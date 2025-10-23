@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Events API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        #results {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .event {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #4CAF50;
+        }
+        .error {
+            color: red;
+            padding: 10px;
+            background: #ffebee;
+            border-radius: 5px;
+        }
+        .success {
+            color: green;
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 5px;
+        }
+        pre {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎫 Events API Test</h1>
+        <p>Test the Ticketmaster and Eventbrite API integration</p>
+
+        <div>
+            <button onclick="testTicketmaster('New York')">Test Ticketmaster (NYC)</button>
+            <button onclick="testTicketmaster('Miami')">Test Ticketmaster (Miami)</button>
+            <button onclick="testEventbrite('New York')">Test Eventbrite (NYC)</button>
+            <button onclick="testEventbrite('Miami')">Test Eventbrite (Miami)</button>
+            <button onclick="testBoth()">Test Both APIs</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const TICKETMASTER_KEY = 'kAfPRLoXerLHtOFA2RvAZXZxXrIMWb9C';
+        const EVENTBRITE_TOKEN = 'MDA5RUNEHHWZJND2YIS6';
+
+        function showResults(html) {
+            document.getElementById('results').innerHTML = html;
+        }
+
+        async function testTicketmaster(city = 'New York') {
+            showResults(`<p>Testing Ticketmaster API for ${city}...</p>`);
+
+            try {
+                const url = `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${TICKETMASTER_KEY}&city=${encodeURIComponent(city)}&size=5&sort=date,asc`;
+
+                console.log('Fetching from:', url);
+
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (data._embedded && data._embedded.events) {
+                    const events = data._embedded.events;
+                    let html = `<div class="success">✅ Success! Found ${events.length} events in ${city}</div>`;
+
+                    events.forEach((event, i) => {
+                        const venue = event._embedded?.venues?.[0];
+                        html += `
+                            <div class="event">
+                                <h3>${i + 1}. ${event.name}</h3>
+                                <p><strong>Date:</strong> ${event.dates?.start?.localDate || 'TBA'}</p>
+                                <p><strong>Venue:</strong> ${venue?.name || 'TBA'}</p>
+                                <p><strong>City:</strong> ${venue?.city?.name || 'TBA'}</p>
+                                <p><strong>Category:</strong> ${event.classifications?.[0]?.segment?.name || 'N/A'}</p>
+                                <p><strong>URL:</strong> <a href="${event.url}" target="_blank">View Event</a></p>
+                            </div>
+                        `;
+                    });
+
+                    html += '<h3>Raw Response:</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    showResults(html);
+                } else {
+                    showResults(`<div class="error">❌ No events found in response</div><pre>${JSON.stringify(data, null, 2)}</pre>`);
+                }
+            } catch (error) {
+                showResults(`<div class="error">❌ Error: ${error.message}</div><pre>${error.stack}</pre>`);
+            }
+        }
+
+        async function testEventbrite(city = 'New York') {
+            showResults(`<p>Testing Eventbrite API for ${city}...</p>`);
+
+            try {
+                const url = `https://www.eventbriteapi.com/v3/events/search/?location.address=${encodeURIComponent(city)}&page_size=5`;
+
+                console.log('Fetching from:', url);
+
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${EVENTBRITE_TOKEN}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (data.events && data.events.length > 0) {
+                    const events = data.events;
+                    let html = `<div class="success">✅ Success! Found ${events.length} events in ${city}</div>`;
+
+                    events.forEach((event, i) => {
+                        html += `
+                            <div class="event">
+                                <h3>${i + 1}. ${event.name?.text || 'Untitled'}</h3>
+                                <p><strong>Date:</strong> ${event.start?.local || 'TBA'}</p>
+                                <p><strong>Venue:</strong> ${event.venue?.name || 'Online Event'}</p>
+                                <p><strong>City:</strong> ${event.venue?.address?.city || 'TBA'}</p>
+                                <p><strong>Free:</strong> ${event.is_free ? 'Yes' : 'No'}</p>
+                                <p><strong>URL:</strong> <a href="${event.url}" target="_blank">View Event</a></p>
+                            </div>
+                        `;
+                    });
+
+                    html += '<h3>Raw Response:</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    showResults(html);
+                } else {
+                    showResults(`<div class="error">❌ No events found in response</div><pre>${JSON.stringify(data, null, 2)}</pre>`);
+                }
+            } catch (error) {
+                showResults(`<div class="error">❌ Error: ${error.message}</div><pre>${error.stack}</pre>`);
+            }
+        }
+
+        async function testBoth() {
+            showResults('<p>Testing both APIs...</p>');
+
+            let html = '<h2>Combined Results</h2>';
+
+            try {
+                // Test Ticketmaster
+                html += '<h3>Ticketmaster:</h3>';
+                const tmUrl = `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${TICKETMASTER_KEY}&city=New York&size=3&sort=date,asc`;
+                const tmResponse = await fetch(tmUrl);
+
+                if (tmResponse.ok) {
+                    const tmData = await tmResponse.json();
+                    if (tmData._embedded?.events) {
+                        html += `<div class="success">✅ ${tmData._embedded.events.length} events found</div>`;
+                        tmData._embedded.events.slice(0, 3).forEach((event, i) => {
+                            html += `<div class="event"><strong>${event.name}</strong> - ${event.dates?.start?.localDate || 'TBA'}</div>`;
+                        });
+                    } else {
+                        html += '<div class="error">❌ No events</div>';
+                    }
+                } else {
+                    html += `<div class="error">❌ API Error: ${tmResponse.status}</div>`;
+                }
+
+                // Test Eventbrite
+                html += '<h3>Eventbrite:</h3>';
+                const ebUrl = 'https://www.eventbriteapi.com/v3/events/search/?location.address=New York&page_size=3';
+                const ebResponse = await fetch(ebUrl, {
+                    headers: { 'Authorization': `Bearer ${EVENTBRITE_TOKEN}` }
+                });
+
+                if (ebResponse.ok) {
+                    const ebData = await ebResponse.json();
+                    if (ebData.events && ebData.events.length > 0) {
+                        html += `<div class="success">✅ ${ebData.events.length} events found</div>`;
+                        ebData.events.slice(0, 3).forEach((event, i) => {
+                            html += `<div class="event"><strong>${event.name?.text || 'Untitled'}</strong> - ${event.start?.local || 'TBA'}</div>`;
+                        });
+                    } else {
+                        html += '<div class="error">❌ No events</div>';
+                    }
+                } else {
+                    html += `<div class="error">❌ API Error: ${ebResponse.status}</div>`;
+                }
+
+                showResults(html);
+            } catch (error) {
+                showResults(html + `<div class="error">❌ Error: ${error.message}</div>`);
+            }
+        }
+    </script>
+</body>
+</html>

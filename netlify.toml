@@ -1,0 +1,61 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+[dev]
+  command = "npm run dev"
+  targetPort = 5173
+# Catch-all rewrite for SPA routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+# API function redirects
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+# Dashboard subdomain configuration
+[[redirects]]
+  from = "https://dashboard.privatecharterx.com/*"
+  to = "/index.html"
+  status = 200
+  force = true
+  conditions = {Role = ["user"]}
+# Admin subdomain configuration  
+[[redirects]]
+  from = "https://admin.privatecharterx.com/*"
+  to = "/index.html"
+  status = 200
+  force = true
+  conditions = {Role = ["admin"]}
+# FIXED: Headers with proper CSP formatting including wallet domains
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api.mapbox.com https://*.tiles.mapbox.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://www.google.com/js/ blob:; style-src 'self' 'unsafe-inline' https://api.mapbox.com https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https: blob:; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' https://www.google.com/recaptcha/ https://recaptcha.google.com/; connect-src 'self' http://localhost:* https://api.mapbox.com https://*.tiles.mapbox.com https://events.mapbox.com wss://api.mapbox.com https://oubecmstqtzdnevyqavu.supabase.co https://*.supabase.co wss://oubecmstqtzdnevyqavu.supabase.co wss://*.supabase.co wss://relay.walletconnect.org https://*.walletconnect.org https://rpc.walletconnect.org https://api.web3modal.org https://pulse.walletconnect.org https://cca-lite.coinbase.com https://*.coinbase.com https://eth-mainnet.g.alchemy.com https://*.alchemy.com https://*.alchemyapi.io https://base-mainnet.g.alchemy.com https://www.google.com/recaptcha/ https://www.privatecharterx.blog https://public-api.wordpress.com;"
+# Domain configuration
+[context.production]
+  [context.production.environment]
+    VITE_APP_URL = "https://www.privatecharterx.com"
+    VITE_DASHBOARD_URL = "https://dashboard.privatecharterx.com"
+    VITE_ADMIN_URL = "https://admin.privatecharterx.com"
+    VITE_MAINTENANCE_MODE = "false"
+# Staging context
+[context.staging]
+  [context.staging.environment]
+    VITE_APP_URL = "https://staging.privatecharterx.com"
+    VITE_DASHBOARD_URL = "https://staging-dashboard.privatecharterx.com"
+    VITE_ADMIN_URL = "https://staging-admin.privatecharterx.com"
+    VITE_MAINTENANCE_MODE = "false"
+# Development context
+[context.development]
+  [context.development.environment]
+    VITE_APP_URL = "http://localhost:5173"
+    VITE_DASHBOARD_URL = "http://localhost:5173"
+    VITE_ADMIN_URL = "http://localhost:5173"
+    VITE_MAINTENANCE_MODE = "false"
