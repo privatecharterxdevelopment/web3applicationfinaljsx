@@ -1212,12 +1212,32 @@ As their luxury travel consultant, provide an enthusiastic response that:
       return;
     }
 
+    // Check message limit (40 messages = 2 chats used, limit reached for free users)
+    const existingChat = chatHistory.find(c => c.id === activeChat);
+    const currentMessageCount = existingChat?.messages?.length || 0;
+    const chatsUsed = Math.floor(currentMessageCount / 20);
+
+    // Block sending if limit reached (2/2 chats used)
+    if (chatsUsed >= 2 && userProfile?.chats_limit !== null) {
+      setToast({
+        message: '2/2 chats used! Please upgrade to continue chatting.',
+        type: 'warning'
+      });
+      setShowSubscriptionModal(true);
+      return;
+    }
+
+    // Show warning when approaching limit (1/2 chats used at 20 messages)
+    if (currentMessageCount === 20 && userProfile?.chats_limit !== null) {
+      setToast({
+        message: '1/2 chats used! You have 20 more messages remaining.',
+        type: 'info'
+      });
+    }
+
     setShowWelcomeMessage(false);
     const userMessage = { role: 'user', content: message };
     let workingChatId = activeChat;
-
-    // Update chat with user message
-    const existingChat = chatHistory.find(c => c.id === activeChat);
 
     // Check if this is the first user message (chat only has welcome message)
     const isFirstUserMessage = existingChat && existingChat.messages.length === 1 &&
@@ -2274,6 +2294,32 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Chat Counter - Shows chats used based on messages (20 msgs = 1 chat) */}
+            <button
+              onClick={() => setShowSubscriptionModal(true)}
+              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-900 transition-colors"
+            >
+              {userProfile?.chats_limit === null ? (
+                <span className="flex items-center gap-1 text-yellow-600">
+                  <Crown size={14} />
+                  <span>∞</span>
+                </span>
+              ) : (
+                <span>
+                  {Math.min(Math.floor((currentChat?.messages?.length || 0) / 20), 2)}/2
+                </span>
+              )}
+            </button>
+
+            {/* Voice Mute Toggle */}
+            <button
+              onClick={toggleVoiceMute}
+              className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
+              title={isVoiceMuted ? 'Voice Muted' : 'Voice Active'}
+            >
+              {isVoiceMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+            </button>
+
             {/* Cart - Always visible */}
             <button
               onClick={() => setShowCartSidebar(true)}
@@ -2298,32 +2344,6 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               }`}
             >
               Send Request
-            </button>
-
-            {/* Voice Mute Toggle */}
-            <button
-              onClick={toggleVoiceMute}
-              className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
-              title={isVoiceMuted ? 'Voice Muted' : 'Voice Active'}
-            >
-              {isVoiceMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-            </button>
-
-            {/* Chat Counter - Clickable to open subscriptions */}
-            <button
-              onClick={() => setShowSubscriptionModal(true)}
-              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-900 transition-colors"
-            >
-              {userProfile?.chats_limit === null ? (
-                <span className="flex items-center gap-1 text-yellow-600">
-                  <Crown size={14} />
-                  <span>∞</span>
-                </span>
-              ) : (
-                <span>
-                  {userProfile?.chats_used || 0}/{userProfile?.chats_limit || 2}
-                </span>
-              )}
             </button>
 
             {/* Chat Sessions Dropdown - Hidden, can be accessed via menu if needed */}
