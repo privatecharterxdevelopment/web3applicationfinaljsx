@@ -148,18 +148,18 @@ export const UnifiedSearchService = {
       if (searchEmptyLegs) {
         emptyLegsQ = supabase.from('EmptyLegs_').select('*');
 
-        // Filter by departure city (fromLocation or q)
+        // Filter by departure city/country (fromLocation or q)
         if (fromVariants.length > 0) {
-          emptyLegsQ = emptyLegsQ.or(fromVariants.map(v => `from_city.ilike.%${v}%,departure_city.ilike.%${v}%`).join(','));
+          emptyLegsQ = emptyLegsQ.or(fromVariants.map(v => `from_city.ilike.%${v}%,departure_city.ilike.%${v}%,from_country.ilike.%${v}%`).join(','));
         } else if (qVariants.length > 0) {
           // If no fromLocation, search both departure and arrival for general location
-          emptyLegsQ = emptyLegsQ.or(qVariants.map(v => `from_city.ilike.%${v}%,departure_city.ilike.%${v}%,to_city.ilike.%${v}%,arrival_city.ilike.%${v}%`).join(','));
+          emptyLegsQ = emptyLegsQ.or(qVariants.map(v => `from_city.ilike.%${v}%,departure_city.ilike.%${v}%,from_country.ilike.%${v}%,to_city.ilike.%${v}%,arrival_city.ilike.%${v}%,to_country.ilike.%${v}%`).join(','));
         }
 
-        // Filter by arrival city (location)
+        // Filter by arrival city/country (location)
         if (locationVariants.length > 0 && fromVariants.length > 0) {
-          // If we have both from and to, filter arrival city
-          emptyLegsQ = emptyLegsQ.or(locationVariants.map(v => `to_city.ilike.%${v}%,arrival_city.ilike.%${v}%`).join(','));
+          // If we have both from and to, filter arrival city/country
+          emptyLegsQ = emptyLegsQ.or(locationVariants.map(v => `to_city.ilike.%${v}%,arrival_city.ilike.%${v}%,to_country.ilike.%${v}%`).join(','));
         }
 
         // Filter by departure date if provided
