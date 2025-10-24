@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
  * Intelligent Search Component with Perplexity-Style Autocomplete
  * Features: Progressive word suggestions, natural language queries, glassmorphic dropdown, actual offers display
  */
-const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a...", onOpenAIChat }) => {
+const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a...", onOpenAIChat, onQueryChange }) => {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
@@ -261,6 +261,13 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
       setLoadingOffers(false);
     }
   };
+
+  // Notify parent of query changes
+  useEffect(() => {
+    if (onQueryChange) {
+      onQueryChange(query);
+    }
+  }, [query, onQueryChange]);
 
   // Smart filtering with pattern matching
   useEffect(() => {

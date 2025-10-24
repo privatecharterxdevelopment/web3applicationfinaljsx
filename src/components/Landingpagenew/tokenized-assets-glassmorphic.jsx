@@ -3466,25 +3466,41 @@ const TokenizedAssetsGlassmorphic = () => {
               {/* Spacer to keep content centered */}
               <div className="mb-8"></div>
               <div className="flex-1 flex flex-col">
-                {/* AI Search Input with Purple Button */}
+                {/* Overview Search with Dropdown + AI Button */}
                 <div className="mb-8 px-4">
-                  <div className="max-w-2xl mx-auto">
+                  <div className="max-w-2xl mx-auto relative">
                     <div className="flex items-center gap-3">
-                      <input
-                        type="text"
-                        value={overviewSearchQuery}
-                        onChange={(e) => setOverviewSearchQuery(e.target.value)}
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter' && overviewSearchQuery.trim()) {
+                      {/* IntelligentSearch Dropdown Component */}
+                      <div className="flex-1">
+                        <IntelligentSearch
+                          webMode={webMode}
+                          placeholder="I need a..."
+                          onQueryChange={(q) => setOverviewSearchQuery(q)}
+                          onSearch={(item, openIndexPage) => {
+                            // Handle search selection
+                            if (item.action === 'search-index' || openIndexPage) {
+                              // Open search index page with query
+                              setSearchQuery(item.query || item.label);
+                              setActiveCategory('search-index');
+                            } else if (item.action === 'search:zurich' || item.action === 'search:dubai' || item.action?.startsWith('search:')) {
+                              // Handle destination searches
+                              const destination = item.action.replace('search:', '');
+                              setSearchQuery(destination);
+                              setActiveCategory('search-index');
+                            } else if (item.action) {
+                              // Navigate to specific page/category
+                              setActiveCategory(item.action);
+                            }
+                          }}
+                          onOpenAIChat={(query) => {
+                            // User wants AI from dropdown - redirect to chat
+                            setAiChatQuery(query || '');
                             setActiveCategory('chat');
-                            setAiChatQuery(overviewSearchQuery);
-                            setOverviewSearchQuery('');
-                          }
-                        }}
-                        placeholder="What can I help you with today?"
-                        className="flex-1 px-6 py-4 border border-gray-300/50 rounded-xl text-base focus:outline-none focus:border-gray-400/50 transition-colors bg-white/35"
-                        style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                      />
+                          }}
+                        />
+                      </div>
+
+                      {/* AI Chat Button - RIGHT SIDE - appears when typing */}
                       {overviewSearchQuery.trim() && (
                         <button
                           onClick={() => {
