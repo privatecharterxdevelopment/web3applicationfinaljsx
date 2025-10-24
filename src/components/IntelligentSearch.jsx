@@ -355,18 +355,15 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
       e.preventDefault();
       if (query.trim().length > 0) {
         setIsOpen(false);
-        // Directly open AI chat instead of search index page
-        if (onOpenAIChat) {
-          onOpenAIChat(query);
-          setQuery('');
-        } else if (onSearch) {
-          // Fallback to traditional search if AI chat not available
+        // ALWAYS open search index page on ENTER (not AI chat)
+        if (onSearch) {
           onSearch({
             label: query,
             action: 'search-index',
             query: query,
             category: 'Search Results'
           }, true);
+          setQuery('');
         }
       }
     } else if (e.key === 'Escape') {

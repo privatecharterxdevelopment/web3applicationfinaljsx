@@ -3473,36 +3473,47 @@ const TokenizedAssetsGlassmorphic = () => {
                     <IntelligentSearch
                       webMode={webMode}
                       placeholder="I need a..."
-                      onQueryChange={(q) => setOverviewSearchQuery(q)}
+                      onQueryChange={(q) => {
+                        console.log('Query changed:', q);
+                        setOverviewSearchQuery(q);
+                      }}
                       onSearch={(item, openIndexPage) => {
-                        // Handle search selection - ONLY dropdown clicks navigate to pages
+                        console.log('Search triggered:', item, openIndexPage);
+                        // Handle search selection
                         if (item.action === 'search-index' || openIndexPage) {
                           // Open search index page with query
                           setSearchQuery(item.query || item.label);
                           setActiveCategory('search-index');
+                          setOverviewSearchQuery(''); // Clear after search
                         } else if (item.action === 'search:zurich' || item.action === 'search:dubai' || item.action?.startsWith('search:')) {
                           // Handle destination searches
                           const destination = item.action.replace('search:', '');
                           setSearchQuery(destination);
                           setActiveCategory('search-index');
+                          setOverviewSearchQuery(''); // Clear after search
                         } else if (item.action) {
                           // Navigate to specific page/category
                           setActiveCategory(item.action);
+                          setOverviewSearchQuery(''); // Clear after navigation
                         }
                       }}
                       onOpenAIChat={(query) => {
-                        // NOT used - AI button is separate
+                        // NOT used anymore - AI button is separate
                       }}
                     />
 
                     {/* AI Chat Button - Absolute positioned inside input on right - ONLY appears when typing */}
-                    {overviewSearchQuery.trim() && (
+                    {overviewSearchQuery && overviewSearchQuery.trim() && (
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('AI button clicked with query:', overviewSearchQuery);
                           if (overviewSearchQuery.trim()) {
-                            setActiveCategory('chat');
+                            // Open NEW CHAT with this query
                             setAiChatQuery(overviewSearchQuery);
-                            setOverviewSearchQuery('');
+                            setActiveCategory('chat');
+                            setOverviewSearchQuery(''); // Clear after opening chat
                           }
                         }}
                         className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white rounded-lg hover:from-black hover:via-gray-900 hover:to-black transition-all shadow-lg shadow-gray-400/20 flex items-center gap-2 overflow-hidden group z-10"
