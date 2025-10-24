@@ -36,6 +36,7 @@ import LoadingMessage from '../LoadingMessage';
 import BulkOrderInterface from '../BulkOrderInterface';
 import SubscriptionModal from '../SubscriptionModal';
 import PaymentSelectionModal from '../PaymentSelectionModal';
+import VoiceReactiveSphere from '../VoiceReactiveSphere';
 
 // Web3
 import { useAccount, useDisconnect, useSignMessage } from 'wagmi';
@@ -158,6 +159,7 @@ const AIChat = ({
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0);
   const [lastInputMethod, setLastInputMethod] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const [loadingStage, setLoadingStage] = useState('searching');
@@ -294,7 +296,7 @@ const AIChat = ({
   // This keeps the chat temporary until actually used
 
   // Toggle Voice Mode
-  const toggleVoiceMode = useCallback(() => {
+  const toggleVoiceMode = useCallback(async () => {
     if (!recognitionRef.current) {
       setToast({ message: 'Voice recognition not supported in this browser', type: 'error' });
       return;
@@ -304,17 +306,53 @@ const AIChat = ({
       const newMode = !prev;
 
       if (newMode) {
-        // Start voice mode
-        try {
-          recognitionRef.current.start();
-          setIsListening(true);
-          setToast({ message: 'Voice mode activated - speak naturally', type: 'info' });
-        } catch (err) {
-          console.error('Failed to start speech recognition:', err);
-        }
+        // Start voice mode with audio analysis
+        (async () => {
+          try {
+            // Get microphone access for audio analysis
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+
+            const source = audioContext.createMediaStreamSource(stream);
+            source.connect(analyser);
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            audioContextRef.current = { audioContext, analyser, dataArray };
+
+            // Update audio level continuously for sphere animation
+            const updateAudioLevel = () => {
+              if (audioContextRef.current) {
+                const { analyser, dataArray } = audioContextRef.current;
+                analyser.getByteFrequencyData(dataArray);
+                const sum = dataArray.reduce((a, b) => a + b, 0);
+                const level = sum / dataArray.length / 255;
+                setAudioLevel(level);
+                requestAnimationFrame(updateAudioLevel);
+              }
+            };
+            updateAudioLevel();
+
+            recognitionRef.current.start();
+            setIsListening(true);
+            setToast({ message: 'Voice mode activated - speak naturally', type: 'info' });
+          } catch (err) {
+            console.error('Failed to start speech recognition:', err);
+            setToast({ message: 'Microphone access denied', type: 'error' });
+          }
+        })();
       } else {
-        // Stop voice mode
+        // Stop voice mode and audio analysis
         try {
+          if (audioContextRef.current?.audioContext) {
+            audioContextRef.current.audioContext.close();
+            audioContextRef.current = null;
+          }
+          setAudioLevel(0);
+
           recognitionRef.current.stop();
           setIsListening(false);
           setToast({ message: 'Voice mode deactivated', type: 'info' });
@@ -2308,15 +2346,17 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
     console.log('🎨 Rendering: NEW CHAT VIEW');
     return (
       <div className="h-full bg-transparent flex flex-col overflow-hidden">
-        {/* Welcome message */}
-        <div className="flex-1 flex flex-col items-center justify-center px-6">
-          <div className="text-center max-w-2xl">
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">
-              Hey! I'm Sphera AI ✨
-            </h2>
-            <p className="text-lg text-gray-600 mb-6">
-              Where are we traveling today? I can help find and book private jets, empty legs, helicopters, yachts, and more.
-            </p>
+        {/* Voice Reactive Sphere - Takes most of the space */}
+        <div className="flex-1 relative min-h-0">
+          <VoiceReactiveSphere
+            isListening={isVoiceMode || isListening}
+            audioLevel={audioLevel}
+          />
+        </div>
+
+        {/* Quick Action Cards - Positioned above input */}
+        <div className="flex-shrink-0 px-6 pb-4">
+          <div className="max-w-3xl mx-auto">
             <div className="flex flex-wrap gap-2 justify-center">
               <button
                 onClick={() => setCurrentMessage("Show me empty legs from Zurich to London")}
