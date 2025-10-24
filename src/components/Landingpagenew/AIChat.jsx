@@ -1348,10 +1348,10 @@ As their luxury travel consultant, provide an enthusiastic response that:
         if (toolUse) {
           console.log('🔧 Tool used:', toolUse.name, toolUse.input);
 
-          // Show "Searching database..." message
+          // Show "Searching options..." message
           const searchingMessage = {
             role: 'assistant',
-            content: `🔍 Searching database for ${toolUse.name === 'searchEmptyLegs' ? 'empty legs' : 'options'}...`,
+            content: `🔍 Searching options...`,
             isSearching: true
           };
 
