@@ -35,10 +35,11 @@ import WalletConnect from '../WalletConnect';
 import LoadingMessage from '../LoadingMessage';
 import BulkOrderInterface from '../BulkOrderInterface';
 import SubscriptionModal from '../SubscriptionModal';
+import PaymentSelectionModal from '../PaymentSelectionModal';
 
 // Web3
 import { useAccount, useDisconnect, useSignMessage } from 'wagmi';
-import { signAIChatRequest } from '../../lib/web3';
+import { signAIChatRequest, web3Service } from '../../lib/web3';
 
 // Weather Widget - Light gray design
 const WeatherWidget = ({ location, weather }) => {
@@ -196,6 +197,7 @@ const AIChat = ({
 
   // Cart visibility
   const [showCartWidget, setShowCartWidget] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   // Web3 Wallet
   const { address: walletAddress, isConnected: isWalletConnected } = useAccount();
@@ -699,10 +701,106 @@ const AIChat = ({
   }, [cartItems, cartTotal, activeChat, currentChat, weather]);
 
   const sendRequest = useCallback(async () => {
-    const hasNFTItem = cartItems.some(item => 
+    // Check if there are items in cart
+    if (!cartItems || cartItems.length === 0) {
+      setToast({ message: 'Your cart is empty', type: 'error' });
+      return;
+    }
+
+    // Show payment modal instead of sending immediately
+    setShowPaymentModal(true);
+  }, [cartItems]);
+
+  const handlePaymentSelection = useCallback(async (paymentMethod) => {
+    setShowPaymentModal(false);
+    setSelectedPaymentMethod(paymentMethod);
+
+    // If crypto is selected, request wallet signature
+    if (paymentMethod === 'crypto') {
+      if (!walletAddress) {
+        setToast({ message: 'Please connect your wallet first', type: 'error' });
+        return;
+      }
+
+      try {
+        // Create signature data
+        const requestData = {
+          requestId: `REQ-${Date.now()}`,
+          userId: user?.id || 'guest',
+          services: cartItems.map(item => item.name || item.type).join(', '),
+          totalAmount: cartTotal,
+          currency: 'EUR',
+          timestamp: Date.now(),
+          includesBlockchain: true,
+          includesCO2Certificate: false,
+          includesCryptoPayment: true
+        };
+
+        // Request signature using wagmi
+        setToast({ message: 'Please sign the request in your wallet...', type: 'info' });
+
+        const signatureResult = await signAIChatRequest(requestData, signMessageAsync);
+
+        // Save crypto transaction with signature
+        await saveRequestWithSignature(requestData, signatureResult.signature, signatureResult.message);
+
+      } catch (error) {
+        console.error('Signature error:', error);
+        setToast({ message: 'Signature cancelled or failed', type: 'error' });
+        setSelectedPaymentMethod(null);
+        return;
+      }
+    } else {
+      // Bank transfer - proceed directly
+      await finalizeRequest(paymentMethod, null, null);
+    }
+  }, [cartItems, cartTotal, user, walletAddress, signMessageAsync]);
+
+  const saveRequestWithSignature = useCallback(async (requestData, signature, message) => {
+    try {
+      const { data: userInfo } = await supabase.auth.getUser();
+      const userId = userInfo?.user?.id || null;
+
+      if (userId) {
+        // Save to crypto_transactions table (or user_requests with signature)
+        const cryptoTxPayload = {
+          user_id: userId,
+          wallet_address: walletAddress,
+          request_id: requestData.requestId,
+          signature: signature,
+          signature_message: message,
+          timestamp: new Date(requestData.timestamp).toISOString(),
+          amount: requestData.totalAmount,
+          currency: requestData.currency,
+          services: requestData.services,
+          status: 'pending_confirmation'
+        };
+
+        // Try to save to crypto_transactions table if it exists
+        const { error } = await supabase
+          .from('crypto_transactions')
+          .insert([cryptoTxPayload]);
+
+        if (error) {
+          console.warn('crypto_transactions table may not exist, saving to user_requests instead');
+        }
+      }
+
+      // Finalize the request
+      await finalizeRequest('crypto', signature, message);
+
+      setToast({ message: 'Signature saved successfully!', type: 'success' });
+    } catch (error) {
+      console.error('Error saving signature:', error);
+      setToast({ message: 'Failed to save signature', type: 'error' });
+    }
+  }, [walletAddress]);
+
+  const finalizeRequest = useCallback(async (paymentMethod, signature = null, signatureMessage = null) => {
+    const hasNFTItem = cartItems.some(item =>
       conversationalAI.isEligibleForNFTBenefit(item, userHasNFT, usedNFTBenefitThisYear)
     );
-    
+
     if (hasNFTItem && !usedNFTBenefitThisYear) {
       sessionStorage.setItem('nft_benefit_used_this_year', 'true');
       setUsedNFTBenefitThisYear(true);
@@ -715,13 +813,15 @@ const AIChat = ({
       items: cartItems,
       total: cartTotal,
       status: 'sent',
-      paymentMethod: selectedPaymentMethod,
-      walletAddress: connectedWallet
+      paymentMethod: paymentMethod,
+      walletAddress: walletAddress || connectedWallet,
+      signature: signature,
+      signatureMessage: signatureMessage
     };
 
     const existing = JSON.parse(sessionStorage.getItem('chat_requests') || '[]');
     sessionStorage.setItem('chat_requests', JSON.stringify([...existing, request]));
-    
+
     // Persist to Supabase user_requests (My Requests)
     try {
       // Determine request type from items
@@ -747,8 +847,10 @@ const AIChat = ({
             request_id: request.id,
             items: cartItems,
             total: cartTotal,
-            payment_method: selectedPaymentMethod,
-            wallet_address: connectedWallet,
+            payment_method: paymentMethod,
+            wallet_address: walletAddress || connectedWallet,
+            signature: signature,
+            signature_message: signatureMessage,
             conversation: currentChat?.messages || [],
             created_at: request.timestamp
           },
@@ -763,15 +865,16 @@ const AIChat = ({
       console.error('Error saving to user_requests:', e);
     }
 
-    let msg = `Request submitted!\n\nReference: ${request.id}\nTotal: €${cartTotal.toLocaleString()}\n\nOur team will respond within 2-4 hours.`;
-    
-    setChatHistory(prev => prev.map(c => 
+    const paymentMethodText = paymentMethod === 'crypto' ? 'Crypto Payment (Signature Verified)' : 'Bank Transfer (1-3 days)';
+    let msg = `Request submitted!\n\nReference: ${request.id}\nTotal: €${cartTotal.toLocaleString()}\nPayment: ${paymentMethodText}\n\nOur team will respond within 2-4 hours.`;
+
+    setChatHistory(prev => prev.map(c =>
       c.id === activeChat ? { ...c, messages: [...c.messages, { role: 'assistant', content: msg }] } : c
     ));
-    
+
     setCartItems([]);
     setSelectedPaymentMethod(null);
-  }, [cartItems, cartTotal, activeChat, selectedPaymentMethod, userHasNFT, usedNFTBenefitThisYear, conversationalAI, connectedWallet]);
+  }, [cartItems, cartTotal, activeChat, userHasNFT, usedNFTBenefitThisYear, conversationalAI, connectedWallet, walletAddress, currentChat]);
 
   const handleSearch = async (query, conversationHistory = []) => {
     setIsSearching(true);
@@ -2881,6 +2984,16 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
           // After successful upgrade, reload profile
           await loadUserProfile();
         }}
+      />
+
+      {/* Payment Selection Modal */}
+      <PaymentSelectionModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onSelectPayment={handlePaymentSelection}
+        cartTotal={cartTotal}
+        cartItems={cartItems}
+        connectedWallet={walletAddress || connectedWallet}
       />
 
       {/* Toast Notifications */}
