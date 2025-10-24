@@ -2408,7 +2408,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
   if (activeChat === 'new') {
     console.log('🎨 Rendering: NEW CHAT VIEW');
     return (
-      <div className="h-full bg-transparent flex flex-col overflow-hidden">
+      <div className="ai-chat-page h-full bg-transparent flex flex-col overflow-hidden">
         {/* Voice Reactive Sphere - Takes most of the space */}
         <div className="flex-1 relative min-h-0">
           <VoiceReactiveSphere
