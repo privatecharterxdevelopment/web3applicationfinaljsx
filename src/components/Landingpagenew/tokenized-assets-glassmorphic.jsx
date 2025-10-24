@@ -3494,10 +3494,15 @@ const TokenizedAssetsGlassmorphic = () => {
                               setOverviewSearchQuery('');
                             }
                           }}
-                          className="px-6 py-4 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-xl hover:from-purple-700 hover:to-purple-600 transition-all shadow-lg shadow-purple-200 animate-fade-in flex items-center gap-2"
+                          className="px-6 py-4 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white rounded-xl hover:from-black hover:via-gray-900 hover:to-black transition-all shadow-lg shadow-gray-400/30 animate-fade-in flex items-center gap-2 relative overflow-hidden group"
                         >
-                          <Send size={18} />
-                          <span className="font-medium">Connect to AI</span>
+                          {/* Animated border gradient */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-gray-600 via-gray-400 to-gray-600 opacity-50 blur-sm group-hover:opacity-75 transition-opacity animate-pulse" style={{ zIndex: -1 }}></div>
+
+                          <Send size={18} className="animate-pulse" />
+                          <span className="font-medium bg-gradient-to-r from-white via-gray-100 to-white bg-clip-text text-transparent animate-pulse">
+                            Connect to AI
+                          </span>
                         </button>
                       )}
                     </div>
