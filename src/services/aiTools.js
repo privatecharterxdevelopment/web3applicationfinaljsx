@@ -194,18 +194,38 @@ export async function executeTool(toolName, input) {
 export async function searchEmptyLegs(params) {
   console.log('🔍 searchEmptyLegs called with params:', params);
 
-  const results = await UnifiedSearchService.searchAll({
-    fromLocation: params.from,
-    location: params.to,
-    q: params.location,
-    dateFrom: params.date,
-    passengers: params.passengers,
+  // If only 'from' is specified without 'to', use it as general search
+  const searchParams = {
     serviceTypes: { emptyLegs: true }
-  });
+  };
+
+  if (params.from && params.to) {
+    // Both from and to specified - specific route search
+    searchParams.fromLocation = params.from;
+    searchParams.location = params.to;
+  } else if (params.from) {
+    // Only from specified - search as general location (departure OR arrival)
+    searchParams.q = params.from;
+  } else if (params.to) {
+    // Only to specified - search as general location
+    searchParams.q = params.to;
+  } else if (params.location) {
+    // Generic location search
+    searchParams.q = params.location;
+  }
+
+  // Add date and passenger filters
+  if (params.date) searchParams.dateFrom = params.date;
+  if (params.passengers) searchParams.passengers = params.passengers;
+
+  console.log('🔍 Calling UnifiedSearchService with:', searchParams);
+
+  const results = await UnifiedSearchService.searchAll(searchParams);
 
   console.log('✅ searchEmptyLegs results:', {
     emptyLegsCount: results.emptyLegs?.length || 0,
-    totalResults: results.totalResults
+    totalResults: results.totalResults,
+    params: searchParams
   });
 
   return {
