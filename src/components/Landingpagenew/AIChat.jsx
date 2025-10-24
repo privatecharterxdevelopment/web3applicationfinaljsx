@@ -275,78 +275,9 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
     }
   }, []);
 
-  // Create welcome chat when activeChat is 'new'
-  const hasCreatedWelcomeRef = useRef(false);
-
-  useEffect(() => {
-    const createWelcomeChat = async () => {
-      if (activeChat !== 'new' || !user?.id || hasCreatedWelcomeRef.current) return;
-
-      hasCreatedWelcomeRef.current = true; // Prevent multiple creations
-
-      const welcomeMessages = [
-        "Hey! I'm Sphera AI. Where are we traveling today?",
-        "Hi Captain! Let's plan something great together.",
-        "Hello! I'm Sphera. How can I assist you today?"
-      ];
-
-      const randomWelcome = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
-
-      const welcomeMessage = {
-        role: 'assistant',
-        content: randomWelcome
-      };
-
-      // Timeout fallback - if chat creation takes too long, show existing chats
-      const timeout = setTimeout(() => {
-        console.warn('⏱️ Chat creation timeout - showing existing chats');
-        hasCreatedWelcomeRef.current = false;
-        if (chatHistory.length > 0) {
-          setActiveChat(chatHistory[0].id);
-        } else {
-          setActiveChat(null); // Show chat list
-        }
-      }, 5000);
-
-      try {
-        const { success, chat } = await chatService.createChat(user.id, 'New Chat', welcomeMessage);
-
-        clearTimeout(timeout);
-
-        if (success && chat?.id) {
-          const newChat = {
-            id: chat.id,
-            title: 'New Chat',
-            date: 'Just now',
-            messages: [welcomeMessage]
-          };
-
-          setChatHistory(prev => [newChat, ...prev]);
-          setActiveChat(chat.id);
-          await chatService.updateChatMessages(chat.id, [welcomeMessage], user.id);
-        } else {
-          console.error('Chat creation returned no chat ID');
-          hasCreatedWelcomeRef.current = false;
-          setActiveChat(null); // Return to chat list
-        }
-      } catch (error) {
-        clearTimeout(timeout);
-        console.error('Failed to create welcome chat:', error);
-        hasCreatedWelcomeRef.current = false; // Reset on error
-        setActiveChat(null); // Return to chat list on error
-        setToast({ message: 'Failed to create chat. Please try again.', type: 'error' });
-      }
-    };
-
-    createWelcomeChat();
-  }, [activeChat, user?.id, chatHistory]);
-
-  // Reset the welcome ref when switching away from 'new'
-  useEffect(() => {
-    if (activeChat !== 'new') {
-      hasCreatedWelcomeRef.current = false;
-    }
-  }, [activeChat]);
+  // No automatic chat creation when clicking "New Chat"
+  // Chat is only created in DB when user sends their first message
+  // This keeps the chat temporary until actually used
 
   // Toggle Voice Mode
   const toggleVoiceMode = useCallback(() => {
@@ -2175,14 +2106,41 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
     }
   };
 
-  // NEW CHAT VIEW - Show loading while creating chat with welcome message
+  // NEW CHAT VIEW - Show welcome message without creating chat in DB yet
   if (activeChat === 'new') {
-    console.log('🎨 Rendering: NEW CHAT VIEW (loading)');
+    console.log('🎨 Rendering: NEW CHAT VIEW');
     return (
       <div className="h-full bg-transparent flex flex-col overflow-hidden">
-        {/* Show loading while creating chat */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className="animate-pulse text-gray-500">Creating your chat...</div>
+        {/* Welcome message */}
+        <div className="flex-1 flex flex-col items-center justify-center px-6">
+          <div className="text-center max-w-2xl">
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">
+              Hey! I'm Sphera AI ✨
+            </h2>
+            <p className="text-lg text-gray-600 mb-6">
+              Where are we traveling today? I can help you find private jets, empty legs, helicopters, yachts, and more.
+            </p>
+            <div className="flex flex-wrap gap-2 justify-center">
+              <button
+                onClick={() => setCurrentMessage("Show me empty legs from Zurich to London")}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
+              >
+                Empty legs from Zurich
+              </button>
+              <button
+                onClick={() => setCurrentMessage("Private jet for 6 passengers to Monaco")}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
+              >
+                Private jet to Monaco
+              </button>
+              <button
+                onClick={() => setCurrentMessage("Helicopter transfer to St. Moritz")}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
+              >
+                Helicopter to St. Moritz
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* FIXED INPUT - Floating unten */}
