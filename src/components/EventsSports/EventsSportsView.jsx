@@ -279,8 +279,8 @@ const EventsSportsView = ({ cart = [], setCart, user }) => {
       return event.images?.[0]?.url || event.images?.[1]?.url || event.images?.[2]?.url || 'https://via.placeholder.com/800x450?text=Event';
     }
     if (event.source === 'eventbrite') {
-      // Eventbrite logo/image - multiple fallbacks
-      return event.logo?.url || event.logo?.original?.url || event.image || 'https://via.placeholder.com/800x450?text=Event';
+      // Eventbrite logo/image - logo is already a URL string after formatting
+      return event.logo || event.image || 'https://via.placeholder.com/800x450?text=Event';
     }
     return event.images?.[0]?.url || 'https://via.placeholder.com/800x450?text=Event';
   };
