@@ -130,7 +130,7 @@ export const UnifiedSearchService = {
       const searchEmptyLegs = shouldSearchAll || serviceTypes?.emptyLegs;
       const searchJets = shouldSearchAll || serviceTypes?.jets;
       const searchHelicopters = shouldSearchAll || serviceTypes?.helicopters;
-      const searchYachts = shouldSearchAll || serviceTypes?.yachts;
+      const searchYachts = false; // YACHTS = CUSTOM REQUESTS ONLY, NO DATABASE TABLE
       const searchCars = shouldSearchAll || serviceTypes?.cars;
 
       // Build queries only for requested services
@@ -176,20 +176,27 @@ export const UnifiedSearchService = {
         // Filter by departure date if provided
         if (dateFrom) {
           emptyLegsQ = emptyLegsQ.gte('departure_date', dateFrom);
+          console.log('🔍 Date filter: from', dateFrom);
         }
         if (dateTo) {
           emptyLegsQ = emptyLegsQ.lte('departure_date', dateTo);
+          console.log('🔍 Date filter: to', dateTo);
         } else if (dateFrom) {
           // If only dateFrom provided, show next 30 days
           const endDate = new Date(dateFrom);
           endDate.setDate(endDate.getDate() + 30);
           emptyLegsQ = emptyLegsQ.lte('departure_date', endDate.toISOString().split('T')[0]);
+          console.log('🔍 Date filter: next 30 days from', dateFrom);
+        } else {
+          // NO specific dates - show last 7 days + future (not ALL past data)
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          emptyLegsQ = emptyLegsQ.gte('departure_date', sevenDaysAgo.toISOString().split('T')[0]);
+          console.log('🔍 Date filter: last 7 days + future from', sevenDaysAgo.toISOString().split('T')[0]);
         }
-        // REMOVED DATE FILTER - Show ALL empty legs regardless of date
-        // Users should see all available inventory, not just future dates
 
-        // Order by departure_date descending to show most recent first
-        emptyLegsQ = emptyLegsQ.order('departure_date', { ascending: false }).limit(50);
+        // Order by departure_date ascending (soonest flights first), limit to 10 max
+        emptyLegsQ = emptyLegsQ.order('departure_date', { ascending: true }).limit(10);
         console.log('🔍 EmptyLegs query built, executing...');
       }
 
@@ -207,7 +214,8 @@ export const UnifiedSearchService = {
         helicoptersQ = helicoptersQ.limit(10);
       }
 
-      const yachtsQ = searchYachts ? supabase.from('fixed_offers').select('*').limit(10) : Promise.resolve({ data: [], error: null });
+      // Yachts - NO TABLE, custom requests only
+      const yachtsQ = Promise.resolve({ data: [], error: null });
       const carsQ = searchCars ? supabase.from('taxi_cars').select('*').limit(10) : Promise.resolve({ data: [], error: null });
 
       // Adventures query - fetch from fixed_offers where is_empty_leg = false
