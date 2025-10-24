@@ -205,10 +205,49 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                         )}
                         
                         {item.type === 'empty_legs' && (
-                          <div className="text-sm text-gray-600 space-y-1">
-                            <p>{item.subtitle}</p>
-                            {item.aircraft_type && <p>Aircraft: {item.aircraft_type}</p>}
-                            {item.capacity && <p>Capacity: {item.capacity}</p>}
+                          <div className="text-sm text-gray-600 space-y-2">
+                            {/* Route */}
+                            <div className="flex items-center gap-2 text-base font-semibold text-gray-900">
+                              <span>{item.departure_city || 'TBD'}</span>
+                              <span className="text-gray-400">→</span>
+                              <span>{item.arrival_city || 'TBD'}</span>
+                            </div>
+
+                            {/* Date and Time */}
+                            {item.departure_date && (
+                              <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-500">📅</span>
+                                  <span>{new Date(item.departure_date).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                  })}</span>
+                                </div>
+                                {item.departure_time && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-gray-500">🕐</span>
+                                    <span>{item.departure_time}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Passengers */}
+                            {item.available_seats && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-500">👤</span>
+                                <span>{item.available_seats} seats available</span>
+                              </div>
+                            )}
+
+                            {/* Discount */}
+                            {item.discount_percentage && (
+                              <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-semibold">
+                                <span>💰</span>
+                                <span>{item.discount_percentage}% OFF</span>
+                              </div>
+                            )}
                           </div>
                         )}
                         
@@ -240,14 +279,26 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                   {/* Price and Actions */}
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      {item.price && (
+                      {/* Empty legs use price_eur */}
+                      {item.type === 'empty_legs' && item.price_eur && (
+                        <>
+                          <p className="text-lg font-semibold text-gray-900">
+                            €{item.price_eur.toLocaleString()}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            ≈ ${Math.round(item.price_eur * 1.1).toLocaleString()}
+                          </p>
+                        </>
+                      )}
+                      {/* Other types use generic price */}
+                      {item.type !== 'empty_legs' && item.price && (
                         <p className="text-lg font-semibold text-gray-900">
                           €{item.price.toLocaleString()}
-                          {item.type === 'jets' || item.type === 'helicopters' ? '/hr' : 
+                          {item.type === 'jets' || item.type === 'helicopters' ? '/hr' :
                            item.type === 'yachts' ? '/day' : ''}
                         </p>
                       )}
-                      {item.currency && item.currency !== 'EUR' && (
+                      {item.type !== 'empty_legs' && item.currency && item.currency !== 'EUR' && (
                         <p className="text-sm text-gray-500">
                           {item.currency} {item.price}
                         </p>
