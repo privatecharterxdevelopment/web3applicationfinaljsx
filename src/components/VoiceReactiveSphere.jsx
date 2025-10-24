@@ -13,6 +13,21 @@ export default function VoiceReactiveSphere({ isListening = false, audioLevel = 
   const particlesRef = useRef(null);
   const animationIdRef = useRef(null);
 
+  // Use refs to store latest prop values for animation loop
+  const audioLevelRef = useRef(audioLevel);
+  const isListeningRef = useRef(isListening);
+
+  // Update refs when props change
+  useEffect(() => {
+    audioLevelRef.current = audioLevel;
+    isListeningRef.current = isListening;
+
+    // Log audio level changes for debugging
+    if (audioLevel > 0.1) {
+      console.log('🎵 Audio level:', audioLevel.toFixed(3));
+    }
+  }, [audioLevel, isListening]);
+
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -33,22 +48,22 @@ export default function VoiceReactiveSphere({ isListening = false, audioLevel = 
     renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
     containerRef.current.appendChild(renderer.domElement);
 
-    // Create particle sphere
-    const particleCount = 8000;
+    // Create particle sphere with MORE particles for better visual
+    const particleCount = 12000;
     const positions = new Float32Array(particleCount * 3);
     const originalPositions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
 
-    // Create deformed sphere shape
+    // Create deformed sphere shape - BIGGER radius
     for (let i = 0; i < particleCount; i++) {
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
 
-      // Base radius with some randomness for organic shape
-      const radius = 80 + Math.random() * 20;
+      // BIGGER base radius for larger sphere
+      const radius = 120 + Math.random() * 30;
 
       // Add noise for deformation
-      const noise = Math.sin(theta * 3) * Math.cos(phi * 2) * 10;
+      const noise = Math.sin(theta * 3) * Math.cos(phi * 2) * 15;
       const finalRadius = radius + noise;
 
       positions[i * 3] = finalRadius * Math.sin(phi) * Math.cos(theta);
@@ -61,7 +76,7 @@ export default function VoiceReactiveSphere({ isListening = false, audioLevel = 
       originalPositions[i * 3 + 2] = positions[i * 3 + 2];
 
       // Assign random grayscale colors (black to gray)
-      const grayValue = Math.random() * 0.5;
+      const grayValue = Math.random() * 0.6;
       colors[i * 3] = grayValue;     // R
       colors[i * 3 + 1] = grayValue; // G
       colors[i * 3 + 2] = grayValue; // B
@@ -72,9 +87,9 @@ export default function VoiceReactiveSphere({ isListening = false, audioLevel = 
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
     const material = new THREE.PointsMaterial({
-      size: 1.5,
+      size: 2.0, // Slightly larger particles
       transparent: true,
-      opacity: 0.8,
+      opacity: 0.85,
       vertexColors: true
     });
 
@@ -93,8 +108,8 @@ export default function VoiceReactiveSphere({ isListening = false, audioLevel = 
       animationIdRef.current = requestAnimationFrame(animate);
       time += 0.005;
 
-      // Use audioLevel prop from Hume AI
-      const currentAudioLevel = isListening ? audioLevel : 0;
+      // Use REF values to get latest audioLevel from props
+      const currentAudioLevel = isListeningRef.current ? audioLevelRef.current : 0;
 
       // Update particle positions
       const positions = geometry.attributes.position.array;
@@ -111,10 +126,10 @@ export default function VoiceReactiveSphere({ isListening = false, audioLevel = 
         );
 
         // Base wave animation
-        const wave = Math.sin(time + distance * 0.02) * 3;
+        const wave = Math.sin(time + distance * 0.02) * 4;
 
-        // Audio reactive scaling (enhanced when listening)
-        const audioScale = 1 + currentAudioLevel * 0.5;
+        // Audio reactive scaling - MUCH MORE SENSITIVE (increased multiplier)
+        const audioScale = 1 + currentAudioLevel * 2.5;
 
         // Apply transformations
         positions[i3] = origPos[i3] * audioScale + wave * (origPos[i3] / distance);
@@ -156,11 +171,6 @@ export default function VoiceReactiveSphere({ isListening = false, audioLevel = 
       renderer.dispose();
     };
   }, []);
-
-  // Update animation based on audio level changes
-  useEffect(() => {
-    // Animation automatically uses the latest audioLevel via closure
-  }, [isListening, audioLevel]);
 
   return (
     <div ref={containerRef} className="w-full h-full" />

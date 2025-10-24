@@ -256,6 +256,11 @@ const AIChat = ({
               setCurrentMessage(data.message.content);
               // Auto-send the message
               handleSendMessage(data.message.content, 'voice');
+
+              // Hide sphere overlay and show chat after message is sent
+              setTimeout(() => {
+                setIsListening(false);
+              }, 500);
             } else if (data.type === 'assistant_message') {
               // AI response text
               console.log('🤖 AI response:', data.message.content);
@@ -302,6 +307,11 @@ const AIChat = ({
         if (event.results[event.results.length - 1].isFinal) {
           console.log('🎤 Voice input:', transcript);
           handleSendMessage(transcript, 'voice');
+
+          // Hide sphere overlay and show chat after message is sent
+          setTimeout(() => {
+            setIsListening(false);
+          }, 500);
         }
       };
 
@@ -3244,6 +3254,49 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             </button>
           </div>
         </div>
+      )}
+
+      {/* Voice Input Overlay - Shows sphere animation when user is speaking */}
+      {isListening && activeChat !== 'new' && (
+        <>
+          <div className="fixed inset-0 bg-black/80 z-50 animate-fade-in backdrop-blur-sm" />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-8 animate-fade-in">
+            <div className="relative w-full max-w-2xl h-96 bg-gradient-to-b from-gray-900/50 to-black/50 rounded-3xl border border-white/20 p-8 backdrop-blur-xl shadow-2xl">
+              {/* Close button */}
+              <button
+                onClick={() => {
+                  if (isVoiceMode) {
+                    toggleVoiceMode();
+                  } else {
+                    setIsListening(false);
+                  }
+                }}
+                className="absolute top-4 right-4 p-2 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors z-10"
+                title="Stop Voice Input"
+              >
+                <X size={20} />
+              </button>
+
+              {/* Voice Reactive Sphere */}
+              <div className="w-full h-full relative">
+                <VoiceReactiveSphere
+                  isListening={isListening}
+                  audioLevel={audioLevel}
+                />
+              </div>
+
+              {/* Status Text */}
+              <div className="absolute bottom-8 left-0 right-0 text-center">
+                <div className="inline-flex items-center gap-3 px-6 py-3 bg-black/70 backdrop-blur-md rounded-full border border-white/20">
+                  <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                  <span className="text-white font-medium">
+                    🎤 Listening... Speak naturally
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
