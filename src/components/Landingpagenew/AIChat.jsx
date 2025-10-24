@@ -198,6 +198,8 @@ const AIChat = ({
   // Cart visibility
   const [showCartWidget, setShowCartWidget] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [isSigningTransaction, setIsSigningTransaction] = useState(false);
+  const [signatureSuccess, setSignatureSuccess] = useState(false);
 
   // Web3 Wallet
   const { address: walletAddress, isConnected: isWalletConnected } = useAccount();
@@ -712,17 +714,20 @@ const AIChat = ({
   }, [cartItems]);
 
   const handlePaymentSelection = useCallback(async (paymentMethod) => {
-    setShowPaymentModal(false);
     setSelectedPaymentMethod(paymentMethod);
 
     // If crypto is selected, request wallet signature
     if (paymentMethod === 'crypto') {
       if (!walletAddress) {
         setToast({ message: 'Please connect your wallet first', type: 'error' });
+        setShowPaymentModal(false);
         return;
       }
 
       try {
+        // Start signing process - show loading animation
+        setIsSigningTransaction(true);
+
         // Create signature data
         const requestData = {
           requestId: `REQ-${Date.now()}`,
@@ -737,21 +742,34 @@ const AIChat = ({
         };
 
         // Request signature using wagmi
-        setToast({ message: 'Please sign the request in your wallet...', type: 'info' });
-
         const signatureResult = await signAIChatRequest(requestData, signMessageAsync);
+
+        // Show success animation
+        setIsSigningTransaction(false);
+        setSignatureSuccess(true);
+
+        // Wait 2 seconds to show success message
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Close modal and save
+        setShowPaymentModal(false);
+        setSignatureSuccess(false);
 
         // Save crypto transaction with signature
         await saveRequestWithSignature(requestData, signatureResult.signature, signatureResult.message);
 
       } catch (error) {
         console.error('Signature error:', error);
+        setIsSigningTransaction(false);
+        setSignatureSuccess(false);
+        setShowPaymentModal(false);
         setToast({ message: 'Signature cancelled or failed', type: 'error' });
         setSelectedPaymentMethod(null);
         return;
       }
     } else {
       // Bank transfer - proceed directly
+      setShowPaymentModal(false);
       await finalizeRequest(paymentMethod, null, null);
     }
   }, [cartItems, cartTotal, user, walletAddress, signMessageAsync]);
@@ -788,8 +806,6 @@ const AIChat = ({
 
       // Finalize the request
       await finalizeRequest('crypto', signature, message);
-
-      setToast({ message: 'Signature saved successfully!', type: 'success' });
     } catch (error) {
       console.error('Error saving signature:', error);
       setToast({ message: 'Failed to save signature', type: 'error' });
@@ -2989,11 +3005,18 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       {/* Payment Selection Modal */}
       <PaymentSelectionModal
         isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
+        onClose={() => {
+          if (!isSigningTransaction) {
+            setShowPaymentModal(false);
+            setSignatureSuccess(false);
+          }
+        }}
         onSelectPayment={handlePaymentSelection}
         cartTotal={cartTotal}
         cartItems={cartItems}
         connectedWallet={walletAddress || connectedWallet}
+        isSigningTransaction={isSigningTransaction}
+        signatureSuccess={signatureSuccess}
       />
 
       {/* Toast Notifications */}

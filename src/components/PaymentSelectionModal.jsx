@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, CreditCard, Building2, Wallet, Clock } from 'lucide-react';
+import { X, CreditCard, Building2, Wallet, Clock, CheckCircle } from 'lucide-react';
 
 /**
  * Payment Selection Modal
@@ -12,7 +12,9 @@ const PaymentSelectionModal = ({
   onSelectPayment,
   cartTotal,
   cartItems,
-  connectedWallet
+  connectedWallet,
+  isSigningTransaction = false,
+  signatureSuccess = false
 }) => {
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -51,18 +53,56 @@ const PaymentSelectionModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={isSigningTransaction ? undefined : onClose}>
       <div
         className="bg-white rounded-2xl max-w-2xl w-full p-8 relative"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <X size={24} />
-        </button>
+        {!isSigningTransaction && (
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X size={24} />
+          </button>
+        )}
+
+        {/* Loading Overlay for Signature */}
+        {isSigningTransaction && (
+          <div className="absolute inset-0 bg-white/95 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
+            <div className="text-center">
+              {/* Rotating Circle Animation */}
+              <div className="relative w-24 h-24 mx-auto mb-6">
+                <div className="absolute inset-0 border-4 border-gray-200 rounded-full"></div>
+                <div className="absolute inset-0 border-4 border-transparent border-t-black rounded-full animate-spin"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Wallet size={32} className="text-gray-400" />
+                </div>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Waiting for Signature</h3>
+              <p className="text-sm text-gray-600">Please sign the transaction in your wallet...</p>
+              <p className="text-xs text-gray-400 mt-2">This does not transfer any funds</p>
+            </div>
+          </div>
+        )}
+
+        {/* Success Overlay */}
+        {signatureSuccess && (
+          <div className="absolute inset-0 bg-white/95 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
+            <div className="text-center">
+              {/* Success Check Animation */}
+              <div className="relative w-24 h-24 mx-auto mb-6">
+                <div className="absolute inset-0 bg-green-100 rounded-full animate-pulse"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <CheckCircle size={48} className="text-green-600 animate-bounce" />
+                </div>
+              </div>
+              <h3 className="text-lg font-bold text-green-600 mb-2">Request Signed Successfully!</h3>
+              <p className="text-sm text-gray-600">Your crypto payment request has been verified</p>
+            </div>
+          </div>
+        )}
 
         {/* Header */}
         <div className="mb-6">
@@ -189,13 +229,14 @@ const PaymentSelectionModal = ({
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+            disabled={isSigningTransaction}
+            className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
-            disabled={!selectedMethod || loading}
+            disabled={!selectedMethod || loading || isSigningTransaction}
             className="flex-1 px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Processing...' : 'Confirm & Continue'}
