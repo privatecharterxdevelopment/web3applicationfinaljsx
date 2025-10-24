@@ -242,11 +242,48 @@ const AIChat = ({
   useEffect(() => {
     if (HUME_API_KEY && HUME_SECRET_KEY) {
       humeClientRef.current = new HumeEVIClient(HUME_API_KEY, HUME_SECRET_KEY);
-      humeClientRef.current.connect().catch(err => {
-        console.warn('Hume AI connection failed:', err);
-      });
+
+      // Connect to Hume AI
+      humeClientRef.current.connect()
+        .then(() => {
+          console.log('✅ Hume AI ready for voice interaction');
+
+          // Listen for Hume AI messages (transcriptions)
+          humeClientRef.current.onMessage((data) => {
+            if (data.type === 'user_message') {
+              // User's speech transcribed
+              console.log('🎤 User said:', data.message.content);
+              setCurrentMessage(data.message.content);
+              // Auto-send the message
+              handleSendMessage(data.message.content, 'voice');
+            } else if (data.type === 'assistant_message') {
+              // AI response text
+              console.log('🤖 AI response:', data.message.content);
+            }
+          });
+
+          // Listen for Hume AI voice responses
+          humeClientRef.current.onAudio((base64Audio) => {
+            console.log('🔊 Received Hume AI voice response');
+            // Play audio if voice is not muted
+            if (!isVoiceMuted) {
+              humeClientRef.current.playAudioResponse(base64Audio);
+              setIsSpeaking(true);
+            }
+          });
+
+        })
+        .catch(err => {
+          console.warn('⚠️ Hume AI connection failed:', err);
+        });
     }
-  }, []);
+
+    return () => {
+      if (humeClientRef.current) {
+        humeClientRef.current.disconnect();
+      }
+    };
+  }, [HUME_API_KEY, HUME_SECRET_KEY, isVoiceMuted]);
 
   // Initialize Speech Recognition for Voice Mode
   useEffect(() => {
@@ -297,7 +334,7 @@ const AIChat = ({
 
   // Toggle Voice Mode
   const toggleVoiceMode = useCallback(async () => {
-    if (!recognitionRef.current) {
+    if (!humeEnabled && !recognitionRef.current) {
       setToast({ message: 'Voice recognition not supported in this browser', type: 'error' });
       return;
     }
@@ -306,10 +343,10 @@ const AIChat = ({
       const newMode = !prev;
 
       if (newMode) {
-        // Start voice mode with audio analysis
+        // Start voice mode with Hume AI or browser fallback
         (async () => {
           try {
-            // Get microphone access for audio analysis
+            // Get microphone access for audio analysis and streaming
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const analyser = audioContext.createAnalyser();
@@ -321,7 +358,7 @@ const AIChat = ({
             const bufferLength = analyser.frequencyBinCount;
             const dataArray = new Uint8Array(bufferLength);
 
-            audioContextRef.current = { audioContext, analyser, dataArray };
+            audioContextRef.current = { audioContext, analyser, dataArray, stream };
 
             // Update audio level continuously for sphere animation
             const updateAudioLevel = () => {
@@ -336,34 +373,75 @@ const AIChat = ({
             };
             updateAudioLevel();
 
-            recognitionRef.current.start();
-            setIsListening(true);
-            setToast({ message: 'Voice mode activated - speak naturally', type: 'info' });
+            // Use Hume AI if available, otherwise fallback to browser speech
+            if (humeEnabled && humeClientRef.current?.isConnected) {
+              console.log('🎭 Starting Hume AI voice mode');
+
+              // Set up MediaRecorder to stream audio to Hume AI
+              const mediaRecorder = new MediaRecorder(stream);
+              const audioChunks = [];
+
+              mediaRecorder.ondataavailable = async (event) => {
+                if (event.data.size > 0) {
+                  audioChunks.push(event.data);
+
+                  // Send audio chunk to Hume AI
+                  const audioBlob = new Blob([event.data], { type: 'audio/webm' });
+                  await humeClientRef.current.sendAudio(audioBlob);
+                }
+              };
+
+              mediaRecorder.start(100); // Collect audio every 100ms
+              mediaRecorderRef.current = mediaRecorder;
+
+              setIsListening(true);
+              setToast({ message: '🎭 Hume AI Voice Active - Speak naturally', type: 'success' });
+            } else {
+              // Fallback to browser speech recognition
+              console.log('🎤 Using browser speech recognition');
+              recognitionRef.current.start();
+              setIsListening(true);
+              setToast({ message: 'Voice mode activated - speak naturally', type: 'info' });
+            }
+
           } catch (err) {
-            console.error('Failed to start speech recognition:', err);
+            console.error('Failed to start voice mode:', err);
             setToast({ message: 'Microphone access denied', type: 'error' });
           }
         })();
       } else {
         // Stop voice mode and audio analysis
         try {
+          if (mediaRecorderRef.current) {
+            mediaRecorderRef.current.stop();
+            mediaRecorderRef.current = null;
+          }
+
           if (audioContextRef.current?.audioContext) {
             audioContextRef.current.audioContext.close();
             audioContextRef.current = null;
           }
+
+          if (audioContextRef.current?.stream) {
+            audioContextRef.current.stream.getTracks().forEach(track => track.stop());
+          }
+
           setAudioLevel(0);
 
-          recognitionRef.current.stop();
+          if (recognitionRef.current) {
+            recognitionRef.current.stop();
+          }
+
           setIsListening(false);
           setToast({ message: 'Voice mode deactivated', type: 'info' });
         } catch (err) {
-          console.error('Failed to stop speech recognition:', err);
+          console.error('Failed to stop voice mode:', err);
         }
       }
 
       return newMode;
     });
-  }, []);
+  }, [humeEnabled]);
 
   // Text-to-Speech for AI responses
   const speakResponse = useCallback((text) => {

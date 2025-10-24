@@ -23,59 +23,85 @@ export class HumeEVIClient {
       try {
         // Check if API keys are valid
         if (!this.apiKey || !this.secretKey) {
-          console.warn('Hume API keys not configured, skipping connection');
+          console.warn('🎭 Hume API keys not configured, skipping connection');
           resolve(); // Resolve without connecting
           return;
         }
 
-        // Note: Hume EVI WebSocket requires proper authentication via headers
-        // The URL format is: wss://api.hume.ai/v0/assistant/chat
-        // For now, we'll gracefully skip WebSocket connection and use REST API instead
-        console.log('🎭 Hume client initialized (REST mode - WebSocket disabled)');
-        this.isConnected = false;
-        resolve();
+        console.log('🎭 Connecting to Hume EVI WebSocket...');
 
-        /* Original WebSocket code - disabled due to authentication requirements
-        const wsUrl = `wss://api.hume.ai/v0/evi/chat`;
+        // Hume EVI WebSocket URL with authentication
+        // Format: wss://api.hume.ai/v0/assistant/chat?apiKey=YOUR_KEY
+        const wsUrl = `wss://api.hume.ai/v0/evi/chat?apiKey=${this.apiKey}`;
+
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
-          console.log('🎭 Hume EVI Connected');
+          console.log('✅ Hume EVI Connected - Voice AI Ready!');
           this.isConnected = true;
+
+          // Send initial configuration
           this.ws.send(JSON.stringify({
-            type: 'authenticate',
-            apiKey: this.apiKey,
-            secretKey: this.secretKey
+            type: 'session_settings',
+            voice: {
+              provider: 'HUME_AI',
+              voice_id: 'ITO', // High-quality, natural voice
+              speed: 1.0,
+              emotion_detection: true
+            },
+            language: {
+              model: 'LanguageModelConfigPresetName.GPT_4O',
+              enable_emotion: true
+            }
           }));
+
           resolve();
         };
 
         this.ws.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-          if (data.type === 'emotion') {
-            this.updateContext(data.emotions);
-            this.emotionCallbacks.forEach(cb => cb(data.emotions));
-          }
-          if (data.type === 'transcript') {
-            this.messageCallbacks.forEach(cb => cb(data));
-          }
-          if (data.type === 'audio_output') {
-            this.audioCallbacks.forEach(cb => cb(data.audio));
+          try {
+            const data = JSON.parse(event.data);
+            console.log('🎭 Hume message:', data.type);
+
+            // Handle different message types
+            if (data.type === 'user_message' || data.type === 'assistant_message') {
+              // Text transcript
+              this.messageCallbacks.forEach(cb => cb(data));
+            }
+
+            if (data.type === 'audio_output') {
+              // AI voice response (base64 audio)
+              this.audioCallbacks.forEach(cb => cb(data.data));
+            }
+
+            if (data.type === 'user_interruption') {
+              console.log('🎭 User interrupted AI');
+            }
+
+            if (data.type === 'emotion_features') {
+              // Emotion detection from user's voice
+              this.updateContext(data.emotions);
+              this.emotionCallbacks.forEach(cb => cb(data.emotions));
+            }
+          } catch (err) {
+            console.error('Error parsing Hume message:', err);
           }
         };
 
         this.ws.onerror = (error) => {
-          console.error('Hume.ai error:', error);
-          reject(error);
+          console.error('❌ Hume.ai WebSocket error:', error);
+          this.isConnected = false;
+          // Don't reject - allow app to continue without Hume
+          resolve();
         };
 
         this.ws.onclose = () => {
           this.isConnected = false;
-          console.log('Hume.ai disconnected');
+          console.log('🎭 Hume.ai disconnected');
         };
-        */
+
       } catch (error) {
-        console.error('Failed to initialize Hume.ai:', error);
+        console.error('❌ Failed to initialize Hume.ai:', error);
         // Resolve instead of reject to allow app to continue
         resolve();
       }
@@ -133,28 +159,78 @@ export class HumeEVIClient {
 
   async sendAudio(audioBlob) {
     if (!this.isConnected) {
-      console.warn('Hume.ai not connected');
+      console.warn('🎭 Hume.ai not connected - cannot send audio');
       return;
     }
-    
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result.split(',')[1];
-      this.ws.send(JSON.stringify({ type: 'audio', data: base64 }));
-    };
-    reader.readAsDataURL(audioBlob);
+
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const base64Audio = reader.result.split(',')[1];
+
+          // Send audio input to Hume EVI
+          this.ws.send(JSON.stringify({
+            type: 'audio_input',
+            data: base64Audio
+          }));
+
+          console.log('🎤 Audio sent to Hume AI');
+          resolve();
+        } catch (err) {
+          console.error('Error sending audio:', err);
+          reject(err);
+        }
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(audioBlob);
+    });
   }
 
   async sendText(text) {
     if (!this.isConnected) {
-      console.warn('Hume.ai not connected');
+      console.warn('🎭 Hume.ai not connected - cannot send text');
       return;
     }
-    this.ws.send(JSON.stringify({ 
-      type: 'text', 
-      text: text, 
-      returnAudio: true 
-    }));
+
+    try {
+      // Send text message and request voice response
+      this.ws.send(JSON.stringify({
+        type: 'user_message',
+        message: {
+          role: 'user',
+          content: text
+        }
+      }));
+
+      console.log('💬 Text sent to Hume AI:', text);
+    } catch (err) {
+      console.error('Error sending text:', err);
+    }
+  }
+
+  // Play audio response from Hume AI
+  async playAudioResponse(base64Audio) {
+    try {
+      // Convert base64 to audio blob
+      const audioData = atob(base64Audio);
+      const audioArray = new Uint8Array(audioData.length);
+      for (let i = 0; i < audioData.length; i++) {
+        audioArray[i] = audioData.charCodeAt(i);
+      }
+
+      const audioBlob = new Blob([audioArray], { type: 'audio/wav' });
+      const audioUrl = URL.createObjectURL(audioBlob);
+
+      const audio = new Audio(audioUrl);
+      audio.play();
+
+      console.log('🔊 Playing Hume AI voice response');
+
+      return audio;
+    } catch (err) {
+      console.error('Error playing audio:', err);
+    }
   }
 
   disconnect() {
