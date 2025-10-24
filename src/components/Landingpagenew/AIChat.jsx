@@ -2478,51 +2478,6 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             </div>
           </div>
         </div>
-
-        {/* FIXED INPUT - Floating unten */}
-        <div className="flex-shrink-0 px-6 pb-6">
-          <div className="max-w-3xl mx-auto">
-            <div className="flex items-center gap-2 bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 focus-within:border-gray-400 transition-colors shadow-lg">
-              <button
-                onClick={toggleVoiceMode}
-                className={`flex-shrink-0 p-2 rounded-lg transition-colors ${
-                  isVoiceMode
-                    ? 'bg-red-500 text-white animate-pulse'
-                    : 'text-gray-600 hover:bg-gray-200'
-                }`}
-                title={isVoiceMode ? 'Voice Mode Active - Click to Stop' : 'Click for Voice Mode'}
-              >
-                {isVoiceMode ? <X size={16} /> : <Mic size={16} />}
-              </button>
-
-              <input
-                type="text"
-                value={currentMessage}
-                onChange={(e) => setCurrentMessage(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && currentMessage.trim()) {
-                    handleSendMessage(currentMessage, 'text');
-                  }
-                }}
-                placeholder={isVoiceMode ? "🎤 Listening... speak naturally" : "Private jet from London to Monaco for 4 passengers..."}
-                disabled={isVoiceMode}
-                className="flex-1 bg-transparent border-none outline-none text-sm text-gray-900 placeholder-gray-500 disabled:text-gray-400"
-              />
-
-              <button
-                onClick={() => handleSendMessage(currentMessage, 'text')}
-                disabled={!currentMessage.trim()}
-                className={`flex-shrink-0 p-2 rounded-lg transition-colors ${
-                  currentMessage.trim()
-                    ? 'bg-black text-white hover:bg-gray-800'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
-              >
-                <Send size={16} />
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
     );
   }
