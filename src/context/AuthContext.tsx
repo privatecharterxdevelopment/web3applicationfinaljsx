@@ -337,6 +337,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error('⚠️ Free subscription creation error:', subscriptionError);
         }
 
+        // 🎁 GIVE NEW USER 100 PVCX TOKENS AS WELCOME BONUS
+        try {
+          console.log('🎁 Giving welcome bonus: 100 PVCX tokens...');
+
+          // Insert initial balance record
+          const { error: balanceError } = await supabase
+            .from('user_pvcx_balances')
+            .insert({
+              user_id: data.user.id,
+              balance: 100,
+              earned_from_bookings: 0,
+              earned_from_co2: 0
+            });
+
+          if (!balanceError) {
+            console.log('✅ 100 PVCX tokens credited to user');
+
+            // Record the registration bonus transaction
+            await supabase
+              .from('pvcx_transactions')
+              .insert({
+                user_id: data.user.id,
+                type: 'admin_bonus',
+                amount: 100,
+                description: 'Welcome bonus - Registration reward',
+                metadata: { reason: 'new_user_registration' }
+              });
+
+            console.log('✅ PVCX transaction recorded');
+          } else {
+            console.error('⚠️ Failed to credit PVCX tokens:', balanceError);
+          }
+        } catch (bonusError) {
+          console.error('⚠️ Welcome bonus error:', bonusError);
+          // Don't block registration if bonus fails
+        }
+
+        // 🔔 SEND WELCOME NOTIFICATION
+        try {
+          console.log('🔔 Sending welcome notification...');
+
+          await supabase
+            .from('notifications')
+            .insert({
+              user_id: data.user.id,
+              type: 'welcome',
+              title: '🎉 Welcome to PrivateCharterX!',
+              message: `Hi ${firstName}! Welcome to PrivateCharterX. You've received 100 $PVCX tokens as a welcome bonus! 🎁 Start exploring tokenized assets, private jets, yachts, and exclusive travel services.`,
+              read: false
+            });
+
+          console.log('✅ Welcome notification sent');
+        } catch (notificationError) {
+          console.error('⚠️ Welcome notification error:', notificationError);
+          // Don't block registration if notification fails
+        }
+
         return;
       }
 

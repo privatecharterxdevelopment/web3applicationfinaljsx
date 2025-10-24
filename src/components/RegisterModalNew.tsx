@@ -92,8 +92,10 @@ function Step2WithRecaptcha({
         if (userId) {
           setRegisteredUserId(userId);
 
-          // Give new user 100 PVCX tokens as registration bonus
+          // 🎁 GIVE NEW USER 100 PVCX TOKENS AS WELCOME BONUS
           try {
+            console.log('🎁 Giving welcome bonus: 100 PVCX tokens...');
+
             // Insert initial balance record
             const { error: balanceError } = await supabase
               .from('user_pvcx_balances')
@@ -105,6 +107,8 @@ function Step2WithRecaptcha({
               });
 
             if (!balanceError) {
+              console.log('✅ 100 PVCX tokens credited to user');
+
               // Record the registration bonus transaction
               await supabase
                 .from('pvcx_transactions')
@@ -115,25 +119,33 @@ function Step2WithRecaptcha({
                   description: 'Welcome bonus - Registration reward',
                   metadata: { reason: 'new_user_registration' }
                 });
+
+              console.log('✅ PVCX transaction recorded');
+            } else {
+              console.error('⚠️ Failed to credit PVCX tokens:', balanceError);
             }
           } catch (bonusError) {
-            console.error('Failed to award registration bonus:', bonusError);
+            console.error('⚠️ Welcome bonus error:', bonusError);
             // Don't block registration if bonus fails
           }
 
-          // Send welcome notification
+          // 🔔 SEND WELCOME NOTIFICATION
           try {
+            console.log('🔔 Sending welcome notification...');
+
             await supabase
               .from('notifications')
               .insert({
                 user_id: userId,
                 type: 'welcome',
-                title: 'Welcome to PVCX!',
-                message: `Hi ${formData.firstName}! Welcome to the PVCX platform. You've received 100 PVCX tokens as a welcome bonus. Start exploring tokenized assets, P2P marketplace, and exclusive travel services.`,
-                is_read: false
+                title: '🎉 Welcome to PrivateCharterX!',
+                message: `Hi ${formData.firstName}! Welcome to PrivateCharterX. You've received 100 $PVCX tokens as a welcome bonus! 🎁 Start exploring tokenized assets, private jets, yachts, and exclusive travel services.`,
+                read: false
               });
+
+            console.log('✅ Welcome notification sent');
           } catch (notificationError) {
-            console.error('Failed to send welcome notification:', notificationError);
+            console.error('⚠️ Welcome notification error:', notificationError);
             // Don't block registration if notification fails
           }
 
