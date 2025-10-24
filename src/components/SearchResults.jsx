@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Check, X, CalendarPlus } from 'lucide-react';
+import { ChevronDown, ChevronUp, Check, X, CalendarPlus, Settings } from 'lucide-react';
 import BookableServiceCard from './BookableServiceCard';
+import JetConfigurationModal from './JetConfigurationModal';
 
 /**
  * SearchResults component displays search results in expandable tabs/cards
@@ -19,6 +20,8 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
   const [activeTab, setActiveTab] = useState(getInitialTab());
   const [expandedCards, setExpandedCards] = useState({});
   const [showAllItems, setShowAllItems] = useState(false);
+  const [configuringJet, setConfiguringJet] = useState(null);
+  const [showJetConfig, setShowJetConfig] = useState(false);
 
   if (!tabs || tabs.length === 0) {
     return null;
@@ -252,20 +255,35 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => onAddToCalendar && onAddToCalendar(item)}
-                        className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-                        title="Add to Calendar"
-                      >
-                        <CalendarPlus size={18} />
-                      </button>
-                      
-                      <button
-                        onClick={() => onAddToCart && onAddToCart(item)}
-                        className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
-                      >
-                        Add to Cart
-                      </button>
+                      {!item.isCustomRequest && (
+                        <button
+                          onClick={() => onAddToCalendar && onAddToCalendar(item)}
+                          className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                          title="Add to Calendar"
+                        >
+                          <CalendarPlus size={18} />
+                        </button>
+                      )}
+
+                      {item.isCustomRequest ? (
+                        <button
+                          onClick={() => {
+                            setConfiguringJet(item);
+                            setShowJetConfig(true);
+                          }}
+                          className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium flex items-center gap-2"
+                        >
+                          <Settings size={16} />
+                          Configure
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => onAddToCart && onAddToCart(item)}
+                          className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
+                        >
+                          Add to Cart
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -294,6 +312,22 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
             </div>
           )}
         </div>
+      )}
+
+      {/* Jet Configuration Modal */}
+      {showJetConfig && configuringJet && (
+        <JetConfigurationModal
+          jet={configuringJet}
+          onClose={() => {
+            setShowJetConfig(false);
+            setConfiguringJet(null);
+          }}
+          onAddToCart={(configuredJet) => {
+            onAddToCart && onAddToCart(configuredJet);
+            setShowJetConfig(false);
+            setConfiguringJet(null);
+          }}
+        />
       )}
     </div>
   );

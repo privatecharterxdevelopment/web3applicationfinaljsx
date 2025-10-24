@@ -630,14 +630,22 @@ const AIChat = ({
       addedAt: new Date().toISOString()
     };
     setCartItems(prev => [...prev, cartItem]);
-    
+
     const isFree = conversationalAI.isEligibleForNFTBenefit(item, userHasNFT, usedNFTBenefitThisYear);
-    
+
     let msg = `Added ${item.name || item.title}`;
     if (isFree) msg += ` (FREE with NFT!)`;
-    msg += `\n\nContinue browsing or say "send request" when ready.`;
-    
-    setChatHistory(prev => prev.map(c => 
+
+    // Check if this is a custom jet request - offer taxi/concierge upsell
+    if (item.type === 'custom_jet_request' && item.configured) {
+      msg += `\n\n✅ Charter configured for ${item.departureDate} at ${item.departureTime}`;
+      msg += `\n\nWould you like to add:\n• Taxi/chauffeur to ${item.departureAirport}?\n• Taxi/chauffeur from ${item.arrivalAirport}?\n• Concierge services at your destination?`;
+      msg += `\n\nJust say "yes" or "add taxi" to see available options, or "send request" to proceed with your booking.`;
+    } else {
+      msg += `\n\nContinue browsing or say "send request" when ready.`;
+    }
+
+    setChatHistory(prev => prev.map(c =>
       c.id === activeChat ? { ...c, messages: [...c.messages, { role: 'assistant', content: msg }] } : c
     ));
   }, [activeChat, conversationalAI, userHasNFT, usedNFTBenefitThisYear]);
