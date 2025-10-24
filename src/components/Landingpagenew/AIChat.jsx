@@ -419,6 +419,50 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
     return chat;
   }, [chatHistory, activeChat]);
 
+  // Load specific chat if not found in chatHistory (e.g., direct link to chat)
+  useEffect(() => {
+    const loadMissingChat = async () => {
+      // Skip if no activeChat, if it's 'new', if chat is already loaded, or if not logged in
+      if (!activeChat || activeChat === 'new' || currentChat || !user?.id || !chatsLoaded) return;
+
+      console.log('🔄 Chat not found in history, loading from DB:', activeChat);
+
+      try {
+        const { data: chat, error } = await supabase
+          .from('ai_chat_sessions')
+          .select('*')
+          .eq('id', activeChat)
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Failed to load chat:', error);
+          setActiveChat(null); // Return to chat list
+          setToast({ message: 'Chat not found', type: 'error' });
+          return;
+        }
+
+        if (chat) {
+          const formattedChat = {
+            id: chat.id,
+            title: chat.title,
+            date: new Date(chat.updated_at).toLocaleDateString(),
+            messages: chat.messages || []
+          };
+
+          setChatHistory(prev => [formattedChat, ...prev]);
+          console.log('✅ Chat loaded and added to history');
+        }
+      } catch (error) {
+        console.error('Error loading missing chat:', error);
+        setActiveChat(null);
+        setToast({ message: 'Failed to load chat', type: 'error' });
+      }
+    };
+
+    loadMissingChat();
+  }, [activeChat, currentChat, user?.id, chatsLoaded]);
+
   // Define audio playback helper BEFORE any effects that reference it
   const playHumeVoice = useCallback((audioBase64) => {
     if (!voiceEnabled) return;
