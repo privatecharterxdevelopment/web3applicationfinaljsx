@@ -3467,61 +3467,55 @@ const TokenizedAssetsGlassmorphic = () => {
               <div className="mb-8"></div>
               <div className="flex-1 flex flex-col">
                 {/* Overview Search with Dropdown + AI Button */}
-                <div className="mb-8 px-4">
-                  <div className="max-w-2xl mx-auto relative">
-                    <div className="flex items-center gap-3">
-                      {/* IntelligentSearch Dropdown Component */}
-                      <div className="flex-1">
-                        <IntelligentSearch
-                          webMode={webMode}
-                          placeholder="I need a..."
-                          onQueryChange={(q) => setOverviewSearchQuery(q)}
-                          onSearch={(item, openIndexPage) => {
-                            // Handle search selection
-                            if (item.action === 'search-index' || openIndexPage) {
-                              // Open search index page with query
-                              setSearchQuery(item.query || item.label);
-                              setActiveCategory('search-index');
-                            } else if (item.action === 'search:zurich' || item.action === 'search:dubai' || item.action?.startsWith('search:')) {
-                              // Handle destination searches
-                              const destination = item.action.replace('search:', '');
-                              setSearchQuery(destination);
-                              setActiveCategory('search-index');
-                            } else if (item.action) {
-                              // Navigate to specific page/category
-                              setActiveCategory(item.action);
-                            }
-                          }}
-                          onOpenAIChat={(query) => {
-                            // User wants AI from dropdown - redirect to chat
-                            setAiChatQuery(query || '');
+                <div className="mb-8">
+                  <div className="relative w-full">
+                    {/* IntelligentSearch Dropdown Component - Full Width to match cards */}
+                    <IntelligentSearch
+                      webMode={webMode}
+                      placeholder="I need a..."
+                      onQueryChange={(q) => setOverviewSearchQuery(q)}
+                      onSearch={(item, openIndexPage) => {
+                        // Handle search selection - ONLY dropdown clicks navigate to pages
+                        if (item.action === 'search-index' || openIndexPage) {
+                          // Open search index page with query
+                          setSearchQuery(item.query || item.label);
+                          setActiveCategory('search-index');
+                        } else if (item.action === 'search:zurich' || item.action === 'search:dubai' || item.action?.startsWith('search:')) {
+                          // Handle destination searches
+                          const destination = item.action.replace('search:', '');
+                          setSearchQuery(destination);
+                          setActiveCategory('search-index');
+                        } else if (item.action) {
+                          // Navigate to specific page/category
+                          setActiveCategory(item.action);
+                        }
+                      }}
+                      onOpenAIChat={(query) => {
+                        // NOT used - AI button is separate
+                      }}
+                    />
+
+                    {/* AI Chat Button - Absolute positioned inside input on right - ONLY appears when typing */}
+                    {overviewSearchQuery.trim() && (
+                      <button
+                        onClick={() => {
+                          if (overviewSearchQuery.trim()) {
                             setActiveCategory('chat');
-                          }}
-                        />
-                      </div>
+                            setAiChatQuery(overviewSearchQuery);
+                            setOverviewSearchQuery('');
+                          }
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white rounded-lg hover:from-black hover:via-gray-900 hover:to-black transition-all shadow-lg shadow-gray-400/20 flex items-center gap-2 overflow-hidden group z-10"
+                      >
+                        {/* Animated border gradient */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-gray-600 via-gray-400 to-gray-600 opacity-50 blur-sm group-hover:opacity-75 transition-opacity animate-pulse"></div>
 
-                      {/* AI Chat Button - RIGHT SIDE - appears when typing */}
-                      {overviewSearchQuery.trim() && (
-                        <button
-                          onClick={() => {
-                            if (overviewSearchQuery.trim()) {
-                              setActiveCategory('chat');
-                              setAiChatQuery(overviewSearchQuery);
-                              setOverviewSearchQuery('');
-                            }
-                          }}
-                          className="px-6 py-4 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white rounded-xl hover:from-black hover:via-gray-900 hover:to-black transition-all shadow-lg shadow-gray-400/30 animate-fade-in flex items-center gap-2 relative overflow-hidden group"
-                        >
-                          {/* Animated border gradient */}
-                          <div className="absolute inset-0 bg-gradient-to-r from-gray-600 via-gray-400 to-gray-600 opacity-50 blur-sm group-hover:opacity-75 transition-opacity animate-pulse" style={{ zIndex: -1 }}></div>
-
-                          <Send size={18} className="animate-pulse" />
-                          <span className="font-medium bg-gradient-to-r from-white via-gray-100 to-white bg-clip-text text-transparent animate-pulse">
-                            Connect to AI
-                          </span>
-                        </button>
-                      )}
-                    </div>
+                        <Send size={16} className="relative z-10" />
+                        <span className="font-medium text-sm relative z-10 whitespace-nowrap">
+                          AI
+                        </span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
