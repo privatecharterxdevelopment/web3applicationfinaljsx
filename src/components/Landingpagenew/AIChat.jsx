@@ -1309,12 +1309,17 @@ As their luxury travel consultant, provide an enthusiastic response that:
       const systemPrompt = getSystemPrompt();
 
       // Filter out 'results' messages - they're UI-only, not part of Claude conversation
+      // Limit to last 20 messages for cost optimization
       const claudeMessages = conversationHistory
         .filter(msg => msg.role !== 'results')
+        .slice(-20) // Keep only last 20 messages
         .map(msg => ({
           role: msg.role,
           content: msg.content
         }));
+
+      console.log(`📊 Sending ${claudeMessages.length} messages to Claude (limited to 20)`);
+
 
       const response = await anthropicRef.current.messages.create({
         model: 'claude-sonnet-4-20250514',
