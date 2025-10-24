@@ -2410,11 +2410,13 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
     return (
       <div className="ai-chat-page h-full bg-transparent flex flex-col overflow-hidden">
         {/* Voice Reactive Sphere - Takes most of the space */}
-        <div className="flex-1 relative min-h-0">
-          <VoiceReactiveSphere
-            isListening={isVoiceMode || isListening}
-            audioLevel={audioLevel}
-          />
+        <div className="flex-1 relative min-h-0 flex items-center justify-center">
+          <div className="w-full h-full flex items-center justify-center">
+            <VoiceReactiveSphere
+              isListening={isVoiceMode || isListening}
+              audioLevel={audioLevel}
+            />
+          </div>
         </div>
 
         {/* Quick Action Cards - Positioned above input */}
@@ -2422,55 +2424,55 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
           <div className="max-w-3xl mx-auto">
             <div className="flex flex-wrap gap-2 justify-center">
               <button
-                onClick={() => setCurrentMessage("Empty Legs")}
+                onClick={() => handleSendMessage("Empty Legs", 'text')}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
               >
                 Empty Legs
               </button>
               <button
-                onClick={() => setCurrentMessage("Private Jets")}
+                onClick={() => handleSendMessage("Private Jets", 'text')}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
               >
                 Private Jets
               </button>
               <button
-                onClick={() => setCurrentMessage("Helicopters")}
+                onClick={() => handleSendMessage("Helicopters", 'text')}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
               >
                 Helicopters
               </button>
               <button
-                onClick={() => setCurrentMessage("Tokenization")}
+                onClick={() => handleSendMessage("Tokenization", 'text')}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
               >
                 Tokenization
               </button>
               <button
-                onClick={() => setCurrentMessage("SPV Formation")}
+                onClick={() => handleSendMessage("SPV Formation", 'text')}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
               >
                 SPV Formation
               </button>
               <button
-                onClick={() => setCurrentMessage("Tax Benefits")}
+                onClick={() => handleSendMessage("Tax Benefits", 'text')}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
               >
                 Tax Benefits
               </button>
               <button
-                onClick={() => setCurrentMessage("Adventure Packages")}
+                onClick={() => handleSendMessage("Adventure Packages", 'text')}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
               >
                 Adventure Packages
               </button>
               <button
-                onClick={() => setCurrentMessage("Events")}
+                onClick={() => handleSendMessage("Events", 'text')}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
               >
                 Events
               </button>
               <button
-                onClick={() => setCurrentMessage("Yachts & Boats")}
+                onClick={() => handleSendMessage("Yachts & Boats", 'text')}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
               >
                 Yachts & Boats
