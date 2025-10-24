@@ -1348,6 +1348,19 @@ As their luxury travel consultant, provide an enthusiastic response that:
         if (toolUse) {
           console.log('🔧 Tool used:', toolUse.name, toolUse.input);
 
+          // Show "Searching database..." message
+          const searchingMessage = {
+            role: 'assistant',
+            content: `🔍 Searching database for ${toolUse.name === 'searchEmptyLegs' ? 'empty legs' : 'options'}...`,
+            isSearching: true
+          };
+
+          setChatHistory(prev => prev.map(c =>
+            c.id === workingChatId
+              ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), searchingMessage] }
+              : c
+          ));
+
           const toolResult = await executeTool(toolUse.name, toolUse.input);
           console.log('📊 Tool result:', toolResult);
           console.log('📊 Tool result details:', {
@@ -1372,9 +1385,10 @@ As their luxury travel consultant, provide an enthusiastic response that:
               tabs: tabs
             };
 
+            // Remove searching message and add results
             setChatHistory(prev => prev.map(c =>
               c.id === workingChatId
-                ? { ...c, messages: [...c.messages, resultsMessage] }
+                ? { ...c, messages: [...c.messages.filter(m => !m.isSearching && !m.isLoading), resultsMessage] }
                 : c
             ));
 
@@ -1417,9 +1431,10 @@ As their luxury travel consultant, provide an enthusiastic response that:
           const aiText = followUp.content.find(block => block.type === 'text')?.text || 'Found results!';
           const aiMessage = { role: 'assistant', content: aiText };
 
+          // Remove any searching/loading messages and add AI response
           setChatHistory(prev => prev.map(c =>
             c.id === workingChatId
-              ? { ...c, messages: [...c.messages, aiMessage] }
+              ? { ...c, messages: [...c.messages.filter(m => !m.isSearching && !m.isLoading), aiMessage] }
               : c
           ));
 
