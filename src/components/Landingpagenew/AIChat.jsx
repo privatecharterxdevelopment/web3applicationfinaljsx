@@ -2422,58 +2422,58 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
           <div className="max-w-3xl mx-auto">
             <div className="flex flex-wrap gap-2 justify-center">
               <button
-                onClick={() => setCurrentMessage("Show me empty legs from Zurich to London")}
+                onClick={() => setCurrentMessage("Empty Legs")}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
               >
-                Empty legs from Zurich
+                Empty Legs
               </button>
               <button
-                onClick={() => setCurrentMessage("Private jet for 6 passengers to Monaco")}
+                onClick={() => setCurrentMessage("Private Jets")}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
               >
-                Private jet to Monaco
+                Private Jets
               </button>
               <button
-                onClick={() => setCurrentMessage("Helicopter transfer to St. Moritz")}
+                onClick={() => setCurrentMessage("Helicopters")}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
               >
-                Helicopter to St. Moritz
+                Helicopters
               </button>
               <button
-                onClick={() => setCurrentMessage("I want to tokenize my real estate property")}
+                onClick={() => setCurrentMessage("Tokenization")}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
               >
                 Tokenization
               </button>
               <button
-                onClick={() => setCurrentMessage("Help me set up an SPV formation")}
+                onClick={() => setCurrentMessage("SPV Formation")}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
               >
                 SPV Formation
               </button>
               <button
-                onClick={() => setCurrentMessage("Tell me about tax benefits and CO2 offsets")}
+                onClick={() => setCurrentMessage("Tax Benefits")}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
               >
                 Tax Benefits
               </button>
               <button
-                onClick={() => setCurrentMessage("Show me adventure packages")}
+                onClick={() => setCurrentMessage("Adventure Packages")}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
               >
                 Adventure Packages
               </button>
               <button
-                onClick={() => setCurrentMessage("I need help booking an event")}
+                onClick={() => setCurrentMessage("Events")}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
               >
                 Events
               </button>
               <button
-                onClick={() => setCurrentMessage("Show me luxury yachts available")}
+                onClick={() => setCurrentMessage("Yachts & Boats")}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
               >
-                Luxury Yachts
+                Yachts & Boats
               </button>
             </div>
           </div>

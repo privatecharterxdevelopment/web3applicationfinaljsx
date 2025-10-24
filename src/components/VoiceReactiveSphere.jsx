@@ -54,16 +54,16 @@ export default function VoiceReactiveSphere({ isListening = false, audioLevel = 
     const originalPositions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
 
-    // Create deformed sphere shape - BIGGER radius
+    // Create deformed sphere shape - Medium size for better screen fit
     for (let i = 0; i < particleCount; i++) {
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
 
-      // BIGGER base radius for larger sphere
-      const radius = 120 + Math.random() * 30;
+      // Medium size sphere - fits screen better
+      const radius = 90 + Math.random() * 20;
 
       // Add noise for deformation
-      const noise = Math.sin(theta * 3) * Math.cos(phi * 2) * 15;
+      const noise = Math.sin(theta * 3) * Math.cos(phi * 2) * 12;
       const finalRadius = radius + noise;
 
       positions[i * 3] = finalRadius * Math.sin(phi) * Math.cos(theta);
