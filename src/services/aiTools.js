@@ -43,7 +43,7 @@ export const aiToolDefinitions = [
   },
   {
     name: "searchPrivateJets",
-    description: "Search for private jet charters. Use when users ask about private jets, jet charter, or aircraft.",
+    description: "Show available private jet models and create custom charter request. Private jets are NOT fixed offers - they require custom quotes based on route, date, and aircraft selection. Always explain this is a custom request process where users select aircraft, dates, and create a booking request.",
     input_schema: {
       type: "object",
       properties: {
@@ -55,17 +55,13 @@ export const aiToolDefinitions = [
           type: "string",
           description: "Destination city or airport"
         },
-        location: {
-          type: "string",
-          description: "Generic location for jets available in that area"
-        },
         passengers: {
           type: "number",
           description: "Number of passengers"
         },
         category: {
           type: "string",
-          description: "Jet category: light, midsize, heavy, ultra-long-range"
+          description: "Jet category: light, midsize, super-midsize, heavy, ultra-long-range"
         }
       },
       required: []
@@ -221,21 +217,52 @@ export async function searchEmptyLegs(params) {
 }
 
 /**
- * Search for private jets
+ * Search for private jets - CUSTOM REQUEST BUILDER
+ * Returns available jet models for custom charter requests
  */
 export async function searchPrivateJets(params) {
+  console.log('🛩️ searchPrivateJets called - CUSTOM REQUEST MODE:', params);
+
+  // Fetch available jet models from jets table
   const results = await UnifiedSearchService.searchAll({
-    fromLocation: params.from || params.location,
+    fromLocation: params.from,
     location: params.to,
     q: params.location,
     passengers: params.passengers,
     serviceTypes: { jets: true }
   });
 
+  // Price ranges by category (hourly rates in EUR)
+  const priceRanges = {
+    'light': { min: 2500, max: 4000, range: '€2,500-€4,000/hr' },
+    'midsize': { min: 4000, max: 6000, range: '€4,000-€6,000/hr' },
+    'super-midsize': { min: 5500, max: 7500, range: '€5,500-€7,500/hr' },
+    'heavy': { min: 7000, max: 10000, range: '€7,000-€10,000/hr' },
+    'ultra-long-range': { min: 10000, max: 15000, range: '€10,000-€15,000/hr' }
+  };
+
+  // Enhance jets with price estimates
+  const enhancedJets = (results.aircraft || []).map(jet => {
+    const category = (jet.category || 'midsize').toLowerCase();
+    const priceInfo = priceRanges[category] || priceRanges['midsize'];
+
+    return {
+      ...jet,
+      isCustomRequest: true, // Flag indicating this needs custom configuration
+      priceRange: priceInfo.range,
+      estimatedHourlyRate: priceInfo.min,
+      requiresConfiguration: true,
+      bookingType: 'custom_request'
+    };
+  });
+
   return {
     success: true,
-    results: results.aircraft || [],
-    total: results.aircraft?.length || 0,
+    results: enhancedJets,
+    total: enhancedJets.length,
+    isCustomRequest: true,
+    message: 'Private jets require custom configuration. Select aircraft, dates, and create booking request.',
+    priceRanges: priceRanges,
     params
   };
 }
