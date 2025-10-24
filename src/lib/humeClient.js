@@ -10,6 +10,7 @@ export class HumeEVIClient {
     this.emotionCallbacks = [];
     this.messageCallbacks = [];
     this.audioCallbacks = [];
+    this.currentAudio = null; // Track current playing audio
     this.conversationContext = {
       userMood: 'neutral',
       urgencyLevel: 0,
@@ -212,6 +213,14 @@ export class HumeEVIClient {
   // Play audio response from Hume AI
   async playAudioResponse(base64Audio) {
     try {
+      // STOP ANY PREVIOUS AUDIO BEFORE PLAYING NEW ONE
+      if (this.currentAudio) {
+        console.log('🔇 Stopping previous Hume audio');
+        this.currentAudio.pause();
+        this.currentAudio.currentTime = 0;
+        this.currentAudio = null;
+      }
+
       // Convert base64 to audio blob
       const audioData = atob(base64Audio);
       const audioArray = new Uint8Array(audioData.length);
@@ -223,13 +232,45 @@ export class HumeEVIClient {
       const audioUrl = URL.createObjectURL(audioBlob);
 
       const audio = new Audio(audioUrl);
-      audio.play();
+
+      // Clean up when audio ends
+      audio.onended = () => {
+        console.log('🔇 Hume audio finished');
+        URL.revokeObjectURL(audioUrl);
+        if (this.currentAudio === audio) {
+          this.currentAudio = null;
+        }
+      };
+
+      // Clean up on error
+      audio.onerror = () => {
+        console.error('🔇 Hume audio error');
+        URL.revokeObjectURL(audioUrl);
+        if (this.currentAudio === audio) {
+          this.currentAudio = null;
+        }
+      };
+
+      // Store reference and play
+      this.currentAudio = audio;
+      await audio.play();
 
       console.log('🔊 Playing Hume AI voice response');
 
       return audio;
     } catch (err) {
       console.error('Error playing audio:', err);
+      this.currentAudio = null;
+    }
+  }
+
+  // Stop current audio playback
+  stopAudio() {
+    if (this.currentAudio) {
+      console.log('🔇 Stopping Hume audio playback');
+      this.currentAudio.pause();
+      this.currentAudio.currentTime = 0;
+      this.currentAudio = null;
     }
   }
 

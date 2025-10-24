@@ -140,10 +140,6 @@ const AIChat = ({
   // =======================
   const humeEnabled = Boolean(HUME_API_KEY && HUME_SECRET_KEY);
 
-  const [humeClient] = useState(() => new HumeEVIClient(
-    HUME_API_KEY,
-    HUME_SECRET_KEY
-  ));
   const [conversationalAI] = useState(() => new SpheraWeb3Concierge());
   const [conversationState] = useState(() => new ConversationStateManager());
 
@@ -469,16 +465,27 @@ const AIChat = ({
     window.speechSynthesis.speak(utterance);
   }, [isVoiceMuted, isVoiceMode]);
 
-  // Toggle Voice Mute
+  // Toggle Voice Mute - also stops microphone and audio
   const toggleVoiceMute = useCallback(() => {
     setIsVoiceMuted(prev => {
       const newMuted = !prev;
       if (newMuted) {
+        // Stop all audio playback
         window.speechSynthesis.cancel();
+
+        // Stop Hume AI audio
+        if (humeClientRef.current) {
+          humeClientRef.current.stopAudio();
+        }
+
+        // Stop microphone session
+        if (isVoiceMode) {
+          toggleVoiceMode(); // This will stop the microphone
+        }
       }
       return newMuted;
     });
-  }, []);
+  }, [isVoiceMode, toggleVoiceMode]);
 
   const currentChat = useMemo(() => {
     const chat = chatHistory.find(c => c.id === activeChat);
@@ -534,17 +541,7 @@ const AIChat = ({
     loadMissingChat();
   }, [activeChat, currentChat, user?.id, chatsLoaded]);
 
-  // Define audio playback helper BEFORE any effects that reference it
-  const playHumeVoice = useCallback((audioBase64) => {
-    if (!voiceEnabled) return;
-    if (currentAudioRef.current) currentAudioRef.current.pause();
-    setIsSpeaking(true);
-    const audio = new Audio(`data:audio/mp3;base64,${audioBase64}`);
-    currentAudioRef.current = audio;
-    audio.onended = () => { setIsSpeaking(false); currentAudioRef.current = null; };
-    audio.onerror = () => { setIsSpeaking(false); currentAudioRef.current = null; };
-    audio.play().catch(() => { setIsSpeaking(false); });
-  }, [voiceEnabled]);
+  // Audio playback is now handled directly by humeClientRef.current.playAudioResponse
 
   // Use Hume emotion context (when available) to gently adapt tone
   const withEmpathy = useCallback((text) => {
@@ -642,31 +639,7 @@ const AIChat = ({
     return () => clearTimeout(timeoutId);
   }, [chatHistory, activeChat, user?.id, chatsLoaded]);
 
-  useEffect(() => {
-    if (!humeEnabled) return; // Skip Hume setup if keys are not configured
-    const initHume = async () => {
-      try {
-        await humeClient.connect();
-        humeClient.onMessage((data) => {
-          const text = data?.transcript || data?.text || data?.message;
-          if (text) {
-            setLastInputMethod('voice');
-            handleSendMessage(String(text), 'voice');
-          }
-        });
-        humeClient.onAudio((audioBase64) => {
-          playHumeVoice(audioBase64);
-        });
-      } catch (error) {
-        console.log('Hume skipped');
-      }
-    };
-    initHume();
-    return () => {
-      humeClient.disconnect();
-      if (currentAudioRef.current) currentAudioRef.current.pause();
-    };
-  }, [humeClient, humeEnabled, playHumeVoice]);
+  // REMOVED: Duplicate Hume client initialization that was causing multiple audio playbacks
 
   useEffect(() => {
     if (activeChat !== 'new' && !hasGreetedRef.current && currentChat?.messages.length === 0) {
