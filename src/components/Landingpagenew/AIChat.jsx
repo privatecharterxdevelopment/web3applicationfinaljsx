@@ -1350,8 +1350,14 @@ As their luxury travel consultant, provide an enthusiastic response that:
 
           const toolResult = await executeTool(toolUse.name, toolUse.input);
           console.log('📊 Tool result:', toolResult);
+          console.log('📊 Tool result details:', {
+            success: toolResult.success,
+            hasResults: !!toolResult.results,
+            resultsLength: toolResult.results?.length,
+            error: toolResult.error
+          });
 
-          // Format and save results as message
+          // Format and save results as message ONLY if we have results
           if (toolResult.success && toolResult.results && toolResult.results.length > 0) {
             const tabs = [{
               id: toolUse.name === 'searchEmptyLegs' ? 'emptylegs' : 'jets',
@@ -1373,9 +1379,17 @@ As their luxury travel consultant, provide an enthusiastic response that:
             ));
 
             await chatService.updateChatMessages(workingChatId, [...conversationHistory, resultsMessage], user.id);
+          } else {
+            // No results or error - log it
+            console.warn('⚠️ Tool execution returned no results or failed:', {
+              success: toolResult.success,
+              resultsCount: toolResult.results?.length || 0,
+              error: toolResult.error,
+              params: toolUse.input
+            });
           }
 
-          // Get AI response about results - MUST use proper tool_result format
+          // ALWAYS send tool_result back to Claude, even if empty
           const followUp = await anthropicRef.current.messages.create({
             model: 'claude-sonnet-4-20250514',
             max_tokens: 1024,
