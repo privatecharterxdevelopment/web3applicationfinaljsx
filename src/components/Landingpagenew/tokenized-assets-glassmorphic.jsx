@@ -2450,24 +2450,24 @@ const TokenizedAssetsGlassmorphic = () => {
 
 
       {/* Main Container - Centered Floating Glassmorphic Dashboard */}
-      <div className="relative z-10 flex h-screen items-center justify-center p-8">
-        {/* COMPLETE FLOATING GLASSMORPHIC CONTAINER - Sidebar + Content als ein Stück */}
-        <div className={`relative flex w-full max-w-7xl h-[90vh] rounded-3xl shadow-2xl border overflow-hidden transition-all duration-700 ease-out ${
+      <div className="relative z-10 flex h-screen items-center justify-center p-2 md:p-8">
+        {/* COMPLETE FLOATING GLASSMORPHIC CONTAINER - Sidebar + Content, mobile-friendly */}
+        <div className={`relative flex w-full max-w-7xl h-[98vh] md:h-[90vh] rounded-xl md:rounded-3xl shadow-2xl border overflow-hidden transition-all duration-700 ease-out ${
           showDashboard ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
         } ${
           webMode === 'web3'
             ? 'bg-white/30 backdrop-blur-3xl border-white/40'
             : 'bg-white/80 backdrop-blur-3xl border-gray-200/80'
         }`} style={{ backdropFilter: webMode === 'web3' ? 'blur(60px) saturate(120%)' : 'blur(40px) saturate(180%)' }}>
-          {/* Glassmorphic Sidebar - EXPANDABLE ON HOVER */}
-          <aside className={`group w-16 hover:w-60 border-r flex flex-col py-4 transition-all duration-300 ease-in-out overflow-hidden ${
+          {/* Glassmorphic Sidebar - EXPANDABLE ON HOVER, always collapsed on mobile */}
+          <aside className={`group w-12 md:w-16 md:hover:w-60 border-r flex flex-col py-2 md:py-4 transition-all duration-300 ease-in-out overflow-hidden ${
             webMode === 'web3'
               ? 'border-white/30'
               : 'bg-white/70 border-gray-200/70'
           }`} style={webMode === 'web3' ? { backgroundColor: '#efefef' } : { backdropFilter: 'blur(20px) saturate(180%)' }}>
           {/* Logo */}
-          <div className="mb-6 px-2 group-hover:px-4 transition-all duration-300">
-            <div className="w-12 h-12 group-hover:w-auto flex items-center justify-center overflow-hidden">
+          <div className="mb-4 md:mb-6 px-1 md:px-2 md:group-hover:px-4 transition-all duration-300">
+            <div className="w-8 h-8 md:w-12 md:h-12 md:group-hover:w-auto flex items-center justify-center overflow-hidden">
               {webMode === 'web3' ? (
                 <>
                   {/* Animated logo when collapsed - Web3.0 only */}
@@ -2476,7 +2476,7 @@ const TokenizedAssetsGlassmorphic = () => {
                     loop
                     muted
                     playsInline
-                    className="h-12 w-12 object-contain group-hover:hidden"
+                    className="h-8 w-8 md:h-12 md:w-12 object-contain md:group-hover:hidden"
                   >
                     <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/videoExport-2025-10-19@14-08-49.871-540x540@60fps.mp4" type="video/mp4" />
                   </video>
@@ -2484,7 +2484,7 @@ const TokenizedAssetsGlassmorphic = () => {
                   <img
                     src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_Logo_written-removebg-preview.png"
                     alt="PrivateCharterX"
-                    className="hidden group-hover:block h-12 w-auto object-contain"
+                    className="hidden md:group-hover:block h-12 w-auto object-contain"
                   />
                 </>
               ) : (
@@ -2493,13 +2493,13 @@ const TokenizedAssetsGlassmorphic = () => {
                   <img
                     src="https://i.imgur.com/iu42DU1.png"
                     alt="PrivateCharterX"
-                    className="h-12 w-12 object-contain group-hover:hidden"
+                    className="h-8 w-8 md:h-12 md:w-12 object-contain md:group-hover:hidden"
                   />
                   {/* Full logo when expanded */}
                   <img
                     src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_Logo_written-removebg-preview.png"
                     alt="PrivateCharterX"
-                    className="hidden group-hover:block h-12 w-auto object-contain"
+                    className="hidden md:group-hover:block h-12 w-auto object-contain"
                   />
                 </>
               )}

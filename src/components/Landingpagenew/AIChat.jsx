@@ -3188,47 +3188,44 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         </div>
       )}
 
-      {/* Voice Input Overlay - Shows sphere animation when user is speaking */}
+      {/* Voice Input Overlay - Shows sphere with white blurred background when user is speaking */}
       {isListening && activeChat !== 'new' && (
-        <>
-          <div className="fixed inset-0 bg-black/80 z-50 animate-fade-in backdrop-blur-sm" />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-8 animate-fade-in">
-            <div className="relative w-full max-w-2xl h-96 bg-gradient-to-b from-gray-900/50 to-black/50 rounded-3xl border border-white/20 p-8 backdrop-blur-xl shadow-2xl">
-              {/* Close button */}
-              <button
-                onClick={() => {
-                  if (isVoiceMode) {
-                    toggleVoiceMode();
-                  } else {
-                    setIsListening(false);
-                  }
-                }}
-                className="absolute top-4 right-4 p-2 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors z-10"
-                title="Stop Voice Input"
-              >
-                <X size={20} />
-              </button>
+        <div className="fixed inset-0 bg-white/80 z-50 animate-fade-in backdrop-blur-xl flex items-center justify-center">
+          {/* Close button - top right corner */}
+          <button
+            onClick={() => {
+              if (isVoiceMode) {
+                toggleVoiceMode();
+              } else {
+                setIsListening(false);
+              }
+            }}
+            className="absolute top-8 right-8 p-3 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors z-10 shadow-lg"
+            title="Stop Voice Input"
+          >
+            <X size={24} />
+          </button>
 
-              {/* Voice Reactive Sphere */}
-              <div className="w-full h-full relative">
-                <VoiceReactiveSphere
-                  isListening={isListening}
-                  audioLevel={audioLevel}
-                />
-              </div>
-
-              {/* Status Text */}
-              <div className="absolute bottom-8 left-0 right-0 text-center">
-                <div className="inline-flex items-center gap-3 px-6 py-3 bg-black/70 backdrop-blur-md rounded-full border border-white/20">
-                  <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                  <span className="text-white font-medium">
-                    🎤 Listening... Speak naturally
-                  </span>
-                </div>
-              </div>
+          {/* Voice Reactive Sphere - Full height, centered */}
+          <div className="w-full h-full flex items-center justify-center p-8">
+            <div className="w-full max-w-2xl h-96">
+              <VoiceReactiveSphere
+                isListening={isListening}
+                audioLevel={audioLevel}
+              />
             </div>
           </div>
-        </>
+
+          {/* Status Text */}
+          <div className="absolute bottom-12 left-0 right-0 text-center">
+            <div className="inline-flex items-center gap-3 px-6 py-3 bg-gray-900/90 backdrop-blur-md rounded-full shadow-xl">
+              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+              <span className="text-white font-medium">
+                🎤 Listening... Speak naturally
+              </span>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

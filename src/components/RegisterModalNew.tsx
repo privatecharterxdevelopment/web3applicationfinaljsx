@@ -282,11 +282,11 @@ function Step2WithRecaptcha({
   // Phone & Submit Step
   return (
     <Portal>
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-8 font-['DM_Sans']">
-        <div className="w-full max-w-7xl h-[90vh] bg-white rounded-3xl shadow-2xl overflow-hidden flex">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 md:p-8 font-['DM_Sans']">
+        <div className="w-full max-w-7xl h-[95vh] md:h-[90vh] bg-white rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
 
           {/* LEFT SIDE - Form */}
-          <div className="w-2/5 bg-white p-8 flex flex-col relative overflow-y-auto">
+          <div className="w-full md:w-2/5 bg-white p-6 md:p-8 flex flex-col relative overflow-y-auto">
 
             {/* Progress Dots */}
             <div className="absolute right-6 top-20 flex items-center gap-2">
@@ -397,8 +397,8 @@ function Step2WithRecaptcha({
             </form>
           </div>
 
-          {/* RIGHT SIDE - Feature Preview */}
-          <div className="w-3/5 relative bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center overflow-hidden">
+          {/* RIGHT SIDE - Feature Preview (hidden on mobile) */}
+          <div className="hidden md:flex md:w-3/5 relative bg-gradient-to-br from-gray-900 via-gray-800 to-black items-center justify-center overflow-hidden">
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-10">
               <div className="absolute inset-0" style={{
@@ -562,13 +562,13 @@ export default function RegisterModalNew({
   // Step 1: Basic Info
   return (
     <Portal>
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-8 font-['DM_Sans']">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 md:p-8 font-['DM_Sans']">
 
-        {/* Modal Container - Same size as dashboard */}
-        <div className="w-full max-w-7xl h-[90vh] bg-white rounded-3xl shadow-2xl overflow-hidden flex">
+        {/* Modal Container - Same size as dashboard, mobile-friendly */}
+        <div className="w-full max-w-7xl h-[95vh] md:h-[90vh] bg-white rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
 
           {/* LEFT SIDE - Form */}
-          <div className="w-2/5 bg-white p-8 flex flex-col relative overflow-y-auto">
+          <div className="w-full md:w-2/5 bg-white p-6 md:p-8 flex flex-col relative overflow-y-auto">
 
             {/* Progress Dots */}
             <div className="absolute right-6 top-20 flex items-center gap-2">
@@ -763,8 +763,8 @@ export default function RegisterModalNew({
             </form>
           </div>
 
-          {/* RIGHT SIDE - Feature Preview */}
-          <div className="w-3/5 relative bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center overflow-hidden">
+          {/* RIGHT SIDE - Feature Preview (hidden on mobile) */}
+          <div className="hidden md:flex md:w-3/5 relative bg-gradient-to-br from-gray-900 via-gray-800 to-black items-center justify-center overflow-hidden">
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-10">
               <div className="absolute inset-0" style={{
