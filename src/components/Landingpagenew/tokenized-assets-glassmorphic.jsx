@@ -789,6 +789,7 @@ const TokenizedAssetsGlassmorphic = () => {
 
   // AI Chat query state (for search integration)
   const [aiChatQuery, setAiChatQuery] = useState('');
+  const [overviewSearchQuery, setOverviewSearchQuery] = useState('');
   const [adventuresViewMode, setAdventuresViewMode] = useState('grid');
   const [selectedAdventure, setSelectedAdventure] = useState(null);
   const [showAdventureDetail, setShowAdventureDetail] = useState(false);
@@ -3135,14 +3136,7 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* Profile Overview View - Enhanced Analytics Dashboard */}
           {!isTransitioning && activeCategory === 'dashboard' && dashboardView === 'profile' && (
             <div className="w-full h-full overflow-y-auto">
-              <ProfileOverviewEnhanced
-                onStartChat={(query) => {
-                  // Switch to chat view
-                  setActiveCategory('chat');
-                  // Set initial query for the AIChat component to process
-                  setAiChatQuery(query);
-                }}
-              />
+              <ProfileOverviewEnhanced />
             </div>
           )}
 
@@ -3472,11 +3466,49 @@ const TokenizedAssetsGlassmorphic = () => {
               {/* Spacer to keep content centered */}
               <div className="mb-8"></div>
               <div className="flex-1 flex flex-col">
+                {/* AI Search Input with Purple Button */}
+                <div className="mb-8 px-4">
+                  <div className="max-w-2xl mx-auto">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="text"
+                        value={overviewSearchQuery}
+                        onChange={(e) => setOverviewSearchQuery(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && overviewSearchQuery.trim()) {
+                            setActiveCategory('chat');
+                            setAiChatQuery(overviewSearchQuery);
+                            setOverviewSearchQuery('');
+                          }
+                        }}
+                        placeholder="What can I help you with today?"
+                        className="flex-1 px-6 py-4 border border-gray-300/50 rounded-xl text-base focus:outline-none focus:border-gray-400/50 transition-colors bg-white/35"
+                        style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                      />
+                      {overviewSearchQuery.trim() && (
+                        <button
+                          onClick={() => {
+                            if (overviewSearchQuery.trim()) {
+                              setActiveCategory('chat');
+                              setAiChatQuery(overviewSearchQuery);
+                              setOverviewSearchQuery('');
+                            }
+                          }}
+                          className="px-6 py-4 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-xl hover:from-purple-700 hover:to-purple-600 transition-all shadow-lg shadow-purple-200 animate-fade-in flex items-center gap-2"
+                        >
+                          <Send size={18} />
+                          <span className="font-medium">Connect to AI</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 {/* RWS Mode Only: Search Input & Quick Action Buttons */}
                 {webMode === 'rws' && (
                   <>
                     {/* Intelligent Search with Autocomplete */}
-                    <div className="mb-8">
+                    <div className="mb-8 hidden">
                       <IntelligentSearch
                         webMode={webMode}
                         onSearch={(item, openIndexPage) => {

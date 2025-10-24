@@ -2196,7 +2196,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               Hey! I'm Sphera AI ✨
             </h2>
             <p className="text-lg text-gray-600 mb-6">
-              Where are we traveling today? I can help you find private jets, empty legs, helicopters, yachts, and more.
+              Where are we traveling today? I can help find and book private jets, empty legs, helicopters, yachts, and more.
             </p>
             <div className="flex flex-wrap gap-2 justify-center">
               <button
@@ -2216,6 +2216,42 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
               >
                 Helicopter to St. Moritz
+              </button>
+              <button
+                onClick={() => setCurrentMessage("I want to tokenize my real estate property")}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
+              >
+                Tokenization
+              </button>
+              <button
+                onClick={() => setCurrentMessage("Help me set up an SPV formation")}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
+              >
+                SPV Formation
+              </button>
+              <button
+                onClick={() => setCurrentMessage("Tell me about tax benefits and CO2 offsets")}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
+              >
+                Tax Benefits
+              </button>
+              <button
+                onClick={() => setCurrentMessage("Show me adventure packages")}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
+              >
+                Adventure Packages
+              </button>
+              <button
+                onClick={() => setCurrentMessage("I need help booking an event")}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
+              >
+                Events
+              </button>
+              <button
+                onClick={() => setCurrentMessage("Show me luxury yachts available")}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
+              >
+                Luxury Yachts
               </button>
             </div>
           </div>

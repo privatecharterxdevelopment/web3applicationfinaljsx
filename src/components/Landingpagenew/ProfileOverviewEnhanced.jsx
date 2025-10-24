@@ -4,7 +4,7 @@ import {
   TrendingUp, TrendingDown, FileText, Building2, Coins, AlertCircle, Edit, Eye, Download,
   Activity, DollarSign, Plane, Ship, Home as HomeIcon, Briefcase, Plus, ExternalLink,
   Sparkles, BarChart3, LineChart, PieChart, ArrowUpRight, ArrowDownRight, Wallet,
-  Link as LinkIcon, Copy, Check, ChevronRight, Search, Send
+  Link as LinkIcon, Copy, Check, ChevronRight
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -13,11 +13,10 @@ import { useAccount } from 'wagmi';
 import { LineChart as RechartsLineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, BarChart as RechartsBarChart, Bar } from 'recharts';
 import LaunchpadTransactions from './LaunchpadTransactions';
 
-export default function ProfileOverviewEnhanced({ onStartChat }) {
+export default function ProfileOverviewEnhanced() {
   const { user } = useAuth();
   const { address: walletAddress, isConnected, chain } = useAccount();
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
   const [profileData, setProfileData] = useState(null);
   const [tokenizedAssets, setTokenizedAssets] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -293,40 +292,6 @@ export default function ProfileOverviewEnhanced({ onStartChat }) {
               <p className="text-xs text-black/40 mt-0.5">Your account summary</p>
             </div>
             <div className="flex items-center gap-3">
-              {/* AI Search Input */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && searchQuery.trim() && onStartChat) {
-                      onStartChat(searchQuery);
-                      setSearchQuery('');
-                    }
-                  }}
-                  placeholder="Ask Sphera AI..."
-                  className="px-4 py-2 w-64 border border-gray-300/50 rounded-lg text-sm focus:outline-none focus:border-gray-400/50 transition-colors bg-white/20"
-                  style={{ backdropFilter: 'blur(10px)' }}
-                />
-                <button
-                  onClick={() => {
-                    if (searchQuery.trim() && onStartChat) {
-                      onStartChat(searchQuery);
-                      setSearchQuery('');
-                    }
-                  }}
-                  disabled={!searchQuery.trim()}
-                  className="relative px-4 py-2 bg-gradient-to-r from-black to-gray-700 text-white rounded-lg hover:from-gray-800 hover:to-gray-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group"
-                >
-                  <div className="absolute inset-0 border-2 border-gray-400/30 rounded-lg animate-pulse"></div>
-                  <div className="relative flex items-center gap-2">
-                    <Send size={16} />
-                    <span className="text-sm font-medium">Chat</span>
-                  </div>
-                </button>
-              </div>
-
               <select
                 value={timeRange}
                 onChange={(e) => setTimeRange(e.target.value)}
