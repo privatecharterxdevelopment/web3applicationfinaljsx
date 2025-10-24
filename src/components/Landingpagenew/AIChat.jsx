@@ -15,15 +15,6 @@ import { chatService } from '../../services/chatService';
 import { subscriptionService } from '../../services/subscriptionService';
 import { useAuth } from '../../context/AuthContext';
 import { createRequest } from '../../services/requests';
-import {
-  aiToolDefinitions,
-  executeTool,
-  searchEmptyLegs,
-  searchPrivateJets,
-  searchHelicopters,
-  searchYachtsAndAdventures,
-  searchLuxuryCars
-} from '../../services/aiTools';
 
 // Components
 import SearchResults from '../SearchResults';
