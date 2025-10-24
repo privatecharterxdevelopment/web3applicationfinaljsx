@@ -40,15 +40,21 @@ function mapJetToAircraft(jet) {
 }
 
 function mapEmptyLeg(leg) {
+  const departureCity = leg.from_city || leg.from || leg.departure_city || 'TBD';
+  const arrivalCity = leg.to_city || leg.to || leg.arrival_city || 'TBD';
+
   return {
     id: leg.id,
-    departure_city: leg.from_city || leg.from || leg.departure_city || null,
-    arrival_city: leg.to_city || leg.to || leg.arrival_city || null,
+    name: `${departureCity} → ${arrivalCity}`, // Add name for display in SearchResults
+    title: `Empty Leg: ${departureCity} to ${arrivalCity}`, // Alternative title
+    departure_city: departureCity,
+    arrival_city: arrivalCity,
     departure_date: leg.departure_date,
     departure_time: leg.departure_time || null,
     price_eur: leg.price_eur || leg.price_usd || leg.price || null,
     discount_percentage: leg.discount_percentage || leg.discount || null,
     available_seats: leg.available_seats || leg.passengers || leg.max_passengers || leg.passenger_capacity || 8,
+    type: 'empty_legs', // Add type for proper rendering in SearchResults
     // AIChat looks for leg.aircraft?.images; provide a minimal wrapper if we have images
     aircraft: {
       images: ImageUtils.getAllImageUrls(leg.images || leg.image_url || leg.photo_url)

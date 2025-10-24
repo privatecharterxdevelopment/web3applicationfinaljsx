@@ -194,7 +194,7 @@ export async function executeTool(toolName, input) {
 export async function searchEmptyLegs(params) {
   console.log('🔍 searchEmptyLegs called with params:', params);
 
-  // If only 'from' is specified without 'to', use it as general search
+  // Build search params with proper location filtering
   const searchParams = {
     serviceTypes: { emptyLegs: true }
   };
@@ -204,13 +204,13 @@ export async function searchEmptyLegs(params) {
     searchParams.fromLocation = params.from;
     searchParams.location = params.to;
   } else if (params.from) {
-    // Only from specified - search as general location (departure OR arrival)
-    searchParams.q = params.from;
+    // Only from specified - search departure cities ONLY (not arrival)
+    searchParams.fromLocation = params.from;
   } else if (params.to) {
-    // Only to specified - search as general location
-    searchParams.q = params.to;
+    // Only to specified - search arrival cities ONLY (not departure)
+    searchParams.location = params.to;
   } else if (params.location) {
-    // Generic location search
+    // Generic location search (when direction is ambiguous) - search both departure AND arrival
     searchParams.q = params.location;
   }
 
