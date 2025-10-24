@@ -297,10 +297,23 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
         content: randomWelcome
       };
 
+      // Timeout fallback - if chat creation takes too long, show existing chats
+      const timeout = setTimeout(() => {
+        console.warn('⏱️ Chat creation timeout - showing existing chats');
+        hasCreatedWelcomeRef.current = false;
+        if (chatHistory.length > 0) {
+          setActiveChat(chatHistory[0].id);
+        } else {
+          setActiveChat(null); // Show chat list
+        }
+      }, 5000);
+
       try {
         const { success, chat } = await chatService.createChat(user.id, 'New Chat', welcomeMessage);
 
-        if (success) {
+        clearTimeout(timeout);
+
+        if (success && chat?.id) {
           const newChat = {
             id: chat.id,
             title: 'New Chat',
@@ -311,15 +324,22 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
           setChatHistory(prev => [newChat, ...prev]);
           setActiveChat(chat.id);
           await chatService.updateChatMessages(chat.id, [welcomeMessage], user.id);
+        } else {
+          console.error('Chat creation returned no chat ID');
+          hasCreatedWelcomeRef.current = false;
+          setActiveChat(null); // Return to chat list
         }
       } catch (error) {
+        clearTimeout(timeout);
         console.error('Failed to create welcome chat:', error);
         hasCreatedWelcomeRef.current = false; // Reset on error
+        setActiveChat(null); // Return to chat list on error
+        setToast({ message: 'Failed to create chat. Please try again.', type: 'error' });
       }
     };
 
     createWelcomeChat();
-  }, [activeChat, user?.id]);
+  }, [activeChat, user?.id, chatHistory]);
 
   // Reset the welcome ref when switching away from 'new'
   useEffect(() => {
