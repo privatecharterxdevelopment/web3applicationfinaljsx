@@ -114,7 +114,13 @@ const TypingText = ({ text, speed = 20, onComplete }) => {
 };
 
 // Main Component
-const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {} }) => {
+const AIChat = ({
+  user: userProp,
+  initialQuery = '',
+  onQueryProcessed = () => {},
+  chatHistory: chatHistoryProp,
+  setChatHistory: setChatHistoryProp
+}) => {
   // Use auth context (returns null if not in AuthProvider)
   const authContext = useAuth();
   const user = userProp || authContext?.user || { name: 'Guest', id: null };
@@ -139,7 +145,11 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
   const [conversationalAI] = useState(() => new SpheraWeb3Concierge());
   const [conversationState] = useState(() => new ConversationStateManager());
 
-  const [chatHistory, setChatHistory] = useState([]);
+  // Use parent's chatHistory if provided, otherwise create local state
+  const [localChatHistory, setLocalChatHistory] = useState([]);
+  const chatHistory = chatHistoryProp || localChatHistory;
+  const setChatHistory = setChatHistoryProp || setLocalChatHistory;
+
   const [activeChat, setActiveChat] = useState('new');
   const [chatsLoaded, setChatsLoaded] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
@@ -459,8 +469,14 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
     }
   };
 
-  // Load user's chat history from database
+  // Load user's chat history from database (only if parent doesn't provide chatHistory)
   useEffect(() => {
+    if (chatHistoryProp) {
+      // Parent is managing chatHistory, skip local loading
+      setChatsLoaded(true);
+      return;
+    }
+
     if (!user?.id || chatsLoaded) return;
 
     const loadChats = async () => {
@@ -479,7 +495,7 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
     };
 
     loadChats();
-  }, [user?.id, chatsLoaded]);
+  }, [user?.id, chatsLoaded, chatHistoryProp]);
 
   // Auto-save chat when messages change
   useEffect(() => {

@@ -26,6 +26,7 @@ import TokenizeAssetFlow from './TokenizeAssetFlow';
 import SPVFormationFlow from '../SPVFormation/SPVFormationFlow_NEW';
 import TokenSwap from './TokenSwap';
 import AIChat from './AIChat';
+import { chatService } from '../../services/chatService';
 import ChatRequestsView from '../ChatRequestsView';
 import CalendarView from '../Calendar/CalendarView';
 import FavouritesView from '../Favourites/FavouritesView';
@@ -1124,6 +1125,34 @@ const TokenizedAssetsGlassmorphic = () => {
 
     fetchKycStatus();
   }, [user?.id]);
+
+  // Load user's chat history from database
+  useEffect(() => {
+    const loadChats = async () => {
+      if (!user?.id) return;
+
+      try {
+        const { success, chats } = await chatService.loadUserChats(user.id);
+        if (success && chats.length > 0) {
+          const formattedChats = chats.map(chat => ({
+            id: chat.id,
+            title: chat.title,
+            date: new Date(chat.updated_at).toLocaleDateString(),
+            messages: chat.messages || []
+          }));
+          setChatHistory(formattedChats);
+          console.log(`✅ Loaded ${formattedChats.length} chats from database`);
+        } else {
+          setChatHistory([]);
+          console.log('📭 No chats found in database');
+        }
+      } catch (error) {
+        console.error('Error loading chat history:', error);
+      }
+    };
+
+    loadChats();
+  }, [user?.id, activeCategory]); // Reload when navigating to chat page
 
   // Handle clicks outside settings dropdown
   useEffect(() => {
