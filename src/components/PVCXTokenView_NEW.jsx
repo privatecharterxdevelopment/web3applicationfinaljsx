@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import PVCXWithdrawalModal from './Modals/PVCXWithdrawalModal';
+import PVCXWithdrawalModal from './modals/PVCXWithdrawalModal';
 
 const PVCXTokenView = ({ user, onNavigate }) => {
   const [balance, setBalance] = useState(0);
