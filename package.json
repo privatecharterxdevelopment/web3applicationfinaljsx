@@ -65,6 +65,7 @@
     "react-virtualized": "^9.22.6",
     "recharts": "^2.12.2",
     "tailwind-merge": "^2.2.1",
+    "three": "^0.160.0",
     "viem": "^2.21.45",
     "wagmi": "^2.12.26",
     "zod": "^3.22.4"
