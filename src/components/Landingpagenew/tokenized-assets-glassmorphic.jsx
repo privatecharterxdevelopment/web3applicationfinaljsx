@@ -5,7 +5,7 @@ import {
   Plane, Zap, Mountain, Car, MapPin, Sparkles, Rocket,
   Leaf, Award, Settings, User, ChevronRight, ChevronDown, X, LogOut, MessageSquare, MessageCircle,
   Users, Calendar, Package, Compass, ArrowLeft, Wallet, History, Crown, Gift, LayoutDashboard,
-  Mail, Phone, Globe, FileText, Edit3, Check, Loader2, Building2, Coins, Share2
+  Mail, Phone, Globe, FileText, Edit3, Check, Loader2, Building2, Coins, Share2, Send
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
