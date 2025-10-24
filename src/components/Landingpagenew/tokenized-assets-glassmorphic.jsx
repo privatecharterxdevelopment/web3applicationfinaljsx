@@ -3135,7 +3135,14 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* Profile Overview View - Enhanced Analytics Dashboard */}
           {!isTransitioning && activeCategory === 'dashboard' && dashboardView === 'profile' && (
             <div className="w-full h-full overflow-y-auto">
-              <ProfileOverviewEnhanced />
+              <ProfileOverviewEnhanced
+                onStartChat={(query) => {
+                  // Switch to chat view
+                  setActiveCategory('chat');
+                  // Set initial query for the AIChat component to process
+                  setAiChatQuery(query);
+                }}
+              />
             </div>
           )}
 
@@ -7448,9 +7455,21 @@ const TokenizedAssetsGlassmorphic = () => {
           {!isTransitioning && activeCategory === 'chat-history' && (
             <div className="p-8">
               {/* Header */}
-              <div className="mb-8">
-                <h1 className="text-3xl font-semibold text-gray-900 mb-2">Chat History</h1>
-                <p className="text-sm text-gray-600">View and manage your AI conversations with Sphera</p>
+              <div className="mb-8 flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">Chat History</h1>
+                  <p className="text-sm text-gray-600">View and manage your AI conversations with Sphera</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setActiveChat('new');
+                    setActiveCategory('chat');
+                  }}
+                  className="px-6 py-2.5 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2"
+                >
+                  <MessageSquare size={18} />
+                  Start a Chat
+                </button>
               </div>
 
               {/* Chat List */}
