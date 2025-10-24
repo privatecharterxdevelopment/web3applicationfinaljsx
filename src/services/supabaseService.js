@@ -152,14 +152,19 @@ export const UnifiedSearchService = {
       // Empty Legs query - filter by departure/arrival cities and dates (CRITICAL)
       let emptyLegsQ = Promise.resolve({ data: [], error: null });
       if (searchEmptyLegs) {
+        console.log('🔍 EmptyLegs query - fromVariants:', fromVariants, 'qVariants:', qVariants, 'locationVariants:', locationVariants);
         emptyLegsQ = supabase.from('EmptyLegs_').select('*');
 
         // Filter by departure city/country (fromLocation or q)
         if (fromVariants.length > 0) {
-          emptyLegsQ = emptyLegsQ.or(fromVariants.map(v => `from_city.ilike.%${v}%,departure_city.ilike.%${v}%,from_country.ilike.%${v}%`).join(','));
+          const filter = fromVariants.map(v => `from_city.ilike.%${v}%,departure_city.ilike.%${v}%,from_country.ilike.%${v}%`).join(',');
+          console.log('🔍 Applying fromVariants filter:', filter);
+          emptyLegsQ = emptyLegsQ.or(filter);
         } else if (qVariants.length > 0) {
           // If no fromLocation, search both departure and arrival for general location
-          emptyLegsQ = emptyLegsQ.or(qVariants.map(v => `from_city.ilike.%${v}%,departure_city.ilike.%${v}%,from_country.ilike.%${v}%,to_city.ilike.%${v}%,arrival_city.ilike.%${v}%,to_country.ilike.%${v}%`).join(','));
+          const filter = qVariants.map(v => `from_city.ilike.%${v}%,departure_city.ilike.%${v}%,from_country.ilike.%${v}%,to_city.ilike.%${v}%,arrival_city.ilike.%${v}%,to_country.ilike.%${v}%`).join(',');
+          console.log('🔍 Applying qVariants filter:', filter);
+          emptyLegsQ = emptyLegsQ.or(filter);
         }
 
         // Filter by arrival city/country (location)
@@ -179,12 +184,13 @@ export const UnifiedSearchService = {
           const endDate = new Date(dateFrom);
           endDate.setDate(endDate.getDate() + 30);
           emptyLegsQ = emptyLegsQ.lte('departure_date', endDate.toISOString().split('T')[0]);
-        } else {
-          // No date filter - show future flights only
-          emptyLegsQ = emptyLegsQ.gte('departure_date', today);
         }
+        // REMOVED DATE FILTER - Show ALL empty legs regardless of date
+        // Users should see all available inventory, not just future dates
 
-        emptyLegsQ = emptyLegsQ.limit(10);
+        // Order by departure_date descending to show most recent first
+        emptyLegsQ = emptyLegsQ.order('departure_date', { ascending: false }).limit(50);
+        console.log('🔍 EmptyLegs query built, executing...');
       }
 
       // Helicopters query - filter by location and passengers
