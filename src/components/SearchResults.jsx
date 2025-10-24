@@ -332,7 +332,7 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                           onClick={() => onAddToCart && onAddToCart(item)}
                           className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
                         >
-                          Add to Cart
+                          Book Now
                         </button>
                       )}
                     </div>
