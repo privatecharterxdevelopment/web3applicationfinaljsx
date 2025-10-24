@@ -34,6 +34,14 @@ export default function ProfileOverviewEnhanced() {
   });
   const [timeRange, setTimeRange] = useState('7d');
   const [copiedAddress, setCopiedAddress] = useState(false);
+  const [chatUsage, setChatUsage] = useState({
+    totalChats: 0,
+    totalMessages: 0,
+    chatsUsed: 0,
+    chatsLimit: 2,
+    subscriptionPlan: 'Free',
+    messageLimit: 40
+  });
 
   useEffect(() => {
     if (user?.id) {
@@ -55,7 +63,8 @@ export default function ProfileOverviewEnhanced() {
       await Promise.all([
         fetchProfile(),
         fetchTokenizedAssets(),
-        fetchAnalytics()
+        fetchAnalytics(),
+        fetchChatUsage()
       ]);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -80,6 +89,47 @@ export default function ProfileOverviewEnhanced() {
       });
     } catch (error) {
       console.error('Error fetching profile:', error);
+    }
+  };
+
+  const fetchChatUsage = async () => {
+    try {
+      // Fetch all chat sessions for the user
+      const { data: chats, error } = await supabase
+        .from('ai_chat_sessions')
+        .select('id, messages')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Calculate total messages across all chats
+      const totalMessages = chats?.reduce((sum, chat) => {
+        return sum + (chat.messages?.length || 0);
+      }, 0) || 0;
+
+      // Calculate chats used (20 messages = 1 chat)
+      const chatsUsed = Math.min(Math.floor(totalMessages / 20), 2);
+
+      // Get subscription plan from user profile
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('subscription_plan, chats_limit')
+        .eq('user_id', user.id)
+        .single();
+
+      const subscriptionPlan = profile?.subscription_plan || 'Free';
+      const chatsLimit = profile?.chats_limit === null ? 999 : (profile?.chats_limit || 2);
+
+      setChatUsage({
+        totalChats: chats?.length || 0,
+        totalMessages: totalMessages,
+        chatsUsed: chatsUsed,
+        chatsLimit: chatsLimit,
+        subscriptionPlan: subscriptionPlan,
+        messageLimit: chatsLimit * 20
+      });
+    } catch (error) {
+      console.error('Error fetching chat usage:', error);
     }
   };
 
@@ -439,6 +489,79 @@ export default function ProfileOverviewEnhanced() {
                         </span>
                       </div>
                     </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Chat Usage & Subscription */}
+              <div className="border border-gray-300/50 rounded-xl bg-white/35" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                <div className="px-5 py-4 border-b border-black/5">
+                  <h2 className="text-sm font-medium text-black">AI Chat Usage</h2>
+                  <p className="text-[10px] text-black/30 mt-0.5">Message tracking & limits</p>
+                </div>
+                <div className="p-5 space-y-4">
+                  {/* Subscription Plan */}
+                  <div className="flex items-start gap-4 pb-4 border-b border-black/5">
+                    <div className="w-12 h-12 rounded-sm border border-black/10 flex items-center justify-center">
+                      {chatUsage.subscriptionPlan === 'Free' ? (
+                        <Activity size={20} className="text-black/40" />
+                      ) : (
+                        <Sparkles size={20} className="text-black/60" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-sm font-medium text-black">{chatUsage.subscriptionPlan}</h3>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-black/5 text-black/60">
+                          Current plan
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-black/40">
+                        {chatUsage.chatsLimit === 999 ? 'Unlimited' : `${chatUsage.chatsLimit} chats`} available
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Usage Stats */}
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-black/40">Chats Used</span>
+                        <span className="font-mono text-black">
+                          {chatUsage.chatsUsed}/{chatUsage.chatsLimit === 999 ? '∞' : chatUsage.chatsLimit}
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 bg-black/5 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-black/20 transition-all duration-300"
+                          style={{ width: `${chatUsage.chatsLimit === 999 ? 0 : (chatUsage.chatsUsed / chatUsage.chatsLimit) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs py-2">
+                      <span className="text-black/40">Total Messages</span>
+                      <span className="font-mono text-black/80">{chatUsage.totalMessages}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs py-2">
+                      <span className="text-black/40">Active Chats</span>
+                      <span className="font-mono text-black/80">{chatUsage.totalChats}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs py-2 border-t border-black/5 pt-3">
+                      <span className="text-black/40">Message Limit</span>
+                      <span className="font-mono text-black/80">
+                        {chatUsage.totalMessages}/{chatUsage.messageLimit === 19980 ? '∞' : chatUsage.messageLimit}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Upgrade Button */}
+                  {chatUsage.subscriptionPlan === 'Free' && (
+                    <button className="w-full mt-4 px-4 py-2 bg-black text-white rounded-sm text-xs hover:bg-black/90 transition-colors">
+                      Upgrade Plan
+                    </button>
                   )}
                 </div>
               </div>
