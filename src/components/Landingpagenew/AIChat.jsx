@@ -546,13 +546,13 @@ const AIChat = ({
   // Use Hume emotion context (when available) to gently adapt tone
   const withEmpathy = useCallback((text) => {
     try {
-      if (!humeEnabled || typeof humeClient?.getEmpatheticPrefix !== 'function') return text;
-      const prefix = humeClient.getEmpatheticPrefix();
+      if (!humeEnabled || !humeClientRef.current || typeof humeClientRef.current.getEmpatheticPrefix !== 'function') return text;
+      const prefix = humeClientRef.current.getEmpatheticPrefix();
       return prefix ? `${prefix} ${text}` : text;
     } catch {
       return text;
     }
-  }, [humeEnabled, humeClient]);
+  }, [humeEnabled]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -700,7 +700,9 @@ const AIChat = ({
         mediaRecorder.ondataavailable = (event) => audioChunksRef.current.push(event.data);
         mediaRecorder.onstop = async () => {
           const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-          await humeClient.sendAudio(audioBlob);
+          if (humeClientRef.current) {
+            await humeClientRef.current.sendAudio(audioBlob);
+          }
           stream.getTracks().forEach(track => track.stop());
         };
         mediaRecorder.start();
@@ -710,7 +712,7 @@ const AIChat = ({
         alert('Microphone access denied');
       }
     }
-  }, [isRecording, humeClient, humeEnabled]);
+  }, [isRecording, humeEnabled]);
 
   const fetchWeather = useCallback(async (location) => {
     try {
