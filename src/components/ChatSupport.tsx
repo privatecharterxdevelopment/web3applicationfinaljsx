@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, X, MessageSquare, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../../thefinalwebapplicationpcx-main/src/context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
 
 interface Message {

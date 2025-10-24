@@ -150,3 +150,6 @@ typechain/
 
 # Local Netlify folder
 .netlify
+
+# Exclude duplicate/old project folder from deployment
+thefinalwebapplicationpcx-main/

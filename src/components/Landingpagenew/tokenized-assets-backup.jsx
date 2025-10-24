@@ -2,15 +2,15 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Shield, Bell, Heart } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../../thefinalwebapplicationpcx-main/src/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { useAccount } from 'wagmi';
-import { web3Service } from '../../../thefinalwebapplicationpcx-main/src/lib/web3';
+import { web3Service } from '../../lib/web3';
 import UserMenu from '../UserMenu';
 import WalletMenu from '../WalletMenu';
 import LoginModal from '../LoginModal';
 import RegisterModal from '../RegisterModal';
-import UnifiedBookingFlow from '../../../thefinalwebapplicationpcx-main/src/components/UnifiedBookingFlow';
-import DashboardOverviewNew from '../../../thefinalwebapplicationpcx-main/src/components/DashboardOverviewNew';
+import UnifiedBookingFlow from '../../components/UnifiedBookingFlow';
+import DashboardOverviewNew from '../../components/DashboardOverviewNew';
 
 const TokenizedAssets = () => {
   const navigate = useNavigate();

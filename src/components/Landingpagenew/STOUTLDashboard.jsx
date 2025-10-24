@@ -7,7 +7,7 @@ import {
 import { useAccount } from 'wagmi';
 import { web3Service } from '../../lib/web3';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../../thefinalwebapplicationpcx-main/src/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import PageHeader from './PageHeader';
 import Button from './Button';
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Rocket, Loader2, TrendingUp, Users, Clock, CheckCircle, Plus, Package } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../../thefinalwebapplicationpcx-main/src/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { useAccount } from 'wagmi';
 
 export default function MyLaunches() {

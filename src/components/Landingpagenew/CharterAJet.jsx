@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, ShoppingBag, Settings, User, Shield } from 'lucide-react';
-import UnifiedBookingFlow from '../../../thefinalwebapplicationpcx-main/src/components/UnifiedBookingFlow.tsx';
+import UnifiedBookingFlow from '../../components/UnifiedBookingFlow.tsx';
 
 export default function CharterAJet() {
   const navigate = useNavigate();

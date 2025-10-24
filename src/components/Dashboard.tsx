@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { bookingService } from '../services/bookingService';
 import { BookingRequest } from '../types/booking';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../../thefinalwebapplicationpcx-main/src/context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import TransactionService from '../services/transactionService';
 import { web3Service, WalletTransaction } from '../lib/web3';
 import ChatSupport from './ChatSupport';

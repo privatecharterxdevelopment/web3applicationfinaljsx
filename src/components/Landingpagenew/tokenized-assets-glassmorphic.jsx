@@ -8,11 +8,11 @@ import {
   Mail, Phone, Globe, FileText, Edit3, Check, Loader2, Building2, Coins, Share2
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../../thefinalwebapplicationpcx-main/src/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import IntelligentSearch from '../IntelligentSearch';
 import { eventsService } from '../../services/eventsService';
 import { useAccount } from 'wagmi';
-import { web3Service } from '../../../thefinalwebapplicationpcx-main/src/lib/web3';
+import { web3Service } from '../../lib/web3';
 import WalletMenu from '../WalletMenu';
 import Dashboard from '../Dashboard';
 import { createRequest } from '../../services/requests';
@@ -21,7 +21,7 @@ import RegisterModal from '../RegisterModalNew';
 import ForgotPasswordModal from '../ForgotPasswordModal';
 import { ToastContainer } from '../Toast';
 import { useToast } from '../../hooks/useToast';
-import UnifiedBookingFlow from '../../../thefinalwebapplicationpcx-main/src/components/UnifiedBookingFlow';
+import UnifiedBookingFlow from '../../components/UnifiedBookingFlow';
 import TokenizeAssetFlow from './TokenizeAssetFlow';
 import SPVFormationFlow from '../SPVFormation/SPVFormationFlow_NEW';
 import TokenSwap from './TokenSwap';

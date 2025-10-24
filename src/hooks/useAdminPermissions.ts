@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../../thefinalwebapplicationpcx-main/src/context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 export interface AdminPermissions {
   booking_requests: {

@@ -5,7 +5,7 @@ import {
   Plus, Minus, AlertCircle, ExternalLink, Info
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../../thefinalwebapplicationpcx-main/src/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { useAccount } from 'wagmi';
 import PageHeader from './PageHeader';
 import Button from './Button';

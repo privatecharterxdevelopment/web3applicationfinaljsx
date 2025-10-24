@@ -5,7 +5,7 @@ import {
   ChevronDown, ChevronUp, Star, Award, Info
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../../thefinalwebapplicationpcx-main/src/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import Button from './Button';
 
 export default function AssetDetailPage({ assetId, onBack }) {

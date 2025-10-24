@@ -12,66 +12,66 @@ import { createAppKit } from '@reown/appkit/react';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3';
 
-import Header from '../../../thefinalwebapplicationpcx-main/src/components/Header.tsx';
-import Login from '../../../thefinalwebapplicationpcx-main/src/pages/Login.tsx';
-import Register from '../../../thefinalwebapplicationpcx-main/src/pages/Register.tsx';
-import VerifyEmail from '../../../thefinalwebapplicationpcx-main/src/pages/VerifyEmail.tsx';
+import Header from '../../components/Header.tsx';
+import Login from '../../pages/Login.tsx';
+import Register from '../../pages/Register.tsx';
+import VerifyEmail from '../../pages/VerifyEmail.tsx';
 import GoogleCalendarCallback from '../GoogleCalendarCallback.jsx';
-import MapboxMap from '../../../thefinalwebapplicationpcx-main/src/components/Map.tsx';
-import WeatherWidget from '../../../thefinalwebapplicationpcx-main/src/components/WeatherWidget.tsx';
-import Logo from '../../../thefinalwebapplicationpcx-main/src/components/Logo.tsx';
-import Footer from '../../../thefinalwebapplicationpcx-main/src/components/Footer.tsx';
-import NavigationMenu from '../../../thefinalwebapplicationpcx-main/src/components/NavigationMenu.tsx';
-import CookieBanner from '../../../thefinalwebapplicationpcx-main/src/components/CookieBanner.tsx';
-import ErrorBoundary from '../../../thefinalwebapplicationpcx-main/src/components/ErrorBoundary.tsx';
-import LoadingSpinner from '../../../thefinalwebapplicationpcx-main/src/components/LoadingSpinner.tsx';
-import ServicesCarousel from '../../../thefinalwebapplicationpcx-main/src/components/ServicesCarousel.tsx';
-import CheckoutPage from '../../../thefinalwebapplicationpcx-main/src/components/CheckoutPage.tsx';
-import type { Location, Weather, Stop, BookingDetails } from '../../../thefinalwebapplicationpcx-main/src/types.ts';
-import { AuthProvider, useAuth } from '../../../thefinalwebapplicationpcx-main/src/context/AuthContext.tsx';
-import { ThemeProvider } from '../../../thefinalwebapplicationpcx-main/src/context/ThemeContext.tsx';
-import { MaintenanceProvider, useMaintenance } from '../../../thefinalwebapplicationpcx-main/src/context/MaintenanceContext.tsx';
-import MaintenanceMode from '../../../thefinalwebapplicationpcx-main/src/components/MaintenanceMode.tsx';
-import ChatSupport from '../../../thefinalwebapplicationpcx-main/src/components/ChatSupport.tsx';
-import Dashboard from '../../../thefinalwebapplicationpcx-main/src/components/Dashboard.tsx';
-import AdminLayout from '../../../thefinalwebapplicationpcx-main/src/pages/admin/Layout.tsx';
-import AdminAnalytics from '../../../thefinalwebapplicationpcx-main/src/pages/admin/Analytics.tsx';
-import AdminBookingRequests from '../../../thefinalwebapplicationpcx-main/src/pages/admin/BookingRequests.tsx';
-import AdminUserRequests from '../../../thefinalwebapplicationpcx-main/src/pages/admin/UserRequests.tsx';
-import AdminKYCVerification from '../../../thefinalwebapplicationpcx-main/src/pages/admin/KYCVerification.tsx';
-import AdminCO2Certificates from '../../../thefinalwebapplicationpcx-main/src/pages/admin/CO2Certificates.tsx';
-import AdminManagement from '../../../thefinalwebapplicationpcx-main/src/pages/admin/Management.tsx';
-import Faq from '../../../thefinalwebapplicationpcx-main/src/components/faq.tsx';  // LOWERCASE faq.tsx
+import MapboxMap from '../../components/Map.tsx';
+import WeatherWidget from '../../components/WeatherWidget.tsx';
+import Logo from '../../components/Logo.tsx';
+import Footer from '../../components/Footer.tsx';
+import NavigationMenu from '../../components/NavigationMenu.tsx';
+import CookieBanner from '../../components/CookieBanner.tsx';
+import ErrorBoundary from '../../components/ErrorBoundary.tsx';
+import LoadingSpinner from '../../components/LoadingSpinner.tsx';
+import ServicesCarousel from '../../components/ServicesCarousel.tsx';
+import CheckoutPage from '../../components/CheckoutPage.tsx';
+import type { Location, Weather, Stop, BookingDetails } from '../../types.ts';
+import { AuthProvider, useAuth } from '../../context/AuthContext.tsx';
+import { ThemeProvider } from '../../context/ThemeContext.tsx';
+import { MaintenanceProvider, useMaintenance } from '../../context/MaintenanceContext.tsx';
+import MaintenanceMode from '../../components/MaintenanceMode.tsx';
+import ChatSupport from '../../components/ChatSupport.tsx';
+import Dashboard from '../../components/Dashboard.tsx';
+import AdminLayout from '../../pages/admin/Layout.tsx';
+import AdminAnalytics from '../../pages/admin/Analytics.tsx';
+import AdminBookingRequests from '../../pages/admin/BookingRequests.tsx';
+import AdminUserRequests from '../../pages/admin/UserRequests.tsx';
+import AdminKYCVerification from '../../pages/admin/KYCVerification.tsx';
+import AdminCO2Certificates from '../../pages/admin/CO2Certificates.tsx';
+import AdminManagement from '../../pages/admin/Management.tsx';
+import Faq from '../../components/faq.tsx';  // LOWERCASE faq.tsx
 
 // Import pages
-import FixedOffers from '../../../thefinalwebapplicationpcx-main/src/pages/FixedOffers.tsx';
-import EmptyLegOffers from '../../../thefinalwebapplicationpcx-main/src/pages/EmptyLegOffers.tsx';
-import AdminOffers from '../../../thefinalwebapplicationpcx-main/src/pages/AdminOffers.tsx';
-import BehindTheScene from '../../../thefinalwebapplicationpcx-main/src/pages/BehindTheScene.tsx';
-import HowItWorks from '../../../thefinalwebapplicationpcx-main/src/pages/HowItWorks.tsx';
-import Contact from '../../../thefinalwebapplicationpcx-main/src/pages/Contact.tsx';
-import Crypto from '../../../thefinalwebapplicationpcx-main/src/pages/Crypto.tsx';
-import GroupCharter from '../../../thefinalwebapplicationpcx-main/src/pages/services/GroupCharter.tsx';
-import HelicopterCharter from '../../../thefinalwebapplicationpcx-main/src/pages/services/HelicopterCharter.tsx';
-import PrivateJetCharter from '../../../thefinalwebapplicationpcx-main/src/pages/services/PrivateJetCharter.tsx';
-import PartnersBoard from '../../../thefinalwebapplicationpcx-main/src/pages/services/PartnersBoard.tsx';
-import EVTOL from '../../../thefinalwebapplicationpcx-main/src/pages/services/EVTOL.tsx';
-import EVTOLPage from '../../../thefinalwebapplicationpcx-main/src/pages/eVtolpage.tsx';
-import ICO from '../../../thefinalwebapplicationpcx-main/src/pages/web3/ICO.tsx';
-import NFTCollection from '../../../thefinalwebapplicationpcx-main/src/pages/web3/NFTCollection.tsx';
-import CarbonCertificates from '../../../thefinalwebapplicationpcx-main/src/pages/web3/CarbonCertificates.tsx';
-import DAODrivenTokenizedAssetLicensing from '../../../thefinalwebapplicationpcx-main/src/pages/web3/DAODrivenTokenizedAssetLicensing.tsx';
-import Impressum from '../../../thefinalwebapplicationpcx-main/src/pages/Legal/Impressum.tsx';
-import PrivacyPolicy from '../../../thefinalwebapplicationpcx-main/src/pages/Legal/PrivacyPolicy.tsx';
-import TermsConditions from '../../../thefinalwebapplicationpcx-main/src/pages/Legal/TermsConditions.tsx';
-import Partners from '../../../thefinalwebapplicationpcx-main/src/pages/Partners.tsx';
-import AITravelAgent from '../../../thefinalwebapplicationpcx-main/src/pages/web3/AITravelAgent.tsx';
-import LuxuryCars from '../../../thefinalwebapplicationpcx-main/src/pages/LuxuryCars.tsx';
-import BlogPosts from '../../../thefinalwebapplicationpcx-main/src/pages/BlogPosts.tsx';
-import ResetPassword from '../../../thefinalwebapplicationpcx-main/src/pages/ResetPassword.tsx';
-import JetCard from '../../../thefinalwebapplicationpcx-main/src/pages/JetCard.tsx';
-import EnhancedServicesMap from '../../../thefinalwebapplicationpcx-main/src/components/EnhancedServicesMap.jsx';
-import TravelDesignerPage from '../../../thefinalwebapplicationpcx-main/src/components/TravelDesigner.tsx';
+import FixedOffers from '../../pages/FixedOffers.tsx';
+import EmptyLegOffers from '../../pages/EmptyLegOffers.tsx';
+import AdminOffers from '../../pages/AdminOffers.tsx';
+import BehindTheScene from '../../pages/BehindTheScene.tsx';
+import HowItWorks from '../../pages/HowItWorks.tsx';
+import Contact from '../../pages/Contact.tsx';
+import Crypto from '../../pages/Crypto.tsx';
+import GroupCharter from '../../pages/services/GroupCharter.tsx';
+import HelicopterCharter from '../../pages/services/HelicopterCharter.tsx';
+import PrivateJetCharter from '../../pages/services/PrivateJetCharter.tsx';
+import PartnersBoard from '../../pages/services/PartnersBoard.tsx';
+import EVTOL from '../../pages/services/EVTOL.tsx';
+import EVTOLPage from '../../pages/eVtolpage.tsx';
+import ICO from '../../pages/web3/ICO.tsx';
+import NFTCollection from '../../pages/web3/NFTCollection.tsx';
+import CarbonCertificates from '../../pages/web3/CarbonCertificates.tsx';
+import DAODrivenTokenizedAssetLicensing from '../../pages/web3/DAODrivenTokenizedAssetLicensing.tsx';
+import Impressum from '../../pages/Legal/Impressum.tsx';
+import PrivacyPolicy from '../../pages/Legal/PrivacyPolicy.tsx';
+import TermsConditions from '../../pages/Legal/TermsConditions.tsx';
+import Partners from '../../pages/Partners.tsx';
+import AITravelAgent from '../../pages/web3/AITravelAgent.tsx';
+import LuxuryCars from '../../pages/LuxuryCars.tsx';
+import BlogPosts from '../../pages/BlogPosts.tsx';
+import ResetPassword from '../../pages/ResetPassword.tsx';
+import JetCard from '../../pages/JetCard.tsx';
+import EnhancedServicesMap from '../../components/EnhancedServicesMap.jsx';
+import TravelDesignerPage from '../../components/TravelDesigner.tsx';
 
 // Import TokenSwap page
 import TokenSwapPage from './TokenSwapPage';
@@ -106,12 +106,12 @@ import CO2CertificateDetail from './CO2CertificateDetail.jsx';
 import ChatWidget from './ChatWidget.jsx';
 
 // Import the CO2 Marketplace component
-import Marketplace from '../../../thefinalwebapplicationpcx-main/src/services/Marketplace.tsx';
+import Marketplace from '../../services/Marketplace.tsx';
 
 // Import the new unified booking flow instead of separate components
-import UnifiedBookingFlow from '../../../thefinalwebapplicationpcx-main/src/components/UnifiedBookingFlow.tsx';
+import UnifiedBookingFlow from '../../components/UnifiedBookingFlow.tsx';
 
-import { supabase } from '../../../thefinalwebapplicationpcx-main/src/lib/supabase.ts';
+import { supabase } from '../../lib/supabase.ts';
 
 // ===== WAGMI/REOWN CONFIGURATION =====
 const projectId = 'a9111834382219cf7080a2d516cad517';

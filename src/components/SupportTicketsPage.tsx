@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, MessageSquare, Clock, CheckCircle, Circle, AlertCircle, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../../thefinalwebapplicationpcx-main/src/context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 // @ts-ignore
 import { supportTicketService } from '../services/supportTicketService';
 

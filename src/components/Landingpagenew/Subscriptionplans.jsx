@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../../../thefinalwebapplicationpcx-main/src/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const PricingPackages = () => {
   const { user } = useAuth();

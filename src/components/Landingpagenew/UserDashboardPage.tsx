@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Shield, CreditCard, History, Settings, Bell, Plane, Coins, ArrowUpRight, Plus, Home } from 'lucide-react';
-import { useAuth } from '../../../thefinalwebapplicationpcx-main/src/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { useBalance, useAccount, useDisconnect } from 'wagmi';
 import { useAppKit } from '@reown/appkit/react';
 import { PVCX_TOKEN_ADDRESS } from '../../lib/web3';

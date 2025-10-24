@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { ArrowLeft, Upload, Check, AlertTriangle, FileText, User, Calendar, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../../thefinalwebapplicationpcx-main/src/context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 interface KYCVerificationProps {
   onBack: () => void;

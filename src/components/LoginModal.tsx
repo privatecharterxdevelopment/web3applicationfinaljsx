@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Scan, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../thefinalwebapplicationpcx-main/src/context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import Portal from './Portal';
 import { VideoHero, FaceLoginModal } from './auth';
 import { checkFaceAuthEnabled } from '../services/faceAuthService';

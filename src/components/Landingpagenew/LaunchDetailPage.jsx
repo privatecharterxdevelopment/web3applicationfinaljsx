@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Plane, Clock, MapPin, Users, ExternalLink, Leaf, Wallet, Loader2, Share2, Facebook, Twitter, Linkedin, Send, Copy, Mail, CheckCircle, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../../thefinalwebapplicationpcx-main/src/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { useAccount, useWalletClient } from 'wagmi';
 import { useAppKit } from '@reown/appkit/react';
 import { web3Service } from '../../lib/web3';

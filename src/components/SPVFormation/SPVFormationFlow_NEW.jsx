@@ -16,7 +16,7 @@ import {
   Home
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../../thefinalwebapplicationpcx-main/src/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const SPVFormationFlow = ({ onBack }) => {
   const { user } = useAuth();

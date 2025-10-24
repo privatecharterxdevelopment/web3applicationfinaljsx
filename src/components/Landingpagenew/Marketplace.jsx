@@ -5,7 +5,7 @@ import {
   Ship, Car, Palette, Building2, Sparkles
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../../thefinalwebapplicationpcx-main/src/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import AssetDetailModal from './Marketplace/AssetDetailModal';
 import PageHeader from './PageHeader';
 import Button from './Button';

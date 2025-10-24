@@ -23,7 +23,7 @@ import {
   Users,
   MessageCircle
 } from 'lucide-react';
-import { useAuth } from '../../thefinalwebapplicationpcx-main/src/context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { useAdminPermissions } from '../hooks/useAdminPermissions';
 import Dashboard from './Dashboard';
 import Portal from './Portal';

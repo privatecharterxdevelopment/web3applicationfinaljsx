@@ -4,7 +4,7 @@ import {
   Info, CheckCircle, AlertCircle, DollarSign, Percent,
   FileText, Download
 } from 'lucide-react';
-import { useAuth } from '../../../../thefinalwebapplicationpcx-main/src/context/AuthContext';
+import { useAuth } from '../../../context/AuthContext';
 import { useAccount } from 'wagmi';
 import { purchaseSTOShares } from '../../../services/stoContractService';
 import { supabase } from '../../../lib/supabase';

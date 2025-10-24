@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, Mail, Calendar, Plane, FileCheck, Check, X, Trash2, Search, Filter, CheckCircle, Circle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../../thefinalwebapplicationpcx-main/src/context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 
 interface Notification {
