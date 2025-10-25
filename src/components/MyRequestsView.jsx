@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Car, Plane, FileText, Clock, Check, X, ChevronRight, Search, Filter, AlertTriangle } from 'lucide-react';
 import { getUserRequests } from '../services/requests';
 import { formatDistanceToNow } from 'date-fns';
-import ReviewDisputeModal from './Modals/ReviewDisputeModal';
+import ReviewDisputeModal from './modals/ReviewDisputeModal';
 
 const MyRequestsView = ({ user }) => {
   const [requests, setRequests] = useState([]);
