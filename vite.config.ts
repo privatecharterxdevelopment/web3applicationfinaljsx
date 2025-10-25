@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [react(), faceApiCdnPlugin(), claudeApiPlugin()],
   optimizeDeps: {
     exclude: ['lucide-react'],
-    include: ['ethers', 'wagmi', 'viem', '@reown/appkit']
+    include: ['ethers', 'wagmi', 'viem', '@reown/appkit', 'three']
   },
   resolve: {
     alias: {
@@ -17,11 +17,11 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     // Use a fixed port to avoid auto-switching and HMR reconnect loops in dev
-    port: 5177,
+    port: 5178,
     strictPort: true,
     hmr: {
       // Align HMR websocket port with the dev server
-      clientPort: 5177,
+      clientPort: 5178,
       host: 'localhost',
       protocol: 'ws',
       timeout: 120000
@@ -32,7 +32,7 @@ export default defineConfig({
     }
   },
   preview: {
-    port: 5177,
+    port: 5178,
     strictPort: true,
     host: true
   },
@@ -47,7 +47,8 @@ export default defineConfig({
           vendor: ['react', 'react-dom', 'react-router-dom'],
           i18n: ['i18next', 'react-i18next', 'i18next-browser-languagedetector', 'i18next-http-backend'],
           web3: ['ethers', 'wagmi', 'viem', '@reown/appkit', '@reown/appkit-adapter-wagmi'],
-          ui: ['lucide-react', 'recharts', 'mapbox-gl', 'react-map-gl']
+          ui: ['lucide-react', 'recharts', 'mapbox-gl', 'react-map-gl'],
+          three: ['three']
         }
       }
     }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AnimatedSection from '../AnimatedSection';
 import LandingHeader from './LandingHeader';
-import MapboxMap from '../Map';
+import Globe3D from '../Globe3D';
 import { supabase } from '../../lib/supabase';
 import {
   Plane,
@@ -212,57 +212,46 @@ function Homepage() {
   // All page navigation now handled by React Router
 
   return (
-    <div className="min-h-screen bg-gray-100 px-4 py-4 overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 px-4 py-4 overflow-x-hidden">
       <LandingHeader onGetStarted={handleGetStarted} />
 
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto rounded-2xl overflow-hidden shadow-sm border border-gray-200 relative">
-        {/* Background Map */}
+      <div className="max-w-7xl mx-auto rounded-2xl overflow-hidden shadow-xl border border-white/20 relative backdrop-blur-xl bg-white/10 min-h-[600px]">
+        {/* Background Globe */}
         <div className="absolute inset-0 z-0">
-          <div className="w-full h-[200%] -bottom-[110%] absolute opacity-80">
-            <MapboxMap
-              origin={null}
-              destination={null}
-              isReturn={false}
-              stops={[]}
-              showOfficeLocations={false}
-              showControls={false}
-              hideLabels={true}
-            />
+          <div className="w-full h-full absolute opacity-60">
+            <Globe3D />
           </div>
         </div>
 
-        {/* Overlay gradient for better text readability - WHITE ON TOP */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/90 via-white/50 to-transparent z-10"></div>
+        {/* Glassmorphic overlay for better text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/40 to-white/20 backdrop-blur-md z-10"></div>
 
-        {/* Content overlay */}
-        <section className="relative z-20 px-4 sm:px-8 py-12 sm:py-24 max-w-4xl mx-auto text-center">
-          <div className="mb-8">
-            <span className="bg-gray-100/90 text-gray-700 px-3 py-1 rounded-full text-xs font-medium tracking-wide uppercase backdrop-blur-sm">
-              Blockchain Aviation Platform
-            </span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-gray-900 mb-6 sm:mb-8 leading-tight tracking-tight">
-            Tokenizing global mobility<br />
-            <span className="font-normal">aviation. assets. benefits.</span>
-          </h1>
-          <p className="text-base sm:text-lg text-gray-600 mb-8 sm:mb-12 max-w-2xl mx-auto leading-relaxed px-4">
-            Experience seamless private jet charter through blockchain technology.
-            Tokenized flights, transparent pricing, and instant bookings.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
-            <button
-              onClick={handleGetStarted}
-              className="bg-gray-900 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-md text-sm hover:bg-gray-800 transition-colors shadow-lg"
-            >
-              Start Booking Process
-            </button>
-            <button
-              onClick={() => navigate('/aviation')}
-              className="border border-gray-300 bg-white/80 text-gray-700 px-6 sm:px-8 py-3 sm:py-4 rounded-md text-sm hover:bg-white transition-colors backdrop-blur-sm shadow-lg"
-            >
-              Explore Fleet
-            </button>
+        {/* Content overlay - 3 column layout */}
+        <section className="absolute inset-0 z-20 px-4 sm:px-8 flex items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center w-full">
+            {/* Left: Title */}
+            <div className="flex flex-col justify-center">
+              <div className="mb-6">
+                <span className="bg-gray-100/90 text-gray-700 px-3 py-1 rounded-full text-xs font-medium tracking-wide uppercase backdrop-blur-sm">
+                  Blockchain Aviation Platform
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-light text-gray-900 leading-tight tracking-tight">
+                Tokenizing global mobility<br />
+                <span className="font-normal">aviation. assets. benefits.</span>
+              </h1>
+            </div>
+
+            {/* Middle: Globe (empty - globe is in background) */}
+            <div className="hidden lg:block"></div>
+
+            {/* Right: Description */}
+            <div className="flex items-center justify-center lg:justify-end">
+              <p className="text-sm sm:text-base text-gray-600 leading-relaxed max-w-sm">
+                All-in-one Web3 mobility platform: Asset tokenization, private jet charters, empty legs, luxury cars, and crypto-enabled rides.
+              </p>
+            </div>
           </div>
         </section>
       </div>

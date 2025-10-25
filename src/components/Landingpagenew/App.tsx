@@ -319,7 +319,7 @@ function AppContent() {
       </Suspense>
 
       {/* Chat Widget - Visible on all pages */}
-      {!isAdminDomain && <ChatWidget />}
+      {/* {!isAdminDomain && <ChatWidget />} */}
 
       {/* Logout Popup */}
       <LogoutPopupComponent />

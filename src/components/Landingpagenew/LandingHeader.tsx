@@ -23,14 +23,14 @@ export default function LandingHeader({ onGetStarted, showInfoButton = true }: L
   };
 
   return (
-    <header className="px-4 sm:px-8 py-4 sm:py-6 flex items-center justify-between max-w-6xl mx-auto">
+    <header className="px-4 sm:px-8 py-2 sm:py-3 flex items-center justify-between max-w-6xl mx-auto">
       {/* Logo */}
       <div className="flex items-center">
         <button onClick={() => navigate('/')}>
           <img
             src="https://i.ibb.co/DPF5g3Sk/iu42DU1.png"
             alt="PrivateCharterX"
-            className="h-20 w-auto hover:opacity-80 transition-opacity"
+            className="h-16 w-auto hover:opacity-80 transition-opacity"
           />
         </button>
       </div>
