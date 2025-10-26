@@ -2170,8 +2170,15 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
   }
 
   if (!currentChat) {
-    console.log('⚠️ No currentChat found. Returning null. ActiveChat:', activeChat);
-    return null;
+    console.log('⚠️ No currentChat found. Showing loading state. ActiveChat:', activeChat);
+    // Show loading state while chat is being added to history
+    return (
+      <div className="h-full bg-transparent flex flex-col overflow-hidden">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-pulse text-gray-500">Loading chat...</div>
+        </div>
+      </div>
+    );
   }
 
   console.log('🎨 Rendering: CHAT VIEW with chat:', currentChat.id, currentChat.title);
