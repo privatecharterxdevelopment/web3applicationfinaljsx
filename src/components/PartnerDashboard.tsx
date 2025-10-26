@@ -107,7 +107,7 @@ export default function PartnerDashboard({ user, onNavigate }: PartnerDashboardP
 
   const handleAcceptBooking = async (bookingId: string) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
       const response = await fetch(`${apiUrl}/partners/accept-booking`, {
         method: 'POST',
         headers: {
@@ -139,7 +139,7 @@ export default function PartnerDashboard({ user, onNavigate }: PartnerDashboardP
     const reason = prompt('Please provide a reason for rejecting this booking (optional):');
 
     try {
-      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
       const response = await fetch(`${apiUrl}/partners/reject-booking`, {
         method: 'POST',
         headers: {
@@ -170,7 +170,7 @@ export default function PartnerDashboard({ user, onNavigate }: PartnerDashboardP
 
   const handleConfirmArrival = async (bookingId: string) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
       const response = await fetch(`${apiUrl}/partners/capture-and-transfer`, {
         method: 'POST',
         headers: {
@@ -250,7 +250,7 @@ export default function PartnerDashboard({ user, onNavigate }: PartnerDashboardP
             <button
               onClick={async () => {
                 try {
-                  const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+                  const apiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
                   const response = await fetch(`${apiUrl}/partners/express-dashboard-link`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
