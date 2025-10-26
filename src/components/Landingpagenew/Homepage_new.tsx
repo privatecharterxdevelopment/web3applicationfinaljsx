@@ -232,9 +232,10 @@ function Homepage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center w-full">
             {/* Left: Title */}
             <div className="flex flex-col justify-center">
-              <div className="mb-6">
+              <div className="mb-6 flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <span className="bg-gray-100/90 text-gray-700 px-3 py-1 rounded-full text-xs font-medium tracking-wide uppercase backdrop-blur-sm">
-                  Blockchain Aviation Platform
+                  web3 and ai powered multi charter
                 </span>
               </div>
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-light text-gray-900 leading-tight tracking-tight">
