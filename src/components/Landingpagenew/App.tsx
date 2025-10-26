@@ -13,8 +13,8 @@ import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3';
 
 import Header from '../../components/Header.tsx';
-import Login from '../../pages/Login.tsx';
-import Register from '../../pages/Register.tsx';
+import LoginNew from '../../pages/LoginNew.tsx';
+import RegisterNew from '../../pages/RegisterNew.tsx';
 import VerifyEmail from '../../pages/VerifyEmail.tsx';
 import GoogleCalendarCallback from '../GoogleCalendarCallback.jsx';
 import MapboxMap from '../../components/Map.tsx';
@@ -295,12 +295,8 @@ function AppContent() {
               <Route path="/charter-a-jet" element={<CharterAJet />} />
 
               {/* Auth Routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={
-                <GoogleReCaptchaProvider reCaptchaKey={import.meta.env.VITE_RECAPTCHA_SITE_KEY!}>
-                  <Register />
-                </GoogleReCaptchaProvider>
-              } />
+              <Route path="/login" element={<LoginNew />} />
+              <Route path="/register" element={<RegisterNew />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/reset-password" element={<ResetPassword />} />
 
