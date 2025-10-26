@@ -23,17 +23,10 @@ function getStripe() {
 
 const { createClient } = require('@supabase/supabase-js');
 
-// Lazy Supabase initialization
-let supabase;
-function getSupabase() {
-  if (!supabase) {
-    supabase = createClient(
-      process.env.SUPABASE_URL || 'https://oubecmstqtzdnevyqavu.supabase.co',
-      process.env.SUPABASE_SERVICE_ROLE_KEY || 'dummy_key_for_startup'
-    );
-  }
-  return supabase;
-}
+const supabase = createClient(
+  process.env.SUPABASE_URL || 'https://oubecmstqtzdnevyqavu.supabase.co',
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 const WEBHOOK_SECRET = process.env.STRIPE_CONNECT_WEBHOOK_SECRET;
 
@@ -46,7 +39,7 @@ async function handleStripeConnectWebhook(req, res) {
 
   try {
     // Verify webhook signature
-    event = getStripe().webhooks.constructEvent(
+    event = stripe.webhooks.constructEvent(
       req.rawBody || req.body,
       sig,
       WEBHOOK_SECRET

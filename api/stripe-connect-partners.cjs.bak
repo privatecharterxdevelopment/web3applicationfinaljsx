@@ -25,17 +25,10 @@ function getStripe() {
 
 const { createClient } = require('@supabase/supabase-js');
 
-// Lazy Supabase initialization
-let supabase;
-function getSupabase() {
-  if (!supabase) {
-    supabase = createClient(
-      process.env.SUPABASE_URL || 'https://oubecmstqtzdnevyqavu.supabase.co',
-      process.env.SUPABASE_SERVICE_ROLE_KEY || 'dummy_key_for_startup'
-    );
-  }
-  return supabase;
-}
+const supabase = createClient(
+  process.env.SUPABASE_URL || 'https://oubecmstqtzdnevyqavu.supabase.co',
+  process.env.SUPABASE_SERVICE_ROLE_KEY // Use service role for backend operations
+);
 
 // Commission rates by service type
 const COMMISSION_RATES = {
@@ -89,7 +82,7 @@ async function createConnectAccount(req, res) {
     }
 
     // Create Stripe Connect Express account
-    const account = await getStripe().accounts.create({
+    const account = await stripe.accounts.create({
       type: 'express',
       country: country.toUpperCase(), // CH, US, DE, etc.
       email: email,
@@ -172,7 +165,7 @@ async function getOnboardingLink(req, res) {
     }
 
     // Create account link for onboarding
-    const accountLink = await getStripe().accountLinks.create({
+    const accountLink = await stripe.accountLinks.create({
       account: partner.stripe_connect_account_id,
       refresh_url: `${process.env.FRONTEND_URL}/partner-dashboard?onboarding=refresh`,
       return_url: `${process.env.FRONTEND_URL}/partner-dashboard?onboarding=complete`,
@@ -210,7 +203,7 @@ async function getAccountStatus(req, res) {
     }
 
     // Fetch account details from Stripe
-    const account = await getStripe().accounts.retrieve(partner.stripe_connect_account_id);
+    const account = await stripe.accounts.retrieve(partner.stripe_connect_account_id);
 
     // Update database with latest status
     await supabase
@@ -303,7 +296,7 @@ async function createPartnerBookingPayment(req, res) {
     const partnerEarnings = Math.round((amount - commissionAmount) * 100) / 100;
 
     // Create Payment Intent with manual capture (escrow)
-    const paymentIntent = await getStripe().paymentIntents.create({
+    const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to cents
       currency: (currency || 'EUR').toLowerCase(),
       capture_method: 'manual', // ESCROW: Hold payment, don't transfer yet
@@ -441,7 +434,7 @@ async function rejectBooking(req, res) {
 
     // Cancel payment intent (release escrow)
     if (booking.stripe_payment_intent_id) {
-      await getStripe().paymentIntents.cancel(booking.stripe_payment_intent_id);
+      await stripe.paymentIntents.cancel(booking.stripe_payment_intent_id);
     }
 
     // Update booking
@@ -520,7 +513,7 @@ async function captureAndTransferToPartner(req, res) {
     }
 
     // 1. Capture the payment intent (money goes to platform account)
-    const paymentIntent = await getStripe().paymentIntents.capture(
+    const paymentIntent = await stripe.paymentIntents.capture(
       booking.stripe_payment_intent_id
     );
 
@@ -528,7 +521,7 @@ async function captureAndTransferToPartner(req, res) {
     const transferAmount = Math.round(booking.partner_earnings * 100); // Convert to cents
 
     // 3. Transfer to partner's Connect account
-    const transfer = await getStripe().transfers.create({
+    const transfer = await stripe.transfers.create({
       amount: transferAmount,
       currency: booking.currency.toLowerCase(),
       destination: partner.stripe_connect_account_id,
@@ -680,7 +673,7 @@ async function getExpressDashboardLink(req, res) {
 
     // Create login link for Express Dashboard
     // This is a short-lived URL (valid for a few minutes)
-    const loginLink = await getStripe().accounts.createLoginLink(
+    const loginLink = await stripe.accounts.createLoginLink(
       partner.stripe_connect_account_id
     );
 
