@@ -76,7 +76,7 @@ async function sendEmail({ to, subject, html }) {
  */
 async function logEmailSent({ templateId, recipientEmail, subject, status, errorMessage = null }) {
   try {
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('newsletter_send_log')
       .insert({
         template_id: templateId,
@@ -114,7 +114,7 @@ async function subscribe(req, res) {
     }
 
     // Check if email already exists
-    const { data: existing } = await supabase
+    const { data: existing } = await getSupabase()
       .from('newsletter_subscriptions')
       .select('*')
       .eq('email', email)
@@ -123,7 +123,7 @@ async function subscribe(req, res) {
     if (existing) {
       if (existing.status === 'unsubscribed') {
         // Resubscribe
-        const { error } = await supabase
+        const { error } = await getSupabase()
           .from('newsletter_subscriptions')
           .update({
             status: 'active',
@@ -147,7 +147,7 @@ async function subscribe(req, res) {
     }
 
     // Create new subscription
-    const { data: subscription, error: subscriptionError } = await supabase
+    const { data: subscription, error: subscriptionError } = await getSupabase()
       .from('newsletter_subscriptions')
       .insert({
         email: email,
@@ -161,7 +161,7 @@ async function subscribe(req, res) {
     if (subscriptionError) throw subscriptionError;
 
     // Get welcome email template
-    const { data: template } = await supabase
+    const { data: template } = await getSupabase()
       .from('newsletter_templates')
       .select('*')
       .eq('category', 'welcome')
@@ -196,7 +196,7 @@ async function subscribe(req, res) {
       });
 
       // Update last_email_sent_at
-      await supabase
+      await getSupabase()
         .from('newsletter_subscriptions')
         .update({ last_email_sent_at: new Date().toISOString() })
         .eq('id', subscription.id);
@@ -235,7 +235,7 @@ async function unsubscribe(req, res) {
       });
     }
 
-    const { data: subscription, error } = await supabase
+    const { data: subscription, error } = await getSupabase()
       .from('newsletter_subscriptions')
       .update({
         status: 'unsubscribed',
@@ -282,7 +282,7 @@ async function updatePreferences(req, res) {
       });
     }
 
-    const { data: subscription, error } = await supabase
+    const { data: subscription, error } = await getSupabase()
       .from('newsletter_subscriptions')
       .update({
         preferences: preferences,
@@ -329,7 +329,7 @@ async function getPreferences(req, res) {
       });
     }
 
-    const { data: subscription, error } = await supabase
+    const { data: subscription, error } = await getSupabase()
       .from('newsletter_subscriptions')
       .select('email, preferences, status')
       .eq('unsubscribe_token', token)
@@ -408,35 +408,35 @@ async function getSubscribers(req, res) {
 async function getStats(req, res) {
   try {
     // Get total subscribers
-    const { count: totalSubscribers } = await supabase
+    const { count: totalSubscribers } = await getSupabase()
       .from('newsletter_subscriptions')
       .select('*', { count: 'exact', head: true });
 
     // Get active subscribers
-    const { count: activeSubscribers } = await supabase
+    const { count: activeSubscribers } = await getSupabase()
       .from('newsletter_subscriptions')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'active');
 
     // Get unsubscribed count
-    const { count: unsubscribed } = await supabase
+    const { count: unsubscribed } = await getSupabase()
       .from('newsletter_subscriptions')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'unsubscribed');
 
     // Get web vs wordpress split
-    const { count: webSubscribers } = await supabase
+    const { count: webSubscribers } = await getSupabase()
       .from('newsletter_subscriptions')
       .select('*', { count: 'exact', head: true })
       .eq('source', 'web');
 
-    const { count: wordpressSubscribers } = await supabase
+    const { count: wordpressSubscribers } = await getSupabase()
       .from('newsletter_subscriptions')
       .select('*', { count: 'exact', head: true })
       .eq('source', 'wordpress');
 
     // Get total emails sent
-    const { count: totalEmailsSent } = await supabase
+    const { count: totalEmailsSent } = await getSupabase()
       .from('newsletter_send_log')
       .select('*', { count: 'exact', head: true });
 
@@ -444,7 +444,7 @@ async function getStats(req, res) {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const { count: recentSubscribers } = await supabase
+    const { count: recentSubscribers } = await getSupabase()
       .from('newsletter_subscriptions')
       .select('*', { count: 'exact', head: true })
       .gte('created_at', sevenDaysAgo.toISOString());
@@ -480,7 +480,7 @@ async function sendNewsletter(req, res) {
     const { templateId, category, testEmail } = req.body;
 
     // Get template
-    const { data: template, error: templateError } = await supabase
+    const { data: template, error: templateError } = await getSupabase()
       .from('newsletter_templates')
       .select('*')
       .eq('id', templateId)
@@ -571,7 +571,7 @@ async function sendNewsletter(req, res) {
       if (result.success) {
         successCount++;
         // Update last_email_sent_at
-        await supabase
+        await getSupabase()
           .from('newsletter_subscriptions')
           .update({ last_email_sent_at: new Date().toISOString() })
           .eq('email', subscriber.email);
@@ -584,7 +584,7 @@ async function sendNewsletter(req, res) {
     }
 
     // Update template last_used_at
-    await supabase
+    await getSupabase()
       .from('newsletter_templates')
       .update({ last_used_at: new Date().toISOString() })
       .eq('id', templateId);
@@ -612,7 +612,7 @@ async function sendNewsletter(req, res) {
  */
 async function getTemplates(req, res) {
   try {
-    const { data: templates, error } = await supabase
+    const { data: templates, error } = await getSupabase()
       .from('newsletter_templates')
       .select('*')
       .order('created_at', { ascending: false });
@@ -641,7 +641,7 @@ async function createTemplate(req, res) {
   try {
     const { name, subject, category, html_content, variables } = req.body;
 
-    const { data: template, error } = await supabase
+    const { data: template, error } = await getSupabase()
       .from('newsletter_templates')
       .insert({
         name,
@@ -687,7 +687,7 @@ async function updateTemplate(req, res) {
     if (variables !== undefined) updateData.variables = variables;
     if (is_active !== undefined) updateData.is_active = is_active;
 
-    const { data: template, error } = await supabase
+    const { data: template, error } = await getSupabase()
       .from('newsletter_templates')
       .update(updateData)
       .eq('id', id)
@@ -724,7 +724,7 @@ async function deleteTemplate(req, res) {
   try {
     const { id } = req.params;
 
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('newsletter_templates')
       .delete()
       .eq('id', id);
