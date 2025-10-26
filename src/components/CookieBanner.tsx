@@ -47,7 +47,7 @@ export default function CookieBanner() {
 
               <h2 className="text-xl font-semibold mb-3">What are cookies?</h2>
               <p className="mb-4">
-                Cookies are small text files that are placed on your computer or mobile device when you visit our website. 
+                Cookies are small text files that are placed on your computer or mobile device when you visit our website.
                 They are widely used to make websites work more efficiently and provide information to website owners.
               </p>
 
@@ -65,21 +65,21 @@ export default function CookieBanner() {
                 <div className="border border-gray-700 rounded-lg p-4">
                   <h3 className="font-semibold mb-2">Strictly Necessary Cookies</h3>
                   <p className="text-sm">
-                    These cookies are essential for the website to function and cannot be disabled. 
+                    These cookies are essential for the website to function and cannot be disabled.
                     They are usually set in response to actions you take such as setting privacy preferences or logging in.
                   </p>
                 </div>
                 <div className="border border-gray-700 rounded-lg p-4">
                   <h3 className="font-semibold mb-2">Performance Cookies</h3>
                   <p className="text-sm">
-                    These cookies help us understand how visitors interact with our website by collecting 
+                    These cookies help us understand how visitors interact with our website by collecting
                     and reporting information anonymously.
                   </p>
                 </div>
                 <div className="border border-gray-700 rounded-lg p-4">
                   <h3 className="font-semibold mb-2">Functional Cookies</h3>
                   <p className="text-sm">
-                    These cookies enable enhanced functionality and personalization, such as remembering 
+                    These cookies enable enhanced functionality and personalization, such as remembering
                     your preferences and settings.
                   </p>
                 </div>
@@ -87,7 +87,7 @@ export default function CookieBanner() {
 
               <h2 className="text-xl font-semibold mb-3">Managing cookies</h2>
               <p className="mb-4">
-                You can control and manage cookies in various ways. Most browsers allow you to refuse or delete cookies. 
+                You can control and manage cookies in various ways. Most browsers allow you to refuse or delete cookies.
                 The methods for managing cookies vary from browser to browser.
               </p>
 
@@ -120,30 +120,69 @@ export default function CookieBanner() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-[300px] bg-gradient-to-br from-neutral-900 via-zinc-800 to-gray-900 text-white rounded-xl shadow-xl transform hover:-translate-y-1 transition-transform duration-300">
-      <div className="p-5">
-        <div className="flex items-start gap-3 mb-4">
-          <Cookie size={24} className="text-white flex-shrink-0 mt-0.5" />
-          <p className="text-sm font-light text-white/90 font-sans">
-            We use cookies to enhance your experience while prioritizing your privacy and data protection. 
-            By continuing to visit this site you agree to our use of cookies.
-          </p>
+    <div className="fixed bottom-1 left-1 right-1 z-50 mx-1">
+      {/* Glassmorphic Container */}
+      <div className="relative backdrop-blur-xl bg-gradient-to-br from-gray-800/80 via-gray-700/70 to-gray-900/80 border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+        {/* Animated Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/10"></div>
         </div>
-        <div className="flex gap-3">
-          <button
-            onClick={handleAccept}
-            className="flex-1 py-2 bg-white text-black rounded-lg text-sm font-light tracking-wide hover:bg-gray-100 transition-colors"
-          >
-            Accept
-          </button>
-          <button
-            onClick={handleLearnMore}
-            className="flex-1 py-2 border border-white/30 rounded-lg text-sm font-light tracking-wide hover:bg-white/10 transition-colors"
-          >
-            Learn More
-          </button>
+
+        {/* Content */}
+        <div className="relative z-10 p-6 flex items-center justify-between gap-6">
+          {/* Left: Rotating Logo */}
+          <div className="flex-shrink-0">
+            <div className="relative w-16 h-16">
+              {/* Rotating logo container */}
+              <img
+                src="https://i.ibb.co/DPF5g3Sk/iu42DU1.png"
+                alt="PrivateCharterX"
+                className="w-full h-full object-contain animate-spin-slow"
+              />
+            </div>
+          </div>
+
+          {/* Middle: Text Content */}
+          <div className="flex-1 flex items-center gap-4">
+            <Cookie size={24} className="text-white/90 flex-shrink-0 hidden sm:block" />
+            <p className="text-sm font-light text-white/90 leading-relaxed">
+              We use cookies to enhance your experience while prioritizing your privacy and data protection.
+              By continuing to visit this site you agree to our use of cookies.
+            </p>
+          </div>
+
+          {/* Right: Buttons */}
+          <div className="flex gap-3 flex-shrink-0">
+            <button
+              onClick={handleAccept}
+              className="px-6 py-2.5 bg-white text-black rounded-lg text-sm font-medium hover:bg-gray-100 transition-all duration-200 hover:scale-105 shadow-lg"
+            >
+              Accept
+            </button>
+            <button
+              onClick={handleLearnMore}
+              className="px-6 py-2.5 border border-white/30 backdrop-blur-sm bg-white/5 text-white rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
+            >
+              Learn More
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* CSS for slow rotation animation */}
+      <style jsx>{`
+        @keyframes spin-slow {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        .animate-spin-slow {
+          animation: spin-slow 8s linear infinite;
+        }
+      `}</style>
     </div>
   );
 }
