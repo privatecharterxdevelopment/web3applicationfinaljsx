@@ -3,18 +3,18 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Auth0Provider } from '@auth0/auth0-react';
 import App from './components/Landingpagenew/App.tsx';
-import { initializeFaceCollection } from './services/awsFaceService';
+// import { initializeFaceCollection } from './services/awsFaceService';
 import './index.css';
 import './i18n';
 
-// Initialize AWS Face Collection on app start
-initializeFaceCollection().then((result) => {
-  if (result.success) {
-    console.log('✅ AWS Face Collection initialized');
-  } else {
-    console.error('❌ Failed to initialize AWS Face Collection:', result.error);
-  }
-});
+// Face ID disabled - AWS Face Collection initialization commented out
+// initializeFaceCollection().then((result) => {
+//   if (result.success) {
+//     console.log('✅ AWS Face Collection initialized');
+//   } else {
+//     console.error('❌ Failed to initialize AWS Face Collection:', result.error);
+//   }
+// });
 
 // Create a client
 const queryClient = new QueryClient();

@@ -9,7 +9,10 @@ ADD COLUMN IF NOT EXISTS payment_method TEXT CHECK (payment_method IN ('iban', '
 ADD COLUMN IF NOT EXISTS iban TEXT,
 ADD COLUMN IF NOT EXISTS wallet_address TEXT,
 ADD COLUMN IF NOT EXISTS stripe_account_id TEXT,
-ADD COLUMN IF NOT EXISTS partner_verified BOOLEAN DEFAULT FALSE;
+ADD COLUMN IF NOT EXISTS partner_verified BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS logo_url TEXT,
+ADD COLUMN IF NOT EXISTS biography TEXT,
+ADD COLUMN IF NOT EXISTS phone TEXT;
 
 -- 2. Create partner_details table for KYC/AML data
 CREATE TABLE IF NOT EXISTS partner_details (
@@ -89,14 +92,14 @@ CREATE TABLE IF NOT EXISTS partner_services (
 
   -- Timestamps
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-
-  -- Indexes
-  INDEX idx_partner_services_partner_id (partner_id),
-  INDEX idx_partner_services_status (status),
-  INDEX idx_partner_services_location (city, country),
-  INDEX idx_partner_services_type (service_type)
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Create indexes for partner_services
+CREATE INDEX IF NOT EXISTS idx_partner_services_partner_id ON partner_services(partner_id);
+CREATE INDEX IF NOT EXISTS idx_partner_services_status ON partner_services(status);
+CREATE INDEX IF NOT EXISTS idx_partner_services_location ON partner_services(city, country);
+CREATE INDEX IF NOT EXISTS idx_partner_services_type ON partner_services(service_type);
 
 -- 4. Create partner_bookings table
 CREATE TABLE IF NOT EXISTS partner_bookings (
@@ -138,14 +141,14 @@ CREATE TABLE IF NOT EXISTS partner_bookings (
 
   -- Timestamps
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-
-  -- Indexes
-  INDEX idx_partner_bookings_partner_id (partner_id),
-  INDEX idx_partner_bookings_customer_id (customer_id),
-  INDEX idx_partner_bookings_status (status),
-  INDEX idx_partner_bookings_date (booking_date)
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Create indexes for partner_bookings
+CREATE INDEX IF NOT EXISTS idx_partner_bookings_partner_id ON partner_bookings(partner_id);
+CREATE INDEX IF NOT EXISTS idx_partner_bookings_customer_id ON partner_bookings(customer_id);
+CREATE INDEX IF NOT EXISTS idx_partner_bookings_status ON partner_bookings(status);
+CREATE INDEX IF NOT EXISTS idx_partner_bookings_date ON partner_bookings(booking_date);
 
 -- 5. Create partner_notifications table
 CREATE TABLE IF NOT EXISTS partner_notifications (
@@ -164,12 +167,12 @@ CREATE TABLE IF NOT EXISTS partner_notifications (
   read_at TIMESTAMP WITH TIME ZONE,
 
   -- Timestamps
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-
-  -- Indexes
-  INDEX idx_partner_notifications_partner_id (partner_id),
-  INDEX idx_partner_notifications_read (read)
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Create indexes for partner_notifications
+CREATE INDEX IF NOT EXISTS idx_partner_notifications_partner_id ON partner_notifications(partner_id);
+CREATE INDEX IF NOT EXISTS idx_partner_notifications_read ON partner_notifications(read);
 
 -- 6. Create partner_payouts table
 CREATE TABLE IF NOT EXISTS partner_payouts (
@@ -197,12 +200,12 @@ CREATE TABLE IF NOT EXISTS partner_payouts (
 
   -- Timestamps
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-
-  -- Indexes
-  INDEX idx_partner_payouts_partner_id (partner_id),
-  INDEX idx_partner_payouts_status (status)
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Create indexes for partner_payouts
+CREATE INDEX IF NOT EXISTS idx_partner_payouts_partner_id ON partner_payouts(partner_id);
+CREATE INDEX IF NOT EXISTS idx_partner_payouts_status ON partner_payouts(status);
 
 -- 7. Enable Row Level Security (RLS)
 ALTER TABLE partner_details ENABLE ROW LEVEL SECURITY;
@@ -211,42 +214,52 @@ ALTER TABLE partner_bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE partner_notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE partner_payouts ENABLE ROW LEVEL SECURITY;
 
--- 8. Create RLS Policies
+-- 8. Create RLS Policies (Drop existing first to avoid conflicts)
 
 -- Partner Details: Partners can view/update their own, admins can view all
+DROP POLICY IF EXISTS "Partners can view own details" ON partner_details;
 CREATE POLICY "Partners can view own details" ON partner_details
   FOR SELECT USING (auth.uid() = user_id OR EXISTS (
     SELECT 1 FROM users WHERE id = auth.uid() AND user_role = 'admin'
   ));
 
+DROP POLICY IF EXISTS "Partners can update own details" ON partner_details;
 CREATE POLICY "Partners can update own details" ON partner_details
   FOR UPDATE USING (auth.uid() = user_id);
 
 -- Partner Services: Partners manage their own, customers can view approved
+DROP POLICY IF EXISTS "Partners can manage own services" ON partner_services;
 CREATE POLICY "Partners can manage own services" ON partner_services
   FOR ALL USING (auth.uid() = partner_id);
 
+DROP POLICY IF EXISTS "Users can view approved services" ON partner_services;
 CREATE POLICY "Users can view approved services" ON partner_services
   FOR SELECT USING (status = 'approved' OR auth.uid() = partner_id);
 
 -- Partner Bookings: Partners see their bookings, customers see their bookings
+DROP POLICY IF EXISTS "Partners can view own bookings" ON partner_bookings;
 CREATE POLICY "Partners can view own bookings" ON partner_bookings
   FOR SELECT USING (auth.uid() = partner_id OR auth.uid() = customer_id);
 
+DROP POLICY IF EXISTS "Customers can create bookings" ON partner_bookings;
 CREATE POLICY "Customers can create bookings" ON partner_bookings
   FOR INSERT WITH CHECK (auth.uid() = customer_id);
 
+DROP POLICY IF EXISTS "Partners can update booking status" ON partner_bookings;
 CREATE POLICY "Partners can update booking status" ON partner_bookings
   FOR UPDATE USING (auth.uid() = partner_id);
 
 -- Partner Notifications: Partners see their own notifications
+DROP POLICY IF EXISTS "Partners can view own notifications" ON partner_notifications;
 CREATE POLICY "Partners can view own notifications" ON partner_notifications
   FOR SELECT USING (auth.uid() = partner_id);
 
+DROP POLICY IF EXISTS "Partners can update own notifications" ON partner_notifications;
 CREATE POLICY "Partners can update own notifications" ON partner_notifications
   FOR UPDATE USING (auth.uid() = partner_id);
 
 -- Partner Payouts: Partners see their own payouts
+DROP POLICY IF EXISTS "Partners can view own payouts" ON partner_payouts;
 CREATE POLICY "Partners can view own payouts" ON partner_payouts
   FOR SELECT USING (auth.uid() = partner_id);
 
@@ -259,15 +272,19 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_partner_details_updated_at ON partner_details;
 CREATE TRIGGER update_partner_details_updated_at BEFORE UPDATE ON partner_details
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_partner_services_updated_at ON partner_services;
 CREATE TRIGGER update_partner_services_updated_at BEFORE UPDATE ON partner_services
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_partner_bookings_updated_at ON partner_bookings;
 CREATE TRIGGER update_partner_bookings_updated_at BEFORE UPDATE ON partner_bookings
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_partner_payouts_updated_at ON partner_payouts;
 CREATE TRIGGER update_partner_payouts_updated_at BEFORE UPDATE ON partner_payouts
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -281,3 +298,29 @@ COMMENT ON TABLE partner_services IS 'Services offered by partners (auto, taxi, 
 COMMENT ON TABLE partner_bookings IS 'Booking requests and confirmations between customers and partners';
 COMMENT ON TABLE partner_notifications IS 'Location-based notifications for partners';
 COMMENT ON TABLE partner_payouts IS 'Payout tracking for partners via IBAN or crypto wallet';
+
+-- 11. MANUAL SETUP REQUIRED: Storage Bucket for Partner Logos
+-- ============================================================
+-- After running this migration, create a storage bucket in Supabase Dashboard:
+--
+-- Bucket name: partner-logos
+-- Settings:
+--   - Public: YES (allow public access to logo images)
+--   - File size limit: 2MB
+--   - Allowed MIME types: image/jpeg, image/png, image/webp, image/gif
+--
+-- RLS Policies for partner-logos bucket:
+--   1. Allow authenticated partners to upload their own logos
+--   2. Allow public read access to all logos
+--
+-- Run these commands in Supabase SQL Editor after creating the bucket:
+--
+-- INSERT INTO storage.buckets (id, name, public) VALUES ('partner-logos', 'partner-logos', true) ON CONFLICT DO NOTHING;
+--
+-- CREATE POLICY "Partners can upload own logos" ON storage.objects
+--   FOR INSERT TO authenticated
+--   WITH CHECK (bucket_id = 'partner-logos' AND auth.uid()::text = (storage.foldername(name))[1]);
+--
+-- CREATE POLICY "Anyone can view logos" ON storage.objects
+--   FOR SELECT TO public
+--   USING (bucket_id = 'partner-logos');

@@ -1,0 +1,433 @@
+/**
+ * Stripe Connect Webhook Handler
+ *
+ * Listens for Stripe Connect events and updates database accordingly
+ *
+ * Events handled:
+ * - account.updated - Partner verification status changes
+ * - account.application.deauthorized - Partner disconnects account
+ * - transfer.created - Money transferred to partner
+ * - transfer.failed - Transfer to partner failed
+ * - payout.paid - Partner received payout
+ * - payout.failed - Payout failed
+ */
+
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const { createClient } = require('@supabase/supabase-js');
+
+const supabase = createClient(
+  process.env.VITE_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+const WEBHOOK_SECRET = process.env.STRIPE_CONNECT_WEBHOOK_SECRET;
+
+/**
+ * Main webhook handler
+ */
+async function handleStripeConnectWebhook(req, res) {
+  const sig = req.headers['stripe-signature'];
+  let event;
+
+  try {
+    // Verify webhook signature
+    event = stripe.webhooks.constructEvent(
+      req.rawBody || req.body,
+      sig,
+      WEBHOOK_SECRET
+    );
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  console.log(`[Webhook] Received event: ${event.type}`);
+
+  // Handle the event
+  try {
+    switch (event.type) {
+      case 'account.updated':
+        await handleAccountUpdated(event.data.object);
+        break;
+
+      case 'account.application.deauthorized':
+        await handleAccountDeauthorized(event.data.object);
+        break;
+
+      case 'transfer.created':
+        await handleTransferCreated(event.data.object);
+        break;
+
+      case 'transfer.updated':
+        await handleTransferUpdated(event.data.object);
+        break;
+
+      case 'transfer.failed':
+        await handleTransferFailed(event.data.object);
+        break;
+
+      case 'payout.paid':
+        await handlePayoutPaid(event.data.object);
+        break;
+
+      case 'payout.failed':
+        await handlePayoutFailed(event.data.object);
+        break;
+
+      default:
+        console.log(`[Webhook] Unhandled event type: ${event.type}`);
+    }
+
+    res.json({ received: true });
+  } catch (error) {
+    console.error(`[Webhook] Error handling ${event.type}:`, error);
+    res.status(500).json({ error: 'Webhook handler failed' });
+  }
+}
+
+/**
+ * Handle account.updated event
+ * Updates partner verification status when Stripe verifies identity
+ */
+async function handleAccountUpdated(account) {
+  console.log(`[Webhook] Account updated: ${account.id}`);
+
+  const verificationStatus = getVerificationStatus(account);
+  const chargesEnabled = account.charges_enabled || false;
+  const payoutsEnabled = account.payouts_enabled || false;
+  const detailsSubmitted = account.details_submitted || false;
+
+  // Find partner by Stripe account ID
+  const { data: partner, error: findError } = await supabase
+    .from('users')
+    .select('id, email, first_name, last_name')
+    .eq('stripe_connect_account_id', account.id)
+    .single();
+
+  if (findError || !partner) {
+    console.error('[Webhook] Partner not found for account:', account.id);
+    return;
+  }
+
+  // Update users table
+  const { error: updateError } = await supabase
+    .from('users')
+    .update({
+      stripe_onboarding_completed: detailsSubmitted,
+      stripe_details_submitted: detailsSubmitted,
+      stripe_charges_enabled: chargesEnabled,
+      stripe_payouts_enabled: payoutsEnabled,
+      stripe_verification_status: verificationStatus,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', partner.id);
+
+  if (updateError) {
+    console.error('[Webhook] Error updating user:', updateError);
+  }
+
+  // Update partner_stripe_accounts table
+  await supabase
+    .from('partner_stripe_accounts')
+    .update({
+      onboarding_completed: detailsSubmitted,
+      details_submitted: detailsSubmitted,
+      charges_enabled: chargesEnabled,
+      payouts_enabled: payoutsEnabled,
+      card_payments_enabled: account.capabilities?.card_payments === 'active',
+      transfers_enabled: account.capabilities?.transfers === 'active',
+      verification_status: verificationStatus,
+      verification_fields_needed: account.requirements?.currently_due || [],
+      verification_due_by: account.requirements?.current_deadline
+        ? new Date(account.requirements.current_deadline * 1000).toISOString()
+        : null,
+      last_sync_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .eq('stripe_account_id', account.id);
+
+  // Send notification to partner if verification status changed
+  if (verificationStatus === 'verified' && chargesEnabled && payoutsEnabled) {
+    await supabase
+      .from('partner_notifications')
+      .insert({
+        partner_id: partner.id,
+        type: 'service_approved',
+        title: 'Account Verified!',
+        message: 'Congratulations! Your Stripe account has been verified. You can now start receiving bookings and payments.',
+        read: false
+      });
+
+    console.log(`[Webhook] Partner ${partner.id} verified successfully`);
+  } else if (verificationStatus === 'rejected') {
+    await supabase
+      .from('partner_notifications')
+      .insert({
+        partner_id: partner.id,
+        type: 'service_rejected',
+        title: 'Verification Failed',
+        message: 'Your Stripe account verification failed. Please check your email from Stripe for more details and resubmit your information.',
+        read: false
+      });
+
+    console.log(`[Webhook] Partner ${partner.id} verification rejected`);
+  }
+}
+
+/**
+ * Handle account.application.deauthorized event
+ * Partner has disconnected their Stripe account
+ */
+async function handleAccountDeauthorized(account) {
+  console.log(`[Webhook] Account deauthorized: ${account.id}`);
+
+  const { data: partner } = await supabase
+    .from('users')
+    .select('id')
+    .eq('stripe_connect_account_id', account.id)
+    .single();
+
+  if (partner) {
+    // Mark account as disconnected
+    await supabase
+      .from('users')
+      .update({
+        stripe_connect_account_id: null,
+        stripe_charges_enabled: false,
+        stripe_payouts_enabled: false,
+        stripe_verification_status: 'unverified',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', partner.id);
+
+    // Notify partner
+    await supabase
+      .from('partner_notifications')
+      .insert({
+        partner_id: partner.id,
+        type: 'service_rejected',
+        title: 'Stripe Account Disconnected',
+        message: 'Your Stripe account has been disconnected. Please reconnect to continue receiving payments.',
+        read: false
+      });
+  }
+}
+
+/**
+ * Handle transfer.created event
+ * Money is being transferred to partner
+ */
+async function handleTransferCreated(transfer) {
+  console.log(`[Webhook] Transfer created: ${transfer.id} for ${transfer.amount / 100} ${transfer.currency}`);
+
+  const bookingId = transfer.metadata?.booking_id;
+  const partnerId = transfer.metadata?.partner_id;
+
+  if (bookingId) {
+    await supabase
+      .from('partner_bookings')
+      .update({
+        stripe_transfer_id: transfer.id,
+        stripe_transfer_status: 'processing',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', bookingId);
+
+    await supabase
+      .from('partner_earnings')
+      .update({
+        stripe_transfer_id: transfer.id,
+        stripe_transfer_status: 'processing',
+        updated_at: new Date().toISOString()
+      })
+      .eq('booking_id', bookingId);
+  }
+}
+
+/**
+ * Handle transfer.updated event
+ * Transfer status updated
+ */
+async function handleTransferUpdated(transfer) {
+  console.log(`[Webhook] Transfer updated: ${transfer.id}`);
+
+  const bookingId = transfer.metadata?.booking_id;
+
+  if (bookingId && transfer.reversed === false) {
+    const status = 'completed';
+
+    await supabase
+      .from('partner_bookings')
+      .update({
+        stripe_transfer_status: status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', bookingId);
+
+    await supabase
+      .from('partner_earnings')
+      .update({
+        stripe_transfer_status: status,
+        status: 'paid',
+        paid_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('booking_id', bookingId);
+  }
+}
+
+/**
+ * Handle transfer.failed event
+ * Transfer to partner failed
+ */
+async function handleTransferFailed(transfer) {
+  console.error(`[Webhook] Transfer failed: ${transfer.id}`);
+
+  const bookingId = transfer.metadata?.booking_id;
+  const partnerId = transfer.metadata?.partner_id;
+
+  if (bookingId) {
+    await supabase
+      .from('partner_bookings')
+      .update({
+        stripe_transfer_status: 'failed',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', bookingId);
+
+    await supabase
+      .from('partner_earnings')
+      .update({
+        stripe_transfer_status: 'failed',
+        status: 'failed',
+        failed_reason: transfer.failure_message || 'Transfer failed',
+        updated_at: new Date().toISOString()
+      })
+      .eq('booking_id', bookingId);
+
+    // Notify partner
+    if (partnerId) {
+      await supabase
+        .from('partner_notifications')
+        .insert({
+          partner_id: partnerId,
+          booking_id: bookingId,
+          type: 'payment_received', // Use existing type
+          title: 'Payment Transfer Failed',
+          message: `Payment transfer for booking #${bookingId.slice(0, 8)} failed. Please contact support.`,
+          read: false
+        });
+    }
+  }
+}
+
+/**
+ * Handle payout.paid event
+ * Partner received their daily payout
+ */
+async function handlePayoutPaid(payout) {
+  console.log(`[Webhook] Payout paid: ${payout.id} for ${payout.amount / 100} ${payout.currency}`);
+
+  // Find partner by Stripe account ID
+  const { data: partner } = await supabase
+    .from('users')
+    .select('id')
+    .eq('stripe_connect_account_id', payout.destination || payout.account)
+    .single();
+
+  if (partner) {
+    // Update partner_earnings with payout ID
+    await supabase
+      .from('partner_earnings')
+      .update({
+        stripe_payout_id: payout.id,
+        updated_at: new Date().toISOString()
+      })
+      .eq('partner_id', partner.id)
+      .eq('status', 'paid')
+      .is('stripe_payout_id', null);
+
+    // Notify partner
+    await supabase
+      .from('partner_notifications')
+      .insert({
+        partner_id: partner.id,
+        type: 'payment_received',
+        title: 'Payout Received',
+        message: `Your daily payout of ${payout.currency.toUpperCase()} ${(payout.amount / 100).toFixed(2)} has been sent to your bank account.`,
+        read: false
+      });
+  }
+}
+
+/**
+ * Handle payout.failed event
+ * Payout to partner failed
+ */
+async function handlePayoutFailed(payout) {
+  console.error(`[Webhook] Payout failed: ${payout.id}`);
+
+  const { data: partner } = await supabase
+    .from('users')
+    .select('id, email')
+    .eq('stripe_connect_account_id', payout.destination || payout.account)
+    .single();
+
+  if (partner) {
+    // Notify partner
+    await supabase
+      .from('partner_notifications')
+      .insert({
+        partner_id: partner.id,
+        type: 'service_rejected', // Use existing type for failures
+        title: 'Payout Failed',
+        message: `Your payout failed. Reason: ${payout.failure_message || 'Unknown error'}. Please update your bank account details.`,
+        read: false
+      });
+
+    console.error(`[Webhook] Payout failed for partner ${partner.id}:`, payout.failure_message);
+  }
+}
+
+// ============================================================
+// Helper Functions
+// ============================================================
+
+function getVerificationStatus(account) {
+  if (!account.details_submitted) return 'unverified';
+  if (account.requirements?.currently_due?.length > 0 ||
+      account.requirements?.past_due?.length > 0) {
+    return 'pending';
+  }
+  if (account.charges_enabled && account.payouts_enabled) {
+    return 'verified';
+  }
+  if (account.requirements?.disabled_reason) {
+    return 'rejected';
+  }
+  return 'pending';
+}
+
+// ============================================================
+// Export
+// ============================================================
+
+module.exports = {
+  handleStripeConnectWebhook
+};
+
+// ============================================================
+// Example Express.js Route
+// ============================================================
+/*
+const express = require('express');
+const router = express.Router();
+
+router.post(
+  '/webhooks/stripe-connect',
+  express.raw({ type: 'application/json' }), // Important: raw body for signature verification
+  handleStripeConnectWebhook
+);
+
+module.exports = router;
+*/

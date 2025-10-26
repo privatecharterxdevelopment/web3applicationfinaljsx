@@ -603,6 +603,56 @@ function Homepage() {
           </div>
         </section>
 
+        {/* Become a Partner Banner */}
+        <section className="px-4 sm:px-8 py-12 max-w-6xl mx-auto">
+          <div className="bg-white rounded-2xl px-8 py-12 border border-gray-200 shadow-sm">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+              {/* Left: Content */}
+              <div className="flex-1">
+                <div className="mb-4 flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-medium tracking-wide uppercase">
+                    Partner Program
+                  </span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-light text-gray-900 mb-4 leading-tight">
+                  Become a Partner
+                  <br />
+                  <span className="text-gray-400">Expand Your Business</span>
+                </h2>
+                <p className="text-gray-600 text-sm sm:text-base leading-relaxed max-w-xl mb-6">
+                  List your services on our platform. Offer luxury cars, taxis, adventure packages, or limousine services to our global clientele. Receive location-based booking notifications and grow your revenue.
+                </p>
+                <div className="flex flex-wrap gap-4 mb-6">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-sm text-gray-700">Global Exposure</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-sm text-gray-700">Secure Payments</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-sm text-gray-700">Easy Management</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: CTA */}
+              <div className="flex flex-col items-center md:items-end gap-4">
+                <button
+                  onClick={handleGetStarted}
+                  className="bg-gray-900 text-white px-8 py-3 rounded-lg text-sm font-medium hover:bg-black transition-all duration-300 hover:scale-105 shadow-lg flex items-center gap-2"
+                >
+                  Join as Partner
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                <p className="text-xs text-gray-500">Start listing your services today</p>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* All-in-one Global Mobility Platform */}
         <section className="px-4 sm:px-8 py-12 sm:py-20 max-w-6xl mx-auto">

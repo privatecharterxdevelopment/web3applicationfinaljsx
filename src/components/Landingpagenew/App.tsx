@@ -111,6 +111,9 @@ import Marketplace from '../../services/Marketplace.tsx';
 // Import the new unified booking flow instead of separate components
 import UnifiedBookingFlow from '../../components/UnifiedBookingFlow.tsx';
 
+// Import Partner components
+import PartnerDashboard from '../../components/PartnerDashboard.tsx';
+
 import { supabase } from '../../lib/supabase.ts';
 
 // ===== WAGMI/REOWN CONFIGURATION =====
@@ -278,6 +281,9 @@ function AppContent() {
 
               {/* User Dashboard Route */}
               <Route path="/tokenized-assets/dashboard" element={<Dashboard />} />
+
+              {/* Partner Dashboard Route */}
+              <Route path="/partner-dashboard" element={<PartnerDashboard />} />
 
               {/* Charter a Jet Route */}
               <Route path="/charter-a-jet" element={<CharterAJet />} />

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, Clock, Loader2, Shield, FileText, Wallet, Download, ExternalLink, Plane, Euro, Leaf, AlertTriangle, Copy, ArrowRight } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
+import { supabase } from '../lib/supabase';
 import Logo from './Logo';
 import NavigationMenu from './NavigationMenu';
 import UserMenu from './UserMenu';
@@ -9,14 +9,9 @@ import WalletMenu from './WalletMenu';
 
 // Configuration - replace with your actual values
 const config = {
-  SUPABASE_URL: 'https://oubecmstqtzdnevyqavu.supabase.co',
-  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91YmVjbXN0cXR6ZG5ldnlxYXZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEwOTc0MTIsImV4cCI6MjA2NjY3MzQxMn0.CQTa4WE0oGF8y5xm3CSeyK6O3fcxhpJv50l_xvHKQfs',
   CONTRACT_ADDRESS: "0x742d35Cc643C0532F8e5b0d6a7f6b8a09c128a9c",
   ADMIN_WALLET: "0x150328862D9EbEdc7Dc2C98c26Ae0def05bbAA3D"
 };
-
-// Initialize Supabase
-const supabase = createClient(config.SUPABASE_URL, config.SUPABASE_ANON_KEY);
 
 // Smart Contract Configuration
 const CONTRACT_ADDRESS = config.CONTRACT_ADDRESS;

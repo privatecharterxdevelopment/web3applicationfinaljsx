@@ -9,6 +9,7 @@ import { checkFaceAuthEnabled } from '../services/faceAuthService';
 interface LoginModalProps {
   onClose: () => void;
   onSwitchToRegister: () => void;
+  onSwitchToPartnerRegister?: () => void;
   onSuccess?: () => void;
   onSwitchToForgotPassword?: () => void;
 }
@@ -29,6 +30,7 @@ const videos = [
 export default function LoginModal({
   onClose,
   onSwitchToRegister,
+  onSwitchToPartnerRegister,
   onSuccess,
   onSwitchToForgotPassword
 }: LoginModalProps) {
@@ -202,28 +204,30 @@ export default function LoginModal({
               </div>
 
               {/* Links */}
-              <div className="flex justify-between items-center text-xs mb-4">
-                <button
-                  type="button"
-                  onClick={onSwitchToRegister}
-                  className="text-gray-500 hover:text-gray-900 transition-colors font-light"
-                >
-                  Create account
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (onSwitchToForgotPassword) {
-                      onSwitchToForgotPassword();
-                    } else {
-                      onClose();
-                      navigate('/reset-password');
-                    }
-                  }}
-                  className="text-gray-500 hover:text-gray-900 transition-colors font-light"
-                >
-                  Forgot password?
-                </button>
+              <div className="flex flex-col gap-2 text-xs mb-4">
+                <div className="flex justify-between items-center">
+                  <button
+                    type="button"
+                    onClick={onSwitchToRegister}
+                    className="text-gray-500 hover:text-gray-900 transition-colors font-light"
+                  >
+                    Create account
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onSwitchToForgotPassword) {
+                        onSwitchToForgotPassword();
+                      } else {
+                        onClose();
+                        navigate('/reset-password');
+                      }
+                    }}
+                    className="text-gray-500 hover:text-gray-900 transition-colors font-light"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
               </div>
 
               {/* Sign In Button - Monochromatic */}

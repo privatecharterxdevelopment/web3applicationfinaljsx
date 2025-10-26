@@ -1,8 +1,7 @@
 import React from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
-import AITravelAgentChat from '../../components/AITravelAgentChat';
-import { VoiceProvider } from '@humeai/voice-react';
+import AIChatComingSoon from '../../components/AIChatComingSoon';
 
 interface TravelService {
   id: string;
@@ -52,12 +51,7 @@ export default function AITravelAgent() {
 
           {/* Chat Interface */}
           <div className="max-w-4xl mx-auto bg-transparent rounded-xl overflow-hidden">
-            <VoiceProvider
-              apiKey={import.meta.env.VITE_REACT_APP_HUME_API_KEY}
-              apiSecret={import.meta.env.VITE_REACT_APP_HUME_API_SECRET}
-            >
-              <AITravelAgentChat />
-            </VoiceProvider>
+            <AIChatComingSoon />
           </div>
 
           {/* Services Section */}

@@ -3,11 +3,27 @@ import { Mail, Lock, User, Phone, X, CheckCircle, ArrowRight } from 'lucide-reac
 import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import Portal from './Portal';
 import { supabase } from '../lib/supabase';
+import { VideoHero } from './auth';
 import FaceRegisterModal from './auth/FaceRegisterModal';
+
+// Same videos as LoginModalNew
+const videos = [
+  'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/moreVideos/8436362-uhd_3840_2160_30fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzg0MzYzNjItdWhkXzM4NDBfMjE2MF8zMGZwcy5tcDQiLCJpYXQiOjE3NjA5MTE2MjAsImV4cCI6Nzc1MjI5OTgwMjB9.ebROl6af5ZnN0T1Xd95tfZBwKmPhcCUl8oCsVAYwlMI',
+  'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/fucking%20videos/17324151-hd_1080_1920_30fps.mp4',
+  'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/moreVideos/7875576-hd_1920_1080_25fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzc4NzU1NzYtaGRfMTkyMF8xMDgwXzI1ZnBzLm1wNCIsImlhdCI6MTc2MDkxMzc2NiwiZXhwIjo3NzUyMzAwMDE2Nn0.acimIaa-fPSN47voHxAUiNjrkKjC98fo2aNQyVO0a-A',
+  'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/12427495_3840_2160_24fps.mp4',
+  'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/moreVideos/13736229-uhd_3840_2160_30fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzEzNzM2MjI5LXVoZF8zODQwXzIxNjBfMzBmcHMubXA0IiwiaWF0IjoxNzYwOTEyMTU3LCJleHAiOjc3NjUyNDI1NzU3fQ.Oq64TE_BAxshzy6AS9U5AnboXpjnQZWubm8HW5eGavs',
+  'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/moreVideos/13158911_4096_2160_50fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzEzMTU4OTExXzQwOTZfMjE2MF81MGZwcy5tcDQiLCJpYXQiOjE3NjA5MTIyNDUsImV4cCI6OTUxMzkyOTg0NX0.jM3JSo4Kyf27Hi5yiGGIK5mrtDnrCtUxA5vdFm7Rino',
+  'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/moreVideos/5673899-uhd_4096_2160_30fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzU2NzM4OTktdWhkXzQwOTZfMjE2MF8zMGZwcy5tcDQiLCJpYXQiOjE3NjA5MTI0MjYsImV4cCI6MTc5MjQ0ODQyNn0.YHofw-Rwow-p8VmZkyg-cDaxejMSvd14KnG8NoPxp2E',
+  'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/moreVideos/4415852-uhd_3840_2160_30fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzQ0MTU4NTItdWhkXzM4NDBfMjE2MF8zMGZwcy5tcDQiLCJpYXQiOjE3NjA5MTI1NDgsImV4cCI6MTc5MjQ0ODU0OH0.IBjgnpwZaf9pj47zgGIyCxIPlvs-lNo-Qqmbe8X9fsk',
+  'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/moreVideos/13167263_1080_1920_30fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzEzMTY3MjYzXzEwODBfMTkyMF8zMGZwcy5tcDQiLCJpYXQiOjE3NjA5MTM1NTcsImV4cCI6MTc5MjQ0OTU1N30.iDgNvEyF3i3S3F6GyPEDL52ZlJicj2GxVQuTRXXs5v0',
+  'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/moreVideos/19948847-uhd_3840_2160_60fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzE5OTQ4ODQ3LXVoZF8zODQwXzIxNjBfNjBmcHMubXA0IiwiaWF0IjoxNzYwOTEzNjY5LCJleHAiOjE3OTI0NDk2Njl9.F-uRmmODnG2dLtVGSunChWYYnE3RvUPtab3fhU8lhpQ'
+];
 
 interface RegisterModalNewProps {
   onClose: () => void;
   onSwitchToLogin: () => void;
+  onSwitchToPartnerRegister?: () => void;
   onSuccess?: () => void;
 }
 
@@ -141,9 +157,10 @@ function Step2WithRecaptcha({
 
         setCurrentStep('success');
 
-        // Show face registration choice after 2 seconds
+        // Auto-close after 2 seconds (Face ID disabled)
         setTimeout(() => {
-          setCurrentStep('face-choice');
+          if (onSuccess) onSuccess();
+          onClose();
         }, 2000);
       } else {
         setError(data?.error || 'Registration failed. Please try again.');
@@ -385,64 +402,9 @@ function Step2WithRecaptcha({
             </form>
           </div>
 
-          {/* RIGHT SIDE - Feature Preview */}
-          <div className="w-3/5 relative bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center overflow-hidden">
-            {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute inset-0" style={{
-                backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)',
-                backgroundSize: '40px 40px'
-              }} />
-            </div>
-
-            {/* Content */}
-            <div className="relative z-10 text-center text-white p-12">
-              <div className="mb-8">
-                <img
-                  src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/PrivatecharterX_logo_vectorized.glb.png"
-                  alt="PrivateCharterX"
-                  className="h-16 mx-auto mb-8 brightness-0 invert"
-                />
-              </div>
-
-              <h2 className="text-4xl font-bold mb-4">
-                Welcome to PrivateCharterX
-              </h2>
-              <p className="text-xl text-gray-300 mb-8 max-w-md mx-auto">
-                Experience luxury aviation with cutting-edge security
-              </p>
-
-              {/* Features */}
-              <div className="space-y-4 max-w-sm mx-auto text-left">
-                <div className="flex items-start gap-3">
-                  <CheckCircle size={24} className="text-emerald-400 flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-semibold mb-1">Biometric Security</h3>
-                    <p className="text-sm text-gray-400">
-                      Advanced face recognition for secure access
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle size={24} className="text-emerald-400 flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-semibold mb-1">Instant Booking</h3>
-                    <p className="text-sm text-gray-400">
-                      Book your private flights in seconds
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle size={24} className="text-emerald-400 flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-semibold mb-1">Premium Experience</h3>
-                    <p className="text-sm text-gray-400">
-                      Luxury aviation at your fingertips
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {/* RIGHT SIDE - Video Hero */}
+          <div className="w-3/5 relative">
+            <VideoHero videos={videos} interval={8000} />
           </div>
 
         </div>
@@ -455,6 +417,7 @@ function Step2WithRecaptcha({
 export default function RegisterModalNew({
   onClose,
   onSwitchToLogin,
+  onSwitchToPartnerRegister,
   onSuccess
 }: RegisterModalNewProps) {
   const [step, setStep] = useState<1 | 2>(1);
@@ -713,18 +676,41 @@ export default function RegisterModalNew({
               </div>
 
               {/* Links */}
-              <div className="flex justify-between items-center text-xs mb-4">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onSwitchToLogin();
-                  }}
-                  className="text-gray-500 hover:text-gray-900 transition-colors font-light cursor-pointer"
-                >
-                  Already have an account?
-                </button>
+              <div className="flex flex-col gap-2 text-xs mb-4">
+                <div className="flex justify-between items-center">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onSwitchToLogin();
+                    }}
+                    className="text-gray-500 hover:text-gray-900 transition-colors font-light cursor-pointer"
+                  >
+                    Already have an account?
+                  </button>
+                </div>
+
+                {/* Partner Registration Link */}
+                {onSwitchToPartnerRegister && (
+                  <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg">
+                    <div className="flex-1">
+                      <p className="text-gray-700 font-medium text-xs">Looking to offer services?</p>
+                      <p className="text-gray-500 text-[10px]">Join as a partner and list your services</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onSwitchToPartnerRegister();
+                      }}
+                      className="px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md hover:bg-black transition-colors whitespace-nowrap"
+                    >
+                      Become a Partner
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Next Button */}
@@ -751,64 +737,9 @@ export default function RegisterModalNew({
             </form>
           </div>
 
-          {/* RIGHT SIDE - Feature Preview */}
-          <div className="w-3/5 relative bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center overflow-hidden">
-            {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute inset-0" style={{
-                backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)',
-                backgroundSize: '40px 40px'
-              }} />
-            </div>
-
-            {/* Content */}
-            <div className="relative z-10 text-center text-white p-12">
-              <div className="mb-8">
-                <img
-                  src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/PrivatecharterX_logo_vectorized.glb.png"
-                  alt="PrivateCharterX"
-                  className="h-16 mx-auto mb-8 brightness-0 invert"
-                />
-              </div>
-
-              <h2 className="text-4xl font-bold mb-4">
-                Welcome to PrivateCharterX
-              </h2>
-              <p className="text-xl text-gray-300 mb-8 max-w-md mx-auto">
-                Experience luxury aviation with cutting-edge security
-              </p>
-
-              {/* Features */}
-              <div className="space-y-4 max-w-sm mx-auto text-left">
-                <div className="flex items-start gap-3">
-                  <CheckCircle size={24} className="text-emerald-400 flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-semibold mb-1">Biometric Security</h3>
-                    <p className="text-sm text-gray-400">
-                      Advanced face recognition for secure access
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle size={24} className="text-emerald-400 flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-semibold mb-1">Instant Booking</h3>
-                    <p className="text-sm text-gray-400">
-                      Book your private flights in seconds
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle size={24} className="text-emerald-400 flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-semibold mb-1">Premium Experience</h3>
-                    <p className="text-sm text-gray-400">
-                      Luxury aviation at your fingertips
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {/* RIGHT SIDE - Video Hero */}
+          <div className="w-3/5 relative">
+            <VideoHero videos={videos} interval={8000} />
           </div>
 
         </div>

@@ -21,6 +21,7 @@ import RegisterModal from '../RegisterModalNew';
 import ForgotPasswordModal from '../ForgotPasswordModal';
 import { ToastContainer } from '../Toast';
 import { useToast } from '../../hooks/useToast';
+import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3';
 import UnifiedBookingFlow from '../../components/UnifiedBookingFlow';
 import TokenizeAssetFlow from './TokenizeAssetFlow';
 import SPVFormationFlow from '../SPVFormation/SPVFormationFlow_NEW';
@@ -61,6 +62,8 @@ import Subscriptionplans from './Subscriptionplans';
 import AdminDashboardEnhanced from '../AdminDashboardEnhanced';
 import TaxiConciergeView from '../TaxiConcierge/TaxiConciergeView';
 import PVCXTokenView from '../PVCXTokenView';
+import PartnerDashboard from '../PartnerDashboard';
+import PartnerRegistrationModal from '../PartnerRegistrationModal';
 
 // Settings Page Component
 const SettingsPage = ({ user, kycStatus, setKycStatus, setActiveCategory }) => {
@@ -601,9 +604,10 @@ Happy travels!`,
 
 const TokenizedAssetsGlassmorphic = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user, profile } = useAuth();
+  const { isAuthenticated, user, profile, signOut } = useAuth();
   const { toasts, showToast, removeToast } = useToast();
   const [showDashboard, setShowDashboard] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [adventureSubmitting, setAdventureSubmitting] = useState(false);
   const [adventureSubmitSuccess, setAdventureSubmitSuccess] = useState(false);
   const [luxuryCarSubmitting, setLuxuryCarSubmitting] = useState(false);
@@ -632,6 +636,7 @@ const TokenizedAssetsGlassmorphic = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [showPartnerRegisterModal, setShowPartnerRegisterModal] = useState(false);
 
   // Search and UI states
   const [searchQuery, setSearchQuery] = useState('');
@@ -1059,6 +1064,18 @@ const TokenizedAssetsGlassmorphic = () => {
       setShowDashboard(false);
     }
   }, [isAuthenticated]);
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showProfileDropdown && !event.target.closest('.profile-dropdown-container')) {
+        setShowProfileDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showProfileDropdown]);
 
   // Initialize blog sync on mount
   useEffect(() => {
@@ -2352,6 +2369,17 @@ const TokenizedAssetsGlassmorphic = () => {
   // Active category menu based on webMode
   const categoryMenu = webMode === 'rws' ? rwsCategoryMenu : web3CategoryMenu;
 
+  // Partner menu - for partner-specific navigation
+  const partnerMenuBase = [
+    { id: 'overview', label: 'Dashboard', icon: Home, category: 'overview' },
+    { id: 'my-services', label: 'My Services', icon: Package, category: 'my-services' },
+    { id: 'bookings', label: 'Booking Requests', icon: FolderOpen, category: 'partner-bookings' },
+    { id: 'earnings', label: 'Earnings', icon: Award, category: 'partner-earnings' },
+    { id: 'profile', label: 'Profile', icon: User, category: 'dashboard', dashboardTab: 'profile' },
+    { id: 'chat-support', label: 'Chat Support', icon: MessageSquare, category: 'chat-support' },
+    { id: 'settings', label: 'Settings', icon: Settings, category: 'settings' }
+  ];
+
   // User menu - for sidebar navigation (dashboard-related items)
   const userMenuBase = [
     { id: 'overview', label: 'Overview', icon: Home, category: 'overview' },
@@ -2392,12 +2420,14 @@ const TokenizedAssetsGlassmorphic = () => {
     { id: 'kyc', label: 'KYC Verification', icon: Shield, category: 'kyc-verification' }
   ];
 
-  // Filter userMenu based on webMode
-  const userMenu = userMenuBase.filter(item => {
-    if (item.rwsOnly && webMode !== 'rws') return false;
-    if (item.web3Only && webMode !== 'web3') return false;
-    return true;
-  });
+  // Filter menu based on user role and webMode
+  const userMenu = user?.user_role === 'partner'
+    ? partnerMenuBase
+    : userMenuBase.filter(item => {
+        if (item.rwsOnly && webMode !== 'rws') return false;
+        if (item.web3Only && webMode !== 'web3') return false;
+        return true;
+      });
 
   const recentActivities = [
     { id: 1, title: 'Gulfstream G650 Charter', time: '23 hours' },
@@ -2639,11 +2669,9 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* Bottom Section - Expandable */}
           <div className="mt-auto pt-4 border-t border-gray-600/30 transition-all duration-300">
             {/* User Profile - Expandable with username and membership tier */}
-            <div className="relative px-2 group-hover:px-4 transition-all duration-300">
+            <div className="relative px-2 group-hover:px-4 transition-all duration-300 profile-dropdown-container">
               <button
-                onClick={() => {
-                  setActiveView('subscription');
-                }}
+                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                 className="w-10 group-hover:w-full h-10 rounded-full group-hover:rounded-lg flex items-center justify-center group-hover:justify-start group-hover:gap-3 group-hover:px-2 group-hover:bg-white/10 hover:bg-white/5 text-xs font-semibold transition-all duration-300"
                 title={user?.email?.split('@')[0] || 'User'}
               >
@@ -2651,15 +2679,70 @@ const TokenizedAssetsGlassmorphic = () => {
                   {user?.email?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <div className="hidden group-hover:flex flex-col items-start flex-1 text-left">
-                  <span className="text-xs font-semibold text-gray-900 truncate max-w-[120px]">
-                    {user?.email?.split('@')[0] || 'User'}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-gray-900 truncate max-w-[100px]">
+                      {user?.email?.split('@')[0] || 'User'}
+                    </span>
+                    {user?.user_role === 'partner' && (
+                      <span className="bg-gray-900 text-white text-[9px] px-1.5 py-0.5 rounded font-medium">
+                        Partner
+                      </span>
+                    )}
+                  </div>
                   <span className="text-[10px] text-gray-600 capitalize">
                     {subscriptionTier === 'explorer' ? 'Free' : subscriptionTier}
                   </span>
                 </div>
                 <ChevronRight size={14} className="hidden group-hover:block text-gray-400 flex-shrink-0" />
               </button>
+
+              {/* Profile Dropdown Menu */}
+              {showProfileDropdown && (
+                <div className="absolute bottom-full left-2 mb-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden z-50">
+                  <div className="p-3 border-b border-gray-100">
+                    <p className="text-xs font-semibold text-gray-900">{user?.email?.split('@')[0]}</p>
+                    <p className="text-[10px] text-gray-500">{user?.email}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      setActiveCategory('dashboard');
+                      setDashboardView('profile');
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <User size={12} />
+                    Profile Settings
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      setActiveView('subscription');
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <Crown size={12} />
+                    Subscription
+                  </button>
+                  <div className="border-t border-gray-100"></div>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await signOut();
+                        setShowProfileDropdown(false);
+                        navigate('/');
+                      } catch (error) {
+                        console.error('Sign out error:', error);
+                        showToast('Failed to sign out', 'error');
+                      }
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 font-medium"
+                  >
+                    <LogOut size={12} />
+                    Sign Out
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </aside>
@@ -2677,9 +2760,16 @@ const TokenizedAssetsGlassmorphic = () => {
             <div className="flex justify-between items-center px-8 py-3">
               {/* Dynamic Greeting */}
               <div className="flex items-center gap-4">
-                <span className={`text-lg font-semibold ${webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'}`}>
-                  Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {user?.email?.split('@')[0] || 'User'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-lg font-semibold ${webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'}`}>
+                    Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {user?.email?.split('@')[0] || 'User'}
+                  </span>
+                  {user?.user_role === 'partner' && (
+                    <span className="bg-gray-900 text-white text-xs px-2 py-1 rounded font-medium">
+                      Partner
+                    </span>
+                  )}
+                </div>
                 
                 {/* Chat Usage Counter - HIDDEN */}
                 {/* <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-xl border ${webMode === 'web3' ? 'bg-white/30 border-gray-300/50' : 'bg-white/35 border-gray-300/50'}`}>
@@ -2890,7 +2980,7 @@ const TokenizedAssetsGlassmorphic = () => {
             activeCategory === 'chat' ? 'hidden' : ''
           } ${
             webMode === 'web3' ? 'border-white/30' : 'border-gray-200/50'
-          }`}>
+          } ${user?.user_role === 'partner' ? 'hidden' : ''}`}>
             {categoryMenu
               .filter(item => {
                 // Hide "My DeFi Assets" bubble in Web3.0 mode (keep in sidebar only)
@@ -3430,8 +3520,13 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
-          {/* Overview Section (Chat Interface) */}
-          {!isTransitioning && activeCategory === 'overview' && (
+          {/* Partner Dashboard - Show for partner users */}
+          {!isTransitioning && activeCategory === 'overview' && user?.user_role === 'partner' && (
+            <PartnerDashboard user={user} onNavigate={setActiveCategory} />
+          )}
+
+          {/* Overview Section (Chat Interface) - Show for regular users */}
+          {!isTransitioning && activeCategory === 'overview' && user?.user_role !== 'partner' && (
             <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col">
               {/* Spacer to keep content centered */}
               <div className="mb-8"></div>
@@ -7811,6 +7906,10 @@ const TokenizedAssetsGlassmorphic = () => {
             setShowLoginModal(false);
             setShowRegisterModal(true);
           }}
+          onSwitchToPartnerRegister={() => {
+            setShowLoginModal(false);
+            setShowPartnerRegisterModal(true);
+          }}
           onSuccess={() => setShowLoginModal(false)}
           onSwitchToForgotPassword={() => {
             setShowLoginModal(false);
@@ -7825,6 +7924,10 @@ const TokenizedAssetsGlassmorphic = () => {
             setShowRegisterModal(false);
             setShowLoginModal(true);
           }}
+          onSwitchToPartnerRegister={() => {
+            setShowRegisterModal(false);
+            setShowPartnerRegisterModal(true);
+          }}
           onSuccess={() => setShowRegisterModal(false)}
         />
       )}
@@ -7837,6 +7940,20 @@ const TokenizedAssetsGlassmorphic = () => {
             setShowLoginModal(true);
           }}
         />
+      )}
+
+      {showPartnerRegisterModal && (
+        <GoogleReCaptchaProvider reCaptchaKey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}>
+          <PartnerRegistrationModal
+            isOpen={showPartnerRegisterModal}
+            onClose={() => setShowPartnerRegisterModal(false)}
+            onSuccess={() => {
+              setShowPartnerRegisterModal(false);
+              // Optionally show success message
+              showToast('Partner registration successful! Please wait for verification.', 'success');
+            }}
+          />
+        </GoogleReCaptchaProvider>
       )}
 
       {/* Toast Notifications */}
