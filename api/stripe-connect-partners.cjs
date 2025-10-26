@@ -18,7 +18,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(
-  process.env.VITE_SUPABASE_URL,
+  process.env.SUPABASE_URL || 'https://oubecmstqtzdnevyqavu.supabase.co',
   process.env.SUPABASE_SERVICE_ROLE_KEY // Use service role for backend operations
 );
 
