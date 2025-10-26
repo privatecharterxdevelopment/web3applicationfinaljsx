@@ -8,13 +8,21 @@ interface User {
   first_name?: string;
   last_name?: string;
   email_verified?: boolean;
-  user_role?: string;
+  user_role?: string; // 'user' | 'partner' | 'admin'
   created_at?: string;
   subscription_tier?: string;
   chat_limit?: number;
   chats_used?: number;
   referral_code?: string;
   successful_referrals?: number;
+  // Partner-specific fields
+  partner_type?: 'auto' | 'taxi' | 'adventure' | 'limousine' | 'other';
+  company_name?: string;
+  payment_method?: 'iban' | 'wallet';
+  iban?: string;
+  wallet_address?: string;
+  stripe_account_id?: string;
+  partner_verified?: boolean;
 }
 
 interface AuthContextType {
