@@ -105,6 +105,7 @@ async function logEmailSent({ templateId, recipientEmail, subject, status, error
 async function subscribe(req, res) {
   try {
     const { email, source = 'web' } = req.body;
+    console.log('📧 Newsletter subscribe request:', { email, source });
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return res.status(400).json({
@@ -113,12 +114,15 @@ async function subscribe(req, res) {
       });
     }
 
+    console.log('✅ Email validated, checking if exists...');
     // Check if email already exists
     const { data: existing } = await getSupabase()
       .from('newsletter_subscriptions')
       .select('*')
       .eq('email', email)
       .single();
+
+    console.log('📊 Existing subscriber check:', existing ? 'Found' : 'Not found');
 
     if (existing) {
       if (existing.status === 'unsubscribed') {
@@ -147,6 +151,7 @@ async function subscribe(req, res) {
     }
 
     // Create new subscription
+    console.log('➕ Creating new subscription...');
     const { data: subscription, error: subscriptionError } = await getSupabase()
       .from('newsletter_subscriptions')
       .insert({
@@ -158,7 +163,11 @@ async function subscribe(req, res) {
       .select()
       .single();
 
-    if (subscriptionError) throw subscriptionError;
+    if (subscriptionError) {
+      console.error('❌ Subscription error:', subscriptionError);
+      throw subscriptionError;
+    }
+    console.log('✅ Subscription created:', subscription.id);
 
     // Get welcome email template
     const { data: template } = await getSupabase()
@@ -213,10 +222,12 @@ async function subscribe(req, res) {
 
   } catch (error) {
     console.error('❌ Subscribe error:', error);
+    console.error('Error details:', JSON.stringify(error, null, 2));
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to subscribe. Please try again.',
-      debug: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: error.message || error.hint || error.details || 'Failed to subscribe. Please try again.',
+      errorCode: error.code,
+      errorDetails: error.details
     });
   }
 }
