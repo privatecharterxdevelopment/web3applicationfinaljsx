@@ -487,122 +487,6 @@ function Homepage() {
           </div>
         </section>
 
-        {/* Popular Jets Carousel */}
-        <section className="px-4 sm:px-8 py-12 sm:py-20 max-w-6xl mx-auto">
-          <div className="bg-white rounded-2xl px-8 py-12 border border-gray-200 shadow-sm">
-            <div className="text-center mb-16">
-              <h2 className="text-2xl sm:text-3xl font-light text-gray-900 mb-4 leading-tight">
-                Our Most Popular Jets
-              </h2>
-              <p className="text-sm sm:text-base text-gray-500 max-w-2xl mx-auto leading-relaxed px-4">
-                Discover our premium fleet of blockchain-verified private jets,
-                each tokenized for transparent ownership and flexible booking.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {jets.length > 0 ? jets.map((jet) => {
-              const jetImages = getAllJetImages(jet);
-              const currentImageIndex = cardImageIndexes[jet.id] || 0;
-              const hasMultipleImages = jetImages.length > 1;
-
-              return (
-                <div
-                  key={jet.id}
-                  className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer group flex flex-col h-full"
-                  onClick={() => handleJetClick(jet)}
-                >
-                  <div className="relative h-32 overflow-hidden">
-                    <img
-                      src={jetImages[currentImageIndex]}
-                      alt={`${jet.aircraft_model} - Image ${currentImageIndex + 1}`}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
-                    />
-
-                    {/* Gallery Controls - Only show if multiple images */}
-                    {hasMultipleImages && (
-                      <>
-                        {/* Previous Button */}
-                        <button
-                          onClick={(e) => prevCardImage(jet.id, e)}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center text-gray-700 hover:text-gray-900 hover:bg-white shadow-lg transition-all duration-200 z-10"
-                          title="Previous image"
-                        >
-                          <ChevronLeft size={16} />
-                        </button>
-
-                        {/* Next Button */}
-                        <button
-                          onClick={(e) => nextCardImage(jet.id, e)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center text-gray-700 hover:text-gray-900 hover:bg-white shadow-lg transition-all duration-200 z-10"
-                          title="Next image"
-                        >
-                          <ChevronRight size={16} />
-                        </button>
-
-                        {/* Image Indicators */}
-                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                          {jetImages.map((_, index) => (
-                            <div
-                              key={index}
-                              className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                                index === currentImageIndex
-                                  ? 'bg-white shadow-lg scale-110'
-                                  : 'bg-white/70'
-                              }`}
-                            />
-                          ))}
-                        </div>
-
-                        {/* Image Counter */}
-                        <div className="absolute top-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm">
-                          {currentImageIndex + 1}/{jetImages.length}
-                        </div>
-                      </>
-                    )}
-
-                    {/* Category Badge */}
-                    <div className="absolute top-3 left-3 bg-blue-500 text-white text-xs px-3 py-1 rounded-full">
-                      {jet.aircraft_category}
-                    </div>
-                  </div>
-
-                  <div className="p-4 sm:p-6 flex flex-col flex-grow">
-                    <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-4">{jet.aircraft_model}</h3>
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="text-xs text-gray-400">Range: {jet.range}</span>
-                      <span className="text-xs text-gray-400">Passengers: {jet.capacity}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs sm:text-sm font-medium text-gray-900">{jet.price_range}</span>
-                      <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Available</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            }) : (
-              // Loading placeholders
-              Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="bg-white border border-gray-200 rounded-xl overflow-hidden animate-pulse">
-                  <div className="h-32 bg-gray-200"></div>
-                  <div className="p-4 sm:p-6">
-                    <div className="h-5 bg-gray-200 rounded mb-4"></div>
-                    <div className="flex justify-between items-center mb-4">
-                      <div className="h-3 bg-gray-200 rounded w-16"></div>
-                      <div className="h-3 bg-gray-200 rounded w-20"></div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <div className="h-4 bg-gray-200 rounded w-20"></div>
-                      <div className="h-6 bg-gray-200 rounded w-16"></div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-            </div>
-          </div>
-        </section>
-
         {/* Become a Partner Banner */}
         <section className="px-4 sm:px-8 py-12 max-w-6xl mx-auto">
           <div className="bg-white rounded-2xl px-8 py-12 border border-gray-200 shadow-sm">
@@ -651,6 +535,81 @@ function Homepage() {
                 <p className="text-xs text-gray-500">Start listing your services today</p>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Crypto Payments & Ground Coordination */}
+        <section className="px-4 sm:px-8 py-12 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* Crypto Payments Card */}
+            <div
+              onClick={handleGetStarted}
+              className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-8"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center">
+                  <Coins className="w-6 h-6 text-gray-700" />
+                </div>
+                <h3 className="text-xl font-medium text-gray-900">Crypto Payments</h3>
+              </div>
+              <p className="text-gray-600 text-sm leading-relaxed mb-6">
+                Accept Bitcoin, Ethereum, and stablecoins for all your charter bookings. Seamless integration with Web3 wallets and instant settlement through smart contracts.
+              </p>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  <span className="text-sm text-gray-700">Multi-currency support (BTC, ETH, USDC)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  <span className="text-sm text-gray-700">Smart contract escrow protection</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  <span className="text-sm text-gray-700">Instant cross-border transactions</span>
+                </div>
+              </div>
+              <div className="mt-6 flex items-center text-gray-900 font-medium group-hover:gap-2 transition-all">
+                <span className="text-sm">Learn More</span>
+                <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+
+            {/* Ground Coordination Card */}
+            <div
+              onClick={handleGetStarted}
+              className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-8"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center">
+                  <Car className="w-6 h-6 text-gray-700" />
+                </div>
+                <h3 className="text-xl font-medium text-gray-900">Ground Coordination</h3>
+              </div>
+              <p className="text-gray-600 text-sm leading-relaxed mb-6">
+                Complete end-to-end ground transportation services. Luxury cars, helicopters, and concierge support integrated directly into your flight booking experience.
+              </p>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  <span className="text-sm text-gray-700">Private chauffeur & limousine service</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  <span className="text-sm text-gray-700">Helicopter transfers to/from airport</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  <span className="text-sm text-gray-700">24/7 concierge assistance</span>
+                </div>
+              </div>
+              <div className="mt-6 flex items-center text-gray-900 font-medium group-hover:gap-2 transition-all">
+                <span className="text-sm">Learn More</span>
+                <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+
           </div>
         </section>
 
