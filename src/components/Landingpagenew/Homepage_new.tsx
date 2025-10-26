@@ -538,11 +538,11 @@ function Homepage() {
           </div>
         </section>
 
-        {/* Crypto Payments & Ground Coordination */}
+        {/* Tokenize Your Travel Business & Ground Coordination */}
         <section className="px-4 sm:px-8 py-12 max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-            {/* Crypto Payments Card */}
+            {/* Tokenize Your Travel Business Card */}
             <div
               onClick={handleGetStarted}
               className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-8"
@@ -551,23 +551,23 @@ function Homepage() {
                 <div className="w-12 h-12 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center">
                   <Coins className="w-6 h-6 text-gray-700" />
                 </div>
-                <h3 className="text-xl font-medium text-gray-900">Crypto Payments</h3>
+                <h3 className="text-xl font-medium text-gray-900">Tokenize Your Travel Business</h3>
               </div>
               <p className="text-gray-600 text-sm leading-relaxed mb-6">
-                Accept Bitcoin, Ethereum, and stablecoins for all your charter bookings. Seamless integration with Web3 wallets and instant settlement through smart contracts.
+                Transform your travel company into a tokenized entity. Issue utility tokens, raise capital through fractional ownership, and unlock liquidity for your aviation or ground transportation business.
               </p>
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  <span className="text-sm text-gray-700">Multi-currency support (BTC, ETH, USDC)</span>
+                  <span className="text-sm text-gray-700">Fractional ownership & equity tokens</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  <span className="text-sm text-gray-700">Smart contract escrow protection</span>
+                  <span className="text-sm text-gray-700">Smart contract governance & voting rights</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  <span className="text-sm text-gray-700">Instant cross-border transactions</span>
+                  <span className="text-sm text-gray-700">Secondary market liquidity for investors</span>
                 </div>
               </div>
               <div className="mt-6 flex items-center text-gray-900 font-medium group-hover:gap-2 transition-all">
