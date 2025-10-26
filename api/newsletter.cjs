@@ -215,7 +215,8 @@ async function subscribe(req, res) {
     console.error('❌ Subscribe error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to subscribe. Please try again.'
+      error: error.message || 'Failed to subscribe. Please try again.',
+      debug: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 }
