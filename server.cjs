@@ -17,9 +17,9 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 // Import API modules
-const stripeConnectApi = require('./api/stripe-connect-partners');
-const stripeWebhook = require('./api/webhooks/stripe-connect-webhook');
-const newsletterApi = require('./api/newsletter');
+const stripeConnectApi = require('./api/stripe-connect-partners.cjs');
+const stripeWebhook = require('./api/webhooks/stripe-connect-webhook.cjs');
+const newsletterApi = require('./api/newsletter.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
