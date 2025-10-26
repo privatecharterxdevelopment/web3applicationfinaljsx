@@ -41,6 +41,7 @@ import AdminUserRequests from '../../pages/admin/UserRequests.tsx';
 import AdminKYCVerification from '../../pages/admin/KYCVerification.tsx';
 import AdminCO2Certificates from '../../pages/admin/CO2Certificates.tsx';
 import AdminManagement from '../../pages/admin/Management.tsx';
+import AdminNewsletter from '../../pages/admin/Newsletter.tsx';
 import Faq from '../../components/faq.tsx';  // LOWERCASE faq.tsx
 
 // Import pages
@@ -113,6 +114,10 @@ import UnifiedBookingFlow from '../../components/UnifiedBookingFlow.tsx';
 
 // Import Partner components
 import PartnerDashboard from '../../components/PartnerDashboard.tsx';
+
+// Import Newsletter components
+import NewsletterPreferences from '../../pages/NewsletterPreferences.tsx';
+import NewsletterUnsubscribe from '../../pages/NewsletterUnsubscribe.tsx';
 
 import { supabase } from '../../lib/supabase.ts';
 
@@ -237,6 +242,7 @@ function AppContent() {
                 <Route path="kyc-verification" element={<AdminKYCVerification />} />
                 <Route path="co2-certificates" element={<AdminCO2Certificates />} />
                 <Route path="management" element={<AdminManagement />} />
+                <Route path="newsletter" element={<AdminNewsletter />} />
               </Route>
               <Route path="/offers" element={<AdminOffers />} />
             </>
@@ -309,7 +315,12 @@ function AppContent() {
                 <Route path="kyc-verification" element={<AdminKYCVerification />} />
                 <Route path="co2-certificates" element={<AdminCO2Certificates />} />
                 <Route path="management" element={<AdminManagement />} />
+                <Route path="newsletter" element={<AdminNewsletter />} />
               </Route>
+
+              {/* Newsletter Routes */}
+              <Route path="/newsletter/preferences" element={<NewsletterPreferences />} />
+              <Route path="/newsletter/unsubscribe" element={<NewsletterUnsubscribe />} />
 
               {/* Home Route - New Landing Page */}
               <Route path="/" element={<Homepage />} />

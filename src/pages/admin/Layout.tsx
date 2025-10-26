@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { Users, FileCheck, Settings, Plane, BarChart3, UserCog } from 'lucide-react';
+import { Users, FileCheck, Settings, Plane, BarChart3, UserCog, Mail } from 'lucide-react';
 import AdminRoute from '../../components/AdminRoute';
 import { useAdminPermissions } from '../../hooks/useAdminPermissions';
 
@@ -49,6 +49,12 @@ export default function AdminLayout() {
       path: '/admin/management',
       name: 'Admin Management',
       icon: UserCog,
+      permission: isSuperAdmin
+    },
+    {
+      path: '/admin/newsletter',
+      name: 'Newsletter',
+      icon: Mail,
       permission: isSuperAdmin
     }
   ];

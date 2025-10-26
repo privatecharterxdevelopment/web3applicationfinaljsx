@@ -4,6 +4,7 @@ import AnimatedSection from '../AnimatedSection';
 import LandingHeader from './LandingHeader';
 import Globe3D from '../Globe3D';
 import { supabase } from '../../lib/supabase';
+import NewsletterForm from '../NewsletterForm';
 import {
   Plane,
   Shield,
@@ -893,18 +894,13 @@ function Homepage() {
             Join the future of private aviation. Get early access to our blockchain platform
             and exclusive tokenized flight opportunities.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
-            <input
-              type="email"
+          <div className="max-w-md mx-auto">
+            <NewsletterForm
+              compact
+              source="web"
               placeholder="Enter your email address"
-              className="px-4 py-3 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-900 text-sm flex-1"
+              buttonText="Subscribe"
             />
-            <button
-                onClick={handleGetStarted}
-                className="bg-gray-900 text-white px-3 sm:px-5 py-2 rounded-md text-xs sm:text-sm hover:bg-gray-800 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-              >
-              Get Started
-              </button>
           </div>
           </div>
         </section>

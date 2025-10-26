@@ -19,6 +19,7 @@ dotenv.config();
 // Import API modules
 const stripeConnectApi = require('./api/stripe-connect-partners');
 const stripeWebhook = require('./api/webhooks/stripe-connect-webhook');
+const newsletterApi = require('./api/newsletter');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -68,6 +69,30 @@ app.get('/api/partners/earnings', stripeConnectApi.getPartnerEarnings);
 app.get('/api/admin/stripe-dashboard-links', stripeConnectApi.getAdminStripeDashboardLinks);
 
 // ============================================================
+// Newsletter API Routes
+// ============================================================
+
+// Public Newsletter Routes
+app.post('/api/newsletter/subscribe', newsletterApi.subscribe);
+app.post('/api/newsletter/unsubscribe', newsletterApi.unsubscribe);
+app.patch('/api/newsletter/preferences', newsletterApi.updatePreferences);
+app.get('/api/newsletter/preferences', newsletterApi.getPreferences);
+
+// WordPress Integration
+app.post('/api/newsletter/wordpress-subscribe', newsletterApi.wordpressSubscribe);
+
+// Admin Newsletter Routes
+app.get('/api/newsletter/subscribers', newsletterApi.getSubscribers);
+app.get('/api/newsletter/stats', newsletterApi.getStats);
+app.post('/api/newsletter/send', newsletterApi.sendNewsletter);
+
+// Newsletter Template Management (Admin)
+app.get('/api/newsletter/templates', newsletterApi.getTemplates);
+app.post('/api/newsletter/templates', newsletterApi.createTemplate);
+app.patch('/api/newsletter/templates/:id', newsletterApi.updateTemplate);
+app.delete('/api/newsletter/templates/:id', newsletterApi.deleteTemplate);
+
+// ============================================================
 // Webhook Endpoints
 // ============================================================
 
@@ -96,6 +121,7 @@ app.get('/', (req, res) => {
       health: '/health',
       partners: '/api/partners/*',
       admin: '/api/admin/*',
+      newsletter: '/api/newsletter/*',
       webhooks: '/webhooks/stripe-connect'
     }
   });
@@ -140,6 +166,7 @@ app.listen(PORT, () => {
   console.log(`   Health: http://localhost:${PORT}/health`);
   console.log(`   Partners API: http://localhost:${PORT}/api/partners/*`);
   console.log(`   Admin API: http://localhost:${PORT}/api/admin/*`);
+  console.log(`   Newsletter API: http://localhost:${PORT}/api/newsletter/*`);
   console.log(`   Webhooks: http://localhost:${PORT}/webhooks/stripe-connect`);
   console.log('='.repeat(60));
 });
