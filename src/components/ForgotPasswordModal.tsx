@@ -70,13 +70,13 @@ export default function ForgotPasswordModal({
 
   return (
     <Portal>
-      <div className="fixed inset-0 bg-gray-100 z-[9999] flex items-center justify-center p-6 font-['DM_Sans']">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-0 lg:p-8 font-['DM_Sans']">
 
-        {/* Modal Container */}
-        <div className="w-full h-full bg-white rounded-3xl shadow-2xl overflow-hidden flex">
+        {/* Modal Container - Fullscreen mobile, centered desktop */}
+        <div className="w-full h-screen lg:h-[90vh] lg:max-w-7xl bg-white rounded-none lg:rounded-3xl shadow-2xl overflow-hidden flex flex-col-reverse lg:flex-row">
 
-          {/* LEFT SIDE - Form */}
-          <div className="w-2/5 bg-white p-8 flex flex-col relative z-20">
+          {/* Form Section */}
+          <div className="w-full lg:w-2/5 bg-white p-6 lg:p-8 flex flex-col relative z-20 overflow-y-auto">
 
             {/* Close Button */}
             <button
@@ -204,8 +204,8 @@ export default function ForgotPasswordModal({
             )}
           </div>
 
-          {/* RIGHT SIDE - Video Hero */}
-          <div className="w-3/5 relative">
+          {/* Video Section - Top on mobile, right on desktop */}
+          <div className="w-full lg:w-3/5 relative h-64 lg:h-auto">
             <VideoHero videos={videos} interval={8000} />
           </div>
 

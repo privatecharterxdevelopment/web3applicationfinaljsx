@@ -124,10 +124,10 @@ export default function LoginModal({
 
   return (
     <Portal>
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 lg:p-8 font-['DM_Sans']">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-0 lg:p-8 font-['DM_Sans']">
 
-        {/* Modal Container - Mobile: video top, form bottom */}
-        <div className="w-full max-w-7xl h-auto lg:h-[90vh] max-h-[95vh] bg-white rounded-2xl lg:rounded-3xl shadow-2xl overflow-hidden flex flex-col-reverse lg:flex-row">
+        {/* Modal Container - Fullscreen mobile, centered desktop */}
+        <div className="w-full h-screen lg:h-[90vh] lg:max-w-7xl bg-white rounded-none lg:rounded-3xl shadow-2xl overflow-hidden flex flex-col-reverse lg:flex-row">
 
           {/* Form Section */}
           <div className="w-full lg:w-2/5 bg-white p-6 lg:p-8 flex flex-col relative overflow-y-auto">
