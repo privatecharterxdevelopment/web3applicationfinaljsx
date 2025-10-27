@@ -339,6 +339,11 @@ export default function BookingRequestManagement() {
                         <div className="text-sm text-gray-500">
                           {request.contact_email}
                         </div>
+                        {request.contact_phone && (
+                          <div className="text-xs text-gray-500">
+                            📞 {request.contact_phone}
+                          </div>
+                        )}
                         {request.contact_company && (
                           <div className="text-xs text-gray-400">
                             {request.contact_company}
