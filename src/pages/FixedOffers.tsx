@@ -58,6 +58,9 @@ export interface FixedOffer {
   equipment_provided?: boolean;
   guide_included?: boolean;
   insurance_included?: boolean;
+  // Partner info (for partner services)
+  partner_name?: string;
+  partner_logo?: string;
 }
 
 const currencies = [
@@ -291,7 +294,7 @@ const fetchFixedOffers = async (params: {
 
     console.log('✅ Supabase connected, fetching real data...');
 
-    // Build and execute query with improved filtering
+    // Build and execute query for fixed_offers with improved filtering
     let query = supabase.from('fixed_offers').select('*', { count: 'exact' });
 
     // Apply search filter first
@@ -327,24 +330,100 @@ const fetchFixedOffers = async (params: {
 
     query = query.order('created_at', { ascending: false });
 
-    const from = (params.page - 1) * params.limit;
-    const to = from + params.limit - 1;
-    query = query.range(from, to);
+    const { data: fixedOffersData, error: fixedOffersError, count: fixedOffersCount } = await query;
 
-    const { data, error, count } = await query;
-
-    if (error) {
-      throw new Error(`Database query failed: ${error.message}`);
+    if (fixedOffersError) {
+      throw new Error(`Database query failed: ${fixedOffersError.message}`);
     }
 
-    console.log(`✅ Supabase query successful: ${data?.length || 0} items`);
+    console.log(`✅ Fixed offers query successful: ${fixedOffersData?.length || 0} items`);
+
+    // Also fetch partner adventure packages (approved only)
+    let partnerQuery = supabase
+      .from('partner_services')
+      .select('*, users!partner_id(first_name, last_name, company_name, logo_url)', { count: 'exact' })
+      .eq('service_type', 'adventure')
+      .eq('status', 'approved');
+
+    // Apply same search filter to partner services
+    if (params.searchTerm?.trim()) {
+      const search = params.searchTerm.trim();
+      partnerQuery = partnerQuery.or(`title.ilike.%${search}%,city.ilike.%${search}%,description.ilike.%${search}%,service_location.ilike.%${search}%`);
+    }
+
+    // Apply location-based filtering for partner services (using city instead of continent)
+    if (params.category && params.category !== 'all') {
+      // Partner services use city/country, so we'll filter by country keywords
+      const continentKeywords: Record<string, string[]> = {
+        'europe': ['Germany', 'France', 'Italy', 'Spain', 'Switzerland', 'UK', 'United Kingdom', 'Austria', 'Netherlands'],
+        'africa': ['South Africa', 'Kenya', 'Morocco', 'Egypt', 'Tanzania'],
+        'asia': ['UAE', 'Dubai', 'Japan', 'Thailand', 'Singapore', 'China', 'India'],
+        'north-america': ['USA', 'United States', 'Canada', 'Mexico'],
+        'south-america': ['Brazil', 'Argentina', 'Chile', 'Peru', 'Colombia'],
+        'oceania': ['Australia', 'New Zealand', 'Fiji']
+      };
+
+      const keywords = continentKeywords[params.category] || [];
+      if (keywords.length > 0) {
+        const orConditions = keywords.map(k => `country.ilike.%${k}%`).join(',');
+        partnerQuery = partnerQuery.or(orConditions);
+      }
+    }
+
+    partnerQuery = partnerQuery.order('created_at', { ascending: false });
+
+    const { data: partnerServicesData, error: partnerServicesError } = await partnerQuery;
+
+    if (partnerServicesError) {
+      console.warn('⚠️ Partner services query failed:', partnerServicesError);
+    } else {
+      console.log(`✅ Partner services query successful: ${partnerServicesData?.length || 0} items`);
+    }
+
+    // Transform partner services to match FixedOffer interface
+    const transformedPartnerServices: FixedOffer[] = (partnerServicesData || []).map((service: any) => ({
+      id: service.id,
+      title: service.title,
+      description: service.description,
+      origin: service.city,
+      destination: service.city, // Adventure packages are location-based
+      price: parseFloat(service.price_amount),
+      currency: service.price_currency,
+      image_url: service.images?.[0] || null,
+      passengers: null,
+      duration: service.price_type === 'per_day' ? '1 day' : service.price_type === 'per_hour' ? '1 hour' : 'Flexible',
+      created_at: service.created_at,
+      updated_at: service.updated_at,
+      package_type: 'Partner Adventure',
+      inclusions: service.features || [],
+      min_passengers: 1,
+      max_passengers: 12,
+      is_featured: false,
+      // Partner info
+      partner_name: service.users?.company_name || `${service.users?.first_name} ${service.users?.last_name}`,
+      partner_logo: service.users?.logo_url
+    }));
+
+    // Merge both datasets
+    const allOffers = [...(fixedOffersData || []), ...transformedPartnerServices];
+
+    // Sort by created_at desc
+    allOffers.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    // Apply pagination to merged results
+    const from = (params.page - 1) * params.limit;
+    const to = from + params.limit;
+    const paginatedOffers = allOffers.slice(from, to);
+    const totalCount = allOffers.length;
+
+    console.log(`✅ Total offers (fixed + partner): ${totalCount} items, showing page ${params.page}`);
 
     return {
-      data: data || [],
-      total: count || 0,
+      data: paginatedOffers,
+      total: totalCount,
       page: params.page,
       limit: params.limit,
-      totalPages: Math.ceil((count || 0) / params.limit)
+      totalPages: Math.ceil(totalCount / params.limit)
     };
 
   } catch (supabaseError) {
