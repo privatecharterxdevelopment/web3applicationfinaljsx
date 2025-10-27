@@ -153,6 +153,32 @@ function Step2WithRecaptcha({
             // Don't block registration if notification fails
           }
 
+          // Send notification to ALL admins about new user registration
+          try {
+            const { data: admins } = await supabase
+              .from('admin_settings')
+              .select('user_id');
+
+            if (admins && admins.length > 0) {
+              const adminNotifications = admins.map(admin => ({
+                user_id: admin.user_id,
+                type: 'admin',
+                title: '🎉 New User Registered',
+                message: `${formData.firstName} ${formData.lastName} (${formData.email}) just registered and received 100 PVCX welcome bonus.`,
+                is_read: false,
+                metadata: {
+                  new_user_id: userId,
+                  new_user_email: formData.email
+                }
+              }));
+
+              await supabase.from('notifications').insert(adminNotifications);
+            }
+          } catch (adminNotifError) {
+            console.error('Failed to send admin notification:', adminNotifError);
+            // Don't block registration if admin notification fails
+          }
+
         }
 
         setCurrentStep('success');

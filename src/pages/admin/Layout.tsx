@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { Users, FileCheck, Settings, Plane, BarChart3, UserCog, Mail } from 'lucide-react';
+import { Users, FileCheck, Settings, Plane, BarChart3, UserCog, Mail, DollarSign, Handshake } from 'lucide-react';
 import AdminRoute from '../../components/AdminRoute';
 import { useAdminPermissions } from '../../hooks/useAdminPermissions';
 
@@ -44,6 +44,18 @@ export default function AdminLayout() {
       name: 'CO2 Certificates',
       icon: Settings,
       permission: canManageCO2Requests
+    },
+    {
+      path: '/admin/partners',
+      name: 'Partners',
+      icon: Handshake,
+      permission: canManageBookings || isSuperAdmin
+    },
+    {
+      path: '/admin/transactions',
+      name: 'Transactions',
+      icon: DollarSign,
+      permission: canManageBookings || isSuperAdmin
     },
     {
       path: '/admin/management',

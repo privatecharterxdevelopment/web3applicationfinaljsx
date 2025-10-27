@@ -42,6 +42,8 @@ import AdminKYCVerification from '../../pages/admin/KYCVerification.tsx';
 import AdminCO2Certificates from '../../pages/admin/CO2Certificates.tsx';
 import AdminManagement from '../../pages/admin/Management.tsx';
 import AdminNewsletter from '../../pages/admin/Newsletter.tsx';
+import AdminPartners from '../../pages/admin/Partners.tsx';
+import AdminTransactions from '../../pages/admin/Transactions.tsx';
 import Faq from '../../components/faq.tsx';  // LOWERCASE faq.tsx
 
 // Import pages
@@ -241,6 +243,8 @@ function AppContent() {
                 <Route path="user-requests" element={<AdminUserRequests />} />
                 <Route path="kyc-verification" element={<AdminKYCVerification />} />
                 <Route path="co2-certificates" element={<AdminCO2Certificates />} />
+                <Route path="partners" element={<AdminPartners />} />
+                <Route path="transactions" element={<AdminTransactions />} />
                 <Route path="management" element={<AdminManagement />} />
                 <Route path="newsletter" element={<AdminNewsletter />} />
               </Route>
@@ -310,6 +314,8 @@ function AppContent() {
                 <Route path="user-requests" element={<AdminUserRequests />} />
                 <Route path="kyc-verification" element={<AdminKYCVerification />} />
                 <Route path="co2-certificates" element={<AdminCO2Certificates />} />
+                <Route path="partners" element={<AdminPartners />} />
+                <Route path="transactions" element={<AdminTransactions />} />
                 <Route path="management" element={<AdminManagement />} />
                 <Route path="newsletter" element={<AdminNewsletter />} />
               </Route>

@@ -267,6 +267,34 @@ export default function PartnerRegistrationModal({ isOpen, onClose, onSuccess }:
         // Continue with registration even if Stripe fails
       }
 
+      // Send notification to ALL admins about new partner registration
+      try {
+        const { data: admins } = await supabase
+          .from('admin_settings')
+          .select('user_id');
+
+        if (admins && admins.length > 0) {
+          const adminNotifications = admins.map(admin => ({
+            user_id: admin.user_id,
+            type: 'admin',
+            title: '🤝 New Partner Registered',
+            message: `${formData.firstName} ${formData.lastName} from ${formData.companyName || 'N/A'} (${formData.email}) registered as ${formData.partnerType} partner.`,
+            is_read: false,
+            metadata: {
+              new_partner_id: authData.user.id,
+              partner_email: formData.email,
+              partner_type: formData.partnerType,
+              company_name: formData.companyName
+            }
+          }));
+
+          await supabase.from('notifications').insert(adminNotifications);
+        }
+      } catch (adminNotifError) {
+        console.error('Failed to send admin notification:', adminNotifError);
+        // Don't block registration if admin notification fails
+      }
+
       onSuccess();
     } catch (err: any) {
       console.error('Registration error:', err);
