@@ -1673,7 +1673,7 @@ const TokenizedAssetsGlassmorphic = () => {
       }
 
       const { data, error } = await supabase
-        .from('user_pvcx_balances')
+        .from('pvcx_balance')
         .select('balance')
         .eq('user_id', user.id)
         .single();

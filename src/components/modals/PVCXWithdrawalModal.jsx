@@ -61,7 +61,7 @@ const PVCXWithdrawalModal = ({ user, balance, onClose }) => {
 
       // Update pending withdrawal in user balance
       const { error: updateError } = await supabase
-        .from('user_pvcx_balances')
+        .from('pvcx_balance')
         .update({
           pending_withdrawal: withdrawalAmount,
           wallet_address: walletAddress.trim()

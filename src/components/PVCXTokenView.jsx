@@ -24,7 +24,7 @@ const PVCXTokenView = ({ user, onNavigate }) => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('user_pvcx_balances')
+        .from('pvcx_balance')
         .select('*')
         .eq('user_id', user.id)
         .single();
