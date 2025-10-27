@@ -36,6 +36,7 @@ import ChatSupport from '../../components/ChatSupport.tsx';
 import Dashboard from '../../components/Dashboard.tsx';
 import AdminLayout from '../../pages/admin/Layout.tsx';
 import AdminAnalytics from '../../pages/admin/Analytics.tsx';
+import AdminUsers from '../../pages/admin/Users.tsx';
 import AdminBookingRequests from '../../pages/admin/BookingRequests.tsx';
 import AdminUserRequests from '../../pages/admin/UserRequests.tsx';
 import AdminKYCVerification from '../../pages/admin/KYCVerification.tsx';
@@ -239,6 +240,7 @@ function AppContent() {
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<Navigate to="/admin/analytics" replace />} />
                 <Route path="analytics" element={<AdminAnalytics />} />
+                <Route path="users" element={<AdminUsers />} />
                 <Route path="booking-requests" element={<AdminBookingRequests />} />
                 <Route path="user-requests" element={<AdminUserRequests />} />
                 <Route path="kyc-verification" element={<AdminKYCVerification />} />
@@ -310,6 +312,7 @@ function AppContent() {
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<Navigate to="/admin/analytics" replace />} />
                 <Route path="analytics" element={<AdminAnalytics />} />
+                <Route path="users" element={<AdminUsers />} />
                 <Route path="booking-requests" element={<AdminBookingRequests />} />
                 <Route path="user-requests" element={<AdminUserRequests />} />
                 <Route path="kyc-verification" element={<AdminKYCVerification />} />

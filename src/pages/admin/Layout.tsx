@@ -22,6 +22,12 @@ export default function AdminLayout() {
       permission: true
     },
     {
+      path: '/admin/users',
+      name: 'Users',
+      icon: Users,
+      permission: isSuperAdmin || canManageBookings
+    },
+    {
       path: '/admin/booking-requests',
       name: 'Booking Requests',
       icon: Plane,
