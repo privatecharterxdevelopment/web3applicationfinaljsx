@@ -20,6 +20,7 @@ import {
   Settings
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import PartnerServiceManagement from './PartnerServiceManagement';
 
 interface PartnerDashboardProps {
   user: any;
@@ -27,6 +28,7 @@ interface PartnerDashboardProps {
 }
 
 export default function PartnerDashboard({ user, onNavigate }: PartnerDashboardProps) {
+  const [view, setView] = useState<'dashboard' | 'services'>('dashboard');
   const [stats, setStats] = useState({
     activeServices: 0,
     pendingBookings: 0,
@@ -222,6 +224,27 @@ export default function PartnerDashboard({ user, onNavigate }: PartnerDashboardP
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
         <div className="animate-pulse text-gray-500">Loading dashboard...</div>
+      </div>
+    );
+  }
+
+  // Service Management View
+  if (view === 'services') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+        <div className="max-w-7xl mx-auto">
+          {/* Back button */}
+          <div className="p-6 pb-0">
+            <button
+              onClick={() => setView('dashboard')}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <ChevronRight size={20} className="rotate-180" />
+              Back to Dashboard
+            </button>
+          </div>
+          <PartnerServiceManagement partnerId={user.id} />
+        </div>
       </div>
     );
   }
@@ -441,7 +464,7 @@ export default function PartnerDashboard({ user, onNavigate }: PartnerDashboardP
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">My Services</h2>
                 <button
-                  onClick={() => onNavigate?.('services')}
+                  onClick={() => setView('services')}
                   className="text-sm text-gray-600 hover:text-gray-900"
                 >
                   View all
