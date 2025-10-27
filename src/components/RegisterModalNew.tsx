@@ -112,7 +112,7 @@ function Step2WithRecaptcha({
           try {
             // Insert initial balance record
             const { error: balanceError } = await supabase
-              .from('user_pvcx_balances')
+              .from('pvcx_balance')
               .insert({
                 user_id: userId,
                 balance: 100,
