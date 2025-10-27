@@ -175,7 +175,7 @@ export default function PartnerRegistrationModal({ isOpen, onClose, onSuccess }:
           email_verified: authData.user.email_confirmed_at !== null,
           logo_url: logoUrl,
           biography: formData.biography || null,
-          phone: formData.phone || null
+          phone: formData.phone
         }, {
           onConflict: 'id'
         });
@@ -407,13 +407,14 @@ export default function PartnerRegistrationModal({ isOpen, onClose, onSuccess }:
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">Phone (optional)</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">Phone <span className="text-red-500">*</span></label>
                 <input
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
                   className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900"
                   placeholder="+1 234 567 890"
+                  required
                 />
               </div>
 
