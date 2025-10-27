@@ -5,7 +5,7 @@ import {
   Plane, Zap, Mountain, Car, MapPin, Sparkles, Rocket,
   Leaf, Award, Settings, User, ChevronRight, ChevronDown, X, LogOut, MessageSquare, MessageCircle,
   Users, Calendar, Package, Compass, ArrowLeft, Wallet, History, Crown, Gift, LayoutDashboard,
-  Mail, Phone, Globe, FileText, Edit3, Check, Loader2, Building2, Coins, Share2
+  Mail, Phone, Globe, FileText, Edit3, Check, Loader2, Building2, Coins, Share2, Menu
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -608,6 +608,7 @@ const TokenizedAssetsGlassmorphic = () => {
   const { toasts, showToast, removeToast } = useToast();
   const [showDashboard, setShowDashboard] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [adventureSubmitting, setAdventureSubmitting] = useState(false);
   const [adventureSubmitSuccess, setAdventureSubmitSuccess] = useState(false);
   const [luxuryCarSubmitting, setLuxuryCarSubmitting] = useState(false);
@@ -2450,24 +2451,45 @@ const TokenizedAssetsGlassmorphic = () => {
 
 
       {/* Main Container - Centered Floating Glassmorphic Dashboard */}
-      <div className="relative z-10 flex h-screen items-center justify-center p-8">
+      <div className="relative z-10 flex h-screen items-center justify-center p-2 lg:p-8">
         {/* COMPLETE FLOATING GLASSMORPHIC CONTAINER - Sidebar + Content als ein Stück */}
-        <div className={`relative flex w-full max-w-7xl h-[90vh] rounded-3xl shadow-2xl border overflow-hidden transition-all duration-700 ease-out ${
+        <div className={`relative flex w-full max-w-7xl h-screen lg:h-[90vh] rounded-none lg:rounded-3xl shadow-2xl border-0 lg:border overflow-hidden transition-all duration-700 ease-out ${
           showDashboard ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
         } ${
           webMode === 'web3'
-            ? 'bg-white/30 backdrop-blur-3xl border-white/40'
-            : 'bg-white/80 backdrop-blur-3xl border-gray-200/80'
+            ? 'bg-white/30 backdrop-blur-3xl lg:border-white/40'
+            : 'bg-white/80 backdrop-blur-3xl lg:border-gray-200/80'
         }`} style={{ backdropFilter: webMode === 'web3' ? 'blur(60px) saturate(120%)' : 'blur(40px) saturate(180%)' }}>
-          {/* Glassmorphic Sidebar - EXPANDABLE ON HOVER */}
-          <aside className={`group w-16 hover:w-60 border-r flex flex-col py-4 transition-all duration-300 ease-in-out overflow-hidden ${
+
+          {/* Mobile Burger Button */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-xl bg-white/80 backdrop-blur-xl border border-gray-200/50 shadow-lg hover:bg-white transition-all"
+          >
+            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+
+          {/* Mobile Backdrop */}
+          {isMobileMenuOpen && (
+            <div
+              className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-30"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+          )}
+
+          {/* Glassmorphic Sidebar - EXPANDABLE ON HOVER, Mobile Overlay */}
+          <aside className={`group border-r flex flex-col py-4 transition-all duration-300 ease-in-out overflow-hidden z-40 ${
             webMode === 'web3'
               ? 'border-white/30'
               : 'bg-white/70 border-gray-200/70'
+          } ${
+            isMobileMenuOpen
+              ? 'fixed inset-y-0 left-0 w-60'
+              : 'hidden lg:flex lg:relative lg:w-16 lg:hover:w-60'
           }`} style={webMode === 'web3' ? { backgroundColor: '#efefef' } : { backdropFilter: 'blur(20px) saturate(180%)' }}>
           {/* Logo */}
-          <div className="mb-6 px-2 group-hover:px-4 transition-all duration-300">
-            <div className="w-12 h-12 group-hover:w-auto flex items-center justify-center overflow-hidden">
+          <div className={`mb-6 transition-all duration-300 ${isMobileMenuOpen ? 'px-4' : 'px-2 group-hover:px-4'}`}>
+            <div className={`flex items-center justify-center overflow-hidden ${isMobileMenuOpen ? 'w-auto' : 'w-12 h-12 group-hover:w-auto'}`}>
               {webMode === 'web3' ? (
                 <>
                   {/* Animated logo when collapsed - Web3.0 only */}
@@ -2476,15 +2498,15 @@ const TokenizedAssetsGlassmorphic = () => {
                     loop
                     muted
                     playsInline
-                    className="h-12 w-12 object-contain group-hover:hidden"
+                    className={`h-12 w-12 object-contain ${isMobileMenuOpen ? 'hidden' : 'group-hover:hidden'}`}
                   >
                     <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/videoExport-2025-10-19@14-08-49.871-540x540@60fps.mp4" type="video/mp4" />
                   </video>
-                  {/* Full logo when expanded */}
+                  {/* Full logo when expanded or mobile open */}
                   <img
                     src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_Logo_written-removebg-preview.png"
                     alt="PrivateCharterX"
-                    className="hidden group-hover:block h-12 w-auto object-contain"
+                    className={`h-12 w-auto object-contain ${isMobileMenuOpen ? 'block' : 'hidden group-hover:block'}`}
                   />
                 </>
               ) : (
@@ -2493,13 +2515,13 @@ const TokenizedAssetsGlassmorphic = () => {
                   <img
                     src="https://i.imgur.com/iu42DU1.png"
                     alt="PrivateCharterX"
-                    className="h-12 w-12 object-contain group-hover:hidden"
+                    className={`h-12 w-12 object-contain ${isMobileMenuOpen ? 'hidden' : 'group-hover:hidden'}`}
                   />
-                  {/* Full logo when expanded */}
+                  {/* Full logo when expanded or mobile open */}
                   <img
                     src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_Logo_written-removebg-preview.png"
                     alt="PrivateCharterX"
-                    className="hidden group-hover:block h-12 w-auto object-contain"
+                    className={`h-12 w-auto object-contain ${isMobileMenuOpen ? 'block' : 'hidden group-hover:block'}`}
                   />
                 </>
               )}
