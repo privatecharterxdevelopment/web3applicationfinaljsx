@@ -845,19 +845,23 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          // Create request in user_requests table
-          await createRequest({
-            userId: user.id,
-            type: 'taxi_concierge',
-            data: {
-              ...requestData,
-              carImage: selectedCar.image,
-              carName: selectedCar.name,
-              carSeats: selectedCar.seats,
-              status: 'pending'
-            },
-            userEmail: user.email
-          });
+          // Create request in user_requests table - DIRECT INSERT
+          const { error: dbError } = await supabase
+            .from('user_requests')
+            .insert([{
+              user_id: user.id,
+              type: 'taxi_concierge',
+              status: 'pending',
+              data: {
+                ...requestData,
+                carImage: selectedCar.image,
+                carName: selectedCar.name,
+                carSeats: selectedCar.seats,
+                user_email: user.email
+              }
+            }]);
+
+          if (dbError) throw dbError;
 
           // Create notification
           const notificationData = {
