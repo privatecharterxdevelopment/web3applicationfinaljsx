@@ -6903,15 +6903,22 @@ const TokenizedAssetsGlassmorphic = () => {
                                 timestamp: new Date().toISOString(),
                               };
 
-                              const { error } = await createRequest({
-                                userId: user.id,
-                                type: 'adventure_package',
-                                data: payload,
-                              });
+                              // DIRECT INSERT - matching working pattern
+                              const { error: dbError } = await supabase
+                                .from('user_requests')
+                                .insert([{
+                                  user_id: user.id,
+                                  type: 'adventure_package',
+                                  status: 'pending',
+                                  data: payload
+                                }]);
 
-                              if (error) throw new Error(error);
+                              if (dbError) throw dbError;
                               setAdventureSubmitSuccess(true);
-                              setTimeout(() => setAdventureSubmitSuccess(false), 2500);
+                              setTimeout(() => {
+                                setAdventureSubmitSuccess(false);
+                                setActiveCategory('requests'); // Navigate to My Requests
+                              }, 2500);
                             } catch (err) {
                               console.error('Failed to submit adventure request', err);
                               alert('Failed to submit request. Please try again.');
@@ -7587,15 +7594,22 @@ const TokenizedAssetsGlassmorphic = () => {
                                 timestamp: new Date().toISOString(),
                               };
 
-                              const { error } = await createRequest({
-                                userId: user.id,
-                                type: 'luxury_car_rental',
-                                data: payload,
-                              });
+                              // DIRECT INSERT - matching working pattern
+                              const { error: dbError } = await supabase
+                                .from('user_requests')
+                                .insert([{
+                                  user_id: user.id,
+                                  type: 'luxury_car_rental',
+                                  status: 'pending',
+                                  data: payload
+                                }]);
 
-                              if (error) throw new Error(error);
+                              if (dbError) throw dbError;
                               setLuxuryCarSubmitSuccess(true);
-                              setTimeout(() => setLuxuryCarSubmitSuccess(false), 2500);
+                              setTimeout(() => {
+                                setLuxuryCarSubmitSuccess(false);
+                                setActiveCategory('requests'); // Navigate to My Requests
+                              }, 2500);
                             } catch (err) {
                               console.error('Failed to submit luxury car request', err);
                               alert('Failed to submit request. Please try again.');
