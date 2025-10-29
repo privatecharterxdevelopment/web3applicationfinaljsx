@@ -268,8 +268,11 @@ function AppContent() {
               <Route path="/tokenized" element={<Tokenized setCurrentPage={() => {}} />} />
               <Route path="/tokenswap" element={<TokenSwapPage />} />
 
-              {/* Dashboard Route - User Dashboard with My Requests */}
-              <Route path="/dashboard" element={<Dashboard />} />
+              {/* Dashboard Route - Glassmorphic Dashboard with Empty Legs & RWS */}
+              <Route path="/dashboard" element={<TokenizedAssetsGlassmorphic />} />
+
+              {/* User Overview Dashboard (old) */}
+              <Route path="/user-overview" element={<Dashboard />} />
 
               {/* Tokenized Assets Route */}
               <Route path="/tokenized-assets" element={<TokenizedAssets />} />

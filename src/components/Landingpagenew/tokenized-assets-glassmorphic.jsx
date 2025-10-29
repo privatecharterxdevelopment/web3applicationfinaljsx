@@ -22,6 +22,7 @@ import ForgotPasswordModal from '../ForgotPasswordModal';
 import { ToastContainer } from '../Toast';
 import { useToast } from '../../hooks/useToast';
 import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3';
+import SuccessNotification from '../SuccessNotification';
 import UnifiedBookingFlow from '../../components/UnifiedBookingFlow';
 import TokenizeAssetFlow from './TokenizeAssetFlow';
 import SPVFormationFlow from '../SPVFormation/SPVFormationFlow_NEW';
@@ -783,6 +784,7 @@ const TokenizedAssetsGlassmorphic = () => {
   const [emptyLegPassengers, setEmptyLegPassengers] = useState(1);
   const [emptyLegLuggage, setEmptyLegLuggage] = useState(0);
   const [emptyLegHasPet, setEmptyLegHasPet] = useState(false);
+  const [showEmptyLegSuccess, setShowEmptyLegSuccess] = useState(false);
 
   // Empty Leg Request Function
   const requestEmptyLegFlight = async () => {
@@ -820,8 +822,12 @@ const TokenizedAssetsGlassmorphic = () => {
         }
       });
 
-      alert('✅ Flight request submitted successfully! Check your dashboard.');
-      navigate('/dashboard');
+      setShowEmptyLegSuccess(true);
+
+      setTimeout(() => {
+        setShowEmptyLegSuccess(false);
+        navigate('/dashboard');
+      }, 3000);
     } catch (error) {
       console.error('Request failed:', error);
       alert('❌ Flight request failed. Please try again.');
@@ -8075,6 +8081,14 @@ const TokenizedAssetsGlassmorphic = () => {
 
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} removeToast={removeToast} />
+
+      {/* Success Notification for Empty Leg Requests */}
+      <SuccessNotification
+        show={showEmptyLegSuccess}
+        onClose={() => setShowEmptyLegSuccess(false)}
+        title="Flight Request Submitted!"
+        message="Your empty leg flight request has been saved. We'll contact you soon!"
+      />
     </div>
   );
 };
