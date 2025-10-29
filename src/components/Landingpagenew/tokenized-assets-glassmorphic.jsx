@@ -780,6 +780,53 @@ const TokenizedAssetsGlassmorphic = () => {
   const [selectedEmptyLeg, setSelectedEmptyLeg] = useState(null);
   const [showEmptyLegDetail, setShowEmptyLegDetail] = useState(false);
   const [currentEmptyLegImageIndex, setCurrentEmptyLegImageIndex] = useState(0);
+  const [emptyLegPassengers, setEmptyLegPassengers] = useState(1);
+  const [emptyLegLuggage, setEmptyLegLuggage] = useState(0);
+  const [emptyLegHasPet, setEmptyLegHasPet] = useState(false);
+
+  // Empty Leg Request Function
+  const requestEmptyLegFlight = async () => {
+    if (!user) {
+      alert('Please sign in to request a flight');
+      navigate('/login');
+      return;
+    }
+
+    if (!selectedEmptyLeg) return;
+
+    try {
+      const rawData = selectedEmptyLeg.rawData || selectedEmptyLeg;
+
+      await createRequest({
+        userId: user.id,
+        type: 'empty_leg',
+        data: {
+          empty_leg_id: rawData.id,
+          flight_route: `${rawData.from_city || rawData.from_iata} → ${rawData.to_city || rawData.to_iata}`,
+          from_city: rawData.from_city,
+          to_city: rawData.to_city,
+          from_iata: rawData.from_iata,
+          to_iata: rawData.to_iata,
+          departure_date: rawData.departure_date,
+          departure_time: rawData.departure_time,
+          aircraft_type: rawData.category || rawData.aircraft_type,
+          capacity: rawData.capacity || rawData.pax,
+          original_price: rawData.price || rawData.price_usd,
+          currency: 'USD',
+          passengers: emptyLegPassengers,
+          luggage: emptyLegLuggage,
+          has_pet: emptyLegHasPet,
+          wallet_address: address && isConnected ? address : null
+        }
+      });
+
+      alert('✅ Flight request submitted successfully! Check your dashboard.');
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Request failed:', error);
+      alert('❌ Flight request failed. Please try again.');
+    }
+  };
 
   // Adventures state variables
   const [adventuresData, setAdventuresData] = useState([]);
@@ -5671,6 +5718,9 @@ const TokenizedAssetsGlassmorphic = () => {
                         setSelectedEmptyLeg(leg);
                         setShowEmptyLegDetail(true);
                         setCurrentEmptyLegImageIndex(0);
+                        setEmptyLegPassengers(1);
+                        setEmptyLegLuggage(0);
+                        setEmptyLegHasPet(false);
                       }}
                       className="bg-white/35 hover:bg-white/40 rounded-xl flex h-64 hover:shadow-lg transition-all cursor-pointer border border-gray-300/50"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
@@ -5805,6 +5855,9 @@ const TokenizedAssetsGlassmorphic = () => {
                         setSelectedEmptyLeg(leg);
                         setShowEmptyLegDetail(true);
                         setCurrentEmptyLegImageIndex(0);
+                        setEmptyLegPassengers(1);
+                        setEmptyLegLuggage(0);
+                        setEmptyLegHasPet(false);
                       }}
                       className="bg-white/35 hover:bg-white/40 rounded-lg border border-gray-300/50 overflow-hidden transition-all cursor-pointer"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
@@ -6073,24 +6126,43 @@ const TokenizedAssetsGlassmorphic = () => {
                             <div>
                               <p className="text-xs text-gray-600 mb-2">Passengers</p>
                               <div className="flex items-center justify-between border border-gray-300 rounded px-2 py-1">
-                                <button className="text-gray-600 hover:text-gray-900">−</button>
-                                <span className="text-sm font-medium">1</span>
-                                <button className="text-gray-600 hover:text-gray-900">+</button>
+                                <button
+                                  onClick={() => setEmptyLegPassengers(Math.max(1, emptyLegPassengers - 1))}
+                                  className="text-gray-600 hover:text-gray-900"
+                                >−</button>
+                                <span className="text-sm font-medium">{emptyLegPassengers}</span>
+                                <button
+                                  onClick={() => setEmptyLegPassengers(Math.min(rawData.capacity || rawData.pax || 14, emptyLegPassengers + 1))}
+                                  className="text-gray-600 hover:text-gray-900"
+                                >+</button>
                               </div>
                             </div>
                             <div>
                               <p className="text-xs text-gray-600 mb-2">Luggage</p>
                               <div className="flex items-center justify-between border border-gray-300 rounded px-2 py-1">
-                                <button className="text-gray-600 hover:text-gray-900">−</button>
-                                <span className="text-sm font-medium">0</span>
-                                <button className="text-gray-600 hover:text-gray-900">+</button>
+                                <button
+                                  onClick={() => setEmptyLegLuggage(Math.max(0, emptyLegLuggage - 1))}
+                                  className="text-gray-600 hover:text-gray-900"
+                                >−</button>
+                                <span className="text-sm font-medium">{emptyLegLuggage}</span>
+                                <button
+                                  onClick={() => setEmptyLegLuggage(Math.min((rawData.capacity || rawData.pax || 14) * 2, emptyLegLuggage + 1))}
+                                  className="text-gray-600 hover:text-gray-900"
+                                >+</button>
                               </div>
                             </div>
                             <div>
                               <p className="text-xs text-gray-600 mb-2">Pet</p>
-                              <div className="flex items-center justify-center border border-gray-300 rounded px-2 py-1">
-                                <span className="text-sm font-medium">No</span>
-                              </div>
+                              <button
+                                onClick={() => setEmptyLegHasPet(!emptyLegHasPet)}
+                                className={`w-full flex items-center justify-center border rounded px-2 py-1 transition-colors ${
+                                  emptyLegHasPet
+                                    ? 'bg-black text-white border-black'
+                                    : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                                }`}
+                              >
+                                <span className="text-sm font-medium">{emptyLegHasPet ? 'Yes' : 'No'}</span>
+                              </button>
                             </div>
                           </div>
 
@@ -6106,7 +6178,10 @@ const TokenizedAssetsGlassmorphic = () => {
                           </div>
                         </div>
 
-                        <button className="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition-all mb-4">
+                        <button
+                          onClick={requestEmptyLegFlight}
+                          className="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition-all mb-4"
+                        >
                           Request Flight
                         </button>
 
