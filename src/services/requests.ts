@@ -11,6 +11,8 @@ interface CreateRequestOptions {
 
 export const createRequest = async ({ userId, type, data, userEmail }: CreateRequestOptions) => {
   try {
+    console.log('🔥 createRequest called with:', { userId, type, dataKeys: Object.keys(data) });
+
     const requestData: any = {
       user_id: userId,
       type,
@@ -23,21 +25,37 @@ export const createRequest = async ({ userId, type, data, userEmail }: CreateReq
       requestData.user_email = userEmail;
     }
 
+    console.log('🔥 Inserting into user_requests:', { userId, type });
+
     const { data: request, error } = await supabase
       .from('user_requests')
       .insert([requestData])
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Supabase INSERT error:', error);
+      throw error;
+    }
+
+    console.log('✅ Request inserted successfully:', request?.id);
 
     // Send email notification based on request type
-    await sendEmailNotification(type, data, userEmail);
+    try {
+      await sendEmailNotification(type, data, userEmail);
+    } catch (emailError) {
+      console.warn('⚠️ Email notification failed (non-critical):', emailError);
+      // Don't throw - email failure shouldn't block request creation
+    }
 
     return { request, error: null };
-  } catch (error) {
+  } catch (error: any) {
+    console.error('❌ createRequest FAILED:', error);
     logger.error('Error creating request:', error);
-    return { request: null, error: 'Failed to create request' };
+    return {
+      request: null,
+      error: error.message || error.toString() || 'Failed to create request'
+    };
   }
 };
 
