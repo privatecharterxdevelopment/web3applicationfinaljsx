@@ -268,8 +268,8 @@ function AppContent() {
               <Route path="/tokenized" element={<Tokenized setCurrentPage={() => {}} />} />
               <Route path="/tokenswap" element={<TokenSwapPage />} />
 
-              {/* Dashboard Route - Glassmorphic Dashboard */}
-              <Route path="/dashboard" element={<TokenizedAssetsGlassmorphic />} />
+              {/* Dashboard Route - User Dashboard with My Requests */}
+              <Route path="/dashboard" element={<Dashboard />} />
 
               {/* Tokenized Assets Route */}
               <Route path="/tokenized-assets" element={<TokenizedAssets />} />
@@ -291,8 +291,8 @@ function AppContent() {
               <Route path="/helicopter/:id" element={<HelicopterDetail />} />
               <Route path="/co2-certificate/:id" element={<CO2CertificateDetail />} />
 
-              {/* User Dashboard Route */}
-              <Route path="/tokenized-assets/dashboard" element={<Dashboard />} />
+              {/* Legacy redirect - kept for backwards compatibility */}
+              <Route path="/tokenized-assets/dashboard" element={<Navigate to="/dashboard" replace />} />
 
               {/* Partner Dashboard Route */}
               <Route path="/partner-dashboard" element={<PartnerDashboard />} />
