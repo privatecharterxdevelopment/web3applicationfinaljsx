@@ -619,6 +619,7 @@ const TokenizedAssetsGlassmorphic = () => {
   const [dashboardView, setDashboardView] = useState('overview');
   const [expandedMenus, setExpandedMenus] = useState({});
   const [bookingStep, setBookingStep] = useState(0);
+  const [bookingVehicleType, setBookingVehicleType] = useState('private-jet');
 
   // KYC Status state
   const [kycStatus, setKycStatus] = useState('not_started'); // 'not_started', 'pending', 'approved', 'rejected'
@@ -2348,8 +2349,8 @@ const TokenizedAssetsGlassmorphic = () => {
     { id: 'empty-legs', label: 'Empty Legs', icon: MapPin, category: 'empty-legs' },
     { id: 'adventures', label: 'Adventures', icon: Mountain, category: 'adventures' },
     { id: 'assets', label: 'Events & Sports', icon: Calendar, category: 'assets' },
-    { id: 'luxury-cars', label: 'Luxury Cars', icon: Car, category: 'luxury-cars' },
-    { id: 'ground-transport', label: 'Taxi/Concierge', icon: Car, category: 'ground-transport' },
+    // { id: 'luxury-cars', label: 'Luxury Cars', icon: Car, category: 'luxury-cars' }, // Hidden - now integrated into Ground Transport
+    { id: 'ground-transport', label: 'Ground Transport', icon: Car, category: 'ground-transport' },
     { id: 'community', label: 'Community', icon: MessageCircle, category: 'community' },
     // { id: 'tailored-services', label: 'AI Travel Designer', icon: Compass, category: 'chat' },
     { id: 'co2-saf', label: 'CO₂/SAF', icon: Leaf, category: 'co2-saf' }
@@ -4166,7 +4167,10 @@ const TokenizedAssetsGlassmorphic = () => {
                 </div>
               )}
               <div className="w-full max-w-7xl mx-auto">
-                <UnifiedBookingFlow onStepChange={setBookingStep} />
+                <UnifiedBookingFlow
+                  onStepChange={setBookingStep}
+                  initialVehicleType={bookingVehicleType}
+                />
               </div>
             </div>
           )}
@@ -4251,7 +4255,10 @@ const TokenizedAssetsGlassmorphic = () => {
 
                     {/* Charter a Jet Button */}
                     <button
-                      onClick={() => setActiveCategory('private-jet')}
+                      onClick={() => {
+                        setBookingVehicleType('private-jet');
+                        setActiveCategory('private-jet');
+                      }}
                       className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
                     >
                       Charter a Jet
@@ -4870,6 +4877,10 @@ const TokenizedAssetsGlassmorphic = () => {
                           </div>
 
                           <button
+                            onClick={() => {
+                              setBookingVehicleType('private-jet');
+                              setActiveCategory('private-jet');
+                            }}
                             className="w-full bg-black text-white py-3 rounded-xl font-semibold hover:bg-gray-800 transition-all mb-3"
                           >
                             Request Quote
@@ -4956,7 +4967,10 @@ const TokenizedAssetsGlassmorphic = () => {
 
                     {/* Charter a Heli Button */}
                     <button
-                      onClick={() => setActiveCategory('private-jet')}
+                      onClick={() => {
+                        setBookingVehicleType('helicopter');
+                        setActiveCategory('private-jet');
+                      }}
                       className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
                     >
                       Charter a Heli
@@ -5476,7 +5490,13 @@ const TokenizedAssetsGlassmorphic = () => {
                           </div>
                         </div>
 
-                        <button className="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition-all mb-4">
+                        <button
+                          onClick={() => {
+                            setBookingVehicleType('helicopter');
+                            setActiveCategory('private-jet');
+                          }}
+                          className="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition-all mb-4"
+                        >
                           Request Charter
                         </button>
 

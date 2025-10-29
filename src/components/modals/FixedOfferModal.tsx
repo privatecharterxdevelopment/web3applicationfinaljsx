@@ -4,6 +4,9 @@ import { FixedOffer } from '../../pages/FixedOffers';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { useAccount } from 'wagmi';
+import { useAppKit } from '@reown/appkit/react';
+import { web3Service } from '../../lib/web3';
 
 const exchangeRates = {
   CHF: { rate: 1, symbol: 'CHF' },
@@ -20,7 +23,9 @@ interface FixedOfferModalProps {
 export default function FixedOfferModal({ offer, onClose }: FixedOfferModalProps) {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  
+  const { address, isConnected: isWalletConnected } = useAccount();
+  const { open } = useAppKit();
+
   const [formData, setFormData] = useState({
     fullName: user?.name || '',
     email: user?.email || '',
@@ -34,29 +39,65 @@ export default function FixedOfferModal({ offer, onClose }: FixedOfferModalProps
   const [currency, setCurrency] = useState('CHF');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [hasNFT, setHasNFT] = useState(false);
+  const [nftDiscount, setNftDiscount] = useState(0);
+  const [isCheckingNFT, setIsCheckingNFT] = useState(false);
 
   const calculatePackageDetails = () => {
     if (!selectedStartDate || !selectedEndDate) {
-      return { days: 0, subtotal: 0, tax: 0, total: 0 };
+      return { days: 0, subtotal: 0, tax: 0, total: 0, isFree: false, basePrice: 0, discountedPrice: 0 };
     }
 
     const diffTime = Math.abs(selectedEndDate.getTime() - selectedStartDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    
+
     const rate = offer?.price_per_person || offer?.price || 0;
     const currencyRate = exchangeRates[currency]?.rate || 1;
-    const subtotal = rate * currencyRate;
+    const basePrice = rate * currencyRate;
+
+    // NFT discount logic
+    const isFree = hasNFT && basePrice <= 1500;
+    const discountedPrice = hasNFT ? basePrice * (1 - nftDiscount / 100) : basePrice;
+    const subtotal = isFree ? 0 : discountedPrice;
     const tax = subtotal * 0.081;
-    
+
     return {
       days: diffDays,
       subtotal,
       tax,
-      total: subtotal + tax
+      total: subtotal + tax,
+      isFree,
+      basePrice,
+      discountedPrice
     };
   };
 
   const packageDetails = calculatePackageDetails();
+
+  const checkNFTMembership = async () => {
+    if (!isWalletConnected || !address) {
+      open();
+      return;
+    }
+
+    setIsCheckingNFT(true);
+    try {
+      const eligibility = await web3Service.checkDiscountEligibility(address);
+      setHasNFT(eligibility.hasDiscount);
+      setNftDiscount(eligibility.discountPercent);
+
+      if (eligibility.hasDiscount) {
+        alert(`✅ NFT Membership Detected!\n\nYou have ${eligibility.discountPercent}% discount on all flights.\n\nFlights under $1,500 are FREE for NFT holders!`);
+      } else {
+        alert('❌ No NFT Membership found in your connected wallet.\n\nConnect a wallet with an NFT to unlock benefits!');
+      }
+    } catch (error) {
+      console.error('Error checking NFT:', error);
+      alert('Error checking NFT membership. Please try again.');
+    } finally {
+      setIsCheckingNFT(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -140,7 +181,11 @@ export default function FixedOfferModal({ offer, onClose }: FixedOfferModalProps
               email: formData.email,
               phone: formData.phone,
               special_requests: formData.specialRequests
-            }
+            },
+            wallet_address: address || null,
+            has_nft: hasNFT,
+            nft_discount: nftDiscount,
+            is_free: packageDetails.isFree
           }
         }]);
 
@@ -453,11 +498,19 @@ export default function FixedOfferModal({ offer, onClose }: FixedOfferModalProps
                               <option key={curr} value={curr}>{curr}</option>
                             ))}
                           </select>
-                          <span className="font-medium">
+                          <span className={`font-medium ${packageDetails.isFree ? "line-through" : ""}`}>
                             <span className="font-thin">{exchangeRates[currency].symbol}</span> {(offer.price * exchangeRates[currency].rate).toFixed(0)}
                           </span>
                         </div>
                       </div>
+                      {hasNFT && !packageDetails.isFree && (
+                        <div className="flex justify-between text-green-600">
+                          <span>NFT Discount ({nftDiscount}%)</span>
+                          <span className="font-medium">
+                            <span className="font-thin">{exchangeRates[currency].symbol}</span> -{((packageDetails.basePrice - packageDetails.discountedPrice)).toFixed(2)}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex justify-between">
                         <span className="text-gray-600">Travel Period</span>
                         <span className="font-medium">{packageDetails.days} days</span>
@@ -472,12 +525,47 @@ export default function FixedOfferModal({ offer, onClose }: FixedOfferModalProps
                       </div>
                       <div className="border-t border-gray-300 my-2 pt-2 flex justify-between font-bold">
                         <span>Total</span>
-                        <span><span className="font-thin">{exchangeRates[currency].symbol}</span> {packageDetails.total.toFixed(2)}</span>
+                        <span className={packageDetails.isFree ? "text-green-600" : ""}>{packageDetails.isFree ? "FREE" : `${exchangeRates[currency].symbol} ${packageDetails.total.toFixed(2)}`}</span>
                       </div>
+                      {packageDetails.isFree && (
+                        <div className="text-sm text-green-600 text-center font-medium">
+                          ✨ FREE with your NFT Membership! (Packages under $1,500)
+                        </div>
+                      )}
                       <div className="text-xs font-thin text-gray-500 text-center mt-2">
                         all prices incl. VAT
                       </div>
                     </div>
+                  </div>
+
+                  {/* NFT Membership Check */}
+                  <div className="mb-6">
+                    <button
+                      type="button"
+                      onClick={checkNFTMembership}
+                      disabled={isCheckingNFT}
+                      className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg flex items-center justify-center gap-2"
+                    >
+                      {isCheckingNFT ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          <span>Checking NFT...</span>
+                        </>
+                      ) : (
+                        <span>🎫 Check NFT Membership Benefits</span>
+                      )}
+                    </button>
+                    {hasNFT && (
+                      <div className="mt-4 p-4 bg-green-50 border-2 border-green-200 rounded-xl">
+                        <p className="text-green-800 font-semibold mb-1">✅ NFT Membership Active</p>
+                        <p className="text-green-700 text-sm">
+                          {packageDetails.isFree
+                            ? "This package is FREE with your NFT membership!"
+                            : `You have ${nftDiscount}% discount on this package!`
+                          }
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
                 

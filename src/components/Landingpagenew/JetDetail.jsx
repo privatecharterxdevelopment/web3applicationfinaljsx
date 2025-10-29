@@ -5,6 +5,8 @@ import { useAppKit } from '@reown/appkit/react';
 import { Search, ShoppingBag, Settings, User, Shield, Plane, Clock, MapPin, Users, Calendar } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { web3Service } from '../../lib/web3';
+import { createRequest } from '../../services/requests';
+import SuccessNotification from '../SuccessNotification';
 
 const JetDetail = () => {
   const { id } = useParams();
@@ -19,6 +21,8 @@ const JetDetail = () => {
   const [isCheckingNFT, setIsCheckingNFT] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     fetchJet();
@@ -74,19 +78,36 @@ const JetDetail = () => {
       return;
     }
     try {
-      const { error } = await supabase.from('charter_requests').insert([{
-        wallet_address: address,
-        jet_id: jet.id,
-        aircraft_model: jet.aircraft_model,
-        manufacturer: jet.manufacturer,
-        has_nft: hasNFT,
-        nft_discount: nftDiscount,
-        created_at: new Date().toISOString()
-      }]);
+      // Get user data
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert('Please sign in to submit a request.');
+        return;
+      }
 
-      if (error) throw error;
+      // Create request using unified system
+      const { request, error } = await createRequest({
+        userId: user.id,
+        type: 'private_jet_charter',
+        data: {
+          wallet_address: address,
+          jet_id: jet.id,
+          aircraft_model: jet.aircraft_model,
+          manufacturer: jet.manufacturer,
+          passenger_capacity: jet.passenger_capacity,
+          range: jet.range,
+          has_nft: hasNFT,
+          nft_discount: nftDiscount,
+          request_date: new Date().toISOString()
+        },
+        userEmail: user.email
+      });
 
-      alert('✅ Quote request submitted!\n\nOur concierge team will contact you within 24 hours with pricing and availability.');
+      if (error) throw new Error(error);
+
+      // Show success notification
+      setSuccessMessage(`Your ${jet.aircraft_model} charter quote request has been submitted. We'll contact you within 24 hours.`);
+      setShowSuccessNotification(true);
     } catch (error) {
       console.error('Error submitting quote request:', error);
       alert('❌ Failed to submit quote request. Please try again.');
@@ -485,6 +506,14 @@ const JetDetail = () => {
         </>
         )}
       </div>
+
+      {/* Success Notification */}
+      <SuccessNotification
+        show={showSuccessNotification}
+        onClose={() => setShowSuccessNotification(false)}
+        title="Request Submitted!"
+        message={successMessage}
+      />
     </div>
   );
 };

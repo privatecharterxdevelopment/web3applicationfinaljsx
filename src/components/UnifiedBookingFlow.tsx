@@ -409,9 +409,10 @@ const CalendarComponent = ({ selectedDate, onDateSelect }: CalendarProps) => {
 
 interface UnifiedBookingFlowProps {
   onStepChange?: (step: number) => void;
+  initialVehicleType?: 'private-jet' | 'helicopter';
 }
 
-export default function UnifiedBookingFlow({ onStepChange }: UnifiedBookingFlowProps = {}) {
+export default function UnifiedBookingFlow({ onStepChange, initialVehicleType }: UnifiedBookingFlowProps = {}) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showRouteSlider, setShowRouteSlider] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -451,7 +452,9 @@ export default function UnifiedBookingFlow({ onStepChange }: UnifiedBookingFlowP
   const [origin, setOrigin] = useState<AirportSearchResult | null>(null);
   const [destination, setDestination] = useState<AirportSearchResult | null>(null);
   const [stops, setStops] = useState<AirportSearchResult[]>([]);
-  const [selectedVehicleType, setSelectedVehicleType] = useState<'private-jet' | 'helicopter'>('private-jet');
+  const [selectedVehicleType, setSelectedVehicleType] = useState<'private-jet' | 'helicopter'>(
+    initialVehicleType || 'private-jet'
+  );
   const [departureDate, setDepartureDate] = useState<Date | null>(null);
   const [departureTime, setDepartureTime] = useState('10:00');
   const [passengers, setPassengers] = useState(1);

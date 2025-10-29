@@ -4,6 +4,9 @@ import type { EmptyLegOffer } from '../../pages/EmptyLegOffers';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { useAccount } from 'wagmi';
+import { useAppKit } from '@reown/appkit/react';
+import { web3Service } from '../../lib/web3';
 
 const exchangeRates = {
   CHF: 1,
@@ -20,6 +23,8 @@ interface EmptyLegModalProps {
 export default function EmptyLegModal({ offer, onClose }: EmptyLegModalProps) {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const { address, isConnected: isWalletConnected } = useAccount();
+  const { open } = useAppKit();
   const [formData, setFormData] = useState({
     firstName: user?.first_name || '',
     lastName: user?.last_name || '',
@@ -32,6 +37,9 @@ export default function EmptyLegModal({ offer, onClose }: EmptyLegModalProps) {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasNFT, setHasNFT] = useState(false);
+  const [nftDiscount, setNftDiscount] = useState(0);
+  const [isCheckingNFT, setIsCheckingNFT] = useState(false);
 
   // Fetch user profile data including phone number
   useEffect(() => {
@@ -58,6 +66,31 @@ export default function EmptyLegModal({ offer, onClose }: EmptyLegModalProps) {
 
     fetchUserProfile();
   }, [user?.id]);
+
+  const checkNFTMembership = async () => {
+    if (!isWalletConnected || !address) {
+      open();
+      return;
+    }
+
+    setIsCheckingNFT(true);
+    try {
+      const eligibility = await web3Service.checkDiscountEligibility(address);
+      setHasNFT(eligibility.hasDiscount);
+      setNftDiscount(eligibility.discountPercent);
+
+      if (eligibility.hasDiscount) {
+        alert(`✅ NFT Membership Detected!\n\nYou have ${eligibility.discountPercent}% discount on all flights.\n\nFlights under $1,500 are FREE for NFT holders!`);
+      } else {
+        alert('❌ No NFT Membership found in your connected wallet.\n\nConnect a wallet with an NFT to unlock benefits!');
+      }
+    } catch (error) {
+      console.error('Error checking NFT:', error);
+      alert('Failed to check NFT membership. Please try again.');
+    } finally {
+      setIsCheckingNFT(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -95,7 +128,11 @@ export default function EmptyLegModal({ offer, onClose }: EmptyLegModalProps) {
               price: total,
               currency: currencyCode,
               customer_details: formData,
-              pricing_breakdown: { base, tax, total }
+              pricing_breakdown: { base, tax, total },
+              wallet_address: address || null,
+              has_nft: hasNFT,
+              nft_discount: nftDiscount,
+              is_free: isFree
             }
           }]);
 
@@ -128,7 +165,9 @@ export default function EmptyLegModal({ offer, onClose }: EmptyLegModalProps) {
 
   const currencyCode = formData.currency;
   // const rate = exchangeRates[currencyCode as keyof typeof exchangeRates] || 1;
-  const base = offer.price_usd; //* rate;
+  const isFree = hasNFT && offer.price_usd <= 1500;
+  const discountedPrice = hasNFT ? offer.price_usd * (1 - nftDiscount / 100) : offer.price_usd;
+  const base = isFree ? 0 : discountedPrice; //* rate;
   const tax = Math.round(base * 0.081);
   const total = base + tax;
 
@@ -237,19 +276,62 @@ export default function EmptyLegModal({ offer, onClose }: EmptyLegModalProps) {
               </div>
               <div className="flex justify-between text-sm text-gray-600 mb-1">
                 <span>Base Price</span>
-                <span>{currencyCode} {base.toLocaleString()}</span>
+                <span className={isFree ? "line-through" : ""}>{currencyCode} {offer.price_usd.toLocaleString()}</span>
               </div>
+              {hasNFT && !isFree && (
+                <div className="flex justify-between text-sm text-green-600 mb-1">
+                  <span>NFT Discount ({nftDiscount}%)</span>
+                  <span>-{currencyCode} {(offer.price_usd - discountedPrice).toLocaleString()}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm text-gray-600 mb-2">
                 <span>Taxes (8.1%)</span>
                 <span>{currencyCode} {tax.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-xl font-bold border-t border-gray-200 pt-3 mt-3">
                 <span>Total Price</span>
-                <span>{currencyCode} {total.toLocaleString()}</span>
+                <span className={isFree ? "text-green-600" : ""}>{isFree ? "FREE" : `${currencyCode} ${total.toLocaleString()}`}</span>
               </div>
-              <div className="text-sm text-green-600 mt-2 text-center font-medium">
-                Save up to 75% compared to regular charter
-              </div>
+              {isFree && (
+                <div className="text-sm text-green-600 mt-2 text-center font-medium">
+                  ✨ FREE with your NFT Membership! (Flights under $1,500)
+                </div>
+              )}
+              {!isFree && (
+                <div className="text-sm text-green-600 mt-2 text-center font-medium">
+                  Save up to 75% compared to regular charter
+                </div>
+              )}
+            </div>
+
+            {/* NFT Membership Check */}
+            <div className="mb-6">
+              <button
+                type="button"
+                onClick={checkNFTMembership}
+                disabled={isCheckingNFT}
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg flex items-center justify-center gap-2"
+              >
+                {isCheckingNFT ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Checking NFT...</span>
+                  </>
+                ) : (
+                  <span>🎫 Check NFT Membership Benefits</span>
+                )}
+              </button>
+              {hasNFT && (
+                <div className="mt-4 p-4 bg-green-50 border-2 border-green-200 rounded-xl">
+                  <p className="text-green-800 font-semibold mb-1">✅ NFT Membership Active</p>
+                  <p className="text-green-700 text-sm">
+                    {isFree
+                      ? "This flight is FREE with your NFT membership!"
+                      : `You have ${nftDiscount}% discount on this flight!`
+                    }
+                  </p>
+                </div>
+              )}
             </div>
 
             {!isAuthenticated && (

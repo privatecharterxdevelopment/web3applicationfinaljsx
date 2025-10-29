@@ -4,7 +4,7 @@ import { sendRequestNotificationEmail, sendBookingsNotification } from '../utils
 
 interface CreateRequestOptions {
   userId: string;
-  type: 'flight_quote' | 'support' | 'document' | 'visa' | 'payment' | 'booking' | 'cancellation' | 'modification' | 'private_jet_charter' | 'fixed_offer' | 'helicopter_charter' | 'empty_leg' | 'luxury_car_rental' | 'adventure_package' | 'spv_formation' | 'tokenization' | 'taxi_concierge';
+  type: 'flight_quote' | 'support' | 'document' | 'visa' | 'payment' | 'booking' | 'cancellation' | 'modification' | 'private_jet_charter' | 'fixed_offer' | 'helicopter_charter' | 'empty_leg' | 'luxury_car_rental' | 'adventure_package' | 'spv_formation' | 'tokenization' | 'taxi_concierge' | 'event_booking' | 'co2_certificate';
   data: any;
   userEmail?: string;
 }

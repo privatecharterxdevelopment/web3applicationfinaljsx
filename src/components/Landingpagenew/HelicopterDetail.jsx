@@ -5,6 +5,8 @@ import { useAppKit } from '@reown/appkit/react';
 import { Search, ShoppingBag, Settings, User, Shield, MapPin } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { web3Service } from '../../lib/web3';
+import { createRequest } from '../../services/requests';
+import SuccessNotification from '../SuccessNotification';
 
 const HelicopterDetail = () => {
   const { id } = useParams();
@@ -20,6 +22,8 @@ const HelicopterDetail = () => {
   const [passengers, setPassengers] = useState(1);
   const [flightDuration, setFlightDuration] = useState(1);
   const [specialRequests, setSpecialRequests] = useState('');
+  const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     fetchHelicopter();
@@ -76,26 +80,47 @@ const HelicopterDetail = () => {
     }
 
     try {
+      // Get user data
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert('Please sign in to submit a request.');
+        return;
+      }
+
       const hourlyRate = helicopter.price ? parseFloat(helicopter.price) : 0;
       const totalPrice = hourlyRate * flightDuration;
       const discountedPrice = hasNFT ? totalPrice * (1 - nftDiscount / 100) : totalPrice;
 
-      console.log(`Helicopter Charter Request: ${helicopter.name}`);
-      console.log(`Hourly Rate: €${hourlyRate}`);
-      console.log(`Duration: ${flightDuration} hours`);
-      console.log(`Total: €${totalPrice}`);
-      console.log(`Has NFT: ${hasNFT}`);
-      console.log(`Discount: ${nftDiscount}%`);
-      console.log(`Final Price: €${discountedPrice}`);
+      // Create request using unified system
+      const { request, error } = await createRequest({
+        userId: user.id,
+        type: 'helicopter_charter',
+        data: {
+          wallet_address: address,
+          helicopter_id: helicopter.id,
+          helicopter_name: helicopter.name,
+          manufacturer: helicopter.manufacturer,
+          passengers,
+          flight_duration: flightDuration,
+          hourly_rate: hourlyRate,
+          total_price: totalPrice,
+          discounted_price: discountedPrice,
+          has_nft: hasNFT,
+          nft_discount: nftDiscount,
+          special_requests: specialRequests,
+          request_date: new Date().toISOString()
+        },
+        userEmail: user.email
+      });
 
-      if (hasNFT) {
-        alert(`✈️ Charter Requested with ${nftDiscount}% Discount!\n\n${helicopter.name}\nHourly Rate: €${hourlyRate}\nDuration: ${flightDuration} hours\nOriginal Price: €${totalPrice}\nYour Price: €${discountedPrice.toFixed(2)}\n\nYour request has been saved to your dashboard!`);
-      } else {
-        alert(`✈️ Charter Requested!\n\n${helicopter.name}\nHourly Rate: €${hourlyRate}\nDuration: ${flightDuration} hours\nTotal Price: €${totalPrice}\n\nYour request has been saved to your dashboard!`);
-      }
+      if (error) throw new Error(error);
+
+      // Show success notification
+      setSuccessMessage(`Your ${helicopter.name} charter request has been submitted. We'll contact you within 24 hours with availability and pricing.`);
+      setShowSuccessNotification(true);
     } catch (error) {
       console.error('Request failed:', error);
-      alert('Charter request failed. Please try again.');
+      alert('❌ Failed to submit charter request. Please try again.');
     }
   };
 
@@ -601,6 +626,14 @@ const HelicopterDetail = () => {
           </div>
         </div>
       </footer>
+
+      {/* Success Notification */}
+      <SuccessNotification
+        show={showSuccessNotification}
+        onClose={() => setShowSuccessNotification(false)}
+        title="Request Submitted!"
+        message={successMessage}
+      />
     </div>
   );
 };

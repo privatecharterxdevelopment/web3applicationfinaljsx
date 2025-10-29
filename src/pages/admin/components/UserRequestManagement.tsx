@@ -56,7 +56,9 @@ const REQUEST_TYPES = [
   { value: 'empty_leg', label: 'Empty Leg', color: 'pink' },
   { value: 'luxury_car_rental', label: 'Luxury Car Rental', color: 'gray' },
   { value: 'nft_discount_empty_leg', label: 'NFT Discount Empty Leg', color: 'violet' },
-  { value: 'nft_free_flight', label: 'NFT Free Flight', color: 'emerald' }
+  { value: 'nft_free_flight', label: 'NFT Free Flight', color: 'emerald' },
+  { value: 'spv_formation', label: 'SPV Formation', color: 'indigo' },
+  { value: 'tokenization', label: 'Asset Tokenization', color: 'purple' }
 ];
 
 export default function UserRequestManagement() {
@@ -106,10 +108,14 @@ export default function UserRequestManagement() {
 
     try {
       const oldRequest = requests.find(r => r.id === requestId);
-      
+
+      // Get current admin user
+      const { data: { user } } = await supabase.auth.getUser();
+
       const updates: any = {
         status: newStatus,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        admin_id: user?.id // Track which admin updated the request
       };
 
       if (newStatus === 'completed') {
@@ -133,6 +139,7 @@ export default function UserRequestManagement() {
         p_admin_notes: `Status changed to ${newStatus}`
       });
 
+      // Database trigger will automatically create notification for user
       fetchRequests();
     } catch (err) {
       console.error('Error updating user request status:', err);
@@ -144,10 +151,14 @@ export default function UserRequestManagement() {
     if (!editingRequest || !hasPermission('user_requests', 'write')) return;
 
     try {
+      // Get current admin user
+      const { data: { user } } = await supabase.auth.getUser();
+
       const { error } = await supabase
         .from('user_requests')
         .update({
           admin_notes: adminNotes,
+          admin_id: user?.id, // Track which admin responded
           updated_at: new Date().toISOString()
         })
         .eq('id', editingRequest.id);
@@ -164,6 +175,7 @@ export default function UserRequestManagement() {
         p_admin_notes: 'Admin notes updated'
       });
 
+      // Database trigger will automatically create notification for user
       setEditingRequest(null);
       setAdminNotes('');
       fetchRequests();
@@ -979,8 +991,288 @@ export default function UserRequestManagement() {
                         </div>
                       )}
 
+                      {/* SPV Formation Details */}
+                      {selectedRequest.type === 'spv_formation' && (
+                        <div className="space-y-6">
+                          {/* Tier & Jurisdiction */}
+                          <div>
+                            <div className="text-sm font-semibold text-gray-900 mb-3">Tier & Jurisdiction</div>
+                            <div className="grid grid-cols-2 gap-4">
+                              {selectedRequest.data.tier && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Tier</div>
+                                  <div className="text-sm font-medium text-gray-900">{selectedRequest.data.tier}</div>
+                                </div>
+                              )}
+                              {selectedRequest.data.jurisdiction && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Jurisdiction</div>
+                                  <div className="text-sm font-medium text-gray-900">{selectedRequest.data.jurisdiction.name || selectedRequest.data.jurisdiction}</div>
+                                </div>
+                              )}
+                              {selectedRequest.data.pricing?.total && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Total Cost</div>
+                                  <div className="text-sm font-medium text-green-600 text-lg">{formatCurrency(selectedRequest.data.pricing.total, 'EUR')}</div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Company Information */}
+                          {selectedRequest.data.companyInfo && (
+                            <div>
+                              <div className="text-sm font-semibold text-gray-900 mb-3">Company Information</div>
+                              <div className="space-y-3">
+                                {selectedRequest.data.companyInfo.companyName && (
+                                  <div>
+                                    <div className="text-xs text-gray-500 mb-1">Company Name</div>
+                                    <div className="text-sm font-medium text-gray-900">{selectedRequest.data.companyInfo.companyName}</div>
+                                  </div>
+                                )}
+                                {selectedRequest.data.companyInfo.activity && (
+                                  <div>
+                                    <div className="text-xs text-gray-500 mb-1">Business Activity</div>
+                                    <div className="text-sm text-gray-700">{selectedRequest.data.companyInfo.activity}</div>
+                                  </div>
+                                )}
+                                {selectedRequest.data.companyInfo.description && (
+                                  <div>
+                                    <div className="text-xs text-gray-500 mb-1">Description</div>
+                                    <div className="text-sm text-gray-700">{selectedRequest.data.companyInfo.description}</div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Directors & Shareholders */}
+                          {selectedRequest.data.directors && selectedRequest.data.directors.length > 0 && (
+                            <div>
+                              <div className="text-sm font-semibold text-gray-900 mb-3">Directors & Shareholders</div>
+                              <div className="space-y-3">
+                                {selectedRequest.data.directors.map((director: any, idx: number) => (
+                                  <div key={idx} className="bg-white p-3 rounded-lg border border-gray-200">
+                                    <div className="grid grid-cols-2 gap-3">
+                                      <div>
+                                        <div className="text-xs text-gray-500">Full Name</div>
+                                        <div className="text-sm font-medium">{director.fullName}</div>
+                                      </div>
+                                      <div>
+                                        <div className="text-xs text-gray-500">Nationality</div>
+                                        <div className="text-sm">{director.nationality}</div>
+                                      </div>
+                                      <div>
+                                        <div className="text-xs text-gray-500">Role</div>
+                                        <div className="text-sm">{director.role || 'Director'}</div>
+                                      </div>
+                                      {director.sharePercentage && (
+                                        <div>
+                                          <div className="text-xs text-gray-500">Share %</div>
+                                          <div className="text-sm font-medium text-blue-600">{director.sharePercentage}%</div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Additional Services */}
+                          {selectedRequest.data.additionalServices && Object.keys(selectedRequest.data.additionalServices).length > 0 && (
+                            <div>
+                              <div className="text-sm font-semibold text-gray-900 mb-3">Additional Services</div>
+                              <div className="bg-blue-50 p-3 rounded-lg space-y-2">
+                                {Object.entries(selectedRequest.data.additionalServices).map(([key, value]) => {
+                                  if (value) {
+                                    return (
+                                      <div key={key} className="flex items-center gap-2">
+                                        <Check size={16} className="text-green-600" />
+                                        <span className="text-sm text-gray-700">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Documents */}
+                          {selectedRequest.data.documents && selectedRequest.data.documents.length > 0 && (
+                            <div>
+                              <div className="text-sm font-semibold text-gray-900 mb-3">Uploaded Documents</div>
+                              <div className="space-y-2">
+                                {selectedRequest.data.documents.map((doc: any, idx: number) => (
+                                  <div key={idx} className="flex items-center gap-2 text-sm text-gray-700 bg-gray-50 p-2 rounded">
+                                    <FileText size={16} className="text-gray-400" />
+                                    <span>{doc.name || `Document ${idx + 1}`}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Tokenization Details */}
+                      {selectedRequest.type === 'tokenization' && (
+                        <div className="space-y-6">
+                          {/* Asset Information */}
+                          <div>
+                            <div className="text-sm font-semibold text-gray-900 mb-3">Asset Information</div>
+                            <div className="grid grid-cols-2 gap-4">
+                              {selectedRequest.data.assetInfo?.assetName && (
+                                <div className="col-span-2">
+                                  <div className="text-xs text-gray-500 mb-1">Asset Name</div>
+                                  <div className="text-sm font-medium text-gray-900">{selectedRequest.data.assetInfo.assetName}</div>
+                                </div>
+                              )}
+                              {selectedRequest.data.assetInfo?.category && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Category</div>
+                                  <div className="text-sm font-medium text-gray-900">{selectedRequest.data.assetInfo.category}</div>
+                                </div>
+                              )}
+                              {selectedRequest.data.assetInfo?.assetValue && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Asset Value</div>
+                                  <div className="text-sm font-medium text-green-600 text-lg">{formatCurrency(selectedRequest.data.assetInfo.assetValue)}</div>
+                                </div>
+                              )}
+                              {selectedRequest.data.assetInfo?.location && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Location</div>
+                                  <div className="text-sm text-gray-700">{selectedRequest.data.assetInfo.location}</div>
+                                </div>
+                              )}
+                            </div>
+                            {selectedRequest.data.assetInfo?.description && (
+                              <div className="mt-3">
+                                <div className="text-xs text-gray-500 mb-1">Description</div>
+                                <div className="text-sm text-gray-700">{selectedRequest.data.assetInfo.description}</div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Token Configuration */}
+                          {selectedRequest.data.tokenConfig && (
+                            <div>
+                              <div className="text-sm font-semibold text-gray-900 mb-3">Token Configuration</div>
+                              <div className="grid grid-cols-2 gap-4">
+                                {selectedRequest.data.tokenConfig.tokenStandard && (
+                                  <div>
+                                    <div className="text-xs text-gray-500 mb-1">Token Standard</div>
+                                    <div className="text-sm font-medium text-gray-900">{selectedRequest.data.tokenConfig.tokenStandard}</div>
+                                  </div>
+                                )}
+                                {selectedRequest.data.tokenConfig.tokenSymbol && (
+                                  <div>
+                                    <div className="text-xs text-gray-500 mb-1">Token Symbol</div>
+                                    <div className="text-sm font-medium text-blue-600">{selectedRequest.data.tokenConfig.tokenSymbol}</div>
+                                  </div>
+                                )}
+                                {selectedRequest.data.tokenConfig.totalSupply && (
+                                  <div>
+                                    <div className="text-xs text-gray-500 mb-1">Total Supply</div>
+                                    <div className="text-sm font-medium text-gray-900">{selectedRequest.data.tokenConfig.totalSupply.toLocaleString()}</div>
+                                  </div>
+                                )}
+                                {selectedRequest.data.tokenConfig.pricePerToken && (
+                                  <div>
+                                    <div className="text-xs text-gray-500 mb-1">Price per Token</div>
+                                    <div className="text-sm font-medium text-gray-900">{formatCurrency(selectedRequest.data.tokenConfig.pricePerToken)}</div>
+                                  </div>
+                                )}
+                                {selectedRequest.data.tokenConfig.expectedAPY && (
+                                  <div>
+                                    <div className="text-xs text-gray-500 mb-1">Expected APY</div>
+                                    <div className="text-sm font-medium text-green-600">{selectedRequest.data.tokenConfig.expectedAPY}%</div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Token Type */}
+                          {selectedRequest.data.tokenType && (
+                            <div>
+                              <div className="text-sm font-semibold text-gray-900 mb-3">Token Type</div>
+                              <div className="bg-purple-50 p-3 rounded-lg">
+                                <div className="text-sm font-medium text-purple-900">
+                                  {selectedRequest.data.tokenType === 'utility' ? 'Utility Token (UTO)' : 'Security Token (STO)'}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Compliance & Jurisdiction */}
+                          {selectedRequest.data.compliance && (
+                            <div>
+                              <div className="text-sm font-semibold text-gray-900 mb-3">Compliance & Jurisdiction</div>
+                              <div className="grid grid-cols-2 gap-4">
+                                {selectedRequest.data.compliance.jurisdiction && (
+                                  <div>
+                                    <div className="text-xs text-gray-500 mb-1">Jurisdiction</div>
+                                    <div className="text-sm font-medium text-gray-900">{selectedRequest.data.compliance.jurisdiction}</div>
+                                  </div>
+                                )}
+                                {selectedRequest.data.compliance.hasSPV !== undefined && (
+                                  <div>
+                                    <div className="text-xs text-gray-500 mb-1">SPV Structure</div>
+                                    <div className={`text-sm font-medium ${selectedRequest.data.compliance.hasSPV ? 'text-green-600' : 'text-orange-600'}`}>
+                                      {selectedRequest.data.compliance.hasSPV ? 'Yes - SPV Exists' : 'No - Needs SPV'}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Legal Documents */}
+                          {selectedRequest.data.legalDocuments && Object.keys(selectedRequest.data.legalDocuments).length > 0 && (
+                            <div>
+                              <div className="text-sm font-semibold text-gray-900 mb-3">Legal Documents</div>
+                              <div className="space-y-2">
+                                {Object.entries(selectedRequest.data.legalDocuments).map(([key, value]) => {
+                                  if (value) {
+                                    return (
+                                      <div key={key} className="flex items-center gap-2 text-sm text-gray-700 bg-gray-50 p-2 rounded">
+                                        <FileText size={16} className="text-green-600" />
+                                        <span>{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                                        <Check size={16} className="text-green-600 ml-auto" />
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Payment Package */}
+                          {selectedRequest.data.paymentPackage && (
+                            <div>
+                              <div className="text-sm font-semibold text-gray-900 mb-3">Selected Package</div>
+                              <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg">
+                                <div className="flex justify-between items-center">
+                                  <div>
+                                    <div className="font-medium text-gray-900">{selectedRequest.data.paymentPackage.name}</div>
+                                    <div className="text-xs text-gray-600 mt-1">{selectedRequest.data.paymentPackage.description}</div>
+                                  </div>
+                                  <div className="text-xl font-bold text-purple-600">
+                                    {formatCurrency(selectedRequest.data.paymentPackage.price)}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* Generic data display for other types or when specific parsing isn't available */}
-                      {!['private_jet_charter', 'jets', 'empty_leg', 'nft_discount_empty_leg', 'nft_free_flight', 'adventures', 'co2-certificate', 'luxury_car_rental', 'helicopter_charter'].includes(selectedRequest.type) && (
+                      {!['private_jet_charter', 'jets', 'empty_leg', 'nft_discount_empty_leg', 'nft_free_flight', 'adventures', 'co2-certificate', 'luxury_car_rental', 'helicopter_charter', 'spv_formation', 'tokenization'].includes(selectedRequest.type) && (
                         <div>
                           <pre className="text-sm text-gray-600 whitespace-pre-wrap bg-white p-3 rounded border">
                             {JSON.stringify(selectedRequest.data, null, 2)}
