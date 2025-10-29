@@ -1,87 +1,32 @@
 import { supabase } from '../lib/supabase';
 import { logger } from '../utils/logger';
-import { sendRequestNotificationEmail, sendBookingsNotification } from '../utils/email';
 
 interface CreateRequestOptions {
   userId: string;
   type: 'flight_quote' | 'support' | 'document' | 'visa' | 'payment' | 'booking' | 'cancellation' | 'modification' | 'private_jet_charter' | 'fixed_offer' | 'helicopter_charter' | 'empty_leg' | 'luxury_car_rental' | 'adventure_package' | 'spv_formation' | 'tokenization' | 'taxi_concierge' | 'event_booking' | 'co2_certificate';
   data: any;
-  userEmail?: string;
 }
 
-export const createRequest = async ({ userId, type, data, userEmail }: CreateRequestOptions) => {
+export const createRequest = async ({ userId, type, data }: CreateRequestOptions) => {
   try {
-    console.log('🔥 createRequest called with:', { userId, type, dataKeys: Object.keys(data) });
-
-    const requestData: any = {
-      user_id: userId,
-      type,
-      data,
-      status: 'pending'
-    };
-
-    // Add user email if provided
-    if (userEmail) {
-      requestData.user_email = userEmail;
-    }
-
-    console.log('🔥 Inserting into user_requests:', { userId, type });
-
     const { data: request, error } = await supabase
       .from('user_requests')
-      .insert([requestData])
+      .insert([{
+        user_id: userId,
+        type,
+        data,
+        status: 'pending'
+      }])
       .select()
       .single();
 
-    if (error) {
-      console.error('❌ Supabase INSERT error:', error);
-      throw error;
-    }
-
-    console.log('✅ Request inserted successfully:', request?.id);
-
-    // Send email notification based on request type
-    try {
-      await sendEmailNotification(type, data, userEmail);
-    } catch (emailError) {
-      console.warn('⚠️ Email notification failed (non-critical):', emailError);
-      // Don't throw - email failure shouldn't block request creation
-    }
-
+    if (error) throw error;
     return { request, error: null };
-  } catch (error: any) {
-    console.error('❌ createRequest FAILED:', error);
+  } catch (error) {
     logger.error('Error creating request:', error);
-    return {
-      request: null,
-      error: error.message || error.toString() || 'Failed to create request'
-    };
+    return { request: null, error: 'Failed to create request' };
   }
 };
-
-// Email notification helper
-async function sendEmailNotification(type: string, data: any, userEmail?: string) {
-  try {
-    if (userEmail) {
-      // Send email to customer
-      await sendRequestNotificationEmail(type, userEmail, data);
-
-      // Send email to bookings@privatecharterx.com
-      await sendBookingsNotification(type, data, userEmail);
-
-      logger.info('Email notifications sent successfully', {
-        type,
-        userEmail,
-        timestamp: new Date().toISOString()
-      });
-    } else {
-      logger.warn('No email provided for notification', { type });
-    }
-  } catch (error) {
-    logger.error('Error sending email notification:', error);
-    // Don't throw - we don't want email failures to block request creation
-  }
-}
 
 export const getUserRequests = async (userId: string) => {
   try {
