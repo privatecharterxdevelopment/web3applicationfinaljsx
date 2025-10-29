@@ -196,11 +196,6 @@ const AdventureDetail = () => {
       return;
     }
 
-    if (!isConnected) {
-      open();
-      return;
-    }
-
     try {
       // Calculate pricing
       const pricePerPax = adventure.price / (adventure.max_passengers || 4);
@@ -229,7 +224,7 @@ const AdventureDetail = () => {
           original_price: adventure.price,
           discounted_price: finalPrice,
           currency: 'EUR',
-          wallet_address: address || null,
+          wallet_address: isConnected && address ? address : null,
           has_nft: hasNFT,
           nft_discount: nftDiscount,
           is_free: isFree,

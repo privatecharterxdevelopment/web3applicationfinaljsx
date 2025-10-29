@@ -232,7 +232,7 @@ export default function CO2CertificateDetail() {
           methodology: project.methodology,
           available_tons: project.availableTons,
           benefits: project.benefits,
-          wallet_address: address || null,
+          wallet_address: isConnected && address ? address : null,
           additional_info: project.additionalInfo
         }
       });

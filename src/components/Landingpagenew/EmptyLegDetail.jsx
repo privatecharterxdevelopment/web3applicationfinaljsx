@@ -220,11 +220,6 @@ const EmptyLegDetail = () => {
       return;
     }
 
-    if (!isConnected) {
-      open();
-      return;
-    }
-
     try {
       const isFree = hasNFT && emptyLeg.price <= 1500;
       const discountedPrice = hasNFT ? emptyLeg.price * (1 - nftDiscount / 100) : emptyLeg.price;
@@ -255,7 +250,7 @@ const EmptyLegDetail = () => {
           passengers: passengers,
           luggage: luggage,
           has_pet: hasPet,
-          wallet_address: address || null,
+          wallet_address: isConnected && address ? address : null,
           has_nft: hasNFT,
           nft_discount: nftDiscount,
           is_free: isFree,
@@ -819,9 +814,9 @@ const EmptyLegDetail = () => {
                 </button>
               </div>
 
-              {isConnected && (
+              {isConnected && address && (
                 <div className="mt-3 text-xs text-gray-500 text-center">
-                  {address?.slice(0, 6)}...{address?.slice(-4)}
+                  Connected: {address.slice(0, 6)}...{address.slice(-4)}
                 </div>
               )}
 

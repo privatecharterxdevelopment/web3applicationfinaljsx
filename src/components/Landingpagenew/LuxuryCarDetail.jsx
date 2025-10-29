@@ -99,11 +99,6 @@ const LuxuryCarDetail = () => {
       return;
     }
 
-    if (!isConnected) {
-      open();
-      return;
-    }
-
     try {
       // Check if weekly rental is available
       if (rentalDuration === 'week' && !car.price_per_week) {
@@ -138,7 +133,7 @@ const LuxuryCarDetail = () => {
           original_price: price,
           discounted_price: discountedPrice,
           currency: 'EUR',
-          wallet_address: address || null,
+          wallet_address: isConnected && address ? address : null,
           has_nft: hasNFT,
           nft_discount: nftDiscount,
           price_per_hour: car.price_per_hour,
