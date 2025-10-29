@@ -881,12 +881,17 @@ const FixedOffers: React.FC = () => {
 
       console.log('📤 Submitting enhanced request:', requestData);
 
-      // Use the createRequest service with Supabase
-      await createRequest({
-        userId: user.id,
-        type: 'fixed_offer',
-        data: requestData.data
-      });
+      // DIRECT INSERT - matching working pattern
+      const { error: dbError } = await supabase
+        .from('user_requests')
+        .insert([{
+          user_id: user.id,
+          type: 'fixed_offer',
+          status: 'pending',
+          data: requestData.data
+        }]);
+
+      if (dbError) throw dbError;
 
       console.log('✅ Request submitted successfully with all booking details');
       setShowSuccess(true);
