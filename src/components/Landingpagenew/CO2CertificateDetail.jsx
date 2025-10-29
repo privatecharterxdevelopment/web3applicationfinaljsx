@@ -6,6 +6,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useAccount } from 'wagmi';
 import UserMenu from '../UserMenu';
 import WalletMenu from '../WalletMenu';
+import { createRequest } from '../../services/requests';
+import SuccessNotification from '../SuccessNotification';
 
 // Real CO2 Projects from Marketplace
 const realProjects = {
@@ -168,6 +170,7 @@ export default function CO2CertificateDetail() {
   const [purchaseStep, setPurchaseStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const handleLogout = useCallback(() => {
     console.log('User logged out');
@@ -201,27 +204,47 @@ export default function CO2CertificateDetail() {
     setPurchaseStep(1);
   };
 
-  const handleConfirmPurchase = () => {
-    const emailBody = `
-CO2 Certificate Purchase Request
+  const handleConfirmPurchase = async () => {
+    if (!user) {
+      alert('Please sign in to purchase CO2 certificates');
+      navigate('/login');
+      return;
+    }
 
-Project: ${project.name}
-Project ID: ${project.projectId}
-NGO Provider: ${project.ngoName}
-Location: ${project.location}, ${project.country}
+    try {
+      // Save to database
+      await createRequest({
+        userId: user.id,
+        type: 'co2_certificate',
+        data: {
+          project_id: project.projectId,
+          project_name: project.name,
+          ngo_provider: project.ngoName,
+          location: project.location,
+          country: project.country,
+          quantity_tons: quantity,
+          price_per_ton: project.pricePerTon,
+          total_price: totalPrice,
+          currency: 'USD',
+          payment_method: paymentMethod,
+          certification_standard: project.certificationStandard,
+          category: project.category,
+          methodology: project.methodology,
+          available_tons: project.availableTons,
+          benefits: project.benefits,
+          wallet_address: address || null,
+          additional_info: project.additionalInfo
+        }
+      });
 
-Quantity: ${quantity} tons
-Price per Ton: $${project.pricePerTon.toFixed(2)}
-Total Price: $${totalPrice.toFixed(2)}
-
-Payment Method: ${paymentMethod}
-
-Certification Standard: ${project.certificationStandard}
-    `.trim();
-
-    window.location.href = `mailto:info@privatecharterx.com?subject=CO2 Certificate Purchase - ${project.projectId}&body=${encodeURIComponent(emailBody)}`;
-    setShowPurchaseModal(false);
-    setPurchaseStep(1);
+      // Close modal and show success
+      setShowPurchaseModal(false);
+      setPurchaseStep(1);
+      setShowSuccess(true);
+    } catch (error) {
+      console.error('Purchase failed:', error);
+      alert('CO2 certificate purchase failed. Please try again.');
+    }
   };
 
   return (
@@ -717,6 +740,17 @@ Certification Standard: ${project.certificationStandard}
             )}
           </div>
         </div>
+      )}
+
+      {/* Success Notification */}
+      {showSuccess && (
+        <SuccessNotification
+          message="CO2 certificate purchase requested successfully!"
+          onClose={() => {
+            setShowSuccess(false);
+            navigate('/dashboard');
+          }}
+        />
       )}
     </div>
   );

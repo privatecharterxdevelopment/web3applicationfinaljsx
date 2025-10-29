@@ -6,12 +6,16 @@ import { Search, ShoppingBag, Settings, User, Shield, Plane, Clock, MapPin, User
 import { supabase } from '../../lib/supabase';
 import { airportsStaticService } from '../../services/airportsStaticService';
 import { web3Service } from '../../lib/web3';
+import { useAuth } from '../../context/AuthContext';
+import { createRequest } from '../../services/requests';
+import SuccessNotification from '../SuccessNotification';
 
 const AdventureDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { address, isConnected } = useAccount();
   const { open } = useAppKit();
+  const { user } = useAuth();
 
   const [adventure, setAdventure] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -23,6 +27,7 @@ const AdventureDetail = () => {
   const [participants, setParticipants] = useState(2);
   const [selectedDate, setSelectedDate] = useState(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     fetchAdventure();
@@ -185,26 +190,71 @@ const AdventureDetail = () => {
   };
 
   const requestAdventure = async () => {
+    if (!user) {
+      alert('Please sign in to request an adventure package');
+      navigate('/login');
+      return;
+    }
+
     if (!isConnected) {
       open();
       return;
     }
+
     try {
-      const isFree = hasNFT && adventure.price <= 1500;
-      const discountedPrice = hasNFT ? adventure.price * (1 - nftDiscount / 100) : adventure.price;
+      // Calculate pricing
+      const pricePerPax = adventure.price / (adventure.max_passengers || 4);
+      const extraPax = Math.max(0, participants - (adventure.max_passengers || 4));
+      const subtotal = adventure.price + (extraPax * pricePerPax);
+      const isFree = hasNFT && adventure.price <= 1500 && participants <= (adventure.max_passengers || 4);
+      const discountedPrice = hasNFT ? subtotal * (1 - nftDiscount / 100) : subtotal;
+      const finalPrice = isFree ? 0 : discountedPrice;
+      const requestType = isFree ? 'nft_free_flight' : 'adventure_package';
 
-      // TODO: Save to dashboard history
-      // TODO: Send request to backend
+      // Save to database
+      await createRequest({
+        userId: user.id,
+        type: requestType,
+        data: {
+          adventure_id: adventure.id,
+          adventure_title: adventure.title,
+          package_type: adventure.package_type,
+          origin: adventure.origin,
+          destination: adventure.destination,
+          origin_city: adventure.origin_city,
+          destination_city: adventure.destination_city,
+          duration: adventure.duration,
+          participants: participants,
+          preferred_date: selectedDate,
+          original_price: adventure.price,
+          discounted_price: finalPrice,
+          currency: 'EUR',
+          wallet_address: address || null,
+          has_nft: hasNFT,
+          nft_discount: nftDiscount,
+          is_free: isFree,
+          co2_emissions: co2Data.emissions,
+          co2_offset_cost: co2Data.offset,
+          flight_emissions: co2Data.flightEmissions,
+          package_overhead: co2Data.packageOverhead,
+          includes_helicopter: adventure.includes_helicopter || false,
+          includes_yacht: adventure.includes_yacht || false,
+          includes_safari: adventure.includes_safari || false,
+          includes_ground_transport: adventure.includes_ground_transport || false,
+          includes_accommodation: adventure.includes_accommodation || false,
+          activities: adventure.activities || [],
+          inclusions: adventure.inclusions || [],
+          guide_included: adventure.guide_included || false,
+          equipment_provided: adventure.equipment_provided || false,
+          insurance_included: adventure.insurance_included || false
+        }
+      });
 
-      if (isFree) {
-        alert(`🎉 Adventure Requested - FREE!\n\n${adventure.title}\nOriginal Price: €${adventure.price}\nYour Price: FREE (NFT Membership)`);
-      } else if (hasNFT) {
-        alert(`✈️ Adventure Requested with ${nftDiscount}% Discount!\n\n${adventure.title}\nOriginal Price: €${adventure.price}\nYour Price: €${discountedPrice.toFixed(2)}`);
-      } else {
-        alert(`✈️ Adventure Requested!\n\n${adventure.title}\nPrice: €${adventure.price}`);
-      }
+      // Show success notification
+      setShowSuccess(true);
     } catch (error) {
       console.error('Request failed:', error);
+      alert('Adventure request failed. Please try again.');
     }
   };
 
@@ -883,6 +933,17 @@ const AdventureDetail = () => {
           </div>
         </div>
       </footer>
+
+      {/* Success Notification */}
+      {showSuccess && (
+        <SuccessNotification
+          message="Adventure package requested successfully!"
+          onClose={() => {
+            setShowSuccess(false);
+            navigate('/dashboard');
+          }}
+        />
+      )}
     </div>
   );
 };

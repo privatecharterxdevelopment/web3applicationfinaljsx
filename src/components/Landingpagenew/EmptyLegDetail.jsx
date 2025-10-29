@@ -7,12 +7,16 @@ import { supabase } from '../../lib/supabase';
 import RoutePreviewMap from '../RoutePreviewMap';
 import { airportsStaticService } from '../../services/airportsStaticService';
 import { web3Service } from '../../lib/web3';
+import { useAuth } from '../../context/AuthContext';
+import { createRequest } from '../../services/requests';
+import SuccessNotification from '../SuccessNotification';
 
 const EmptyLegDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { address, isConnected } = useAccount();
   const { open } = useAppKit();
+  const { user } = useAuth();
   const [emptyLeg, setEmptyLeg] = useState(null);
   const [activeTab, setActiveTab] = useState('details');
   const [hasNFT, setHasNFT] = useState(false);
@@ -25,6 +29,7 @@ const EmptyLegDetail = () => {
   const [luggage, setLuggage] = useState(0);
   const [hasPet, setHasPet] = useState(false);
   const [co2Data, setCo2Data] = useState({ emissions: 0, offset: 0, distance: 0 });
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     fetchEmptyLeg();
@@ -209,6 +214,12 @@ const EmptyLegDetail = () => {
   };
 
   const requestFlight = async () => {
+    if (!user) {
+      alert('Please sign in to request a flight');
+      navigate('/login');
+      return;
+    }
+
     if (!isConnected) {
       open();
       return;
@@ -217,23 +228,45 @@ const EmptyLegDetail = () => {
     try {
       const isFree = hasNFT && emptyLeg.price <= 1500;
       const discountedPrice = hasNFT ? emptyLeg.price * (1 - nftDiscount / 100) : emptyLeg.price;
+      const finalPrice = isFree ? 0 : discountedPrice;
 
-      console.log(`Flight Request: ${emptyLeg.from_iata} → ${emptyLeg.to_iata}`);
-      console.log(`Price: €${emptyLeg.price}`);
-      console.log(`Has NFT: ${hasNFT}`);
-      console.log(`Discount: ${nftDiscount}%`);
-      console.log(`Final Price: €${isFree ? 0 : discountedPrice}`);
+      const requestType = isFree ? 'nft_free_flight' : hasNFT ? 'nft_discount_empty_leg' : 'empty_leg';
 
-      // TODO: Save to dashboard history
-      // TODO: Send request to backend
+      // Save to database
+      await createRequest({
+        userId: user.id,
+        type: requestType,
+        data: {
+          empty_leg_id: emptyLeg.id,
+          flight_route: `${emptyLeg.from_iata} → ${emptyLeg.to_iata}`,
+          from_city: emptyLeg.from_city,
+          to_city: emptyLeg.to_city,
+          from_iata: emptyLeg.from_iata,
+          to_iata: emptyLeg.to_iata,
+          departure_date: emptyLeg.departure_date,
+          departure_time: emptyLeg.departure_time,
+          arrival_date: emptyLeg.arrival_date,
+          arrival_time: emptyLeg.arrival_time,
+          aircraft_type: emptyLeg.category,
+          capacity: emptyLeg.capacity,
+          original_price: emptyLeg.price,
+          discounted_price: finalPrice,
+          currency: 'EUR',
+          passengers: passengers,
+          luggage: luggage,
+          has_pet: hasPet,
+          wallet_address: address || null,
+          has_nft: hasNFT,
+          nft_discount: nftDiscount,
+          is_free: isFree,
+          co2_emissions: co2Data.emissions,
+          co2_offset_cost: co2Data.offset,
+          distance_km: co2Data.distance
+        }
+      });
 
-      if (isFree) {
-        alert(`🎉 Flight Requested - FREE!\n\n${emptyLeg.from_iata} → ${emptyLeg.to_iata}\nOriginal Price: €${emptyLeg.price}\nYour Price: FREE (NFT Membership)\n\nYour request has been saved to your dashboard!`);
-      } else if (hasNFT) {
-        alert(`✈️ Flight Requested with ${nftDiscount}% Discount!\n\n${emptyLeg.from_iata} → ${emptyLeg.to_iata}\nOriginal Price: €${emptyLeg.price}\nYour Price: €${discountedPrice.toFixed(2)}\n\nYour request has been saved to your dashboard!`);
-      } else {
-        alert(`✈️ Flight Requested!\n\n${emptyLeg.from_iata} → ${emptyLeg.to_iata}\nPrice: €${emptyLeg.price}\n\nYour request has been saved to your dashboard!`);
-      }
+      // Show success notification
+      setShowSuccess(true);
     } catch (error) {
       console.error('Request failed:', error);
       alert('Flight request failed. Please try again.');
@@ -879,6 +912,17 @@ const EmptyLegDetail = () => {
           </div>
         </div>
       </footer>
+
+      {/* Success Notification */}
+      {showSuccess && (
+        <SuccessNotification
+          message="Flight request submitted successfully!"
+          onClose={() => {
+            setShowSuccess(false);
+            navigate('/dashboard');
+          }}
+        />
+      )}
     </div>
   );
 };

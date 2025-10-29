@@ -5,12 +5,16 @@ import { useAppKit } from '@reown/appkit/react';
 import { Search, ShoppingBag, Settings, User, Shield, Car, Clock, MapPin, Users, Calendar, Fuel, Gauge } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { web3Service } from '../../lib/web3';
+import { useAuth } from '../../context/AuthContext';
+import { createRequest } from '../../services/requests';
+import SuccessNotification from '../SuccessNotification';
 
 const LuxuryCarDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { address, isConnected } = useAccount();
   const { open } = useAppKit();
+  const { user } = useAuth();
 
   const [car, setCar] = useState(null);
   const [activeTab, setActiveTab] = useState('details');
@@ -25,6 +29,7 @@ const LuxuryCarDetail = () => {
   const [dropoffDate, setDropoffDate] = useState(null);
   const [dropoffTime, setDropoffTime] = useState('10:00');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     fetchCar();
@@ -88,10 +93,17 @@ const LuxuryCarDetail = () => {
   };
 
   const requestRental = async () => {
+    if (!user) {
+      alert('Please sign in to request a luxury car rental');
+      navigate('/login');
+      return;
+    }
+
     if (!isConnected) {
       open();
       return;
     }
+
     try {
       // Check if weekly rental is available
       if (rentalDuration === 'week' && !car.price_per_week) {
@@ -105,18 +117,47 @@ const LuxuryCarDetail = () => {
 
       const discountedPrice = hasNFT ? price * (1 - nftDiscount / 100) : price;
 
-      console.log(`Car Rental Request: ${car.brand} ${car.model}`);
-      console.log(`Duration: ${rentalDays} ${rentalDuration}(s)`);
-      console.log(`Price: €${price}`);
-      console.log(`Final Price: €${discountedPrice}`);
+      // Save to database
+      await createRequest({
+        userId: user.id,
+        type: 'luxury_car',
+        data: {
+          car_id: car.id,
+          car_name: `${car.brand} ${car.model}`,
+          brand: car.brand,
+          model: car.model,
+          year: car.year,
+          category: car.category,
+          rental_duration_type: rentalDuration,
+          rental_duration_count: rentalDays,
+          pickup_date: pickupDate,
+          pickup_time: pickupTime,
+          dropoff_date: dropoffDate,
+          dropoff_time: dropoffTime,
+          pickup_location: car.location,
+          original_price: price,
+          discounted_price: discountedPrice,
+          currency: 'EUR',
+          wallet_address: address || null,
+          has_nft: hasNFT,
+          nft_discount: nftDiscount,
+          price_per_hour: car.price_per_hour,
+          price_per_day: car.price_per_day,
+          price_per_week: car.price_per_week || null,
+          fuel_type: car.fuel_type,
+          transmission: car.transmission,
+          seats: car.seats,
+          acceleration: car.acceleration,
+          top_speed: car.top_speed,
+          features: car.features || []
+        }
+      });
 
-      if (hasNFT) {
-        alert(`🚗 Car Rental Requested with ${nftDiscount}% Discount!\n\n${car.brand} ${car.model}\nDuration: ${rentalDays} ${rentalDuration}(s)\nOriginal Price: €${price}\nYour Price: €${discountedPrice.toFixed(2)}\n\nYour request has been saved to your dashboard!`);
-      } else {
-        alert(`🚗 Car Rental Requested!\n\n${car.brand} ${car.model}\nDuration: ${rentalDays} ${rentalDuration}(s)\nPrice: €${price}\n\nYour request has been saved to your dashboard!`);
-      }
+      // Show success notification
+      setShowSuccess(true);
     } catch (error) {
       console.error('Request failed:', error);
+      alert('Car rental request failed. Please try again.');
     }
   };
 
@@ -711,6 +752,17 @@ const LuxuryCarDetail = () => {
           </div>
         </div>
       </footer>
+
+      {/* Success Notification */}
+      {showSuccess && (
+        <SuccessNotification
+          message="Luxury car rental requested successfully!"
+          onClose={() => {
+            setShowSuccess(false);
+            navigate('/dashboard');
+          }}
+        />
+      )}
     </div>
   );
 };
