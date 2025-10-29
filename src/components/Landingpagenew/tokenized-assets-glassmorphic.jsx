@@ -799,7 +799,16 @@ const TokenizedAssetsGlassmorphic = () => {
     try {
       const rawData = selectedEmptyLeg.rawData || selectedEmptyLeg;
 
-      await createRequest({
+      console.log('🔥 SAVING EMPTY LEG REQUEST:', {
+        userId: user.id,
+        userEmail: user.email,
+        type: 'empty_leg',
+        passengers: emptyLegPassengers,
+        luggage: emptyLegLuggage,
+        hasPet: emptyLegHasPet
+      });
+
+      const result = await createRequest({
         userId: user.id,
         type: 'empty_leg',
         data: {
@@ -822,15 +831,28 @@ const TokenizedAssetsGlassmorphic = () => {
         }
       });
 
+      console.log('✅ REQUEST SAVED RESULT:', result);
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      if (!result.request || !result.request.id) {
+        throw new Error('No request ID returned from database');
+      }
+
+      console.log('✅ REQUEST ID:', result.request.id);
+      console.log('✅ Navigating to My Requests tab...');
+
       setShowEmptyLegSuccess(true);
 
       setTimeout(() => {
         setShowEmptyLegSuccess(false);
-        navigate('/dashboard');
-      }, 3000);
+        setActiveCategory('requests'); // Go directly to My Requests tab!
+      }, 2000);
     } catch (error) {
-      console.error('Request failed:', error);
-      alert('❌ Flight request failed. Please try again.');
+      console.error('❌ Request failed:', error);
+      alert(`❌ Flight request failed!\n\nError: ${error.message}\n\nUser ID: ${user?.id}\nPlease screenshot this and report it.`);
     }
   };
 
