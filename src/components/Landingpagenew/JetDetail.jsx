@@ -85,25 +85,28 @@ const JetDetail = () => {
         return;
       }
 
-      // Create request using unified system
-      const { request, error } = await createRequest({
-        userId: user.id,
-        type: 'private_jet_charter',
-        data: {
-          wallet_address: address,
-          jet_id: jet.id,
-          aircraft_model: jet.aircraft_model,
-          manufacturer: jet.manufacturer,
-          passenger_capacity: jet.passenger_capacity,
-          range: jet.range,
-          has_nft: hasNFT,
-          nft_discount: nftDiscount,
-          request_date: new Date().toISOString()
-        },
-        userEmail: user.email
-      });
+      // Create request - DIRECT INSERT
+      const { error: dbError } = await supabase
+        .from('user_requests')
+        .insert([{
+          user_id: user.id,
+          type: 'private_jet_charter',
+          status: 'pending',
+          data: {
+            wallet_address: address,
+            jet_id: jet.id,
+            aircraft_model: jet.aircraft_model,
+            manufacturer: jet.manufacturer,
+            passenger_capacity: jet.passenger_capacity,
+            range: jet.range,
+            has_nft: hasNFT,
+            nft_discount: nftDiscount,
+            request_date: new Date().toISOString(),
+            user_email: user.email
+          }
+        }]);
 
-      if (error) throw new Error(error);
+      if (dbError) throw dbError;
 
       // Show success notification
       setSuccessMessage(`Your ${jet.aircraft_model} charter quote request has been submitted. We'll contact you within 24 hours.`);

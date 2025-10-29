@@ -112,41 +112,46 @@ const LuxuryCarDetail = () => {
 
       const discountedPrice = hasNFT ? price * (1 - nftDiscount / 100) : price;
 
-      // Save to database
-      await createRequest({
-        userId: user.id,
-        type: 'luxury_car',
-        data: {
-          car_id: car.id,
-          car_name: `${car.brand} ${car.model}`,
-          brand: car.brand,
-          model: car.model,
-          year: car.year,
-          category: car.category,
-          rental_duration_type: rentalDuration,
-          rental_duration_count: rentalDays,
-          pickup_date: pickupDate,
-          pickup_time: pickupTime,
-          dropoff_date: dropoffDate,
-          dropoff_time: dropoffTime,
-          pickup_location: car.location,
-          original_price: price,
-          discounted_price: discountedPrice,
-          currency: 'EUR',
-          wallet_address: isConnected && address ? address : null,
-          has_nft: hasNFT,
-          nft_discount: nftDiscount,
-          price_per_hour: car.price_per_hour,
-          price_per_day: car.price_per_day,
-          price_per_week: car.price_per_week || null,
-          fuel_type: car.fuel_type,
-          transmission: car.transmission,
-          seats: car.seats,
-          acceleration: car.acceleration,
-          top_speed: car.top_speed,
-          features: car.features || []
-        }
-      });
+      // Save to database - DIRECT INSERT
+      const { error: dbError } = await supabase
+        .from('user_requests')
+        .insert([{
+          user_id: user.id,
+          type: 'luxury_car',
+          status: 'pending',
+          data: {
+            car_id: car.id,
+            car_name: `${car.brand} ${car.model}`,
+            brand: car.brand,
+            model: car.model,
+            year: car.year,
+            category: car.category,
+            rental_duration_type: rentalDuration,
+            rental_duration_count: rentalDays,
+            pickup_date: pickupDate,
+            pickup_time: pickupTime,
+            dropoff_date: dropoffDate,
+            dropoff_time: dropoffTime,
+            pickup_location: car.location,
+            original_price: price,
+            discounted_price: discountedPrice,
+            currency: 'EUR',
+            wallet_address: isConnected && address ? address : null,
+            has_nft: hasNFT,
+            nft_discount: nftDiscount,
+            price_per_hour: car.price_per_hour,
+            price_per_day: car.price_per_day,
+            price_per_week: car.price_per_week || null,
+            fuel_type: car.fuel_type,
+            transmission: car.transmission,
+            seats: car.seats,
+            acceleration: car.acceleration,
+            top_speed: car.top_speed,
+            features: car.features || []
+          }
+        }]);
+
+      if (dbError) throw dbError;
 
       // Show success notification
       setShowSuccess(true);

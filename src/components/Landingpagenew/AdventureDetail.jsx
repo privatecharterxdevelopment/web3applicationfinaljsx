@@ -206,44 +206,49 @@ const AdventureDetail = () => {
       const finalPrice = isFree ? 0 : discountedPrice;
       const requestType = isFree ? 'nft_free_flight' : 'adventure_package';
 
-      // Save to database
-      await createRequest({
-        userId: user.id,
-        type: requestType,
-        data: {
-          adventure_id: adventure.id,
-          adventure_title: adventure.title,
-          package_type: adventure.package_type,
-          origin: adventure.origin,
-          destination: adventure.destination,
-          origin_city: adventure.origin_city,
-          destination_city: adventure.destination_city,
-          duration: adventure.duration,
-          participants: participants,
-          preferred_date: selectedDate,
-          original_price: adventure.price,
-          discounted_price: finalPrice,
-          currency: 'EUR',
-          wallet_address: isConnected && address ? address : null,
-          has_nft: hasNFT,
-          nft_discount: nftDiscount,
-          is_free: isFree,
-          co2_emissions: co2Data.emissions,
-          co2_offset_cost: co2Data.offset,
-          flight_emissions: co2Data.flightEmissions,
-          package_overhead: co2Data.packageOverhead,
-          includes_helicopter: adventure.includes_helicopter || false,
-          includes_yacht: adventure.includes_yacht || false,
-          includes_safari: adventure.includes_safari || false,
-          includes_ground_transport: adventure.includes_ground_transport || false,
-          includes_accommodation: adventure.includes_accommodation || false,
-          activities: adventure.activities || [],
-          inclusions: adventure.inclusions || [],
-          guide_included: adventure.guide_included || false,
-          equipment_provided: adventure.equipment_provided || false,
-          insurance_included: adventure.insurance_included || false
-        }
-      });
+      // Save to database - DIRECT INSERT
+      const { error: dbError } = await supabase
+        .from('user_requests')
+        .insert([{
+          user_id: user.id,
+          type: requestType,
+          status: 'pending',
+          data: {
+            adventure_id: adventure.id,
+            adventure_title: adventure.title,
+            package_type: adventure.package_type,
+            origin: adventure.origin,
+            destination: adventure.destination,
+            origin_city: adventure.origin_city,
+            destination_city: adventure.destination_city,
+            duration: adventure.duration,
+            participants: participants,
+            preferred_date: selectedDate,
+            original_price: adventure.price,
+            discounted_price: finalPrice,
+            currency: 'EUR',
+            wallet_address: isConnected && address ? address : null,
+            has_nft: hasNFT,
+            nft_discount: nftDiscount,
+            is_free: isFree,
+            co2_emissions: co2Data.emissions,
+            co2_offset_cost: co2Data.offset,
+            flight_emissions: co2Data.flightEmissions,
+            package_overhead: co2Data.packageOverhead,
+            includes_helicopter: adventure.includes_helicopter || false,
+            includes_yacht: adventure.includes_yacht || false,
+            includes_safari: adventure.includes_safari || false,
+            includes_ground_transport: adventure.includes_ground_transport || false,
+            includes_accommodation: adventure.includes_accommodation || false,
+            activities: adventure.activities || [],
+            inclusions: adventure.inclusions || [],
+            guide_included: adventure.guide_included || false,
+            equipment_provided: adventure.equipment_provided || false,
+            insurance_included: adventure.insurance_included || false
+          }
+        }]);
+
+      if (dbError) throw dbError;
 
       // Show success notification
       setShowSuccess(true);

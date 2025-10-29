@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Search, Shield, Leaf, Globe, Award, Users } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useAccount } from 'wagmi';
 import UserMenu from '../UserMenu';
@@ -212,30 +213,35 @@ export default function CO2CertificateDetail() {
     }
 
     try {
-      // Save to database
-      await createRequest({
-        userId: user.id,
-        type: 'co2_certificate',
-        data: {
-          project_id: project.projectId,
-          project_name: project.name,
-          ngo_provider: project.ngoName,
-          location: project.location,
-          country: project.country,
-          quantity_tons: quantity,
-          price_per_ton: project.pricePerTon,
-          total_price: totalPrice,
-          currency: 'USD',
-          payment_method: paymentMethod,
-          certification_standard: project.certificationStandard,
-          category: project.category,
-          methodology: project.methodology,
-          available_tons: project.availableTons,
-          benefits: project.benefits,
-          wallet_address: isConnected && address ? address : null,
-          additional_info: project.additionalInfo
-        }
-      });
+      // Save to database - DIRECT INSERT
+      const { error: dbError } = await supabase
+        .from('user_requests')
+        .insert([{
+          user_id: user.id,
+          type: 'co2_certificate',
+          status: 'pending',
+          data: {
+            project_id: project.projectId,
+            project_name: project.name,
+            ngo_provider: project.ngoName,
+            location: project.location,
+            country: project.country,
+            quantity_tons: quantity,
+            price_per_ton: project.pricePerTon,
+            total_price: totalPrice,
+            currency: 'USD',
+            payment_method: paymentMethod,
+            certification_standard: project.certificationStandard,
+            category: project.category,
+            methodology: project.methodology,
+            available_tons: project.availableTons,
+            benefits: project.benefits,
+            wallet_address: isConnected && address ? address : null,
+            additional_info: project.additionalInfo
+          }
+        }]);
+
+      if (dbError) throw dbError;
 
       // Close modal and show success
       setShowPurchaseModal(false);

@@ -91,29 +91,32 @@ const HelicopterDetail = () => {
       const totalPrice = hourlyRate * flightDuration;
       const discountedPrice = hasNFT ? totalPrice * (1 - nftDiscount / 100) : totalPrice;
 
-      // Create request using unified system
-      const { request, error } = await createRequest({
-        userId: user.id,
-        type: 'helicopter_charter',
-        data: {
-          wallet_address: address,
-          helicopter_id: helicopter.id,
-          helicopter_name: helicopter.name,
-          manufacturer: helicopter.manufacturer,
-          passengers,
-          flight_duration: flightDuration,
-          hourly_rate: hourlyRate,
-          total_price: totalPrice,
-          discounted_price: discountedPrice,
-          has_nft: hasNFT,
-          nft_discount: nftDiscount,
-          special_requests: specialRequests,
-          request_date: new Date().toISOString()
-        },
-        userEmail: user.email
-      });
+      // Create request - DIRECT INSERT
+      const { error: dbError } = await supabase
+        .from('user_requests')
+        .insert([{
+          user_id: user.id,
+          type: 'helicopter_charter',
+          status: 'pending',
+          data: {
+            wallet_address: address,
+            helicopter_id: helicopter.id,
+            helicopter_name: helicopter.name,
+            manufacturer: helicopter.manufacturer,
+            passengers,
+            flight_duration: flightDuration,
+            hourly_rate: hourlyRate,
+            total_price: totalPrice,
+            discounted_price: discountedPrice,
+            has_nft: hasNFT,
+            nft_discount: nftDiscount,
+            special_requests: specialRequests,
+            request_date: new Date().toISOString(),
+            user_email: user.email
+          }
+        }]);
 
-      if (error) throw new Error(error);
+      if (dbError) throw dbError;
 
       // Show success notification
       setSuccessMessage(`Your ${helicopter.name} charter request has been submitted. We'll contact you within 24 hours with availability and pricing.`);

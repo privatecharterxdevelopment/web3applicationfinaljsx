@@ -227,38 +227,43 @@ const EmptyLegDetail = () => {
 
       const requestType = isFree ? 'nft_free_flight' : hasNFT ? 'nft_discount_empty_leg' : 'empty_leg';
 
-      // Save to database
-      await createRequest({
-        userId: user.id,
-        type: requestType,
-        data: {
-          empty_leg_id: emptyLeg.id,
-          flight_route: `${emptyLeg.from_iata} → ${emptyLeg.to_iata}`,
-          from_city: emptyLeg.from_city,
-          to_city: emptyLeg.to_city,
-          from_iata: emptyLeg.from_iata,
-          to_iata: emptyLeg.to_iata,
-          departure_date: emptyLeg.departure_date,
-          departure_time: emptyLeg.departure_time,
-          arrival_date: emptyLeg.arrival_date,
-          arrival_time: emptyLeg.arrival_time,
-          aircraft_type: emptyLeg.category,
-          capacity: emptyLeg.capacity,
-          original_price: emptyLeg.price,
-          discounted_price: finalPrice,
-          currency: 'EUR',
-          passengers: passengers,
-          luggage: luggage,
-          has_pet: hasPet,
-          wallet_address: isConnected && address ? address : null,
-          has_nft: hasNFT,
-          nft_discount: nftDiscount,
-          is_free: isFree,
-          co2_emissions: co2Data.emissions,
-          co2_offset_cost: co2Data.offset,
-          distance_km: co2Data.distance
-        }
-      });
+      // Save to database - DIRECT INSERT
+      const { error: dbError } = await supabase
+        .from('user_requests')
+        .insert([{
+          user_id: user.id,
+          type: requestType,
+          status: 'pending',
+          data: {
+            empty_leg_id: emptyLeg.id,
+            flight_route: `${emptyLeg.from_iata} → ${emptyLeg.to_iata}`,
+            from_city: emptyLeg.from_city,
+            to_city: emptyLeg.to_city,
+            from_iata: emptyLeg.from_iata,
+            to_iata: emptyLeg.to_iata,
+            departure_date: emptyLeg.departure_date,
+            departure_time: emptyLeg.departure_time,
+            arrival_date: emptyLeg.arrival_date,
+            arrival_time: emptyLeg.arrival_time,
+            aircraft_type: emptyLeg.category,
+            capacity: emptyLeg.capacity,
+            original_price: emptyLeg.price,
+            discounted_price: finalPrice,
+            currency: 'EUR',
+            passengers: passengers,
+            luggage: luggage,
+            has_pet: hasPet,
+            wallet_address: isConnected && address ? address : null,
+            has_nft: hasNFT,
+            nft_discount: nftDiscount,
+            is_free: isFree,
+            co2_emissions: co2Data.emissions,
+            co2_offset_cost: co2Data.offset,
+            distance_km: co2Data.distance
+          }
+        }]);
+
+      if (dbError) throw dbError;
 
       // Show success notification
       setShowSuccess(true);
