@@ -808,40 +808,36 @@ const TokenizedAssetsGlassmorphic = () => {
         hasPet: emptyLegHasPet
       });
 
-      const result = await createRequest({
-        userId: user.id,
-        type: 'empty_leg',
-        data: {
-          empty_leg_id: rawData.id,
-          flight_route: `${rawData.from_city || rawData.from_iata} → ${rawData.to_city || rawData.to_iata}`,
-          from_city: rawData.from_city,
-          to_city: rawData.to_city,
-          from_iata: rawData.from_iata,
-          to_iata: rawData.to_iata,
-          departure_date: rawData.departure_date,
-          departure_time: rawData.departure_time,
-          aircraft_type: rawData.category || rawData.aircraft_type,
-          capacity: rawData.capacity || rawData.pax,
-          original_price: rawData.price || rawData.price_usd,
-          currency: 'USD',
-          passengers: emptyLegPassengers,
-          luggage: emptyLegLuggage,
-          has_pet: emptyLegHasPet,
-          wallet_address: address && isConnected ? address : null
-        }
-      });
+      // DIRECT INSERT - matching working EmptyLegModal.tsx pattern
+      const { error: dbError } = await supabase
+        .from('user_requests')
+        .insert([{
+          user_id: user.id,
+          type: 'empty_leg',
+          status: 'pending',
+          data: {
+            empty_leg_id: rawData.id,
+            flight_route: `${rawData.from_city || rawData.from_iata} → ${rawData.to_city || rawData.to_iata}`,
+            from_city: rawData.from_city,
+            to_city: rawData.to_city,
+            from_iata: rawData.from_iata,
+            to_iata: rawData.to_iata,
+            departure_date: rawData.departure_date,
+            departure_time: rawData.departure_time,
+            aircraft_type: rawData.category || rawData.aircraft_type,
+            capacity: rawData.capacity || rawData.pax,
+            original_price: rawData.price || rawData.price_usd,
+            currency: 'USD',
+            passengers: emptyLegPassengers,
+            luggage: emptyLegLuggage,
+            has_pet: emptyLegHasPet,
+            wallet_address: address && isConnected ? address : null
+          }
+        }]);
 
-      console.log('✅ REQUEST SAVED RESULT:', result);
+      if (dbError) throw dbError;
 
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      if (!result.request || !result.request.id) {
-        throw new Error('No request ID returned from database');
-      }
-
-      console.log('✅ REQUEST ID:', result.request.id);
+      console.log('✅ REQUEST SAVED SUCCESSFULLY');
       console.log('✅ Navigating to My Requests tab...');
 
       setShowEmptyLegSuccess(true);
