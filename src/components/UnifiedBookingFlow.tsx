@@ -1142,9 +1142,8 @@ export default function UnifiedBookingFlow({ onStepChange, initialVehicleType }:
             <div className="w-full max-w-5xl">
               {/* Extended Title - Two Lines */}
               <div className="text-center mb-8 mt-12">
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-light text-gray-900 tracking-tighter leading-none md:leading-tight">
+                <h1 className="text-3xl md:text-4xl lg:text-5xl font-light text-gray-900 tracking-tighter leading-none md:leading-tight">
                   <span className="block">Charter Private Jets and Helicopters</span>
-                  <span className="block">the Smart Way</span>
                 </h1>
               </div>
 
