@@ -45,49 +45,61 @@ export default function CryptoPaymentModal({
 
   if (!isOpen) return null;
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
     setIsProcessing(true);
     setError('');
 
     try {
-      // Build CoinGate checkout URL with parameters
-      const params = new URLSearchParams({
-        'order_id': orderId,
-        'price_amount': amount.toString(),
-        'price_currency': currency,
-        'receive_currency': selectedCrypto,
-        'title': title,
-        'description': description || title,
-        'success_url': `${window.location.origin}/dashboard`,
-        'cancel_url': `${window.location.origin}/dashboard`,
-        'callback_url': `${window.location.origin}/api/coingate-callback`,
+      // Call backend API to create CoinGate order
+      const response = await fetch('/api/coingate/create-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          price_amount: amount,
+          price_currency: currency,
+          receive_currency: selectedCrypto,
+          title: title,
+          description: description || title,
+          order_id: orderId,
+          purchaser_email: userEmail,
+          success_url: `${window.location.origin}/dashboard`,
+          cancel_url: `${window.location.origin}/dashboard`,
+          callback_url: `${window.location.origin}/api/coingate-callback`,
+        }),
       });
 
-      if (userEmail) {
-        params.append('purchaser_email', userEmail);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create payment order');
       }
 
-      // Save transaction data immediately
+      const data = await response.json();
+      const order = data.order;
+
+      // Save transaction data with actual CoinGate order details
       const transactionData = {
-        order_id: orderId,
-        amount: amount,
-        currency: currency,
-        crypto_currency: selectedCrypto,
-        status: 'pending',
-        created_at: new Date().toISOString(),
+        coingate_order_id: order.id,
+        order_id: order.order_id,
+        amount: order.price_amount,
+        currency: order.price_currency,
+        crypto_currency: order.receive_currency,
+        status: order.status,
+        payment_url: order.payment_url,
+        created_at: order.created_at,
       };
 
       onSuccess(transactionData);
 
       // Open CoinGate checkout in new window
-      const checkoutUrl = `https://coingate.com/pay?${params.toString()}`;
-      window.open(checkoutUrl, '_blank', 'width=800,height=600,scrollbars=yes');
+      window.open(order.payment_url, '_blank', 'width=800,height=600,scrollbars=yes');
 
       onClose();
 
     } catch (err: any) {
       console.error('Payment error:', err);
-      setError('Failed to initialize payment. Please try again.');
+      setError(err.message || 'Failed to initialize payment. Please try again.');
       setIsProcessing(false);
     }
   };
