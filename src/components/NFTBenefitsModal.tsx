@@ -92,27 +92,27 @@ export default function NFTBenefitsModal({ isOpen, onClose, nft, hasNFT, usedBen
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
       <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl animate-slideUp overflow-hidden">
         {/* Header */}
-        <div className={`relative ${hasNFT ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gradient-to-r from-gray-700 to-gray-900'} text-white p-6`}>
+        <div className={`relative ${hasNFT ? 'bg-white border-b border-gray-200' : 'bg-white border-b border-gray-200'} p-6`}>
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-lg transition-colors"
+            className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <X size={20} />
+            <X size={20} className="text-gray-600" />
           </button>
 
           <div className="flex items-center gap-4">
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center ${hasNFT ? 'bg-white/20' : 'bg-white/10'}`}>
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center ${hasNFT ? 'bg-gray-900' : 'bg-gray-100'}`}>
               {hasNFT ? (
                 <Check size={32} className="text-white" />
               ) : (
-                <Crown size={32} className="text-white/70" />
+                <Crown size={32} className="text-gray-400" />
               )}
             </div>
             <div>
-              <h2 className="text-2xl font-bold mb-1">
+              <h2 className="text-xl font-semibold text-gray-900 mb-1">
                 {hasNFT ? 'NFT Membership Active!' : 'No NFT Membership Found'}
               </h2>
-              <p className="text-white/90 text-sm">
+              <p className="text-gray-500 text-sm">
                 {hasNFT
                   ? `${nft?.name} • Token #${nft?.tokenId}`
                   : 'Get your membership to unlock exclusive benefits'
@@ -126,14 +126,14 @@ export default function NFTBenefitsModal({ isOpen, onClose, nft, hasNFT, usedBen
         <div className="p-6">
           {hasNFT ? (
             <>
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6">
                 <div className="flex items-start gap-3">
-                  <Check size={20} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <Check size={20} className="text-gray-900 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-green-900 mb-1">
+                    <p className="text-sm font-medium text-gray-900 mb-1">
                       All Benefits Unlocked!
                     </p>
-                    <p className="text-xs text-green-700">
+                    <p className="text-xs text-gray-600">
                       Your NFT membership gives you access to exclusive perks. Discounts are applied automatically at checkout.
                     </p>
                   </div>
@@ -147,15 +147,15 @@ export default function NFTBenefitsModal({ isOpen, onClose, nft, hasNFT, usedBen
                   {benefits.map((benefit, idx) => (
                     <div
                       key={idx}
-                      className={`relative border-2 rounded-xl p-4 transition-all ${
+                      className={`relative border rounded-xl p-4 transition-all ${
                         benefit.used
                           ? 'border-gray-200 bg-gray-50'
-                          : 'border-green-200 bg-green-50 hover:border-green-300'
+                          : 'border-gray-200 bg-white hover:border-gray-300'
                       }`}
                     >
                       <div className="flex items-start gap-3">
-                        <div className={`p-2 rounded-lg ${benefit.color}`}>
-                          <benefit.icon size={20} />
+                        <div className="p-2 rounded-lg bg-gray-100">
+                          <benefit.icon size={20} className="text-gray-700" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1">
@@ -174,13 +174,13 @@ export default function NFTBenefitsModal({ isOpen, onClose, nft, hasNFT, usedBen
 
               {/* Stats */}
               {usedBenefits.discountsUsed !== undefined && (
-                <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-4">
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-purple-700 mb-1">Total Discounts Applied</p>
-                      <p className="text-2xl font-bold text-purple-900">{usedBenefits.discountsUsed}</p>
+                      <p className="text-xs text-gray-600 mb-1">Total Discounts Applied</p>
+                      <p className="text-2xl font-bold text-gray-900">{usedBenefits.discountsUsed}</p>
                     </div>
-                    <Star size={32} className="text-purple-400" />
+                    <Star size={32} className="text-gray-400" />
                   </div>
                 </div>
               )}
@@ -190,17 +190,17 @@ export default function NFTBenefitsModal({ isOpen, onClose, nft, hasNFT, usedBen
               {/* No NFT - Show Wallet Connection or Refresh */}
               {!isConnected ? (
                 <div className="mb-6">
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6 text-center">
-                    <Wallet size={48} className="mx-auto text-blue-600 mb-3" />
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">Connect Your Wallet</h3>
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 mb-6 text-center">
+                    <Wallet size={48} className="mx-auto text-gray-600 mb-3" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Connect Your Wallet</h3>
                     <p className="text-sm text-gray-600 mb-4">
                       Connect your wallet to check for NFT membership and unlock exclusive benefits
                     </p>
                     <button
                       onClick={handleConnectWallet}
-                      className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
+                      className="bg-black text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors inline-flex items-center gap-2"
                     >
-                      <Wallet size={20} />
+                      <Wallet size={18} />
                       Connect Wallet
                     </button>
                   </div>
@@ -220,7 +220,7 @@ export default function NFTBenefitsModal({ isOpen, onClose, nft, hasNFT, usedBen
                         <button
                           onClick={handleRefresh}
                           disabled={isRefreshing}
-                          className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50"
+                          className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 font-medium disabled:opacity-50"
                         >
                           <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
                           {isRefreshing ? 'Checking...' : 'Refresh'}
@@ -236,11 +236,11 @@ export default function NFTBenefitsModal({ isOpen, onClose, nft, hasNFT, usedBen
                       {benefits.map((benefit, idx) => (
                         <div
                           key={idx}
-                          className="border-2 border-gray-200 bg-gray-50 rounded-xl p-4 opacity-60"
+                          className="border border-gray-200 bg-gray-50 rounded-xl p-4 opacity-60"
                         >
                           <div className="flex items-start gap-3">
-                            <div className={`p-2 rounded-lg ${benefit.color}`}>
-                              <benefit.icon size={20} />
+                            <div className="p-2 rounded-lg bg-gray-100">
+                              <benefit.icon size={20} className="text-gray-500" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <h4 className="text-sm font-semibold text-gray-700 mb-1">{benefit.title}</h4>
@@ -258,7 +258,7 @@ export default function NFTBenefitsModal({ isOpen, onClose, nft, hasNFT, usedBen
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={onClose}
-                    className="block w-full bg-gradient-to-r from-gray-900 to-black text-white text-center py-4 rounded-xl font-semibold hover:from-gray-800 hover:to-gray-900 transition-all shadow-lg"
+                    className="block w-full bg-black text-white text-center py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors"
                   >
                     Get Membership NFT on OpenSea →
                   </a>

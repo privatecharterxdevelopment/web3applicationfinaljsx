@@ -6246,10 +6246,7 @@ const TokenizedAssetsGlassmorphic = () => {
                         <div className="space-y-3 mb-5">
                           <div>
                             <p className="text-xs text-gray-500 mb-1">Base Price</p>
-                            <div>
-                              <p className="text-lg font-semibold text-gray-900">{selectedEmptyLeg.totalPrice}</p>
-                              <p className="text-xs text-gray-400 mt-0.5">incl. 8.1% VAT</p>
-                            </div>
+                            <p className="text-lg font-semibold text-gray-900">{selectedEmptyLeg.totalPrice}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500 mb-1">Departure</p>
@@ -6311,10 +6308,7 @@ const TokenizedAssetsGlassmorphic = () => {
                           <div className="space-y-2 mb-4 text-sm border-t border-gray-100 pt-4">
                             <div className="flex justify-between items-center">
                               <span className="text-gray-600">Base Price:</span>
-                              <div className="text-right">
-                                <span className="font-semibold text-gray-900">{selectedEmptyLeg.totalPrice}</span>
-                                <p className="text-xs text-gray-400 mt-0.5">incl. 8.1% VAT</p>
-                              </div>
+                              <span className="font-semibold text-gray-900">{selectedEmptyLeg.totalPrice}</span>
                             </div>
                             {(rawData.distance_km || rawData.distance) && (
                               <div className="flex justify-between items-center">
@@ -7077,10 +7071,7 @@ const TokenizedAssetsGlassmorphic = () => {
                           <div className="space-y-2 mb-4 text-sm">
                             <div className="flex justify-between">
                               <span className="text-gray-600">Base Price:</span>
-                              <div className="text-right">
-                                <span className="font-bold text-gray-900">{priceLabel}</span>
-                                <p className="text-xs text-gray-400 mt-0.5">incl. 8.1% VAT</p>
-                              </div>
+                              <span className="font-bold text-gray-900">{priceLabel}</span>
                             </div>
                             {rawData.price && !rawData.price_on_request && (
                               <div className="flex justify-between items-center">
