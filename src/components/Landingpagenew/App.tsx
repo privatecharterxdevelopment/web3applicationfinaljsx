@@ -31,6 +31,7 @@ import type { Location, Weather, Stop, BookingDetails } from '../../types.ts';
 import { AuthProvider, useAuth } from '../../context/AuthContext.tsx';
 import { ThemeProvider } from '../../context/ThemeContext.tsx';
 import { MaintenanceProvider, useMaintenance } from '../../context/MaintenanceContext.tsx';
+import { NFTProvider } from '../../context/NFTContext';
 import MaintenanceMode from '../../components/MaintenanceMode.tsx';
 import ChatSupport from '../../components/ChatSupport.tsx';
 import Dashboard from '../../components/Dashboard.tsx';
@@ -356,13 +357,15 @@ function AppContent() {
 export default function App() {
   return (
     <WagmiProvider config={wagmiAdapter.wagmiConfig}>
-      <ThemeProvider>
-        <AuthProvider>
-          <MaintenanceProvider>
-            <AppContent />
-          </MaintenanceProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      <NFTProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <MaintenanceProvider>
+              <AppContent />
+            </MaintenanceProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </NFTProvider>
     </WagmiProvider>
   );
 }
