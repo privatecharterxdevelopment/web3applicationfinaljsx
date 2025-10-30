@@ -6112,7 +6112,7 @@ const TokenizedAssetsGlassmorphic = () => {
                         </div>
 
                         {/* GREEN CO2 Certificate Box */}
-                        <div className="bg-green-50 border-2 border-green-500 rounded-lg p-6">
+                        <div className="bg-green-50 border-2 border-green-500 rounded-lg p-6 mb-6">
                           <div className="flex items-start gap-3 mb-3">
                             <span className="text-2xl">🌿</span>
                             <div>
@@ -6123,6 +6123,42 @@ const TokenizedAssetsGlassmorphic = () => {
                                 <p className="text-sm text-green-900">
                                   <span className="font-semibold">Classic or Blockchain Certificate:</span> Choose between traditional carbon offset certificate or blockchain-verified NFT certificate at checkout.
                                 </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* PVCX REWARDS Box */}
+                        <div className="bg-blue-50 border-2 border-blue-500 rounded-lg p-6">
+                          <div className="flex items-start gap-3">
+                            <Coins className="text-blue-600 w-8 h-8" />
+                            <div className="flex-1">
+                              <h3 className="text-base font-bold text-blue-900 mb-2">$PVCX Token Rewards</h3>
+                              <p className="text-sm text-blue-800 mb-3">Earn PVCX tokens on every flight based on distance traveled!</p>
+                              <div className="bg-white/50 rounded-lg p-4">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="text-xs text-blue-700 mb-1">Distance</p>
+                                    <p className="text-lg font-bold text-blue-900">
+                                      {rawData.distance_km || rawData.distance ? `${rawData.distance_km || rawData.distance} km` : 'TBD'}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-xs text-blue-700 mb-1">You'll Earn</p>
+                                    <p className="text-lg font-bold text-blue-900 flex items-center gap-1">
+                                      {rawData.distance_km || rawData.distance
+                                        ? `${((rawData.distance_km || rawData.distance) * 1.5).toFixed(1)}`
+                                        : 'TBD'
+                                      }
+                                      <span className="text-sm text-blue-700">$PVCX</span>
+                                    </p>
+                                  </div>
+                                </div>
+                                {(rawData.distance_km || rawData.distance) && (
+                                  <p className="text-xs text-blue-600 mt-2">
+                                    Calculation: {rawData.distance_km || rawData.distance} km × 1.5 = {((rawData.distance_km || rawData.distance) * 1.5).toFixed(1)} $PVCX
+                                  </p>
+                                )}
                               </div>
                             </div>
                           </div>
