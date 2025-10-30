@@ -908,6 +908,7 @@ export default function UnifiedBookingFlow({ onStepChange, initialVehicleType }:
                 carbonOption={carbonOption}
                 flightHours={flightHours}
                 walletAddress={walletAddress}
+                distance={distance}
               />
 
               {/* Pricing Disclaimer */}

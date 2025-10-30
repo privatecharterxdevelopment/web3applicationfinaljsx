@@ -47,6 +47,9 @@ interface BookingSummaryStepProps {
   carbonOption: string;
   flightHours: number;
   walletAddress: string;
+
+  // Distance
+  distance: number;
 }
 
 export default function BookingSummaryStep({
@@ -75,8 +78,11 @@ export default function BookingSummaryStep({
   formatPrice,
   carbonOption,
   flightHours,
-  walletAddress
+  walletAddress,
+  distance
 }: BookingSummaryStepProps) {
+  // Calculate PVCX rewards based on actual distance
+  const pvcxRewards = Math.round(distance * 1.5);
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 animate-slideIn">
       <div className="space-y-6">
@@ -236,20 +242,24 @@ export default function BookingSummaryStep({
             <Coins size={24} className="text-blue-600 mt-1" />
             <div className="flex-1">
               <div className="font-medium text-gray-900 mb-1">$PVCX Token Rewards</div>
-              <div className="text-sm text-gray-600 mb-3">Earn PVCX tokens on every flight based on distance traveled!</div>
-              <div className="bg-white/60 rounded-lg p-3">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-900">
-                    <span className="text-3xl">1.5</span> <span className="text-lg text-blue-700">$PVCX</span>
+              <div className="text-sm text-gray-600 mb-3">You'll earn PVCX tokens based on your flight distance!</div>
+              <div className="bg-white/60 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <div className="text-xs text-blue-700 mb-1">Flight Distance</div>
+                    <div className="text-lg font-bold text-blue-900">{Math.round(distance)} km</div>
                   </div>
-                  <div className="text-xs text-blue-600 mt-1">per kilometer flown</div>
+                  <div className="text-right">
+                    <div className="text-xs text-blue-700 mb-1">You'll Earn</div>
+                    <div className="text-lg font-bold text-blue-900 flex items-center gap-1">
+                      {pvcxRewards.toLocaleString()}
+                      <span className="text-sm text-blue-700">$PVCX</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="border-t border-blue-200 mt-3 pt-3">
-                  <div className="text-xs text-blue-700 text-center">
-                    <div>Example rewards:</div>
-                    <div className="mt-1">• 100 km = 150 $PVCX</div>
-                    <div>• 500 km = 750 $PVCX</div>
-                    <div>• 1,000 km = 1,500 $PVCX</div>
+                <div className="border-t border-blue-200 pt-3">
+                  <div className="text-xs text-blue-600 text-center">
+                    Calculation: {Math.round(distance)} km × 1.5 = {pvcxRewards.toLocaleString()} $PVCX
                   </div>
                 </div>
               </div>
