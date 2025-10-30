@@ -1232,25 +1232,35 @@ As their luxury travel consultant, provide an enthusiastic response that:
         console.warn('Failed to update chat title:', error);
       }
     } else if (activeChat === 'new') {
-      // Fallback: Create new chat if somehow still on 'new'
+      // Create new chat when starting from category overview
       const title = message.substring(0, 50) + (message.length > 50 ? '...' : '');
+
+      if (!user?.id) {
+        setToast({ message: 'Please log in to start a chat', type: 'error' });
+        return;
+      }
+
       const { success, chat } = await chatService.createChat(user.id, title, userMessage);
 
-      if (success) {
+      if (success && chat) {
+        const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
         const newChat = {
           id: chat.id,
           title: chat.title,
           date: 'Just now',
-          messages: [userMessage]
+          messages: [userMessage, loadingMsg]
         };
 
+        // Update chat history and active chat
         setChatHistory(prev => [newChat, ...prev]);
         setActiveChat(chat.id);
         workingChatId = chat.id;
 
-        await chatService.updateChatMessages(chat.id, [userMessage], user.id);
+        console.log('✅ New chat created:', { id: chat.id, title: chat.title });
       } else {
-        setToast({ message: 'Failed to create chat', type: 'error' });
+        console.error('❌ Failed to create chat');
+        setToast({ message: 'Failed to create chat. Please try again.', type: 'error' });
+        setIsProcessing(false);
         return;
       }
     } else {
@@ -1269,30 +1279,37 @@ As their luxury travel consultant, provide an enthusiastic response that:
     setCurrentMessage('');
     setIsProcessing(true);
 
-    // Build conversation history BEFORE state updates
-    const currentChatObj = chatHistory.find(c => c.id === workingChatId);
+    // Build conversation history - handle new chat creation case
     let conversationHistory;
 
     if (isFirstUserMessage && existingChat) {
       // First message after welcome: [welcome, userMessage]
       conversationHistory = [...existingChat.messages, userMessage];
-    } else if (currentChatObj) {
-      // Existing chat: use all messages + new user message
-      conversationHistory = [...currentChatObj.messages.filter(msg => !msg.isLoading), userMessage];
-    } else {
-      // Fallback
+    } else if (workingChatId !== activeChat) {
+      // Just created a new chat - use only the user message
       conversationHistory = [userMessage];
+    } else {
+      // Existing chat: find it and use all messages
+      const currentChatObj = chatHistory.find(c => c.id === workingChatId);
+      if (currentChatObj) {
+        conversationHistory = [...currentChatObj.messages.filter(msg => !msg.isLoading), userMessage];
+      } else {
+        // Fallback for any edge case
+        conversationHistory = [userMessage];
+      }
     }
 
     console.log('📝 Conversation history being sent to Claude:', conversationHistory);
 
-    // Add a loading message immediately
-    const loadingMessage = { role: 'assistant', content: '...', isLoading: true };
-    setChatHistory(prev => prev.map(c =>
-      c.id === workingChatId
-        ? { ...c, messages: [...c.messages, loadingMessage] }
-        : c
-    ));
+    // Add a loading message (only if not just created a new chat with loading already added)
+    if (workingChatId === activeChat) {
+      const loadingMessage = { role: 'assistant', content: '...', isLoading: true };
+      setChatHistory(prev => prev.map(c =>
+        c.id === workingChatId
+          ? { ...c, messages: [...c.messages, loadingMessage] }
+          : c
+      ));
+    }
 
     try {
       const systemPrompt = getSystemPrompt();
