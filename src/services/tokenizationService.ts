@@ -340,6 +340,63 @@ export async function submitDraft(
       return { success: false, error: error.message };
     }
 
+    // PARALLEL SAVE: Also save to user_requests for email notifications
+    // This triggers the email notification system to bookings@privatecharterx.com
+    try {
+      const userRequestPayload = {
+        user_id: userId,
+        type: 'tokenization',
+        status: 'pending',
+        data: {
+          tokenization_draft_id: draftId,
+          asset_name: data.asset_name,
+          asset_category: data.asset_category,
+          asset_description: data.asset_description,
+          asset_value: data.asset_value,
+          asset_location: data.asset_location,
+          token_type: data.token_type,
+          token_standard: data.token_standard,
+          total_supply: data.total_supply,
+          token_symbol: data.token_symbol,
+          price_per_token: data.price_per_token,
+          minimum_investment: data.minimum_investment,
+          expected_apy: data.expected_apy,
+          revenue_distribution: data.revenue_distribution,
+          revenue_currency: data.revenue_currency,
+          lockup_period: data.lockup_period,
+          has_spv: data.has_spv,
+          spv_details: data.spv_details,
+          operator: data.operator,
+          management_fee: data.management_fee,
+          jurisdiction: data.jurisdiction,
+          issuer_wallet_address: data.issuer_wallet_address,
+          membership_package: data.membership_package,
+          package_setup_fee: data.package_setup_fee,
+          package_monthly_fee: data.package_monthly_fee,
+          signature_data: signatureData,
+          wallet_signature: data.wallet_signature,
+          signer_address: data.signer_address,
+          submitted_at: data.submitted_at,
+          booking_source: 'tokenization_flow',
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      const { error: userRequestError } = await supabase
+        .from('user_requests')
+        .insert([userRequestPayload]);
+
+      if (userRequestError) {
+        console.warn('Failed to save tokenization to user_requests (email notification may not work):', userRequestError);
+        // Don't fail the submission - tokenization_drafts save succeeded
+      } else {
+        console.log('✅ Tokenization parallel save to user_requests successful - email notifications will be sent');
+      }
+    } catch (parallelSaveError) {
+      console.warn('Tokenization parallel save to user_requests failed:', parallelSaveError);
+      // Continue - main submission was successful
+    }
+
     // Send notification to user about submission
     try {
       const tokenType = data.token_type === 'utility' ? 'UTO' : 'STO';
