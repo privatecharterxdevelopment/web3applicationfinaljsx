@@ -335,16 +335,28 @@ const MyRequestsView = ({ user }) => {
                   <p className="text-sm font-semibold text-gray-800">{data.duration}</p>
                 </div>
               )}
-              {data.participants && (
+              {(data.participants || data.guests) && (
                 <div>
-                  <p className="text-xs text-gray-600 mb-1">Participants</p>
-                  <p className="text-sm font-semibold text-gray-800">{data.participants}</p>
+                  <p className="text-xs text-gray-600 mb-1">Guests</p>
+                  <p className="text-sm font-semibold text-gray-800">{data.guests || data.participants}</p>
                 </div>
               )}
               {data.start_date && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Start Date</p>
                   <p className="text-sm font-semibold text-gray-800">{new Date(data.start_date).toLocaleDateString()}</p>
+                </div>
+              )}
+              {data.end_date && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">End Date</p>
+                  <p className="text-sm font-semibold text-gray-800">{new Date(data.end_date).toLocaleDateString()}</p>
+                </div>
+              )}
+              {data.payment_method === 'crypto' && data.crypto_currency && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Payment Method</p>
+                  <p className="text-sm font-semibold text-gray-800">💰 {data.crypto_currency}</p>
                 </div>
               )}
             </div>

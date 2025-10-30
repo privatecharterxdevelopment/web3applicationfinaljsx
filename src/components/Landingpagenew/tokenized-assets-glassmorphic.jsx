@@ -623,6 +623,9 @@ const TokenizedAssetsGlassmorphic = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [adventureSubmitting, setAdventureSubmitting] = useState(false);
   const [adventureSubmitSuccess, setAdventureSubmitSuccess] = useState(false);
+  const [adventureStartDate, setAdventureStartDate] = useState('');
+  const [adventureEndDate, setAdventureEndDate] = useState('');
+  const [adventureGuests, setAdventureGuests] = useState(2);
   const [showCryptoPayment, setShowCryptoPayment] = useState(false);
   const [cryptoPaymentData, setCryptoPaymentData] = useState(null);
   const [luxuryCarSubmitting, setLuxuryCarSubmitting] = useState(false);
@@ -6982,13 +6985,49 @@ const TokenizedAssetsGlassmorphic = () => {
                         <div className="border-t border-gray-300/50 pt-6 mb-6">
                           <h3 className="text-sm font-semibold text-gray-900 mb-4">Booking Details</h3>
 
+                          {/* Date Range Picker */}
+                          <div className="mb-4 space-y-3">
+                            <div>
+                              <label className="text-xs text-gray-600 block mb-2">Start Date</label>
+                              <div className="relative">
+                                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                                <input
+                                  type="date"
+                                  value={adventureStartDate}
+                                  onChange={(e) => setAdventureStartDate(e.target.value)}
+                                  min={new Date().toISOString().split('T')[0]}
+                                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-white text-sm text-gray-600 focus:ring-2 focus:ring-gray-300 focus:border-transparent"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-600 block mb-2">End Date</label>
+                              <div className="relative">
+                                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                                <input
+                                  type="date"
+                                  value={adventureEndDate}
+                                  onChange={(e) => setAdventureEndDate(e.target.value)}
+                                  min={adventureStartDate || new Date().toISOString().split('T')[0]}
+                                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-white text-sm text-gray-600 focus:ring-2 focus:ring-gray-300 focus:border-transparent"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
                           <div className="grid grid-cols-3 gap-3 mb-4">
                             <div>
                               <p className="text-xs text-gray-600 mb-2">Guests</p>
                               <div className="flex items-center justify-between border border-gray-300 rounded px-2 py-1">
-                                <button className="text-gray-600 hover:text-gray-900">−</button>
-                                <span className="text-sm font-medium">2</span>
-                                <button className="text-gray-600 hover:text-gray-900">+</button>
+                                <button
+                                  onClick={() => setAdventureGuests(Math.max(1, adventureGuests - 1))}
+                                  className="text-gray-600 hover:text-gray-900"
+                                >−</button>
+                                <span className="text-sm font-medium">{adventureGuests}</span>
+                                <button
+                                  onClick={() => setAdventureGuests(adventureGuests + 1)}
+                                  className="text-gray-600 hover:text-gray-900"
+                                >+</button>
                               </div>
                             </div>
                             <div>
@@ -7048,6 +7087,11 @@ const TokenizedAssetsGlassmorphic = () => {
                                 price: offer.price || null,
                                 price_on_request: offer.price_on_request || !offer.price,
                                 description: offer.description,
+
+                                // Booking dates and guests
+                                start_date: adventureStartDate || null,
+                                end_date: adventureEndDate || null,
+                                guests: adventureGuests,
 
                                 // Client info
                                 client_info: {
@@ -7136,6 +7180,9 @@ const TokenizedAssetsGlassmorphic = () => {
                                 nft_discount_applied: hasNFT ? nftDiscount : 0,
                                 price_on_request: false,
                                 description: offer.description,
+                                start_date: adventureStartDate || null,
+                                end_date: adventureEndDate || null,
+                                guests: adventureGuests,
                               }
                             });
                             setShowCryptoPayment(true);
