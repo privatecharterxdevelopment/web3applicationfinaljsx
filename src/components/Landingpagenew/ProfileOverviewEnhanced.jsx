@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   ShoppingBag, FileText, TrendingUp, Receipt, DollarSign, AlertCircle,
-  CheckCircle, X, MoreVertical, ArrowUpRight, ArrowDownRight
+  CheckCircle, X, MoreVertical, ArrowUpRight, ArrowDownRight, ChevronLeft,
+  ChevronRight, Calendar as CalendarIcon
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -11,6 +12,7 @@ export default function ProfileOverviewEnhanced() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [selectedCard, setSelectedCard] = useState('requests');
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
   // Dashboard metrics
   const [metrics, setMetrics] = useState({
@@ -31,7 +33,8 @@ export default function ProfileOverviewEnhanced() {
   const [chartData, setChartData] = useState([]);
   const [recentRequests, setRecentRequests] = useState([]);
   const [recentTransactions, setRecentTransactions] = useState([]);
-  const [pendingCount, setPendingCount] = useState(0);
+  const [p2pTransactions, setP2pTransactions] = useState([]);
+  const [calendarEvents, setCalendarEvents] = useState([]);
 
   useEffect(() => {
     if (user?.id) {
@@ -41,6 +44,12 @@ export default function ProfileOverviewEnhanced() {
     }
   }, [user?.id]);
 
+  useEffect(() => {
+    if (user?.id) {
+      fetchCalendarEvents();
+    }
+  }, [currentMonth, user?.id]);
+
   const fetchAllData = async () => {
     setLoading(true);
     try {
@@ -49,7 +58,9 @@ export default function ProfileOverviewEnhanced() {
         fetchBalance(),
         fetchChartData(),
         fetchRecentRequests(),
-        fetchRecentTransactions()
+        fetchRecentTransactions(),
+        fetchP2PTransactions(),
+        fetchCalendarEvents()
       ]);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -96,16 +107,21 @@ export default function ProfileOverviewEnhanced() {
         return sum + (t.transaction_type === 'credit' ? t.amount : -t.amount);
       }, 0) || 0;
 
+      // Get incidents (failed transactions)
+      const { count: incidentsCount } = await supabase
+        .from('transactions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('status', 'failed');
+
       setMetrics({
         totalBookings: bookingsCount || 0,
         newRequests: newRequestsCount || 0,
         tokenizationProjects: tokenCount || 0,
         totalTransactions: transCount || 0,
         pvcxBalance: Math.round(pvcxBalance),
-        incidents: 0 // Can add failed transactions count later
+        incidents: incidentsCount || 0
       });
-
-      setPendingCount(newRequestsCount || 0);
     } catch (error) {
       console.error('Error fetching metrics:', error);
     }
@@ -163,7 +179,6 @@ export default function ProfileOverviewEnhanced() {
         const date = new Date();
         date.setDate(date.getDate() - i);
 
-        // Simple mock data - could be replaced with real daily aggregation
         data.push({
           date: date.getTime(),
           value: balance.current * (0.95 + Math.random() * 0.1)
@@ -206,6 +221,64 @@ export default function ProfileOverviewEnhanced() {
     }
   };
 
+  const fetchP2PTransactions = async () => {
+    try {
+      // Fetch P2P marketplace transactions if they exist in launchpad_transactions
+      const { data } = await supabase
+        .from('launchpad_transactions')
+        .select('*')
+        .eq('buyer_address', user.id)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      setP2pTransactions(data || []);
+    } catch (error) {
+      console.error('Error fetching P2P transactions:', error);
+    }
+  };
+
+  const fetchCalendarEvents = async () => {
+    try {
+      const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+      const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+
+      const { data } = await supabase
+        .from('calendar_events')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('start_date', startOfMonth.toISOString())
+        .lte('start_date', endOfMonth.toISOString())
+        .order('start_date', { ascending: true });
+
+      setCalendarEvents(data || []);
+    } catch (error) {
+      console.error('Error fetching calendar events:', error);
+    }
+  };
+
+  const navigateToCategory = (category) => {
+    const event = new CustomEvent('navigate-to-category', { detail: { category } });
+    window.dispatchEvent(event);
+  };
+
+  const handleCardClick = (cardId) => {
+    setSelectedCard(cardId);
+
+    // Navigate to appropriate page
+    const categoryMap = {
+      bookings: 'requests', // Show My Requests for bookings
+      requests: 'requests',
+      tokenization: 'tokenization',
+      transactions: 'transactions',
+      pvcx: 'wallet-nfts', // Navigate to wallet for PVCX
+      incidents: 'transactions'
+    };
+
+    if (categoryMap[cardId]) {
+      navigateToCategory(categoryMap[cardId]);
+    }
+  };
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -217,6 +290,49 @@ export default function ProfileOverviewEnhanced() {
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+
+  const getDaysInMonth = () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+
+    const days = [];
+    // Add empty cells for days before month starts
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(null);
+    }
+    // Add days of month
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push(i);
+    }
+
+    return days;
+  };
+
+  const getEventsForDay = (day) => {
+    if (!day) return [];
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const dayDate = new Date(year, month, day);
+
+    return calendarEvents.filter(event => {
+      const eventDate = new Date(event.start_date);
+      return eventDate.getDate() === day &&
+             eventDate.getMonth() === month &&
+             eventDate.getFullYear() === year;
+    });
+  };
+
+  const previousMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+  };
+
+  const nextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
   };
 
   if (loading) {
@@ -278,6 +394,14 @@ export default function ProfileOverviewEnhanced() {
     }
   ];
 
+  const days = getDaysInMonth();
+  const today = new Date();
+  const isToday = (day) => {
+    return day === today.getDate() &&
+           currentMonth.getMonth() === today.getMonth() &&
+           currentMonth.getFullYear() === today.getFullYear();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top Navigation */}
@@ -288,10 +412,16 @@ export default function ProfileOverviewEnhanced() {
               <button className="text-sm font-medium text-gray-900 border-b-2 border-gray-900 pb-4">
                 Company dashboard
               </button>
-              <button className="text-sm text-gray-400 pb-4">
+              <button
+                onClick={() => navigateToCategory('p2p-trading')}
+                className="text-sm text-gray-400 hover:text-gray-700 pb-4 transition-colors"
+              >
                 Send money
               </button>
-              <button className="text-sm text-gray-400 pb-4">
+              <button
+                onClick={() => navigateToCategory('swap')}
+                className="text-sm text-gray-400 hover:text-gray-700 pb-4 transition-colors"
+              >
                 Exchange funds
               </button>
             </div>
@@ -346,7 +476,7 @@ export default function ProfileOverviewEnhanced() {
                   return (
                     <button
                       key={card.id}
-                      onClick={() => setSelectedCard(card.id)}
+                      onClick={() => handleCardClick(card.id)}
                       className={`bg-white rounded-lg border ${
                         isSelected ? 'border-gray-900' : 'border-gray-200'
                       } p-5 text-left hover:border-gray-400 transition-colors`}
@@ -371,6 +501,50 @@ export default function ProfileOverviewEnhanced() {
                 })}
               </div>
             </div>
+
+            {/* P2P Transactions Overview */}
+            {p2pTransactions.length > 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm font-medium text-gray-900">P2P Trading Activity</div>
+                  <button
+                    onClick={() => navigateToCategory('p2p-trading')}
+                    className="text-xs text-gray-400 hover:text-gray-700 transition-colors"
+                  >
+                    View all
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {p2pTransactions.map((tx) => (
+                    <div key={tx.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-xs">
+                          🔄
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            P2P Transaction
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {formatDate(tx.created_at)}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-semibold text-gray-900">
+                          {tx.amount_paid ? formatCurrency(tx.amount_paid) : '-'}
+                        </span>
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          tx.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {tx.status?.toUpperCase() || 'PENDING'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* User Requests */}
             <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
@@ -458,28 +632,112 @@ export default function ProfileOverviewEnhanced() {
             </div>
           </div>
 
-          {/* Right Column */}
+          {/* Right Column - Calendar */}
           <div className="col-span-4">
-            <div className="bg-white rounded-lg border border-gray-200 p-6 text-center">
-              <div className="text-sm font-medium text-gray-900 mb-4">
-                Requests to manage
+            <div className="bg-white rounded-lg border border-gray-200 p-6 sticky top-6">
+              {/* Calendar Header */}
+              <div className="flex items-center justify-between mb-4">
+                <button
+                  onClick={previousMonth}
+                  className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
+                >
+                  <ChevronLeft size={16} className="text-gray-600" />
+                </button>
+                <div className="text-sm font-medium text-gray-900">
+                  {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </div>
+                <button
+                  onClick={nextMonth}
+                  className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
+                >
+                  <ChevronRight size={16} className="text-gray-600" />
+                </button>
               </div>
-              <div className="text-6xl font-bold text-gray-900 mb-4">
-                {pendingCount}
+
+              {/* Calendar Grid */}
+              <div className="mb-4">
+                <div className="grid grid-cols-7 gap-1 mb-2">
+                  {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
+                    <div key={day} className="text-[10px] text-gray-400 text-center font-medium">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-1">
+                  {days.map((day, index) => {
+                    const dayEvents = getEventsForDay(day);
+                    const hasEvents = dayEvents.length > 0;
+
+                    return (
+                      <div key={index} className="relative">
+                        {day ? (
+                          <button
+                            className={`w-full aspect-square text-xs flex items-center justify-center rounded transition-colors ${
+                              isToday(day)
+                                ? 'bg-gray-900 text-white font-semibold'
+                                : hasEvents
+                                ? 'bg-blue-50 text-gray-900 hover:bg-blue-100'
+                                : 'text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            {day}
+                          </button>
+                        ) : (
+                          <div className="w-full aspect-square"></div>
+                        )}
+                        {hasEvents && !isToday(day) && (
+                          <div className="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-500 rounded-full"></div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="text-xs text-gray-500 mb-6">
-                Verify all the requests<br />
-                Manage permissions
+
+              {/* Upcoming Events */}
+              <div className="border-t border-gray-200 pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-xs font-medium text-gray-900">Upcoming Events</div>
+                  <button
+                    onClick={() => navigateToCategory('calendar')}
+                    className="text-xs text-gray-400 hover:text-gray-700 transition-colors"
+                  >
+                    View all
+                  </button>
+                </div>
+                {calendarEvents.length > 0 ? (
+                  <div className="space-y-2">
+                    {calendarEvents.slice(0, 3).map((event) => (
+                      <div key={event.id} className="flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
+                        <CalendarIcon size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-medium text-gray-900 truncate">
+                            {event.title}
+                          </div>
+                          <div className="text-[10px] text-gray-500">
+                            {formatDate(event.start_date)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <CalendarIcon size={24} className="text-gray-300 mx-auto mb-2" />
+                    <div className="text-xs text-gray-400">No upcoming events</div>
+                  </div>
+                )}
               </div>
-              <button
-                onClick={() => {
-                  const event = new CustomEvent('navigate-to-view', { detail: { view: 'my-requests' } });
-                  window.dispatchEvent(event);
-                }}
-                className="w-full px-4 py-2 bg-gray-900 text-white text-sm rounded hover:bg-gray-800 transition-colors"
-              >
-                Check requests
-              </button>
+
+              {/* Quick Actions */}
+              <div className="border-t border-gray-200 pt-4 mt-4">
+                <button
+                  onClick={() => navigateToCategory('calendar')}
+                  className="w-full px-4 py-2 bg-gray-900 text-white text-sm rounded hover:bg-gray-800 transition-colors"
+                >
+                  Manage Calendar
+                </button>
+              </div>
             </div>
           </div>
         </div>
