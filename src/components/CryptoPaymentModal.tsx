@@ -18,10 +18,15 @@ interface CryptoPaymentModalProps {
 const SUPPORTED_CRYPTOS = [
   { code: 'BTC', name: 'Bitcoin', logo: '₿' },
   { code: 'ETH', name: 'Ethereum', logo: 'Ξ' },
-  { code: 'USDT', name: 'Tether (ERC20)', logo: '₮' },
-  { code: 'USDC', name: 'USD Coin', logo: '$' },
+  { code: 'USDC', name: 'USDC', logo: '$' },
   { code: 'LTC', name: 'Litecoin', logo: 'Ł' },
   { code: 'BCH', name: 'Bitcoin Cash', logo: 'BCH' },
+  { code: 'SOL', name: 'Solana', logo: 'SOL' },
+  { code: 'BNB', name: 'Binance Coin', logo: 'BNB' },
+  { code: 'POL', name: 'Polygon', logo: 'POL' },
+  { code: 'XRP', name: 'XRP', logo: 'XRP' },
+  { code: 'TRX', name: 'TRON', logo: 'TRX' },
+  { code: 'DOGE', name: 'Dogecoin', logo: 'Ð' },
 ];
 
 export default function CryptoPaymentModal({
