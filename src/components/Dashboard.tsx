@@ -2801,6 +2801,106 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
                         </>
                       )}
 
+                      {/* SPV Formation Details */}
+                      {selectedRequest.type === 'spv_formation' && (
+                        <>
+                          {data.companyInfo?.companyName && (
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Company Name</div>
+                              <div className="text-sm font-medium text-gray-900">{data.companyInfo.companyName}</div>
+                            </div>
+                          )}
+                          {(data.tier || data.jurisdiction) && (
+                            <div className="grid grid-cols-2 gap-4">
+                              {data.tier && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Tier</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.tier}</div>
+                                </div>
+                              )}
+                              {data.jurisdiction && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Jurisdiction</div>
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {data.jurisdiction.name || data.jurisdiction}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {data.companyInfo?.activity && (
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Business Activity</div>
+                              <div className="text-sm text-gray-900">{data.companyInfo.activity}</div>
+                            </div>
+                          )}
+                          {data.companyInfo?.description && (
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Description</div>
+                              <div className="text-sm text-gray-700">{data.companyInfo.description}</div>
+                            </div>
+                          )}
+                          {data.directors && data.directors.length > 0 && (
+                            <div>
+                              <div className="text-xs text-gray-500 mb-2">Directors & Shareholders</div>
+                              <div className="space-y-2">
+                                {data.directors.map((director, idx) => (
+                                  <div key={idx} className="bg-gray-100 rounded-lg p-3">
+                                    <div className="grid grid-cols-2 gap-3 text-sm">
+                                      <div>
+                                        <span className="text-gray-600">Name:</span>
+                                        <span className="ml-2 font-medium text-gray-900">{director.fullName}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-600">Nationality:</span>
+                                        <span className="ml-2 text-gray-900">{director.nationality}</span>
+                                      </div>
+                                      {director.sharePercentage && (
+                                        <div>
+                                          <span className="text-gray-600">Shares:</span>
+                                          <span className="ml-2 font-medium text-indigo-600">{director.sharePercentage}%</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {data.additionalServices && Object.keys(data.additionalServices).length > 0 && (
+                            <div>
+                              <div className="text-xs text-gray-500 mb-2">Additional Services</div>
+                              <div className="flex flex-wrap gap-2">
+                                {Object.entries(data.additionalServices).map(([key, value]) => {
+                                  if (value) {
+                                    return (
+                                      <span key={key} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                                        {key.replace(/([A-Z])/g, ' $1').trim()}
+                                      </span>
+                                    );
+                                  }
+                                  return null;
+                                })}
+                              </div>
+                            </div>
+                          )}
+                          {/* PRICE - Most Important */}
+                          {(data.pricing?.total || selectedRequest.estimated_cost) && (
+                            <div className="bg-indigo-50 border-2 border-indigo-300 rounded-lg p-4">
+                              <div className="text-xs text-indigo-700 mb-1 font-medium">💰 TOTAL COST - FIRST YEAR</div>
+                              <div className="text-2xl font-bold text-indigo-900">
+                                €{(data.pricing?.total || selectedRequest.estimated_cost).toLocaleString()}
+                              </div>
+                              {data.pricing?.setup && (
+                                <div className="text-xs text-indigo-700 mt-2">
+                                  Setup: €{data.pricing.setup.toLocaleString()} | Annual: €{data.pricing.annual.toLocaleString()}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </>
+                      )}
+
                       {/* Submitted Date (always show) */}
                       <div className="pt-3 border-t border-gray-200">
                         <div className="text-xs text-gray-500 mb-1">Submitted</div>

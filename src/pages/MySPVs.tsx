@@ -228,35 +228,40 @@ export default function MySPVs() {
                           {request.status.replace('_', ' ').toUpperCase()}
                         </span>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        {request.data.tier && (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                          {request.data.tier && (
+                            <div>
+                              <span className="text-gray-500">Tier:</span>
+                              <span className="ml-2 font-medium text-gray-900">{request.data.tier}</span>
+                            </div>
+                          )}
+                          {request.data.jurisdiction && (
+                            <div>
+                              <span className="text-gray-500">Jurisdiction:</span>
+                              <span className="ml-2 font-medium text-gray-900">
+                                {request.data.jurisdiction.name || request.data.jurisdiction}
+                              </span>
+                            </div>
+                          )}
                           <div>
-                            <span className="text-gray-500">Tier:</span>
-                            <span className="ml-2 font-medium text-gray-900">{request.data.tier}</span>
-                          </div>
-                        )}
-                        {request.data.jurisdiction && (
-                          <div>
-                            <span className="text-gray-500">Jurisdiction:</span>
+                            <span className="text-gray-500">Submitted:</span>
                             <span className="ml-2 font-medium text-gray-900">
-                              {request.data.jurisdiction.name || request.data.jurisdiction}
+                              {new Date(request.created_at).toLocaleDateString()}
                             </span>
                           </div>
-                        )}
-                        {request.data.pricing?.total && (
-                          <div>
-                            <span className="text-gray-500">Cost:</span>
-                            <span className="ml-2 font-medium text-green-600">
-                              {formatCurrency(request.data.pricing.total, 'EUR')}
-                            </span>
-                          </div>
-                        )}
-                        <div>
-                          <span className="text-gray-500">Submitted:</span>
-                          <span className="ml-2 font-medium text-gray-900">
-                            {new Date(request.created_at).toLocaleDateString()}
-                          </span>
                         </div>
+                        {/* PRICE - Prominently Displayed */}
+                        {request.data.pricing?.total && (
+                          <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-indigo-900">💰 Total First Year Cost</span>
+                              <span className="text-xl font-bold text-indigo-600">
+                                {formatCurrency(request.data.pricing.total, 'EUR')}
+                              </span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       {request.admin_notes && (
                         <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
