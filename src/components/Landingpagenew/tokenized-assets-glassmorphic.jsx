@@ -50,6 +50,7 @@ import CommunityPage from './CommunityPage';
 import MyLaunches from './MyLaunches';
 import { useNFT } from '../../context/NFTContext';
 import NFTBenefitsModal from '../NFTBenefitsModal';
+import CryptoPaymentModal from '../CryptoPaymentModal';
 import LaunchpadPage from './LaunchpadPage';
 import TransactionsPage from './TransactionsPage';
 import NFTsPage from './NFTsPage';
@@ -622,6 +623,8 @@ const TokenizedAssetsGlassmorphic = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [adventureSubmitting, setAdventureSubmitting] = useState(false);
   const [adventureSubmitSuccess, setAdventureSubmitSuccess] = useState(false);
+  const [showCryptoPayment, setShowCryptoPayment] = useState(false);
+  const [cryptoPaymentData, setCryptoPaymentData] = useState(null);
   const [luxuryCarSubmitting, setLuxuryCarSubmitting] = useState(false);
   const [luxuryCarSubmitSuccess, setLuxuryCarSubmitSuccess] = useState(false);
   const { isConnected, address } = useAccount();
@@ -7085,6 +7088,63 @@ const TokenizedAssetsGlassmorphic = () => {
                         </button>
 
                         <button
+                          className="w-full py-3 rounded-lg font-bold transition-all mb-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
+                          onClick={() => {
+                            if (!user) {
+                              alert('Please log in to pay with crypto.');
+                              return;
+                            }
+
+                            const offer = selectedAdventure?.rawData || {};
+                            const basePrice = offer.price || 0;
+                            const isFree = hasNFT && basePrice < 1500;
+
+                            if (isFree) {
+                              alert('This adventure is FREE with your NFT membership! Click "Request Quote" instead.');
+                              return;
+                            }
+
+                            if (!basePrice || offer.price_on_request) {
+                              alert('Price on request. Please submit a quote request first.');
+                              return;
+                            }
+
+                            // Apply NFT discount if applicable
+                            const finalPrice = hasNFT ? basePrice * (1 - nftDiscount / 100) : basePrice;
+
+                            setCryptoPaymentData({
+                              amount: finalPrice,
+                              currency: offer.currency || 'EUR',
+                              title: offer.title || selectedAdventure?.name || 'Adventure Package',
+                              description: `${offer.destination || selectedAdventure?.location} - ${offer.duration || 'Flexible duration'}`,
+                              orderId: `ADV-${offer.id}-${Date.now()}`,
+                              userEmail: user.email,
+                              adventureData: {
+                                offer_id: offer.id,
+                                offer_title: offer.title || selectedAdventure?.name,
+                                offer_type: offer.package_type || 'Adventure',
+                                origin: offer.origin,
+                                destination: offer.destination || selectedAdventure?.location,
+                                image_url: offer.image_url || selectedAdventure?.image,
+                                duration: offer.duration,
+                                difficulty_level: offer.difficulty_level,
+                                package_type: offer.package_type,
+                                passengers: offer.passengers || offer.max_participants,
+                                currency: offer.currency || 'EUR',
+                                price: basePrice,
+                                final_price: finalPrice,
+                                nft_discount_applied: hasNFT ? nftDiscount : 0,
+                                price_on_request: false,
+                                description: offer.description,
+                              }
+                            });
+                            setShowCryptoPayment(true);
+                          }}
+                        >
+                          💰 Pay with Crypto
+                        </button>
+
+                        <button
                           onClick={checkNFTMembership}
                           disabled={isCheckingNFT}
                           className="block w-full text-center text-sm text-blue-600 hover:underline"
@@ -8334,6 +8394,87 @@ const TokenizedAssetsGlassmorphic = () => {
         hasNFT={hasNFT}
         usedBenefits={usedBenefits}
       />
+
+      {/* Crypto Payment Modal */}
+      {cryptoPaymentData && (
+        <CryptoPaymentModal
+          isOpen={showCryptoPayment}
+          onClose={() => {
+            setShowCryptoPayment(false);
+            setCryptoPaymentData(null);
+          }}
+          amount={cryptoPaymentData.amount}
+          currency={cryptoPaymentData.currency}
+          title={cryptoPaymentData.title}
+          description={cryptoPaymentData.description}
+          orderId={cryptoPaymentData.orderId}
+          userEmail={cryptoPaymentData.userEmail}
+          onSuccess={async (transactionData) => {
+            try {
+              // Save crypto transaction to database
+              const { error: transactionError } = await supabase
+                .from('crypto_transactions')
+                .insert([{
+                  user_id: user.id,
+                  coingate_order_id: transactionData.coingate_order_id,
+                  order_id: transactionData.order_id,
+                  amount: transactionData.amount,
+                  currency: transactionData.currency,
+                  crypto_currency: transactionData.crypto_currency,
+                  status: transactionData.status,
+                  payment_url: transactionData.payment_url,
+                  created_at: transactionData.created_at,
+                }]);
+
+              if (transactionError) {
+                console.error('Error saving crypto transaction:', transactionError);
+              }
+
+              // Save adventure request as PAID
+              const { error: requestError } = await supabase
+                .from('user_requests')
+                .insert([{
+                  user_id: user.id,
+                  type: 'adventure_package',
+                  status: 'paid',
+                  payment_status: 'paid',
+                  payment_method: 'crypto',
+                  crypto_currency: transactionData.crypto_currency,
+                  crypto_transaction_id: transactionData.order_id,
+                  data: {
+                    ...cryptoPaymentData.adventureData,
+                    booking_source: 'glassmorphic_adventures_crypto',
+                    timestamp: new Date().toISOString(),
+                    payment_info: {
+                      coingate_order_id: transactionData.coingate_order_id,
+                      payment_url: transactionData.payment_url,
+                      crypto_currency: transactionData.crypto_currency,
+                    },
+                    client_info: {
+                      user_id: user.id,
+                      email: user.email,
+                    },
+                  }
+                }]);
+
+              if (requestError) {
+                console.error('Error saving adventure request:', requestError);
+                alert('Payment initiated but failed to save request. Please contact support with order ID: ' + transactionData.order_id);
+              } else {
+                showToast('Payment initiated! Complete payment in the new window.', 'success');
+                setTimeout(() => {
+                  setShowCryptoPayment(false);
+                  setCryptoPaymentData(null);
+                  setActiveCategory('requests'); // Navigate to My Requests
+                }, 2000);
+              }
+            } catch (err) {
+              console.error('Error handling crypto payment success:', err);
+              alert('Payment initiated but failed to save. Please contact support with order ID: ' + transactionData.order_id);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
