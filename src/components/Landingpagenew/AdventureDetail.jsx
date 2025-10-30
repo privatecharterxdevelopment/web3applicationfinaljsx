@@ -229,8 +229,7 @@ const AdventureDetail = () => {
 
       if (dbError) throw dbError;
 
-      // Track benefit usage
-      const isFree = hasNFT && adventure.price < 1500;
+      // Track benefit usage (isFree already calculated on line 183)
       if (isFree) {
         markFreeFlightUsed(); // Mark free adventure as used
       } else if (hasNFT) {
