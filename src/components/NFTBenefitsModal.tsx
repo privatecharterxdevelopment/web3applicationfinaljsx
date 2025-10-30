@@ -101,12 +101,16 @@ export default function NFTBenefitsModal({ isOpen, onClose, nft, hasNFT, usedBen
           </button>
 
           <div className="flex items-center gap-4">
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center ${hasNFT ? 'bg-gray-900' : 'bg-gray-100'}`}>
-              {hasNFT ? (
-                <Check size={32} className="text-white" />
-              ) : (
-                <Crown size={32} className="text-gray-400" />
-              )}
+            <div className="w-16 h-16 flex-shrink-0 flex items-center justify-center">
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-contain"
+              >
+                <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
+              </video>
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900 mb-1">
