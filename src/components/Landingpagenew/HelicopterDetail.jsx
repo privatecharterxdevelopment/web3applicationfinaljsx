@@ -7,17 +7,17 @@ import { supabase } from '../../lib/supabase';
 import { web3Service } from '../../lib/web3';
 import { createRequest } from '../../services/requests';
 import SuccessNotification from '../SuccessNotification';
+import { useNFT } from '../../context/NFTContext';
+import NFTBenefitsModal from '../NFTBenefitsModal';
 
 const HelicopterDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { address, isConnected } = useAccount();
   const { open } = useAppKit();
+  const { hasNFT, nftDiscount, isCheckingNFT, checkNFTMembership, showNFTModal, closeNFTModal, nfts, usedBenefits, incrementDiscountUsage } = useNFT();
   const [helicopter, setHelicopter] = useState(null);
   const [activeTab, setActiveTab] = useState('details');
-  const [hasNFT, setHasNFT] = useState(false);
-  const [nftDiscount, setNftDiscount] = useState(0);
-  const [isCheckingNFT, setIsCheckingNFT] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [passengers, setPassengers] = useState(1);
   const [flightDuration, setFlightDuration] = useState(1);
@@ -45,31 +45,6 @@ const HelicopterDetail = () => {
       navigate('/tokenized-assets');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const checkNFTMembership = async () => {
-    if (!isConnected || !address) {
-      open();
-      return;
-    }
-
-    setIsCheckingNFT(true);
-    try {
-      const eligibility = await web3Service.checkDiscountEligibility(address);
-      setHasNFT(eligibility.hasDiscount);
-      setNftDiscount(eligibility.discountPercent);
-
-      if (eligibility.hasDiscount) {
-        alert(`✅ NFT Membership Detected!\n\nYou have ${eligibility.discountPercent}% discount on all flights.`);
-      } else {
-        alert('❌ No NFT Membership found in your wallet.\n\nGet your membership at:\nhttps://opensea.io/collection/privatecharterx-membership');
-      }
-    } catch (error) {
-      console.error('Error checking NFT:', error);
-      alert('Error checking NFT membership. Please try again.');
-    } finally {
-      setIsCheckingNFT(false);
     }
   };
 
@@ -117,6 +92,11 @@ const HelicopterDetail = () => {
         }]);
 
       if (dbError) throw dbError;
+
+      // Track benefit usage
+      if (hasNFT) {
+        incrementDiscountUsage(); // Track discount usage
+      }
 
       // Show success notification
       setSuccessMessage(`Your ${helicopter.name} charter request has been submitted. We'll contact you within 24 hours with availability and pricing.`);
@@ -636,6 +616,15 @@ const HelicopterDetail = () => {
         onClose={() => setShowSuccessNotification(false)}
         title="Request Submitted!"
         message={successMessage}
+      />
+
+      {/* NFT Benefits Modal */}
+      <NFTBenefitsModal
+        isOpen={showNFTModal}
+        onClose={closeNFTModal}
+        nft={nfts[0] || null}
+        hasNFT={hasNFT}
+        usedBenefits={usedBenefits}
       />
     </div>
   );

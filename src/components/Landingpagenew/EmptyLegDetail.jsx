@@ -8,8 +8,10 @@ import RoutePreviewMap from '../RoutePreviewMap';
 import { airportsStaticService } from '../../services/airportsStaticService';
 import { web3Service } from '../../lib/web3';
 import { useAuth } from '../../context/AuthContext';
+import { useNFT } from '../../context/NFTContext';
 import { createRequest } from '../../services/requests';
 import SuccessNotification from '../SuccessNotification';
+import NFTBenefitsModal from '../NFTBenefitsModal';
 
 const EmptyLegDetail = () => {
   const { id } = useParams();
@@ -17,11 +19,9 @@ const EmptyLegDetail = () => {
   const { address, isConnected } = useAccount();
   const { open } = useAppKit();
   const { user } = useAuth();
+  const { hasNFT, nftDiscount, isCheckingNFT, checkNFTMembership, showNFTModal, closeNFTModal, nfts, usedBenefits, markFreeFlightUsed, incrementDiscountUsage } = useNFT();
   const [emptyLeg, setEmptyLeg] = useState(null);
   const [activeTab, setActiveTab] = useState('details');
-  const [hasNFT, setHasNFT] = useState(false);
-  const [nftDiscount, setNftDiscount] = useState(0);
-  const [isCheckingNFT, setIsCheckingNFT] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [originCoords, setOriginCoords] = useState(null);
   const [destCoords, setDestCoords] = useState(null);
@@ -188,30 +188,7 @@ const EmptyLegDetail = () => {
     }
   };
 
-  const checkNFTMembership = async () => {
-    if (!isConnected || !address) {
-      open();
-      return;
-    }
-
-    setIsCheckingNFT(true);
-    try {
-      const eligibility = await web3Service.checkDiscountEligibility(address);
-      setHasNFT(eligibility.hasDiscount);
-      setNftDiscount(eligibility.discountPercent);
-
-      if (eligibility.hasDiscount) {
-        alert(`✅ NFT Membership Detected!\n\nYou have ${eligibility.discountPercent}% discount on all flights.\n\nFlights under $1,500 are FREE for NFT holders!`);
-      } else {
-        alert('❌ No NFT Membership found in your wallet.\n\nGet your membership at:\nhttps://opensea.io/collection/privatecharterx-membership');
-      }
-    } catch (error) {
-      console.error('Error checking NFT:', error);
-      alert('Error checking NFT membership. Please try again.');
-    } finally {
-      setIsCheckingNFT(false);
-    }
-  };
+  // NFT check now handled by useNFT context - modal will show automatically
 
   const requestFlight = async () => {
     if (!user) {
@@ -264,6 +241,13 @@ const EmptyLegDetail = () => {
         }]);
 
       if (dbError) throw dbError;
+
+      // Track benefit usage
+      if (isFree) {
+        markFreeFlightUsed(); // Mark free flight as used
+      } else if (hasNFT) {
+        incrementDiscountUsage(); // Track discount usage
+      }
 
       // Show success notification
       setShowSuccess(true);
@@ -923,6 +907,15 @@ const EmptyLegDetail = () => {
           }}
         />
       )}
+
+      {/* NFT Benefits Modal */}
+      <NFTBenefitsModal
+        isOpen={showNFTModal}
+        onClose={closeNFTModal}
+        nft={nfts[0] || null}
+        hasNFT={hasNFT}
+        usedBenefits={usedBenefits}
+      />
     </div>
   );
 };

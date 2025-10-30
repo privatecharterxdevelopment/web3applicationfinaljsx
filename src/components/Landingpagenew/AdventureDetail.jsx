@@ -9,6 +9,8 @@ import { web3Service } from '../../lib/web3';
 import { useAuth } from '../../context/AuthContext';
 import { createRequest } from '../../services/requests';
 import SuccessNotification from '../SuccessNotification';
+import { useNFT } from '../../context/NFTContext';
+import NFTBenefitsModal from '../NFTBenefitsModal';
 
 const AdventureDetail = () => {
   const { id } = useParams();
@@ -16,12 +18,10 @@ const AdventureDetail = () => {
   const { address, isConnected } = useAccount();
   const { open } = useAppKit();
   const { user } = useAuth();
+  const { hasNFT, nftDiscount, isCheckingNFT, checkNFTMembership, showNFTModal, closeNFTModal, nfts, usedBenefits, markFreeFlightUsed, incrementDiscountUsage } = useNFT();
 
   const [adventure, setAdventure] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
-  const [hasNFT, setHasNFT] = useState(false);
-  const [nftDiscount, setNftDiscount] = useState(0);
-  const [isCheckingNFT, setIsCheckingNFT] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [co2Data, setCo2Data] = useState({ emissions: 0, offset: 0, flightEmissions: 0, packageOverhead: 0 });
   const [participants, setParticipants] = useState(2);
@@ -166,29 +166,6 @@ const AdventureDetail = () => {
     }
   };
 
-  const checkNFTMembership = async () => {
-    if (!isConnected || !address) {
-      open();
-      return;
-    }
-    setIsCheckingNFT(true);
-    try {
-      const eligibility = await web3Service.checkDiscountEligibility(address);
-      setHasNFT(eligibility.hasDiscount);
-      setNftDiscount(eligibility.discountPercent);
-
-      if (eligibility.hasDiscount) {
-        alert(`✅ NFT Membership Detected!\n\nYou have ${eligibility.discountPercent}% discount on all packages.\n\nPackages under $1,500 are FREE for NFT holders!`);
-      } else {
-        alert('❌ No NFT Membership found in your wallet.\n\nGet your membership at:\nhttps://opensea.io/collection/privatecharterx-membership');
-      }
-    } catch (error) {
-      console.error('Error checking NFT:', error);
-    } finally {
-      setIsCheckingNFT(false);
-    }
-  };
-
   const requestAdventure = async () => {
     if (!user) {
       alert('Please sign in to request an adventure package');
@@ -249,6 +226,14 @@ const AdventureDetail = () => {
         }]);
 
       if (dbError) throw dbError;
+
+      // Track benefit usage
+      const isFree = hasNFT && adventure.base_price < 1500;
+      if (isFree) {
+        markFreeFlightUsed(); // Mark free adventure as used
+      } else if (hasNFT) {
+        incrementDiscountUsage(); // Track discount usage
+      }
 
       // Show success notification
       setShowSuccess(true);
@@ -944,6 +929,15 @@ const AdventureDetail = () => {
           }}
         />
       )}
+
+      {/* NFT Benefits Modal */}
+      <NFTBenefitsModal
+        isOpen={showNFTModal}
+        onClose={closeNFTModal}
+        nft={nfts[0] || null}
+        hasNFT={hasNFT}
+        usedBenefits={usedBenefits}
+      />
     </div>
   );
 };

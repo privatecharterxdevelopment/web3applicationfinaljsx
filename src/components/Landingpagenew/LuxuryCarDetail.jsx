@@ -8,6 +8,8 @@ import { web3Service } from '../../lib/web3';
 import { useAuth } from '../../context/AuthContext';
 import { createRequest } from '../../services/requests';
 import SuccessNotification from '../SuccessNotification';
+import { useNFT } from '../../context/NFTContext';
+import NFTBenefitsModal from '../NFTBenefitsModal';
 
 const LuxuryCarDetail = () => {
   const { id } = useParams();
@@ -15,12 +17,10 @@ const LuxuryCarDetail = () => {
   const { address, isConnected } = useAccount();
   const { open } = useAppKit();
   const { user } = useAuth();
+  const { hasNFT, nftDiscount, isCheckingNFT, checkNFTMembership, showNFTModal, closeNFTModal, nfts, usedBenefits, incrementDiscountUsage } = useNFT();
 
   const [car, setCar] = useState(null);
   const [activeTab, setActiveTab] = useState('details');
-  const [hasNFT, setHasNFT] = useState(false);
-  const [nftDiscount, setNftDiscount] = useState(0);
-  const [isCheckingNFT, setIsCheckingNFT] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [rentalDuration, setRentalDuration] = useState('day');
   const [rentalDays, setRentalDays] = useState(1);
@@ -66,29 +66,6 @@ const LuxuryCarDetail = () => {
       setTimeout(() => navigate('/tokenized-assets'), 2000);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const checkNFTMembership = async () => {
-    if (!isConnected || !address) {
-      open();
-      return;
-    }
-    setIsCheckingNFT(true);
-    try {
-      const eligibility = await web3Service.checkDiscountEligibility(address);
-      setHasNFT(eligibility.hasDiscount);
-      setNftDiscount(eligibility.discountPercent);
-
-      if (eligibility.hasDiscount) {
-        alert(`✅ NFT Membership Detected!\n\nYou have ${eligibility.discountPercent}% discount on all rentals.`);
-      } else {
-        alert('❌ No NFT Membership found in your wallet.\n\nGet your membership at:\nhttps://opensea.io/collection/privatecharterx-membership');
-      }
-    } catch (error) {
-      console.error('Error checking NFT:', error);
-    } finally {
-      setIsCheckingNFT(false);
     }
   };
 
@@ -152,6 +129,11 @@ const LuxuryCarDetail = () => {
         }]);
 
       if (dbError) throw dbError;
+
+      // Track benefit usage
+      if (hasNFT) {
+        incrementDiscountUsage(); // Track discount usage
+      }
 
       // Show success notification
       setShowSuccess(true);
@@ -763,6 +745,15 @@ const LuxuryCarDetail = () => {
           }}
         />
       )}
+
+      {/* NFT Benefits Modal */}
+      <NFTBenefitsModal
+        isOpen={showNFTModal}
+        onClose={closeNFTModal}
+        nft={nfts[0] || null}
+        hasNFT={hasNFT}
+        usedBenefits={usedBenefits}
+      />
     </div>
   );
 };

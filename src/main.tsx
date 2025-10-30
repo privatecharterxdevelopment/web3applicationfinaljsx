@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Auth0Provider } from '@auth0/auth0-react';
+import { NFTProvider } from './context/NFTContext';
 import App from './components/Landingpagenew/App.tsx';
 // import { initializeFaceCollection } from './services/awsFaceService';
 import './index.css';
@@ -41,9 +42,11 @@ createRoot(document.getElementById('root')!).render(
     useRefreshTokens={true}
   >
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <App />
-      </Router>
+      <NFTProvider>
+        <Router>
+          <App />
+        </Router>
+      </NFTProvider>
     </QueryClientProvider>
   </Auth0Provider>
 );
