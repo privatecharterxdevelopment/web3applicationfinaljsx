@@ -5852,10 +5852,18 @@ const TokenizedAssetsGlassmorphic = () => {
                           </button>
                         </div>
 
-                        <div className="flex justify-between mt-auto mb-5">
+                        <div className="flex justify-between mt-auto mb-3">
                           <div className="flex flex-col space-y-1">
                             <span className="text-xs text-gray-600">Price</span>
                             <span className="text-sm font-semibold text-gray-800">{leg.totalPrice}</span>
+                            {leg.rawData?.distance_km && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <Coins size={12} className="text-blue-600" />
+                                <span className="text-xs font-medium text-blue-600">
+                                  {(leg.rawData.distance_km * 1.5).toFixed(0)} $PVCX
+                                </span>
+                              </div>
+                            )}
                           </div>
                           <div className="flex flex-col space-y-1">
                             <span className="text-xs text-gray-600">Capacity</span>

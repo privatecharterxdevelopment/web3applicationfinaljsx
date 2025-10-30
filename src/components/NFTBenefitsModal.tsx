@@ -1,5 +1,8 @@
-import React from 'react';
-import { X, Check, Gift, Plane, Car, Star, Zap, Crown } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Check, Gift, Plane, Car, Star, Zap, Crown, Wallet, RefreshCw } from 'lucide-react';
+import { useAccount } from 'wagmi';
+import { useAppKit } from '@reown/appkit/react';
+import { web3Service } from '../lib/web3';
 import type { NFTBenefit } from '../lib/web3';
 
 interface NFTBenefitsModalProps {
@@ -14,13 +17,37 @@ interface NFTBenefitsModalProps {
 }
 
 export default function NFTBenefitsModal({ isOpen, onClose, nft, hasNFT, usedBenefits = {} }: NFTBenefitsModalProps) {
+  const { address, isConnected } = useAccount();
+  const { open: openWallet } = useAppKit();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   if (!isOpen) return null;
+
+  const handleConnectWallet = () => {
+    openWallet();
+  };
+
+  const handleRefresh = async () => {
+    if (!address) return;
+
+    setIsRefreshing(true);
+    try {
+      await web3Service.getUserNFTs(address as `0x${string}`);
+      // Force a small delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      window.location.reload(); // Reload to refresh NFT state
+    } catch (error) {
+      console.error('Error refreshing NFTs:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const benefits = [
     {
       icon: Plane,
       title: 'Free Empty Leg Flight',
-      desc: 'One complimentary flight under €1,500',
+      desc: 'One complimentary flight',
       used: usedBenefits.freeFlightUsed,
       color: 'text-blue-600 bg-blue-50'
     },
@@ -160,39 +187,83 @@ export default function NFTBenefitsModal({ isOpen, onClose, nft, hasNFT, usedBen
             </>
           ) : (
             <>
-              {/* No NFT - Show Benefits as Locked */}
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Unlock These Benefits</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {benefits.map((benefit, idx) => (
-                    <div
-                      key={idx}
-                      className="border-2 border-gray-200 bg-gray-50 rounded-xl p-4 opacity-60"
+              {/* No NFT - Show Wallet Connection or Refresh */}
+              {!isConnected ? (
+                <div className="mb-6">
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6 text-center">
+                    <Wallet size={48} className="mx-auto text-blue-600 mb-3" />
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">Connect Your Wallet</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Connect your wallet to check for NFT membership and unlock exclusive benefits
+                    </p>
+                    <button
+                      onClick={handleConnectWallet}
+                      className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
                     >
-                      <div className="flex items-start gap-3">
-                        <div className={`p-2 rounded-lg ${benefit.color}`}>
-                          <benefit.icon size={20} />
+                      <Wallet size={20} />
+                      Connect Wallet
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Wallet connected but no NFT - Show refresh button */}
+                  <div className="mb-6">
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Wallet size={16} className="text-gray-600" />
+                          <span className="text-sm text-gray-600">
+                            {address?.slice(0, 6)}...{address?.slice(-4)}
+                          </span>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-semibold text-gray-700 mb-1">{benefit.title}</h4>
-                          <p className="text-xs text-gray-500">{benefit.desc}</p>
-                        </div>
+                        <button
+                          onClick={handleRefresh}
+                          disabled={isRefreshing}
+                          className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50"
+                        >
+                          <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+                          {isRefreshing ? 'Checking...' : 'Refresh'}
+                        </button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
 
-              {/* CTA */}
-              <a
-                href="https://opensea.io/collection/privatecharterx-membership-card"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={onClose}
-                className="block w-full bg-gradient-to-r from-gray-900 to-black text-white text-center py-4 rounded-xl font-semibold hover:from-gray-800 hover:to-gray-900 transition-all shadow-lg"
-              >
-                Get Membership NFT on OpenSea →
-              </a>
+                  {/* Show Benefits as Locked */}
+                  <div className="mb-6">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-3">Unlock These Benefits</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {benefits.map((benefit, idx) => (
+                        <div
+                          key={idx}
+                          className="border-2 border-gray-200 bg-gray-50 rounded-xl p-4 opacity-60"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`p-2 rounded-lg ${benefit.color}`}>
+                              <benefit.icon size={20} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm font-semibold text-gray-700 mb-1">{benefit.title}</h4>
+                              <p className="text-xs text-gray-500">{benefit.desc}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* CTA */}
+                  <a
+                    href="https://opensea.io/collection/privatecharterx-membership-card"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={onClose}
+                    className="block w-full bg-gradient-to-r from-gray-900 to-black text-white text-center py-4 rounded-xl font-semibold hover:from-gray-800 hover:to-gray-900 transition-all shadow-lg"
+                  >
+                    Get Membership NFT on OpenSea →
+                  </a>
+                </>
+              )}
             </>
           )}
         </div>
