@@ -23,6 +23,8 @@ const MyRequestsView = ({ user }) => {
     try {
       const { requests: data, error } = await getUserRequests(user.id);
       if (!error && data) {
+        console.log('📥 Loaded requests:', data);
+        console.log('📊 Request types:', data.map(r => ({ id: r.id.slice(0,8), type: r.type, dataType: typeof r.data })));
         setRequests(data);
       }
     } catch (error) {
@@ -83,7 +85,11 @@ const MyRequestsView = ({ user }) => {
   });
 
   const renderTaxiRequest = (request) => {
-    const data = request.data;
+    let data = request.data;
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch (e) { data = {}; }
+    }
+    data = data || {};
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
         <div className="flex items-start gap-4">
@@ -188,7 +194,17 @@ const MyRequestsView = ({ user }) => {
   };
 
   const renderEmptyLegRequest = (request) => {
-    const data = request.data;
+    // Parse data if it's a string
+    let data = request.data;
+    if (typeof data === 'string') {
+      try {
+        data = JSON.parse(data);
+      } catch (e) {
+        data = {};
+      }
+    }
+    data = data || {};
+    console.log('Rendering Empty Leg Request:', { type: request.type, data });
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
         <div className="flex items-start gap-4">
@@ -281,7 +297,11 @@ const MyRequestsView = ({ user }) => {
   };
 
   const renderAdventureRequest = (request) => {
-    const data = request.data;
+    let data = request.data;
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch (e) { data = {}; }
+    }
+    data = data || {};
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
         <div className="flex items-start gap-4">
@@ -376,7 +396,11 @@ const MyRequestsView = ({ user }) => {
   };
 
   const renderLuxuryCarRequest = (request) => {
-    const data = request.data;
+    let data = request.data;
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch (e) { data = {}; }
+    }
+    data = data || {};
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
         <div className="flex items-start gap-4">
@@ -479,7 +503,11 @@ const MyRequestsView = ({ user }) => {
   };
 
   const renderPrivateJetRequest = (request) => {
-    const data = request.data;
+    let data = request.data;
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch (e) { data = {}; }
+    }
+    data = data || {};
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
         <div className="flex items-start gap-4">
@@ -545,7 +573,11 @@ const MyRequestsView = ({ user }) => {
   };
 
   const renderHelicopterRequest = (request) => {
-    const data = request.data;
+    let data = request.data;
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch (e) { data = {}; }
+    }
+    data = data || {};
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
         <div className="flex items-start gap-4">
@@ -633,7 +665,11 @@ const MyRequestsView = ({ user }) => {
   };
 
   const renderCO2CertificateRequest = (request) => {
-    const data = request.data;
+    let data = request.data;
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch (e) { data = {}; }
+    }
+    data = data || {};
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
         <div className="flex items-start gap-4">
@@ -727,7 +763,11 @@ const MyRequestsView = ({ user }) => {
   };
 
   const renderFixedOfferRequest = (request) => {
-    const data = request.data;
+    let data = request.data;
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch (e) { data = {}; }
+    }
+    data = data || {};
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
         <div className="flex items-start gap-4">
