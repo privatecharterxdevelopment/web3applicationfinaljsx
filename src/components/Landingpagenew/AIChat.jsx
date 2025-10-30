@@ -2183,23 +2183,74 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
     return (
       <div className="h-full bg-transparent flex flex-col overflow-hidden">
-        {/* Animated Header */}
-        <div className="flex-shrink-0 px-8 py-8 text-center">
-          <div className="relative inline-block mb-4">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full flex items-center justify-center backdrop-blur-xl border border-white/20 animate-pulse-slow">
-              <MessageSquare size={40} className="text-gray-700" />
+        {/* Voice Interactive Dotted Circle Animation */}
+        <div className="flex-shrink-0 px-8 py-12 text-center">
+          <div className="relative inline-block mb-6">
+            {/* Main dotted circle with voice animation */}
+            <div className="relative w-32 h-32">
+              {/* Outer rotating dotted circle */}
+              <svg className="absolute inset-0 w-full h-full animate-spin-slow" viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  fill="none"
+                  stroke="url(#gradient1)"
+                  strokeWidth="2"
+                  strokeDasharray="3 6"
+                  strokeLinecap="round"
+                  opacity="0.6"
+                />
+                <defs>
+                  <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#3b82f6" />
+                    <stop offset="100%" stopColor="#8b5cf6" />
+                  </linearGradient>
+                </defs>
+              </svg>
+
+              {/* Middle rotating dotted circle (opposite direction) */}
+              <svg className="absolute inset-0 w-full h-full animate-spin-reverse" viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="38"
+                  fill="none"
+                  stroke="url(#gradient2)"
+                  strokeWidth="2"
+                  strokeDasharray="4 8"
+                  strokeLinecap="round"
+                  opacity="0.5"
+                />
+                <defs>
+                  <linearGradient id="gradient2" x1="100%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#8b5cf6" />
+                    <stop offset="100%" stopColor="#ec4899" />
+                  </linearGradient>
+                </defs>
+              </svg>
+
+              {/* Inner pulsing circle */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-24 h-24 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full flex items-center justify-center backdrop-blur-xl border-2 border-white/30 shadow-xl animate-pulse-gentle">
+                  <MessageSquare size={36} className="text-gray-800" />
+                </div>
+              </div>
+
+              {/* Voice wave indicators */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="absolute w-28 h-28 rounded-full border-2 border-blue-400/20 animate-ping-slow"></div>
+                <div className="absolute w-32 h-32 rounded-full border-2 border-purple-400/20 animate-ping-slower"></div>
+              </div>
             </div>
-            {/* Animated rings */}
-            <div className="absolute inset-0 rounded-full border-2 border-blue-500/30 animate-ping-slow"></div>
-            <div className="absolute inset-0 rounded-full border-2 border-purple-500/30 animate-ping-slow" style={{ animationDelay: '0.5s' }}></div>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">How can Sphera AI help you today?</h2>
-          <p className="text-sm text-gray-600">Select a category or type your request below</p>
+          <h2 className="text-3xl font-bold text-gray-900 mb-3">How can Sphera AI help you today?</h2>
+          <p className="text-sm text-gray-600">Select a category or speak your request</p>
         </div>
 
-        {/* Category Cards Grid */}
+        {/* Clean Category Bubbles */}
         <div className="flex-1 overflow-y-auto px-8 pb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+          <div className="flex flex-wrap justify-center gap-6 max-w-4xl mx-auto">
             {categories.map((category, index) => (
               <button
                 key={category.id}
@@ -2207,34 +2258,33 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   // Create a new chat with this category context
                   handleSendMessage(category.prompt, 'text');
                 }}
-                className={`group relative bg-gradient-to-br ${category.color} backdrop-blur-xl border ${category.borderColor} rounded-2xl p-6 text-left transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:border-opacity-60`}
+                className="group relative flex flex-col items-center"
                 style={{
-                  animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both`
+                  animation: `bubbleIn 0.6s ease-out ${index * 0.08}s both`
                 }}
               >
-                {/* Animated background on hover */}
-                <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 rounded-2xl transition-all duration-300"></div>
+                {/* Icon Bubble */}
+                <div className={`relative w-20 h-20 bg-gradient-to-br ${category.color} backdrop-blur-xl border-2 ${category.borderColor} rounded-full flex items-center justify-center mb-3 transition-all duration-300 group-hover:scale-110 group-hover:shadow-2xl`}>
+                  {/* Glow effect on hover */}
+                  <div className="absolute inset-0 rounded-full bg-white/0 group-hover:bg-white/20 transition-all duration-300"></div>
 
-                {/* Icon with pulse animation */}
-                <div className="relative mb-4">
-                  <div className="text-5xl transform transition-transform group-hover:scale-110 group-hover:rotate-6">
+                  {/* Icon */}
+                  <div className="relative text-4xl transform transition-transform group-hover:scale-110">
                     {category.icon}
                   </div>
-                  <div className="absolute inset-0 bg-white/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+                  {/* Hover ring */}
+                  <div className="absolute inset-0 rounded-full border-2 border-white/0 group-hover:border-white/40 transition-all duration-300 scale-100 group-hover:scale-110"></div>
                 </div>
 
-                {/* Content */}
-                <h3 className="relative text-lg font-semibold text-gray-900 mb-2 group-hover:text-black">
-                  {category.title}
-                </h3>
-                <p className="relative text-sm text-gray-600 group-hover:text-gray-700">
-                  {category.description}
-                </p>
-
-                {/* Arrow indicator */}
-                <div className="relative mt-4 flex items-center text-xs text-gray-500 group-hover:text-gray-700">
-                  <span>Start conversation</span>
-                  <ChevronRight size={14} className="ml-1 transform group-hover:translate-x-1 transition-transform" />
+                {/* Label */}
+                <div className="text-center max-w-[140px]">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1 group-hover:text-black transition-colors">
+                    {category.title}
+                  </h3>
+                  <p className="text-xs text-gray-600 group-hover:text-gray-700 transition-colors leading-tight">
+                    {category.description}
+                  </p>
                 </div>
               </button>
             ))}
@@ -2288,39 +2338,86 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
         {/* Animation keyframes */}
         <style>{`
-          @keyframes fadeInUp {
+          @keyframes bubbleIn {
             from {
               opacity: 0;
-              transform: translateY(30px);
+              transform: scale(0.3) translateY(20px);
             }
             to {
               opacity: 1;
-              transform: translateY(0);
+              transform: scale(1) translateY(0);
             }
           }
 
-          @keyframes pulse-slow {
+          @keyframes spin-slow {
+            from {
+              transform: rotate(0deg);
+            }
+            to {
+              transform: rotate(360deg);
+            }
+          }
+
+          @keyframes spin-reverse {
+            from {
+              transform: rotate(360deg);
+            }
+            to {
+              transform: rotate(0deg);
+            }
+          }
+
+          @keyframes pulse-gentle {
             0%, 100% {
+              transform: scale(1);
               opacity: 1;
             }
             50% {
-              opacity: 0.5;
+              transform: scale(1.05);
+              opacity: 0.9;
             }
           }
 
           @keyframes ping-slow {
+            0% {
+              transform: scale(1);
+              opacity: 0.8;
+            }
             75%, 100% {
               transform: scale(1.5);
               opacity: 0;
             }
           }
 
-          .animate-pulse-slow {
-            animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+          @keyframes ping-slower {
+            0% {
+              transform: scale(1);
+              opacity: 0.6;
+            }
+            75%, 100% {
+              transform: scale(1.8);
+              opacity: 0;
+            }
+          }
+
+          .animate-spin-slow {
+            animation: spin-slow 8s linear infinite;
+          }
+
+          .animate-spin-reverse {
+            animation: spin-reverse 6s linear infinite;
+          }
+
+          .animate-pulse-gentle {
+            animation: pulse-gentle 2s ease-in-out infinite;
           }
 
           .animate-ping-slow {
             animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+          }
+
+          .animate-ping-slower {
+            animation: ping-slower 3s cubic-bezier(0, 0, 0.2, 1) infinite;
           }
         `}</style>
       </div>
