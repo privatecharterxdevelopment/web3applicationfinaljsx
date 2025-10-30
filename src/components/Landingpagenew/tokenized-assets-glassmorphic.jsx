@@ -36,6 +36,7 @@ import MembershipCard from '../MembershipCard';
 import ReferralCard from '../ReferralCard';
 import SubscriptionManagement from '../SubscriptionManagement';
 import ChatSupport from '../ChatSupport';
+import ChatWidget from './ChatWidget';
 import SupportTicketsPage from '../SupportTicketsPage';
 import AIChatComingSoon from '../AIChatComingSoon';
 import KYCForm from '../KYCForm';
@@ -8713,16 +8714,8 @@ const TokenizedAssetsGlassmorphic = () => {
         />
       )}
 
-      {/* Need Help? Floating Button - Only on glassmorphic dashboard */}
-      <button
-        onClick={() => {
-          setActiveCategory('chat-support');
-        }}
-        className="fixed bottom-6 right-6 z-40 bg-black text-white px-5 py-3 rounded-full shadow-lg hover:bg-gray-800 transition-all flex items-center gap-2 group"
-      >
-        <MessageCircle size={20} />
-        <span className="text-sm font-medium">Need Help?</span>
-      </button>
+      {/* Chat Widget - Intelligent support with team bubbles and glassmorphic design */}
+      <ChatWidget />
     </div>
   );
 };

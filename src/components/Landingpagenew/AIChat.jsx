@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
-  ArrowLeft, Mic, Send, X, Volume2, VolumeX, Edit2, Shield, Wallet, ShoppingCart, MessageSquare, Plus, Crown, AlertCircle, Calendar, Trash2
+  ArrowLeft, Mic, Send, X, Volume2, VolumeX, Edit2, Shield, Wallet, ShoppingCart, MessageSquare, Plus, Crown, AlertCircle, Calendar, Trash2, ChevronRight
 } from 'lucide-react';
 import Anthropic from '@anthropic-ai/sdk';
 
@@ -2111,20 +2111,140 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
     }
   };
 
-  // NEW CHAT VIEW - Show loading while creating chat with welcome message
+  // NEW CHAT VIEW - Category overview with animated cards
   if (activeChat === 'new') {
-    console.log('🎨 Rendering: NEW CHAT VIEW (loading)');
+    console.log('🎨 Rendering: NEW CHAT VIEW (category overview)');
+
+    const categories = [
+      {
+        id: 'aviation',
+        title: 'Private Aviation',
+        icon: '✈️',
+        description: 'Jets, helicopters & empty legs',
+        color: 'from-blue-500/20 to-blue-600/20',
+        borderColor: 'border-blue-500/30',
+        prompt: 'I need help with private aviation services'
+      },
+      {
+        id: 'yachts',
+        title: 'Luxury Yachts',
+        icon: '⛵',
+        description: 'Charter exclusive yachts worldwide',
+        color: 'from-cyan-500/20 to-cyan-600/20',
+        borderColor: 'border-cyan-500/30',
+        prompt: 'I want to charter a yacht'
+      },
+      {
+        id: 'adventures',
+        title: 'Adventures & Experiences',
+        icon: '🏔️',
+        description: 'Unique luxury experiences',
+        color: 'from-green-500/20 to-green-600/20',
+        borderColor: 'border-green-500/30',
+        prompt: 'Show me luxury adventure packages'
+      },
+      {
+        id: 'luxury-cars',
+        title: 'Luxury Cars',
+        icon: '🚗',
+        description: 'Premium chauffeur services',
+        color: 'from-purple-500/20 to-purple-600/20',
+        borderColor: 'border-purple-500/30',
+        prompt: 'I need a luxury car service'
+      },
+      {
+        id: 'events',
+        title: 'Events & Sports',
+        icon: '🎭',
+        description: 'VIP event experiences',
+        color: 'from-pink-500/20 to-pink-600/20',
+        borderColor: 'border-pink-500/30',
+        prompt: 'I want to attend exclusive events'
+      },
+      {
+        id: 'tokenization',
+        title: 'Asset Tokenization',
+        icon: '🪙',
+        description: 'Tokenize luxury assets',
+        color: 'from-amber-500/20 to-amber-600/20',
+        borderColor: 'border-amber-500/30',
+        prompt: 'Tell me about asset tokenization'
+      },
+      {
+        id: 'general',
+        title: 'General Assistance',
+        icon: '💬',
+        description: 'Ask me anything',
+        color: 'from-gray-500/20 to-gray-600/20',
+        borderColor: 'border-gray-500/30',
+        prompt: 'I have a general question'
+      }
+    ];
+
     return (
       <div className="h-full bg-transparent flex flex-col overflow-hidden">
-        {/* Show loading while creating chat */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className="animate-pulse text-gray-500">Creating your chat...</div>
+        {/* Animated Header */}
+        <div className="flex-shrink-0 px-8 py-8 text-center">
+          <div className="relative inline-block mb-4">
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full flex items-center justify-center backdrop-blur-xl border border-white/20 animate-pulse-slow">
+              <MessageSquare size={40} className="text-gray-700" />
+            </div>
+            {/* Animated rings */}
+            <div className="absolute inset-0 rounded-full border-2 border-blue-500/30 animate-ping-slow"></div>
+            <div className="absolute inset-0 rounded-full border-2 border-purple-500/30 animate-ping-slow" style={{ animationDelay: '0.5s' }}></div>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">How can Sphera AI help you today?</h2>
+          <p className="text-sm text-gray-600">Select a category or type your request below</p>
         </div>
 
-        {/* FIXED INPUT - Floating unten */}
+        {/* Category Cards Grid */}
+        <div className="flex-1 overflow-y-auto px-8 pb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+            {categories.map((category, index) => (
+              <button
+                key={category.id}
+                onClick={() => {
+                  // Create a new chat with this category context
+                  handleSendMessage(category.prompt, 'text');
+                }}
+                className={`group relative bg-gradient-to-br ${category.color} backdrop-blur-xl border ${category.borderColor} rounded-2xl p-6 text-left transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:border-opacity-60`}
+                style={{
+                  animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both`
+                }}
+              >
+                {/* Animated background on hover */}
+                <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 rounded-2xl transition-all duration-300"></div>
+
+                {/* Icon with pulse animation */}
+                <div className="relative mb-4">
+                  <div className="text-5xl transform transition-transform group-hover:scale-110 group-hover:rotate-6">
+                    {category.icon}
+                  </div>
+                  <div className="absolute inset-0 bg-white/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </div>
+
+                {/* Content */}
+                <h3 className="relative text-lg font-semibold text-gray-900 mb-2 group-hover:text-black">
+                  {category.title}
+                </h3>
+                <p className="relative text-sm text-gray-600 group-hover:text-gray-700">
+                  {category.description}
+                </p>
+
+                {/* Arrow indicator */}
+                <div className="relative mt-4 flex items-center text-xs text-gray-500 group-hover:text-gray-700">
+                  <span>Start conversation</span>
+                  <ChevronRight size={14} className="ml-1 transform group-hover:translate-x-1 transition-transform" />
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* FIXED INPUT - Floating bottom */}
         <div className="flex-shrink-0 px-6 pb-6">
           <div className="max-w-3xl mx-auto">
-            <div className="flex items-center gap-2 bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 focus-within:border-gray-400 transition-colors shadow-lg">
+            <div className="flex items-center gap-2 bg-white/60 backdrop-blur-xl border border-gray-300 rounded-xl px-3 py-2 focus-within:border-gray-400 transition-colors shadow-lg">
               <button
                 onClick={toggleVoiceMode}
                 className={`flex-shrink-0 p-2 rounded-lg transition-colors ${
@@ -2146,7 +2266,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     handleSendMessage(currentMessage, 'text');
                   }
                 }}
-                placeholder={isVoiceMode ? "🎤 Listening... speak naturally" : "Private jet from London to Monaco for 4 passengers..."}
+                placeholder={isVoiceMode ? "🎤 Listening... speak naturally" : "Or type your request here... e.g. 'Private jet from London to Monaco'"}
                 disabled={isVoiceMode}
                 className="flex-1 bg-transparent border-none outline-none text-sm text-gray-900 placeholder-gray-500 disabled:text-gray-400"
               />
@@ -2165,6 +2285,44 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             </div>
           </div>
         </div>
+
+        {/* Animation keyframes */}
+        <style>{`
+          @keyframes fadeInUp {
+            from {
+              opacity: 0;
+              transform: translateY(30px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          @keyframes pulse-slow {
+            0%, 100% {
+              opacity: 1;
+            }
+            50% {
+              opacity: 0.5;
+            }
+          }
+
+          @keyframes ping-slow {
+            75%, 100% {
+              transform: scale(1.5);
+              opacity: 0;
+            }
+          }
+
+          .animate-pulse-slow {
+            animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+          }
+
+          .animate-ping-slow {
+            animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+          }
+        `}</style>
       </div>
     );
   }
