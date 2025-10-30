@@ -2389,32 +2389,102 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
                               {data.departure_date && (
                                 <div>
                                   <div className="text-xs text-gray-500 mb-1">Departure</div>
-                                  <div className="text-sm font-medium text-gray-900">{new Date(data.departure_date).toLocaleDateString()}</div>
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {new Date(data.departure_date).toLocaleDateString()} {data.departure_time}
+                                  </div>
                                 </div>
                               )}
                             </div>
                           )}
-                          {(data.passengers || data.luggage) && (
+                          {(data.arrival_date || data.capacity) && (
                             <div className="grid grid-cols-2 gap-4">
-                              {data.passengers && (
+                              {data.arrival_date && (
                                 <div>
-                                  <div className="text-xs text-gray-500 mb-1">Passengers</div>
-                                  <div className="text-sm font-medium text-gray-900">{data.passengers}</div>
+                                  <div className="text-xs text-gray-500 mb-1">Arrival</div>
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {new Date(data.arrival_date).toLocaleDateString()} {data.arrival_time}
+                                  </div>
                                 </div>
                               )}
-                              {data.luggage && (
+                              {data.capacity && (
                                 <div>
-                                  <div className="text-xs text-gray-500 mb-1">Luggage</div>
-                                  <div className="text-sm font-medium text-gray-900">{data.luggage}</div>
+                                  <div className="text-xs text-gray-500 mb-1">Aircraft Capacity</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.capacity} passengers</div>
                                 </div>
                               )}
                             </div>
                           )}
-                          {data.price && (
-                            <div className="bg-pink-50 border border-pink-200 rounded-lg p-3">
-                              <div className="text-xs text-pink-700 mb-1">Price</div>
-                              <div className="text-base font-bold text-pink-900">
-                                {typeof data.price === 'number' ? `$${data.price.toLocaleString()}` : data.price}
+                          {/* Passenger Information */}
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <div className="text-xs text-blue-700 mb-2 font-medium">👥 Passenger Information</div>
+                            <div className="grid grid-cols-3 gap-4">
+                              {data.passengers !== undefined && (
+                                <div>
+                                  <div className="text-xs text-blue-600 mb-1">Passengers</div>
+                                  <div className="text-sm font-bold text-blue-900">{data.passengers}</div>
+                                </div>
+                              )}
+                              {data.luggage !== undefined && (
+                                <div>
+                                  <div className="text-xs text-blue-600 mb-1">Luggage</div>
+                                  <div className="text-sm font-bold text-blue-900">{data.luggage} bags</div>
+                                </div>
+                              )}
+                              {data.has_pet !== undefined && (
+                                <div>
+                                  <div className="text-xs text-blue-600 mb-1">Pets</div>
+                                  <div className="text-sm font-bold text-blue-900">{data.has_pet ? '🐕 Yes' : '❌ No'}</div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          {/* PRICE - Most Important */}
+                          {(data.original_price || data.discounted_price || data.price) && (
+                            <div className="bg-pink-50 border-2 border-pink-300 rounded-lg p-4">
+                              <div className="text-xs text-pink-700 mb-1 font-medium">💰 PRICING</div>
+                              {data.original_price && data.discounted_price && data.original_price !== data.discounted_price ? (
+                                <>
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <span className="text-sm text-pink-700 line-through">€{data.original_price.toLocaleString()}</span>
+                                    <span className="text-2xl font-bold text-pink-900">€{data.discounted_price.toLocaleString()}</span>
+                                  </div>
+                                  {data.has_nft && data.nft_discount && (
+                                    <div className="text-xs text-pink-700">🎫 NFT Discount: {data.nft_discount}% OFF</div>
+                                  )}
+                                  {data.is_free && (
+                                    <div className="text-xs text-green-700 font-bold">✨ FREE FLIGHT (NFT Benefit)</div>
+                                  )}
+                                </>
+                              ) : (
+                                <div className="text-2xl font-bold text-pink-900">
+                                  €{(data.discounted_price || data.original_price || data.price).toLocaleString()}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {/* CO2 Information */}
+                          {(data.co2_emissions || data.distance_km) && (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                              <div className="text-xs text-green-700 mb-2 font-medium">🌱 Environmental Impact</div>
+                              <div className="grid grid-cols-2 gap-4 text-sm">
+                                {data.distance_km && (
+                                  <div>
+                                    <span className="text-green-600">Distance:</span>
+                                    <span className="ml-2 font-medium text-green-900">{data.distance_km} km</span>
+                                  </div>
+                                )}
+                                {data.co2_emissions && (
+                                  <div>
+                                    <span className="text-green-600">CO2:</span>
+                                    <span className="ml-2 font-medium text-green-900">{data.co2_emissions} tons</span>
+                                  </div>
+                                )}
+                                {data.co2_offset_cost && (
+                                  <div className="col-span-2">
+                                    <span className="text-green-600">Offset Cost:</span>
+                                    <span className="ml-2 font-medium text-green-900">€{data.co2_offset_cost}</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )}
@@ -2566,25 +2636,33 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
                             <div className="text-xs text-gray-500 mb-1">Aircraft</div>
                             <div className="text-sm font-medium text-gray-900">{data.aircraft_model || data.manufacturer}</div>
                           </div>
-                          {(data.passenger_capacity || data.range) && (
+                          {/* Aircraft Specifications */}
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <div className="text-xs text-blue-700 mb-2 font-medium">✈️ Aircraft Specifications</div>
                             <div className="grid grid-cols-2 gap-4">
                               {data.passenger_capacity && (
                                 <div>
-                                  <div className="text-xs text-gray-500 mb-1">Capacity</div>
-                                  <div className="text-sm font-medium text-gray-900">{data.passenger_capacity} passengers</div>
+                                  <div className="text-xs text-blue-600 mb-1">Capacity</div>
+                                  <div className="text-sm font-bold text-blue-900">{data.passenger_capacity} passengers</div>
                                 </div>
                               )}
                               {data.range && (
                                 <div>
-                                  <div className="text-xs text-gray-500 mb-1">Range</div>
-                                  <div className="text-sm font-medium text-gray-900">{data.range}</div>
+                                  <div className="text-xs text-blue-600 mb-1">Range</div>
+                                  <div className="text-sm font-bold text-blue-900">{data.range}</div>
                                 </div>
                               )}
                             </div>
-                          )}
+                          </div>
                           {data.has_nft && (
-                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-                              <div className="text-sm text-purple-900">🎫 NFT Discount Applied: {data.nft_discount}</div>
+                            <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-3">
+                              <div className="text-sm font-medium text-purple-900">🎫 NFT Discount Applied: {data.nft_discount}% OFF</div>
+                              <div className="text-xs text-purple-700 mt-1">Request quote for discounted pricing</div>
+                            </div>
+                          )}
+                          {!data.has_nft && (
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                              <div className="text-xs text-gray-700">📝 Quote request submitted - we'll contact you within 24 hours</div>
                             </div>
                           )}
                         </>
@@ -2597,42 +2675,45 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
                             <div className="text-xs text-gray-500 mb-1">Helicopter</div>
                             <div className="text-sm font-medium text-gray-900">{data.helicopter_name || data.manufacturer}</div>
                           </div>
-                          {(data.passengers || data.flight_duration || data.hourly_rate) && (
+                          {/* Passenger and Flight Info */}
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <div className="text-xs text-blue-700 mb-2 font-medium">👥 Flight Information</div>
                             <div className="grid grid-cols-3 gap-4">
-                              {data.passengers && (
+                              {data.passengers !== undefined && (
                                 <div>
-                                  <div className="text-xs text-gray-500 mb-1">Passengers</div>
-                                  <div className="text-sm font-medium text-gray-900">{data.passengers}</div>
+                                  <div className="text-xs text-blue-600 mb-1">Passengers</div>
+                                  <div className="text-sm font-bold text-blue-900">{data.passengers}</div>
                                 </div>
                               )}
                               {data.flight_duration && (
                                 <div>
-                                  <div className="text-xs text-gray-500 mb-1">Duration</div>
-                                  <div className="text-sm font-medium text-gray-900">{data.flight_duration} hours</div>
+                                  <div className="text-xs text-blue-600 mb-1">Duration</div>
+                                  <div className="text-sm font-bold text-blue-900">{data.flight_duration} hours</div>
                                 </div>
                               )}
                               {data.hourly_rate && (
                                 <div>
-                                  <div className="text-xs text-gray-500 mb-1">Hourly Rate</div>
-                                  <div className="text-sm font-medium text-gray-900">${data.hourly_rate}/hr</div>
+                                  <div className="text-xs text-blue-600 mb-1">Hourly Rate</div>
+                                  <div className="text-sm font-bold text-blue-900">€{data.hourly_rate}/hr</div>
                                 </div>
                               )}
                             </div>
-                          )}
+                          </div>
                           {data.special_requests && (
-                            <div>
-                              <div className="text-xs text-gray-500 mb-1">Special Requests</div>
-                              <div className="text-sm font-medium text-gray-900">{data.special_requests}</div>
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                              <div className="text-xs text-gray-700 mb-1 font-medium">Special Requests</div>
+                              <div className="text-sm text-gray-900">{data.special_requests}</div>
                             </div>
                           )}
+                          {/* PRICE - Most Important */}
                           {(data.discounted_price || data.total_price) && (
-                            <div className="bg-teal-50 border border-teal-200 rounded-lg p-3">
-                              <div className="text-xs text-teal-700 mb-1">Total Price</div>
-                              <div className="text-base font-bold text-teal-900">
-                                ${(data.discounted_price || data.total_price).toLocaleString()}
+                            <div className="bg-teal-50 border-2 border-teal-300 rounded-lg p-4">
+                              <div className="text-xs text-teal-700 mb-1 font-medium">💰 TOTAL PRICE</div>
+                              <div className="text-2xl font-bold text-teal-900">
+                                €{(data.discounted_price || data.total_price).toLocaleString()}
                               </div>
                               {data.has_nft && data.nft_discount && (
-                                <div className="text-xs text-teal-700 mt-1">🎫 NFT Discount: {data.nft_discount}</div>
+                                <div className="text-xs text-teal-700 mt-2">🎫 NFT Discount: {data.nft_discount}% OFF</div>
                               )}
                             </div>
                           )}
