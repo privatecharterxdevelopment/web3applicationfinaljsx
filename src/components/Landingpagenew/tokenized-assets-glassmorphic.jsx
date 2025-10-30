@@ -8716,8 +8716,7 @@ const TokenizedAssetsGlassmorphic = () => {
       {/* Need Help? Floating Button - Only on glassmorphic dashboard */}
       <button
         onClick={() => {
-          // Scroll to help section or open help modal
-          window.open('mailto:bookings@privatecharterx.com?subject=Need Help with PrivateCharterX', '_blank');
+          setActiveCategory('chat-support');
         }}
         className="fixed bottom-6 right-6 z-40 bg-black text-white px-5 py-3 rounded-full shadow-lg hover:bg-gray-800 transition-all flex items-center gap-2 group"
       >
