@@ -7057,11 +7057,26 @@ const TokenizedAssetsGlassmorphic = () => {
                           <div className="space-y-2 mb-4 text-sm">
                             <div className="flex justify-between">
                               <span className="text-gray-600">Base Price:</span>
-                              <span className="font-bold text-gray-900">{priceLabel}</span>
+                              <div className="text-right">
+                                <span className="font-bold text-gray-900">{priceLabel}</span>
+                                <p className="text-xs text-gray-400 mt-0.5">incl. 8.1% VAT</p>
+                              </div>
                             </div>
+                            {rawData.price && !rawData.price_on_request && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600">PVCX Rewards:</span>
+                                <div className="flex items-center gap-1">
+                                  <Coins size={14} className="text-blue-600" />
+                                  <span className="font-bold text-gray-900">{(rawData.price * 1.5).toFixed(0)} $PVCX</span>
+                                </div>
+                              </div>
+                            )}
                             <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-300">
                               <span>Total:</span>
-                              <span>{priceLabel}</span>
+                              <div className="text-right">
+                                <span>{priceLabel}</span>
+                                <p className="text-xs text-gray-400 font-normal mt-0.5">incl. 8.1% VAT</p>
+                              </div>
                             </div>
                           </div>
                         </div>
