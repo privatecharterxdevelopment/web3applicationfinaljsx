@@ -48,6 +48,8 @@ import P2PMarketplace from './P2PMarketplace';
 import TokenizedAssetsShowcase from './TokenizedAssetsShowcase';
 import CommunityPage from './CommunityPage';
 import MyLaunches from './MyLaunches';
+import { useNFT } from '../../context/NFTContext';
+import NFTBenefitsModal from '../NFTBenefitsModal';
 import LaunchpadPage from './LaunchpadPage';
 import TransactionsPage from './TransactionsPage';
 import NFTsPage from './NFTsPage';
@@ -615,6 +617,7 @@ const TokenizedAssetsGlassmorphic = () => {
   const [luxuryCarSubmitting, setLuxuryCarSubmitting] = useState(false);
   const [luxuryCarSubmitSuccess, setLuxuryCarSubmitSuccess] = useState(false);
   const { isConnected, address } = useAccount();
+  const { hasNFT, nftDiscount, isCheckingNFT, checkNFTMembership, showNFTModal, closeNFTModal, nfts, usedBenefits } = useNFT();
 
   const [activeCategory, setActiveCategory] = useState('overview');
   const [dashboardView, setDashboardView] = useState('overview');
@@ -4958,9 +4961,11 @@ const TokenizedAssetsGlassmorphic = () => {
                           </button>
 
                           <button
+                            onClick={checkNFTMembership}
+                            disabled={isCheckingNFT}
                             className="w-full bg-white border-2 border-black text-black py-3 rounded-xl font-semibold hover:bg-gray-50 transition-all"
                           >
-                            Check NFT Membership
+                            {isCheckingNFT ? 'Checking...' : 'Check NFT Membership'}
                           </button>
 
                           <div className="mt-6 pt-6 border-t border-gray-200">
@@ -6209,9 +6214,13 @@ const TokenizedAssetsGlassmorphic = () => {
                           Request Flight
                         </button>
 
-                        <a href="#" className="block text-center text-sm text-blue-600 hover:underline">
-                          Check NFT Membership for Discounts
-                        </a>
+                        <button
+                          onClick={checkNFTMembership}
+                          disabled={isCheckingNFT}
+                          className="block w-full text-center text-sm text-blue-600 hover:underline"
+                        >
+                          {isCheckingNFT ? 'Checking...' : 'Check NFT Membership for Discounts'}
+                        </button>
 
                         {address && (
                           <p className="text-xs text-gray-500 text-center mt-4">{address.slice(0, 6)}...{address.slice(-4)}</p>
@@ -6932,9 +6941,13 @@ const TokenizedAssetsGlassmorphic = () => {
                           {adventureSubmitting ? 'Submitting...' : adventureSubmitSuccess ? 'Request Sent ✓' : 'Request Quote'}
                         </button>
 
-                        <a href="#" className="block text-center text-sm text-blue-600 hover:underline">
-                          Check NFT Membership for Perks
-                        </a>
+                        <button
+                          onClick={checkNFTMembership}
+                          disabled={isCheckingNFT}
+                          className="block w-full text-center text-sm text-blue-600 hover:underline"
+                        >
+                          {isCheckingNFT ? 'Checking...' : 'Check NFT Membership for Perks'}
+                        </button>
 
                         {address && (
                           <p className="text-xs text-gray-500 text-center mt-4">{address.slice(0, 6)}...{address.slice(-4)}</p>
@@ -7625,9 +7638,13 @@ const TokenizedAssetsGlassmorphic = () => {
                           {luxuryCarSubmitting ? 'Submitting...' : luxuryCarSubmitSuccess ? 'Request Sent ✓' : 'Request Quote'}
                         </button>
 
-                        <a href="#" className="block text-center text-sm text-blue-600 hover:underline">
-                          Check NFT Membership for Perks
-                        </a>
+                        <button
+                          onClick={checkNFTMembership}
+                          disabled={isCheckingNFT}
+                          className="block w-full text-center text-sm text-blue-600 hover:underline"
+                        >
+                          {isCheckingNFT ? 'Checking...' : 'Check NFT Membership for Perks'}
+                        </button>
 
                         {address && (
                           <p className="text-xs text-gray-500 text-center mt-4">{address.slice(0, 6)}...{address.slice(-4)}</p>
@@ -8126,6 +8143,15 @@ const TokenizedAssetsGlassmorphic = () => {
         onClose={() => setShowEmptyLegSuccess(false)}
         title="Flight Request Submitted!"
         message="Your empty leg flight request has been saved. We'll contact you soon!"
+      />
+
+      {/* NFT Benefits Modal */}
+      <NFTBenefitsModal
+        isOpen={showNFTModal}
+        onClose={closeNFTModal}
+        nft={nfts[0] || null}
+        hasNFT={hasNFT}
+        usedBenefits={usedBenefits}
       />
     </div>
   );
