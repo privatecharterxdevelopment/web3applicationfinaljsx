@@ -4505,7 +4505,24 @@ const TokenizedAssetsGlassmorphic = () => {
                       </div>
                       <div className="flex-1 p-5 flex flex-col">
                         <div className="flex items-center justify-between mb-3">
-                          <span className="bg-black text-white px-2 py-1 rounded text-xs font-semibold uppercase">PCX</span>
+                          {adventure.rawData?.is_partner_offer ? (
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={adventure.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
+                                alt={adventure.rawData.partner_name || 'Partner'}
+                                className="h-6 w-auto object-contain rounded"
+                                onError={(e) => {
+                                  e.target.src = 'https://via.placeholder.com/80x24/000/fff?text=Partner';
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <img
+                              src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_logo_vectorized.glb.png"
+                              alt="PrivateCharterX"
+                              className="h-6 w-auto object-contain"
+                            />
+                          )}
                           <div className="flex space-x-2">
                             <button className="w-6 h-6 border border-gray-600/40 bg-white/20 rounded flex items-center justify-center text-xs backdrop-blur-sm">⎘</button>
                             <button className="w-6 h-6 border border-gray-600/40 bg-white/20 rounded flex items-center justify-center text-xs backdrop-blur-sm">◉</button>
@@ -5239,7 +5256,24 @@ const TokenizedAssetsGlassmorphic = () => {
                       </div>
                       <div className="flex-1 p-5 flex flex-col">
                         <div className="flex items-center justify-between mb-3">
-                          <span className="bg-black text-white px-2 py-1 rounded text-xs font-semibold uppercase">PCX</span>
+                          {adventure.rawData?.is_partner_offer ? (
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={adventure.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
+                                alt={adventure.rawData.partner_name || 'Partner'}
+                                className="h-6 w-auto object-contain rounded"
+                                onError={(e) => {
+                                  e.target.src = 'https://via.placeholder.com/80x24/000/fff?text=Partner';
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <img
+                              src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_logo_vectorized.glb.png"
+                              alt="PrivateCharterX"
+                              className="h-6 w-auto object-contain"
+                            />
+                          )}
                           <div className="flex space-x-2">
                             <button className="w-6 h-6 border border-gray-600/40 bg-white/20 rounded flex items-center justify-center text-xs backdrop-blur-sm">⎘</button>
                             <button className="w-6 h-6 border border-gray-600/40 bg-white/20 rounded flex items-center justify-center text-xs backdrop-blur-sm">◉</button>
@@ -5842,7 +5876,24 @@ const TokenizedAssetsGlassmorphic = () => {
                       </div>
                       <div className="flex-1 p-5 flex flex-col">
                         <div className="flex items-center justify-between mb-3">
-                          <span className="bg-black text-white px-2 py-1 rounded text-xs font-semibold uppercase">PCX</span>
+                          {adventure.rawData?.is_partner_offer ? (
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={adventure.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
+                                alt={adventure.rawData.partner_name || 'Partner'}
+                                className="h-6 w-auto object-contain rounded"
+                                onError={(e) => {
+                                  e.target.src = 'https://via.placeholder.com/80x24/000/fff?text=Partner';
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <img
+                              src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_logo_vectorized.glb.png"
+                              alt="PrivateCharterX"
+                              className="h-6 w-auto object-contain"
+                            />
+                          )}
                         </div>
                         <h3 className="text-base font-semibold text-gray-800 mb-4 line-clamp-2 overflow-hidden">{leg.name}</h3>
                         <div className="flex space-x-6 border-b border-gray-600/30 mb-5">
@@ -6545,7 +6596,24 @@ const TokenizedAssetsGlassmorphic = () => {
                       </div>
                       <div className="flex-1 p-5 flex flex-col">
                         <div className="flex items-center justify-between mb-3">
-                          <span className="bg-black text-white px-2 py-1 rounded text-xs font-semibold uppercase">PCX</span>
+                          {adventure.rawData?.is_partner_offer ? (
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={adventure.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
+                                alt={adventure.rawData.partner_name || 'Partner'}
+                                className="h-6 w-auto object-contain rounded"
+                                onError={(e) => {
+                                  e.target.src = 'https://via.placeholder.com/80x24/000/fff?text=Partner';
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <img
+                              src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_logo_vectorized.glb.png"
+                              alt="PrivateCharterX"
+                              className="h-6 w-auto object-contain"
+                            />
+                          )}
                           <div className="flex space-x-2">
                             <button className="w-6 h-6 border border-gray-600/40 bg-white/20 rounded flex items-center justify-center text-xs backdrop-blur-sm">⎘</button>
                             <button className="w-6 h-6 border border-gray-600/40 bg-white/20 rounded flex items-center justify-center text-xs backdrop-blur-sm">◉</button>
@@ -6799,7 +6867,24 @@ const TokenizedAssetsGlassmorphic = () => {
                         {/* Right: Package Info */}
                         <div className="flex-1 p-5 flex flex-col">
                           <div className="flex items-center justify-between mb-3">
-                            <span className="bg-black text-white px-2 py-1 rounded text-xs font-semibold uppercase">PCX ADVENTURE</span>
+                            {selectedAdventure.rawData?.is_partner_offer ? (
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={selectedAdventure.rawData.partner_logo_url || 'https://via.placeholder.com/120x30/000/fff?text=Partner'}
+                                  alt={selectedAdventure.rawData.partner_name || 'Partner'}
+                                  className="h-7 w-auto object-contain rounded"
+                                  onError={(e) => {
+                                    e.target.src = 'https://via.placeholder.com/120x30/000/fff?text=Partner';
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              <img
+                                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_logo_vectorized.glb.png"
+                                alt="PrivateCharterX"
+                                className="h-7 w-auto object-contain"
+                              />
+                            )}
                             <div className="flex space-x-2">
                               <button className="w-6 h-6 border border-gray-300 bg-white rounded flex items-center justify-center text-xs">⎘</button>
                               <button className="w-6 h-6 border border-gray-300 bg-white rounded flex items-center justify-center text-xs">◉</button>
@@ -7384,7 +7469,24 @@ const TokenizedAssetsGlassmorphic = () => {
                       </div>
                       <div className="flex-1 p-5 flex flex-col">
                         <div className="flex items-center justify-between mb-3">
-                          <span className="bg-black text-white px-2 py-1 rounded text-xs font-semibold uppercase">PCX</span>
+                          {adventure.rawData?.is_partner_offer ? (
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={adventure.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
+                                alt={adventure.rawData.partner_name || 'Partner'}
+                                className="h-6 w-auto object-contain rounded"
+                                onError={(e) => {
+                                  e.target.src = 'https://via.placeholder.com/80x24/000/fff?text=Partner';
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <img
+                              src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_logo_vectorized.glb.png"
+                              alt="PrivateCharterX"
+                              className="h-6 w-auto object-contain"
+                            />
+                          )}
                           <div className="flex space-x-2">
                             <button className="w-6 h-6 border border-gray-600/40 bg-white/20 rounded flex items-center justify-center text-xs backdrop-blur-sm">⎘</button>
                             <button className="w-6 h-6 border border-gray-600/40 bg-white/20 rounded flex items-center justify-center text-xs backdrop-blur-sm">◉</button>
