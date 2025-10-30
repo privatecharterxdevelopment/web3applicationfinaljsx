@@ -555,39 +555,94 @@ export default function ProfileOverviewEnhanced() {
                 </button>
               </div>
               <div className="space-y-3">
-                {recentRequests.slice(0, 3).map((request) => (
-                  <div key={request.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium">
-                        {user?.first_name?.charAt(0)?.toUpperCase() || 'U'}
+                {recentRequests.length > 0 ? recentRequests.slice(0, 3).map((request) => {
+                  // Get request type display name
+                  const getRequestTypeName = (type) => {
+                    const typeMap = {
+                      'private_jet_charter': 'Private Jet Charter',
+                      'helicopter_charter': 'Helicopter Charter',
+                      'empty_leg': 'Empty Leg Flight',
+                      'adventure_package': 'Adventure Package',
+                      'luxury_car_rental': 'Luxury Car Rental',
+                      'yacht_charter': 'Yacht Charter',
+                      'event_booking': 'Event Booking',
+                      'spv_formation': 'SPV Formation',
+                      'tokenization': 'Asset Tokenization',
+                      'co2_certificate': 'CO2 Certificate'
+                    };
+                    return typeMap[type] || type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Service Request';
+                  };
+
+                  // Get request icon
+                  const getRequestIcon = (type) => {
+                    const iconMap = {
+                      'private_jet_charter': '✈️',
+                      'helicopter_charter': '🚁',
+                      'empty_leg': '✈️',
+                      'adventure_package': '🏔️',
+                      'luxury_car_rental': '🚗',
+                      'yacht_charter': '⛵',
+                      'event_booking': '🎫',
+                      'spv_formation': '🏢',
+                      'tokenization': '💎',
+                      'co2_certificate': '🌱'
+                    };
+                    return iconMap[type] || '📋';
+                  };
+
+                  // Get route info if available
+                  const getRouteInfo = (requestData) => {
+                    if (requestData?.origin && requestData?.destination) {
+                      return `${requestData.origin} → ${requestData.destination}`;
+                    }
+                    if (requestData?.asset_name) {
+                      return requestData.asset_name;
+                    }
+                    return null;
+                  };
+
+                  const requestName = getRequestTypeName(request.type);
+                  const requestIcon = getRequestIcon(request.type);
+                  const routeInfo = getRouteInfo(request.data);
+
+                  return (
+                    <div key={request.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-base">
+                          {requestIcon}
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {requestName}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {routeInfo || formatDate(request.created_at)} {new Date(request.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {user?.first_name} {user?.last_name}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {formatDate(request.created_at)} {new Date(request.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                        </div>
+                      <div className="flex items-center gap-3">
+                        {request.data?.total_price && (
+                          <span className="text-sm font-semibold text-gray-900">
+                            {formatCurrency(request.data.total_price)}
+                          </span>
+                        )}
+                        <button className="w-8 h-8 rounded-full bg-gray-100 hover:bg-green-100 flex items-center justify-center transition-colors">
+                          <CheckCircle size={16} className="text-gray-600" />
+                        </button>
+                        <button className="w-8 h-8 rounded-full bg-gray-100 hover:bg-red-100 flex items-center justify-center transition-colors">
+                          <X size={16} className="text-gray-600" />
+                        </button>
+                        <button className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
+                          <MoreVertical size={16} className="text-gray-600" />
+                        </button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      {request.data?.total_price && (
-                        <span className="text-sm font-semibold text-gray-900">
-                          {formatCurrency(request.data.total_price)}
-                        </span>
-                      )}
-                      <button className="w-8 h-8 rounded-full bg-gray-100 hover:bg-green-100 flex items-center justify-center">
-                        <CheckCircle size={16} className="text-gray-600" />
-                      </button>
-                      <button className="w-8 h-8 rounded-full bg-gray-100 hover:bg-red-100 flex items-center justify-center">
-                        <X size={16} className="text-gray-600" />
-                      </button>
-                      <button className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center">
-                        <MoreVertical size={16} className="text-gray-600" />
-                      </button>
-                    </div>
+                  );
+                }) : (
+                  <div className="text-center py-8">
+                    <div className="text-sm text-gray-400">No recent requests</div>
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
