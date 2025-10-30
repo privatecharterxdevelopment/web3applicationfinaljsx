@@ -6213,7 +6213,9 @@ const TokenizedAssetsGlassmorphic = () => {
                           Check NFT Membership for Discounts
                         </a>
 
-                        <p className="text-xs text-gray-500 text-center mt-4">0xe2ee...801b</p>
+                        {address && (
+                          <p className="text-xs text-gray-500 text-center mt-4">{address.slice(0, 6)}...{address.slice(-4)}</p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -6934,7 +6936,9 @@ const TokenizedAssetsGlassmorphic = () => {
                           Check NFT Membership for Perks
                         </a>
 
-                        <p className="text-xs text-gray-500 text-center mt-4">0xe2ee...801b</p>
+                        {address && (
+                          <p className="text-xs text-gray-500 text-center mt-4">{address.slice(0, 6)}...{address.slice(-4)}</p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -7625,7 +7629,9 @@ const TokenizedAssetsGlassmorphic = () => {
                           Check NFT Membership for Perks
                         </a>
 
-                        <p className="text-xs text-gray-500 text-center mt-4">0xe2ee...801b</p>
+                        {address && (
+                          <p className="text-xs text-gray-500 text-center mt-4">{address.slice(0, 6)}...{address.slice(-4)}</p>
+                        )}
                       </div>
                     </div>
                   </div>
