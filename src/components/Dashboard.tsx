@@ -2349,33 +2349,474 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
             <div className="p-6 space-y-6">
               <div>
                 <h3 className="font-medium text-gray-900 mb-4">Request Details</h3>
-                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <div className="text-xs text-gray-500 mb-1">Status</div>
-                      <div className="text-sm font-medium text-gray-900">{selectedRequest.status}</div>
+                {(() => {
+                  // Parse data if needed
+                  let data = selectedRequest.data;
+                  if (typeof data === 'string') {
+                    try { data = JSON.parse(data); } catch (e) { data = {}; }
+                  }
+                  data = data || {};
+
+                  return (
+                    <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+                      {/* Status and Type Row */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <div className="text-xs text-gray-500 mb-1">Status</div>
+                          <div className="text-sm font-medium text-gray-900 capitalize">{selectedRequest.status}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500 mb-1">Type</div>
+                          <div className="text-sm font-medium text-gray-900">{getCategoryInfoForRequest(selectedRequest.type).name}</div>
+                        </div>
+                      </div>
+
+                      {/* Empty Leg Details */}
+                      {(selectedRequest.type === 'emptyleg' || selectedRequest.type === 'empty_leg') && (
+                        <>
+                          <div>
+                            <div className="text-xs text-gray-500 mb-1">Route</div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {data.flight_route || `${data.from_city || data.from_iata || data.departure_iata} → ${data.to_city || data.to_iata || data.arrival_iata}`}
+                            </div>
+                          </div>
+                          {data.aircraft_type && (
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">Aircraft</div>
+                                <div className="text-sm font-medium text-gray-900">{data.aircraft_type}</div>
+                              </div>
+                              {data.departure_date && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Departure</div>
+                                  <div className="text-sm font-medium text-gray-900">{new Date(data.departure_date).toLocaleDateString()}</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {(data.passengers || data.luggage) && (
+                            <div className="grid grid-cols-2 gap-4">
+                              {data.passengers && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Passengers</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.passengers}</div>
+                                </div>
+                              )}
+                              {data.luggage && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Luggage</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.luggage}</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {data.price && (
+                            <div className="bg-pink-50 border border-pink-200 rounded-lg p-3">
+                              <div className="text-xs text-pink-700 mb-1">Price</div>
+                              <div className="text-base font-bold text-pink-900">
+                                {typeof data.price === 'number' ? `$${data.price.toLocaleString()}` : data.price}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* Luxury Car Details */}
+                      {(selectedRequest.type === 'luxury_car' || selectedRequest.type === 'luxury_car_rental') && (
+                        <>
+                          <div>
+                            <div className="text-xs text-gray-500 mb-1">Vehicle</div>
+                            <div className="text-sm font-medium text-gray-900">{data.car_name || `${data.brand} ${data.model}`}</div>
+                          </div>
+                          {(data.year || data.category) && (
+                            <div className="grid grid-cols-2 gap-4">
+                              {data.year && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Year</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.year}</div>
+                                </div>
+                              )}
+                              {data.category && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Category</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.category}</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {data.rental_duration_type && (
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Rental Duration</div>
+                              <div className="text-sm font-medium text-gray-900">{data.rental_duration_count} {data.rental_duration_type}</div>
+                            </div>
+                          )}
+                          {(data.pickup_date || data.dropoff_date) && (
+                            <div className="grid grid-cols-2 gap-4">
+                              {data.pickup_date && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Pickup</div>
+                                  <div className="text-sm font-medium text-gray-900">{new Date(data.pickup_date).toLocaleDateString()} {data.pickup_time}</div>
+                                </div>
+                              )}
+                              {data.dropoff_date && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Dropoff</div>
+                                  <div className="text-sm font-medium text-gray-900">{new Date(data.dropoff_date).toLocaleDateString()} {data.dropoff_time}</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {(data.pickup_location || data.dropoff_location) && (
+                            <div className="space-y-2">
+                              {data.pickup_location && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Pickup Location</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.pickup_location}</div>
+                                </div>
+                              )}
+                              {data.dropoff_location && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Dropoff Location</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.dropoff_location}</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {(data.total_price || data.estimated_price) && (
+                            <div className="bg-gray-100 border border-gray-300 rounded-lg p-3">
+                              <div className="text-xs text-gray-700 mb-1">Total Price</div>
+                              <div className="text-base font-bold text-gray-900">
+                                {typeof (data.total_price || data.estimated_price) === 'number'
+                                  ? `$${(data.total_price || data.estimated_price).toLocaleString()}`
+                                  : (data.total_price || data.estimated_price)}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* Adventure Package Details */}
+                      {selectedRequest.type === 'adventure_package' && (
+                        <>
+                          {data.adventure_name && (
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Package</div>
+                              <div className="text-sm font-medium text-gray-900">{data.adventure_name}</div>
+                            </div>
+                          )}
+                          {(data.destination || data.duration) && (
+                            <div className="grid grid-cols-2 gap-4">
+                              {data.destination && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Destination</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.destination}</div>
+                                </div>
+                              )}
+                              {data.duration && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Duration</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.duration}</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {(data.participants || data.start_date) && (
+                            <div className="grid grid-cols-2 gap-4">
+                              {data.participants && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Participants</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.participants}</div>
+                                </div>
+                              )}
+                              {data.start_date && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Start Date</div>
+                                  <div className="text-sm font-medium text-gray-900">{new Date(data.start_date).toLocaleDateString()}</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {data.activities && Array.isArray(data.activities) && data.activities.length > 0 && (
+                            <div>
+                              <div className="text-xs text-gray-500 mb-2">Activities</div>
+                              <div className="flex flex-wrap gap-2">
+                                {data.activities.map((activity, idx) => (
+                                  <span key={idx} className="px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded">
+                                    {activity}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {data.price && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                              <div className="text-xs text-amber-700 mb-1">Total Price</div>
+                              <div className="text-base font-bold text-amber-900">
+                                {typeof data.price === 'number' ? `$${data.price.toLocaleString()}` : data.price}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* Private Jet Charter Details */}
+                      {selectedRequest.type === 'private_jet_charter' && (
+                        <>
+                          <div>
+                            <div className="text-xs text-gray-500 mb-1">Aircraft</div>
+                            <div className="text-sm font-medium text-gray-900">{data.aircraft_model || data.manufacturer}</div>
+                          </div>
+                          {(data.passenger_capacity || data.range) && (
+                            <div className="grid grid-cols-2 gap-4">
+                              {data.passenger_capacity && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Capacity</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.passenger_capacity} passengers</div>
+                                </div>
+                              )}
+                              {data.range && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Range</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.range}</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {data.has_nft && (
+                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                              <div className="text-sm text-purple-900">🎫 NFT Discount Applied: {data.nft_discount}</div>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* Helicopter Charter Details */}
+                      {selectedRequest.type === 'helicopter_charter' && (
+                        <>
+                          <div>
+                            <div className="text-xs text-gray-500 mb-1">Helicopter</div>
+                            <div className="text-sm font-medium text-gray-900">{data.helicopter_name || data.manufacturer}</div>
+                          </div>
+                          {(data.passengers || data.flight_duration || data.hourly_rate) && (
+                            <div className="grid grid-cols-3 gap-4">
+                              {data.passengers && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Passengers</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.passengers}</div>
+                                </div>
+                              )}
+                              {data.flight_duration && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Duration</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.flight_duration} hours</div>
+                                </div>
+                              )}
+                              {data.hourly_rate && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Hourly Rate</div>
+                                  <div className="text-sm font-medium text-gray-900">${data.hourly_rate}/hr</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {data.special_requests && (
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Special Requests</div>
+                              <div className="text-sm font-medium text-gray-900">{data.special_requests}</div>
+                            </div>
+                          )}
+                          {(data.discounted_price || data.total_price) && (
+                            <div className="bg-teal-50 border border-teal-200 rounded-lg p-3">
+                              <div className="text-xs text-teal-700 mb-1">Total Price</div>
+                              <div className="text-base font-bold text-teal-900">
+                                ${(data.discounted_price || data.total_price).toLocaleString()}
+                              </div>
+                              {data.has_nft && data.nft_discount && (
+                                <div className="text-xs text-teal-700 mt-1">🎫 NFT Discount: {data.nft_discount}</div>
+                              )}
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* CO2 Certificate Details */}
+                      {selectedRequest.type === 'co2_certificate' && (
+                        <>
+                          <div>
+                            <div className="text-xs text-gray-500 mb-1">Project</div>
+                            <div className="text-sm font-medium text-gray-900">{data.project_name}</div>
+                          </div>
+                          {(data.ngo_provider || data.location) && (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                              {data.ngo_provider && (
+                                <div className="text-sm text-green-900 mb-1">Provider: {data.ngo_provider}</div>
+                              )}
+                              {data.location && (
+                                <div className="text-sm text-green-900">Location: {data.location}, {data.country}</div>
+                              )}
+                            </div>
+                          )}
+                          {(data.quantity_tons || data.certification_standard) && (
+                            <div className="grid grid-cols-2 gap-4">
+                              {data.quantity_tons && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Quantity</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.quantity_tons} tons CO2</div>
+                                </div>
+                              )}
+                              {data.certification_standard && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Standard</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.certification_standard}</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {data.total_price && (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                              <div className="text-xs text-green-700 mb-1">Total Price</div>
+                              <div className="text-base font-bold text-green-900">
+                                ${data.total_price.toLocaleString()} {data.currency}
+                              </div>
+                              {data.price_per_ton && (
+                                <div className="text-xs text-green-700 mt-1">${data.price_per_ton}/ton</div>
+                              )}
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* Fixed Offer Details */}
+                      {selectedRequest.type === 'fixed_offer' && (
+                        <>
+                          <div>
+                            <div className="text-xs text-gray-500 mb-1">Offer</div>
+                            <div className="text-sm font-medium text-gray-900">{data.offer_title}</div>
+                          </div>
+                          {(data.origin || data.offer_origin) && (data.destination || data.offer_destination) && (
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Route</div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {data.origin || data.offer_origin} → {data.destination || data.offer_destination}
+                              </div>
+                            </div>
+                          )}
+                          {(data.offer_aircraft_type || data.aircraft_type || data.departure_date || data.departure_date_formatted) && (
+                            <div className="grid grid-cols-2 gap-4">
+                              {(data.offer_aircraft_type || data.aircraft_type) && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Aircraft</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.offer_aircraft_type || data.aircraft_type}</div>
+                                </div>
+                              )}
+                              {(data.departure_date || data.departure_date_formatted) && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Departure</div>
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {data.departure_date_formatted || new Date(data.departure_date).toLocaleDateString()}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {data.offer_description && (
+                            <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-3">
+                              <div className="text-sm text-cyan-900">{data.offer_description}</div>
+                            </div>
+                          )}
+                          {data.message && (
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Your Message</div>
+                              <div className="text-sm font-medium text-gray-900">{data.message}</div>
+                            </div>
+                          )}
+                          {(data.offer_price || data.price) && (
+                            <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-3">
+                              <div className="text-xs text-cyan-700 mb-1">Price</div>
+                              <div className="text-base font-bold text-cyan-900">
+                                {typeof (data.offer_price || data.price) === 'number'
+                                  ? `${(data.offer_price || data.price).toLocaleString()} ${data.offer_currency || data.currency || 'USD'}`
+                                  : (data.offer_price || data.price)}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* Taxi/Concierge Details */}
+                      {selectedRequest.type === 'taxi_concierge' && (
+                        <>
+                          {data.carName && (
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Vehicle</div>
+                              <div className="text-sm font-medium text-gray-900">{data.carName} ({data.carSeats} seats)</div>
+                            </div>
+                          )}
+                          {(data.from || data.to) && (
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Route</div>
+                              <div className="text-sm font-medium text-gray-900">{data.from} → {data.to}</div>
+                            </div>
+                          )}
+                          {(data.distance || data.eta) && (
+                            <div className="grid grid-cols-2 gap-4">
+                              {data.distance && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Distance</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.distance} km</div>
+                                </div>
+                              )}
+                              {data.eta && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">ETA</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.eta} min</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {(data.pickupDate || data.passengers) && (
+                            <div className="grid grid-cols-2 gap-4">
+                              {data.pickupDate && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Pickup Time</div>
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {data.pickupDate === 'Now' ? 'Now' : `${data.pickupDate} ${data.pickupTime}`}
+                                  </div>
+                                </div>
+                              )}
+                              {data.passengers && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Passengers</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.passengers}</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {data.priceRange && (
+                            <div className="bg-gray-100 border border-gray-300 rounded-lg p-3">
+                              <div className="text-xs text-gray-700 mb-1">Estimated Price</div>
+                              <div className="text-base font-bold text-gray-900">{data.priceRange}</div>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* Submitted Date (always show) */}
+                      <div className="pt-3 border-t border-gray-200">
+                        <div className="text-xs text-gray-500 mb-1">Submitted</div>
+                        <div className="text-sm font-medium text-gray-900">{formatDate(selectedRequest.created_at)}</div>
+                      </div>
+
+                      {/* Admin Notes */}
+                      {selectedRequest.admin_notes && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <div className="text-xs text-blue-700 mb-1">Admin Notes</div>
+                          <div className="text-sm text-blue-900">{selectedRequest.admin_notes}</div>
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <div className="text-xs text-gray-500 mb-1">Type</div>
-                      <div className="text-sm font-medium text-gray-900">{selectedRequest.type}</div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500 mb-1">Route/Destination</div>
-                    <div className="text-sm font-medium text-gray-900">
-                      {selectedRequest.type === 'flight_booking'
-                        ? `${selectedRequest.origin_airport_code || ''} → ${selectedRequest.destination_airport_code || ''}`
-                        : (selectedRequest.type === 'emptyleg' || selectedRequest.type === 'empty_leg')
-                          ? `${selectedRequest.data?.departure_iata || ''} → ${selectedRequest.data?.arrival_iata || ''}`
-                          : 'N/A'
-                      }
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500 mb-1">Submitted</div>
-                    <div className="text-sm font-medium text-gray-900">{formatDate(selectedRequest.created_at)}</div>
-                  </div>
-                </div>
+                  );
+                })()}
               </div>
             </div>
           </div>
