@@ -6310,23 +6310,28 @@ const TokenizedAssetsGlassmorphic = () => {
                               <span className="text-gray-600">Base Price:</span>
                               <span className="font-semibold text-gray-900">{selectedEmptyLeg.totalPrice}</span>
                             </div>
-                            {(rawData.distance_km || rawData.distance) && (
-                              <div className="flex justify-between items-center">
-                                <span className="text-gray-600">PVCX Rewards:</span>
-                                <div className="flex items-center gap-1">
-                                  <Coins size={14} className="text-blue-600" />
-                                  <span className="font-semibold text-gray-900">
-                                    {((rawData.distance_km || rawData.distance) * 1.5).toFixed(0)} $PVCX
-                                  </span>
+                            {rawData.price && (
+                              <>
+                                {(rawData.distance_km || rawData.distance) && (
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-gray-600">PVCX Rewards:</span>
+                                    <div className="flex items-center gap-1">
+                                      <Coins size={14} className="text-blue-600" />
+                                      <span className="font-semibold text-gray-900">
+                                        {((rawData.distance_km || rawData.distance) * 1.5).toFixed(0)} $PVCX
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                                <div className="flex justify-between items-center">
+                                  <span className="text-gray-600">VAT (8.1%):</span>
+                                  <span className="font-semibold text-gray-900">${(rawData.price * 0.081).toFixed(2)}</span>
                                 </div>
-                              </div>
+                              </>
                             )}
                             <div className="flex justify-between items-center text-base font-bold pt-2 border-t border-gray-200">
                               <span className="text-gray-900">Total:</span>
-                              <div className="text-right">
-                                <span className="text-gray-900">{selectedEmptyLeg.totalPrice}</span>
-                                <p className="text-xs text-gray-400 font-normal mt-0.5">incl. 8.1% VAT</p>
-                              </div>
+                              <span className="text-gray-900">{selectedEmptyLeg.totalPrice}</span>
                             </div>
                           </div>
                         </div>
@@ -7074,20 +7079,23 @@ const TokenizedAssetsGlassmorphic = () => {
                               <span className="font-bold text-gray-900">{priceLabel}</span>
                             </div>
                             {rawData.price && !rawData.price_on_request && (
-                              <div className="flex justify-between items-center">
-                                <span className="text-gray-600">PVCX Rewards:</span>
-                                <div className="flex items-center gap-1">
-                                  <Coins size={14} className="text-blue-600" />
-                                  <span className="font-bold text-gray-900">{(rawData.price * 1.5).toFixed(0)} $PVCX</span>
+                              <>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-gray-600">PVCX Rewards:</span>
+                                  <div className="flex items-center gap-1">
+                                    <Coins size={14} className="text-blue-600" />
+                                    <span className="font-bold text-gray-900">{(rawData.price * 1.5).toFixed(0)} $PVCX</span>
+                                  </div>
                                 </div>
-                              </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">VAT (8.1%):</span>
+                                  <span className="font-bold text-gray-900">€{(rawData.price * 0.081).toFixed(2)}</span>
+                                </div>
+                              </>
                             )}
                             <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-300">
                               <span>Total:</span>
-                              <div className="text-right">
-                                <span>{priceLabel}</span>
-                                <p className="text-xs text-gray-400 font-normal mt-0.5">incl. 8.1% VAT</p>
-                              </div>
+                              <span>{priceLabel}</span>
                             </div>
                           </div>
                         </div>
