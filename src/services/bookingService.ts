@@ -98,6 +98,59 @@ class BookingService {
       }
 
       console.log('Booking request created successfully:', data);
+
+      // PARALLEL SAVE: Also save to user_requests for email notifications
+      // This triggers the email notification system without breaking existing workflow
+      if (user?.id && data) {
+        try {
+          const userRequestPayload = {
+            user_id: user.id,
+            type: 'private_jet_charter', // Default to private jet, can be enhanced later
+            status: 'pending',
+            data: {
+              booking_request_id: data.id,
+              origin: data.origin_airport_code,
+              destination: data.destination_airport_code,
+              departure_date: data.departure_date,
+              departure_time: data.departure_time,
+              passengers: data.passengers,
+              luggage: data.luggage,
+              pets: data.pets,
+              aircraft_type: data.selected_jet_category,
+              aviation_services: data.aviation_services,
+              luxury_services: data.luxury_services,
+              carbon_option: data.carbon_option,
+              carbon_nft_wallet: data.carbon_nft_wallet,
+              total_price: data.total_price,
+              currency: data.currency,
+              payment_method: data.payment_method,
+              contact_name: data.contact_name,
+              contact_email: data.contact_email,
+              contact_phone: data.contact_phone,
+              contact_company: data.contact_company,
+              wallet_address: data.wallet_address,
+              nft_discount_applied: data.nft_discount_applied,
+              booking_source: 'unified_booking_flow',
+              timestamp: new Date().toISOString()
+            }
+          };
+
+          const { error: userRequestError } = await supabase
+            .from('user_requests')
+            .insert([userRequestPayload]);
+
+          if (userRequestError) {
+            console.warn('Failed to save to user_requests (email notification may not work):', userRequestError);
+            // Don't fail the whole request - booking_requests save succeeded
+          } else {
+            console.log('✅ Parallel save to user_requests successful - email notifications will be sent');
+          }
+        } catch (parallelSaveError) {
+          console.warn('Parallel save to user_requests failed:', parallelSaveError);
+          // Continue - main booking was successful
+        }
+      }
+
       return { data, error: null };
     } catch (err) {
       console.error('Error in createBookingRequest:', err);
