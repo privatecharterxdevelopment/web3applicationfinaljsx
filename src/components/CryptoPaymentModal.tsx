@@ -51,7 +51,8 @@ export default function CryptoPaymentModal({
 
     try {
       // Call backend API to create CoinGate order
-      const response = await fetch('/api/coingate/create-order', {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+      const response = await fetch(`${backendUrl}/api/coingate/create-order`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

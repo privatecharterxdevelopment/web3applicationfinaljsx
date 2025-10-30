@@ -20,6 +20,7 @@ dotenv.config();
 const stripeConnectApi = require('./api/stripe-connect-partners.cjs');
 const stripeWebhook = require('./api/webhooks/stripe-connect-webhook.cjs');
 const newsletterApi = require('./api/newsletter.cjs');
+const coingateApi = require('./api/coingate.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -91,6 +92,12 @@ app.get('/api/newsletter/templates', newsletterApi.getTemplates);
 app.post('/api/newsletter/templates', newsletterApi.createTemplate);
 app.patch('/api/newsletter/templates/:id', newsletterApi.updateTemplate);
 app.delete('/api/newsletter/templates/:id', newsletterApi.deleteTemplate);
+
+// ============================================================
+// CoinGate Crypto Payment API Routes
+// ============================================================
+
+app.post('/api/coingate/create-order', coingateApi.createOrder);
 
 // ============================================================
 // Webhook Endpoints
