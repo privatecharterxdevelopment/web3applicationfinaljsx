@@ -6240,86 +6240,106 @@ const TokenizedAssetsGlassmorphic = () => {
                       </div>
 
                       {/* Right: Book This Flight Sidebar */}
-                      <div className="bg-white/35 rounded-lg border border-gray-300/50 p-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                        <h2 className="text-lg font-semibold text-gray-900 mb-6">Book This Flight</h2>
+                      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+                        <h2 className="text-base font-semibold text-gray-900 mb-5">Book This Flight</h2>
 
-                        <div className="space-y-3 mb-6">
+                        <div className="space-y-3 mb-5">
                           <div>
-                            <p className="text-xs text-gray-600 mb-1">Base Price</p>
-                            <p className="text-xl font-semibold text-gray-800">{selectedEmptyLeg.totalPrice}</p>
+                            <p className="text-xs text-gray-500 mb-1">Base Price</p>
+                            <div>
+                              <p className="text-lg font-semibold text-gray-900">{selectedEmptyLeg.totalPrice}</p>
+                              <p className="text-xs text-gray-400 mt-0.5">incl. 8.1% VAT</p>
+                            </div>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-600 mb-1">Departure</p>
-                            <p className="text-sm font-semibold text-gray-800">{selectedEmptyLeg.departureDate}</p>
+                            <p className="text-xs text-gray-500 mb-1">Departure</p>
+                            <p className="text-sm font-medium text-gray-900">{selectedEmptyLeg.departureDate}</p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-600 mb-1">Max Capacity</p>
-                            <p className="text-sm font-semibold text-gray-800">{rawData.capacity || rawData.pax || '14'} pax</p>
+                            <p className="text-xs text-gray-500 mb-1">Max Capacity</p>
+                            <p className="text-sm font-medium text-gray-900">{rawData.capacity || rawData.pax || '14'} pax</p>
                           </div>
                         </div>
 
-                        <div className="border-t border-gray-300/50 pt-6 mb-6">
-                          <h3 className="text-sm font-semibold text-gray-900 mb-4">Booking Details</h3>
+                        <div className="border-t border-gray-100 pt-5 mb-5">
+                          <h3 className="text-xs font-semibold text-gray-900 mb-3">Booking Details</h3>
 
-                          <div className="grid grid-cols-3 gap-3 mb-4">
+                          <div className="grid grid-cols-3 gap-2.5 mb-4">
                             <div>
-                              <p className="text-xs text-gray-600 mb-2">Passengers</p>
-                              <div className="flex items-center justify-between border border-gray-300 rounded px-2 py-1">
+                              <p className="text-xs text-gray-500 mb-1.5">Passengers</p>
+                              <div className="flex items-center justify-between border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white">
                                 <button
                                   onClick={() => setEmptyLegPassengers(Math.max(1, emptyLegPassengers - 1))}
-                                  className="text-gray-600 hover:text-gray-900"
+                                  className="text-gray-500 hover:text-gray-900 text-sm"
                                 >−</button>
-                                <span className="text-sm font-medium">{emptyLegPassengers}</span>
+                                <span className="text-sm font-medium text-gray-900">{emptyLegPassengers}</span>
                                 <button
                                   onClick={() => setEmptyLegPassengers(Math.min(rawData.capacity || rawData.pax || 14, emptyLegPassengers + 1))}
-                                  className="text-gray-600 hover:text-gray-900"
+                                  className="text-gray-500 hover:text-gray-900 text-sm"
                                 >+</button>
                               </div>
                             </div>
                             <div>
-                              <p className="text-xs text-gray-600 mb-2">Luggage</p>
-                              <div className="flex items-center justify-between border border-gray-300 rounded px-2 py-1">
+                              <p className="text-xs text-gray-500 mb-1.5">Luggage</p>
+                              <div className="flex items-center justify-between border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white">
                                 <button
                                   onClick={() => setEmptyLegLuggage(Math.max(0, emptyLegLuggage - 1))}
-                                  className="text-gray-600 hover:text-gray-900"
+                                  className="text-gray-500 hover:text-gray-900 text-sm"
                                 >−</button>
-                                <span className="text-sm font-medium">{emptyLegLuggage}</span>
+                                <span className="text-sm font-medium text-gray-900">{emptyLegLuggage}</span>
                                 <button
                                   onClick={() => setEmptyLegLuggage(Math.min((rawData.capacity || rawData.pax || 14) * 2, emptyLegLuggage + 1))}
-                                  className="text-gray-600 hover:text-gray-900"
+                                  className="text-gray-500 hover:text-gray-900 text-sm"
                                 >+</button>
                               </div>
                             </div>
                             <div>
-                              <p className="text-xs text-gray-600 mb-2">Pet</p>
+                              <p className="text-xs text-gray-500 mb-1.5">Pet</p>
                               <button
                                 onClick={() => setEmptyLegHasPet(!emptyLegHasPet)}
-                                className={`w-full flex items-center justify-center border rounded px-2 py-1 transition-colors ${
+                                className={`w-full flex items-center justify-center border rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors ${
                                   emptyLegHasPet
                                     ? 'bg-black text-white border-black'
-                                    : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                                    : 'border-gray-200 text-gray-600 hover:bg-gray-50'
                                 }`}
                               >
-                                <span className="text-sm font-medium">{emptyLegHasPet ? 'Yes' : 'No'}</span>
+                                {emptyLegHasPet ? 'Yes' : 'No'}
                               </button>
                             </div>
                           </div>
 
-                          <div className="space-y-2 mb-4 text-sm">
-                            <div className="flex justify-between">
+                          <div className="space-y-2 mb-4 text-sm border-t border-gray-100 pt-4">
+                            <div className="flex justify-between items-center">
                               <span className="text-gray-600">Base Price:</span>
-                              <span className="font-bold text-gray-900">{selectedEmptyLeg.totalPrice}</span>
+                              <div className="text-right">
+                                <span className="font-semibold text-gray-900">{selectedEmptyLeg.totalPrice}</span>
+                                <p className="text-xs text-gray-400 mt-0.5">incl. 8.1% VAT</p>
+                              </div>
                             </div>
-                            <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-300">
-                              <span>Total:</span>
-                              <span>{selectedEmptyLeg.totalPrice}</span>
+                            {(rawData.distance_km || rawData.distance) && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600">PVCX Rewards:</span>
+                                <div className="flex items-center gap-1">
+                                  <Coins size={14} className="text-blue-600" />
+                                  <span className="font-semibold text-gray-900">
+                                    {((rawData.distance_km || rawData.distance) * 1.5).toFixed(0)} $PVCX
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                            <div className="flex justify-between items-center text-base font-bold pt-2 border-t border-gray-200">
+                              <span className="text-gray-900">Total:</span>
+                              <div className="text-right">
+                                <span className="text-gray-900">{selectedEmptyLeg.totalPrice}</span>
+                                <p className="text-xs text-gray-400 font-normal mt-0.5">incl. 8.1% VAT</p>
+                              </div>
                             </div>
                           </div>
                         </div>
 
                         <button
                           onClick={requestEmptyLegFlight}
-                          className="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition-all mb-4"
+                          className="w-full bg-black text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors mb-3"
                         >
                           Request Flight
                         </button>
@@ -6327,7 +6347,7 @@ const TokenizedAssetsGlassmorphic = () => {
                         <button
                           onClick={checkNFTMembership}
                           disabled={isCheckingNFT}
-                          className="block w-full text-center text-sm text-blue-600 hover:underline"
+                          className="block w-full text-center text-xs text-gray-600 hover:text-gray-900 transition-colors"
                         >
                           {isCheckingNFT ? 'Checking...' : 'Check NFT Membership for Discounts'}
                         </button>
