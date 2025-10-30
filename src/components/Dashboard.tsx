@@ -2553,13 +2553,16 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
                             </div>
                           )}
                           {(data.total_price || data.estimated_price) && (
-                            <div className="bg-gray-100 border border-gray-300 rounded-lg p-3">
-                              <div className="text-xs text-gray-700 mb-1">Total Price</div>
-                              <div className="text-base font-bold text-gray-900">
+                            <div className="bg-gray-100 border-2 border-gray-400 rounded-lg p-4">
+                              <div className="text-xs text-gray-700 mb-1 font-medium">💰 TOTAL PRICE</div>
+                              <div className="text-2xl font-bold text-gray-900">
                                 {typeof (data.total_price || data.estimated_price) === 'number'
-                                  ? `$${(data.total_price || data.estimated_price).toLocaleString()}`
+                                  ? `€${(data.total_price || data.estimated_price).toLocaleString()}`
                                   : (data.total_price || data.estimated_price)}
                               </div>
+                              {data.has_nft && data.nft_discount && (
+                                <div className="text-xs text-gray-700 mt-2">🎫 NFT Discount: {data.nft_discount}% OFF</div>
+                              )}
                             </div>
                           )}
                         </>
@@ -2619,11 +2622,17 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
                             </div>
                           )}
                           {data.price && (
-                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                              <div className="text-xs text-amber-700 mb-1">Total Price</div>
-                              <div className="text-base font-bold text-amber-900">
-                                {typeof data.price === 'number' ? `$${data.price.toLocaleString()}` : data.price}
+                            <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-4">
+                              <div className="text-xs text-amber-700 mb-1 font-medium">💰 PRICING</div>
+                              <div className="text-2xl font-bold text-amber-900">
+                                {typeof data.price === 'number' ? `€${data.price.toLocaleString()}` : data.price}
                               </div>
+                              {data.has_nft && data.nft_discount && (
+                                <div className="text-xs text-amber-700 mt-2">🎫 NFT Discount: {data.nft_discount}% OFF</div>
+                              )}
+                              {data.is_free && (
+                                <div className="text-xs text-green-700 font-bold mt-1">✨ FREE (NFT Benefit)</div>
+                              )}
                             </div>
                           )}
                         </>
