@@ -6810,7 +6810,7 @@ const TokenizedAssetsGlassmorphic = () => {
                                 <p className="text-sm font-semibold text-gray-800">{rawData.difficulty_level || selectedAdventure.period || 'All levels'}</p>
                               </div>
                             </div>
-                            <div className="bg-green-50 border-2 border-green-500 rounded-lg p-6">
+                            <div className="bg-green-50 border-2 border-green-500 rounded-lg p-6 mb-6">
                               <div className="flex items-start gap-3 mb-3">
                                 <span className="text-2xl">🌿</span>
                                 <div>
@@ -6821,6 +6821,42 @@ const TokenizedAssetsGlassmorphic = () => {
                                     <p className="text-sm text-green-900">
                                       <span className="font-semibold">Certificate choice:</span> Classic PDF or on-chain NFT certificate available.
                                     </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* PVCX REWARDS Box */}
+                            <div className="bg-blue-50 border-2 border-blue-500 rounded-lg p-6">
+                              <div className="flex items-start gap-3">
+                                <Coins className="text-blue-600 w-8 h-8" />
+                                <div className="flex-1">
+                                  <h3 className="text-base font-bold text-blue-900 mb-2">$PVCX Token Rewards</h3>
+                                  <p className="text-sm text-blue-800 mb-3">Earn PVCX tokens on your adventure flight based on distance traveled!</p>
+                                  <div className="bg-white/50 rounded-lg p-4">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <p className="text-xs text-blue-700 mb-1">Flight Distance</p>
+                                        <p className="text-lg font-bold text-blue-900">
+                                          {rawData.distance_km || rawData.flight_distance ? `${rawData.distance_km || rawData.flight_distance} km` : 'TBD'}
+                                        </p>
+                                      </div>
+                                      <div className="text-right">
+                                        <p className="text-xs text-blue-700 mb-1">You'll Earn</p>
+                                        <p className="text-lg font-bold text-blue-900 flex items-center gap-1">
+                                          {rawData.distance_km || rawData.flight_distance
+                                            ? `${((rawData.distance_km || rawData.flight_distance) * 1.5).toFixed(1)}`
+                                            : 'TBD'
+                                          }
+                                          <span className="text-sm text-blue-700">$PVCX</span>
+                                        </p>
+                                      </div>
+                                    </div>
+                                    {(rawData.distance_km || rawData.flight_distance) && (
+                                      <p className="text-xs text-blue-600 mt-2">
+                                        Calculation: {rawData.distance_km || rawData.flight_distance} km × 1.5 = {((rawData.distance_km || rawData.flight_distance) * 1.5).toFixed(1)} $PVCX
+                                      </p>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -7530,7 +7566,7 @@ const TokenizedAssetsGlassmorphic = () => {
                                 <p className="text-sm font-semibold text-gray-800">{car.location || selectedLuxuryCar.location || '-'}</p>
                               </div>
                             </div>
-                            <div className="bg-green-50 border-2 border-green-500 rounded-lg p-6">
+                            <div className="bg-green-50 border-2 border-green-500 rounded-lg p-6 mb-6">
                               <div className="flex items-start gap-3 mb-3">
                                 <span className="text-2xl">🌿</span>
                                 <div>
@@ -7541,6 +7577,33 @@ const TokenizedAssetsGlassmorphic = () => {
                                     <p className="text-sm text-green-900">
                                       <span className="font-semibold">Certificate choice:</span> Classic PDF or on-chain NFT certificate available.
                                     </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* PVCX REWARDS Box for Luxury Cars */}
+                            <div className="bg-blue-50 border-2 border-blue-500 rounded-lg p-6">
+                              <div className="flex items-start gap-3">
+                                <Coins className="text-blue-600 w-8 h-8" />
+                                <div className="flex-1">
+                                  <h3 className="text-base font-bold text-blue-900 mb-2">$PVCX Token Rewards</h3>
+                                  <p className="text-sm text-blue-800 mb-3">Earn PVCX tokens based on distance traveled during your rental!</p>
+                                  <div className="bg-white/50 rounded-lg p-4">
+                                    <div className="text-center">
+                                      <p className="text-xs text-blue-700 mb-2">Reward Rate</p>
+                                      <p className="text-2xl font-bold text-blue-900 mb-2">
+                                        <span className="text-lg">1.5</span> <span className="text-sm text-blue-700">$PVCX</span> <span className="text-base text-blue-700">per km</span>
+                                      </p>
+                                      <div className="border-t border-blue-200 mt-3 pt-3">
+                                        <p className="text-xs text-blue-600">
+                                          Example: 100 km drive = 150 $PVCX tokens
+                                        </p>
+                                        <p className="text-xs text-blue-600 mt-1">
+                                          Track your distance and claim rewards after rental
+                                        </p>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
                               </div>

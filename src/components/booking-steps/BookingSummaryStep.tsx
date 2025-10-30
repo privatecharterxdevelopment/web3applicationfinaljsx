@@ -1,6 +1,6 @@
 // src/components/booking-steps/BookingSummaryStep.tsx
 import React from 'react';
-import { Check, Gift, Leaf } from 'lucide-react';
+import { Check, Gift, Leaf, Coins } from 'lucide-react';
 import type { AirportSearchResult } from '../../services/airportsStaticService';
 
 interface Service {
@@ -230,6 +230,33 @@ export default function BookingSummaryStep({
             </p>
           </div>
         )}
+        {/* PVCX Token Rewards */}
+        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl p-4 md:p-6 border-2 border-blue-500">
+          <div className="flex items-start gap-3">
+            <Coins size={24} className="text-blue-600 mt-1" />
+            <div className="flex-1">
+              <div className="font-medium text-gray-900 mb-1">$PVCX Token Rewards</div>
+              <div className="text-sm text-gray-600 mb-3">Earn PVCX tokens on every flight based on distance traveled!</div>
+              <div className="bg-white/60 rounded-lg p-3">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-900">
+                    <span className="text-3xl">1.5</span> <span className="text-lg text-blue-700">$PVCX</span>
+                  </div>
+                  <div className="text-xs text-blue-600 mt-1">per kilometer flown</div>
+                </div>
+                <div className="border-t border-blue-200 mt-3 pt-3">
+                  <div className="text-xs text-blue-700 text-center">
+                    <div>Example rewards:</div>
+                    <div className="mt-1">• 100 km = 150 $PVCX</div>
+                    <div>• 500 km = 750 $PVCX</div>
+                    <div>• 1,000 km = 1,500 $PVCX</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="text-center text-sm text-gray-600">
           Questions? Get in touch with us at <a href="mailto:bookings@privatecharterx.com" className="text-blue-600 hover:underline">bookings@privatecharterx.com</a>
         </div>
