@@ -11,6 +11,7 @@ import { createRequest } from '../../services/requests';
 import SuccessNotification from '../SuccessNotification';
 import { useNFT } from '../../context/NFTContext';
 import NFTBenefitsModal from '../NFTBenefitsModal';
+import CryptoPaymentModal from '../CryptoPaymentModal';
 
 const AdventureDetail = () => {
   const { id } = useParams();
@@ -28,6 +29,7 @@ const AdventureDetail = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showCryptoPayment, setShowCryptoPayment] = useState(false);
 
   useEffect(() => {
     fetchAdventure();
