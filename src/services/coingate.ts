@@ -2,7 +2,8 @@
 // CoinGate Crypto Payment Gateway Integration
 
 const COINGATE_API_KEY = 'zzwp6uzWzU6Zx6Txdf4htsNzAQzjQzzszqpp1sqr';
-const COINGATE_API_URL = 'https://api.coingate.com/v2';
+// Use sandbox for testing to avoid CORS issues
+const COINGATE_API_URL = 'https://api-sandbox.coingate.com/v2';
 
 export interface CoinGateOrder {
   id: number;

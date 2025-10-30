@@ -7140,7 +7140,7 @@ const TokenizedAssetsGlassmorphic = () => {
                         </button>
 
                         <button
-                          className="w-full py-3 rounded-lg font-bold transition-all mb-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
+                          className="w-full py-2 rounded-lg text-sm font-medium transition-all mb-4 border border-gray-300 text-gray-700 hover:bg-gray-50"
                           onClick={() => {
                             if (!user) {
                               alert('Please log in to pay with crypto.');
@@ -7196,7 +7196,7 @@ const TokenizedAssetsGlassmorphic = () => {
                             setShowCryptoPayment(true);
                           }}
                         >
-                          💰 Pay with Crypto
+                          Pay with Crypto
                         </button>
 
                         <button

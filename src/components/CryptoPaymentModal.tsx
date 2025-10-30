@@ -1,6 +1,6 @@
 // src/components/CryptoPaymentModal.tsx
-import React, { useState } from 'react';
-import { X, Loader2, ExternalLink, CheckCircle, AlertCircle, Coins } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Check } from 'lucide-react';
 import { coinGateService, type CreateOrderParams } from '../services/coingate';
 
 interface CryptoPaymentModalProps {
@@ -16,12 +16,12 @@ interface CryptoPaymentModalProps {
 }
 
 const SUPPORTED_CRYPTOS = [
-  { code: 'BTC', name: 'Bitcoin', icon: '₿', color: 'text-orange-500' },
-  { code: 'ETH', name: 'Ethereum', icon: 'Ξ', color: 'text-blue-500' },
-  { code: 'USDT', name: 'Tether', icon: '₮', color: 'text-green-500' },
-  { code: 'USDC', name: 'USD Coin', icon: '$', color: 'text-blue-400' },
-  { code: 'LTC', name: 'Litecoin', icon: 'Ł', color: 'text-gray-400' },
-  { code: 'BCH', name: 'Bitcoin Cash', icon: 'BCH', color: 'text-green-600' },
+  { code: 'BTC', name: 'Bitcoin', logo: '₿' },
+  { code: 'ETH', name: 'Ethereum', logo: 'Ξ' },
+  { code: 'USDT', name: 'Tether (ERC20)', logo: '₮' },
+  { code: 'USDC', name: 'USD Coin', logo: '$' },
+  { code: 'LTC', name: 'Litecoin', logo: 'Ł' },
+  { code: 'BCH', name: 'Bitcoin Cash', logo: 'BCH' },
 ];
 
 export default function CryptoPaymentModal({
@@ -37,16 +37,13 @@ export default function CryptoPaymentModal({
 }: CryptoPaymentModalProps) {
   const [selectedCrypto, setSelectedCrypto] = useState('BTC');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentUrl, setPaymentUrl] = useState('');
   const [error, setError] = useState('');
-  const [step, setStep] = useState<'select' | 'processing' | 'redirect'>('select');
 
   if (!isOpen) return null;
 
   const handlePayment = async () => {
     setIsProcessing(true);
     setError('');
-    setStep('processing');
 
     try {
       // Create CoinGate order
@@ -58,8 +55,8 @@ export default function CryptoPaymentModal({
         description: description || '',
         order_id: orderId,
         purchaser_email: userEmail,
-        success_url: `${window.location.origin}/payment-success?order=${orderId}`,
-        cancel_url: `${window.location.origin}/payment-cancel?order=${orderId}`,
+        success_url: `${window.location.origin}/dashboard`,
+        cancel_url: `${window.location.origin}/dashboard`,
         callback_url: `${window.location.origin}/api/coingate-callback`,
       };
 
@@ -79,172 +76,124 @@ export default function CryptoPaymentModal({
 
       onSuccess(transactionData);
 
-      setPaymentUrl(order.payment_url);
-      setStep('redirect');
-
       // Redirect to CoinGate payment page
-      setTimeout(() => {
-        window.open(order.payment_url, '_blank');
-      }, 1500);
+      window.open(order.payment_url, '_blank');
+      onClose();
 
     } catch (err: any) {
       console.error('Payment error:', err);
-      setError(err.message || 'Failed to create payment. Please try again.');
-      setStep('select');
+      setError(err.message || 'Payment service temporarily unavailable. Please try again later.');
     } finally {
       setIsProcessing(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
-      <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl animate-slideUp overflow-hidden">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="relative bg-gradient-to-r from-black to-gray-900 text-white p-6">
+        <div className="border-b border-gray-200 p-6 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-900">Choose payment method</h2>
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors"
+            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
           >
-            <X size={24} />
+            <X size={20} className="text-gray-500" />
           </button>
-          <div className="flex items-center gap-3">
-            <Coins size={32} className="text-white" />
-            <div>
-              <h2 className="text-2xl font-bold">Pay with Cryptocurrency</h2>
-              <p className="text-white/80 text-sm mt-1">Secure & Fast Payment</p>
-            </div>
-          </div>
         </div>
 
         {/* Body */}
         <div className="p-6">
-          {step === 'select' && (
-            <>
-              {/* Amount Display */}
-              <div className="bg-gray-50 rounded-xl p-6 mb-6">
-                <p className="text-sm text-gray-600 mb-1">Total Amount</p>
-                <p className="text-4xl font-bold text-gray-900">
-                  {currency === 'EUR' ? '€' : '$'}{amount.toLocaleString()}
-                </p>
-                <p className="text-sm text-gray-500 mt-2">{title}</p>
-                {description && (
-                  <p className="text-xs text-gray-400 mt-1">{description}</p>
-                )}
-              </div>
+          {/* Amount Display */}
+          <div className="mb-6 pb-4 border-b border-gray-200">
+            <p className="text-sm text-gray-600 mb-1">Total Amount</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {currency === 'EUR' ? '€' : '$'}{amount.toLocaleString()}
+            </p>
+            {description && (
+              <p className="text-xs text-gray-500 mt-1">{description}</p>
+            )}
+          </div>
 
-              {/* Crypto Selection */}
-              <div className="mb-6">
-                <p className="text-sm font-semibold text-gray-900 mb-3">
-                  Select Cryptocurrency
-                </p>
-                <div className="grid grid-cols-3 gap-3">
-                  {SUPPORTED_CRYPTOS.map((crypto) => (
-                    <button
-                      key={crypto.code}
-                      onClick={() => setSelectedCrypto(crypto.code)}
-                      className={`relative border-2 rounded-xl p-4 transition-all ${
-                        selectedCrypto === crypto.code
-                          ? 'border-black bg-black text-white'
-                          : 'border-gray-200 bg-white hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="text-center">
-                        <div className={`text-3xl mb-2 ${selectedCrypto === crypto.code ? 'text-white' : crypto.color}`}>
-                          {crypto.icon}
-                        </div>
-                        <div className={`text-xs font-semibold ${selectedCrypto === crypto.code ? 'text-white' : 'text-gray-900'}`}>
-                          {crypto.name}
-                        </div>
-                        <div className={`text-xs ${selectedCrypto === crypto.code ? 'text-white/70' : 'text-gray-500'}`}>
-                          {crypto.code}
-                        </div>
-                      </div>
-                      {selectedCrypto === crypto.code && (
-                        <div className="absolute top-2 right-2">
-                          <CheckCircle size={20} className="text-white" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Error Message */}
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start gap-3">
-                  <AlertCircle size={20} className="text-red-600 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-red-900">Payment Error</p>
-                    <p className="text-xs text-red-700 mt-1">{error}</p>
+          {/* Crypto List */}
+          <div className="space-y-2 mb-6">
+            {SUPPORTED_CRYPTOS.map((crypto) => (
+              <button
+                key={crypto.code}
+                onClick={() => setSelectedCrypto(crypto.code)}
+                className={`w-full flex items-center justify-between p-4 border-2 rounded-xl transition-all ${
+                  selectedCrypto === crypto.code
+                    ? 'border-gray-900 bg-gray-50'
+                    : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-lg font-bold text-gray-700">
+                    {crypto.logo}
+                  </div>
+                  <div className="text-left">
+                    <div className="text-sm font-semibold text-gray-900">{crypto.name}</div>
+                    <div className="text-xs text-gray-500">{crypto.code}</div>
                   </div>
                 </div>
-              )}
-
-              {/* Pay Button */}
-              <button
-                onClick={handlePayment}
-                disabled={isProcessing}
-                className="w-full bg-black text-white py-4 rounded-xl font-bold hover:bg-gray-800 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 size={20} className="animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>Pay {currency === 'EUR' ? '€' : '$'}{amount.toLocaleString()} with {selectedCrypto}</>
-                )}
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                  selectedCrypto === crypto.code
+                    ? 'border-gray-900 bg-gray-900'
+                    : 'border-gray-300'
+                }`}>
+                  {selectedCrypto === crypto.code && (
+                    <div className="w-2 h-2 rounded-full bg-white"></div>
+                  )}
+                </div>
               </button>
+            ))}
+          </div>
 
-              {/* Security Notice */}
-              <div className="mt-6 text-center">
-                <p className="text-xs text-gray-500">
-                  🔒 Secured by CoinGate • Your payment is processed securely
-                </p>
-              </div>
-            </>
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+              <p className="text-xs text-red-700">{error}</p>
+            </div>
           )}
 
-          {step === 'processing' && (
-            <div className="flex flex-col items-center justify-center py-12">
+          {/* Loading State */}
+          {isProcessing && (
+            <div className="flex flex-col items-center justify-center py-8 mb-4">
               <video
                 autoPlay
                 loop
                 muted
                 playsInline
-                className="w-32 h-32 mb-6"
+                className="w-20 h-20 mb-3"
               >
                 <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
               </video>
-              <p className="text-lg font-semibold text-gray-900 mb-2">
-                Creating Payment Order...
-              </p>
-              <p className="text-sm text-gray-600">Please wait while we prepare your payment</p>
+              <p className="text-sm text-gray-600">Opening wallet...</p>
             </div>
           )}
 
-          {step === 'redirect' && (
-            <div className="flex flex-col items-center justify-center py-12">
-              <CheckCircle size={64} className="text-green-600 mb-6" />
-              <p className="text-lg font-semibold text-gray-900 mb-2">
-                Payment Page Opening...
-              </p>
-              <p className="text-sm text-gray-600 mb-6 text-center">
-                You will be redirected to complete your payment
-              </p>
-              {paymentUrl && (
-                <a
-                  href={paymentUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-all"
-                >
-                  Open Payment Page
-                  <ExternalLink size={18} />
-                </a>
-              )}
-            </div>
-          )}
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              disabled={isProcessing}
+              className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handlePayment}
+              disabled={isProcessing}
+              className="flex-1 px-4 py-3 bg-black text-white rounded-xl font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isProcessing ? 'Processing...' : 'Continue'}
+            </button>
+          </div>
+
+          {/* Security Notice */}
+          <p className="text-xs text-gray-500 text-center mt-4">
+            🔒 Secured by CoinGate
+          </p>
         </div>
       </div>
     </div>
