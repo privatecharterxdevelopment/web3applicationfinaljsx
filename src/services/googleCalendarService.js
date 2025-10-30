@@ -24,6 +24,14 @@ export class GoogleCalendarService {
    */
   async connectGoogleCalendar() {
     try {
+      // Check if Google Calendar credentials are configured
+      if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID' || !GOOGLE_CLIENT_SECRET || GOOGLE_CLIENT_SECRET === 'YOUR_GOOGLE_CLIENT_SECRET') {
+        throw new Error(
+          'Google Calendar is not configured. Please add VITE_GOOGLE_CLIENT_ID and VITE_GOOGLE_CLIENT_SECRET to your .env file. ' +
+          'Get credentials from: https://console.cloud.google.com/apis/credentials'
+        );
+      }
+
       // Create OAuth URL
       const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
       authUrl.searchParams.append('client_id', GOOGLE_CLIENT_ID);
