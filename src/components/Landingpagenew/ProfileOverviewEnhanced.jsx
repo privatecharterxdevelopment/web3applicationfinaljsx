@@ -1,39 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import {
   User, Mail, Phone, MapPin, Calendar, Shield, CheckCircle, Clock, XCircle,
-  TrendingUp, TrendingDown, FileText, Building2, Coins, AlertCircle, Edit, Eye, Download,
-  Activity, DollarSign, Plane, Ship, Home as HomeIcon, Briefcase, Plus, ExternalLink,
-  Sparkles, BarChart3, LineChart, PieChart, ArrowUpRight, ArrowDownRight, Wallet,
-  Link as LinkIcon, Copy, Check, ChevronRight
+  AlertCircle, Edit, Plus, ExternalLink, Sparkles, DollarSign, Plane,
+  Coins, Building2, Leaf, Users, Activity
 } from 'lucide-react';
+import { format, startOfMonth } from 'date-fns';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { web3Service } from '../../lib/web3';
 import { useAccount } from 'wagmi';
-import { LineChart as RechartsLineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, BarChart as RechartsBarChart, Bar } from 'recharts';
-import LaunchpadTransactions from './LaunchpadTransactions';
+
+// Dashboard components
+import MultiLineChart from '../Dashboard/MultiLineChart';
+import DashboardCard from '../Dashboard/DashboardCard';
+import BalanceHeader from '../Dashboard/BalanceHeader';
+import RecentActivity from '../Dashboard/RecentActivity';
+import QuickStats from '../Dashboard/QuickStats';
 
 export default function ProfileOverviewEnhanced() {
   const { user } = useAuth();
   const { address: walletAddress, isConnected, chain } = useAccount();
+
   const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState(null);
-  const [tokenizedAssets, setTokenizedAssets] = useState([]);
-  const [transactions, setTransactions] = useState([]);
-  const [analytics, setAnalytics] = useState({
-    chartData: [],
-    assetPerformance: [],
-    interactionData: []
-  });
-  const [stats, setStats] = useState({
+  const [nfts, setNfts] = useState([]);
+  const [loadingNFTs, setLoadingNFTs] = useState(false);
+
+  // Dashboard data
+  const [chartData, setChartData] = useState([]);
+  const [dashboardMetrics, setDashboardMetrics] = useState(null);
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [quickStats, setQuickStats] = useState({
+    memberSince: '-',
     totalValue: 0,
-    totalAssets: 0,
-    totalTransactions: 0,
-    portfolioChange: 0,
-    roi: 0
+    completionRate: 0,
+    activityScore: 0
   });
-  const [timeRange, setTimeRange] = useState('7d');
-  const [copiedAddress, setCopiedAddress] = useState(false);
+  const [monthlyStats, setMonthlyStats] = useState({
+    income: 0,
+    expense: 0
+  });
 
   useEffect(() => {
     if (user?.id) {
@@ -43,19 +49,39 @@ export default function ProfileOverviewEnhanced() {
     }
   }, [user?.id]);
 
+  // Fetch NFTs when wallet is connected
   useEffect(() => {
-    if (walletAddress) {
-      fetchWalletTransactions();
-    }
-  }, [walletAddress, timeRange]);
+    const fetchNFTs = async () => {
+      if (!isConnected || !walletAddress || chain?.id !== 8453) {
+        setNfts([]);
+        return;
+      }
+
+      setLoadingNFTs(true);
+      try {
+        const nftResult = await web3Service.getUserNFTsViaAlchemy(walletAddress);
+        setNfts(nftResult);
+      } catch (error) {
+        console.error('Failed to fetch NFTs:', error);
+        setNfts([]);
+      } finally {
+        setLoadingNFTs(false);
+      }
+    };
+
+    fetchNFTs();
+  }, [isConnected, walletAddress, chain?.id]);
 
   const fetchAllData = async () => {
     setLoading(true);
     try {
       await Promise.all([
         fetchProfile(),
-        fetchTokenizedAssets(),
-        fetchAnalytics()
+        fetchChartData(),
+        fetchDashboardMetrics(),
+        fetchRecentActivities(),
+        calculateMonthlyStats(),
+        calculateQuickStats()
       ]);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -75,7 +101,7 @@ export default function ProfileOverviewEnhanced() {
       if (error && error.code !== 'PGRST116') throw error;
       setProfileData(data || {
         kyc_status: 'not_started',
-        wallet_address: walletAddress,
+        wallet_address: null,
         created_at: user.created_at
       });
     } catch (error) {
@@ -83,565 +109,479 @@ export default function ProfileOverviewEnhanced() {
     }
   };
 
-  const fetchTokenizedAssets = async () => {
+  const fetchChartData = async () => {
     try {
-      const { data: tokenRequests } = await supabase
+      const { data, error } = await supabase.rpc('get_lifetime_chart_data', {
+        p_user_id: user.id
+      });
+
+      if (error) {
+        console.error('Error fetching chart data:', error);
+        setChartData([]);
+        return;
+      }
+
+      setChartData(data || []);
+    } catch (error) {
+      console.error('Error fetching chart data:', error);
+      setChartData([]);
+    }
+  };
+
+  const fetchDashboardMetrics = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_enhanced_dashboard_metrics', {
+        p_user_id: user.id
+      });
+
+      if (error) {
+        console.error('Error fetching dashboard metrics:', error);
+        setDashboardMetrics(null);
+        return;
+      }
+
+      setDashboardMetrics(data?.[0] || null);
+    } catch (error) {
+      console.error('Error fetching dashboard metrics:', error);
+      setDashboardMetrics(null);
+    }
+  };
+
+  const fetchRecentActivities = async () => {
+    try {
+      const { data: requests } = await supabase
         .from('user_requests')
         .select('*')
         .eq('user_id', user.id)
-        .eq('type', 'tokenization')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(5);
 
-      if (tokenRequests && tokenRequests.length > 0) {
-        const assets = tokenRequests.map(asset => ({
-          id: asset.id,
-          name: asset.service_type || 'Asset',
-          type: asset.details || 'Real Estate',
-          tokens: Math.floor(Math.random() * 500),
-          totalTokens: 1000,
-          value: asset.estimated_cost || 0,
-          change24h: (Math.random() * 10 - 5).toFixed(2),
-          apy: (5 + Math.random() * 10).toFixed(2),
-          status: asset.status,
-          created_at: asset.created_at,
-          icon: getAssetIcon(asset.service_type)
-        }));
-
-        setTokenizedAssets(assets);
-
-        const totalValue = assets.reduce((sum, a) => sum + (parseFloat(a.value) || 0), 0);
-        const totalAssets = assets.filter(a => a.status === 'completed').length;
-
-        setStats(prev => ({
-          ...prev,
-          totalValue,
-          totalAssets,
-          portfolioChange: (Math.random() * 10 - 2).toFixed(2),
-          roi: ((totalValue * 0.075) / totalValue * 100).toFixed(2)
-        }));
-      }
+      setRecentActivities(requests || []);
     } catch (error) {
-      console.error('Error fetching tokenized assets:', error);
+      console.error('Error fetching activities:', error);
+      setRecentActivities([]);
     }
   };
 
-  const fetchWalletTransactions = async () => {
+  const calculateMonthlyStats = async () => {
     try {
-      if (!walletAddress) return;
+      const startDate = startOfMonth(new Date()).toISOString();
 
-      const mockTransactions = [
-        {
-          id: '1',
-          type: 'buy',
-          asset: 'Private Jet Token',
-          amount: 50,
-          value: 125000,
-          timestamp: Date.now() - 2 * 24 * 60 * 60 * 1000,
-          hash: '0x1234...5678',
-          status: 'completed'
-        },
-        {
-          id: '2',
-          type: 'sell',
-          asset: 'Yacht Token',
-          amount: 25,
-          value: 75000,
-          timestamp: Date.now() - 5 * 24 * 60 * 60 * 1000,
-          hash: '0x8765...4321',
-          status: 'completed'
-        }
-      ];
+      // Calculate monthly income (bookings, PVCX credits)
+      const { data: bookings } = await supabase
+        .from('booking_requests')
+        .select('total_price')
+        .eq('user_id', user.id)
+        .gte('created_at', startDate);
 
-      setTransactions(mockTransactions);
-      setStats(prev => ({
-        ...prev,
-        totalTransactions: mockTransactions.length
-      }));
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
-    }
-  };
+      const { data: pvcxCredits } = await supabase
+        .from('pvcx_transactions')
+        .select('amount')
+        .eq('user_id', user.id)
+        .eq('transaction_type', 'credit')
+        .gte('created_at', startDate);
 
-  const fetchAnalytics = async () => {
-    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
-    const chartData = [];
+      const bookingIncome = bookings?.reduce((sum, b) => sum + (b.total_price || 0), 0) || 0;
+      const pvcxIncome = pvcxCredits?.reduce((sum, p) => sum + (p.amount || 0), 0) * 0.01 || 0; // $0.01 per PVCX
 
-    for (let i = days; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      chartData.push({
-        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        value: 50000 + Math.random() * 100000,
-        transactions: Math.floor(Math.random() * 10),
-        visitors: Math.floor(Math.random() * 50)
+      // Calculate monthly expenses (tokenization fees, services)
+      const { data: expenses } = await supabase
+        .from('transactions')
+        .select('amount')
+        .eq('user_id', user.id)
+        .in('category', ['booking', 'service', 'subscription'])
+        .gte('created_at', startDate);
+
+      const totalExpense = expenses?.reduce((sum, e) => sum + (e.amount || 0), 0) || 0;
+
+      setMonthlyStats({
+        income: bookingIncome + pvcxIncome,
+        expense: totalExpense
       });
-    }
-
-    const assetPerformance = [
-      { name: 'Private Jet', value: 35, change: +12.5 },
-      { name: 'Real Estate', value: 28, change: +8.3 },
-      { name: 'Yacht', value: 22, change: -2.1 },
-      { name: 'Luxury Car', value: 15, change: +5.7 }
-    ];
-
-    setAnalytics({
-      chartData,
-      assetPerformance,
-      interactionData: chartData
-    });
-  };
-
-  const getAssetIcon = (type) => {
-    const icons = {
-      'jet': '✈',
-      'helicopter': '🚁',
-      'yacht': '⛵',
-      'real-estate': '🏢',
-      'luxury-car': '🚗',
-      'art': '🖼'
-    };
-    return icons[type] || '💎';
-  };
-
-  const copyWalletAddress = () => {
-    if (walletAddress) {
-      navigator.clipboard.writeText(walletAddress);
-      setCopiedAddress(true);
-      setTimeout(() => setCopiedAddress(false), 2000);
+    } catch (error) {
+      console.error('Error calculating monthly stats:', error);
     }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
+  const calculateQuickStats = async () => {
+    try {
+      // Member since
+      const memberSince = user?.created_at
+        ? format(new Date(user.created_at), 'MMM yyyy')
+        : '-';
+
+      // Total value from transactions
+      const { data: transactions } = await supabase
+        .from('transactions')
+        .select('amount, currency')
+        .eq('user_id', user.id)
+        .eq('status', 'completed');
+
+      const totalValue = transactions?.reduce((sum, t) => {
+        const usdValue = t.currency === 'EUR' ? t.amount * 1.1 : t.amount;
+        return sum + usdValue;
+      }, 0) || 0;
+
+      // Completion rate
+      const { data: allRequests } = await supabase
+        .from('user_requests')
+        .select('status')
+        .eq('user_id', user.id);
+
+      const completed = allRequests?.filter(r => r.status === 'completed').length || 0;
+      const total = allRequests?.length || 0;
+      const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+      // Activity score (based on total actions)
+      const activityScore = Math.min(total * 10, 1000); // Max 1000
+
+      setQuickStats({
+        memberSince,
+        totalValue,
+        completionRate,
+        activityScore
+      });
+    } catch (error) {
+      console.error('Error calculating quick stats:', error);
+    }
+  };
+
+  const getKYCStatusColor = (status) => {
+    switch (status) {
+      case 'verified': return 'bg-green-500/20 text-green-700 border-green-500/40';
+      case 'pending': return 'bg-yellow-500/20 text-yellow-700 border-yellow-500/40';
+      case 'rejected': return 'bg-red-500/20 text-red-700 border-red-500/40';
+      default: return 'bg-gray-500/20 text-gray-700 border-gray-500/40';
+    }
+  };
+
+  const getKYCStatusIcon = (status) => {
+    switch (status) {
+      case 'verified': return <CheckCircle size={16} />;
+      case 'pending': return <Clock size={16} />;
+      case 'rejected': return <XCircle size={16} />;
+      default: return <AlertCircle size={16} />;
+    }
+  };
+
+  // Dashboard card click handlers
+  const handleTransactionsClick = () => {
+    // Navigate to transactions
+    const event = new CustomEvent('navigate-to-category', { detail: { category: 'transactions' } });
+    window.dispatchEvent(event);
+  };
+
+  const handleBookingsClick = () => {
+    // Navigate to my requests
+    const event = new CustomEvent('navigate-to-view', { detail: { view: 'my-requests' } });
+    window.dispatchEvent(event);
+  };
+
+  const handleTokenizationClick = () => {
+    // Navigate to tokenization
+    const event = new CustomEvent('navigate-to-category', { detail: { category: 'tokenization' } });
+    window.dispatchEvent(event);
+  };
+
+  const handleDAOClick = () => {
+    // Navigate to DAOs
+    const event = new CustomEvent('navigate-to-category', { detail: { category: 'dao' } });
+    window.dispatchEvent(event);
+  };
+
+  const handlePVCXClick = () => {
+    // Show PVCX wallet info
+    console.log('Navigate to PVCX wallet');
+  };
+
+  const handleCO2Click = () => {
+    // Navigate to CO2 certificates
+    const event = new CustomEvent('navigate-to-category', { detail: { category: 'co2' } });
+    window.dispatchEvent(event);
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-white">
+      <div className="flex items-center justify-center h-full py-20">
         <div className="text-center">
-          <div className="w-8 h-8 border border-black/10 border-t-black rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-sm text-black/40">Loading</p>
+          <div className="w-12 h-12 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen">
-      {/* Minimal Header */}
-      <div className="border-b border-black/5">
-        <div className="max-w-[1920px] mx-auto px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-medium text-black tracking-tight">Profile Overview</h1>
-              <p className="text-xs text-black/40 mt-0.5">Your account summary</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <select
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value)}
-                className="px-3 py-1.5 border border-gray-300/50 rounded text-xs focus:outline-none focus:border-gray-400/50 transition-colors bg-white/20"
-                style={{ backdropFilter: 'blur(10px)' }}
-              >
-                <option value="7d">7d</option>
-                <option value="30d">30d</option>
-                <option value="90d">90d</option>
-              </select>
-            </div>
-          </div>
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-full py-20">
+        <div className="text-center">
+          <AlertCircle size={48} className="text-gray-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Not Logged In</h2>
+          <p className="text-gray-600">Please log in to view your dashboard</p>
         </div>
       </div>
+    );
+  }
 
+  // Calculate total portfolio balance
+  const totalBalance = (dashboardMetrics?.total_transaction_volume || 0) + (quickStats.totalValue || 0);
 
-      <div className="max-w-[1920px] mx-auto px-8 py-8">
-        <div className="grid grid-cols-12 gap-6">
-          {/* Left Sidebar - Minimal Asset List */}
-          <div className="col-span-12 lg:col-span-3">
-            <div className="border border-gray-300/50 rounded-xl bg-white/35 sticky top-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-              <div className="px-5 py-4 border-b border-black/5">
-                <h2 className="text-sm font-medium text-black">My Assets</h2>
-                <p className="text-[10px] text-black/30 mt-0.5">{tokenizedAssets.length} tokenized</p>
-              </div>
+  return (
+    <div className="w-full h-full bg-transparent">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl md:text-4xl font-light text-gray-900 mb-4 tracking-tighter">
+            Dashboard Overview
+          </h1>
+          <p className="text-gray-600 max-w-2xl mx-auto font-light">
+            Track your portfolio, bookings, and activities in one place
+          </p>
+        </div>
 
-              <div className="p-3 space-y-2 max-h-[calc(100vh-200px)] overflow-y-auto">
-                {tokenizedAssets.map((asset) => (
-                  <div
-                    key={asset.id}
-                    className="group p-3 rounded-sm border border-black/0 hover:border-black/10 hover:bg-black/[0.02] transition-all cursor-pointer"
-                  >
-                    <div className="flex items-start gap-3">
-                      {/* Minimal Icon */}
-                      <div className="w-8 h-8 rounded-sm border border-black/10 flex items-center justify-center text-sm flex-shrink-0">
-                        {asset.icon}
-                      </div>
+        {/* Balance Header */}
+        <BalanceHeader
+          totalBalance={totalBalance}
+          monthlyIncome={monthlyStats.income}
+          monthlyExpense={monthlyStats.expense}
+          loading={loading}
+        />
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <h3 className="font-medium text-black text-xs truncate leading-tight">
-                            {asset.name}
-                          </h3>
-                          <span className={`text-[10px] font-mono ${
-                            parseFloat(asset.change24h) >= 0 ? 'text-black/40' : 'text-black/40'
-                          }`}>
-                            {parseFloat(asset.change24h) >= 0 ? '+' : ''}{asset.change24h}%
-                          </span>
-                        </div>
+        {/* Quick Stats */}
+        <QuickStats stats={quickStats} loading={loading} />
 
-                        <p className="text-[10px] text-black/30 mb-2">{asset.type}</p>
+        {/* Multi-Line Chart */}
+        <MultiLineChart data={chartData} loading={loading} />
 
-                        {/* Minimal Progress */}
-                        <div className="mb-2">
-                          <div className="flex items-center justify-between text-[10px] mb-1">
-                            <span className="text-black/30">Tokens</span>
-                            <span className="font-mono text-black/60">
-                              {asset.tokens}/{asset.totalTokens}
-                            </span>
-                          </div>
-                          <div className="w-full h-px bg-black/5">
-                            <div
-                              className="h-full bg-black/20"
-                              style={{ width: `${(asset.tokens / asset.totalTokens) * 100}%` }}
-                            />
-                          </div>
-                        </div>
+        {/* Dashboard Cards Grid - 6 Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 my-8">
+          {/* Card 1: Total Transactions */}
+          <DashboardCard
+            icon={Activity}
+            title="Total Transactions"
+            value={(dashboardMetrics?.web3_transactions || 0) + (dashboardMetrics?.fiat_transactions || 0)}
+            subtitle={`$${Number(dashboardMetrics?.total_transaction_volume || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })} total volume`}
+            badge={`${dashboardMetrics?.web3_transactions || 0} Web3`}
+            badgeColor="bg-purple-100 text-purple-700"
+            onClick={handleTransactionsClick}
+            loading={loading}
+          />
 
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-medium text-black">
-                            {formatCurrency(asset.value)}
-                          </span>
-                          <span className="text-[10px] text-black/30">
-                            {asset.apy}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+          {/* Card 2: RWS Bookings */}
+          <DashboardCard
+            icon={Plane}
+            title="RWS Bookings"
+            value={dashboardMetrics?.total_bookings || 0}
+            subtitle={`€${Number(dashboardMetrics?.booking_revenue || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })} revenue`}
+            badge={`${dashboardMetrics?.pending_bookings || 0} Pending`}
+            badgeColor="bg-amber-100 text-amber-700"
+            onClick={handleBookingsClick}
+            loading={loading}
+          />
 
-                {tokenizedAssets.length === 0 && (
-                  <div className="text-center py-16">
-                    <div className="w-12 h-12 rounded-sm border border-black/10 flex items-center justify-center mx-auto mb-3">
-                      <Coins size={20} className="text-black/20" />
-                    </div>
-                    <p className="text-xs text-black/30 mb-4">No assets</p>
-                    <button className="px-4 py-1.5 border border-black/10 hover:border-black/30 rounded-sm text-xs transition-colors">
-                      Tokenize
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
+          {/* Card 3: Tokenization Projects */}
+          <DashboardCard
+            icon={Coins}
+            title="Tokenization Projects"
+            value={dashboardMetrics?.tokenization_projects || 0}
+            subtitle={`$${Number(dashboardMetrics?.total_token_value || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })} total value`}
+            badge={`${dashboardMetrics?.active_tokens || 0} Active`}
+            badgeColor="bg-blue-100 text-blue-700"
+            onClick={handleTokenizationClick}
+            loading={loading}
+          />
+
+          {/* Card 4: DAO Participation */}
+          <DashboardCard
+            icon={Users}
+            title="DAO Participation"
+            value={dashboardMetrics?.dao_count || 0}
+            subtitle={`${Number(dashboardMetrics?.total_governance_tokens || 0).toLocaleString('en-US')} voting power`}
+            badge={`${dashboardMetrics?.active_proposals || 0} Active`}
+            badgeColor="bg-indigo-100 text-indigo-700"
+            onClick={handleDAOClick}
+            loading={loading}
+          />
+
+          {/* Card 5: PVCX Rewards */}
+          <DashboardCard
+            icon={DollarSign}
+            title="PVCX Rewards"
+            value={`${Number(dashboardMetrics?.pvcx_balance || 0).toLocaleString('en-US')} $PVCX`}
+            subtitle={`${Number(dashboardMetrics?.pvcx_earned_total || 0).toLocaleString('en-US')} total earned`}
+            badge={`${Number(dashboardMetrics?.pvcx_from_bookings || 0).toLocaleString('en-US')} from bookings`}
+            badgeColor="bg-green-100 text-green-700"
+            onClick={handlePVCXClick}
+            loading={loading}
+          />
+
+          {/* Card 6: CO2 Impact */}
+          <DashboardCard
+            icon={Leaf}
+            title="CO2 Impact"
+            value={`${Number(dashboardMetrics?.tons_offset || 0).toFixed(1)} tons`}
+            subtitle={`${dashboardMetrics?.co2_certificates || 0} certificates`}
+            badge={`€${Number(dashboardMetrics?.total_co2_investment || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })} invested`}
+            badgeColor="bg-emerald-100 text-emerald-700"
+            onClick={handleCO2Click}
+            loading={loading}
+          />
+        </div>
+
+        {/* Grid Layout for Additional Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+          {/* Left Column - Recent Activity */}
+          <div className="lg:col-span-2">
+            <RecentActivity
+              activities={recentActivities}
+              loading={loading}
+              onViewAll={handleBookingsClick}
+            />
           </div>
 
-          {/* Main Content */}
-          <div className="col-span-12 lg:col-span-9 space-y-6">
-            {/* Profile & KYC Info Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Profile Info */}
-              <div className="border border-gray-300/50 rounded-xl bg-white/35" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                <div className="px-5 py-4 border-b border-black/5">
-                  <h2 className="text-sm font-medium text-black">Profile</h2>
-                  <p className="text-[10px] text-black/30 mt-0.5">Account information</p>
+          {/* Right Column - KYC & NFT Cards */}
+          <div className="space-y-6">
+            {/* KYC Verification Card */}
+            <div className="bg-white/35 backdrop-blur-xl border border-gray-300/50 rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Shield size={20} className="text-gray-700" />
+                <h2 className="text-lg font-semibold text-gray-900">KYC Verification</h2>
+              </div>
+
+              <div className={`flex items-center gap-2 px-4 py-3 rounded-lg border ${getKYCStatusColor(profileData?.kyc_status || 'not_started')}`}>
+                {getKYCStatusIcon(profileData?.kyc_status || 'not_started')}
+                <span className="font-medium capitalize">
+                  {profileData?.kyc_status === 'not_started' ? 'Not Started' : profileData?.kyc_status || 'Not Started'}
+                </span>
+              </div>
+
+              {profileData?.kyc_status !== 'verified' && (
+                <button className="mt-4 w-full px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium">
+                  {profileData?.kyc_status === 'not_started' ? 'Start Verification' : 'View Status'}
+                </button>
+              )}
+
+              <p className="mt-4 text-xs text-gray-500">
+                {profileData?.kyc_status === 'verified'
+                  ? 'Your account is fully verified'
+                  : 'Complete KYC to unlock all features'}
+              </p>
+            </div>
+
+            {/* NFT Membership Card */}
+            <div className="bg-white/35 backdrop-blur-xl border border-gray-300/50 rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Sparkles size={20} className="text-gray-700" />
+                <h2 className="text-lg font-semibold text-gray-900">VIP Membership NFT</h2>
+              </div>
+
+              {loadingNFTs ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="w-8 h-8 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin"></div>
                 </div>
-                <div className="p-5 space-y-3">
-                  <div className="flex items-center gap-3 pb-3 border-b border-black/5">
-                    <div className="w-12 h-12 rounded-sm border border-black/10 flex items-center justify-center text-black font-medium">
-                      {user?.first_name?.charAt(0).toUpperCase() || 'U'}
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-black">
-                        {user?.first_name} {user?.last_name}
-                      </h3>
-                      <p className="text-[10px] text-black/40">{user?.email}</p>
+              ) : !isConnected || chain?.id !== 8453 ? (
+                <div className="text-center py-6">
+                  <div className="w-full aspect-square bg-gradient-to-br from-gray-100 to-gray-50 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 mb-4">
+                    <div className="text-center">
+                      <Sparkles size={48} className="text-gray-300 mx-auto mb-3" />
+                      <p className="text-sm text-gray-400 font-medium">Connect Wallet</p>
+                      <p className="text-xs text-gray-300 mt-1">on Base Network</p>
                     </div>
                   </div>
-                  <div className="space-y-2 text-xs">
-                    <div className="flex items-center justify-between py-1.5">
-                      <span className="text-black/40">Email</span>
-                      <span className="text-black/80">{user?.email}</span>
+                  <p className="text-xs text-gray-500">
+                    Connect your wallet on Base to see your NFT membership
+                  </p>
+                </div>
+              ) : nfts.length > 0 ? (
+                <div>
+                  <div className="relative group">
+                    <div className="w-full aspect-square bg-gray-900 rounded-xl overflow-hidden shadow-lg">
+                      <video
+                        className="w-full h-full object-cover"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                      >
+                        <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivateCharterX_transparent-_3_.mp4" type="video/mp4" />
+                      </video>
                     </div>
-                    <div className="flex items-center justify-between py-1.5">
-                      <span className="text-black/40">Phone</span>
-                      <span className="text-black/80">{profileData?.phone || 'Not provided'}</span>
-                    </div>
-                    <div className="flex items-center justify-between py-1.5">
-                      <span className="text-black/40">Member since</span>
-                      <span className="text-black/80">
-                        {profileData?.created_at ? new Date(profileData.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short' }) : 'N/A'}
+                    <div className="absolute top-3 right-3">
+                      <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full shadow-lg">
+                        ✓ OWNED
                       </span>
                     </div>
                   </div>
-                  <button className="w-full mt-4 px-4 py-2 border border-black/10 rounded-sm text-xs hover:border-black/30 transition-colors">
-                    Edit Profile
-                  </button>
-                </div>
-              </div>
-
-              {/* KYC Status */}
-              <div className="border border-gray-300/50 rounded-xl bg-white/35" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                <div className="px-5 py-4 border-b border-black/5">
-                  <h2 className="text-sm font-medium text-black">Verification</h2>
-                  <p className="text-[10px] text-black/30 mt-0.5">KYC status</p>
-                </div>
-                <div className="p-5">
-                  <div className="flex items-start gap-4 mb-6">
-                    <div className="w-12 h-12 rounded-sm border border-black/10 flex items-center justify-center">
-                      {profileData?.kyc_status === 'verified' ? (
-                        <CheckCircle size={20} className="text-black/60" />
-                      ) : profileData?.kyc_status === 'pending' ? (
-                        <Clock size={20} className="text-black/40" />
-                      ) : (
-                        <AlertCircle size={20} className="text-black/30" />
-                      )}
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-bold text-gray-900">{nfts[0].name}</h3>
+                      <span className="text-xs font-medium text-gray-500">#{nfts[0].tokenId}</span>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-sm font-medium text-black">
-                          {profileData?.kyc_status === 'verified' ? 'Verified' :
-                           profileData?.kyc_status === 'pending' ? 'Pending Review' :
-                           'Not Verified'}
-                        </h3>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${
-                          profileData?.kyc_status === 'verified' ? 'bg-black/5 text-black/60' :
-                          profileData?.kyc_status === 'pending' ? 'bg-black/5 text-black/40' :
-                          'bg-black/5 text-black/30'
-                        }`}>
-                          {profileData?.kyc_status || 'Not started'}
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-black/40 leading-relaxed">
-                        {profileData?.kyc_status === 'verified' ?
-                          'Your identity has been verified. You have full access to all features.' :
-                         profileData?.kyc_status === 'pending' ?
-                          'Your documents are under review. This typically takes 24-48 hours.' :
-                          'Complete KYC verification to unlock higher transaction limits and additional features.'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {profileData?.kyc_status !== 'verified' && (
-                    <button className="w-full px-4 py-2 bg-black text-white rounded-sm text-xs hover:bg-black/90 transition-colors">
-                      {profileData?.kyc_status === 'pending' ? 'Check Status' : 'Start Verification'}
-                    </button>
-                  )}
-
-                  {profileData?.kyc_status === 'verified' && (
-                    <div className="pt-4 border-t border-black/5">
-                      <div className="flex items-center justify-between text-[10px]">
-                        <span className="text-black/40">Verified on</span>
-                        <span className="text-black/60">
-                          {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Minimal Chart */}
-            <div className="border border-gray-300/50 rounded-xl bg-white/35" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-              <div className="px-5 py-4 border-b border-black/5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-sm font-medium text-black">Trends</h2>
-                    <p className="text-[10px] text-black/30 mt-0.5">Portfolio value</p>
+                    <p className="text-xs text-gray-600 mb-3">
+                      VIP Membership • {nfts[0].discountPercent}% Discount Active
+                    </p>
+                    <a
+                      href="https://opensea.io/collection/privatecharterx-membership-card"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-lg transition-colors text-sm font-medium"
+                    >
+                      <ExternalLink size={14} />
+                      View on OpenSea
+                    </a>
                   </div>
                 </div>
-              </div>
-
-              <div className="p-5">
-                <ResponsiveContainer width="100%" height={280}>
-                  <AreaChart data={analytics.chartData}>
-                    <defs>
-                      <linearGradient id="colorValueMono" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#000000" stopOpacity={0.05}/>
-                        <stop offset="95%" stopColor="#000000" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="0" stroke="#00000008" vertical={false} />
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fontSize: 10, fill: '#00000040' }}
-                      stroke="#00000010"
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 10, fill: '#00000040' }}
-                      stroke="#00000010"
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'white',
-                        border: '1px solid rgba(0,0,0,0.05)',
-                        borderRadius: '2px',
-                        fontSize: '11px'
-                      }}
-                      formatter={(value) => formatCurrency(value)}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="value"
-                      stroke="#000000"
-                      strokeWidth={1}
-                      fillOpacity={1}
-                      fill="url(#colorValueMono)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Performance & Activity Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Performance */}
-              <div className="border border-gray-300/50 rounded-xl bg-white/35" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                <div className="px-5 py-4 border-b border-black/5">
-                  <h2 className="text-sm font-medium text-black">Performance</h2>
-                  <p className="text-[10px] text-black/30 mt-0.5">By asset type</p>
-                </div>
-
-                <div className="p-5">
-                  <div className="space-y-3">
-                    {analytics.assetPerformance.map((asset, index) => (
-                      <div key={index} className="flex items-center justify-between py-2 border-b border-black/5 last:border-0">
-                        <div className="flex items-center gap-3 flex-1">
-                          <div className="w-1 h-1 rounded-full bg-black/20" />
-                          <span className="text-xs text-black/60">{asset.name}</span>
+              ) : (
+                <div>
+                  <a
+                    href="https://opensea.io/collection/privatecharterx-membership-card"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block group"
+                  >
+                    <div className="w-full aspect-square bg-gradient-to-br from-gray-100 to-gray-50 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 hover:border-gray-900 transition-all duration-300 cursor-pointer mb-4 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-br from-transparent to-gray-900/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className="text-center relative z-10">
+                        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 mx-auto shadow-lg group-hover:scale-110 transition-transform">
+                          <Plus size={40} className="text-gray-400 group-hover:text-gray-900 transition-colors" />
                         </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-xs font-mono text-black">{asset.value}%</span>
-                          <span className={`text-[10px] font-mono ${
-                            asset.change >= 0 ? 'text-black/40' : 'text-black/40'
-                          }`}>
-                            {asset.change >= 0 ? '+' : ''}{asset.change}%
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Activity */}
-              <div className="border border-gray-300/50 rounded-xl bg-white/35" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                <div className="px-5 py-4 border-b border-black/5">
-                  <h2 className="text-sm font-medium text-black">Activity</h2>
-                  <p className="text-[10px] text-black/30 mt-0.5">Transaction volume</p>
-                </div>
-
-                <div className="p-5">
-                  <ResponsiveContainer width="100%" height={200}>
-                    <RechartsBarChart data={analytics.interactionData.slice(-10)}>
-                      <CartesianGrid strokeDasharray="0" stroke="#00000008" vertical={false} />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fontSize: 10, fill: '#00000040' }}
-                        stroke="#00000010"
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 10, fill: '#00000040' }}
-                        stroke="#00000010"
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: 'white',
-                          border: '1px solid rgba(0,0,0,0.05)',
-                          borderRadius: '2px',
-                          fontSize: '11px'
-                        }}
-                      />
-                      <Bar dataKey="transactions" fill="#000000" fillOpacity={0.1} radius={[2, 2, 0, 0]} />
-                    </RechartsBarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-
-            {/* Signed Transactions (Launchpad) */}
-            <LaunchpadTransactions
-              limit={5}
-              showHeader={true}
-              onViewAll={() => {
-                // Navigate to transactions page
-                const event = new CustomEvent('navigate-to-category', { detail: { category: 'transactions' } });
-                window.dispatchEvent(event);
-              }}
-            />
-
-            {/* Transactions */}
-            <div className="border border-gray-300/50 rounded-xl bg-white/35" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-              <div className="px-5 py-4 border-b border-black/5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-sm font-medium text-black">Transactions</h2>
-                    <p className="text-[10px] text-black/30 mt-0.5">Recent activity</p>
-                  </div>
-                  <button className="text-[10px] text-black/40 hover:text-black transition-colors">
-                    View all
-                  </button>
-                </div>
-              </div>
-
-              <div className="divide-y divide-black/5">
-                {transactions.length > 0 ? transactions.map((tx) => (
-                  <div key={tx.id} className="px-5 py-4 hover:bg-black/[0.01] transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-8 h-8 rounded-sm border border-black/10 flex items-center justify-center">
-                          {tx.type === 'buy' ? (
-                            <ArrowDownRight className="text-black/40" size={14} />
-                          ) : (
-                            <ArrowUpRight className="text-black/40" size={14} />
-                          )}
-                        </div>
-                        <div>
-                          <h3 className="text-xs font-medium text-black">
-                            {tx.type === 'buy' ? 'Buy' : 'Sell'} {tx.asset}
-                          </h3>
-                          <p className="text-[10px] text-black/30 mt-0.5">
-                            {tx.amount} tokens • {new Date(tx.timestamp).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs font-mono text-black">
-                          {tx.type === 'buy' ? '-' : '+'}{formatCurrency(tx.value)}
-                        </p>
-                        <a
-                          href={`https://basescan.org/tx/${tx.hash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[10px] text-black/30 hover:text-black font-mono flex items-center gap-1 mt-0.5 justify-end"
-                        >
-                          {tx.hash}
-                          <ExternalLink size={10} />
-                        </a>
+                        <p className="text-sm text-gray-600 font-medium">Your NFT Here</p>
+                        <p className="text-xs text-gray-400 mt-2">Click to buy on OpenSea</p>
                       </div>
                     </div>
+                  </a>
+                  <div className="bg-gray-50/50 rounded-lg p-4 border border-gray-200/50">
+                    <h4 className="text-xs font-bold text-gray-900 mb-2">Unlock VIP Benefits:</h4>
+                    <ul className="space-y-1.5 text-xs text-gray-600">
+                      <li className="flex items-center gap-2">
+                        <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                        Free Empty Leg Flight
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                        Up to 10% Permanent Discount
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                        Priority Support & Access
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                        $PVCX Token Rewards
+                      </li>
+                    </ul>
+                    <a
+                      href="https://opensea.io/collection/privatecharterx-membership-card"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg transition-colors text-sm font-medium mt-4"
+                    >
+                      <ExternalLink size={14} />
+                      Buy on OpenSea
+                    </a>
                   </div>
-                )) : (
-                  <div className="p-16 text-center">
-                    <div className="w-12 h-12 rounded-sm border border-black/10 flex items-center justify-center mx-auto mb-3">
-                      <Activity size={20} className="text-black/20" />
-                    </div>
-                    <p className="text-xs text-black/30">No transactions</p>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
