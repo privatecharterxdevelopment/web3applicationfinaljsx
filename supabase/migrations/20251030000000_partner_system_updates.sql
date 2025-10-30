@@ -148,6 +148,10 @@ CREATE POLICY "Partners can view own earnings" ON partner_earnings
 -- 5. Create commission calculation function
 -- ============================================================
 
+-- Drop existing function first to avoid return type conflicts
+DROP FUNCTION IF EXISTS calculate_partner_commission(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS calculate_partner_commission(TEXT, DECIMAL);
+
 CREATE OR REPLACE FUNCTION calculate_partner_commission(
   p_service_type TEXT,
   p_amount DECIMAL

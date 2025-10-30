@@ -4505,11 +4505,11 @@ const TokenizedAssetsGlassmorphic = () => {
                       </div>
                       <div className="flex-1 p-5 flex flex-col">
                         <div className="flex items-center justify-between mb-3">
-                          {adventure.rawData?.is_partner_offer ? (
+                          {jet.rawData?.is_partner_offer ? (
                             <div className="flex items-center gap-2">
                               <img
-                                src={adventure.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
-                                alt={adventure.rawData.partner_name || 'Partner'}
+                                src={jet.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
+                                alt={jet.rawData.partner_name || 'Partner'}
                                 className="h-6 w-auto object-contain rounded"
                                 onError={(e) => {
                                   e.target.src = 'https://via.placeholder.com/80x24/000/fff?text=Partner';
@@ -4523,10 +4523,6 @@ const TokenizedAssetsGlassmorphic = () => {
                               className="h-6 w-auto object-contain"
                             />
                           )}
-                          <div className="flex space-x-2">
-                            <button className="w-6 h-6 border border-gray-600/40 bg-white/20 rounded flex items-center justify-center text-xs backdrop-blur-sm">⎘</button>
-                            <button className="w-6 h-6 border border-gray-600/40 bg-white/20 rounded flex items-center justify-center text-xs backdrop-blur-sm">◉</button>
-                          </div>
                         </div>
                         <h3 className="text-base font-semibold text-gray-800 mb-4 line-clamp-2 overflow-hidden">{jet.name}</h3>
                         <div className="flex space-x-6 border-b border-gray-600/30 mb-5">
@@ -4806,10 +4802,6 @@ const TokenizedAssetsGlassmorphic = () => {
                         <div className="flex-1 p-5 flex flex-col">
                           <div className="flex items-center justify-between mb-3">
                             <span className="bg-black text-white px-2 py-1 rounded text-xs font-semibold uppercase">PCX JETS</span>
-                            <div className="flex space-x-2">
-                              <button className="w-6 h-6 border border-gray-300 bg-white rounded flex items-center justify-center text-xs">⎘</button>
-                              <button className="w-6 h-6 border border-gray-300 bg-white rounded flex items-center justify-center text-xs">◉</button>
-                            </div>
                           </div>
 
                           <h1 className="text-2xl font-semibold mb-4 text-gray-900">
@@ -5256,11 +5248,11 @@ const TokenizedAssetsGlassmorphic = () => {
                       </div>
                       <div className="flex-1 p-5 flex flex-col">
                         <div className="flex items-center justify-between mb-3">
-                          {adventure.rawData?.is_partner_offer ? (
+                          {heli.rawData?.is_partner_offer ? (
                             <div className="flex items-center gap-2">
                               <img
-                                src={adventure.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
-                                alt={adventure.rawData.partner_name || 'Partner'}
+                                src={heli.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
+                                alt={heli.rawData.partner_name || 'Partner'}
                                 className="h-6 w-auto object-contain rounded"
                                 onError={(e) => {
                                   e.target.src = 'https://via.placeholder.com/80x24/000/fff?text=Partner';
@@ -5274,10 +5266,6 @@ const TokenizedAssetsGlassmorphic = () => {
                               className="h-6 w-auto object-contain"
                             />
                           )}
-                          <div className="flex space-x-2">
-                            <button className="w-6 h-6 border border-gray-600/40 bg-white/20 rounded flex items-center justify-center text-xs backdrop-blur-sm">⎘</button>
-                            <button className="w-6 h-6 border border-gray-600/40 bg-white/20 rounded flex items-center justify-center text-xs backdrop-blur-sm">◉</button>
-                          </div>
                         </div>
                         <h3 className="text-base font-semibold text-gray-800 mb-4 line-clamp-2 overflow-hidden">{heli.name}</h3>
                         <div className="flex space-x-6 border-b border-gray-600/30 mb-5">
@@ -5876,11 +5864,11 @@ const TokenizedAssetsGlassmorphic = () => {
                       </div>
                       <div className="flex-1 p-5 flex flex-col">
                         <div className="flex items-center justify-between mb-3">
-                          {adventure.rawData?.is_partner_offer ? (
+                          {leg.rawData?.is_partner_offer ? (
                             <div className="flex items-center gap-2">
                               <img
-                                src={adventure.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
-                                alt={adventure.rawData.partner_name || 'Partner'}
+                                src={leg.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
+                                alt={leg.rawData.partner_name || 'Partner'}
                                 className="h-6 w-auto object-contain rounded"
                                 onError={(e) => {
                                   e.target.src = 'https://via.placeholder.com/80x24/000/fff?text=Partner';
@@ -6152,10 +6140,6 @@ const TokenizedAssetsGlassmorphic = () => {
                         <div className="flex-1 p-5 flex flex-col">
                           <div className="flex items-center justify-between mb-3">
                             <span className="bg-black text-white px-2 py-1 rounded text-xs font-semibold uppercase">PCX EMPTY LEG</span>
-                            <div className="flex space-x-2">
-                              <button className="w-6 h-6 border border-gray-300 bg-white rounded flex items-center justify-center text-xs">⎘</button>
-                              <button className="w-6 h-6 border border-gray-300 bg-white rounded flex items-center justify-center text-xs">◉</button>
-                            </div>
                           </div>
 
                           <h1 className="text-2xl font-semibold mb-4 text-gray-900">{selectedEmptyLeg.name}</h1>
@@ -6320,42 +6304,47 @@ const TokenizedAssetsGlassmorphic = () => {
                             </div>
                           </div>
 
-                          <div className="space-y-2 mb-4 text-sm border-t border-gray-100 pt-4">
+                          <div className="space-y-2.5 mb-4 border-t border-gray-100 pt-4">
                             {rawData.price ? (
                               <>
-                                <div className="flex justify-between items-center">
-                                  <span className="text-gray-600">Base Price:</span>
-                                  <span className="font-semibold text-gray-900">${(rawData.price / 1.081).toFixed(2)}</span>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600">Base Price</span>
+                                  <span className="text-gray-900">${(rawData.price / 1.081).toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between items-center">
-                                  <span className="text-gray-600">VAT (8.1%):</span>
-                                  <span className="font-semibold text-gray-900">${(rawData.price - (rawData.price / 1.081)).toFixed(2)}</span>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600">VAT (8.1%)</span>
+                                  <span className="text-gray-900">${(rawData.price - (rawData.price / 1.081)).toFixed(2)}</span>
                                 </div>
+
+                                {/* PVCX Earnings Box */}
                                 {(rawData.distance_km || rawData.distance) && (
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">Earnings $PVCX:</span>
-                                    <div className="flex items-center gap-1">
-                                      <Coins size={14} className="text-blue-600" />
-                                      <span className="font-semibold text-gray-900">
+                                  <div className="border border-gray-300 rounded-lg p-3 bg-blue-50/30 mt-3 mb-3">
+                                    <div className="flex justify-between items-center">
+                                      <div className="flex items-center gap-2">
+                                        <Coins size={16} className="text-blue-600" />
+                                        <span className="text-sm text-gray-700">Earnings $PVCX</span>
+                                      </div>
+                                      <span className="text-sm font-medium text-blue-900">
                                         {((rawData.distance_km || rawData.distance) * 1.5).toFixed(0)} $PVCX
                                       </span>
                                     </div>
                                   </div>
                                 )}
-                                <div className="flex justify-between items-center text-base font-bold pt-2 border-t border-gray-200">
-                                  <span className="text-gray-900">Final Price:</span>
-                                  <span className="text-gray-900">${rawData.price.toFixed(2)}</span>
+
+                                <div className="flex justify-between text-base pt-2 border-t border-gray-200">
+                                  <span className="font-semibold text-gray-900">Final Price</span>
+                                  <span className="font-semibold text-gray-900">${rawData.price.toFixed(2)}</span>
                                 </div>
                               </>
                             ) : (
                               <>
-                                <div className="flex justify-between items-center">
-                                  <span className="text-gray-600">Base Price:</span>
-                                  <span className="font-semibold text-gray-900">{selectedEmptyLeg.totalPrice}</span>
-                                </div>
-                                <div className="flex justify-between items-center text-base font-bold pt-2 border-t border-gray-200">
-                                  <span className="text-gray-900">Final Price:</span>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600">Price</span>
                                   <span className="text-gray-900">{selectedEmptyLeg.totalPrice}</span>
+                                </div>
+                                <div className="flex justify-between text-base pt-2 border-t border-gray-200">
+                                  <span className="font-semibold text-gray-900">Final Price</span>
+                                  <span className="font-semibold text-gray-900">{selectedEmptyLeg.totalPrice}</span>
                                 </div>
                               </>
                             )}
@@ -6380,6 +6369,78 @@ const TokenizedAssetsGlassmorphic = () => {
                         {address && (
                           <p className="text-xs text-gray-500 text-center mt-4">{address.slice(0, 6)}...{address.slice(-4)}</p>
                         )}
+                      </div>
+                    </div>
+
+                    {/* Contact Section - Need Assistance */}
+                    <div className="bg-white/35 rounded-lg border border-gray-300/50 p-8 mt-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                      <div className="text-center mb-6">
+                        <h3 className="text-xl font-semibold text-gray-900 mb-2">Need Assistance?</h3>
+                        <p className="text-sm text-gray-600">Our team is here to help you find the perfect flight</p>
+                      </div>
+
+                      {/* Team Bubbles */}
+                      <div className="flex justify-center gap-4 mb-6">
+                        <div className="flex flex-col items-center">
+                          <div className="w-16 h-16 rounded-full bg-gray-200 border-2 border-white shadow-md flex items-center justify-center text-2xl">
+                            👨‍✈️
+                          </div>
+                          <span className="text-xs text-gray-600 mt-2">Expert</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <div className="w-16 h-16 rounded-full bg-gray-200 border-2 border-white shadow-md flex items-center justify-center text-2xl">
+                            👩‍✈️
+                          </div>
+                          <span className="text-xs text-gray-600 mt-2">Advisor</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <div className="w-16 h-16 rounded-full bg-gray-200 border-2 border-white shadow-md flex items-center justify-center text-2xl">
+                            🧑‍✈️
+                          </div>
+                          <span className="text-xs text-gray-600 mt-2">Support</span>
+                        </div>
+                      </div>
+
+                      {/* Contact Info */}
+                      <div className="flex items-center justify-center gap-2 mb-6">
+                        <Mail size={18} className="text-gray-600" />
+                        <a href="mailto:bookings@privatecharterx.com" className="text-gray-900 hover:text-black font-medium">
+                          bookings@privatecharterx.com
+                        </a>
+                      </div>
+
+                      {/* Social Share */}
+                      <div className="border-t border-gray-300 pt-6">
+                        <p className="text-sm text-gray-600 text-center mb-3">Share this flight</p>
+                        <div className="flex justify-center gap-3">
+                          <button
+                            onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out this flight on PrivateCharterX!')}&url=${encodeURIComponent(window.location.href)}`, '_blank')}
+                            className="w-10 h-10 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"></path></svg>
+                          </button>
+                          <button
+                            onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank')}
+                            className="w-10 h-10 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"></path></svg>
+                          </button>
+                          <button
+                            onClick={() => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`, '_blank')}
+                            className="w-10 h-10 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"></path><circle cx="4" cy="4" r="2"></circle></svg>
+                          </button>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(window.location.href);
+                              alert('Link copied to clipboard!');
+                            }}
+                            className="w-10 h-10 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -6614,10 +6675,6 @@ const TokenizedAssetsGlassmorphic = () => {
                               className="h-6 w-auto object-contain"
                             />
                           )}
-                          <div className="flex space-x-2">
-                            <button className="w-6 h-6 border border-gray-600/40 bg-white/20 rounded flex items-center justify-center text-xs backdrop-blur-sm">⎘</button>
-                            <button className="w-6 h-6 border border-gray-600/40 bg-white/20 rounded flex items-center justify-center text-xs backdrop-blur-sm">◉</button>
-                          </div>
                         </div>
                         <h3 className="text-base font-semibold text-gray-800 mb-4 line-clamp-2 overflow-hidden">{adventure.name}</h3>
                         <div className="flex space-x-6 border-b border-gray-600/30 mb-5">
@@ -6637,15 +6694,10 @@ const TokenizedAssetsGlassmorphic = () => {
                             <span className="text-xs text-gray-600">Duration</span>
                             <span className="text-sm font-semibold text-gray-800">{adventure.yield}</span>
                           </div>
-                          <div className="flex flex-col space-y-1">
-                            <span className="text-xs text-gray-600">Level</span>
-                            <span className="text-sm font-semibold text-gray-800">{adventure.period}</span>
-                          </div>
                         </div>
 
                         <div className="flex space-x-4 pt-4 border-t border-gray-600/30 text-xs">
                           <a href="#" className="text-gray-600 hover:text-gray-800">See details ↗</a>
-                          <a href="#" className="text-gray-600 hover:text-gray-800">Specifications ⚖</a>
                         </div>
                       </div>
                     </div>
@@ -6885,10 +6937,6 @@ const TokenizedAssetsGlassmorphic = () => {
                                 className="h-7 w-auto object-contain"
                               />
                             )}
-                            <div className="flex space-x-2">
-                              <button className="w-6 h-6 border border-gray-300 bg-white rounded flex items-center justify-center text-xs">⎘</button>
-                              <button className="w-6 h-6 border border-gray-300 bg-white rounded flex items-center justify-center text-xs">◉</button>
-                            </div>
                           </div>
 
                           <h1 className="text-2xl font-semibold mb-2 text-gray-900">{selectedAdventure.name}</h1>
@@ -7097,38 +7145,43 @@ const TokenizedAssetsGlassmorphic = () => {
                             </div>
                           </div>
 
-                          <div className="space-y-2 mb-4 text-sm">
+                          <div className="space-y-2.5 mb-4">
                             {rawData.price && !rawData.price_on_request ? (
                               <>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Base Price:</span>
-                                  <span className="font-bold text-gray-900">€{(rawData.price / 1.081).toFixed(2)}</span>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600">Base Price</span>
+                                  <span className="text-gray-900">€{(rawData.price / 1.081).toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">VAT (8.1%):</span>
-                                  <span className="font-bold text-gray-900">€{(rawData.price - (rawData.price / 1.081)).toFixed(2)}</span>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600">VAT (8.1%)</span>
+                                  <span className="text-gray-900">€{(rawData.price - (rawData.price / 1.081)).toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between items-center">
-                                  <span className="text-gray-600">Earnings $PVCX:</span>
-                                  <div className="flex items-center gap-1">
-                                    <Coins size={14} className="text-blue-600" />
-                                    <span className="font-bold text-gray-900">{(rawData.price * 1.5).toFixed(0)} $PVCX</span>
+
+                                {/* PVCX Earnings Box */}
+                                <div className="border border-gray-300 rounded-lg p-3 bg-blue-50/30 mt-3 mb-3">
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center gap-2">
+                                      <Coins size={16} className="text-blue-600" />
+                                      <span className="text-sm text-gray-700">Earnings $PVCX</span>
+                                    </div>
+                                    <span className="text-sm font-medium text-blue-900">{(rawData.price * 1.5).toFixed(0)} $PVCX</span>
                                   </div>
                                 </div>
-                                <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-300">
-                                  <span>Final Price:</span>
-                                  <span>€{rawData.price.toFixed(2)}</span>
+
+                                <div className="flex justify-between text-base pt-2 border-t border-gray-300">
+                                  <span className="font-semibold text-gray-900">Final Price</span>
+                                  <span className="font-semibold text-gray-900">€{rawData.price.toFixed(2)}</span>
                                 </div>
                               </>
                             ) : (
                               <>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Base Price:</span>
-                                  <span className="font-bold text-gray-900">{priceLabel}</span>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600">Price</span>
+                                  <span className="text-gray-900">{priceLabel}</span>
                                 </div>
-                                <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-300">
-                                  <span>Final Price:</span>
-                                  <span>{priceLabel}</span>
+                                <div className="flex justify-between text-base pt-2 border-t border-gray-300">
+                                  <span className="font-semibold text-gray-900">Final Price</span>
+                                  <span className="font-semibold text-gray-900">{priceLabel}</span>
                                 </div>
                               </>
                             )}
@@ -7279,6 +7332,78 @@ const TokenizedAssetsGlassmorphic = () => {
                         {address && (
                           <p className="text-xs text-gray-500 text-center mt-4">{address.slice(0, 6)}...{address.slice(-4)}</p>
                         )}
+                      </div>
+                    </div>
+
+                    {/* Contact Section - Need Assistance */}
+                    <div className="bg-white/35 rounded-lg border border-gray-300/50 p-8 mt-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                      <div className="text-center mb-6">
+                        <h3 className="text-xl font-semibold text-gray-900 mb-2">Need Assistance?</h3>
+                        <p className="text-sm text-gray-600">Our team is here to help you plan the perfect adventure</p>
+                      </div>
+
+                      {/* Team Bubbles */}
+                      <div className="flex justify-center gap-4 mb-6">
+                        <div className="flex flex-col items-center">
+                          <div className="w-16 h-16 rounded-full bg-gray-200 border-2 border-white shadow-md flex items-center justify-center text-2xl">
+                            👨‍💼
+                          </div>
+                          <span className="text-xs text-gray-600 mt-2">Expert</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <div className="w-16 h-16 rounded-full bg-gray-200 border-2 border-white shadow-md flex items-center justify-center text-2xl">
+                            👩‍💼
+                          </div>
+                          <span className="text-xs text-gray-600 mt-2">Advisor</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <div className="w-16 h-16 rounded-full bg-gray-200 border-2 border-white shadow-md flex items-center justify-center text-2xl">
+                            🧑‍💼
+                          </div>
+                          <span className="text-xs text-gray-600 mt-2">Support</span>
+                        </div>
+                      </div>
+
+                      {/* Contact Info */}
+                      <div className="flex items-center justify-center gap-2 mb-6">
+                        <Mail size={18} className="text-gray-600" />
+                        <a href="mailto:bookings@privatecharterx.com" className="text-gray-900 hover:text-black font-medium">
+                          bookings@privatecharterx.com
+                        </a>
+                      </div>
+
+                      {/* Social Share */}
+                      <div className="border-t border-gray-300 pt-6">
+                        <p className="text-sm text-gray-600 text-center mb-3">Share this adventure</p>
+                        <div className="flex justify-center gap-3">
+                          <button
+                            onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out this adventure on PrivateCharterX!')}&url=${encodeURIComponent(window.location.href)}`, '_blank')}
+                            className="w-10 h-10 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"></path></svg>
+                          </button>
+                          <button
+                            onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank')}
+                            className="w-10 h-10 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"></path></svg>
+                          </button>
+                          <button
+                            onClick={() => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`, '_blank')}
+                            className="w-10 h-10 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"></path><circle cx="4" cy="4" r="2"></circle></svg>
+                          </button>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(window.location.href);
+                              alert('Link copied to clipboard!');
+                            }}
+                            className="w-10 h-10 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -7469,28 +7594,7 @@ const TokenizedAssetsGlassmorphic = () => {
                       </div>
                       <div className="flex-1 p-5 flex flex-col">
                         <div className="flex items-center justify-between mb-3">
-                          {adventure.rawData?.is_partner_offer ? (
-                            <div className="flex items-center gap-2">
-                              <img
-                                src={adventure.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
-                                alt={adventure.rawData.partner_name || 'Partner'}
-                                className="h-6 w-auto object-contain rounded"
-                                onError={(e) => {
-                                  e.target.src = 'https://via.placeholder.com/80x24/000/fff?text=Partner';
-                                }}
-                              />
-                            </div>
-                          ) : (
-                            <img
-                              src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_logo_vectorized.glb.png"
-                              alt="PrivateCharterX"
-                              className="h-6 w-auto object-contain"
-                            />
-                          )}
-                          <div className="flex space-x-2">
-                            <button className="w-6 h-6 border border-gray-600/40 bg-white/20 rounded flex items-center justify-center text-xs backdrop-blur-sm">⎘</button>
-                            <button className="w-6 h-6 border border-gray-600/40 bg-white/20 rounded flex items-center justify-center text-xs backdrop-blur-sm">◉</button>
-                          </div>
+                          <span className="bg-black text-white px-2 py-1 rounded text-xs font-semibold uppercase">PCX CARS</span>
                         </div>
                         <h3 className="text-base font-semibold text-gray-800 mb-4 line-clamp-2 overflow-hidden">{car.name}</h3>
                         <div className="flex space-x-6 border-b border-gray-600/30 mb-5">
@@ -7752,10 +7856,6 @@ const TokenizedAssetsGlassmorphic = () => {
                         <div className="flex-1 p-5 flex flex-col">
                           <div className="flex items-center justify-between mb-3">
                             <span className="bg-black text-white px-2 py-1 rounded text-xs font-semibold uppercase">PCX CARS</span>
-                            <div className="flex space-x-2">
-                              <button className="w-6 h-6 border border-gray-300 bg-white rounded flex items-center justify-center text-xs">⎘</button>
-                              <button className="w-6 h-6 border border-gray-300 bg-white rounded flex items-center justify-center text-xs">◉</button>
-                            </div>
                           </div>
 
                           <h1 className="text-2xl font-semibold mb-2 text-gray-900">{selectedLuxuryCar.name}</h1>
@@ -7808,7 +7908,7 @@ const TokenizedAssetsGlassmorphic = () => {
                     {/* Bottom Section: Car Details + Booking */}
                     <div className="grid grid-cols-3 gap-6">
                       {/* Left: Car Details (tabbed content) */}
-                      <div className="col-span-2 bg-white/35 rounded-lg border border-gray-300/50 p-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                      <div className="col-span-2 bg-white/35 rounded-lg border border-gray-300/50 p-6 max-h-[600px] overflow-y-auto" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
                         {luxuryCarDetailTab === 'details' && (
                           <div>
                             <h2 className="text-lg font-semibold text-gray-900 mb-4">Car Details</h2>
@@ -7910,7 +8010,7 @@ const TokenizedAssetsGlassmorphic = () => {
                       </div>
 
                       {/* Right: Book This Car Sidebar */}
-                      <div className="bg-white/35 rounded-lg border border-gray-300/50 p-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                      <div className="bg-white/35 rounded-lg border border-gray-300/50 p-6 max-h-[600px] overflow-y-auto" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
                         <h2 className="text-lg font-semibold text-gray-900 mb-6">Book This Car</h2>
 
                         <div className="space-y-3 mb-6">
@@ -8224,8 +8324,6 @@ const TokenizedAssetsGlassmorphic = () => {
                       <div className="flex items-center justify-between mb-3">
                         <span className="bg-black text-white px-2 py-1 rounded text-xs font-semibold uppercase">PCX</span>
                         <div className="flex space-x-2">
-                          <button className="w-6 h-6 border border-gray-600/40 bg-white/20 rounded flex items-center justify-center text-xs backdrop-blur-sm">⎘</button>
-                          <button className="w-6 h-6 border border-gray-600/40 bg-white/20 rounded flex items-center justify-center text-xs backdrop-blur-sm">◉</button>
                         </div>
                       </div>
 
@@ -8301,8 +8399,6 @@ const TokenizedAssetsGlassmorphic = () => {
                     <div className="flex items-center justify-between mb-3">
                       <span className="bg-black text-white px-2 py-1 rounded text-xs font-semibold uppercase">PCX</span>
                       <div className="flex space-x-2">
-                        <button className="w-6 h-6 border border-gray-300 bg-white rounded flex items-center justify-center text-xs">⎘</button>
-                        <button className="w-6 h-6 border border-gray-300 bg-white rounded flex items-center justify-center text-xs">◉</button>
                       </div>
                     </div>
 

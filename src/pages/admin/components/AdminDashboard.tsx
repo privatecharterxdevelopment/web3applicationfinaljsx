@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, FileCheck, Settings, Plane, Tag, BarChart3, UserCog, Building2 } from 'lucide-react';
+import { Users, FileCheck, Settings, Plane, Tag, BarChart3, UserCog, Building2, DollarSign } from 'lucide-react';
 import BookingRequestManagement from './BookingRequestManagement';
 import CO2CertificateManagement from './CO2CertificateManagement';
 import KYCVerificationManagement from './KYCVerificationManagement';
@@ -7,6 +7,7 @@ import UserRequestManagement from './UserRequestManagement';
 import AdminAnalytics from './AdminAnalytics';
 import AdminManagement from './AdminManagement';
 import PartnerVerificationManagement from './PartnerVerificationManagement';
+import PaymentApprovalManagement from './PaymentApprovalManagement';
 import { useAdminPermissions } from '../../../hooks/useAdminPermissions';
 
 export default function AdminDashboard() {
@@ -33,6 +34,8 @@ export default function AdminDashboard() {
         return <BookingRequestManagement />;
       case 'partner_verification':
         return <PartnerVerificationManagement />;
+      case 'payment_approvals':
+        return <PaymentApprovalManagement />;
       case 'admin_management':
         return <AdminManagement />;
       default:
@@ -97,6 +100,17 @@ export default function AdminDashboard() {
                 >
                   <Building2 size={18} />
                   <span>Partner Verification</span>
+                </button>
+              )}
+
+              {isSuperAdmin && (
+                <button
+                  onClick={() => setActiveView('payment_approvals')}
+                  className={`w-full flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeView === 'payment_approvals' ? 'bg-black text-white' : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                >
+                  <DollarSign size={18} />
+                  <span>Payment Approvals</span>
                 </button>
               )}
 

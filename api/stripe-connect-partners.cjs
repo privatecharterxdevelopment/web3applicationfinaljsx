@@ -738,6 +738,251 @@ async function getAdminStripeDashboardLinks(req, res) {
   }
 }
 
+/**
+ * 11. ADMIN APPROVE PAYMENT
+ * Admin reviews and approves payment to be captured and transferred to partner
+ * Called after partner confirms service completion
+ */
+async function adminApprovePayment(req, res) {
+  try {
+    const { bookingId, partnerId, adminId } = req.body;
+
+    // Validate admin authorization
+    const { data: admin, error: adminError } = await getSupabase()
+      .from('users')
+      .select('user_role')
+      .eq('id', adminId)
+      .single();
+
+    if (adminError || admin?.user_role !== 'admin') {
+      return res.status(403).json({ error: 'Unauthorized: Admin access required' });
+    }
+
+    // Get booking details
+    const { data: booking, error: bookingError } = await getSupabase()
+      .from('partner_bookings')
+      .select('*')
+      .eq('id', bookingId)
+      .eq('partner_id', partnerId)
+      .single();
+
+    if (bookingError || !booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    if (booking.payment_status !== 'held_escrow') {
+      return res.status(400).json({ error: 'Payment not in escrow status' });
+    }
+
+    // Get partner's Stripe account
+    const { data: partner, error: partnerError } = await getSupabase()
+      .from('users')
+      .select('stripe_connect_account_id, stripe_payouts_enabled, first_name, last_name, company_name')
+      .eq('id', partnerId)
+      .single();
+
+    if (partnerError || !partner?.stripe_connect_account_id) {
+      return res.status(404).json({ error: 'Partner Stripe account not found' });
+    }
+
+    if (!partner.stripe_payouts_enabled) {
+      return res.status(403).json({ error: 'Partner account not yet verified for payouts' });
+    }
+
+    // 1. Update booking approval status
+    await getSupabase()
+      .from('partner_bookings')
+      .update({
+        payment_approval_status: 'approved',
+        payment_approved_by: adminId,
+        payment_approved_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', bookingId);
+
+    // 2. Capture the payment intent (money goes to platform account)
+    const paymentIntent = await getStripe().paymentIntents.capture(
+      booking.stripe_payment_intent_id
+    );
+
+    // 3. Calculate transfer amount (total - commission)
+    const transferAmount = Math.round(booking.partner_earnings * 100); // Convert to cents
+
+    // 4. Transfer to partner's Connect account
+    const transfer = await getStripe().transfers.create({
+      amount: transferAmount,
+      currency: (booking.currency || 'EUR').toLowerCase(),
+      destination: partner.stripe_connect_account_id,
+      description: `Booking ${bookingId.slice(0, 8)} - ${booking.service_type}`,
+      metadata: {
+        booking_id: bookingId,
+        partner_id: partnerId,
+        service_type: booking.service_type,
+        commission_rate: booking.commission_rate.toString(),
+        commission_amount: booking.commission_amount.toString(),
+        approved_by: adminId
+      }
+    });
+
+    // 5. Update booking status
+    await getSupabase()
+      .from('partner_bookings')
+      .update({
+        status: 'completed',
+        payment_status: 'captured_transferred',
+        stripe_transfer_id: transfer.id,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', bookingId);
+
+    // 6. Record in partner_earnings
+    await getSupabase()
+      .from('partner_earnings')
+      .insert({
+        partner_id: partnerId,
+        booking_id: bookingId,
+        gross_amount: booking.total_amount,
+        commission_rate: booking.commission_rate,
+        commission_amount: booking.commission_amount,
+        net_earnings: booking.partner_earnings,
+        currency: booking.currency || 'EUR',
+        service_type: booking.service_type,
+        service_title: `${booking.service_type} booking`,
+        stripe_transfer_id: transfer.id,
+        transfer_date: new Date().toISOString(),
+        status: 'paid'
+      });
+
+    // 7. Notify partner
+    await getSupabase()
+      .from('partner_notifications')
+      .insert({
+        partner_id: partnerId,
+        booking_id: bookingId,
+        type: 'payment_received',
+        title: 'Payment Approved & Transferred',
+        message: `Your payment of ${booking.currency} ${booking.partner_earnings.toFixed(2)} has been approved by admin and transferred to your account. Commission: ${booking.currency} ${booking.commission_amount.toFixed(2)} (${(booking.commission_rate * 100).toFixed(0)}%)`,
+        read: false
+      });
+
+    // 8. Notify customer
+    await getSupabase()
+      .from('notifications')
+      .insert({
+        user_id: booking.customer_id,
+        type: 'booking_completed',
+        title: 'Service Completed',
+        message: 'Your booking has been completed. Payment has been processed. Thank you for using PrivateCharterX!',
+        metadata: { booking_id: bookingId },
+        is_read: false
+      });
+
+    res.json({
+      success: true,
+      message: 'Payment approved and transferred to partner',
+      transfer: {
+        id: transfer.id,
+        amount: booking.partner_earnings,
+        currency: booking.currency,
+        commission: booking.commission_amount,
+        partnerName: partner.company_name || `${partner.first_name} ${partner.last_name}`
+      }
+    });
+
+  } catch (error) {
+    console.error('Error approving payment:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
+/**
+ * 12. ADMIN REJECT PAYMENT
+ * Admin rejects payment and refunds customer
+ */
+async function adminRejectPayment(req, res) {
+  try {
+    const { bookingId, adminId, reason } = req.body;
+
+    // Validate admin authorization
+    const { data: admin, error: adminError } = await getSupabase()
+      .from('users')
+      .select('user_role')
+      .eq('id', adminId)
+      .single();
+
+    if (adminError || admin?.user_role !== 'admin') {
+      return res.status(403).json({ error: 'Unauthorized: Admin access required' });
+    }
+
+    // Get booking details
+    const { data: booking, error: bookingError } = await getSupabase()
+      .from('partner_bookings')
+      .select('*')
+      .eq('id', bookingId)
+      .single();
+
+    if (bookingError || !booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    if (booking.payment_status !== 'held_escrow') {
+      return res.status(400).json({ error: 'Payment not in escrow status' });
+    }
+
+    // Cancel payment intent (releases authorization, no charge to customer)
+    if (booking.stripe_payment_intent_id) {
+      await getStripe().paymentIntents.cancel(booking.stripe_payment_intent_id);
+    }
+
+    // Update booking status
+    await getSupabase()
+      .from('partner_bookings')
+      .update({
+        status: 'cancelled',
+        payment_status: 'refunded',
+        payment_approval_status: 'rejected',
+        payment_approved_by: adminId,
+        payment_approved_at: new Date().toISOString(),
+        payment_rejection_reason: reason,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', bookingId);
+
+    // Notify partner
+    await getSupabase()
+      .from('partner_notifications')
+      .insert({
+        partner_id: booking.partner_id,
+        booking_id: bookingId,
+        type: 'payment_rejected',
+        title: 'Payment Rejected by Admin',
+        message: `Payment for booking #${bookingId.slice(0, 8)} has been rejected. Reason: ${reason}. Customer has been refunded.`,
+        read: false
+      });
+
+    // Notify customer
+    await getSupabase()
+      .from('notifications')
+      .insert({
+        user_id: booking.customer_id,
+        type: 'booking_refunded',
+        title: 'Booking Cancelled - Refund Issued',
+        message: `Your booking has been cancelled and you have been refunded. ${reason ? `Reason: ${reason}` : ''}`,
+        metadata: { booking_id: bookingId },
+        is_read: false
+      });
+
+    res.json({
+      success: true,
+      message: 'Payment rejected and customer refunded'
+    });
+
+  } catch (error) {
+    console.error('Error rejecting payment:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
 // ============================================================
 // Helper Functions
 // ============================================================
@@ -780,7 +1025,9 @@ module.exports = {
   captureAndTransferToPartner,
   getPartnerEarnings,
   getExpressDashboardLink,
-  getAdminStripeDashboardLinks
+  getAdminStripeDashboardLinks,
+  adminApprovePayment,
+  adminRejectPayment
 };
 
 // ============================================================
@@ -794,21 +1041,25 @@ const router = express.Router();
 router.post('/partners/create-connect-account', createConnectAccount);
 router.post('/partners/onboarding-link', getOnboardingLink);
 router.get('/partners/account-status', getAccountStatus);
-router.post('/partners/express-dashboard-link', getExpressDashboardLink); // NEW - Partner Stripe Dashboard
+router.post('/partners/express-dashboard-link', getExpressDashboardLink);
 
 // Booking management
 router.post('/partners/accept-booking', acceptBooking);
 router.post('/partners/reject-booking', rejectBooking);
 
-// Payment flow
+// Payment flow (DEPRECATED - replaced by admin approval)
+// router.post('/partners/capture-and-transfer', captureAndTransferToPartner);
 router.post('/partners/create-booking-payment', createPartnerBookingPayment);
-router.post('/partners/capture-and-transfer', captureAndTransferToPartner);
 
 // Earnings
 router.get('/partners/earnings', getPartnerEarnings);
 
+// Admin payment approvals (NEW)
+router.post('/admin/approve-payment', adminApprovePayment);
+router.post('/admin/reject-payment', adminRejectPayment);
+
 // Admin Stripe Dashboard
-router.get('/admin/stripe-dashboard-links', getAdminStripeDashboardLinks); // NEW - Admin Stripe Links
+router.get('/admin/stripe-dashboard-links', getAdminStripeDashboardLinks);
 
 module.exports = router;
 */
