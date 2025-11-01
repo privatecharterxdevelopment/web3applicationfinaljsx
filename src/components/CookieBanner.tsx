@@ -120,32 +120,15 @@ export default function CookieBanner() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-1 left-1 right-1 z-50 mx-1">
-      {/* Glassmorphic Container */}
-      <div className="relative backdrop-blur-xl bg-gradient-to-br from-gray-800/80 via-gray-700/70 to-gray-900/80 border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
-        {/* Animated Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/10"></div>
-        </div>
-
+    <div className="fixed bottom-0 left-0 right-0 z-50">
+      {/* Full-width Light Grey Container */}
+      <div className="bg-gray-200 border-t border-gray-300">
         {/* Content */}
-        <div className="relative z-10 p-6 flex items-center justify-between gap-6">
-          {/* Left: Rotating Logo */}
-          <div className="flex-shrink-0">
-            <div className="relative w-16 h-16">
-              {/* Rotating logo container */}
-              <img
-                src="https://i.ibb.co/DPF5g3Sk/iu42DU1.png"
-                alt="PrivateCharterX"
-                className="w-full h-full object-contain animate-spin-slow"
-              />
-            </div>
-          </div>
-
-          {/* Middle: Text Content */}
-          <div className="flex-1 flex items-center gap-4">
-            <Cookie size={24} className="text-white/90 flex-shrink-0 hidden sm:block" />
-            <p className="text-sm font-light text-white/90 leading-relaxed">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-6">
+          {/* Left: Cookie Icon */}
+          <div className="flex items-center gap-4 flex-1">
+            <Cookie size={24} className="text-gray-700 flex-shrink-0" />
+            <p className="text-sm text-gray-700 leading-relaxed">
               We use cookies to enhance your experience while prioritizing your privacy and data protection.
               By continuing to visit this site you agree to our use of cookies.
             </p>
@@ -155,34 +138,19 @@ export default function CookieBanner() {
           <div className="flex gap-3 flex-shrink-0">
             <button
               onClick={handleAccept}
-              className="px-6 py-2.5 bg-white text-black rounded-lg text-sm font-medium hover:bg-gray-100 transition-all duration-200 hover:scale-105 shadow-lg"
+              className="px-6 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-black transition-colors"
             >
               Accept
             </button>
             <button
               onClick={handleLearnMore}
-              className="px-6 py-2.5 border border-white/30 backdrop-blur-sm bg-white/5 text-white rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
+              className="px-6 py-2.5 border border-gray-400 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
             >
               Learn More
             </button>
           </div>
         </div>
       </div>
-
-      {/* CSS for slow rotation animation */}
-      <style jsx>{`
-        @keyframes spin-slow {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-        .animate-spin-slow {
-          animation: spin-slow 8s linear infinite;
-        }
-      `}</style>
     </div>
   );
 }

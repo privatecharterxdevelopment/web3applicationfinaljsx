@@ -117,6 +117,7 @@ const Globe3D: React.FC = () => {
       });
 
       globe = new THREE.Points(geometry, material);
+      globe.position.y = 0; // Center the globe vertically
       scene.add(globe);
     }
 
@@ -160,6 +161,7 @@ const Globe3D: React.FC = () => {
       });
 
       cityMarkers = cityGroup;
+      cityMarkers.position.y = 0; // Match globe position
       scene.add(cityMarkers);
     }
 
@@ -226,6 +228,7 @@ const Globe3D: React.FC = () => {
       });
 
       flightLines = lineGroup;
+      flightLines.position.y = 0; // Match globe position
       scene.add(flightLines);
     }
 
@@ -269,7 +272,7 @@ const Globe3D: React.FC = () => {
         1,
         2000
       );
-      camera.position.z = 600;
+      camera.position.z = 520;
 
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setSize(containerRef.current!.clientWidth, containerRef.current!.clientHeight);
@@ -450,7 +453,7 @@ const Globe3D: React.FC = () => {
 
       camera.position.x += (mouseX * 0.2 - camera.position.x) * 0.05;
       camera.position.y += (-mouseY * 0.2 - camera.position.y) * 0.05;
-      camera.position.z = 600 + Math.sin(time * 0.3) * 15;
+      camera.position.z = 520 + Math.sin(time * 0.3) * 15;
 
       camera.lookAt(scene.position);
       renderer.render(scene, camera);

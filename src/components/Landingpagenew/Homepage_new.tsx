@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import FloatingSearchModal from './FloatingSearchModal';
 import AnimatedSection from '../AnimatedSection';
 import LandingHeader from './LandingHeader';
 import Globe3D from '../Globe3D';
@@ -213,53 +214,39 @@ function Homepage() {
   // All page navigation now handled by React Router
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 px-4 py-4 overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 px-4 py-4 overflow-x-hidden">
       <LandingHeader onGetStarted={handleGetStarted} />
 
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto rounded-2xl overflow-hidden shadow-xl border border-white/20 relative backdrop-blur-xl bg-white/10 min-h-[600px]">
-        {/* Background Globe */}
-        <div className="absolute inset-0 z-0">
-          <div className="w-full h-full absolute opacity-60">
+      <div className="max-w-7xl mx-auto rounded-2xl overflow-visible relative backdrop-blur-3xl bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 min-h-[600px]">
+        {/* Frosted Glass Texture Overlay */}
+        <div className="absolute inset-0 pointer-events-none z-[1]" style={{
+          backgroundImage: `
+            url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E"),
+            repeating-linear-gradient(0deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 1px, transparent 1px, transparent 2px),
+            repeating-linear-gradient(90deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 1px, transparent 1px, transparent 2px),
+            radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.3), transparent 50%),
+            radial-gradient(ellipse at 70% 80%, rgba(200,200,200,0.2), transparent 50%),
+            radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.15), transparent 70%)
+          `,
+          backgroundSize: '200px 200px, 2px 2px, 2px 2px, 100% 100%, 100% 100%, 100% 100%',
+          filter: 'blur(0.3px)'
+        }}></div>
+
+        {/* Background Globe - Full Color - Centered */}
+        <div className="absolute inset-0 z-0 flex items-center justify-center">
+          <div className="w-full h-full">
             <Globe3D />
           </div>
+          {/* Grey Overlay */}
+          <div className="absolute inset-0 bg-gray-100/40 pointer-events-none"></div>
         </div>
 
-        {/* Glassmorphic overlay for better text readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/40 to-white/20 backdrop-blur-md z-10"></div>
-
-        {/* Content overlay - 3 column layout */}
-        <section className="absolute inset-0 z-20 px-4 sm:px-8 flex items-center">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center w-full">
-            {/* Left: Title */}
-            <div className="flex flex-col justify-center">
-              <div className="mb-6 flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="bg-gray-100/90 text-gray-700 px-3 py-1 rounded-full text-xs font-medium tracking-wide uppercase backdrop-blur-sm">
-                  web3 and ai powered multi charter
-                </span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-light text-gray-900 leading-tight tracking-tight">
-                Tokenizing global mobility<br />
-                <span className="font-normal">aviation. assets. benefits.</span>
-              </h1>
-            </div>
-
-            {/* Middle: Globe (empty - globe is in background) */}
-            <div className="hidden lg:block"></div>
-
-            {/* Right: Description */}
-            <div className="flex items-center justify-center lg:justify-end">
-              <p className="text-sm sm:text-base text-gray-600 leading-relaxed max-w-sm">
-                All-in-one Web3 mobility platform: Asset tokenization, private jet charters, empty legs, luxury cars, and crypto-enabled rides.
-              </p>
-            </div>
-          </div>
+        {/* Content overlay - Centered Floating Search Modal */}
+        <section className="absolute inset-0 z-20 flex items-center justify-center px-8">
+          <FloatingSearchModal />
         </section>
       </div>
-
-      {/* Partner Logo Carousel */}
-      <CompactPartnerCarousel />
 
         {/* Service Cards - 8 Cards in Clean Grid */}
         <section className="px-4 sm:px-8 py-12 sm:py-16 max-w-6xl mx-auto">
@@ -632,6 +619,9 @@ function Homepage() {
             </div>
           </div>
         </section>
+
+      {/* Partner Logo Carousel */}
+      <CompactPartnerCarousel />
 
         {/* Steps Section - Horizontal Timeline */}
         <section className="px-4 sm:px-8 py-12 sm:py-20 max-w-7xl mx-auto">
