@@ -1,801 +1,929 @@
 import React, { useState, useEffect } from 'react';
 import {
-  ShoppingBag, FileText, TrendingUp, Receipt, DollarSign, AlertCircle,
-  CheckCircle, X, MoreVertical, ArrowUpRight, ArrowDownRight, ChevronLeft,
-  ChevronRight, Calendar as CalendarIcon
+  User, Mail, Calendar, DollarSign, TrendingUp, Activity, Clock,
+  Rocket, CheckCircle, XCircle, AlertCircle, ArrowRight, Bell,
+  Wallet, Package, MessageSquare, Heart, MapPin, Plane, Coins, Building2
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
-import { LineChart, Line, ResponsiveContainer } from 'recharts';
+import { useAccount } from 'wagmi';
+import { useNavigate } from 'react-router-dom';
 
 export default function ProfileOverviewEnhanced() {
   const { user } = useAuth();
+  const { address, isConnected } = useAccount();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [selectedCard, setSelectedCard] = useState('requests');
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [activeTab, setActiveTab] = useState('overview'); // overview, requests, investments, waitlists, uto, sto
 
-  // Dashboard metrics
-  const [metrics, setMetrics] = useState({
+  // State for live data
+  const [stats, setStats] = useState({
     totalBookings: 0,
-    newRequests: 0,
-    tokenizationProjects: 0,
-    totalTransactions: 0,
-    pvcxBalance: 0,
-    incidents: 0
+    activeRequests: 0,
+    totalInvestments: 0,
+    waitlistCount: 0,
+    notifications: 0,
+    utoTokens: 0,
+    stoTokens: 0
   });
 
-  const [balance, setBalance] = useState({
-    current: 0,
-    monthlyIncome: 0,
-    monthlyExpense: 0
-  });
-
-  const [chartData, setChartData] = useState([]);
   const [recentRequests, setRecentRequests] = useState([]);
-  const [recentTransactions, setRecentTransactions] = useState([]);
-  const [p2pTransactions, setP2pTransactions] = useState([]);
+  const [recentInvestments, setRecentInvestments] = useState([]);
+  const [waitlistItems, setWaitlistItems] = useState([]);
   const [calendarEvents, setCalendarEvents] = useState([]);
+  const [utoProjects, setUtoProjects] = useState([]);
+  const [stoProjects, setStoProjects] = useState([]);
 
   useEffect(() => {
     if (user?.id) {
       fetchAllData();
-    } else {
-      setLoading(false);
     }
-  }, [user?.id]);
-
-  useEffect(() => {
-    if (user?.id) {
-      fetchCalendarEvents();
-    }
-  }, [currentMonth, user?.id]);
+  }, [user?.id, address]);
 
   const fetchAllData = async () => {
     setLoading(true);
     try {
       await Promise.all([
-        fetchMetrics(),
-        fetchBalance(),
-        fetchChartData(),
+        fetchStats(),
         fetchRecentRequests(),
-        fetchRecentTransactions(),
-        fetchP2PTransactions(),
-        fetchCalendarEvents()
+        fetchRecentInvestments(),
+        fetchWaitlistItems(),
+        fetchCalendarEvents(),
+        fetchUTOProjects(),
+        fetchSTOProjects()
       ]);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching profile data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchMetrics = async () => {
+  const fetchStats = async () => {
     try {
-      // Get bookings count
+      // Total bookings
       const { count: bookingsCount } = await supabase
         .from('booking_requests')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id);
 
-      // Get new/pending requests
-      const { count: newRequestsCount } = await supabase
+      // Active requests
+      const { count: requestsCount } = await supabase
         .from('user_requests')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .eq('status', 'pending');
+        .in('status', ['pending', 'processing']);
 
-      // Get tokenization projects
-      const { count: tokenCount } = await supabase
-        .from('user_requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('type', 'tokenization');
-
-      // Get transactions
-      const { count: transCount } = await supabase
-        .from('transactions')
+      // Total investments
+      const { count: investmentsCount } = await supabase
+        .from('launchpad_investments')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id);
 
-      // Get PVCX balance
-      const { data: pvcxData } = await supabase
-        .from('pvcx_transactions')
-        .select('amount, transaction_type')
-        .eq('user_id', user.id);
+      // Waitlist count - combine user and wallet waitlist
+      let totalWaitlistCount = 0;
 
-      const pvcxBalance = pvcxData?.reduce((sum, t) => {
-        return sum + (t.transaction_type === 'credit' ? t.amount : -t.amount);
-      }, 0) || 0;
-
-      // Get incidents (failed transactions)
-      const { count: incidentsCount } = await supabase
+      // Count by user ID
+      const { count: userWaitlistCount } = await supabase
         .from('transactions')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .eq('status', 'failed');
+        .eq('type', 'waitlist');
 
-      setMetrics({
-        totalBookings: bookingsCount || 0,
-        newRequests: newRequestsCount || 0,
-        tokenizationProjects: tokenCount || 0,
-        totalTransactions: transCount || 0,
-        pvcxBalance: Math.round(pvcxBalance),
-        incidents: incidentsCount || 0
-      });
-    } catch (error) {
-      console.error('Error fetching metrics:', error);
-    }
-  };
+      totalWaitlistCount = userWaitlistCount || 0;
 
-  const fetchBalance = async () => {
-    try {
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      // Also count by wallet if connected (avoid duplicates)
+      if (address) {
+        const { data: walletWaitlist } = await supabase
+          .from('transactions')
+          .select('launch_id')
+          .eq('wallet_address', address.toLowerCase())
+          .eq('type', 'waitlist');
 
-      // Get total bookings value
-      const { data: bookings } = await supabase
-        .from('booking_requests')
-        .select('total_price')
-        .eq('user_id', user.id);
+        // Get user's waitlist launch IDs to avoid counting duplicates
+        const { data: userWaitlist } = await supabase
+          .from('transactions')
+          .select('launch_id')
+          .eq('user_id', user.id)
+          .eq('type', 'waitlist');
 
-      const totalBookingValue = bookings?.reduce((sum, b) => sum + (b.total_price || 0), 0) || 0;
+        const userLaunchIds = new Set((userWaitlist || []).map(item => item.launch_id));
+        const uniqueWalletCount = (walletWaitlist || []).filter(
+          item => !userLaunchIds.has(item.launch_id)
+        ).length;
 
-      // Monthly income (bookings this month)
-      const { data: monthlyBookings } = await supabase
-        .from('booking_requests')
-        .select('total_price')
-        .eq('user_id', user.id)
-        .gte('created_at', startOfMonth);
-
-      const monthlyIncome = monthlyBookings?.reduce((sum, b) => sum + (b.total_price || 0), 0) || 0;
-
-      // Monthly expenses (transactions this month)
-      const { data: monthlyExpenses } = await supabase
-        .from('transactions')
-        .select('amount')
-        .eq('user_id', user.id)
-        .in('category', ['booking', 'service', 'subscription'])
-        .gte('created_at', startOfMonth);
-
-      const monthlyExpense = monthlyExpenses?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
-
-      setBalance({
-        current: totalBookingValue,
-        monthlyIncome,
-        monthlyExpense
-      });
-    } catch (error) {
-      console.error('Error fetching balance:', error);
-    }
-  };
-
-  const fetchChartData = async () => {
-    try {
-      // Generate simple 30-day chart data
-      const days = 30;
-      const data = [];
-
-      for (let i = days; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-
-        data.push({
-          date: date.getTime(),
-          value: balance.current * (0.95 + Math.random() * 0.1)
-        });
+        totalWaitlistCount += uniqueWalletCount;
       }
 
-      setChartData(data);
+      // Unread notifications
+      const { count: notifCount } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false);
+
+      // UTO tokens count (if connected)
+      let utoCount = 0;
+      let stoCount = 0;
+      if (address) {
+        const { count: utoTokensCount } = await supabase
+          .from('launchpad_investments')
+          .select('*, launchpad_projects!inner(project_type)', { count: 'exact', head: true })
+          .eq('wallet_address', address.toLowerCase())
+          .eq('launchpad_projects.project_type', 'uto')
+          .eq('status', 'completed');
+
+        // STO tokens count
+        const { count: stoTokensCount } = await supabase
+          .from('launchpad_investments')
+          .select('*, launchpad_projects!inner(project_type)', { count: 'exact', head: true })
+          .eq('wallet_address', address.toLowerCase())
+          .eq('launchpad_projects.project_type', 'sto')
+          .eq('status', 'completed');
+
+        utoCount = utoTokensCount || 0;
+        stoCount = stoTokensCount || 0;
+      }
+
+      setStats({
+        totalBookings: bookingsCount || 0,
+        activeRequests: requestsCount || 0,
+        totalInvestments: investmentsCount || 0,
+        waitlistCount: totalWaitlistCount,
+        notifications: notifCount || 0,
+        utoTokens: utoCount,
+        stoTokens: stoCount
+      });
     } catch (error) {
-      console.error('Error fetching chart data:', error);
+      console.error('Error fetching stats:', error);
     }
   };
 
   const fetchRecentRequests = async () => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('user_requests')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(5);
 
+      if (error) throw error;
       setRecentRequests(data || []);
     } catch (error) {
       console.error('Error fetching requests:', error);
     }
   };
 
-  const fetchRecentTransactions = async () => {
+  const fetchRecentInvestments = async () => {
     try {
-      const { data } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
+      if (!address) return;
+
+      const { data, error } = await supabase
+        .from('launchpad_investments')
+        .select(`
+          *,
+          launchpad_projects (
+            name,
+            token_symbol,
+            image_url
+          )
+        `)
+        .eq('wallet_address', address.toLowerCase())
         .order('created_at', { ascending: false })
         .limit(5);
 
-      setRecentTransactions(data || []);
+      if (error) throw error;
+      setRecentInvestments(data || []);
     } catch (error) {
-      console.error('Error fetching transactions:', error);
+      console.error('Error fetching investments:', error);
     }
   };
 
-  const fetchP2PTransactions = async () => {
+  const fetchWaitlistItems = async () => {
     try {
-      // Fetch P2P marketplace transactions if they exist in launchpad_transactions
-      const { data } = await supabase
-        .from('launchpad_transactions')
-        .select('*')
-        .eq('buyer_address', user.id)
-        .order('created_at', { ascending: false })
-        .limit(3);
+      let allWaitlistItems = [];
 
-      setP2pTransactions(data || []);
+      // Fetch by wallet address if connected
+      if (address) {
+        const { data: walletData, error: walletError } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('wallet_address', address.toLowerCase())
+          .eq('type', 'waitlist')
+          .order('created_at', { ascending: false });
+
+        if (!walletError && walletData) {
+          allWaitlistItems = [...walletData];
+        }
+      }
+
+      // Also fetch by user ID if logged in
+      if (user) {
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('type', 'waitlist')
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          // Merge and deduplicate by launch_id
+          const walletLaunchIds = new Set(allWaitlistItems.map(item => item.launch_id));
+          const newItems = data.filter(item => !walletLaunchIds.has(item.launch_id));
+          allWaitlistItems = [...allWaitlistItems, ...newItems];
+        }
+      }
+
+      setWaitlistItems(allWaitlistItems);
     } catch (error) {
-      console.error('Error fetching P2P transactions:', error);
+      console.error('Error fetching waitlist:', error);
     }
   };
 
   const fetchCalendarEvents = async () => {
     try {
-      const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-      const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+      const today = new Date();
+      const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('calendar_events')
         .select('*')
         .eq('user_id', user.id)
-        .gte('start_date', startOfMonth.toISOString())
-        .lte('start_date', endOfMonth.toISOString())
-        .order('start_date', { ascending: true });
+        .gte('start_date', today.toISOString())
+        .lte('start_date', nextWeek.toISOString())
+        .order('start_date', { ascending: true })
+        .limit(5);
 
+      if (error) throw error;
       setCalendarEvents(data || []);
     } catch (error) {
       console.error('Error fetching calendar events:', error);
     }
   };
 
-  const navigateToCategory = (category) => {
-    const event = new CustomEvent('navigate-to-category', { detail: { category } });
-    window.dispatchEvent(event);
-  };
+  const fetchUTOProjects = async () => {
+    try {
+      if (!address) return;
 
-  const handleCardClick = (cardId) => {
-    setSelectedCard(cardId);
+      const { data, error } = await supabase
+        .from('launchpad_investments')
+        .select(`
+          *,
+          launchpad_projects (
+            id,
+            name,
+            token_symbol,
+            image_url,
+            images,
+            description,
+            project_type,
+            status,
+            current_raised,
+            target_amount,
+            token_price
+          )
+        `)
+        .eq('wallet_address', address.toLowerCase())
+        .eq('status', 'completed')
+        .order('created_at', { ascending: false });
 
-    // Navigate to appropriate page
-    const categoryMap = {
-      bookings: 'requests', // Show My Requests for bookings
-      requests: 'requests',
-      tokenization: 'tokenization',
-      transactions: 'transactions',
-      pvcx: 'wallet-nfts', // Navigate to wallet for PVCX
-      incidents: 'transactions'
-    };
+      if (error) throw error;
 
-    if (categoryMap[cardId]) {
-      navigateToCategory(categoryMap[cardId]);
+      // Filter for UTO projects
+      const utoData = (data || []).filter(
+        inv => inv.launchpad_projects?.project_type === 'uto'
+      );
+      setUtoProjects(utoData);
+    } catch (error) {
+      console.error('Error fetching UTO projects:', error);
     }
   };
 
+  const fetchSTOProjects = async () => {
+    try {
+      if (!address) return;
+
+      const { data, error } = await supabase
+        .from('launchpad_investments')
+        .select(`
+          *,
+          launchpad_projects (
+            id,
+            name,
+            token_symbol,
+            image_url,
+            images,
+            description,
+            project_type,
+            status,
+            current_raised,
+            target_amount,
+            token_price,
+            launch_end_date
+          )
+        `)
+        .eq('wallet_address', address.toLowerCase())
+        .eq('status', 'completed')
+        .order('created_at', { ascending: false});
+
+      if (error) throw error;
+
+      // Filter for STO projects
+      const stoData = (data || []).filter(
+        inv => inv.launchpad_projects?.project_type === 'sto'
+      );
+      setStoProjects(stoData);
+    } catch (error) {
+      console.error('Error fetching STO projects:', error);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      pending: 'bg-yellow-100 text-yellow-700',
+      processing: 'bg-blue-100 text-blue-700',
+      completed: 'bg-green-100 text-green-700',
+      confirmed: 'bg-green-100 text-green-700',
+      cancelled: 'bg-red-100 text-red-700',
+      rejected: 'bg-red-100 text-red-700'
+    };
+    return colors[status] || 'bg-gray-100 text-gray-700';
+  };
+
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 2
-    }).format(amount);
+    if (amount >= 1000000) return `$${(amount / 1000000).toFixed(1)}M`;
+    if (amount >= 1000) return `$${(amount / 1000).toFixed(0)}K`;
+    return `$${amount?.toFixed(2) || '0.00'}`;
   };
 
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const getDaysInMonth = () => {
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
-
-    const days = [];
-    // Add empty cells for days before month starts
-    for (let i = 0; i < startingDayOfWeek; i++) {
-      days.push(null);
-    }
-    // Add days of month
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(i);
-    }
-
-    return days;
-  };
-
-  const getEventsForDay = (day) => {
-    if (!day) return [];
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const dayDate = new Date(year, month, day);
-
-    return calendarEvents.filter(event => {
-      const eventDate = new Date(event.start_date);
-      return eventDate.getDate() === day &&
-             eventDate.getMonth() === month &&
-             eventDate.getFullYear() === year;
+  const handleProjectClick = (projectId) => {
+    // Navigate to tokenized assets and open the specific project
+    navigate('/dashboard', {
+      state: {
+        openCategory: 'tokenized-assets',
+        projectId: projectId
+      }
     });
-  };
-
-  const previousMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
-  };
-
-  const nextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-sm text-gray-400">Loading...</div>
+      <div className="flex items-center justify-center h-screen bg-transparent">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-light">Loading your profile...</p>
+        </div>
       </div>
     );
   }
 
-  const dashboardCards = [
-    {
-      id: 'bookings',
-      icon: ShoppingBag,
-      title: 'Bookings',
-      subtitle: 'All service bookings',
-      label: 'TOTAL',
-      value: metrics.totalBookings
-    },
-    {
-      id: 'requests',
-      icon: FileText,
-      title: 'Requests',
-      subtitle: 'Pending approvals',
-      label: 'NEW REQUESTS',
-      value: String(metrics.newRequests).padStart(2, '0')
-    },
-    {
-      id: 'tokenization',
-      icon: TrendingUp,
-      title: 'Tokenization',
-      subtitle: 'Asset projects',
-      label: 'PROJECTS',
-      value: metrics.tokenizationProjects
-    },
-    {
-      id: 'transactions',
-      icon: Receipt,
-      title: 'Transactions',
-      subtitle: 'All payments',
-      label: 'TOTAL',
-      value: metrics.totalTransactions
-    },
-    {
-      id: 'pvcx',
-      icon: DollarSign,
-      title: 'PVCX Rewards',
-      subtitle: 'Token balance',
-      label: 'BALANCE',
-      value: metrics.pvcxBalance
-    },
-    {
-      id: 'incidents',
-      icon: AlertCircle,
-      title: 'Incidents',
-      subtitle: 'Failed transactions',
-      label: 'ISSUES',
-      value: metrics.incidents
-    }
-  ];
-
-  const days = getDaysInMonth();
-  const today = new Date();
-  const isToday = (day) => {
-    return day === today.getDate() &&
-           currentMonth.getMonth() === today.getMonth() &&
-           currentMonth.getFullYear() === today.getFullYear();
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top Navigation */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-8">
-              <button className="text-sm font-medium text-gray-900 border-b-2 border-gray-900 pb-4">
-                Company dashboard
-              </button>
-              <button
-                onClick={() => navigateToCategory('p2p-trading')}
-                className="text-sm text-gray-400 hover:text-gray-700 pb-4 transition-colors"
-              >
-                Send money
-              </button>
-              <button
-                onClick={() => navigateToCategory('swap')}
-                className="text-sm text-gray-400 hover:text-gray-700 pb-4 transition-colors"
-              >
-                Exchange funds
-              </button>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-xs">
-                <ArrowUpRight size={16} className="text-gray-400" />
-                <span className="text-gray-500">Monthly income</span>
-                <span className="font-semibold text-gray-900">{formatCurrency(balance.monthlyIncome)}</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs">
-                <ArrowDownRight size={16} className="text-gray-400" />
-                <span className="text-gray-500">Monthly expense</span>
-                <span className="font-semibold text-gray-900">{formatCurrency(balance.monthlyExpense)}</span>
-              </div>
-            </div>
-          </div>
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-transparent">
+        <div className="text-center">
+          <User size={64} className="text-gray-300 mx-auto mb-4" />
+          <h2 className="text-3xl font-thin text-gray-900 mb-2 tracking-tight">Not Logged In</h2>
+          <p className="text-gray-600 font-light">Please log in to view your profile</p>
         </div>
       </div>
+    );
+  }
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-8 py-8">
-        <div className="grid grid-cols-12 gap-6">
-          {/* Left Column */}
-          <div className="col-span-8">
-            {/* Balance Section */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-              <div className="text-xs text-gray-500 mb-2">Balance (current month)</div>
-              <div className="text-4xl font-semibold text-gray-900 mb-6">
-                {formatCurrency(balance.current)}
-              </div>
-              <ResponsiveContainer width="100%" height={80}>
-                <LineChart data={chartData}>
-                  <Line
-                    type="monotone"
-                    dataKey="value"
-                    stroke="#000000"
-                    strokeWidth={1.5}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+  return (
+    <div className="w-full min-h-screen bg-transparent" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
-            {/* Dashboard Cards */}
-            <div className="mb-6">
-              <div className="text-sm font-medium text-gray-900 mb-4">My Dashboard</div>
-              <div className="grid grid-cols-3 gap-4">
-                {dashboardCards.map((card) => {
-                  const Icon = card.icon;
-                  const isSelected = selectedCard === card.id;
+        {/* Header */}
+        <div className="mb-16">
+          <h1 className="text-5xl md:text-6xl font-thin text-gray-900 tracking-tighter mb-4">
+            Profile
+          </h1>
+          <p className="text-xl text-gray-600 font-light">
+            Welcome back, {user.email?.split('@')[0] || 'User'}
+          </p>
+        </div>
 
-                  return (
-                    <button
-                      key={card.id}
-                      onClick={() => handleCardClick(card.id)}
-                      className={`bg-white rounded-lg border ${
-                        isSelected ? 'border-gray-900' : 'border-gray-200'
-                      } p-5 text-left hover:border-gray-400 transition-colors`}
-                    >
-                      <Icon size={20} className="text-gray-900 mb-3" />
-                      <div className="text-sm font-medium text-gray-900 mb-1">
-                        {card.title}
-                      </div>
-                      <div className="text-xs text-gray-500 mb-4">
-                        {card.subtitle}
-                      </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-[10px] text-gray-400 font-medium">
-                          {card.label}
-                        </span>
-                        <span className="text-2xl font-semibold text-gray-900">
-                          {card.value}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-12">
+          <StatCard
+            icon={<Package size={20} />}
+            label="Total Bookings"
+            value={stats.totalBookings}
+          />
+          <StatCard
+            icon={<Activity size={20} />}
+            label="Active Requests"
+            value={stats.activeRequests}
+          />
+          <StatCard
+            icon={<Rocket size={20} />}
+            label="Investments"
+            value={stats.totalInvestments}
+          />
+          <StatCard
+            icon={<Clock size={20} />}
+            label="Waitlist"
+            value={stats.waitlistCount}
+          />
+          <StatCard
+            icon={<Bell size={20} />}
+            label="Notifications"
+            value={stats.notifications}
+          />
+        </div>
 
-            {/* P2P Transactions Overview */}
-            {p2pTransactions.length > 0 && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-sm font-medium text-gray-900">P2P Trading Activity</div>
-                  <button
-                    onClick={() => navigateToCategory('p2p-trading')}
-                    className="text-xs text-gray-400 hover:text-gray-700 transition-colors"
-                  >
-                    View all
-                  </button>
+        {/* User Info Card */}
+        <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 mb-8">
+          <h2 className="text-3xl font-thin text-gray-900 mb-6 tracking-tight">Account Information</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <InfoRow icon={<Mail size={18} />} label="Email" value={user.email} />
+            <InfoRow
+              icon={<User size={18} />}
+              label="User ID"
+              value={user.id?.slice(0, 8) + '...' + user.id?.slice(-8)}
+            />
+            <InfoRow
+              icon={<Calendar size={18} />}
+              label="Member Since"
+              value={formatDate(user.created_at)}
+            />
+            {isConnected && (
+              <InfoRow
+                icon={<Wallet size={18} />}
+                label="Connected Wallet"
+                value={address?.slice(0, 6) + '...' + address?.slice(-4)}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex items-center gap-2 mb-8 border-b border-gray-200 overflow-x-auto">
+          {[
+            { id: 'overview', label: 'Overview', icon: <Activity size={18} /> },
+            { id: 'requests', label: 'Requests', icon: <Package size={18} />, count: stats.activeRequests },
+            { id: 'investments', label: 'Investments', icon: <Rocket size={18} />, count: stats.totalInvestments },
+            { id: 'waitlists', label: 'Waitlists', icon: <Clock size={18} />, count: stats.waitlistCount },
+            { id: 'uto', label: 'UTO Tokens', icon: <Coins size={18} />, count: stats.utoTokens },
+            { id: 'sto', label: 'STO Tokens', icon: <Building2 size={18} />, count: stats.stoTokens }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-6 py-3 text-sm font-medium transition-all whitespace-nowrap ${
+                activeTab === tab.id
+                  ? 'text-gray-900 border-b-2 border-gray-900'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {tab.icon}
+              <span>{tab.label}</span>
+              {tab.count > 0 && (
+                <span className="ml-1 px-2 py-0.5 bg-gray-900 text-white text-xs rounded-full">
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'overview' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Upcoming Events */}
+            <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-200">
+              <h3 className="text-2xl font-thin text-gray-900 mb-6 tracking-tight">Upcoming Events</h3>
+              {calendarEvents.length === 0 ? (
+                <div className="text-center py-12">
+                  <Calendar size={48} className="text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-600 font-light">No upcoming events</p>
                 </div>
-                <div className="space-y-3">
-                  {p2pTransactions.map((tx) => (
-                    <div key={tx.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-xs">
-                          🔄
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            P2P Transaction
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {formatDate(tx.created_at)}
-                          </div>
-                        </div>
+              ) : (
+                <div className="space-y-4">
+                  {calendarEvents.map((event) => (
+                    <div key={event.id} className="flex items-start gap-4 p-4 bg-gray-50/50 rounded-xl border border-gray-100">
+                      <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                        <Calendar size={20} className="text-blue-600" />
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-semibold text-gray-900">
-                          {tx.amount_paid ? formatCurrency(tx.amount_paid) : '-'}
-                        </span>
-                        <span className={`text-xs px-2 py-1 rounded ${
-                          tx.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {tx.status?.toUpperCase() || 'PENDING'}
-                        </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 truncate">{event.title}</p>
+                        <p className="text-sm text-gray-500 font-light mt-1">
+                          {formatDate(event.start_date)}
+                        </p>
+                        {event.location && (
+                          <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                            <MapPin size={12} />
+                            {event.location}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* User Requests */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-sm font-medium text-gray-900">User Requests</div>
-                <button className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                  <span className="text-xs">🔔</span>
-                </button>
-              </div>
-              <div className="space-y-3">
-                {recentRequests.length > 0 ? recentRequests.slice(0, 3).map((request) => {
-                  // Get request type display name
-                  const getRequestTypeName = (type) => {
-                    const typeMap = {
-                      'private_jet_charter': 'Private Jet Charter',
-                      'helicopter_charter': 'Helicopter Charter',
-                      'empty_leg': 'Empty Leg Flight',
-                      'adventure_package': 'Adventure Package',
-                      'luxury_car_rental': 'Luxury Car Rental',
-                      'yacht_charter': 'Yacht Charter',
-                      'event_booking': 'Event Booking',
-                      'spv_formation': 'SPV Formation',
-                      'tokenization': 'Asset Tokenization',
-                      'co2_certificate': 'CO2 Certificate'
-                    };
-                    return typeMap[type] || type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Service Request';
-                  };
-
-                  // Get request icon
-                  const getRequestIcon = (type) => {
-                    const iconMap = {
-                      'private_jet_charter': '✈️',
-                      'helicopter_charter': '🚁',
-                      'empty_leg': '✈️',
-                      'adventure_package': '🏔️',
-                      'luxury_car_rental': '🚗',
-                      'yacht_charter': '⛵',
-                      'event_booking': '🎫',
-                      'spv_formation': '🏢',
-                      'tokenization': '💎',
-                      'co2_certificate': '🌱'
-                    };
-                    return iconMap[type] || '📋';
-                  };
-
-                  // Get route info if available
-                  const getRouteInfo = (requestData) => {
-                    if (requestData?.origin && requestData?.destination) {
-                      return `${requestData.origin} → ${requestData.destination}`;
-                    }
-                    if (requestData?.asset_name) {
-                      return requestData.asset_name;
-                    }
-                    return null;
-                  };
-
-                  const requestName = getRequestTypeName(request.type);
-                  const requestIcon = getRequestIcon(request.type);
-                  const routeInfo = getRouteInfo(request.data);
-
-                  return (
-                    <div key={request.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-base">
-                          {requestIcon}
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {requestName}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {routeInfo || formatDate(request.created_at)} {new Date(request.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {request.data?.total_price && (
-                          <span className="text-sm font-semibold text-gray-900">
-                            {formatCurrency(request.data.total_price)}
-                          </span>
-                        )}
-                        <button className="w-8 h-8 rounded-full bg-gray-100 hover:bg-green-100 flex items-center justify-center transition-colors">
-                          <CheckCircle size={16} className="text-gray-600" />
-                        </button>
-                        <button className="w-8 h-8 rounded-full bg-gray-100 hover:bg-red-100 flex items-center justify-center transition-colors">
-                          <X size={16} className="text-gray-600" />
-                        </button>
-                        <button className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
-                          <MoreVertical size={16} className="text-gray-600" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                }) : (
-                  <div className="text-center py-8">
-                    <div className="text-sm text-gray-400">No recent requests</div>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
 
-            {/* Last Expenses */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <div className="text-sm font-medium text-gray-900">Last expenses</div>
-                  <div className="text-xs text-gray-400">{formatDate(new Date().toISOString())}</div>
+            {/* Recent Activity */}
+            <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-200">
+              <h3 className="text-2xl font-thin text-gray-900 mb-6 tracking-tight">Recent Activity</h3>
+              {recentRequests.length === 0 ? (
+                <div className="text-center py-12">
+                  <Activity size={48} className="text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-600 font-light">No recent activity</p>
                 </div>
-                <div className="text-sm font-semibold text-gray-900">
-                  - {formatCurrency(balance.monthlyExpense)}
-                </div>
-              </div>
-              <div className="space-y-3">
-                {recentTransactions.slice(0, 3).map((transaction) => (
-                  <div key={transaction.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-xs">
-                        💳
+              ) : (
+                <div className="space-y-4">
+                  {recentRequests.slice(0, 5).map((request) => (
+                    <div key={request.id} className="flex items-center justify-between p-4 bg-gray-50/50 rounded-xl border border-gray-100">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-gray-100 rounded-lg">
+                          <Package size={18} className="text-gray-700" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {request.type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Request'}
+                          </p>
+                          <p className="text-xs text-gray-500 font-light">
+                            {formatDate(request.created_at)}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {transaction.description || 'Transaction'}
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
+                        {request.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'requests' && (
+          <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-200">
+            <h3 className="text-3xl font-thin text-gray-900 mb-6 tracking-tight">All Requests</h3>
+            {recentRequests.length === 0 ? (
+              <div className="text-center py-20">
+                <Package size={64} className="text-gray-300 mx-auto mb-6" />
+                <h4 className="text-2xl font-thin text-gray-900 mb-2 tracking-tight">No Requests Yet</h4>
+                <p className="text-gray-600 font-light">Your booking requests will appear here</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {recentRequests.map((request) => (
+                  <div key={request.id} className="p-6 bg-gray-50/50 rounded-xl border border-gray-100 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-3 bg-white rounded-xl shadow-sm">
+                          <Package size={24} className="text-gray-700" />
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {formatDate(transaction.created_at)} {new Date(transaction.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                        <div>
+                          <h4 className="text-lg font-medium text-gray-900">
+                            {request.type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Request'}
+                          </h4>
+                          <p className="text-sm text-gray-500 font-light">
+                            Created {formatDate(request.created_at)}
+                          </p>
                         </div>
+                      </div>
+                      <span className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(request.status)}`}>
+                        {request.status}
+                      </span>
+                    </div>
+                    {request.data?.origin && request.data?.destination && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600 font-light">
+                        <MapPin size={16} />
+                        <span>{request.data.origin} → {request.data.destination}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'investments' && (
+          <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-200">
+            <h3 className="text-3xl font-thin text-gray-900 mb-6 tracking-tight">Your Investments</h3>
+            {!isConnected ? (
+              <div className="text-center py-20">
+                <Wallet size={64} className="text-gray-300 mx-auto mb-6" />
+                <h4 className="text-2xl font-thin text-gray-900 mb-2 tracking-tight">Connect Your Wallet</h4>
+                <p className="text-gray-600 font-light">Connect your wallet to view your investments</p>
+              </div>
+            ) : recentInvestments.length === 0 ? (
+              <div className="text-center py-20">
+                <Rocket size={64} className="text-gray-300 mx-auto mb-6" />
+                <h4 className="text-2xl font-thin text-gray-900 mb-2 tracking-tight">No Investments Yet</h4>
+                <p className="text-gray-600 font-light">Your launchpad investments will appear here</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {recentInvestments.map((investment) => (
+                  <div key={investment.id} className="p-6 bg-gray-50/50 rounded-xl border border-gray-100 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-4">
+                        {investment.launchpad_projects?.image_url ? (
+                          <img
+                            src={investment.launchpad_projects.image_url}
+                            alt={investment.launchpad_projects.name}
+                            className="w-16 h-16 rounded-xl object-cover"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 bg-gradient-to-br from-gray-900 to-black rounded-xl flex items-center justify-center">
+                            <span className="text-white text-sm font-bold">
+                              {investment.launchpad_projects?.token_symbol || 'TKN'}
+                            </span>
+                          </div>
+                        )}
+                        <div>
+                          <h4 className="text-lg font-medium text-gray-900">
+                            {investment.launchpad_projects?.name || 'Project'}
+                          </h4>
+                          <p className="text-sm text-gray-500 font-light">
+                            Invested {formatDate(investment.created_at)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-thin text-gray-900 tracking-tight">
+                          {formatCurrency(investment.amount_usd)}
+                        </p>
+                        <p className="text-sm text-gray-500 font-light mt-1">
+                          {investment.token_amount?.toFixed(2)} {investment.launchpad_projects?.token_symbol}
+                        </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-semibold text-gray-900">
-                        - {formatCurrency(transaction.amount)}
-                      </span>
-                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                        {transaction.category?.toUpperCase() || 'PENDING'}
-                      </span>
+                    <div className="flex items-center gap-4 pt-4 border-t border-gray-200">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500 font-light">Payment:</span>
+                        <span className="px-2 py-1 bg-white rounded-md text-xs font-medium">
+                          {investment.payment_method}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500 font-light">Status:</span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(investment.status)}`}>
+                          {investment.status}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
+            )}
           </div>
+        )}
 
-          {/* Right Column - Calendar */}
-          <div className="col-span-4">
-            <div className="bg-white rounded-lg border border-gray-200 p-6 sticky top-6">
-              {/* Calendar Header */}
-              <div className="flex items-center justify-between mb-4">
-                <button
-                  onClick={previousMonth}
-                  className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
-                >
-                  <ChevronLeft size={16} className="text-gray-600" />
-                </button>
-                <div className="text-sm font-medium text-gray-900">
-                  {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                </div>
-                <button
-                  onClick={nextMonth}
-                  className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
-                >
-                  <ChevronRight size={16} className="text-gray-600" />
-                </button>
+        {activeTab === 'waitlists' && (
+          <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-200">
+            <h3 className="text-3xl font-thin text-gray-900 mb-6 tracking-tight">Waitlist Activities</h3>
+            {waitlistItems.length === 0 ? (
+              <div className="text-center py-20">
+                <Clock size={64} className="text-gray-300 mx-auto mb-6" />
+                <h4 className="text-2xl font-thin text-gray-900 mb-2 tracking-tight">No Waitlist Items</h4>
+                <p className="text-gray-600 font-light">Join waitlists for upcoming launches to be notified when they go live</p>
               </div>
-
-              {/* Calendar Grid */}
-              <div className="mb-4">
-                <div className="grid grid-cols-7 gap-1 mb-2">
-                  {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
-                    <div key={day} className="text-[10px] text-gray-400 text-center font-medium">
-                      {day}
-                    </div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-7 gap-1">
-                  {days.map((day, index) => {
-                    const dayEvents = getEventsForDay(day);
-                    const hasEvents = dayEvents.length > 0;
-
-                    return (
-                      <div key={index} className="relative">
-                        {day ? (
-                          <button
-                            className={`w-full aspect-square text-xs flex items-center justify-center rounded transition-colors ${
-                              isToday(day)
-                                ? 'bg-gray-900 text-white font-semibold'
-                                : hasEvents
-                                ? 'bg-blue-50 text-gray-900 hover:bg-blue-100'
-                                : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                          >
-                            {day}
-                          </button>
-                        ) : (
-                          <div className="w-full aspect-square"></div>
-                        )}
-                        {hasEvents && !isToday(day) && (
-                          <div className="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-500 rounded-full"></div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Upcoming Events */}
-              <div className="border-t border-gray-200 pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-xs font-medium text-gray-900">Upcoming Events</div>
-                  <button
-                    onClick={() => navigateToCategory('calendar')}
-                    className="text-xs text-gray-400 hover:text-gray-700 transition-colors"
-                  >
-                    View all
-                  </button>
-                </div>
-                {calendarEvents.length > 0 ? (
-                  <div className="space-y-2">
-                    {calendarEvents.slice(0, 3).map((event) => (
-                      <div key={event.id} className="flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
-                        <CalendarIcon size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-medium text-gray-900 truncate">
-                            {event.title}
-                          </div>
-                          <div className="text-[10px] text-gray-500">
-                            {formatDate(event.start_date)}
-                          </div>
+            ) : (
+              <div className="space-y-4">
+                {waitlistItems.map((item) => (
+                  <div key={item.id} className="p-6 bg-gradient-to-br from-blue-50/80 to-indigo-50/80 backdrop-blur-sm rounded-xl border border-blue-200 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-blue-100 rounded-xl">
+                          <Clock size={24} className="text-blue-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-lg font-medium text-gray-900">
+                            {item.metadata?.launch_name || 'Launch Project'}
+                          </h4>
+                          <p className="text-sm text-gray-600 font-light">
+                            Joined {formatDate(item.created_at)}
+                          </p>
+                          {item.metadata?.project_type && (
+                            <span className={`inline-block mt-1 px-2 py-0.5 rounded text-xs font-medium ${
+                              item.metadata.project_type === 'uto' ? 'bg-purple-100 text-purple-700' :
+                              item.metadata.project_type === 'sto' ? 'bg-emerald-100 text-emerald-700' :
+                              'bg-orange-100 text-orange-700'
+                            }`}>
+                              {item.metadata.project_type === 'uto' ? 'UTO' :
+                               item.metadata.project_type === 'sto' ? 'STO' :
+                               'Crypto'}
+                            </span>
+                          )}
                         </div>
                       </div>
-                    ))}
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-100 rounded-lg">
+                        <CheckCircle size={16} className="text-blue-600" />
+                        <span className="text-sm font-medium text-blue-700">On Waitlist</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-blue-900 font-light">
+                        <Bell size={14} />
+                        <span>You'll be notified when this launch goes live</span>
+                      </div>
+                      {item.wallet_address && (
+                        <div className="flex items-center gap-2 text-xs text-gray-500 font-light">
+                          <Wallet size={12} />
+                          <span>Wallet: {item.wallet_address.slice(0, 6)}...{item.wallet_address.slice(-4)}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <div className="text-center py-6">
-                    <CalendarIcon size={24} className="text-gray-300 mx-auto mb-2" />
-                    <div className="text-xs text-gray-400">No upcoming events</div>
-                  </div>
-                )}
+                ))}
               </div>
-
-              {/* Quick Actions */}
-              <div className="border-t border-gray-200 pt-4 mt-4">
-                <button
-                  onClick={() => navigateToCategory('calendar')}
-                  className="w-full px-4 py-2 bg-gray-900 text-white text-sm rounded hover:bg-gray-800 transition-colors"
-                >
-                  Manage Calendar
-                </button>
-              </div>
-            </div>
+            )}
           </div>
+        )}
+
+        {activeTab === 'uto' && (
+          <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-200">
+            <h3 className="text-3xl font-thin text-gray-900 mb-6 tracking-tight">UTO Token Projects</h3>
+            <p className="text-gray-600 font-light mb-8">Utility Token Offerings - Your invested projects</p>
+            {!isConnected ? (
+              <div className="text-center py-20">
+                <Wallet size={64} className="text-gray-300 mx-auto mb-6" />
+                <h4 className="text-2xl font-thin text-gray-900 mb-2 tracking-tight">Connect Your Wallet</h4>
+                <p className="text-gray-600 font-light">Connect your wallet to view your UTO token investments</p>
+              </div>
+            ) : utoProjects.length === 0 ? (
+              <div className="text-center py-20">
+                <Coins size={64} className="text-gray-300 mx-auto mb-6" />
+                <h4 className="text-2xl font-thin text-gray-900 mb-2 tracking-tight">No UTO Tokens Yet</h4>
+                <p className="text-gray-600 font-light">Your UTO token investments will appear here</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {utoProjects.map((investment) => (
+                  <div
+                    key={investment.id}
+                    onClick={() => handleProjectClick(investment.launchpad_projects?.id)}
+                    className="p-6 bg-gradient-to-br from-purple-50/80 to-pink-50/80 backdrop-blur-sm rounded-xl border border-purple-200 hover:shadow-xl transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-start gap-4 mb-4">
+                      {investment.launchpad_projects?.image_url ? (
+                        <img
+                          src={investment.launchpad_projects.image_url}
+                          alt={investment.launchpad_projects.name}
+                          className="w-16 h-16 rounded-xl object-cover"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                          <span className="text-white text-lg font-bold">
+                            {investment.launchpad_projects?.token_symbol || 'UTO'}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <h4 className="text-lg font-medium text-gray-900 mb-1 group-hover:text-purple-700 transition-colors">
+                          {investment.launchpad_projects?.name || 'UTO Project'}
+                        </h4>
+                        <p className="text-sm text-gray-600 font-light">
+                          {investment.launchpad_projects?.token_symbol || 'TKN'}
+                        </p>
+                      </div>
+                      <ArrowRight size={20} className="text-gray-400 group-hover:text-purple-600 group-hover:translate-x-1 transition-all" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-purple-200">
+                      <div>
+                        <p className="text-xs text-gray-500 font-light mb-1">Your Investment</p>
+                        <p className="text-lg font-medium text-gray-900">{formatCurrency(investment.amount_usd)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 font-light mb-1">Tokens Owned</p>
+                        <p className="text-lg font-medium text-gray-900">
+                          {investment.token_amount?.toFixed(2)} {investment.launchpad_projects?.token_symbol}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex items-center gap-2">
+                      <div className="px-3 py-1.5 bg-purple-100 rounded-lg text-xs font-medium text-purple-700">
+                        Utility Token
+                      </div>
+                      <div className="text-xs text-gray-500 font-light">
+                        Click to view in tokenized assets
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'sto' && (
+          <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-200">
+            <h3 className="text-3xl font-thin text-gray-900 mb-6 tracking-tight">STO Token Projects</h3>
+            <p className="text-gray-600 font-light mb-8">Security Token Offerings - Your invested projects</p>
+            {!isConnected ? (
+              <div className="text-center py-20">
+                <Wallet size={64} className="text-gray-300 mx-auto mb-6" />
+                <h4 className="text-2xl font-thin text-gray-900 mb-2 tracking-tight">Connect Your Wallet</h4>
+                <p className="text-gray-600 font-light">Connect your wallet to view your STO token investments</p>
+              </div>
+            ) : stoProjects.length === 0 ? (
+              <div className="text-center py-20">
+                <Building2 size={64} className="text-gray-300 mx-auto mb-6" />
+                <h4 className="text-2xl font-thin text-gray-900 mb-2 tracking-tight">No STO Tokens Yet</h4>
+                <p className="text-gray-600 font-light">Your STO token investments will appear here</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {stoProjects.map((investment) => (
+                  <div
+                    key={investment.id}
+                    onClick={() => handleProjectClick(investment.launchpad_projects?.id)}
+                    className="p-6 bg-gradient-to-br from-emerald-50/80 to-teal-50/80 backdrop-blur-sm rounded-xl border border-emerald-200 hover:shadow-xl transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-start gap-4 mb-4">
+                      {investment.launchpad_projects?.image_url ? (
+                        <img
+                          src={investment.launchpad_projects.image_url}
+                          alt={investment.launchpad_projects.name}
+                          className="w-16 h-16 rounded-xl object-cover"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center">
+                          <span className="text-white text-lg font-bold">
+                            {investment.launchpad_projects?.token_symbol || 'STO'}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <h4 className="text-lg font-medium text-gray-900 mb-1 group-hover:text-emerald-700 transition-colors">
+                          {investment.launchpad_projects?.name || 'STO Project'}
+                        </h4>
+                        <p className="text-sm text-gray-600 font-light">
+                          {investment.launchpad_projects?.token_symbol || 'TKN'}
+                        </p>
+                      </div>
+                      <ArrowRight size={20} className="text-gray-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-emerald-200">
+                      <div>
+                        <p className="text-xs text-gray-500 font-light mb-1">Your Investment</p>
+                        <p className="text-lg font-medium text-gray-900">{formatCurrency(investment.amount_usd)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 font-light mb-1">Tokens Owned</p>
+                        <p className="text-lg font-medium text-gray-900">
+                          {investment.token_amount?.toFixed(2)} {investment.launchpad_projects?.token_symbol}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex items-center gap-2">
+                      <div className="px-3 py-1.5 bg-emerald-100 rounded-lg text-xs font-medium text-emerald-700">
+                        Security Token
+                      </div>
+                      <div className="text-xs text-gray-500 font-light">
+                        Click to view in tokenized assets
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
+// Stat Card Component
+function StatCard({ icon, label, value }) {
+  return (
+    <div className="bg-white/50 backdrop-blur-sm rounded-xl p-6 border border-gray-200">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="p-2 bg-gray-100 rounded-lg">
+          {icon}
         </div>
+      </div>
+      <p className="text-sm text-gray-600 font-light mb-1">{label}</p>
+      <p className="text-4xl font-thin text-gray-900 tracking-tight">{value}</p>
+    </div>
+  );
+}
+
+// Info Row Component
+function InfoRow({ icon, label, value }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="p-2 bg-gray-100 rounded-lg">
+        {icon}
+      </div>
+      <div>
+        <p className="text-xs text-gray-500 font-light">{label}</p>
+        <p className="text-sm font-medium text-gray-900">{value}</p>
       </div>
     </div>
   );

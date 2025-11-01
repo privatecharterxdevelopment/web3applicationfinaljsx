@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Menu, X, Leaf, User, Wallet, ChevronDown, Plane, MapPin } from 'lucide-react';
+import { Menu, X, Leaf, User, Wallet, ChevronDown, Plane, MapPin, Plus } from 'lucide-react';
 
 // Import your actual components
 import Logo from './Logo';
@@ -121,6 +121,9 @@ const NavigationMenu = () => (
           <a href="/web3/jetcard" className="block text-gray-600 hover:text-gray-900 transition-colors text-sm">
             JetCard Packages
           </a>
+          <a href="/web3/launchpad" className="block text-gray-600 hover:text-gray-900 transition-colors text-sm">
+            Launchpad
+          </a>
           
           {/* Company */}
           <a href="/how-it-works" className="block text-gray-600 hover:text-gray-900 transition-colors text-sm">
@@ -165,6 +168,7 @@ export default function Header({ onShowDashboard, nftBenefits }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [timeoutId, setTimeoutId] = useState(null);
   const [showWalletModal, setShowWalletModal] = useState(false);
+  const [headersCollapsed, setHeadersCollapsed] = useState(false);
   const handleLogout = useCallback(() => {
     console.log('User logged out');
   }, []);
@@ -219,11 +223,41 @@ export default function Header({ onShowDashboard, nftBenefits }) {
     }
   }, [timeoutId]);
 
+  const toggleHeaderCollapse = useCallback(() => {
+    setHeadersCollapsed(prev => !prev);
+    if (isMobileMenuOpen) {
+      setIsMobileMenuOpen(false);
+    }
+  }, [isMobileMenuOpen]);
+
   return (
     <>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');`}</style>
 
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+      {/* Collapsed state - Only Plus button visible */}
+      {headersCollapsed && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-end py-4 px-6">
+              <button
+                onClick={toggleHeaderCollapse}
+                className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200"
+                aria-label="Show navigation"
+              >
+                <Plus size={20} className="transition-transform duration-300" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full Header */}
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 transition-all duration-500 ease-in-out ${
+          headersCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        }`}
+        style={{ fontFamily: 'Montserrat, sans-serif' }}
+      >
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between py-4 px-6">
 
@@ -283,6 +317,15 @@ export default function Header({ onShowDashboard, nftBenefits }) {
                   Get Started
                 </button>
               )}
+
+              {/* Plus/Collapse Toggle Button */}
+              <button
+                onClick={toggleHeaderCollapse}
+                className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200"
+                aria-label="Toggle header visibility"
+              >
+                <Plus size={20} className="transition-transform duration-300" />
+              </button>
             </div>
           </div>
         </div>

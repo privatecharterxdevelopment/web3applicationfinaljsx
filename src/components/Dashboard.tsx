@@ -1182,6 +1182,7 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showCardGrid, setShowCardGrid] = useState(!initialTab || initialTab === 'overview'); // Show card menu only for overview or no initialTab
   console.log('showCardGrid:', showCardGrid, 'initialTab:', initialTab);
+  const [headersCollapsed, setHeadersCollapsed] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([
     { id: '1', text: 'New booking request received', time: '5m ago', unread: true },
@@ -4350,8 +4351,23 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
 
   return (
     <div className="w-full h-screen overflow-hidden flex flex-col">
+      {/* Collapsed state - Only Plus button visible */}
+      {headersCollapsed && (
+        <header className="flex items-center justify-end px-4 py-3 border-b border-gray-100 flex-shrink-0 bg-white/80 backdrop-blur-xl">
+          <button
+            onClick={() => setHeadersCollapsed(false)}
+            className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg transition-all duration-200"
+            aria-label="Show navigation"
+          >
+            <Plus size={16} className="text-gray-600 transition-transform duration-300" />
+          </button>
+        </header>
+      )}
+
       {/* Compact Header with Icons */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0">
+      <header className={`flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0 bg-white/80 backdrop-blur-xl transition-all duration-500 ease-in-out ${
+        headersCollapsed ? 'opacity-0 pointer-events-none h-0 py-0' : 'opacity-100'
+      }`}>
         <div className="flex items-center gap-3">
           {/* Sidebar Toggle */}
           <button
@@ -4407,6 +4423,15 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
                 <span className="text-[10px] text-white font-medium">{notifications.filter(n => n.unread).length}</span>
               </div>
             )}
+          </button>
+
+          {/* Plus/Collapse Toggle Button */}
+          <button
+            onClick={() => setHeadersCollapsed(!headersCollapsed)}
+            className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg transition-all duration-200"
+            aria-label="Toggle header visibility"
+          >
+            <Plus size={16} className="text-gray-600 transition-transform duration-300" />
           </button>
 
           {/* Notifications Dropdown */}
