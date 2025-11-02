@@ -130,15 +130,15 @@ export default function MyDAOs() {
   }
 
   return (
-    <div className="min-h-screen bg-white p-6">
+    <div className="min-h-screen bg-transparent p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-end mb-6">
           <button
             onClick={() => setShowCreator(true)}
-            className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-gray-100 text-black rounded-xl hover:bg-gray-200 transition-colors flex items-center gap-2 text-sm"
           >
-            <Plus size={20} />
+            <Plus size={16} />
             Create DAO
           </button>
         </div>
@@ -147,8 +147,8 @@ export default function MyDAOs() {
         <div className="grid grid-cols-4 gap-4 mb-8">
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Users size={20} className="text-blue-600" />
+              <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
+                <Users size={20} className="text-gray-600" />
               </div>
               <div>
                 <p className="text-xs text-gray-500">Total DAOs</p>
@@ -158,8 +158,8 @@ export default function MyDAOs() {
           </div>
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <CheckCircle size={20} className="text-green-600" />
+              <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
+                <CheckCircle size={20} className="text-gray-600" />
               </div>
               <div>
                 <p className="text-xs text-gray-500">Created</p>
@@ -171,8 +171,8 @@ export default function MyDAOs() {
           </div>
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <Users size={20} className="text-purple-600" />
+              <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
+                <Users size={20} className="text-gray-600" />
               </div>
               <div>
                 <p className="text-xs text-gray-500">Joined</p>
@@ -184,8 +184,8 @@ export default function MyDAOs() {
           </div>
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                <TrendingUp size={20} className="text-orange-600" />
+              <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
+                <TrendingUp size={20} className="text-gray-600" />
               </div>
               <div>
                 <p className="text-xs text-gray-500">Active</p>
@@ -298,8 +298,7 @@ export default function MyDAOs() {
                         <p className="text-xs text-gray-500">{dao.token_symbol}</p>
                       </div>
                     </div>
-                    <span className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(dao.status)}`}>
-                      {getStatusIcon(dao.status)}
+                    <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                       {dao.status}
                     </span>
                   </div>
@@ -334,7 +333,7 @@ export default function MyDAOs() {
                       </div>
                     )}
                     {dao.use_safe_escrow && (
-                      <div className="flex items-center gap-2 text-sm text-green-600">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
                         <CheckCircle size={14} />
                         <span>Safe Escrow Enabled</span>
                       </div>
@@ -566,11 +565,7 @@ function DAODetailModal({ dao, onClose, onUpdate }) {
                         <span className="text-xs text-gray-500">
                           {new Date(proposal.created_at).toLocaleDateString()}
                         </span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          proposal.status === 'active' ? 'bg-green-100 text-green-800' :
-                          proposal.status === 'passed' ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                           {proposal.status}
                         </span>
                       </div>

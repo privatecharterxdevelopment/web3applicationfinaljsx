@@ -71,23 +71,23 @@ export default function EscrowPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white p-6">
+    <div className="min-h-screen bg-transparent p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-end mb-6">
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-gray-100 text-black rounded-xl hover:bg-gray-200 transition-colors flex items-center gap-2 text-sm"
           >
-            <Plus size={20} />
+            <Plus size={16} />
             Create Safe
           </button>
         </div>
 
         {/* Info Banner */}
-        <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-2xl p-6 mb-8">
+        <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 mb-8">
           <div className="flex items-start gap-4">
-            <Shield className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
+            <Shield className="w-6 h-6 text-gray-600 flex-shrink-0 mt-1" />
             <div>
               <h3 className="font-medium text-gray-900 mb-2">What is a Safe Account?</h3>
               <p className="text-sm text-gray-700 mb-3">
@@ -96,15 +96,15 @@ export default function EscrowPage() {
               </p>
               <ul className="text-sm text-gray-700 space-y-1">
                 <li className="flex items-center gap-2">
-                  <CheckCircle size={16} className="text-green-600" />
+                  <CheckCircle size={16} className="text-gray-600" />
                   Multiple owners can control the same account
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckCircle size={16} className="text-green-600" />
+                  <CheckCircle size={16} className="text-gray-600" />
                   Requires M-of-N signatures to execute transactions
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckCircle size={16} className="text-green-600" />
+                  <CheckCircle size={16} className="text-gray-600" />
                   Perfect for DAOs, businesses, and shared treasuries
                 </li>
               </ul>
@@ -116,8 +116,8 @@ export default function EscrowPage() {
         <div className="grid grid-cols-4 gap-4 mb-8">
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Shield size={20} className="text-blue-600" />
+              <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
+                <Shield size={20} className="text-gray-600" />
               </div>
               <div>
                 <p className="text-xs text-gray-500">Total Safes</p>
@@ -127,8 +127,8 @@ export default function EscrowPage() {
           </div>
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <CheckCircle size={20} className="text-green-600" />
+              <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
+                <CheckCircle size={20} className="text-gray-600" />
               </div>
               <div>
                 <p className="text-xs text-gray-500">Active</p>
@@ -140,8 +140,8 @@ export default function EscrowPage() {
           </div>
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <Users size={20} className="text-purple-600" />
+              <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
+                <Users size={20} className="text-gray-600" />
               </div>
               <div>
                 <p className="text-xs text-gray-500">Owned by Me</p>
@@ -153,8 +153,8 @@ export default function EscrowPage() {
           </div>
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                <Clock size={20} className="text-orange-600" />
+              <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
+                <Clock size={20} className="text-gray-600" />
               </div>
               <div>
                 <p className="text-xs text-gray-500">Pending</p>
@@ -236,19 +236,15 @@ function SafeCard({ safe, currentAddress, onSelect }) {
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-blue-500 rounded-xl flex items-center justify-center">
-            <Shield size={24} className="text-white" />
+          <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center">
+            <Shield size={24} className="text-gray-600" />
           </div>
           <div>
             <h3 className="font-medium text-gray-900">{safe.name}</h3>
             <p className="text-xs text-gray-500">{isCreator ? 'Creator' : 'Owner'}</p>
           </div>
         </div>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          safe.status === 'active' ? 'bg-green-100 text-green-800' :
-          safe.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-          'bg-gray-100 text-gray-800'
-        }`}>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800`}>
           {safe.status}
         </span>
       </div>
@@ -365,8 +361,8 @@ function CreateSafeModal({ onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <div>
@@ -408,7 +404,7 @@ function CreateSafeModal({ onClose, onSuccess }) {
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 250px)' }}>
+        <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 250px)' }}>
           {currentStep === 1 && (
             <div className="space-y-6">
               <h3 className="text-xl font-light text-gray-900 mb-6">Basic Information</h3>
@@ -562,10 +558,10 @@ function CreateSafeModal({ onClose, onSuccess }) {
                 </div>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                 <div className="flex items-start gap-3">
-                  <AlertCircle size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-blue-800">
+                  <AlertCircle size={20} className="text-gray-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-gray-800">
                     <p className="font-medium mb-1">Important</p>
                     <p>
                       Creating a Safe will deploy a smart contract on the {safeData.network} network.
@@ -647,13 +643,13 @@ function SafeDetailModal({ safe, onClose, onUpdate }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[85vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-blue-500 rounded-xl flex items-center justify-center">
-              <Shield size={32} className="text-white" />
+            <div className="w-16 h-16 bg-gray-200 rounded-xl flex items-center justify-center">
+              <Shield size={32} className="text-gray-600" />
             </div>
             <div>
               <h2 className="text-2xl font-light text-gray-900">{safe.name}</h2>
@@ -683,7 +679,7 @@ function SafeDetailModal({ safe, onClose, onUpdate }) {
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 200px)' }}>
+        <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 200px)' }}>
           {activeTab === 'overview' && (
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
