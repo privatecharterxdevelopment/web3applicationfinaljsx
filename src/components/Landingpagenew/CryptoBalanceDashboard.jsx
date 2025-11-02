@@ -83,6 +83,19 @@ export default function CryptoBalanceDashboard() {
     }
   }, [baseEthBalance, ethMainnetBalance, usdcBalance, isConnected, address]);
 
+  // Auto-refresh balances and transactions every 60 seconds
+  useEffect(() => {
+    if (!isConnected || !address) return;
+
+    const interval = setInterval(() => {
+      console.log('🔄 Auto-refreshing balances and transactions (60s interval)');
+      fetchAllTransactions();
+      updateBalances();
+    }, 60000); // 60 seconds
+
+    return () => clearInterval(interval);
+  }, [isConnected, address]);
+
   const fetchAllTransactions = async () => {
     if (!address) return;
 
@@ -565,6 +578,16 @@ export default function CryptoBalanceDashboard() {
                     </span>
                   ) : (
                     <span className="text-xs text-gray-500">Not connected</span>
+                  )}
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500">Network</span>
+                  {isConnected && chainId ? (
+                    <span className="px-2 py-1 bg-gray-100 rounded-lg text-xs font-medium text-gray-900">
+                      {chainId === base.id ? 'Base' : chainId === mainnet.id ? 'Ethereum' : `Chain ${chainId}`}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-500">-</span>
                   )}
                 </div>
                 <div className="flex justify-between items-center">
