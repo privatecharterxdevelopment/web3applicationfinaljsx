@@ -3328,7 +3328,7 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* Subscription Management View */}
           {!isTransitioning && activeCategory === 'subscription' && (
             <div className="w-full h-full overflow-y-auto">
-              <Subscriptionplans />
+              <Subscriptionplans onClose={() => setActiveCategory('chat')} />
             </div>
           )}
 

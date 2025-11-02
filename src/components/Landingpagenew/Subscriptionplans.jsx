@@ -1,47 +1,48 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
 
-const PricingPackages = () => {
+const PricingPackages = ({ onClose }) => {
   const { user } = useAuth();
+  const [showBusinessModal, setShowBusinessModal] = useState(false);
+  const [businessForm, setBusinessForm] = useState({
+    name: '',
+    email: '',
+    company: '',
+    phone: '',
+    requirements: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState('');
+
   const plans = [
-    {
-      id: 'free',
-      name: 'EXPLORER',
-      price: null,
-      chats: 2,
-      period: 'total',
-      stripeLink: 'https://sphera.ai/signup',
-      features: [
-        '2 AI Conversations',
-        'Text Only',
-        'Try Sphera AI',
-        'No Credit Card'
-      ]
-    },
     {
       id: 'starter',
       name: 'STARTER',
+      tagline: 'Get Started',
       price: 79,
-      chats: 15,
       period: 'month',
       stripeLink: 'https://buy.stripe.com/starter',
+      image: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/serviceImagesVector/Privatecharterx,map.png',
       features: [
         '15 AI Conversations',
         'Voice & Text Support',
         'Real-time Availability',
         'Basic Route Planning',
         'Email Support'
-      ]
+      ],
+      tags: ['Voice & Text', 'Real-time', 'Email Support']
     },
     {
       id: 'pro',
       name: 'PROFESSIONAL',
+      tagline: 'Most Popular',
       price: 149,
-      chats: 30,
       period: 'month',
       stripeLink: 'https://buy.stripe.com/pro',
-      badge: 'MOST POPULAR',
       popular: true,
+      image: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/serviceImagesVector/ethereum-logoprivatecharterx-dots.svg',
       features: [
         '30 AI Conversations',
         'Everything in Starter',
@@ -49,180 +50,261 @@ const PricingPackages = () => {
         'Advanced Analytics',
         'Dedicated Manager',
         'Custom Flight Requests'
-      ]
+      ],
+      tags: ['Priority', 'Analytics', 'Dedicated Manager', 'Custom Requests']
     },
     {
       id: 'elite',
       name: 'ELITE',
-      price: null,
-      chats: null,
-      period: 'custom',
-      isCustom: true,
-      contactLink: 'mailto:elite@sphera.ai',
-      badge: 'CUSTOM',
+      tagline: 'Unlimited Access',
+      price: 299,
+      period: 'month',
+      stripeLink: 'https://buy.stripe.com/elite',
+      image: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/serviceImagesVector/Privatecharterx,map.png',
       features: [
         'Unlimited Conversations',
         'Everything in Professional',
         'Unlimited Voice Calls',
         '24/7 Concierge Service',
         'White Glove Treatment',
-        'API Access',
-        'Dedicated Account Team',
-        'Custom Integration'
-      ]
+        'API Access'
+      ],
+      tags: ['Unlimited', '24/7 Concierge', 'API Access', 'White Glove']
     }
   ];
 
   const handlePlanClick = (plan) => {
-    if (plan.isCustom) {
-      window.location.href = plan.contactLink;
-    } else {
-      window.location.href = plan.stripeLink;
+    window.location.href = plan.stripeLink;
+  };
+
+  const handleBusinessRequest = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitMessage('');
+
+    try {
+      // Create support ticket in Supabase
+      const { error } = await supabase
+        .from('support_tickets')
+        .insert([
+          {
+            user_id: user?.id || null,
+            name: businessForm.name,
+            email: businessForm.email,
+            subject: `Business Solutions Request - ${businessForm.company}`,
+            message: `Company: ${businessForm.company}\nPhone: ${businessForm.phone}\n\nRequirements:\n${businessForm.requirements}`,
+            status: 'open',
+            category: 'business_solutions'
+          }
+        ]);
+
+      if (error) throw error;
+
+      setSubmitMessage('Thank you! Our team will contact you within 24 hours.');
+      setBusinessForm({ name: '', email: '', company: '', phone: '', requirements: '' });
+
+      setTimeout(() => {
+        setShowBusinessModal(false);
+        setSubmitMessage('');
+      }, 3000);
+    } catch (error) {
+      console.error('Error submitting business request:', error);
+      setSubmitMessage('Error submitting request. Please try again or email us at business@sphera.ai');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#fafafa] py-16 px-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#fafafa] py-6 relative">
+      <div className="max-w-full mx-auto px-4">
+        {/* Close Button */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="absolute top-6 right-6 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
+          >
+            <X size={24} className="text-gray-400" />
+          </button>
+        )}
+
         {/* Header */}
-        <div className="text-center mb-16">
-          <div className="h-px w-12 bg-black/20 mb-6 mx-auto" />
-          <p className="text-xs tracking-[0.3em] uppercase text-black/40 mb-3 font-light">Pricing</p>
-          <h1 className="text-4xl font-light text-black tracking-tight mb-3">Choose Your Plan</h1>
+        <div className="text-center mb-8">
+          <div className="h-px w-12 bg-black/20 mb-4 mx-auto" />
+          <p className="text-xs tracking-[0.3em] uppercase text-black/40 mb-2 font-light">Pricing</p>
+          <h1 className="text-3xl font-light text-black tracking-tight mb-2">Choose Your Plan</h1>
           <p className="text-sm text-black/40 font-light">Select the perfect journey for your needs</p>
-          <div className="h-px w-12 bg-black/20 mx-auto mt-6" />
+          <div className="h-px w-12 bg-black/20 mx-auto mt-4" />
         </div>
 
-        {/* Free Plan - Horizontal Bar */}
-        {plans.filter(p => p.id === 'free').map((plan) => (
-          <div
-            key={plan.id}
-            onClick={() => handlePlanClick(plan)}
-            className="mb-8 bg-white/60 backdrop-blur-xl border border-black/10 rounded-3xl p-6 cursor-pointer transition-all duration-300 hover:scale-[1.01]"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-6">
-              {/* Left: Plan Info */}
-              <div className="flex-1 min-w-[200px]">
-                <p className="text-[10px] tracking-[0.3em] uppercase text-black/40 mb-1 font-light">Plan</p>
-                <h3 className="text-2xl font-light text-black tracking-tight mb-2">{plan.name}</h3>
-                <p className="text-3xl font-light text-black">Free</p>
-              </div>
+        {/* Plans Grid */}
+        <div className="space-y-4 mb-6 max-w-6xl mx-auto">
+          {/* Three Main Plans in Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {plans.map((plan) => (
+              <div
+                key={plan.id}
+                onClick={() => handlePlanClick(plan)}
+                className={`group bg-white border rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer ${
+                  plan.popular ? 'border-black ring-2 ring-black/10' : 'border-gray-100 hover:border-gray-200'
+                }`}
+              >
+                {plan.popular && (
+                  <div className="mb-4">
+                    <span className="bg-black text-white px-3 py-1 rounded-full text-xs font-medium">
+                      MOST POPULAR
+                    </span>
+                  </div>
+                )}
 
-              {/* Middle: Features */}
-              <div className="flex-1 min-w-[300px]">
-                <p className="text-[10px] tracking-[0.2em] uppercase text-black/40 mb-3 font-light">Includes</p>
-                <div className="flex flex-wrap gap-4">
-                  {plan.features.map((feature, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <div className="w-1 h-1 rounded-full bg-black/20" />
-                      <p className="text-xs text-black/60 font-light">{feature}</p>
-                    </div>
+                <h3 className="text-xl font-light text-gray-900 mb-1 leading-tight">
+                  {plan.name}
+                  <br />
+                  <span className="text-gray-400 text-sm">{plan.tagline}</span>
+                </h3>
+
+                <div className="my-4">
+                  <span className="text-4xl font-light text-gray-900">${plan.price}</span>
+                  <span className="text-gray-400 text-sm">/{plan.period}</span>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {plan.tags.map((tag, index) => (
+                    <span key={index} className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                      {tag}
+                    </span>
                   ))}
                 </div>
-              </div>
 
-              {/* Right: CTA */}
-              <div className="flex-shrink-0">
-                <button className="bg-gray-400 text-white px-8 py-3 rounded-2xl text-xs tracking-[0.2em] uppercase font-light cursor-default whitespace-nowrap" disabled>
-                  In Usage
-                </button>
+                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+                  +
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Business Solutions Card - Full Width */}
+          <div
+            onClick={() => setShowBusinessModal(true)}
+            className="group bg-white border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+          >
+            <h3 className="text-xl font-light text-gray-900 mb-2 leading-tight">
+              Business Solutions
+              <br />
+              <span className="text-gray-400 text-sm">Custom Enterprise Plans</span>
+            </h3>
+            <p className="text-gray-600 text-sm leading-relaxed mb-4">
+              Tailored solutions for your organization. Unlimited conversations, dedicated support team, custom integrations,
+              and white-label options. Contact us to discuss your requirements.
+            </p>
+            <div className="flex flex-wrap gap-2 mb-4">
+                <span className="bg-gray-200 px-3 py-1 rounded-full text-xs text-gray-700">Unlimited Access</span>
+                <span className="bg-gray-200 px-3 py-1 rounded-full text-xs text-gray-700">Dedicated Team</span>
+                <span className="bg-gray-200 px-3 py-1 rounded-full text-xs text-gray-700">Custom Integration</span>
+                <span className="bg-gray-200 px-3 py-1 rounded-full text-xs text-gray-700">White Label</span>
+                <span className="bg-gray-200 px-3 py-1 rounded-full text-xs text-gray-700">SLA Guarantee</span>
+              </div>
+              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+                +
               </div>
             </div>
           </div>
-        ))}
+        </div>
 
-        {/* Paid Plans - Cards */}
-        <div className="grid md:grid-cols-3 gap-6">
-          {plans.filter(p => p.id !== 'free').map((plan) => (
-            <div
-              key={plan.id}
-              onClick={() => handlePlanClick(plan)}
-              className={`relative backdrop-blur-xl rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-[1.02] ${
-                plan.popular 
-                  ? 'bg-white/80 border-2 border-black' 
-                  : 'bg-white/60 border border-black/10'
-              }`}
-            >
-              {/* Badge */}
-              {plan.badge && (
-                <div className="absolute top-0 right-0 bg-black text-white px-3 py-1 text-[9px] tracking-[0.2em] font-light">
-                  {plan.badge}
-                </div>
-              )}
+        {/* Business Solutions Modal */}
+        {showBusinessModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="mb-6">
+                <h2 className="text-2xl font-light text-gray-900 mb-2">Business Solutions Request</h2>
+                <p className="text-gray-600 text-sm">Tell us about your requirements and we'll get back to you within 24 hours.</p>
+              </div>
 
-              <div className="p-8">
-                {/* Plan Name */}
-                <div className="mb-8">
-                  <p className="text-[10px] tracking-[0.3em] uppercase text-black/40 mb-2 font-light">Plan</p>
-                  <h3 className="text-xl font-light text-black tracking-tight">{plan.name}</h3>
-                </div>
+            {submitMessage && (
+              <div className={`mb-6 p-4 rounded-lg ${submitMessage.includes('Error') ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
+                {submitMessage}
+              </div>
+            )}
 
-                {/* Price */}
-                <div className="mb-8 pb-8 border-b border-black/10">
-                  {plan.price !== null ? (
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-5xl font-light text-black">${plan.price}</span>
-                      <span className="text-sm text-black/40 font-light">/month</span>
-                    </div>
-                  ) : plan.isCustom ? (
-                    <div>
-                      <p className="text-2xl font-light text-black mb-1">Custom Pricing</p>
-                      <p className="text-xs text-black/40 font-light">Tailored to your needs</p>
-                    </div>
-                  ) : (
-                    <div>
-                      <p className="text-5xl font-light text-black mb-1">Free</p>
-                      <p className="text-xs text-black/40 font-light">No credit card required</p>
-                    </div>
-                  )}
-                </div>
+            <form onSubmit={handleBusinessRequest} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={businessForm.name}
+                  onChange={(e) => setBusinessForm({...businessForm, name: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                />
+              </div>
 
-                {/* Chat Count */}
-                <div className="mb-8 pb-8 border-b border-black/10">
-                  <p className="text-[10px] tracking-[0.2em] uppercase text-black/40 mb-2 font-light">Conversations</p>
-                  {plan.chats !== null ? (
-                    <p className="text-2xl font-light text-black">
-                      {plan.chats} <span className="text-sm text-black/40">
-                        {plan.period === 'total' ? 'total' : 'per month'}
-                      </span>
-                    </p>
-                  ) : (
-                    <p className="text-2xl font-light text-black">Unlimited</p>
-                  )}
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                <input
+                  type="email"
+                  required
+                  value={businessForm.email}
+                  onChange={(e) => setBusinessForm({...businessForm, email: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                />
+              </div>
 
-                {/* Features */}
-                <div className="space-y-3 mb-8">
-                  <p className="text-[10px] tracking-[0.2em] uppercase text-black/40 mb-4 font-light">Includes</p>
-                  {plan.features.map((feature, idx) => (
-                    <div key={idx} className="flex items-start gap-3">
-                      <div className="w-1 h-1 rounded-full bg-black/20 mt-2 flex-shrink-0" />
-                      <p className="text-xs text-black/60 font-light leading-relaxed">{feature}</p>
-                    </div>
-                  ))}
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Company *</label>
+                <input
+                  type="text"
+                  required
+                  value={businessForm.company}
+                  onChange={(e) => setBusinessForm({...businessForm, company: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                />
+              </div>
 
-                {/* CTA Button */}
-                <button 
-                  className={`w-full py-3 rounded-2xl text-xs tracking-[0.2em] uppercase font-light transition-all ${
-                    plan.id === 'free' 
-                      ? 'bg-gray-400 text-white cursor-default' 
-                      : 'bg-black text-white hover:bg-black/80'
-                  }`}
-                  disabled={plan.id === 'free'}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                <input
+                  type="tel"
+                  value={businessForm.phone}
+                  onChange={(e) => setBusinessForm({...businessForm, phone: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Requirements *</label>
+                <textarea
+                  required
+                  rows={4}
+                  value={businessForm.requirements}
+                  onChange={(e) => setBusinessForm({...businessForm, requirements: e.target.value})}
+                  placeholder="Tell us about your business needs, expected usage, required integrations, etc."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowBusinessModal(false)}
+                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={isSubmitting}
                 >
-                  {plan.id === 'free' ? 'In Usage' : plan.isCustom ? 'Contact Us' : 'Select Plan'}
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Submitting...' : 'Submit Request'}
                 </button>
               </div>
+            </form>
             </div>
-          ))}
+          </div>
         </div>
-
-        {/* Footer */}
-        <div className="text-center mt-12">
-          <p className="text-xs text-black/30 font-light">All plans include secure payments and instant confirmations</p>
-        </div>
-      </div>
+        )}
     </div>
   );
 };

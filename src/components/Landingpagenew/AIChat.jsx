@@ -248,7 +248,7 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
 
         if (event.results[event.results.length - 1].isFinal) {
           console.log('🎤 Voice input:', transcript);
-          handleSendMessage(transcript, 'voice');
+          handleSendMessage(transcript);
         }
       };
 
@@ -275,58 +275,8 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
     }
   }, []);
 
-  // Create welcome chat when activeChat is 'new'
-  const hasCreatedWelcomeRef = useRef(false);
-
-  useEffect(() => {
-    const createWelcomeChat = async () => {
-      if (activeChat !== 'new' || !user?.id || hasCreatedWelcomeRef.current) return;
-
-      hasCreatedWelcomeRef.current = true; // Prevent multiple creations
-
-      const welcomeMessages = [
-        "Hey! I'm Sphera AI. Where are we traveling today?",
-        "Hi Captain! Let's plan something great together.",
-        "Hello! I'm Sphera. How can I assist you today?"
-      ];
-
-      const randomWelcome = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
-
-      const welcomeMessage = {
-        role: 'assistant',
-        content: randomWelcome
-      };
-
-      try {
-        const { success, chat } = await chatService.createChat(user.id, 'New Chat', welcomeMessage);
-
-        if (success) {
-          const newChat = {
-            id: chat.id,
-            title: 'New Chat',
-            date: 'Just now',
-            messages: [welcomeMessage]
-          };
-
-          setChatHistory(prev => [newChat, ...prev]);
-          setActiveChat(chat.id);
-          await chatService.updateChatMessages(chat.id, [welcomeMessage], user.id);
-        }
-      } catch (error) {
-        console.error('Failed to create welcome chat:', error);
-        hasCreatedWelcomeRef.current = false; // Reset on error
-      }
-    };
-
-    createWelcomeChat();
-  }, [activeChat, user?.id]);
-
-  // Reset the welcome ref when switching away from 'new'
-  useEffect(() => {
-    if (activeChat !== 'new') {
-      hasCreatedWelcomeRef.current = false;
-    }
-  }, [activeChat]);
+  // DO NOT auto-create welcome chat - let user choose service bubble
+  // This prevents the endless loading issue
 
   // Toggle Voice Mode
   const toggleVoiceMode = useCallback(() => {
@@ -510,7 +460,7 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
           const text = data?.transcript || data?.text || data?.message;
           if (text) {
             setLastInputMethod('voice');
-            handleSendMessage(String(text), 'voice');
+            handleSendMessage(String(text));
           }
         });
         humeClient.onAudio((audioBase64) => {
@@ -561,7 +511,7 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
 
       // Send the message after a brief delay to ensure chat is set up
       setTimeout(() => {
-        handleSendMessage(initialQuery, 'text');
+        handleSendMessage(initialQuery);
         // Clear the initial query so it doesn't send again
         onQueryProcessed();
       }, 100);
@@ -1235,34 +1185,56 @@ As their luxury travel consultant, provide an enthusiastic response that:
       // Create new chat when starting from category overview
       const title = message.substring(0, 50) + (message.length > 50 ? '...' : '');
 
+      console.log('🆕 Creating new chat from service bubble:', { title, userId: user?.id });
+
       if (!user?.id) {
+        console.error('❌ No user ID found - user should be logged in!');
         setToast({ message: 'Please log in to start a chat', type: 'error' });
-        return;
-      }
-
-      const { success, chat } = await chatService.createChat(user.id, title, userMessage);
-
-      if (success && chat) {
-        const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
-        const newChat = {
-          id: chat.id,
-          title: chat.title,
-          date: 'Just now',
-          messages: [userMessage, loadingMsg]
-        };
-
-        // Update chat history and active chat
-        setChatHistory(prev => [newChat, ...prev]);
-        setActiveChat(chat.id);
-        workingChatId = chat.id;
-
-        console.log('✅ New chat created:', { id: chat.id, title: chat.title });
-      } else {
-        console.error('❌ Failed to create chat');
-        setToast({ message: 'Failed to create chat. Please try again.', type: 'error' });
         setIsProcessing(false);
         return;
       }
+
+      let chatId, chatTitle;
+
+      try {
+        const { success, chat } = await chatService.createChat(user.id, title, userMessage);
+
+        if (success && chat) {
+          chatId = chat.id;
+          chatTitle = chat.title;
+          console.log('✅ Chat created in database:', { id: chatId, title: chatTitle });
+        } else {
+          throw new Error('Chat creation returned false');
+        }
+      } catch (error) {
+        console.error('❌ Database error, creating temporary local chat:', error);
+        // Create temporary local chat if database fails
+        chatId = `temp-${Date.now()}`;
+        chatTitle = title;
+        setToast({ message: 'Using offline mode (database timeout)', type: 'warning' });
+      }
+
+      const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
+      const newChat = {
+        id: chatId,
+        title: chatTitle,
+        date: 'Just now',
+        messages: [userMessage, loadingMsg]
+      };
+
+      console.log('✅ Adding chat to history:', { id: chatId, title: chatTitle });
+
+      // Update chat history and active chat TOGETHER
+      setChatHistory(prev => {
+        const updated = [newChat, ...prev];
+        console.log('📝 Chat history updated, total chats:', updated.length);
+        return updated;
+      });
+
+      setActiveChat(chatId);
+      workingChatId = chatId;
+
+      console.log('✅ Active chat switched to:', chatId);
     } else {
       // Regular message in existing chat
       setChatHistory(prev => prev.map(c =>
@@ -2128,180 +2100,158 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
     }
   };
 
-  // NEW CHAT VIEW - Category overview with animated cards
+  // NEW CHAT VIEW - Monochromatic service bubbles
   if (activeChat === 'new') {
-    console.log('🎨 Rendering: NEW CHAT VIEW (category overview)');
+    console.log('🎨 Rendering: NEW CHAT VIEW (monochromatic service bubbles)');
 
-    const categories = [
+    const services = [
+      // RWS Services
       {
-        id: 'aviation',
-        title: 'Private Aviation',
-        icon: '✈️',
-        description: 'Jets, helicopters & empty legs',
-        color: 'from-blue-500/20 to-blue-600/20',
-        borderColor: 'border-blue-500/30',
-        prompt: 'I need help with private aviation services'
+        id: 'private-jets',
+        title: 'Private Jets',
+        description: 'Charter private jets worldwide',
+        prompt: 'I need help booking a private jet'
+      },
+      {
+        id: 'helicopters',
+        title: 'Helicopters',
+        description: 'Helicopter charter services',
+        prompt: 'I want to charter a helicopter'
       },
       {
         id: 'yachts',
         title: 'Luxury Yachts',
-        icon: '⛵',
-        description: 'Charter exclusive yachts worldwide',
-        color: 'from-cyan-500/20 to-cyan-600/20',
-        borderColor: 'border-cyan-500/30',
+        description: 'Charter exclusive yachts',
         prompt: 'I want to charter a yacht'
-      },
-      {
-        id: 'adventures',
-        title: 'Adventures & Experiences',
-        icon: '🏔️',
-        description: 'Unique luxury experiences',
-        color: 'from-green-500/20 to-green-600/20',
-        borderColor: 'border-green-500/30',
-        prompt: 'Show me luxury adventure packages'
       },
       {
         id: 'luxury-cars',
         title: 'Luxury Cars',
-        icon: '🚗',
         description: 'Premium chauffeur services',
-        color: 'from-purple-500/20 to-purple-600/20',
-        borderColor: 'border-purple-500/30',
         prompt: 'I need a luxury car service'
+      },
+      {
+        id: 'ground-transport',
+        title: 'Ground Transport',
+        description: 'VIP ground transportation',
+        prompt: 'I need ground transportation'
       },
       {
         id: 'events',
         title: 'Events & Sports',
-        icon: '🎭',
         description: 'VIP event experiences',
-        color: 'from-pink-500/20 to-pink-600/20',
-        borderColor: 'border-pink-500/30',
         prompt: 'I want to attend exclusive events'
+      },
+      {
+        id: 'adventures',
+        title: 'Adventures',
+        description: 'Luxury experiences worldwide',
+        prompt: 'Show me luxury adventure packages'
+      },
+      // Web3 Services
+      {
+        id: 'daos',
+        title: 'DAOs',
+        description: 'Create & manage DAOs',
+        prompt: 'Tell me about DAO creation and management'
+      },
+      {
+        id: 'escrow',
+        title: 'Escrow',
+        description: 'Multi-signature wallets',
+        prompt: 'I want to create a Safe escrow account'
+      },
+      {
+        id: 'marketplace',
+        title: 'Marketplace',
+        description: 'Trade tokenized assets',
+        prompt: 'Show me the asset marketplace'
+      },
+      {
+        id: 'p2p-trading',
+        title: 'P2P Trading',
+        description: 'Peer-to-peer trading',
+        prompt: 'I want to trade peer-to-peer'
+      },
+      {
+        id: 'swap',
+        title: 'Token Swap',
+        description: 'Exchange cryptocurrencies',
+        prompt: 'Help me swap tokens'
+      },
+      {
+        id: 'nft-marketplace',
+        title: 'NFT Marketplace',
+        description: 'Buy & sell NFTs',
+        prompt: 'Show me the NFT marketplace'
+      },
+      {
+        id: 'launchpad',
+        title: 'Launchpad',
+        description: 'Token launches & waitlists',
+        prompt: 'Tell me about upcoming token launches'
       },
       {
         id: 'tokenization',
         title: 'Asset Tokenization',
-        icon: '🪙',
-        description: 'Tokenize luxury assets',
-        color: 'from-amber-500/20 to-amber-600/20',
-        borderColor: 'border-amber-500/30',
-        prompt: 'Tell me about asset tokenization'
+        description: 'Tokenize real-world assets',
+        prompt: 'How does asset tokenization work?'
       },
       {
         id: 'general',
-        title: 'General Assistance',
-        icon: '💬',
+        title: 'General Help',
         description: 'Ask me anything',
-        color: 'from-gray-500/20 to-gray-600/20',
-        borderColor: 'border-gray-500/30',
         prompt: 'I have a general question'
       }
     ];
 
     return (
       <div className="h-full bg-transparent flex flex-col overflow-hidden">
-        {/* Voice Interactive Dotted Circle Animation */}
-        <div className="flex-shrink-0 px-8 py-12 text-center">
-          <div className="relative inline-block mb-6">
-            {/* Main dotted circle with voice animation */}
-            <div className="relative w-32 h-32">
-              {/* Outer rotating dotted circle */}
-              <svg className="absolute inset-0 w-full h-full animate-spin-slow" viewBox="0 0 100 100">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  fill="none"
-                  stroke="url(#gradient1)"
-                  strokeWidth="2"
-                  strokeDasharray="3 6"
-                  strokeLinecap="round"
-                  opacity="0.6"
-                />
-                <defs>
-                  <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#3b82f6" />
-                    <stop offset="100%" stopColor="#8b5cf6" />
-                  </linearGradient>
-                </defs>
-              </svg>
-
-              {/* Middle rotating dotted circle (opposite direction) */}
-              <svg className="absolute inset-0 w-full h-full animate-spin-reverse" viewBox="0 0 100 100">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="38"
-                  fill="none"
-                  stroke="url(#gradient2)"
-                  strokeWidth="2"
-                  strokeDasharray="4 8"
-                  strokeLinecap="round"
-                  opacity="0.5"
-                />
-                <defs>
-                  <linearGradient id="gradient2" x1="100%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#8b5cf6" />
-                    <stop offset="100%" stopColor="#ec4899" />
-                  </linearGradient>
-                </defs>
-              </svg>
-
-              {/* Inner pulsing circle */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-24 h-24 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full flex items-center justify-center backdrop-blur-xl border-2 border-white/30 shadow-xl animate-pulse-gentle">
-                  <MessageSquare size={36} className="text-gray-800" />
-                </div>
-              </div>
-
-              {/* Voice wave indicators */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="absolute w-28 h-28 rounded-full border-2 border-blue-400/20 animate-ping-slow"></div>
-                <div className="absolute w-32 h-32 rounded-full border-2 border-purple-400/20 animate-ping-slower"></div>
-              </div>
-            </div>
-          </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-3">How can Sphera AI help you today?</h2>
-          <p className="text-sm text-gray-600">Select a category or speak your request</p>
+        {/* Simple Header */}
+        <div className="flex-shrink-0 px-8 py-8 text-center">
+          <h2 className="text-2xl font-light text-gray-900 mb-2">Choose a Service</h2>
+          <p className="text-sm text-gray-500">Select a service to start your conversation</p>
         </div>
 
-        {/* Clean Category Bubbles */}
+        {/* Monochromatic Service Bubbles */}
         <div className="flex-1 overflow-y-auto px-8 pb-6">
-          <div className="flex flex-wrap justify-center gap-6 max-w-4xl mx-auto">
-            {categories.map((category, index) => (
+          <div className="flex flex-wrap justify-center gap-3 max-w-5xl mx-auto">
+            {services.map((service, index) => (
               <button
-                key={category.id}
-                onClick={() => {
-                  // Create a new chat with this category context
-                  handleSendMessage(category.prompt, 'text');
+                key={service.id}
+                onClick={async () => {
+                  // Create chat immediately and switch to it
+                  const chatId = `chat-${Date.now()}`;
+                  const userMessage = { role: 'user', content: service.prompt };
+                  const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
+
+                  const newChat = {
+                    id: chatId,
+                    title: service.title,
+                    date: 'Just now',
+                    messages: [userMessage, loadingMsg]
+                  };
+
+                  setChatHistory(prev => [newChat, ...prev]);
+                  setActiveChat(chatId);
+
+                  // Send the message to AI after switching
+                  setTimeout(() => {
+                    handleSendMessage(service.prompt);
+                  }, 100);
                 }}
-                className="group relative flex flex-col items-center"
+                className="group relative"
                 style={{
-                  animation: `bubbleIn 0.6s ease-out ${index * 0.08}s both`
+                  animation: `bubbleIn 0.5s ease-out ${index * 0.04}s both`
                 }}
               >
-                {/* Icon Bubble */}
-                <div className={`relative w-20 h-20 bg-gradient-to-br ${category.color} backdrop-blur-xl border-2 ${category.borderColor} rounded-full flex items-center justify-center mb-3 transition-all duration-300 group-hover:scale-110 group-hover:shadow-2xl`}>
-                  {/* Glow effect on hover */}
-                  <div className="absolute inset-0 rounded-full bg-white/0 group-hover:bg-white/20 transition-all duration-300"></div>
-
-                  {/* Icon */}
-                  <div className="relative text-4xl transform transition-transform group-hover:scale-110">
-                    {category.icon}
+                {/* Light Grey Bubble */}
+                <div className="px-6 py-3 bg-gray-100 hover:bg-gray-200 border border-gray-200 hover:border-gray-300 rounded-full transition-all duration-200 hover:shadow-md">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
+                      {service.title}
+                    </span>
                   </div>
-
-                  {/* Hover ring */}
-                  <div className="absolute inset-0 rounded-full border-2 border-white/0 group-hover:border-white/40 transition-all duration-300 scale-100 group-hover:scale-110"></div>
-                </div>
-
-                {/* Label */}
-                <div className="text-center max-w-[140px]">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-1 group-hover:text-black transition-colors">
-                    {category.title}
-                  </h3>
-                  <p className="text-xs text-gray-600 group-hover:text-gray-700 transition-colors leading-tight">
-                    {category.description}
-                  </p>
                 </div>
               </button>
             ))}
@@ -2330,7 +2280,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 onChange={(e) => setCurrentMessage(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && currentMessage.trim()) {
-                    handleSendMessage(currentMessage, 'text');
+                    handleSendMessage(currentMessage);
                   }
                 }}
                 placeholder={isVoiceMode ? "🎤 Listening... speak naturally" : "Or type your request here... e.g. 'Private jet from London to Monaco'"}
@@ -2339,7 +2289,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               />
 
               <button
-                onClick={() => handleSendMessage(currentMessage, 'text')}
+                onClick={() => handleSendMessage(currentMessage)}
                 disabled={!currentMessage.trim()}
                 className={`flex-shrink-0 p-2 rounded-lg transition-colors ${
                   currentMessage.trim()
@@ -2779,7 +2729,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               onChange={(e) => setCurrentMessage(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && currentMessage.trim() && !isSearching) {
-                  handleSendMessage(currentMessage, 'text');
+                  handleSendMessage(currentMessage);
                 }
               }}
               placeholder={isRecording ? "Listening..." : "Message Sphera..."}
@@ -2788,7 +2738,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             />
 
             <button
-              onClick={() => handleSendMessage(currentMessage, 'text')}
+              onClick={() => handleSendMessage(currentMessage)}
               disabled={!currentMessage.trim() || isSearching}
               className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
                 currentMessage.trim() && !isSearching
