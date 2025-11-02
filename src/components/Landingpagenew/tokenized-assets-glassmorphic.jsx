@@ -624,6 +624,7 @@ const TokenizedAssetsGlassmorphic = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user, profile, signOut } = useAuth();
   const { toasts, showToast, removeToast } = useToast();
+  const notificationCount = useNotificationCount(user?.id);
   const [showDashboard, setShowDashboard] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [adventureSubmitting, setAdventureSubmitting] = useState(false);
@@ -2946,10 +2947,10 @@ const TokenizedAssetsGlassmorphic = () => {
                   className="relative flex items-center justify-center transition-all duration-200"
                 >
                   <Bell size={16} className="text-gray-700" />
-                  {useNotificationCount(user?.id) > 0 && (
+                  {notificationCount > 0 && (
                     <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full flex items-center justify-center">
                       <span className="text-[8px] text-white font-medium">
-                        {useNotificationCount(user?.id) > 9 ? '9+' : useNotificationCount(user?.id)}
+                        {notificationCount > 9 ? '9+' : notificationCount}
                       </span>
                     </div>
                   )}
@@ -3915,7 +3916,7 @@ const TokenizedAssetsGlassmorphic = () => {
                         <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-1">Unread messages</p>
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-medium text-gray-900">
-                            {useNotificationCount(user?.id)} new
+                            {notificationCount} new
                           </span>
                         </div>
                       </button>
