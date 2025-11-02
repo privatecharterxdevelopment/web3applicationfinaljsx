@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   Search, Shield, Bell, Heart, Home, Layers, FolderOpen, Plus,
   Plane, Zap, Mountain, Car, MapPin, Sparkles, Rocket,
-  Leaf, Award, Settings, User, ChevronRight, ChevronDown, X, LogOut, MessageSquare, MessageCircle,
+  Leaf, Award, Settings, User, ChevronRight, ChevronDown, ChevronUp, X, LogOut, MessageSquare, MessageCircle,
   Users, Calendar, Package, Compass, ArrowLeft, Wallet, History, Crown, Gift, LayoutDashboard,
-  Mail, Phone, Globe, FileText, Edit3, Check, Loader2, Building2, Coins, Share2, Menu
+  Mail, Phone, Globe, FileText, Edit3, Check, Loader2, Building2, Coins, Share2, Menu, ExternalLink, SlidersHorizontal
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -43,6 +43,7 @@ import KYCForm from '../KYCForm';
 import ProfileSettings from '../ProfileSettings';
 import ProfileOverview from './ProfileOverview';
 import ProfileOverviewEnhanced from './ProfileOverviewEnhanced';
+import CryptoBalanceDashboard from './CryptoBalanceDashboard';
 import STOUTLDashboard from './STOUTLDashboard';
 import Marketplace from './Marketplace';
 import P2PMarketplace from './P2PMarketplace';
@@ -52,16 +53,17 @@ import MyLaunches from './MyLaunches';
 import { useNFT } from '../../context/NFTContext';
 import NFTBenefitsModal from '../NFTBenefitsModal';
 import CryptoPaymentModal from '../CryptoPaymentModal';
-import LaunchpadPage from './LaunchpadPage';
+import LaunchpadPageNew from './LaunchpadPageNew';
 import TransactionsPage from './TransactionsPage';
 import NFTsPage from './NFTsPage';
 import NFTMarketplace from './NFTMarketplace';
 import NotificationBell, { useNotificationCount } from '../NotificationBell';
 import NotificationCenter from '../NotificationCenter';
 
-import EventsSportsView from '../EventsSports/EventsSportsView';
+import EventsSportsView from '../EventsSports/EventsSportsView_NEW';
 import EventCart from '../EventsSports/EventCart';
 import SearchIndexPage from '../SearchIndexPage';
+import FavouriteButton from '../Favourites/FavouriteButton';
 import ReferralPage from './ReferralPage';
 import Subscriptionplans from './Subscriptionplans';
 import AdminDashboardEnhanced from '../AdminDashboardEnhanced';
@@ -620,7 +622,6 @@ const TokenizedAssetsGlassmorphic = () => {
   const { isAuthenticated, user, profile, signOut } = useAuth();
   const { toasts, showToast, removeToast } = useToast();
   const [showDashboard, setShowDashboard] = useState(false);
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [adventureSubmitting, setAdventureSubmitting] = useState(false);
   const [adventureSubmitSuccess, setAdventureSubmitSuccess] = useState(false);
@@ -677,6 +678,9 @@ const TokenizedAssetsGlassmorphic = () => {
   // Web Mode state
   const [webMode, setWebMode] = useState('rws'); // 'rws' or 'web3'
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Header collapse state
+  const [headersCollapsed, setHeadersCollapsed] = useState(false);
 
   // AI Chat state
   const [showChatOverview, setShowChatOverview] = useState(false);
@@ -770,7 +774,8 @@ const TokenizedAssetsGlassmorphic = () => {
   const [showJetDetail, setShowJetDetail] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [jetsViewMode, setJetsViewMode] = useState('grid'); // 'grid' or 'tabs'
+  const [jetsViewMode, setJetsViewMode] = useState('tabs'); // 'grid' or 'tabs'
+  const [jetsFiltersVisible, setJetsFiltersVisible] = useState(false);
 
   // Helicopters state variables
   const [helicoptersData, setHelicoptersData] = useState([]);
@@ -781,7 +786,8 @@ const TokenizedAssetsGlassmorphic = () => {
   const [helicoptersMaxPrice, setHelicoptersMaxPrice] = useState('');
   const [currentHelicoptersPage, setCurrentHelicoptersPage] = useState(1);
   const helicoptersPerPage = 6;
-  const [helicoptersViewMode, setHelicoptersViewMode] = useState('grid');
+  const [helicoptersViewMode, setHelicoptersViewMode] = useState('tabs');
+  const [helicoptersFiltersVisible, setHelicoptersFiltersVisible] = useState(false);
   const [selectedHelicopter, setSelectedHelicopter] = useState(null);
   const [showHelicopterDetail, setShowHelicopterDetail] = useState(false);
   const [currentHelicopterImageIndex, setCurrentHelicopterImageIndex] = useState(0);
@@ -795,7 +801,8 @@ const TokenizedAssetsGlassmorphic = () => {
   const [emptyLegsMaxPrice, setEmptyLegsMaxPrice] = useState('');
   const [currentEmptyLegsPage, setCurrentEmptyLegsPage] = useState(1);
   const emptyLegsPerPage = 6;
-  const [emptyLegsViewMode, setEmptyLegsViewMode] = useState('grid');
+  const [emptyLegsViewMode, setEmptyLegsViewMode] = useState('tabs');
+  const [emptyLegsFiltersVisible, setEmptyLegsFiltersVisible] = useState(false);
   const [selectedEmptyLeg, setSelectedEmptyLeg] = useState(null);
   const [showEmptyLegDetail, setShowEmptyLegDetail] = useState(false);
   const [currentEmptyLegImageIndex, setCurrentEmptyLegImageIndex] = useState(0);
@@ -884,7 +891,8 @@ const TokenizedAssetsGlassmorphic = () => {
 
   // AI Chat query state (for search integration)
   const [aiChatQuery, setAiChatQuery] = useState('');
-  const [adventuresViewMode, setAdventuresViewMode] = useState('grid');
+  const [adventuresViewMode, setAdventuresViewMode] = useState('tabs');
+  const [adventuresFiltersVisible, setAdventuresFiltersVisible] = useState(false);
   const [selectedAdventure, setSelectedAdventure] = useState(null);
   const [showAdventureDetail, setShowAdventureDetail] = useState(false);
   const [currentAdventureImageIndex, setCurrentAdventureImageIndex] = useState(0);
@@ -900,7 +908,8 @@ const TokenizedAssetsGlassmorphic = () => {
   const [luxuryCarsMaxPrice, setLuxuryCarsMaxPrice] = useState('');
   const [currentLuxuryCarsPage, setCurrentLuxuryCarsPage] = useState(1);
   const luxuryCarsPerPage = 6;
-  const [luxuryCarsViewMode, setLuxuryCarsViewMode] = useState('grid');
+  const [luxuryCarsViewMode, setLuxuryCarsViewMode] = useState('tabs');
+  const [luxuryCarsFiltersVisible, setLuxuryCarsFiltersVisible] = useState(false);
   const [selectedLuxuryCar, setSelectedLuxuryCar] = useState(null);
   const [showLuxuryCarDetail, setShowLuxuryCarDetail] = useState(false);
   const [currentLuxuryCarImageIndex, setCurrentLuxuryCarImageIndex] = useState(0);
@@ -911,6 +920,8 @@ const TokenizedAssetsGlassmorphic = () => {
   const [showCO2ProjectDetail, setShowCO2ProjectDetail] = useState(false);
   const [currentCO2ProjectImageIndex, setCurrentCO2ProjectImageIndex] = useState(0);
   const [co2ActiveTab, setCO2ActiveTab] = useState('details');
+  const [co2ViewMode, setCo2ViewMode] = useState('tabs');
+  const [co2FiltersVisible, setCo2FiltersVisible] = useState(false);
 
   // Blog post state
   const [latestBlogPost, setLatestBlogPost] = useState(null);
@@ -1157,17 +1168,6 @@ const TokenizedAssetsGlassmorphic = () => {
   }, [isAuthenticated]);
 
   // Close profile dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (showProfileDropdown && !event.target.closest('.profile-dropdown-container')) {
-        setShowProfileDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showProfileDropdown]);
-
   // Initialize blog sync on mount
   useEffect(() => {
     const initBlogSync = async () => {
@@ -2433,14 +2433,13 @@ const TokenizedAssetsGlassmorphic = () => {
 
   // RWS Category menu - for Real World Services
   const rwsCategoryMenu = [
-    { id: 'jets', label: 'Jets', icon: Plane, category: 'jets' },
-    { id: 'helicopter', label: 'Helis', icon: Zap, category: 'helicopter' },
-    { id: 'empty-legs', label: 'Empty Legs', icon: MapPin, category: 'empty-legs' },
+    { id: 'jets', label: 'Jets', icon: Plane, category: 'jets', externalLink: '/private-jets' },
+    { id: 'helicopter', label: 'Helis', icon: Zap, category: 'helicopter', externalLink: '/helicopter-charter' },
+    { id: 'empty-legs', label: 'Empty Legs', icon: MapPin, category: 'empty-legs', externalLink: '/empty-legs' },
     { id: 'adventures', label: 'Adventures', icon: Mountain, category: 'adventures' },
     { id: 'assets', label: 'Events & Sports', icon: Calendar, category: 'assets' },
     // { id: 'luxury-cars', label: 'Luxury Cars', icon: Car, category: 'luxury-cars' }, // Hidden - now integrated into Ground Transport
     { id: 'ground-transport', label: 'Ground Transport', icon: Car, category: 'ground-transport' },
-    { id: 'community', label: 'Community', icon: MessageCircle, category: 'community' },
     // { id: 'tailored-services', label: 'AI Travel Designer', icon: Compass, category: 'chat' },
     { id: 'co2-saf', label: 'CO₂/SAF', icon: Leaf, category: 'co2-saf' }
   ];
@@ -2449,10 +2448,9 @@ const TokenizedAssetsGlassmorphic = () => {
   const web3CategoryMenu = [
     { id: 'assets', label: 'My DeFi Assets', icon: Sparkles, category: 'assets' },
     { id: 'marketplace', label: 'Marketplace', icon: Package, category: 'marketplace' },
-    { id: 'p2p-trading', label: 'P2P Trading', icon: Share2, category: 'p2p-trading' },
+    { id: 'p2p-trading', label: 'P2P', icon: Share2, category: 'p2p-trading' },
     { id: 'swap', label: 'Swap', icon: ArrowLeft, category: 'swap' },
-    { id: 'community', label: 'Community', icon: MessageCircle, category: 'community' },
-    { id: 'dao', label: 'DAO Governance', icon: Users, category: 'dao' },
+    { id: 'dao', label: 'DAOs', icon: Users, category: 'dao' },
     { id: 'nft-marketplace', label: 'NFT Marketplace', icon: Shield, category: 'nft-marketplace' },
     { id: 'launchpad', label: 'Launchpad', icon: Zap, category: 'launchpad' }
   ];
@@ -2507,8 +2505,7 @@ const TokenizedAssetsGlassmorphic = () => {
     },
     { id: 'co2-certificates', label: 'CO2 Certificates', icon: Leaf, category: 'co2-certificates' },
     { id: 'chat-support', label: 'Chat Support', icon: MessageSquare, category: 'chat-support' },
-    { id: 'nft-marketplace', label: 'NFT Marketplace', icon: Shield, category: 'nft-marketplace', web3Only: true },
-    { id: 'kyc', label: 'KYC Verification', icon: Shield, category: 'kyc-verification' }
+    { id: 'nft-marketplace', label: 'NFT Marketplace', icon: Shield, category: 'nft-marketplace', web3Only: true }
   ];
 
   // Filter menu based on user role and webMode
@@ -2778,355 +2775,214 @@ const TokenizedAssetsGlassmorphic = () => {
             })}
           </nav>
 
-          {/* Bottom Section - Expandable */}
+          {/* Bottom Section - PVCX Balance Only */}
           <div className="mt-auto pt-4 border-t border-gray-600/30 transition-all duration-300">
-            {/* User Profile - Expandable with username and membership tier */}
-            <div className="relative px-2 group-hover:px-4 transition-all duration-300 profile-dropdown-container">
+            {/* PVCX Balance Widget */}
+            <div className="px-2 group-hover:px-4 transition-all duration-300">
               <button
-                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="w-10 group-hover:w-full h-10 rounded-full group-hover:rounded-lg flex items-center justify-center group-hover:justify-start group-hover:gap-3 group-hover:px-2 group-hover:bg-white/10 hover:bg-white/5 text-xs font-semibold transition-all duration-300"
-                title={user?.email?.split('@')[0] || 'User'}
+                onClick={() => {
+                  if (webMode === 'rws') {
+                    handleWebModeSwitch('web3');
+                  } else {
+                    setActiveCategory('pvcx-token');
+                  }
+                }}
+                className="w-10 group-hover:w-full h-10 rounded-full group-hover:rounded-lg flex items-center justify-center group-hover:justify-start group-hover:gap-2 group-hover:px-2 group-hover:bg-white/10 hover:bg-white/5 transition-all duration-300"
+                title={webMode === 'rws' ? 'Switch to Web3.0 for $PVCX Token' : '$PVCX Token Balance'}
               >
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0 text-white">
-                  {user?.email?.charAt(0).toUpperCase() || 'U'}
-                </div>
-                <div className="hidden group-hover:flex flex-col items-start flex-1 text-left">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold text-gray-900 truncate max-w-[100px]">
-                      {user?.email?.split('@')[0] || 'User'}
-                    </span>
-                    {user?.user_role === 'partner' && (
-                      <span className="bg-gray-900 text-white text-[9px] px-1.5 py-0.5 rounded font-medium">
-                        Partner
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-[10px] text-gray-600 capitalize">
-                    {subscriptionTier === 'explorer' ? 'Free' : subscriptionTier}
+                <img
+                  src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/PaymentIcons/Title-removebg-preview.png"
+                  alt="PVCX"
+                  className="w-10 h-10 object-contain flex-shrink-0"
+                />
+                <div className="hidden group-hover:flex items-center gap-1">
+                  <span className="text-xs font-semibold text-gray-900">
+                    {loadingPvcxBalance ? '...' : pvcxBalance.toFixed(3)}
                   </span>
+                  <span className="text-xs text-gray-600">$PVCX</span>
                 </div>
-                <ChevronRight size={14} className="hidden group-hover:block text-gray-400 flex-shrink-0" />
               </button>
-
-              {/* Profile Dropdown Menu */}
-              {showProfileDropdown && (
-                <div className="absolute bottom-full left-2 mb-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden z-50">
-                  <div className="p-3 border-b border-gray-100">
-                    <p className="text-xs font-semibold text-gray-900">{user?.email?.split('@')[0]}</p>
-                    <p className="text-[10px] text-gray-500">{user?.email}</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setShowProfileDropdown(false);
-                      setActiveCategory('dashboard');
-                      setDashboardView('profile');
-                    }}
-                    className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                  >
-                    <User size={12} />
-                    Profile Settings
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowProfileDropdown(false);
-                      setActiveView('subscription');
-                    }}
-                    className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                  >
-                    <Crown size={12} />
-                    Subscription
-                  </button>
-                  <div className="border-t border-gray-100"></div>
-                  <button
-                    onClick={async () => {
-                      try {
-                        await signOut();
-                        setShowProfileDropdown(false);
-                        navigate('/');
-                      } catch (error) {
-                        console.error('Sign out error:', error);
-                        showToast('Failed to sign out', 'error');
-                      }
-                    }}
-                    className="w-full px-3 py-2 text-left text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 font-medium"
-                  >
-                    <LogOut size={12} />
-                    Sign Out
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </aside>
 
         {/* Main Content Area - PART OF SAME CONTAINER */}
         <main className={`flex-1 overflow-y-auto flex flex-col ${webMode === 'web3' ? 'bg-white/10' : ''}`}>
-          {/* HEADER - Only greeting and icons - HIDDEN IN CHAT WITH CSS */}
-          <div className={`backdrop-blur-xl border-b sticky top-0 z-50 ${
+          {/* FIXED TOP BAR - Category menu links on left, icons and switcher on right */}
+          <div className={`sticky top-4 z-50 px-8 flex justify-between items-center pt-6 pr-6 ${
             activeCategory === 'chat' ? 'hidden' : ''
-          } ${
-            webMode === 'web3'
-              ? 'bg-white/25 border-white/30'
-              : 'bg-white/30 border-gray-200/50'
           }`}>
-            <div className="flex justify-between items-center px-8 py-3">
-              {/* Dynamic Greeting */}
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <span className={`text-lg font-semibold ${webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'}`}>
-                    Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {user?.email?.split('@')[0] || 'User'}
-                  </span>
-                  {user?.user_role === 'partner' && (
-                    <span className="bg-gray-900 text-white text-xs px-2 py-1 rounded font-medium">
-                      Partner
-                    </span>
-                  )}
-                </div>
-                
-                {/* Chat Usage Counter - HIDDEN */}
-                {/* <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-xl border ${webMode === 'web3' ? 'bg-white/30 border-gray-300/50' : 'bg-white/35 border-gray-300/50'}`}>
-                  <MessageSquare size={14} className={webMode === 'web3' ? 'text-gray-800' : 'text-gray-700'} />
-                  <span className={`text-xs font-semibold ${webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'}`}>
-                    {chatUsageCount}/{chatLimit === Infinity ? '∞' : chatLimit}
-                  </span>
-                  {chatUsageCount >= chatLimit && chatLimit !== Infinity && (
-                    <span className="text-[10px] text-red-600 font-medium">Limit reached</span>
-                  )}
-                </div> */}
+            {/* LEFT: Category Menu Links (collapsible, NO ICONS) */}
+            <div className="flex items-center gap-3">
+              {/* COLLAPSIBLE CATEGORY BUTTONS - RWS mode - NO ICONS */}
+              {!headersCollapsed && webMode === 'rws' && user?.user_role !== 'partner' && (
+                <>
+                  {rwsCategoryMenu.map((item) => {
+                    const isActive = activeCategory === item.category;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setActiveCategory(item.category);
+                          setShowJetDetail(false);
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-200 ${
+                          isActive
+                            ? 'bg-black text-white'
+                            : 'text-gray-700 hover:text-gray-900'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </>
+              )}
 
-                {/* Web Mode Switcher - Adapts to mode */}
-                <div className={`flex items-center gap-2 border rounded-full p-1 shadow-sm backdrop-blur-xl ${
-                  webMode === 'web3'
-                    ? 'bg-white/30 border-gray-300/50'
-                    : 'bg-white/35 border-gray-300/50'
-                }`}>
-                  <button
-                    onClick={() => handleWebModeSwitch('rws')}
-                    disabled={isTransitioning}
-                    className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-300 ${
-                      webMode === 'rws'
-                        ? 'bg-black text-white shadow-md'
-                        : webMode === 'web3'
-                        ? 'text-gray-700 hover:text-gray-900'
-                        : 'text-gray-600 hover:text-gray-900'
-                    } ${isTransitioning ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    RWS
-                  </button>
-                  <button
-                    onClick={() => handleWebModeSwitch('web3')}
-                    disabled={isTransitioning}
-                    className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-300 ${
-                      webMode === 'web3'
-                        ? 'bg-black text-white shadow-md'
-                        : 'text-gray-600 hover:text-gray-900'
-                    } ${isTransitioning ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    Web 3.0
-                  </button>
-                </div>
+              {/* COLLAPSIBLE CATEGORY BUTTONS - Web3 mode - NO ICONS */}
+              {!headersCollapsed && webMode === 'web3' && user?.user_role !== 'partner' && (
+                <>
+                  {web3CategoryMenu
+                    .filter(item => item.id !== 'assets')
+                    .map((item) => {
+                      const isActive = activeCategory === item.category;
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setActiveCategory(item.category);
+                            setShowJetDetail(false);
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-200 ${
+                            isActive
+                              ? 'bg-black text-white'
+                              : 'text-gray-700 hover:text-gray-900'
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                </>
+              )}
+            </div>
 
+            {/* RIGHT: Plus Icon + Icons + Switcher */}
+            <div className="flex items-center gap-3">
+              {/* Plus Icon - Thinner with short separator */}
+              <button
+                onClick={() => setHeadersCollapsed(!headersCollapsed)}
+                className="group flex items-center justify-center transition-all duration-300 hover:scale-110 mr-1"
+                title={headersCollapsed ? "Show header" : "Hide header"}
+              >
+                <Plus
+                  size={22}
+                  strokeWidth={1.5}
+                  className="transition-all duration-300 text-gray-800 group-hover:rotate-90"
+                />
+              </button>
+
+              {/* Short separator line */}
+              <div className="w-px h-4 bg-gray-300"></div>
+              {/* Favorites Icon - Only in RWS mode */}
+              {webMode !== 'web3' && (
+                <button
+                  onClick={() => setActiveCategory('favourites')}
+                  className="relative flex items-center justify-center transition-all duration-200"
+                  title="Favourites"
+                >
+                  <Heart size={16} className={activeCategory === 'favourites' ? 'fill-red-500 text-red-500' : 'text-gray-700'} />
+                  {favorites.length > 0 && (
+                    <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full flex items-center justify-center">
+                      <span className="text-[8px] text-white font-medium">{favorites.length}</span>
+                    </div>
+                  )}
+                </button>
+              )}
+
+              {/* Notifications Bell */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative flex items-center justify-center transition-all duration-200"
+                >
+                  <Bell size={16} className="text-gray-700" />
+                  {useNotificationCount(user?.id) > 0 && (
+                    <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full flex items-center justify-center">
+                      <span className="text-[8px] text-white font-medium">
+                        {useNotificationCount(user?.id) > 9 ? '9+' : useNotificationCount(user?.id)}
+                      </span>
+                    </div>
+                  )}
+                </button>
+                <NotificationBell
+                  isOpen={showNotifications}
+                  setIsOpen={setShowNotifications}
+                  onNavigate={(url) => {
+                    if (url.startsWith('/')) {
+                      const category = url.split('/')[1];
+                      setActiveCategory(category || 'overview');
+                    }
+                  }}
+                  onViewAll={() => {
+                    setActiveCategory('notifications');
+                    setShowNotifications(false);
+                  }}
+                />
               </div>
 
-              {/* Right Icons - Adapt to mode */}
-              <div className="flex items-center gap-1.5">
-                {/* PVCX Balance Widget - RWS: switches to Web3.0, Web3.0: opens token page */}
+              {/* Settings Icon */}
+              <button
+                onClick={() => {
+                  setActiveCategory('settings');
+                  setShowSettings(false);
+                }}
+                className="flex items-center justify-center transition-all duration-200"
+              >
+                <Settings size={16} className="text-gray-700" />
+              </button>
+
+              {/* User Profile Icon */}
+              <button
+                onClick={() => {
+                  setActiveCategory('dashboard');
+                  setDashboardView('profile');
+                }}
+                className="flex items-center justify-center transition-all duration-200"
+              >
+                <User size={16} className="text-gray-700" />
+              </button>
+
+              {/* Web Mode Switcher */}
+              <div className="flex items-center gap-1 border rounded-xl p-0.5 bg-white/20 backdrop-blur-md border-gray-200/30">
                 <button
-                  onClick={() => {
-                    if (webMode === 'rws') {
-                      handleWebModeSwitch('web3');
-                    } else {
-                      setActiveCategory('pvcx-token');
-                    }
-                  }}
-                  className={`px-3 py-1.5 backdrop-blur-xl rounded-lg flex items-center gap-1.5 transition-all duration-200 border ${
-                    webMode === 'web3'
-                      ? 'bg-white/40 hover:bg-white/50 text-gray-800 border-gray-300/50'
-                      : 'bg-white/35 hover:bg-white/40 text-gray-700 border-gray-300/50'
-                  }`}
-                  title={webMode === 'rws' ? 'Switch to Web3.0 for $PVCX Token' : '$PVCX Token Balance'}
+                  onClick={() => handleWebModeSwitch('rws')}
+                  disabled={isTransitioning}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-all duration-300 ${
+                    webMode === 'rws'
+                      ? 'bg-black text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  } ${isTransitioning ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  <img
-                    src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/PaymentIcons/Title-removebg-preview.png"
-                    alt="PVCX"
-                    className="w-4 h-4 object-contain"
-                  />
-                  <span className="text-xs font-semibold">
-                    {loadingPvcxBalance ? '...' : pvcxBalance.toFixed(3)}
-                  </span>
-                  <span className="text-xs text-gray-500">$PVCX</span>
+                  RWS
                 </button>
-
-                {/* Tokenize/Charter Button - RWS: Charter, Web3.0: Tokenize */}
                 <button
-                  onClick={() => {
-                    if (webMode === 'rws') {
-                      setActiveCategory('private-jet');
-                    } else {
-                      setActiveCategory('tokenization');
-                    }
-                  }}
-                  className={`h-7 backdrop-blur-xl rounded-lg flex items-center justify-center gap-1 px-3 transition-all duration-200 border ${
+                  onClick={() => handleWebModeSwitch('web3')}
+                  disabled={isTransitioning}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-all duration-300 ${
                     webMode === 'web3'
-                      ? 'bg-black hover:bg-gray-800 text-white border-gray-800'
-                      : 'bg-gray-800 hover:bg-black text-white border-gray-700'
-                  }`}
-                  title={webMode === 'rws' ? 'Charter a Jet' : 'Tokenize Asset'}
+                      ? 'bg-black text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  } ${isTransitioning ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  <Plus size={14} />
-                  <span className="text-xs font-medium">{webMode === 'rws' ? 'Charter' : 'Tokenize'}</span>
+                  Web 3.0
                 </button>
-
-                {/* Favorites/Heart Icon - Only in RWS mode */}
-                {webMode !== 'web3' && (
-                  <button
-                    onClick={() => {
-                      console.log('Favourites icon clicked');
-                      setActiveCategory('favourites');
-                    }}
-                    className="relative w-7 h-7 backdrop-blur-xl rounded-lg flex items-center justify-center transition-all duration-200 border bg-white/35 hover:bg-white/40 text-gray-700 border-gray-300/50"
-                    title="Favourites"
-                  >
-                    <Heart size={14} className={activeCategory === 'favourites' ? 'fill-red-500 text-red-500' : ''} />
-                    {favorites.length > 0 && (
-                      <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full flex items-center justify-center">
-                        <span className="text-[8px] text-white font-medium">{favorites.length}</span>
-                      </div>
-                    )}
-                  </button>
-                )}
-
-                {/* Notifications Bell - Real-time */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowNotifications(!showNotifications)}
-                    className={`relative w-7 h-7 backdrop-blur-xl rounded-lg flex items-center justify-center transition-all duration-200 border ${
-                      webMode === 'web3'
-                        ? 'bg-white/40 hover:bg-white/50 text-gray-800 border-gray-300/50'
-                        : 'bg-white/35 hover:bg-white/40 text-gray-700 border-gray-300/50'
-                    }`}
-                  >
-                    <Bell size={14} />
-                    {useNotificationCount(user?.id) > 0 && (
-                      <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full flex items-center justify-center">
-                        <span className="text-[8px] text-white font-medium">
-                          {useNotificationCount(user?.id) > 9 ? '9+' : useNotificationCount(user?.id)}
-                        </span>
-                      </div>
-                    )}
-                  </button>
-
-                  {/* Notification Dropdown */}
-                  <NotificationBell
-                    isOpen={showNotifications}
-                    setIsOpen={setShowNotifications}
-                    onNavigate={(url) => {
-                      // Handle internal navigation from notifications
-                      if (url.startsWith('/')) {
-                        const category = url.split('/')[1];
-                        setActiveCategory(category || 'overview');
-                      }
-                    }}
-                    onViewAll={() => {
-                      setActiveCategory('notifications');
-                      setShowNotifications(false);
-                    }}
-                  />
-                </div>
-
-                {/* Settings Icon */}
-                <button
-                  onClick={() => {
-                    setActiveCategory('settings');
-                    setShowSettings(false);
-                  }}
-                  className={`w-7 h-7 backdrop-blur-xl rounded-lg flex items-center justify-center transition-all duration-200 border ${
-                    webMode === 'web3'
-                      ? 'bg-white/40 hover:bg-white/50 text-gray-800 border-gray-300/50'
-                      : 'bg-white/35 hover:bg-white/40 text-gray-700 border-gray-300/50'
-                  }`}
-                >
-                  <Settings size={14} />
-                </button>
-
-                {/* User Profile - Icon only in Web3.0, with details in RWS */}
-                <div className="relative">
-                  <button
-                    onClick={() => {
-                      setActiveCategory('dashboard');
-                      setDashboardView('profile');
-                    }}
-                    className={`flex items-center gap-2 backdrop-blur-xl rounded-lg transition-all duration-200 border ${
-                      webMode === 'web3'
-                        ? 'w-7 h-7 justify-center bg-white/40 hover:bg-white/50 text-gray-800 border-gray-300/50'
-                        : 'px-2 py-1 bg-white/35 hover:bg-white/40 text-gray-700 border-gray-300/50'
-                    }`}
-                  >
-                    <div className="w-6 h-6 bg-black rounded-lg flex items-center justify-center text-white text-xs font-medium">
-                      {user?.name?.charAt(0) || user?.email?.charAt(0) || 'U'}
-                    </div>
-                    {webMode !== 'web3' && (
-                      <div className="hidden sm:block text-left">
-                        <div className="text-xs font-medium">{user?.name || 'User'}</div>
-                        <div className="text-[10px] text-gray-500 truncate max-w-20">{user?.email}</div>
-                      </div>
-                    )}
-                  </button>
-                </div>
-
-                {/* Wallet Connection Button - Only show in Web3 mode */}
-                {webMode === 'web3' && (
-                  <div className="relative">
-                    <WalletMenu onConnect={handleWalletConnect} iconOnly={true} />
-                    {isConnected && (
-                      <div className="absolute top-0 right-0 w-2 h-2 bg-green-500 rounded-full border border-white pointer-events-none z-10"></div>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
           </div>
 
-          {/* Category Navigation - Adapts to mode - HIDDEN IN CHAT */}
-          <div className={`flex items-center gap-2 px-8 py-3 overflow-x-auto border-b ${
-            activeCategory === 'chat' ? 'hidden' : ''
-          } ${
-            webMode === 'web3' ? 'border-white/30' : 'border-gray-200/50'
-          } ${user?.user_role === 'partner' ? 'hidden' : ''}`}>
-            {categoryMenu
-              .filter(item => {
-                // Hide "My DeFi Assets" bubble in Web3.0 mode (keep in sidebar only)
-                if (webMode === 'web3' && item.id === 'assets') return false;
-                return true;
-              })
-              .map((item) => {
-              const isActive = activeCategory === item.category;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveCategory(item.category);
-                    setShowJetDetail(false);
-                  }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-200 border backdrop-blur-xl ${
-                    webMode === 'web3'
-                      ? isActive
-                        ? 'bg-black text-white border-gray-800'
-                        : 'bg-white/30 text-gray-800 border-gray-300/50 hover:bg-white/40'
-                      : isActive
-                      ? 'bg-white text-gray-900 border-gray-300'
-                      : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-white hover:text-gray-900'
-                  }`}
-                >
-                  <item.icon size={14} />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
           {/* CONTENT AREA */}
-          <div className={`flex-1 ${activeCategory === 'chat' ? 'overflow-hidden' : 'overflow-y-auto'} ${activeCategory === 'ground-transport' || activeCategory === 'chat' ? 'p-0' : 'p-8'}`}>
+          <div className={`flex-1 ${activeCategory === 'chat' ? 'overflow-hidden' : 'overflow-y-auto'} ${activeCategory === 'ground-transport' || activeCategory === 'chat' ? 'p-0 pt-4' : 'p-8 pt-20'}`}>
 
           {/* Transition Loader - Video Animation */}
           {isTransitioning && (
@@ -3300,10 +3156,10 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
-          {/* Profile Overview View - Enhanced Analytics Dashboard */}
+          {/* Profile Overview View - Crypto Balance Dashboard */}
           {!isTransitioning && activeCategory === 'dashboard' && dashboardView === 'profile' && (
             <div className="w-full h-full overflow-y-auto">
-              <ProfileOverviewEnhanced />
+              <CryptoBalanceDashboard />
             </div>
           )}
 
@@ -3641,6 +3497,18 @@ const TokenizedAssetsGlassmorphic = () => {
                 {/* RWS Mode Only: Search Input & Quick Action Buttons */}
                 {webMode === 'rws' && (
                   <>
+                    {/* Greeting */}
+                    <div className="mb-6 text-left">
+                      <h1 className="text-3xl font-light text-gray-900">
+                        Good {(() => {
+                          const hour = new Date().getHours();
+                          if (hour < 12) return 'morning';
+                          if (hour < 18) return 'afternoon';
+                          return 'evening';
+                        })()}, <span className="text-gray-400">{user?.first_name || user?.name || 'there'}</span>
+                      </h1>
+                    </div>
+
                     {/* Intelligent Search with Autocomplete */}
                     <div className="mb-8">
                       <IntelligentSearch
@@ -4218,7 +4086,7 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* Launchpad */}
           {!isTransitioning && activeCategory === 'launchpad' && (
             <div className="w-full h-full overflow-y-auto">
-              <LaunchpadPage />
+              <LaunchpadPageNew />
             </div>
           )}
 
@@ -4247,13 +4115,6 @@ const TokenizedAssetsGlassmorphic = () => {
           {!isTransitioning && activeCategory === 'p2p-trading' && (
             <div className="w-full h-full overflow-y-auto">
               <P2PMarketplace />
-            </div>
-          )}
-
-          {/* Community */}
-          {!isTransitioning && activeCategory === 'community' && (
-            <div className="w-full h-full overflow-y-auto">
-              <CommunityPage />
             </div>
           )}
 
@@ -4314,50 +4175,47 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* Jets View */}
           {!isTransitioning && activeCategory === 'jets' && (
             <div className="w-full flex-1 flex flex-col">
-              {/* Floating Banner with Video Background */}
-              {!showJetDetail && (
-                <div className="relative w-full h-40 rounded-2xl overflow-hidden mb-8 shadow-lg bg-black">
-                  <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-full h-full object-cover rounded-2xl"
-                  >
-                    <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/fucking%20videos/5778800-uhd_3840_2160_24fps.mp4" type="video/mp4" />
-                  </video>
-
-                {/* Brighter Grey Gradient Filter - Light to Dark */}
-                <div className="absolute inset-0 bg-gradient-to-r from-white/70 via-gray-300/60 to-gray-600/70 pointer-events-none rounded-2xl" />
-                </div>
-              )}
 
               {!showJetDetail && (
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">Private Jets</h2>
 
                   <div className="flex items-center gap-3">
+                    {/* Filter Toggle Button */}
+                    <button
+                      onClick={() => setJetsFiltersVisible(!jetsFiltersVisible)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
+                        jetsFiltersVisible
+                          ? 'bg-gray-800 text-white border-gray-800'
+                          : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
+                      }`}
+                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                    >
+                      <SlidersHorizontal size={14} />
+                      <span>Filters</span>
+                    </button>
+
                     {/* View Mode Switcher */}
-                    <div className="flex items-center gap-2 bg-white/35 border border-gray-300/50 rounded-lg p-1" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                    <div className="flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
                       <button
                         onClick={() => setJetsViewMode('grid')}
                         className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
                           jetsViewMode === 'grid'
-                            ? 'bg-gray-800 text-white'
-                            : 'text-gray-600 hover:text-gray-800'
+                            ? 'bg-gray-800 text-white shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
                         }`}
                       >
-                        Grid View
+                        Grid
                       </button>
                       <button
                         onClick={() => setJetsViewMode('tabs')}
                         className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
                           jetsViewMode === 'tabs'
-                            ? 'bg-gray-800 text-white'
-                            : 'text-gray-600 hover:text-gray-800'
+                            ? 'bg-gray-800 text-white shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
                         }`}
                       >
-                        Tabs View
+                        Tabs
                       </button>
                     </div>
 
@@ -4387,8 +4245,8 @@ const TokenizedAssetsGlassmorphic = () => {
               )}
 
               {/* Filters - Glassmorphic - Only show when not viewing detail */}
-              {!showJetDetail && (
-                <div className="bg-white/35 rounded-lg border border-gray-300/50 p-5 mb-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+              {!showJetDetail && jetsFiltersVisible && (
+                <div className="bg-gray-100/60 rounded-lg border border-gray-300/50 p-5 mb-6 backdrop-blur-xl transition-all duration-300" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
                 <div className="grid grid-cols-5 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-800 mb-2">Aircraft Category</label>
@@ -4503,6 +4361,24 @@ const TokenizedAssetsGlassmorphic = () => {
                             <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium text-gray-800 backdrop-blur-sm">⌂ {jet.category}</div>
                           </div>
                         </div>
+                        <FavouriteButton
+                          item={{
+                            id: jet.id,
+                            type: 'jet',
+                            name: jet.name,
+                            location: jet.location,
+                            image: jet.image,
+                            category: jet.category,
+                            price: jet.totalPrice,
+                            metadata: {
+                              capacity: jet.capacity,
+                              range: jet.range,
+                              manufacturer: jet.rawData?.manufacturer
+                            }
+                          }}
+                          variant="floating"
+                          size={18}
+                        />
                       </div>
                       <div className="flex-1 p-5 flex flex-col">
                         <div className="flex items-center justify-between mb-3">
@@ -5046,52 +4922,47 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* Helicopter View */}
           {!isTransitioning && activeCategory === 'helicopter' && (
             <div className="w-full flex-1 flex flex-col">
-              {/* Floating Banner with Video Background */}
-              {!showHelicopterDetail && (
-                <div className="relative w-full h-40 rounded-2xl overflow-hidden mb-8 shadow-lg bg-black">
-                  <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-full h-full object-cover rounded-2xl"
-                    onLoadedData={() => console.log('Video loaded successfully')}
-                    onError={(e) => console.error('Video error:', e)}
-                  >
-                    <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/fucking%20videos/2771611-uhd_3840_2160_24fps.mp4" type="video/mp4" />
-                  </video>
-
-                  {/* Brighter Grey Gradient Filter - Light to Dark */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/70 via-gray-300/60 to-gray-600/70 pointer-events-none rounded-2xl" />
-                </div>
-              )}
 
               {!showHelicopterDetail && (
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">Helicopter Charters</h2>
 
                   <div className="flex items-center gap-3">
+                    {/* Filter Toggle Button */}
+                    <button
+                      onClick={() => setHelicoptersFiltersVisible(!helicoptersFiltersVisible)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
+                        helicoptersFiltersVisible
+                          ? 'bg-gray-800 text-white border-gray-800'
+                          : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
+                      }`}
+                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                    >
+                      <SlidersHorizontal size={14} />
+                      <span>Filters</span>
+                    </button>
+
                     {/* View Mode Switcher */}
-                    <div className="flex items-center gap-2 bg-white/35 border border-gray-300/50 rounded-lg p-1" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                    <div className="flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
                       <button
                         onClick={() => setHelicoptersViewMode('grid')}
                         className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
                           helicoptersViewMode === 'grid'
-                            ? 'bg-gray-800 text-white'
-                            : 'text-gray-600 hover:text-gray-800'
+                            ? 'bg-gray-800 text-white shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
                         }`}
                       >
-                        Grid View
+                        Grid
                       </button>
                       <button
                         onClick={() => setHelicoptersViewMode('tabs')}
                         className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
                           helicoptersViewMode === 'tabs'
-                            ? 'bg-gray-800 text-white'
-                            : 'text-gray-600 hover:text-gray-800'
+                            ? 'bg-gray-800 text-white shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
                         }`}
                       >
-                        Tabs View
+                        Tabs
                       </button>
                     </div>
 
@@ -5125,8 +4996,8 @@ const TokenizedAssetsGlassmorphic = () => {
               )}
 
               {/* Filters - Glassmorphic */}
-              {!showHelicopterDetail && (
-              <div className="mb-8">
+              {!showHelicopterDetail && helicoptersFiltersVisible && (
+              <div className="bg-gray-100/60 rounded-lg border border-gray-300/50 p-5 mb-6 backdrop-blur-xl transition-all duration-300" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
                 <div className="grid grid-cols-5 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-800 mb-2">Category</label>
@@ -5246,6 +5117,24 @@ const TokenizedAssetsGlassmorphic = () => {
                             <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium text-gray-800 backdrop-blur-sm">🚁 {heli.category.substring(0, 20)}</div>
                           </div>
                         </div>
+                        <FavouriteButton
+                          item={{
+                            id: heli.id,
+                            type: 'helicopter',
+                            name: heli.name,
+                            location: heli.location,
+                            image: heli.image,
+                            category: heli.category,
+                            price: heli.totalPrice,
+                            metadata: {
+                              capacity: heli.capacity,
+                              range: heli.range,
+                              manufacturer: heli.rawData?.manufacturer
+                            }
+                          }}
+                          variant="floating"
+                          size={18}
+                        />
                       </div>
                       <div className="flex-1 p-5 flex flex-col">
                         <div className="flex items-center justify-between mb-3">
@@ -5673,50 +5562,49 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* Empty Legs View */}
           {!isTransitioning && activeCategory === 'empty-legs' && (
             <div className="w-full flex-1 flex flex-col">
-              {/* Floating Banner with Video Background */}
-              {!showEmptyLegDetail && (
-                <div className="relative w-full h-40 rounded-2xl overflow-hidden mb-8 shadow-lg bg-black">
-                  <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-full h-full object-cover rounded-2xl"
-                  >
-                    <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/fucking%20videos/12427469_3840_2160_24fps.mp4" type="video/mp4" />
-                  </video>
-
-                  {/* Brighter Grey Gradient Filter - Light to Dark */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/70 via-gray-300/60 to-gray-600/70 pointer-events-none rounded-2xl" />
-                </div>
-              )}
 
               {!showEmptyLegDetail && (
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">Empty Legs</h2>
 
-                {/* View Mode Switcher */}
-                <div className="flex items-center gap-2 bg-white/35 border border-gray-300/50 rounded-lg p-1" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                <div className="flex items-center gap-3">
+                  {/* Filter Toggle Button */}
                   <button
-                    onClick={() => setEmptyLegsViewMode('grid')}
-                    className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                      emptyLegsViewMode === 'grid'
-                        ? 'bg-gray-800 text-white'
-                        : 'text-gray-600 hover:text-gray-800'
+                    onClick={() => setEmptyLegsFiltersVisible(!emptyLegsFiltersVisible)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
+                      emptyLegsFiltersVisible
+                        ? 'bg-gray-800 text-white border-gray-800'
+                        : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
                     }`}
+                    style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                   >
-                    Grid View
+                    <SlidersHorizontal size={14} />
+                    <span>Filters</span>
                   </button>
-                  <button
-                    onClick={() => setEmptyLegsViewMode('tabs')}
-                    className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                      emptyLegsViewMode === 'tabs'
-                        ? 'bg-gray-800 text-white'
-                        : 'text-gray-600 hover:text-gray-800'
-                    }`}
-                  >
-                    Tabs View
-                  </button>
+
+                  {/* View Mode Switcher */}
+                  <div className="flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                    <button
+                      onClick={() => setEmptyLegsViewMode('grid')}
+                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                        emptyLegsViewMode === 'grid'
+                          ? 'bg-gray-800 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Grid
+                    </button>
+                    <button
+                      onClick={() => setEmptyLegsViewMode('tabs')}
+                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                        emptyLegsViewMode === 'tabs'
+                          ? 'bg-gray-800 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Tabs
+                    </button>
+                  </div>
                 </div>
               </div>
               )}
@@ -5737,8 +5625,8 @@ const TokenizedAssetsGlassmorphic = () => {
               )}
 
               {/* Filters - Glassmorphic */}
-              {!showEmptyLegDetail && (
-                <div className="bg-white/35 rounded-lg border border-gray-300/50 p-5 mb-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+              {!showEmptyLegDetail && emptyLegsFiltersVisible && (
+                <div className="bg-gray-100/60 rounded-lg border border-gray-300/50 p-5 mb-6 backdrop-blur-xl transition-all duration-300" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
                 <div className="grid grid-cols-5 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-800 mb-2">Region</label>
@@ -5862,6 +5750,25 @@ const TokenizedAssetsGlassmorphic = () => {
                             )}
                           </div>
                         </div>
+                        <FavouriteButton
+                          item={{
+                            id: leg.id,
+                            type: 'emptyleg',
+                            name: leg.name,
+                            location: leg.location,
+                            image: leg.image,
+                            category: leg.category,
+                            price: leg.totalPrice,
+                            metadata: {
+                              capacity: leg.capacity,
+                              range: leg.range,
+                              isFreeWithNFT: leg.isFreeWithNFT,
+                              manufacturer: leg.rawData?.manufacturer
+                            }
+                          }}
+                          variant="floating"
+                          size={18}
+                        />
                       </div>
                       <div className="flex-1 p-5 flex flex-col">
                         <div className="flex items-center justify-between mb-3">
@@ -6460,49 +6367,49 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* ADVENTURES SECTION */}
           {!isTransitioning && activeCategory === 'adventures' && (
             <div className="w-full flex-1 flex flex-col">
-              {/* Floating Banner with Video Background */}
-              {!showAdventureDetail && (
-                <div className="relative w-full h-40 rounded-2xl overflow-hidden mb-8 shadow-lg bg-black">
-                  <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-full h-full object-cover rounded-2xl"
-                  >
-                    <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/fucking%20videos/3573961-uhd_3840_2160_30fps.mp4" type="video/mp4" />
-                  </video>
-
-                  {/* Brighter Grey Gradient Filter - Light to Dark */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/70 via-gray-300/60 to-gray-600/70 pointer-events-none rounded-2xl" />
-                </div>
-              )}
 
               {/* Adventures Header with View Switcher */}
               {!showAdventureDetail && (
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">Adventures</h2>
-                  <div className="flex items-center gap-2 bg-white/35 border border-gray-300/50 rounded-lg p-1" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                  <div className="flex items-center gap-3">
+                    {/* Filter Toggle Button */}
                     <button
-                      onClick={() => setAdventuresViewMode('grid')}
-                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                        adventuresViewMode === 'grid'
-                          ? 'bg-gray-800 text-white'
-                          : 'text-gray-600 hover:bg-white/20'
+                      onClick={() => setAdventuresFiltersVisible(!adventuresFiltersVisible)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
+                        adventuresFiltersVisible
+                          ? 'bg-gray-800 text-white border-gray-800'
+                          : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
                       }`}
+                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
-                      Grid View
+                      <SlidersHorizontal size={14} />
+                      <span>Filters</span>
                     </button>
-                    <button
-                      onClick={() => setAdventuresViewMode('tabs')}
-                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                        adventuresViewMode === 'tabs'
-                          ? 'bg-gray-800 text-white'
-                          : 'text-gray-600 hover:bg-white/20'
-                      }`}
-                    >
-                      Tabs View
-                    </button>
+
+                    {/* View Mode Switcher */}
+                    <div className="flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                      <button
+                        onClick={() => setAdventuresViewMode('grid')}
+                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                          adventuresViewMode === 'grid'
+                            ? 'bg-gray-800 text-white shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Grid
+                      </button>
+                      <button
+                        onClick={() => setAdventuresViewMode('tabs')}
+                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                          adventuresViewMode === 'tabs'
+                            ? 'bg-gray-800 text-white shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Tabs
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -6524,8 +6431,8 @@ const TokenizedAssetsGlassmorphic = () => {
               )}
 
               {/* Adventures Filters */}
-              {!showAdventureDetail && (
-                <div className="bg-white/35 rounded-lg border border-gray-300/50 p-5 mb-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+              {!showAdventureDetail && adventuresFiltersVisible && (
+                <div className="bg-gray-100/60 rounded-lg border border-gray-300/50 p-5 mb-6 backdrop-blur-xl transition-all duration-300" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
                   <div className="grid grid-cols-5 gap-4">
                     <div>
                       <label className="block text-xs font-medium text-gray-800 mb-2">Region</label>
@@ -6655,6 +6562,23 @@ const TokenizedAssetsGlassmorphic = () => {
                             </div>
                           )}
                         </div>
+                        <FavouriteButton
+                          item={{
+                            id: adventure.id,
+                            type: 'adventure',
+                            name: adventure.name,
+                            location: adventure.location,
+                            image: adventure.image,
+                            category: adventure.category,
+                            price: adventure.totalPrice,
+                            metadata: {
+                              isFreeWithNFT: adventure.isFreeWithNFT,
+                              description: adventure.description
+                            }
+                          }}
+                          variant="floating"
+                          size={18}
+                        />
                       </div>
                       <div className="flex-1 p-5 flex flex-col">
                         <div className="flex items-center justify-between mb-3">
@@ -7423,56 +7347,56 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* LUXURY CARS SECTION */}
           {!isTransitioning && activeCategory === 'luxury-cars' && (
             <div className="w-full flex-1 flex flex-col">
-              {/* Floating Banner with Video Background */}
-              {!showLuxuryCarDetail && (
-                <div className="relative w-full h-40 rounded-2xl overflow-hidden mb-8 shadow-lg bg-black">
-                  <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-full h-full object-cover rounded-2xl"
-                  >
-                    <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/fucking%20videos/8747374-uhd_3840_2160_30fps.mp4" type="video/mp4" />
-                  </video>
-
-                  {/* Brighter Grey Gradient Filter - Light to Dark */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/70 via-gray-300/60 to-gray-600/70 pointer-events-none rounded-2xl" />
-                </div>
-              )}
 
               {/* Luxury Cars Header with View Switcher */}
               {!showLuxuryCarDetail && (
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">Luxury Cars</h2>
-                  <div className="flex items-center gap-2 bg-white/35 border border-gray-300/50 rounded-lg p-1" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                  <div className="flex items-center gap-3">
+                    {/* Filter Toggle Button */}
                     <button
-                      onClick={() => setLuxuryCarsViewMode('grid')}
-                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                        luxuryCarsViewMode === 'grid'
-                          ? 'bg-gray-800 text-white'
-                          : 'text-gray-600 hover:bg-white/20'
+                      onClick={() => setLuxuryCarsFiltersVisible(!luxuryCarsFiltersVisible)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
+                        luxuryCarsFiltersVisible
+                          ? 'bg-gray-800 text-white border-gray-800'
+                          : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
                       }`}
+                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
-                      Grid View
+                      <SlidersHorizontal size={14} />
+                      <span>Filters</span>
                     </button>
-                    <button
-                      onClick={() => setLuxuryCarsViewMode('tabs')}
-                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                        luxuryCarsViewMode === 'tabs'
-                          ? 'bg-gray-800 text-white'
-                          : 'text-gray-600 hover:bg-white/20'
-                      }`}
-                    >
-                      Tabs View
-                    </button>
+
+                    {/* View Mode Switcher */}
+                    <div className="flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                      <button
+                        onClick={() => setLuxuryCarsViewMode('grid')}
+                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                          luxuryCarsViewMode === 'grid'
+                            ? 'bg-gray-800 text-white shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Grid
+                      </button>
+                      <button
+                        onClick={() => setLuxuryCarsViewMode('tabs')}
+                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                          luxuryCarsViewMode === 'tabs'
+                            ? 'bg-gray-800 text-white shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Tabs
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
 
               {/* Luxury Cars Filters */}
-              {!showLuxuryCarDetail && (
-                <div className="bg-white/35 rounded-lg border border-gray-300/50 p-5 mb-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+              {!showLuxuryCarDetail && luxuryCarsFiltersVisible && (
+                <div className="bg-gray-100/60 rounded-lg border border-gray-300/50 p-5 mb-6 backdrop-blur-xl transition-all duration-300" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
                   <div className="grid grid-cols-5 gap-4">
                     <div>
                       <label className="block text-xs font-medium text-gray-800 mb-2">Car Type</label>
@@ -7592,6 +7516,23 @@ const TokenizedAssetsGlassmorphic = () => {
                             <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium">◆ {car.category}</div>
                           </div>
                         </div>
+                        <FavouriteButton
+                          item={{
+                            id: car.id,
+                            type: 'luxurycar',
+                            name: car.name,
+                            location: car.location,
+                            image: car.image,
+                            category: car.category,
+                            price: car.totalPrice,
+                            metadata: {
+                              manufacturer: car.rawData?.manufacturer,
+                              model: car.rawData?.model
+                            }
+                          }}
+                          variant="floating"
+                          size={18}
+                        />
                       </div>
                       <div className="flex-1 p-5 flex flex-col">
                         <div className="flex items-center justify-between mb-3">
@@ -8267,28 +8208,113 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* CO2/SAF Marketplace View */}
           {!isTransitioning && activeCategory === 'co2-saf' && !showCO2ProjectDetail && (
             <div className="w-full flex-1 flex flex-col">
-              {/* Floating Banner with Video Background */}
-              <div className="relative w-full h-40 rounded-2xl overflow-hidden mb-8 shadow-lg bg-black">
-                <video
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="w-full h-full object-cover rounded-2xl"
-                >
-                  <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/fucking%20videos/200439-912684352_small%20(1).mp4" type="video/mp4" />
-                </video>
-
-                {/* Brighter Grey Gradient Filter - Light to Dark */}
-                <div className="absolute inset-0 bg-gradient-to-r from-white/70 via-gray-300/60 to-gray-600/70 pointer-events-none rounded-2xl" />
-              </div>
 
               {/* Header with Title */}
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">CO₂ Offset & SAF Projects</h2>
+
+                <div className="flex items-center gap-3">
+                  {/* Filter Toggle Button */}
+                  <button
+                    onClick={() => setCo2FiltersVisible(!co2FiltersVisible)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
+                      co2FiltersVisible
+                        ? 'bg-gray-800 text-white border-gray-800'
+                        : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
+                    }`}
+                    style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                  >
+                    <SlidersHorizontal size={14} />
+                    <span>Filters</span>
+                  </button>
+
+                  {/* View Mode Switcher */}
+                  <div className="flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                    <button
+                      onClick={() => setCo2ViewMode('grid')}
+                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                        co2ViewMode === 'grid'
+                          ? 'bg-gray-800 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Grid
+                    </button>
+                    <button
+                      onClick={() => setCo2ViewMode('tabs')}
+                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                        co2ViewMode === 'tabs'
+                          ? 'bg-gray-800 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Tabs
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              {/* CO2 Projects Grid */}
+              {/* CO2 Filters - Collapsible */}
+              {co2FiltersVisible && (
+                <div className="bg-gray-100/60 rounded-lg border border-gray-300/50 p-5 mb-6 backdrop-blur-xl transition-all duration-300" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                  <div className="grid grid-cols-5 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-800 mb-2">Project Type</label>
+                      <select
+                        className="w-full px-3 py-2.5 bg-white/35 border border-gray-300/50 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
+                        style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                      >
+                        <option value="all">All Types</option>
+                        <option value="renewable">Renewable Energy</option>
+                        <option value="forestry">Forestry</option>
+                        <option value="saf">SAF Production</option>
+                        <option value="direct-capture">Direct Air Capture</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-800 mb-2">Location</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. India, Brazil"
+                        className="w-full px-3 py-2.5 bg-white/35 border border-gray-300/50 rounded-xl text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
+                        style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-800 mb-2">Standard</label>
+                      <select
+                        className="w-full px-3 py-2.5 bg-white/35 border border-gray-300/50 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
+                        style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                      >
+                        <option value="all">All Standards</option>
+                        <option value="vcs">VCS</option>
+                        <option value="gold">Gold Standard</option>
+                        <option value="cdm">CDM</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-800 mb-2">Max Price/Ton ($)</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 50"
+                        className="w-full px-3 py-2.5 bg-white/35 border border-gray-300/50 rounded-xl text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
+                        style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <button
+                        className="w-full px-4 py-2.5 bg-gray-100/60 text-gray-700 rounded-lg text-sm hover:bg-gray-200/60 transition-all"
+                        style={{ backdropFilter: 'blur(10px) saturate(150%)' }}
+                      >
+                        Clear Filters
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* CO2 Projects - Grid View */}
+              {co2ViewMode === 'grid' && (
               <div className="grid grid-cols-3 gap-5">
                 {co2ProjectsData.map((project) => (
                   <div
@@ -8319,6 +8345,26 @@ const TokenizedAssetsGlassmorphic = () => {
                           </div>
                         </div>
                       </div>
+                      <FavouriteButton
+                        item={{
+                          id: project.id,
+                          type: 'co2certificate',
+                          name: project.name,
+                          location: `${project.location}, ${project.country}`,
+                          image: project.image,
+                          category: project.category,
+                          price: project.pricePerTon,
+                          metadata: {
+                            projectId: project.projectId,
+                            ngoName: project.ngoName,
+                            certificationStandard: project.certificationStandard,
+                            methodology: project.methodology,
+                            availableTons: project.availableTons
+                          }
+                        }}
+                        variant="floating"
+                        size={18}
+                      />
                     </div>
 
                     <div className="p-5 flex flex-col flex-1">
@@ -8362,6 +8408,74 @@ const TokenizedAssetsGlassmorphic = () => {
                   </div>
                 ))}
               </div>
+              )}
+
+              {/* CO2 Projects - Tabs View */}
+              {co2ViewMode === 'tabs' && (
+              <div className="space-y-4">
+                {co2ProjectsData.map((project) => (
+                  <div
+                    key={project.id}
+                    onClick={() => {
+                      setSelectedCO2Project(project);
+                      setShowCO2ProjectDetail(true);
+                      setCurrentCO2ProjectImageIndex(0);
+                      setCO2ActiveTab('details');
+                    }}
+                    className="bg-white/35 hover:bg-white/40 rounded-xl flex h-48 hover:shadow-lg transition-all cursor-pointer border border-gray-300/50"
+                    style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                  >
+                    <div className="w-1/3 relative rounded-l-xl overflow-hidden">
+                      <img
+                        src={project.image}
+                        alt={project.name}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-3 left-3 flex flex-col space-y-1.5">
+                        <div className="flex space-x-1.5">
+                          <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium flex items-center space-x-1">
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                            <span>Verified</span>
+                          </div>
+                          <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium text-gray-800 backdrop-blur-sm">
+                            {project.certificationStandard}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 p-5 flex flex-col">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="bg-black text-white px-2 py-1 rounded text-xs font-semibold uppercase">PCX</span>
+                        <span className="text-xs text-gray-600">{project.location}, {project.country}</span>
+                      </div>
+
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">{project.name}</h3>
+
+                      <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div className="flex flex-col space-y-1">
+                          <span className="text-xs text-gray-600">Price/Ton</span>
+                          <span className="text-sm font-semibold text-gray-800">${project.pricePerTon.toFixed(2)}</span>
+                        </div>
+                        <div className="flex flex-col space-y-1">
+                          <span className="text-xs text-gray-600">Available</span>
+                          <span className="text-sm font-semibold text-gray-800">{project.availableTons.toLocaleString()} tons</span>
+                        </div>
+                        <div className="flex flex-col space-y-1">
+                          <span className="text-xs text-gray-600">Type</span>
+                          <span className="text-sm font-semibold text-gray-800">{project.category}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex space-x-4 mt-auto text-xs">
+                        <a href="#" className="text-gray-600 hover:text-gray-800">Project docs ↗</a>
+                        <a href="#" className="text-gray-600 hover:text-gray-800">Verification ⚖</a>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              )}
             </div>
           )}
 
