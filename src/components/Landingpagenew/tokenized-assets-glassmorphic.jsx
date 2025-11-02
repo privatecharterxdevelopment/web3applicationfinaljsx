@@ -3051,7 +3051,7 @@ const TokenizedAssetsGlassmorphic = () => {
 
               {/* Info Icon - Links to Helpdesk */}
               <button
-                onClick={() => setActiveCategory('support-tickets')}
+                onClick={() => setActiveCategory('chat-support')}
                 className="flex items-center justify-center transition-all duration-200"
                 title="Helpdesk"
               >
