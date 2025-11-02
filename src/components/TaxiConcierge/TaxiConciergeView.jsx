@@ -1079,10 +1079,10 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                   />
                   <button
                     onClick={handleUseCurrentLocation}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    title="Use current location"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-100 rounded-lg transition-colors group"
+                    title="Use my current location"
                   >
-                    <Navigation size={16} className="text-gray-400" />
+                    <Navigation size={16} className="text-gray-400 group-hover:text-black transition-colors" />
                   </button>
                 </div>
                 {showSuggestionsA && suggestionsA.length > 0 && (
@@ -1676,6 +1676,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
 
                 setShowDateTimeModal(false);
                 setBookingStep(3); // Move to car selection step
+                setIsPanelMinimized(false); // Ensure panel is expanded for car selection
               }}
               className="w-full py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors text-sm"
             >
