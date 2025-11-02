@@ -693,6 +693,10 @@ const TokenizedAssetsGlassmorphic = () => {
   const [chatUsageCount, setChatUsageCount] = useState(0);
   const [chatLimit, setChatLimit] = useState(2); // Default for Explorer
   
+  // User Requests state
+  const [userRequests, setUserRequests] = useState([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
+
   // SPV state
   const [userSPVs, setUserSPVs] = useState([]);
   const [loadingSPVs, setLoadingSPVs] = useState(false);
@@ -1572,6 +1576,29 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   };
 
+  // Fetch all user requests
+  const fetchUserRequests = async () => {
+    if (!user?.id) return;
+
+    setLoadingRequests(true);
+    try {
+      const { data, error } = await supabase
+        .from('user_requests')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setUserRequests(data || []);
+    } catch (error) {
+      console.error('Error fetching user requests:', error);
+      setUserRequests([]);
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
+
   // Fetch user's SPV formations
   const fetchUserSPVs = async () => {
     if (!user?.id) return;
@@ -1884,6 +1911,13 @@ const TokenizedAssetsGlassmorphic = () => {
   useEffect(() => {
     if (activeCategory === 'my-tokenized-assets' && user?.id) {
       fetchUserTokenizations();
+    }
+  }, [activeCategory, user?.id]);
+
+  // Load user requests for overview page
+  useEffect(() => {
+    if (activeCategory === 'overview' && user?.id) {
+      fetchUserRequests();
     }
   }, [activeCategory, user?.id]);
 
@@ -3863,7 +3897,7 @@ const TokenizedAssetsGlassmorphic = () => {
                       <p className={`text-2xl font-semibold mb-1 font-['DM_Sans'] ${
                         webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'
                       }`}>
-                        {recentRequests?.length || 0}
+                        {userRequests?.length || 0}
                       </p>
                       <p className={`text-[10px] font-['DM_Sans'] text-gray-600`}>
                         Active bookings
