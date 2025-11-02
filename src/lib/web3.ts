@@ -1,10 +1,12 @@
 // src/lib/web3.ts
 import { createPublicClient, http, parseAbi } from 'viem';
-import { base } from 'viem/chains';
+import { base, mainnet } from 'viem/chains';
 
 // ===== CONFIG =====
 const ALCHEMY_API_KEY = 'nAGVpg8dv1k94VJ_Q-SG0';
-const RPC_URL = `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`;
+const BASE_RPC_URL = `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`;
+const ETH_RPC_URL = `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`;
+const RPC_URL = BASE_RPC_URL; // Default for backwards compatibility
 const NFT_CONTRACT_ADDRESS = '0xDF86Cf55BD2E58aaaC09160AaD0ed8673382B339' as `0x${string}`;
 const CO2_CONTRACT_ADDRESS = '0x26F42A3B48D67103BD59D5C45118f353888501B0' as `0x${string}`;
 const CHAIN = base;
@@ -16,10 +18,20 @@ export const PVCX_TOKEN_ADDRESS = {
   base: '0x1234567890123456789012345678901234567890' as `0x${string}`
 };
 
-// viem public client for reads
+// viem public clients for reads (multi-chain)
 const publicClient = createPublicClient({
   chain: CHAIN,
   transport: http(RPC_URL)
+});
+
+const baseClient = createPublicClient({
+  chain: base,
+  transport: http(BASE_RPC_URL)
+});
+
+const ethClient = createPublicClient({
+  chain: mainnet,
+  transport: http(ETH_RPC_URL)
 });
 
 // ABI for ERC721 (minimal for ownership/metadata)
@@ -744,6 +756,152 @@ class Web3Service {
    */
   async getRecentTransactions(userAddress: `0x${string}`, limit: number = 50): Promise<WalletTransaction[]> {
     return this.getWalletTransactions(userAddress, { limit });
+  }
+
+  /**
+   * Get transactions from Ethereum mainnet
+   */
+  async getEthereumTransactions(userAddress: `0x${string}`, options?: {
+    limit?: number;
+    fromBlock?: number;
+    toBlock?: number | 'latest';
+  }): Promise<WalletTransaction[]> {
+    try {
+      console.log('🔍 Fetching Ethereum transactions for:', userAddress);
+
+      const limit = options?.limit || 100;
+      const toBlock = options?.toBlock || 'latest';
+      const url = ETH_RPC_URL;
+
+      // Fetch sent transactions
+      const sentResponse = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'alchemy_getAssetTransfers',
+          params: [{
+            fromAddress: userAddress,
+            toBlock: toBlock,
+            category: ['external', 'internal', 'erc20', 'erc721', 'erc1155'],
+            withMetadata: true,
+            excludeZeroValue: false,
+            maxCount: `0x${Math.floor(limit / 2).toString(16)}`
+          }]
+        })
+      });
+
+      const sentData = await sentResponse.json();
+
+      // Fetch received transactions
+      const receivedResponse = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 2,
+          method: 'alchemy_getAssetTransfers',
+          params: [{
+            toAddress: userAddress,
+            toBlock: toBlock,
+            category: ['external', 'internal', 'erc20', 'erc721', 'erc1155'],
+            withMetadata: true,
+            excludeZeroValue: false,
+            maxCount: `0x${Math.floor(limit / 2).toString(16)}`
+          }]
+        })
+      });
+
+      const receivedData = await receivedResponse.json();
+
+      const sentTransfers = sentData.result?.transfers || [];
+      const receivedTransfers = receivedData.result?.transfers || [];
+
+      console.log(`📤 Ethereum Sent: ${sentTransfers.length}, 📥 Received: ${receivedTransfers.length}`);
+
+      // Combine and format transactions
+      const allTransfers = [...sentTransfers, ...receivedTransfers];
+      const transactions: WalletTransaction[] = [];
+      const seenHashes = new Set<string>();
+
+      for (const transfer of allTransfers) {
+        if (seenHashes.has(transfer.hash)) continue;
+        seenHashes.add(transfer.hash);
+
+        const isSent = transfer.from.toLowerCase() === userAddress.toLowerCase();
+        const value = transfer.value || 0;
+        const valueInEth = typeof value === 'number' ? value.toString() : value.toString();
+
+        let type: 'send' | 'receive' | 'contract' = isSent ? 'send' : 'receive';
+        if (transfer.category === 'erc20' || transfer.category === 'erc721' || transfer.category === 'erc1155') {
+          type = 'contract';
+        }
+
+        const tokenTransfers: TokenTransfer[] = [];
+        if (transfer.category === 'erc20' || transfer.category === 'erc721' || transfer.category === 'erc1155') {
+          tokenTransfers.push({
+            token: transfer.rawContract?.address || transfer.to || '',
+            tokenSymbol: transfer.asset || 'Unknown',
+            from: transfer.from,
+            to: transfer.to || '',
+            value: value.toString(),
+            valueFormatted: `${value} ${transfer.asset || ''}`
+          });
+        }
+
+        const transaction: WalletTransaction = {
+          hash: transfer.hash,
+          from: transfer.from,
+          to: transfer.to || null,
+          value: value.toString(),
+          valueInEth: valueInEth,
+          timestamp: new Date(transfer.metadata?.blockTimestamp || Date.now()).getTime(),
+          blockNumber: parseInt(transfer.blockNum, 16) || 0,
+          status: 'success',
+          type,
+          gasUsed: transfer.metadata?.gasUsed || undefined,
+          gasPrice: transfer.metadata?.gasPrice || undefined,
+          methodId: undefined,
+          tokenTransfers: tokenTransfers.length > 0 ? tokenTransfers : undefined,
+          etherscanUrl: `https://etherscan.io/tx/${transfer.hash}`
+        };
+
+        transactions.push(transaction);
+      }
+
+      transactions.sort((a, b) => b.timestamp - a.timestamp);
+      console.log(`✅ Fetched ${transactions.length} Ethereum transactions`);
+      return transactions.slice(0, limit);
+
+    } catch (error) {
+      console.error('Failed to fetch Ethereum transactions:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get transactions from both Base and Ethereum mainnet
+   */
+  async getAllChainTransactions(userAddress: `0x${string}`, limit: number = 50): Promise<WalletTransaction[]> {
+    try {
+      console.log('🌐 Fetching transactions from all chains...');
+
+      const [baseTransactions, ethTransactions] = await Promise.all([
+        this.getWalletTransactions(userAddress, { limit: Math.floor(limit / 2) }),
+        this.getEthereumTransactions(userAddress, { limit: Math.floor(limit / 2) })
+      ]);
+
+      // Combine and sort by timestamp
+      const allTransactions = [...baseTransactions, ...ethTransactions];
+      allTransactions.sort((a, b) => b.timestamp - a.timestamp);
+
+      console.log(`✅ Total transactions: ${allTransactions.length} (Base: ${baseTransactions.length}, ETH: ${ethTransactions.length})`);
+      return allTransactions.slice(0, limit);
+    } catch (error) {
+      console.error('Failed to fetch transactions from all chains:', error);
+      return [];
+    }
   }
 
   /**

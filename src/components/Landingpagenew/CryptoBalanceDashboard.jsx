@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUpRight, ArrowDownLeft, History, Wallet, MessageCircle, Shield, User, Award, Plus, X } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, History, Wallet, MessageCircle, Shield, User, Award, Plus, X, ExternalLink } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer, YAxis, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
-import { useAccount, useBalance } from 'wagmi';
+import { useAccount, useBalance, useChainId } from 'wagmi';
 import { useAppKit } from '@reown/appkit/react';
 import { supabase } from '../../lib/supabase';
 import { formatEther } from 'viem';
+import { base, mainnet } from 'viem/chains';
+import { web3Service } from '../../lib/web3';
 
 export default function CryptoBalanceDashboard() {
   const { user } = useAuth();
   const { address, isConnected } = useAccount();
   const { open } = useAppKit();
+  const chainId = useChainId();
 
   // State for balances
   const [balances, setBalances] = useState([]);
@@ -18,6 +21,8 @@ export default function CryptoBalanceDashboard() {
   const [chartData, setChartData] = useState([]);
   const [showChart, setShowChart] = useState(true);
   const [activeSection, setActiveSection] = useState(null);
+  const [transactions, setTransactions] = useState([]);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
 
   // State for user data
   const [userRequests, setUserRequests] = useState([]);
@@ -26,16 +31,25 @@ export default function CryptoBalanceDashboard() {
   const [nftCount, setNftCount] = useState(0);
   const [investments, setInvestments] = useState([]);
 
-  // Fetch ETH balance using wagmi
-  const { data: ethBalance } = useBalance({
+  // Fetch ETH balance on Base
+  const { data: baseEthBalance } = useBalance({
     address: address,
+    chainId: base.id,
     watch: true,
   });
 
-  // Fetch USDC balance
+  // Fetch ETH balance on Ethereum mainnet
+  const { data: ethMainnetBalance } = useBalance({
+    address: address,
+    chainId: mainnet.id,
+    watch: true,
+  });
+
+  // Fetch USDC balance on Base
   const { data: usdcBalance } = useBalance({
     address: address,
     token: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
+    chainId: base.id,
     watch: true,
   });
 
@@ -50,6 +64,13 @@ export default function CryptoBalanceDashboard() {
     }
   }, [user?.id]);
 
+  // Fetch transactions when wallet connects
+  useEffect(() => {
+    if (isConnected && address) {
+      fetchAllTransactions();
+    }
+  }, [isConnected, address]);
+
   // Update balances when wallet data changes
   useEffect(() => {
     if (isConnected && address) {
@@ -58,8 +79,24 @@ export default function CryptoBalanceDashboard() {
     } else {
       // Show empty state when not connected
       setBalances([]);
+      setTransactions([]);
     }
-  }, [ethBalance, usdcBalance, isConnected, address]);
+  }, [baseEthBalance, ethMainnetBalance, usdcBalance, isConnected, address]);
+
+  const fetchAllTransactions = async () => {
+    if (!address) return;
+
+    setLoadingTransactions(true);
+    try {
+      const allTxs = await web3Service.getAllChainTransactions(address, 50);
+      setTransactions(allTxs);
+      console.log(`✅ Loaded ${allTxs.length} transactions`);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    } finally {
+      setLoadingTransactions(false);
+    }
+  };
 
   const fetchUserProfile = async () => {
     try {
@@ -151,41 +188,55 @@ export default function CryptoBalanceDashboard() {
   const updateBalances = async () => {
     setLoading(true);
     const newBalances = [];
+    const ethPrice = 3000; // Mock price - integrate coingecko API for real prices
 
-    // Add ETH balance
-    if (ethBalance) {
-      const ethValue = parseFloat(formatEther(ethBalance.value));
-      // Fetch ETH price from API (mock for now, you can integrate coingecko)
-      const ethPrice = 3000; // Mock price
-      newBalances.push({
-        symbol: 'ETH',
-        name: 'Ethereum',
-        balance: ethValue,
-        value: ethValue * ethPrice,
-        change: 2.4,
-      });
+    // Add ETH balance from Base
+    if (baseEthBalance) {
+      const ethValue = parseFloat(formatEther(baseEthBalance.value));
+      if (ethValue > 0) {
+        newBalances.push({
+          symbol: 'ETH',
+          name: 'Ethereum (Base)',
+          balance: ethValue,
+          value: ethValue * ethPrice,
+          change: 2.4,
+          chain: 'Base',
+          chainId: base.id,
+        });
+      }
     }
 
-    // Add USDC balance
+    // Add ETH balance from Ethereum mainnet
+    if (ethMainnetBalance) {
+      const ethValue = parseFloat(formatEther(ethMainnetBalance.value));
+      if (ethValue > 0) {
+        newBalances.push({
+          symbol: 'ETH',
+          name: 'Ethereum (Mainnet)',
+          balance: ethValue,
+          value: ethValue * ethPrice,
+          change: 2.4,
+          chain: 'Ethereum',
+          chainId: mainnet.id,
+        });
+      }
+    }
+
+    // Add USDC balance from Base
     if (usdcBalance) {
       const usdcValue = parseFloat(formatEther(usdcBalance.value));
-      newBalances.push({
-        symbol: 'USDC',
-        name: 'USD Coin',
-        balance: usdcValue,
-        value: usdcValue * 1.0,
-        change: 0.0,
-      });
+      if (usdcValue > 0) {
+        newBalances.push({
+          symbol: 'USDC',
+          name: 'USD Coin (Base)',
+          balance: usdcValue,
+          value: usdcValue * 1.0,
+          change: 0.0,
+          chain: 'Base',
+          chainId: base.id,
+        });
+      }
     }
-
-    // Add USDT (mock for now - add real token balance)
-    newBalances.push({
-      symbol: 'USDT',
-      name: 'Tether',
-      balance: 0,
-      value: 0,
-      change: 0.0,
-    });
 
     setBalances(newBalances);
     setLoading(false);
@@ -383,6 +434,71 @@ export default function CryptoBalanceDashboard() {
                     ))
                   ) : (
                     <p className="text-sm text-gray-500">Keine Assets gefunden</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            )}
+
+            {/* Blockchain Transactions Section - Only show when wallet is connected */}
+            {isConnected && (
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <button
+                onClick={() => toggleSection('transactions')}
+                className="w-full p-3 flex items-center justify-between hover:bg-gray-50 transition-all"
+              >
+                <div className="flex items-center gap-2">
+                  <History className="w-4 h-4 text-gray-600" />
+                  <span className="text-sm font-medium text-gray-900">Transactions</span>
+                  {transactions.length > 0 && (
+                    <span className="px-2 py-0.5 bg-black text-white rounded-full text-xs">
+                      {transactions.length}
+                    </span>
+                  )}
+                </div>
+                <Plus className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${activeSection === 'transactions' ? 'rotate-45' : ''}`} />
+              </button>
+              <div className={`transition-all duration-300 ease-in-out overflow-hidden ${activeSection === 'transactions' ? 'max-h-96 overflow-y-auto' : 'max-h-0'}`}>
+                <div className="p-4 bg-gray-50 space-y-2">
+                  {loadingTransactions ? (
+                    <p className="text-sm text-gray-500">Loading transactions...</p>
+                  ) : transactions.length > 0 ? (
+                    transactions.slice(0, 10).map((tx) => (
+                      <div key={tx.hash} className="py-2 border-b border-gray-200 last:border-0">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium text-gray-900 capitalize">{tx.type}</p>
+                              {tx.type === 'send' ? (
+                                <ArrowUpRight className="w-3 h-3 text-red-500" />
+                              ) : (
+                                <ArrowDownLeft className="w-3 h-3 text-green-500" />
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              {new Date(tx.timestamp).toLocaleDateString('de-DE')}
+                            </p>
+                            <a
+                              href={tx.etherscanUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1"
+                            >
+                              View on Explorer <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-gray-900">
+                              {tx.tokenTransfers && tx.tokenTransfers.length > 0
+                                ? tx.tokenTransfers[0].valueFormatted
+                                : `${parseFloat(tx.valueInEth).toFixed(4)} ETH`}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500">No transactions found</p>
                   )}
                 </div>
               </div>
