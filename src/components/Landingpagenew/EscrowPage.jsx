@@ -490,17 +490,20 @@ function CreateSafeModal({ onClose, onSuccess }) {
               <label className="block text-xs font-medium text-gray-700 mb-1.5">
                 Confirmation Threshold * <span className="text-gray-500 font-normal">({safeData.threshold} of {safeData.owners.length})</span>
               </label>
-              <input
-                type="number"
+              <select
                 value={safeData.threshold}
                 onChange={(e) => setSafeData(prev => ({
                   ...prev,
-                  threshold: Math.min(Math.max(1, parseInt(e.target.value) || 1), prev.owners.length)
+                  threshold: parseInt(e.target.value)
                 }))}
-                min="1"
-                max={safeData.owners.length}
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-              />
+              >
+                {Array.from({ length: safeData.owners.length }, (_, i) => i + 1).map(num => (
+                  <option key={num} value={num}>
+                    {num} of {safeData.owners.length} signature{num > 1 ? 's' : ''}
+                  </option>
+                ))}
+              </select>
               <p className="text-xs text-gray-500 mt-1">Signatures required to execute transactions</p>
             </div>
 

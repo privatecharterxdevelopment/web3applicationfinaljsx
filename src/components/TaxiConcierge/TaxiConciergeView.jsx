@@ -550,9 +550,12 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
         .setPopup(new mapboxgl.Popup().setHTML(`<strong>From:</strong> ${feature.place_name}`))
         .addTo(map.current);
 
+      // Faster, smoother flyTo animation
       map.current.flyTo({
         center: feature.center,
-        zoom: 14
+        zoom: 14,
+        duration: 800, // Reduced from default ~2000ms
+        essential: true // Ensures animation completes even if user interacts
       });
     }
   };
@@ -592,9 +595,12 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
         .setPopup(new mapboxgl.Popup().setHTML(`<strong>To:</strong> ${feature.place_name}`))
         .addTo(map.current);
 
+      // Faster, smoother flyTo animation
       map.current.flyTo({
         center: feature.center,
-        zoom: 14
+        zoom: 14,
+        duration: 800, // Reduced from default ~2000ms
+        essential: true // Ensures animation completes even if user interacts
       });
     }
   };
@@ -648,11 +654,16 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
   // Get route when both locations are set (only for taxi/concierge)
   useEffect(() => {
     if (serviceCategory !== 'luxury-cars' && coordsA && coordsB && mapLoaded) {
-      getRoute();
-      // Auto-minimize panel when route is calculated to show map better
-      setTimeout(() => {
-        setIsPanelMinimized(true);
-      }, 1000); // Short delay to let user see the route first
+      // Debounce route calculation to prevent lag
+      const timeoutId = setTimeout(() => {
+        getRoute();
+        // Auto-minimize panel when route is calculated to show map better
+        setTimeout(() => {
+          setIsPanelMinimized(true);
+        }, 800); // Reduced delay for faster UX
+      }, 300); // 300ms debounce to allow map animations to complete
+
+      return () => clearTimeout(timeoutId);
     }
 
     // For luxury cars, just show the rental location marker
@@ -662,7 +673,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
       map.current.flyTo({
         center: coordsA,
         zoom: 12,
-        duration: 1500
+        duration: 1000 // Reduced from 1500ms for snappier feel
       });
     }
   }, [coordsA, coordsB, mapLoaded, serviceCategory]);
