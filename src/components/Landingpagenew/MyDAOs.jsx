@@ -133,86 +133,43 @@ export default function MyDAOs() {
     <div className="min-h-screen bg-transparent p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-end mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-xs text-gray-600">
+              <Users size={14} />
+              <span>{daos.length} DAOs</span>
+            </div>
+            <div className="h-4 w-px bg-gray-300"></div>
+            <div className="flex items-center gap-2 text-xs text-gray-600">
+              <CheckCircle size={14} />
+              <span>{daos.filter(d => d.status === 'active').length} Active</span>
+            </div>
+          </div>
           <button
             onClick={() => setShowCreator(true)}
-            className="px-4 py-2 bg-gray-100 text-black rounded-xl hover:bg-gray-200 transition-colors flex items-center gap-2 text-sm"
+            className="px-3 py-1.5 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-1.5 text-xs font-medium"
           >
-            <Plus size={16} />
+            <Plus size={14} />
             Create DAO
           </button>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-8">
-          <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
-                <Users size={20} className="text-gray-600" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Total DAOs</p>
-                <p className="text-2xl font-light text-black">{daos.length}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
-                <CheckCircle size={20} className="text-gray-600" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Created</p>
-                <p className="text-2xl font-light text-black">
-                  {daos.filter(d => d.role === 'creator').length}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
-                <Users size={20} className="text-gray-600" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Joined</p>
-                <p className="text-2xl font-light text-black">
-                  {daos.filter(d => d.role === 'member').length}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
-                <TrendingUp size={20} className="text-gray-600" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Active</p>
-                <p className="text-2xl font-light text-black">
-                  {daos.filter(d => d.status === 'active').length}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Filters */}
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-3 mb-4">
           <div className="flex-1 relative">
-            <Search size={20} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search DAOs..."
-              className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
+              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             <button
               onClick={() => setFilter('all')}
-              className={`px-4 py-3 rounded-xl transition-colors ${
+              className={`px-3 py-2 rounded-lg transition-colors text-xs font-medium ${
                 filter === 'all' ? 'bg-black text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -220,7 +177,7 @@ export default function MyDAOs() {
             </button>
             <button
               onClick={() => setFilter('created')}
-              className={`px-4 py-3 rounded-xl transition-colors ${
+              className={`px-3 py-2 rounded-lg transition-colors text-xs font-medium ${
                 filter === 'created' ? 'bg-black text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -228,7 +185,7 @@ export default function MyDAOs() {
             </button>
             <button
               onClick={() => setFilter('joined')}
-              className={`px-4 py-3 rounded-xl transition-colors ${
+              className={`px-3 py-2 rounded-lg transition-colors text-xs font-medium ${
                 filter === 'joined' ? 'bg-black text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -260,16 +217,16 @@ export default function MyDAOs() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredDAOs.map((dao) => (
               <div
                 key={dao.id}
-                className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg transition-all cursor-pointer"
+                className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all cursor-pointer"
                 onClick={() => setSelectedDAO(dao)}
               >
                 {/* Header Image */}
                 {dao.header_image_url && (
-                  <div className="h-32 bg-gray-100 overflow-hidden">
+                  <div className="h-24 bg-gray-100 overflow-hidden">
                     <img
                       src={dao.header_image_url}
                       alt={dao.name}
@@ -278,76 +235,76 @@ export default function MyDAOs() {
                   </div>
                 )}
 
-                <div className="p-6">
+                <div className="p-4">
                   {/* Logo & Name */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2">
                       {dao.logo_url ? (
                         <img
                           src={dao.logo_url}
                           alt={dao.name}
-                          className="w-12 h-12 rounded-xl object-cover"
+                          className="w-10 h-10 rounded-lg object-cover"
                         />
                       ) : (
-                        <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
-                          <Users size={24} className="text-gray-400" />
+                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                          <Users size={20} className="text-gray-400" />
                         </div>
                       )}
                       <div>
-                        <h3 className="font-medium text-gray-900">{dao.name}</h3>
+                        <h3 className="text-sm font-medium text-gray-900">{dao.name}</h3>
                         <p className="text-xs text-gray-500">{dao.token_symbol}</p>
                       </div>
                     </div>
-                    <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                       {dao.status}
                     </span>
                   </div>
 
                   {/* Description */}
-                  <p className="text-sm text-gray-600 mb-4 line-clamp-2">{dao.description}</p>
+                  <p className="text-xs text-gray-600 mb-3 line-clamp-2">{dao.description}</p>
 
                   {/* Stats */}
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <p className="text-xs text-gray-500 mb-1">Type</p>
-                      <p className="text-sm font-medium text-gray-900 capitalize">{dao.dao_type}</p>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="bg-gray-50 rounded-lg p-2">
+                      <p className="text-xs text-gray-500">Type</p>
+                      <p className="text-xs font-medium text-gray-900 capitalize">{dao.dao_type}</p>
                     </div>
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <p className="text-xs text-gray-500 mb-1">Role</p>
-                      <p className="text-sm font-medium text-gray-900 capitalize">{dao.role}</p>
+                    <div className="bg-gray-50 rounded-lg p-2">
+                      <p className="text-xs text-gray-500">Role</p>
+                      <p className="text-xs font-medium text-gray-900 capitalize">{dao.role}</p>
                     </div>
                   </div>
 
                   {/* Governance Info */}
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center justify-between text-sm">
+                  <div className="space-y-1.5 mb-3">
+                    <div className="flex items-center justify-between text-xs">
                       <span className="text-gray-500">Governance:</span>
                       <span className="font-medium text-gray-900 capitalize">
                         {dao.governance_model?.replace('-', ' ')}
                       </span>
                     </div>
                     {dao.fundraising_goal && (
-                      <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center justify-between text-xs">
                         <span className="text-gray-500">Goal:</span>
                         <span className="font-medium text-gray-900">€{parseInt(dao.fundraising_goal).toLocaleString()}</span>
                       </div>
                     )}
                     {dao.use_safe_escrow && (
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <CheckCircle size={14} />
-                        <span>Safe Escrow Enabled</span>
+                      <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                        <CheckCircle size={12} />
+                        <span>Safe Escrow</span>
                       </div>
                     )}
                   </div>
 
                   {/* Actions */}
                   <div className="flex gap-2">
-                    <button className="flex-1 bg-black text-white py-2 rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium">
+                    <button className="flex-1 bg-black text-white py-1.5 rounded-lg hover:bg-gray-800 transition-colors text-xs font-medium">
                       View Details
                     </button>
                     {dao.role === 'creator' && (
-                      <button className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                        <Settings size={18} className="text-gray-600" />
+                      <button className="p-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <Settings size={16} className="text-gray-600" />
                       </button>
                     )}
                   </div>
