@@ -194,18 +194,13 @@ export async function executeTool(toolName, input) {
  * Search for empty leg flights
  */
 export async function searchEmptyLegs(params) {
-  const searchService = new UnifiedSearchService();
-
-  const results = await searchService.search({
-    query: params.location || params.from || params.to || '',
-    serviceTypes: ['empty_legs'],
-    filters: {
-      from: params.from,
-      to: params.to,
-      location: params.location,
-      date: params.date,
-      passengers: params.passengers
-    }
+  const results = await UnifiedSearchService.searchAll({
+    q: params.location,
+    fromLocation: params.from,
+    location: params.to,
+    dateFrom: params.date,
+    passengers: params.passengers,
+    serviceTypes: { emptyLegs: true }
   });
 
   return {
@@ -220,24 +215,18 @@ export async function searchEmptyLegs(params) {
  * Search for private jets
  */
 export async function searchPrivateJets(params) {
-  const searchService = new UnifiedSearchService();
-
-  const results = await searchService.search({
-    query: params.location || params.from || params.to || '',
-    serviceTypes: ['jets'],
-    filters: {
-      from: params.from,
-      to: params.to,
-      location: params.location,
-      passengers: params.passengers,
-      category: params.category
-    }
+  const results = await UnifiedSearchService.searchAll({
+    q: params.location,
+    fromLocation: params.from,
+    location: params.to,
+    passengers: params.passengers,
+    serviceTypes: { jets: true }
   });
 
   return {
     success: true,
-    results: results.jets || [],
-    total: results.jets?.length || 0,
+    results: results.aircraft || [],
+    total: results.aircraft?.length || 0,
     params
   };
 }
@@ -246,17 +235,12 @@ export async function searchPrivateJets(params) {
  * Search for helicopters
  */
 export async function searchHelicopters(params) {
-  const searchService = new UnifiedSearchService();
-
-  const results = await searchService.search({
-    query: params.location || params.from || params.to || '',
-    serviceTypes: ['helicopters'],
-    filters: {
-      from: params.from,
-      to: params.to,
-      location: params.location,
-      passengers: params.passengers
-    }
+  const results = await UnifiedSearchService.searchAll({
+    q: params.location,
+    fromLocation: params.from,
+    location: params.to,
+    passengers: params.passengers,
+    serviceTypes: { helicopters: true }
   });
 
   return {
@@ -271,23 +255,19 @@ export async function searchHelicopters(params) {
  * Search for yachts and adventure packages
  */
 export async function searchYachtsAndAdventures(params) {
-  const searchService = new UnifiedSearchService();
-
-  const serviceTypes = [];
+  const serviceTypeObj = {};
   if (params.type === 'yacht' || params.type === 'both' || !params.type) {
-    serviceTypes.push('yachts');
+    serviceTypeObj.yachts = true;
   }
   if (params.type === 'adventure' || params.type === 'both' || !params.type) {
-    serviceTypes.push('adventures');
+    serviceTypeObj.adventures = true;
   }
 
-  const results = await searchService.search({
-    query: params.location || '',
-    serviceTypes,
-    filters: {
-      location: params.location,
-      guests: params.guests
-    }
+  const results = await UnifiedSearchService.searchAll({
+    q: params.location,
+    location: params.location,
+    passengers: params.guests,
+    serviceTypes: serviceTypeObj
   });
 
   return {
@@ -305,18 +285,12 @@ export async function searchYachtsAndAdventures(params) {
  * Search for luxury cars
  */
 export async function searchLuxuryCars(params) {
-  const searchService = new UnifiedSearchService();
-
-  const results = await searchService.search({
-    query: params.location || params.from || params.to || '',
-    serviceTypes: ['luxury_cars'],
-    filters: {
-      from: params.from,
-      to: params.to,
-      location: params.location,
-      passengers: params.passengers,
-      category: params.category
-    }
+  const results = await UnifiedSearchService.searchAll({
+    q: params.location,
+    fromLocation: params.from,
+    location: params.to,
+    passengers: params.passengers,
+    serviceTypes: { cars: true }
   });
 
   return {

@@ -1346,27 +1346,73 @@ As their luxury travel consultant, provide an enthusiastic response that:
           console.log('📊 Tool result:', toolResult);
 
           // Format and save results as message
-          if (toolResult.success && toolResult.results && toolResult.results.length > 0) {
-            const tabs = [{
-              id: toolUse.name === 'searchEmptyLegs' ? 'emptylegs' : 'jets',
-              label: toolUse.name === 'searchEmptyLegs' ? 'Empty Legs' : 'Private Jets',
-              count: toolResult.results.length,
-              items: toolResult.results
-            }];
+          if (toolResult.success) {
+            let tabs = [];
 
-            const resultsMessage = {
-              role: 'results',
-              content: JSON.stringify({ tabs }),
-              tabs: tabs
-            };
+            // Handle different tool types
+            if (toolUse.name === 'searchEmptyLegs' && toolResult.results && toolResult.results.length > 0) {
+              tabs.push({
+                id: 'emptylegs',
+                title: 'Empty Legs',
+                count: toolResult.results.length,
+                items: toolResult.results
+              });
+            } else if (toolUse.name === 'searchPrivateJets' && toolResult.results && toolResult.results.length > 0) {
+              tabs.push({
+                id: 'jets',
+                title: 'Private Jets',
+                count: toolResult.results.length,
+                items: toolResult.results
+              });
+            } else if (toolUse.name === 'searchHelicopters' && toolResult.results && toolResult.results.length > 0) {
+              tabs.push({
+                id: 'helicopters',
+                title: 'Helicopters',
+                count: toolResult.results.length,
+                items: toolResult.results
+              });
+            } else if (toolUse.name === 'searchYachtsAndAdventures' && toolResult.results) {
+              if (toolResult.results.yachts && toolResult.results.yachts.length > 0) {
+                tabs.push({
+                  id: 'yachts',
+                  title: 'Yachts',
+                  count: toolResult.results.yachts.length,
+                  items: toolResult.results.yachts
+                });
+              }
+              if (toolResult.results.adventures && toolResult.results.adventures.length > 0) {
+                tabs.push({
+                  id: 'adventures',
+                  title: 'Adventures',
+                  count: toolResult.results.adventures.length,
+                  items: toolResult.results.adventures
+                });
+              }
+            } else if (toolUse.name === 'searchLuxuryCars' && toolResult.results && toolResult.results.length > 0) {
+              tabs.push({
+                id: 'luxury_cars',
+                title: 'Luxury Cars',
+                count: toolResult.results.length,
+                items: toolResult.results
+              });
+            }
 
-            setChatHistory(prev => prev.map(c =>
-              c.id === workingChatId
-                ? { ...c, messages: [...c.messages, resultsMessage] }
-                : c
-            ));
+            // Only add results message if we have tabs to display
+            if (tabs.length > 0) {
+              const resultsMessage = {
+                role: 'results',
+                content: JSON.stringify({ tabs }),
+                tabs: tabs
+              };
 
-            await chatService.updateChatMessages(workingChatId, [...conversationHistory, resultsMessage], user.id);
+              setChatHistory(prev => prev.map(c =>
+                c.id === workingChatId
+                  ? { ...c, messages: [...c.messages, resultsMessage] }
+                  : c
+              ));
+
+              await chatService.updateChatMessages(workingChatId, [...conversationHistory, resultsMessage], user.id);
+            }
           }
 
           // Get AI response about results - MUST use proper tool_result format
