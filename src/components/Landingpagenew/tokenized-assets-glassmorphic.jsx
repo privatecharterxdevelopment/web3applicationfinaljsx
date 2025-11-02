@@ -3854,80 +3854,73 @@ const TokenizedAssetsGlassmorphic = () => {
                     </a>
                   </div>
 
-                  {/* Third Row - Additional Cards */}
-                  <div className="mt-8 grid grid-cols-3 gap-4">
-                    {/* Card #9 - Portfolio Value */}
-                    <button
-                      onClick={() => setActiveCategory('profile')}
-                      className="border rounded-xl p-4 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    >
-                      <div className="mb-2">
-                        <Wallet className="w-5 h-5 text-gray-600" />
-                      </div>
-                      <h4 className={`text-xs font-semibold mb-1 font-['DM_Sans'] ${
-                        webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'
-                      }`}>
-                        Portfolio
-                      </h4>
-                      <p className={`text-2xl font-semibold mb-1 font-['DM_Sans'] ${
-                        webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'
-                      }`}>
-                        $0.00
-                      </p>
-                      <p className={`text-[10px] font-['DM_Sans'] text-green-600`}>
-                        +0.0% today
-                      </p>
-                    </button>
+                  {/* Third Row - Additional Cards (Web3 Mode Only) */}
+                  {webMode === 'web3' && (
+                    <div className="mt-8 grid grid-cols-3 gap-3">
+                      {/* Card #9 - Portfolio Value */}
+                      <button
+                        onClick={() => setActiveCategory('profile')}
+                        className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
+                        style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                      >
+                        <div className="flex items-start gap-2 mb-2">
+                          <Wallet className="text-sm" />
+                        </div>
+                        <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-900 truncate">
+                          Portfolio
+                        </h4>
+                        <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-1">Total Value</p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-medium text-gray-900">
+                            $0.00
+                          </span>
+                          <span className="text-[10px] font-mono text-green-600">
+                            +0.0%
+                          </span>
+                        </div>
+                      </button>
 
-                    {/* Card #10 - Active Requests */}
-                    <button
-                      onClick={() => setActiveCategory('my-requests')}
-                      className="border rounded-xl p-4 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    >
-                      <div className="mb-2">
-                        <FileText className="w-5 h-5 text-gray-600" />
-                      </div>
-                      <h4 className={`text-xs font-semibold mb-1 font-['DM_Sans'] ${
-                        webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'
-                      }`}>
-                        My Requests
-                      </h4>
-                      <p className={`text-2xl font-semibold mb-1 font-['DM_Sans'] ${
-                        webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'
-                      }`}>
-                        {userRequests?.length || 0}
-                      </p>
-                      <p className={`text-[10px] font-['DM_Sans'] text-gray-600`}>
-                        Active bookings
-                      </p>
-                    </button>
+                      {/* Card #10 - Active Requests */}
+                      <button
+                        onClick={() => setActiveCategory('my-requests')}
+                        className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
+                        style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                      >
+                        <div className="flex items-start gap-2 mb-2">
+                          <FileText className="text-sm" />
+                        </div>
+                        <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-900 truncate">
+                          My Requests
+                        </h4>
+                        <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-1">Active bookings</p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-medium text-gray-900">
+                            {userRequests?.length || 0} requests
+                          </span>
+                        </div>
+                      </button>
 
-                    {/* Card #11 - Notifications */}
-                    <button
-                      onClick={() => setShowNotificationCenter(true)}
-                      className="border rounded-xl p-4 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    >
-                      <div className="mb-2">
-                        <Bell className="w-5 h-5 text-gray-600" />
-                      </div>
-                      <h4 className={`text-xs font-semibold mb-1 font-['DM_Sans'] ${
-                        webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'
-                      }`}>
-                        Notifications
-                      </h4>
-                      <p className={`text-2xl font-semibold mb-1 font-['DM_Sans'] ${
-                        webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'
-                      }`}>
-                        {useNotificationCount(user?.id)}
-                      </p>
-                      <p className={`text-[10px] font-['DM_Sans'] text-gray-600`}>
-                        Unread messages
-                      </p>
-                    </button>
-                  </div>
+                      {/* Card #11 - Notifications */}
+                      <button
+                        onClick={() => setShowNotificationCenter(true)}
+                        className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
+                        style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                      >
+                        <div className="flex items-start gap-2 mb-2">
+                          <Bell className="text-sm" />
+                        </div>
+                        <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-900 truncate">
+                          Notifications
+                        </h4>
+                        <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-1">Unread messages</p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-medium text-gray-900">
+                            {useNotificationCount(user?.id)} new
+                          </span>
+                        </div>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
