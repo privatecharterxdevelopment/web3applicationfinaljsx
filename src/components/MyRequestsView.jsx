@@ -926,13 +926,6 @@ const MyRequestsView = ({ user }) => {
 
   return (
     <div className="w-full h-full p-6 overflow-y-auto" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">My Requests</h1>
-          <p className="text-sm text-gray-600 mt-1">Track all your service requests</p>
-        </div>
-      </div>
 
       {/* Filters */}
       <div className="mb-6 flex items-center gap-4">

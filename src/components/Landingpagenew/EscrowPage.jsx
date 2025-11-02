@@ -285,7 +285,6 @@ function CreateSafeModal({ onClose, onSuccess }) {
   const { address } = useAccount();
   const { user } = useAuth();
 
-  const [currentStep, setCurrentStep] = useState(1);
   const [safeData, setSafeData] = useState({
     name: '',
     description: '',
@@ -395,404 +394,303 @@ function CreateSafeModal({ onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div>
-            <h2 className="text-2xl font-light text-gray-900">Create New Safe</h2>
-            <p className="text-sm text-gray-500 mt-1">Multi-signature wallet</p>
+            <h2 className="text-xl font-medium text-gray-900">Create Safe Escrow</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Multi-signature wallet with automatic fee collection</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <X size={24} className="text-gray-400" />
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <X size={20} className="text-gray-400" />
           </button>
         </div>
 
-        {/* Steps */}
-        <div className="px-6 py-4 border-b border-gray-100">
-          <div className="flex items-center justify-between">
-            {[
-              { id: 1, name: 'Name & Network' },
-              { id: 2, name: 'Owners & Threshold' },
-              { id: 3, name: 'Fee Structure' },
-              { id: 4, name: 'Review' }
-            ].map((step, index) => (
-              <React.Fragment key={step.id}>
-                <div className="flex flex-col items-center">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                    currentStep === step.id ? 'bg-black text-white' :
-                    currentStep > step.id ? 'bg-green-500 text-white' :
-                    'bg-gray-200 text-gray-400'
-                  }`}>
-                    {currentStep > step.id ? <Check size={20} /> : step.id}
-                  </div>
-                  <span className="text-xs text-gray-600 mt-2">{step.name}</span>
-                </div>
-                {index < 3 && (
-                  <div className={`flex-1 h-0.5 mx-2 ${
-                    currentStep > step.id ? 'bg-green-500' : 'bg-gray-200'
-                  }`} />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
+        {/* Split Content */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Left Side - Form */}
+          <div className="w-1/2 overflow-y-auto p-6 space-y-5 border-r border-gray-200">
+            {/* Basic Info */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">Safe Name *</label>
+              <input
+                type="text"
+                value={safeData.name}
+                onChange={(e) => setSafeData(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                placeholder="Company Treasury"
+              />
+            </div>
 
-        {/* Content */}
-        <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 250px)' }}>
-          {currentStep === 1 && (
-            <div className="space-y-6">
-              <h3 className="text-xl font-light text-gray-900 mb-6">Basic Information</h3>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">Description</label>
+              <textarea
+                value={safeData.description}
+                onChange={(e) => setSafeData(prev => ({ ...prev, description: e.target.value }))}
+                rows={2}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                placeholder="Optional..."
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Safe Name</label>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">Network *</label>
+              <select
+                value={safeData.network}
+                onChange={(e) => setSafeData(prev => ({ ...prev, network: e.target.value }))}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+              >
+                <option value="sepolia">Sepolia (Testnet)</option>
+                <option value="mainnet">Ethereum Mainnet</option>
+                <option value="polygon">Polygon</option>
+                <option value="arbitrum">Arbitrum</option>
+                <option value="base">Base</option>
+              </select>
+            </div>
+
+            {/* Owners */}
+            <div className="pt-3 border-t border-gray-200">
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">Safe Owners *</label>
+              <p className="text-xs text-gray-500 mb-2">Add wallet addresses who can sign transactions</p>
+              <div className="flex gap-2 mb-2">
                 <input
                   type="text"
-                  value={safeData.name}
-                  onChange={(e) => setSafeData(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
-                  placeholder="e.g., Company Treasury"
+                  value={newOwner}
+                  onChange={(e) => setNewOwner(e.target.value)}
+                  className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                  placeholder="0x..."
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
-                <textarea
-                  value={safeData.description}
-                  onChange={(e) => setSafeData(prev => ({ ...prev, description: e.target.value }))}
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
-                  placeholder="Describe the purpose of this Safe..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Network</label>
-                <select
-                  value={safeData.network}
-                  onChange={(e) => setSafeData(prev => ({ ...prev, network: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
+                <button
+                  onClick={addOwner}
+                  className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
                 >
-                  <option value="sepolia">Sepolia (Testnet)</option>
-                  <option value="mainnet">Ethereum Mainnet</option>
-                  <option value="polygon">Polygon</option>
-                  <option value="arbitrum">Arbitrum</option>
-                </select>
+                  <Plus size={16} />
+                </button>
               </div>
-            </div>
-          )}
-
-          {currentStep === 2 && (
-            <div className="space-y-6">
-              <h3 className="text-xl font-light text-gray-900 mb-6">Owners & Confirmation Threshold</h3>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Safe Owners</label>
-                <p className="text-xs text-gray-500 mb-3">
-                  Add wallet addresses of all owners. You are already added as the first owner.
-                </p>
-                <div className="flex gap-2 mb-3">
-                  <input
-                    type="text"
-                    value={newOwner}
-                    onChange={(e) => setNewOwner(e.target.value)}
-                    className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
-                    placeholder="0x..."
-                  />
-                  <button
-                    onClick={addOwner}
-                    className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors"
-                  >
-                    <Plus size={20} />
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {safeData.owners.map((owner, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-mono text-gray-900">{owner}</span>
-                        {index === 0 && (
-                          <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs">You</span>
-                        )}
-                      </div>
+              <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                {safeData.owners.map((owner, index) => (
+                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-xs">
+                    <span className="font-mono text-gray-900 truncate">{owner.slice(0, 10)}...{owner.slice(-8)}</span>
+                    <div className="flex items-center gap-2">
+                      {index === 0 && <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">You</span>}
                       {index !== 0 && (
-                        <button
-                          onClick={() => removeOwner(index)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 size={16} />
+                        <button onClick={() => removeOwner(index)} className="text-red-500 hover:text-red-700">
+                          <Trash2 size={14} />
                         </button>
                       )}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Confirmation Threshold
-                </label>
-                <p className="text-xs text-gray-500 mb-3">
-                  Number of owner confirmations required to execute a transaction
-                </p>
+            {/* Threshold */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Confirmation Threshold * <span className="text-gray-500 font-normal">({safeData.threshold} of {safeData.owners.length})</span>
+              </label>
+              <input
+                type="number"
+                value={safeData.threshold}
+                onChange={(e) => setSafeData(prev => ({
+                  ...prev,
+                  threshold: Math.min(Math.max(1, parseInt(e.target.value) || 1), prev.owners.length)
+                }))}
+                min="1"
+                max={safeData.owners.length}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+              />
+              <p className="text-xs text-gray-500 mt-1">Signatures required to execute transactions</p>
+            </div>
+
+            {/* Fee Structure */}
+            <div className="pt-3 border-t border-gray-200">
+              <label className="block text-xs font-medium text-gray-700 mb-2">Fee Structure *</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setSafeData(prev => ({ ...prev, feeOption: 'classic', feePercentage: 1.5 }))}
+                  className={`border-2 rounded-lg p-3 text-left transition-all ${
+                    safeData.feeOption === 'classic' ? 'border-black bg-gray-50' : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium text-gray-900">Classic</span>
+                    {safeData.feeOption === 'classic' && <Check size={14} className="text-black" />}
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900 mb-1">1.5%</div>
+                  <p className="text-xs text-gray-600">Multi-sig security</p>
+                </button>
+
+                <button
+                  onClick={() => setSafeData(prev => ({ ...prev, feeOption: 'disputes', feePercentage: 2.5 }))}
+                  className={`border-2 rounded-lg p-3 text-left transition-all ${
+                    safeData.feeOption === 'disputes' ? 'border-black bg-gray-50' : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium text-gray-900">Managed</span>
+                    {safeData.feeOption === 'disputes' && <Check size={14} className="text-black" />}
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900 mb-1">2.5%</div>
+                  <p className="text-xs text-gray-600">+ Dispute resolution</p>
+                </button>
+              </div>
+            </div>
+
+            {/* Terms & Conditions */}
+            <div className="pt-3 border-t border-gray-200 space-y-3">
+              <label className="flex items-start gap-2 cursor-pointer group">
                 <input
-                  type="number"
-                  value={safeData.threshold}
-                  onChange={(e) => setSafeData(prev => ({
-                    ...prev,
-                    threshold: Math.min(Math.max(1, parseInt(e.target.value) || 1), prev.owners.length)
-                  }))}
-                  min="1"
-                  max={safeData.owners.length}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
+                  type="checkbox"
+                  checked={privateCharterXTermsAccepted}
+                  onChange={(e) => setPrivateCharterXTermsAccepted(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 text-black border-gray-300 rounded focus:ring-2 focus:ring-black"
                 />
-                <p className="text-xs text-gray-500 mt-2">
-                  Out of {safeData.owners.length} owner(s)
-                </p>
-              </div>
+                <span className="text-xs text-gray-700">
+                  I accept the{' '}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); setShowPrivateCharterXTermsModal(true); }}
+                    className="text-black underline font-medium hover:text-gray-600"
+                  >
+                    PrivateCharterX T&C
+                  </button>
+                  {' '}({safeData.feePercentage}% fee)
+                </span>
+              </label>
+
+              <label className="flex items-start gap-2 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={safeGlobalTermsAccepted}
+                  onChange={(e) => setSafeGlobalTermsAccepted(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 text-black border-gray-300 rounded focus:ring-2 focus:ring-black"
+                />
+                <span className="text-xs text-gray-700">
+                  I accept the{' '}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); setShowSafeGlobalTermsModal(true); }}
+                    className="text-black underline font-medium hover:text-gray-600"
+                  >
+                    Safe Global Terms
+                  </button>
+                </span>
+              </label>
             </div>
-          )}
+          </div>
 
-          {currentStep === 3 && (
-            <div className="space-y-6">
-              <h3 className="text-xl font-light text-gray-900 mb-6">Fee Structure</h3>
-              <p className="text-sm text-gray-600 mb-6">
-                Choose the escrow fee structure based on your needs. Fees are automatically deducted from transactions.
-              </p>
+          {/* Right Side - Live Preview */}
+          <div className="w-1/2 bg-gray-50 p-6 flex flex-col">
+            <h3 className="text-sm font-medium text-gray-900 mb-4">Safe Preview</h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Classic Escrow - 1.5% */}
-                <button
-                  onClick={() => setSafeData(prev => ({
-                    ...prev,
-                    feeOption: 'classic',
-                    feePercentage: 1.5
-                  }))}
-                  className={`border-2 rounded-xl p-6 text-left transition-all ${
-                    safeData.feeOption === 'classic'
-                      ? 'border-black bg-gray-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center">
-                      <Shield size={24} className="text-gray-600" />
-                    </div>
-                    {safeData.feeOption === 'classic' && (
-                      <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center">
-                        <Check size={16} className="text-white" />
-                      </div>
-                    )}
-                  </div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">Classic Escrow</h4>
-                  <div className="text-3xl font-light text-gray-900 mb-3">1.5%</div>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Standard multi-signature escrow with basic transaction protection
-                  </p>
-                  <ul className="text-sm text-gray-700 space-y-2">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle size={16} className="text-gray-600 flex-shrink-0 mt-0.5" />
-                      <span>Multi-signature security</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle size={16} className="text-gray-600 flex-shrink-0 mt-0.5" />
-                      <span>Owner-managed transactions</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle size={16} className="text-gray-600 flex-shrink-0 mt-0.5" />
-                      <span>Self-resolution of issues</span>
-                    </li>
-                  </ul>
-                </button>
-
-                {/* Managed Escrow - 2.5% */}
-                <button
-                  onClick={() => setSafeData(prev => ({
-                    ...prev,
-                    feeOption: 'disputes',
-                    feePercentage: 2.5
-                  }))}
-                  className={`border-2 rounded-xl p-6 text-left transition-all ${
-                    safeData.feeOption === 'disputes'
-                      ? 'border-black bg-gray-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center">
-                      <Users size={24} className="text-gray-600" />
-                    </div>
-                    {safeData.feeOption === 'disputes' && (
-                      <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center">
-                        <Check size={16} className="text-white" />
-                      </div>
-                    )}
-                  </div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">Managed Escrow</h4>
-                  <div className="text-3xl font-light text-gray-900 mb-3">2.5%</div>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Premium escrow with PrivateCharterX dispute resolution and mediation
-                  </p>
-                  <ul className="text-sm text-gray-700 space-y-2">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle size={16} className="text-gray-600 flex-shrink-0 mt-0.5" />
-                      <span>All Classic features</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle size={16} className="text-gray-600 flex-shrink-0 mt-0.5" />
-                      <span>Professional dispute resolution</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle size={16} className="text-gray-600 flex-shrink-0 mt-0.5" />
-                      <span>PrivateCharterX mediation</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle size={16} className="text-gray-600 flex-shrink-0 mt-0.5" />
-                      <span>Transaction monitoring</span>
-                    </li>
-                  </ul>
-                </button>
-              </div>
-
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                <div className="flex items-start gap-3">
-                  <DollarSign size={20} className="text-gray-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-gray-800">
-                    <p className="font-medium mb-1">How Fees Work</p>
-                    <p>
-                      Fees are automatically collected through your connected wallet when transactions are executed.
-                      The selected percentage ({safeData.feePercentage}%) is deducted from each transaction and sent to
-                      PrivateCharterX's treasury wallet.
-                    </p>
-                  </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4 flex-1">
+              {/* Header */}
+              <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
+                <div className="w-12 h-12 bg-gradient-to-br from-gray-900 to-gray-700 rounded-xl flex items-center justify-center">
+                  <Shield size={24} className="text-white" />
                 </div>
-              </div>
-            </div>
-          )}
-
-          {currentStep === 4 && (
-            <div className="space-y-6">
-              <h3 className="text-xl font-light text-gray-900 mb-6">Review & Create</h3>
-
-              <div className="border border-gray-200 rounded-xl p-4">
-                <h4 className="font-medium text-gray-900 mb-3">Safe Details</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Name:</span>
-                    <span className="font-medium text-gray-900">{safeData.name || 'Not set'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Network:</span>
-                    <span className="font-medium text-gray-900 capitalize">{safeData.network}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Owners:</span>
-                    <span className="font-medium text-gray-900">{safeData.owners.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Threshold:</span>
-                    <span className="font-medium text-gray-900">{safeData.threshold}/{safeData.owners.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Fee Structure:</span>
-                    <span className="font-medium text-gray-900">
-                      {safeData.feeOption === 'classic' ? 'Classic' : 'Managed'} ({safeData.feePercentage}%)
-                    </span>
-                  </div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-gray-900 text-sm">
+                    {safeData.name || 'Unnamed Safe'}
+                  </h4>
+                  <p className="text-xs text-gray-500 capitalize">{safeData.network} Network</p>
                 </div>
               </div>
 
-              <div className="border border-gray-200 rounded-xl p-4">
-                <h4 className="font-medium text-gray-900 mb-3">Owner Addresses</h4>
-                <div className="space-y-2">
+              {/* Configuration */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-600">Threshold</span>
+                  <span className="font-mono font-medium text-gray-900">
+                    {safeData.threshold}/{safeData.owners.length}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-600">Fee Structure</span>
+                  <span className="font-medium text-gray-900">
+                    {safeData.feeOption === 'classic' ? 'Classic' : 'Managed'} ({safeData.feePercentage}%)
+                  </span>
+                </div>
+                {safeData.description && (
+                  <div className="pt-2 border-t border-gray-100">
+                    <p className="text-xs text-gray-600 leading-relaxed">{safeData.description}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Owners List */}
+              <div className="pt-3 border-t border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-gray-700">Owners ({safeData.owners.length})</span>
+                  <Users size={14} className="text-gray-400" />
+                </div>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
                   {safeData.owners.map((owner, index) => (
-                    <div key={index} className="flex items-center justify-between text-sm">
-                      <span className="font-mono text-xs text-gray-900">{owner}</span>
+                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                      <span className="text-xs font-mono text-gray-900">
+                        {owner.slice(0, 8)}...{owner.slice(-6)}
+                      </span>
                       {index === 0 && (
-                        <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs">You</span>
+                        <span className="px-1.5 py-0.5 bg-blue-500 text-white rounded text-xs font-medium">You</span>
                       )}
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Terms & Conditions */}
-              <div className="border border-gray-200 rounded-xl p-4 space-y-4">
-                <h4 className="font-medium text-gray-900 mb-2">Terms & Conditions</h4>
-
-                {/* PrivateCharterX Terms */}
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={privateCharterXTermsAccepted}
-                    onChange={(e) => setPrivateCharterXTermsAccepted(e.target.checked)}
-                    className="mt-1 w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
-                  />
-                  <div className="text-sm text-gray-800">
-                    <span>I accept the </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowPrivateCharterXTermsModal(true)}
-                      className="text-black underline font-medium hover:text-gray-700"
-                    >
-                      PrivateCharterX Terms & Conditions
-                    </button>
-                    <span> for creating a Safe escrow account with automatic fee collection ({safeData.feePercentage}%)</span>
-                  </div>
-                </label>
-
-                {/* Safe Global Terms */}
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={safeGlobalTermsAccepted}
-                    onChange={(e) => setSafeGlobalTermsAccepted(e.target.checked)}
-                    className="mt-1 w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
-                  />
-                  <div className="text-sm text-gray-800">
-                    <span>I accept the </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowSafeGlobalTermsModal(true)}
-                      className="text-black underline font-medium hover:text-gray-700"
-                    >
-                      Safe Global Terms of Service
-                    </button>
-                    <span> for using Safe smart contract wallets</span>
-                  </div>
-                </label>
+              {/* Status Indicators */}
+              <div className="pt-3 border-t border-gray-200 space-y-2">
+                <div className="flex items-center gap-2 text-xs">
+                  {privateCharterXTermsAccepted ? (
+                    <CheckCircle size={14} className="text-green-600" />
+                  ) : (
+                    <Clock size={14} className="text-gray-400" />
+                  )}
+                  <span className={privateCharterXTermsAccepted ? 'text-green-700' : 'text-gray-500'}>
+                    PrivateCharterX Terms
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  {safeGlobalTermsAccepted ? (
+                    <CheckCircle size={14} className="text-green-600" />
+                  ) : (
+                    <Clock size={14} className="text-gray-400" />
+                  )}
+                  <span className={safeGlobalTermsAccepted ? 'text-green-700' : 'text-gray-500'}>
+                    Safe Global Terms
+                  </span>
+                </div>
               </div>
 
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                <div className="flex items-start gap-3">
-                  <AlertCircle size={20} className="text-gray-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-gray-800">
-                    <p className="font-medium mb-1">Important</p>
-                    <p>
-                      Creating a Safe will deploy a smart contract on the {safeData.network} network.
-                      This requires a blockchain transaction and gas fees.
-                    </p>
-                  </div>
+              {/* Warning */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-auto">
+                <div className="flex gap-2">
+                  <AlertCircle size={14} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    Deployment requires gas fees. Make sure you have enough {safeData.network === 'mainnet' ? 'ETH' : safeData.network === 'polygon' ? 'MATIC' : 'test ETH'} in your wallet.
+                  </p>
                 </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
 
         {/* PrivateCharterX Terms & Conditions Modal */}
         {showPrivateCharterXTermsModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-6">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden">
-              <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                <h3 className="text-xl font-medium text-gray-900">PrivateCharterX Terms & Conditions</h3>
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+                <h3 className="text-base font-semibold text-gray-900">PrivateCharterX Terms & Conditions</h3>
                 <button
                   onClick={() => setShowPrivateCharterXTermsModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <X size={20} className="text-gray-400" />
+                  <X size={18} className="text-gray-400" />
                 </button>
               </div>
-              <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 140px)' }}>
+              <div className="p-5 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 140px)' }}>
                 <div className="space-y-4 text-sm text-gray-700">
                   <section>
                     <h4 className="font-semibold text-gray-900 mb-2">1. Acceptance of Terms</h4>
@@ -913,10 +811,10 @@ function CreateSafeModal({ onClose, onSuccess }) {
                   </section>
                 </div>
               </div>
-              <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100">
+              <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-gray-200">
                 <button
                   onClick={() => setShowPrivateCharterXTermsModal(false)}
-                  className="px-6 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Close
                 </button>
@@ -925,7 +823,7 @@ function CreateSafeModal({ onClose, onSuccess }) {
                     setPrivateCharterXTermsAccepted(true);
                     setShowPrivateCharterXTermsModal(false);
                   }}
-                  className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors"
+                  className="px-5 py-2 text-sm bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
                 >
                   Accept Terms
                 </button>
@@ -936,18 +834,18 @@ function CreateSafeModal({ onClose, onSuccess }) {
 
         {/* Safe Global Terms of Service Modal */}
         {showSafeGlobalTermsModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-6">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden">
-              <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                <h3 className="text-xl font-medium text-gray-900">Safe Global Terms of Service</h3>
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+                <h3 className="text-base font-semibold text-gray-900">Safe Global Terms of Service</h3>
                 <button
                   onClick={() => setShowSafeGlobalTermsModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <X size={20} className="text-gray-400" />
+                  <X size={18} className="text-gray-400" />
                 </button>
               </div>
-              <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 140px)' }}>
+              <div className="p-5 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 140px)' }}>
                 <div className="space-y-4 text-sm text-gray-700">
                   <section>
                     <h4 className="font-semibold text-gray-900 mb-2">About Safe Global</h4>
@@ -1046,10 +944,10 @@ function CreateSafeModal({ onClose, onSuccess }) {
                   </section>
                 </div>
               </div>
-              <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100">
+              <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-gray-200">
                 <button
                   onClick={() => setShowSafeGlobalTermsModal(false)}
-                  className="px-6 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Close
                 </button>
@@ -1058,7 +956,7 @@ function CreateSafeModal({ onClose, onSuccess }) {
                     setSafeGlobalTermsAccepted(true);
                     setShowSafeGlobalTermsModal(false);
                   }}
-                  className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors"
+                  className="px-5 py-2 text-sm bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
                 >
                   Accept Terms
                 </button>
@@ -1068,43 +966,30 @@ function CreateSafeModal({ onClose, onSuccess }) {
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-gray-100">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
           <button
-            onClick={() => setCurrentStep(prev => Math.max(1, prev - 1))}
-            disabled={currentStep === 1}
-            className="px-6 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={onClose}
+            className="px-5 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            Back
+            Cancel
           </button>
-          <div className="flex gap-3">
-            {currentStep < 4 ? (
-              <button
-                onClick={() => setCurrentStep(prev => Math.min(4, prev + 1))}
-                className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors flex items-center gap-2"
-              >
-                Next
-                <ArrowRight size={18} />
-              </button>
+          <button
+            onClick={createSafe}
+            disabled={creating || !safeData.name || !privateCharterXTermsAccepted || !safeGlobalTermsAccepted}
+            className="px-6 py-2 text-sm bg-black text-white rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {creating ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                Deploying...
+              </>
             ) : (
-              <button
-                onClick={createSafe}
-                disabled={creating}
-                className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {creating ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Shield size={18} />
-                    Create Safe
-                  </>
-                )}
-              </button>
+              <>
+                <Shield size={16} />
+                Create Safe
+              </>
             )}
-          </div>
+          </button>
         </div>
       </div>
     </div>
