@@ -698,6 +698,10 @@ const TokenizedAssetsGlassmorphic = () => {
   const [userRequests, setUserRequests] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
 
+  // Escrow state
+  const [userEscrows, setUserEscrows] = useState([]);
+  const [loadingEscrows, setLoadingEscrows] = useState(false);
+
   // SPV state
   const [userSPVs, setUserSPVs] = useState([]);
   const [loadingSPVs, setLoadingSPVs] = useState(false);
@@ -705,6 +709,10 @@ const TokenizedAssetsGlassmorphic = () => {
   // Tokenization state
   const [userTokenizations, setUserTokenizations] = useState([]);
   const [loadingTokenizations, setLoadingTokenizations] = useState(false);
+
+  // DAO state
+  const [userDaos, setUserDaos] = useState([]);
+  const [loadingDaos, setLoadingDaos] = useState(false);
 
   // Empty Legs state
   const [emptyLegs, setEmptyLegs] = useState([]);
@@ -1600,6 +1608,51 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   };
 
+  // Fetch user escrows from Supabase
+  const fetchUserEscrows = async () => {
+    if (!user?.id || !address) return;
+
+    setLoadingEscrows(true);
+    try {
+      const { data, error } = await supabase
+        .from('safe_accounts')
+        .select('*')
+        .or(`creator_address.eq.${address},owners.cs.{${address}}`)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setUserEscrows(data || []);
+    } catch (error) {
+      console.error('Error fetching escrows:', error);
+      setUserEscrows([]);
+    } finally {
+      setLoadingEscrows(false);
+    }
+  };
+
+  // Fetch user's DAOs (created and joined)
+  const fetchUserDaos = async () => {
+    if (!user?.id || !address) return;
+
+    setLoadingDaos(true);
+    try {
+      const { data, error } = await supabase
+        .from('daos')
+        .select('*')
+        .or(`creator_address.eq.${address},members.cs.{${address}}`)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setUserDaos(data || []);
+    } catch (error) {
+      console.error('Error fetching DAOs:', error);
+      setUserDaos([]);
+    } finally {
+      setLoadingDaos(false);
+    }
+  };
+
   // Fetch user's SPV formations
   const fetchUserSPVs = async () => {
     if (!user?.id) return;
@@ -1921,6 +1974,20 @@ const TokenizedAssetsGlassmorphic = () => {
       fetchUserRequests();
     }
   }, [activeCategory, user?.id]);
+
+  // Load user escrows for overview page
+  useEffect(() => {
+    if (activeCategory === 'overview' && user?.id && address) {
+      fetchUserEscrows();
+    }
+  }, [activeCategory, user?.id, address]);
+
+  // Load user DAOs for Web3 overview page
+  useEffect(() => {
+    if (activeCategory === 'overview' && webMode === 'web3' && user?.id && address) {
+      fetchUserDaos();
+    }
+  }, [activeCategory, webMode, user?.id, address]);
 
   // Fetch marketplace tokenized assets on mount (for Web3 overview display)
   useEffect(() => {
@@ -2429,7 +2496,7 @@ const TokenizedAssetsGlassmorphic = () => {
     setTargetMode(mode);
     setIsTransitioning(true);
 
-    // Quick transition: 400ms total
+    // Show loading screen with transition: 1200ms total
     setTimeout(() => {
       setWebMode(mode);
       // Always reset to overview page when switching modes
@@ -2437,8 +2504,8 @@ const TokenizedAssetsGlassmorphic = () => {
       setTimeout(() => {
         setIsTransitioning(false);
         setTargetMode(null);
-      }, 200);
-    }, 200);
+      }, 600);
+    }, 600);
   };
 
   const handleJetClick = (jet) => {
@@ -3704,52 +3771,44 @@ const TokenizedAssetsGlassmorphic = () => {
                           </div>
                         </button>
 
-                        {/* Ongoing Booking Card (Taxi/Concierge or Empty Leg) */}
+                        {/* My Requests Card */}
                         <button
-                          onClick={() => setActiveCategory('favourites')}
+                          onClick={() => setActiveCategory('my-requests')}
                           className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
                           style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                         >
                           <div className="mb-2">
                             <span className="text-[10px] font-bold font-['DM_Sans'] text-gray-500 uppercase tracking-wider">
-                              Upcoming Ride
+                              My Requests
                             </span>
                           </div>
-                          {loadingBooking ? (
+                          {loadingRequests ? (
                             <>
                               <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800">Loading...</h4>
-                              <p className="text-[10px] font-['DM_Sans'] text-gray-600">Checking bookings</p>
+                              <p className="text-[10px] font-['DM_Sans'] text-gray-600">Checking requests</p>
                             </>
-                          ) : ongoingBooking ? (
+                          ) : userRequests.length > 0 ? (
                             <>
                               <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800 line-clamp-1">
-                                {ongoingBooking.type === 'taxi_concierge'
-                                  ? `${ongoingBooking.data?.carType?.name || 'Taxi'} ${ongoingBooking.data?.bookNow ? '(Now)' : ''}`
-                                  : ongoingBooking.type === 'empty_leg_booking'
-                                  ? `${ongoingBooking.data?.from || 'N/A'} → ${ongoingBooking.data?.to || 'N/A'}`
-                                  : 'Booking'}
+                                {userRequests.length} Active Request{userRequests.length > 1 ? 's' : ''}
                               </h4>
                               <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-2">
-                                {ongoingBooking.type === 'taxi_concierge'
-                                  ? `${ongoingBooking.data?.pickupDate ? new Date(ongoingBooking.data.pickupDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'TBA'} • ${bookingCountdown}`
-                                  : ongoingBooking.type === 'empty_leg_booking'
-                                  ? `${ongoingBooking.data?.departureDate ? new Date(ongoingBooking.data.departureDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'TBA'} • ${bookingCountdown}`
-                                  : bookingCountdown}
+                                Latest: {new Date(userRequests[0].created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                               </p>
                               <span className={`inline-block text-[9px] px-2 py-0.5 rounded-full font-medium font-['DM_Sans'] ${
-                                ongoingBooking.status === 'confirmed'
+                                userRequests[0].status === 'confirmed'
                                   ? 'bg-green-100 text-green-700'
-                                  : ongoingBooking.status === 'in_progress'
-                                  ? 'bg-blue-100 text-blue-700'
-                                  : 'bg-yellow-100 text-yellow-700'
+                                  : userRequests[0].status === 'pending'
+                                  ? 'bg-yellow-100 text-yellow-700'
+                                  : 'bg-gray-100 text-gray-700'
                               }`}>
-                                {ongoingBooking.status.replace('_', ' ')}
+                                {userRequests[0].status}
                               </span>
                             </>
                           ) : (
                             <>
-                              <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800">No Ongoing Booking</h4>
-                              <p className="text-[10px] font-['DM_Sans'] text-gray-600">Book a ride to get started</p>
+                              <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800">No Active Requests</h4>
+                              <p className="text-[10px] font-['DM_Sans'] text-gray-600">Start booking services</p>
                             </>
                           )}
                         </button>
@@ -3808,19 +3867,29 @@ const TokenizedAssetsGlassmorphic = () => {
                     )}
                   </div>
 
-                  {/* Weather & News Cards - unterhalb der recent chats */}
+                  {/* Escrow & News Cards - unterhalb der recent chats */}
                   <div className="mt-8 grid grid-cols-2 gap-4">
-                    {/* Card #7 - Weather Card */}
-                    <div className="border rounded-xl p-4 bg-white/35 border-gray-300/50" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                      <div className="flex items-center gap-3 mb-2">
-                        <div>
-                          <p className={`text-xs mb-0.5 font-['DM_Sans'] ${webMode === 'web3' ? 'text-gray-700' : 'text-gray-600'}`}>{weatherData.city}</p>
-                          <p className={`text-2xl font-semibold font-['DM_Sans'] ${webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'}`}>{weatherData.temp}°C</p>
-                        </div>
-                        <div className="text-3xl">{weatherData.condition}</div>
-                      </div>
-                      <p className={`text-[10px] font-['DM_Sans'] ${webMode === 'web3' ? 'text-gray-600' : 'text-gray-600'}`}>{weatherData.description} H:{weatherData.high}° L:{weatherData.low}°</p>
-                    </div>
+                    {/* Card #7 - Escrow Card */}
+                    <button
+                      onClick={() => {
+                        if (webMode !== 'web3') {
+                          setWebMode('web3');
+                        }
+                        setActiveCategory('escrow');
+                      }}
+                      className="border rounded-xl p-4 bg-white/35 hover:bg-white/40 border-gray-300/50 transition-all text-left"
+                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                    >
+                      <h4 className={`text-xs font-semibold mb-1 font-['DM_Sans'] ${webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'}`}>
+                        Safe Escrow
+                      </h4>
+                      <p className={`text-2xl font-semibold font-['DM_Sans'] ${webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'}`}>
+                        {userEscrows.length}
+                      </p>
+                      <p className={`text-[10px] font-['DM_Sans'] text-gray-600`}>
+                        {userEscrows.length === 0 ? 'Click to create your first escrow' : 'Active escrow accounts'}
+                      </p>
+                    </button>
 
                     {/* Card #8 - News Card */}
                     <a
@@ -3864,9 +3933,6 @@ const TokenizedAssetsGlassmorphic = () => {
                         className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
                         style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                       >
-                        <div className="flex items-start gap-2 mb-2">
-                          <Wallet className="text-sm" />
-                        </div>
                         <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-900 truncate">
                           Portfolio
                         </h4>
@@ -3881,22 +3947,21 @@ const TokenizedAssetsGlassmorphic = () => {
                         </div>
                       </button>
 
-                      {/* Card #10 - Active Requests */}
+                      {/* Card #10 - DAO Participation */}
                       <button
-                        onClick={() => setActiveCategory('my-requests')}
+                        onClick={() => setActiveCategory('dao')}
                         className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
                         style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                       >
-                        <div className="flex items-start gap-2 mb-2">
-                          <FileText className="text-sm" />
-                        </div>
                         <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-900 truncate">
-                          My Requests
+                          My DAOs
                         </h4>
-                        <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-1">Active bookings</p>
+                        <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-1">
+                          {loadingDaos ? 'Loading...' : userDaos.length > 0 ? 'Active participation' : 'No DAOs yet'}
+                        </p>
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-medium text-gray-900">
-                            {userRequests?.length || 0} requests
+                            {userDaos.length} {userDaos.length === 1 ? 'DAO' : 'DAOs'}
                           </span>
                         </div>
                       </button>
@@ -3907,9 +3972,6 @@ const TokenizedAssetsGlassmorphic = () => {
                         className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
                         style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                       >
-                        <div className="flex items-start gap-2 mb-2">
-                          <Bell className="text-sm" />
-                        </div>
                         <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-900 truncate">
                           Notifications
                         </h4>

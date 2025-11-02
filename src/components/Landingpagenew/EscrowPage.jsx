@@ -5,8 +5,13 @@ import {
 } from 'lucide-react';
 import { useAccount } from 'wagmi';
 import { useAppKit } from '@reown/appkit/react';
+import { BrowserProvider } from 'ethers';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { deploySafe } from '../../lib/safeService';
+
+// PrivateCharterX Treasury wallet address for fee collection
+const PRIVATECHARTERX_TREASURY = '0xe2eecbbfe60d013e93c7dc4da482e6657ee7801b';
 
 export default function EscrowPage() {
   const { address, isConnected } = useAccount();
@@ -286,10 +291,16 @@ function CreateSafeModal({ onClose, onSuccess }) {
     description: '',
     owners: [address], // Creator is first owner by default
     threshold: 1,
-    network: 'sepolia' // or 'mainnet'
+    network: 'sepolia', // or 'mainnet'
+    feeOption: 'classic', // 'classic' (1.5%) or 'disputes' (2.5%)
+    feePercentage: 1.5
   });
   const [newOwner, setNewOwner] = useState('');
   const [creating, setCreating] = useState(false);
+  const [privateCharterXTermsAccepted, setPrivateCharterXTermsAccepted] = useState(false);
+  const [safeGlobalTermsAccepted, setSafeGlobalTermsAccepted] = useState(false);
+  const [showPrivateCharterXTermsModal, setShowPrivateCharterXTermsModal] = useState(false);
+  const [showSafeGlobalTermsModal, setShowSafeGlobalTermsModal] = useState(false);
 
   const addOwner = () => {
     if (newOwner && /^0x[a-fA-F0-9]{40}$/.test(newOwner)) {
@@ -328,9 +339,31 @@ function CreateSafeModal({ onClose, onSuccess }) {
       return;
     }
 
+    if (!privateCharterXTermsAccepted || !safeGlobalTermsAccepted) {
+      alert('Please accept both PrivateCharterX and Safe Global Terms & Conditions to continue');
+      return;
+    }
+
     setCreating(true);
     try {
-      const { data, error } = await supabase
+      // Step 1: Get the signer from the user's wallet
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      // Step 2: Deploy Safe to blockchain
+      console.log('🚀 Deploying Safe to blockchain...');
+      const { safeAddress, txHash } = await deploySafe(signer, {
+        network: safeData.network,
+        owners: safeData.owners,
+        threshold: safeData.threshold,
+        feeOption: safeData.feeOption,
+        feePercentage: safeData.feePercentage
+      });
+
+      console.log(`✅ Safe deployed at: ${safeAddress}`);
+
+      // Step 3: Save to database with deployed address
+      const { data, error} = await supabase
         .from('safe_accounts')
         .insert([{
           creator_address: address,
@@ -340,21 +373,22 @@ function CreateSafeModal({ onClose, onSuccess }) {
           owners: safeData.owners,
           threshold: safeData.threshold,
           network: safeData.network,
-          status: 'pending', // Will be 'active' after blockchain deployment
+          safe_address: safeAddress, // Store deployed address
+          fee_option: safeData.feeOption,
+          fee_percentage: safeData.feePercentage,
+          terms_accepted_at: new Date().toISOString(),
+          status: 'active', // Mark as active since deployment succeeded
           created_at: new Date().toISOString()
         }])
         .select();
 
       if (error) throw error;
 
-      // Here you would integrate with Safe SDK to deploy the actual Safe
-      // For now, we'll just save the configuration
-
-      alert('Safe created successfully! It will be deployed to the blockchain shortly.');
+      alert(`Safe created successfully!\n\nAddress: ${safeAddress}\nTransaction: ${txHash}`);
       onSuccess && onSuccess(data[0]);
     } catch (error) {
       console.error('Error creating Safe:', error);
-      alert('Failed to create Safe: ' + error.message);
+      alert(`Failed to create Safe: ${error.message || 'Unknown error'}\n\nPlease ensure you have sufficient funds for gas fees and try again.`);
     } finally {
       setCreating(false);
     }
@@ -380,7 +414,8 @@ function CreateSafeModal({ onClose, onSuccess }) {
             {[
               { id: 1, name: 'Name & Network' },
               { id: 2, name: 'Owners & Threshold' },
-              { id: 3, name: 'Review' }
+              { id: 3, name: 'Fee Structure' },
+              { id: 4, name: 'Review' }
             ].map((step, index) => (
               <React.Fragment key={step.id}>
                 <div className="flex flex-col items-center">
@@ -393,7 +428,7 @@ function CreateSafeModal({ onClose, onSuccess }) {
                   </div>
                   <span className="text-xs text-gray-600 mt-2">{step.name}</span>
                 </div>
-                {index < 2 && (
+                {index < 3 && (
                   <div className={`flex-1 h-0.5 mx-2 ${
                     currentStep > step.id ? 'bg-green-500' : 'bg-gray-200'
                   }`} />
@@ -520,6 +555,123 @@ function CreateSafeModal({ onClose, onSuccess }) {
 
           {currentStep === 3 && (
             <div className="space-y-6">
+              <h3 className="text-xl font-light text-gray-900 mb-6">Fee Structure</h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Choose the escrow fee structure based on your needs. Fees are automatically deducted from transactions.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Classic Escrow - 1.5% */}
+                <button
+                  onClick={() => setSafeData(prev => ({
+                    ...prev,
+                    feeOption: 'classic',
+                    feePercentage: 1.5
+                  }))}
+                  className={`border-2 rounded-xl p-6 text-left transition-all ${
+                    safeData.feeOption === 'classic'
+                      ? 'border-black bg-gray-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center">
+                      <Shield size={24} className="text-gray-600" />
+                    </div>
+                    {safeData.feeOption === 'classic' && (
+                      <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center">
+                        <Check size={16} className="text-white" />
+                      </div>
+                    )}
+                  </div>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">Classic Escrow</h4>
+                  <div className="text-3xl font-light text-gray-900 mb-3">1.5%</div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Standard multi-signature escrow with basic transaction protection
+                  </p>
+                  <ul className="text-sm text-gray-700 space-y-2">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle size={16} className="text-gray-600 flex-shrink-0 mt-0.5" />
+                      <span>Multi-signature security</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle size={16} className="text-gray-600 flex-shrink-0 mt-0.5" />
+                      <span>Owner-managed transactions</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle size={16} className="text-gray-600 flex-shrink-0 mt-0.5" />
+                      <span>Self-resolution of issues</span>
+                    </li>
+                  </ul>
+                </button>
+
+                {/* Managed Escrow - 2.5% */}
+                <button
+                  onClick={() => setSafeData(prev => ({
+                    ...prev,
+                    feeOption: 'disputes',
+                    feePercentage: 2.5
+                  }))}
+                  className={`border-2 rounded-xl p-6 text-left transition-all ${
+                    safeData.feeOption === 'disputes'
+                      ? 'border-black bg-gray-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center">
+                      <Users size={24} className="text-gray-600" />
+                    </div>
+                    {safeData.feeOption === 'disputes' && (
+                      <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center">
+                        <Check size={16} className="text-white" />
+                      </div>
+                    )}
+                  </div>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">Managed Escrow</h4>
+                  <div className="text-3xl font-light text-gray-900 mb-3">2.5%</div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Premium escrow with PrivateCharterX dispute resolution and mediation
+                  </p>
+                  <ul className="text-sm text-gray-700 space-y-2">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle size={16} className="text-gray-600 flex-shrink-0 mt-0.5" />
+                      <span>All Classic features</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle size={16} className="text-gray-600 flex-shrink-0 mt-0.5" />
+                      <span>Professional dispute resolution</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle size={16} className="text-gray-600 flex-shrink-0 mt-0.5" />
+                      <span>PrivateCharterX mediation</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle size={16} className="text-gray-600 flex-shrink-0 mt-0.5" />
+                      <span>Transaction monitoring</span>
+                    </li>
+                  </ul>
+                </button>
+              </div>
+
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <DollarSign size={20} className="text-gray-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-gray-800">
+                    <p className="font-medium mb-1">How Fees Work</p>
+                    <p>
+                      Fees are automatically collected through your connected wallet when transactions are executed.
+                      The selected percentage ({safeData.feePercentage}%) is deducted from each transaction and sent to
+                      PrivateCharterX's treasury wallet.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 4 && (
+            <div className="space-y-6">
               <h3 className="text-xl font-light text-gray-900 mb-6">Review & Create</h3>
 
               <div className="border border-gray-200 rounded-xl p-4">
@@ -541,6 +693,12 @@ function CreateSafeModal({ onClose, onSuccess }) {
                     <span className="text-gray-600">Threshold:</span>
                     <span className="font-medium text-gray-900">{safeData.threshold}/{safeData.owners.length}</span>
                   </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Fee Structure:</span>
+                    <span className="font-medium text-gray-900">
+                      {safeData.feeOption === 'classic' ? 'Classic' : 'Managed'} ({safeData.feePercentage}%)
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -556,6 +714,53 @@ function CreateSafeModal({ onClose, onSuccess }) {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* Terms & Conditions */}
+              <div className="border border-gray-200 rounded-xl p-4 space-y-4">
+                <h4 className="font-medium text-gray-900 mb-2">Terms & Conditions</h4>
+
+                {/* PrivateCharterX Terms */}
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={privateCharterXTermsAccepted}
+                    onChange={(e) => setPrivateCharterXTermsAccepted(e.target.checked)}
+                    className="mt-1 w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                  />
+                  <div className="text-sm text-gray-800">
+                    <span>I accept the </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowPrivateCharterXTermsModal(true)}
+                      className="text-black underline font-medium hover:text-gray-700"
+                    >
+                      PrivateCharterX Terms & Conditions
+                    </button>
+                    <span> for creating a Safe escrow account with automatic fee collection ({safeData.feePercentage}%)</span>
+                  </div>
+                </label>
+
+                {/* Safe Global Terms */}
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={safeGlobalTermsAccepted}
+                    onChange={(e) => setSafeGlobalTermsAccepted(e.target.checked)}
+                    className="mt-1 w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                  />
+                  <div className="text-sm text-gray-800">
+                    <span>I accept the </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowSafeGlobalTermsModal(true)}
+                      className="text-black underline font-medium hover:text-gray-700"
+                    >
+                      Safe Global Terms of Service
+                    </button>
+                    <span> for using Safe smart contract wallets</span>
+                  </div>
+                </label>
               </div>
 
               <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
@@ -574,6 +779,294 @@ function CreateSafeModal({ onClose, onSuccess }) {
           )}
         </div>
 
+        {/* PrivateCharterX Terms & Conditions Modal */}
+        {showPrivateCharterXTermsModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-6">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden">
+              <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                <h3 className="text-xl font-medium text-gray-900">PrivateCharterX Terms & Conditions</h3>
+                <button
+                  onClick={() => setShowPrivateCharterXTermsModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X size={20} className="text-gray-400" />
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 140px)' }}>
+                <div className="space-y-4 text-sm text-gray-700">
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">1. Acceptance of Terms</h4>
+                    <p>
+                      By creating a Safe escrow account on PrivateCharterX, you agree to be bound by these Terms & Conditions.
+                      If you do not agree, you must not create a Safe account.
+                    </p>
+                  </section>
+
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">2. Multi-Signature Wallet Responsibilities</h4>
+                    <p className="mb-2">
+                      You acknowledge and understand that:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 ml-4">
+                      <li>This is a multi-signature wallet requiring {safeData.threshold} of {safeData.owners.length} owner approvals for transactions</li>
+                      <li>You are responsible for securing your private keys and wallet access</li>
+                      <li>PrivateCharterX cannot recover lost private keys or reverse transactions</li>
+                      <li>You must verify all transaction details before signing</li>
+                      <li>Owner addresses cannot be changed after deployment without creating a new Safe</li>
+                    </ul>
+                  </section>
+
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">3. Fee Structure</h4>
+                    <p className="mb-2">
+                      You agree to the following fee structure:
+                    </p>
+                    <div className="bg-gray-50 p-4 rounded-lg mb-2">
+                      <p className="font-medium text-gray-900 mb-1">
+                        {safeData.feeOption === 'classic' ? 'Classic Escrow (1.5%)' : 'Managed Escrow (2.5%)'}
+                      </p>
+                      <p className="text-xs text-gray-600 mb-2">
+                        {safeData.feeOption === 'classic'
+                          ? 'Standard multi-signature escrow with self-managed dispute resolution'
+                          : 'Premium escrow with PrivateCharterX professional dispute resolution and mediation services'
+                        }
+                      </p>
+                      <ul className="list-disc list-inside space-y-1 text-xs ml-4">
+                        <li>Fee percentage: {safeData.feePercentage}% of each transaction</li>
+                        <li>Fees are automatically deducted when transactions are executed</li>
+                        <li>Fees are sent to PrivateCharterX treasury: {PRIVATECHARTERX_TREASURY}</li>
+                        <li>Fees are non-refundable</li>
+                      </ul>
+                    </div>
+                    {safeData.feeOption === 'disputes' && (
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <p className="font-medium text-blue-900 mb-1">Dispute Resolution Service</p>
+                        <p className="text-xs text-blue-700">
+                          With the 2.5% fee structure, you gain access to PrivateCharterX's professional dispute resolution service.
+                          Our team will mediate and help resolve conflicts between Safe owners according to our dispute resolution policy.
+                        </p>
+                      </div>
+                    )}
+                  </section>
+
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">4. Owner Obligations</h4>
+                    <ul className="list-disc list-inside space-y-1 ml-4">
+                      <li>All owners must act in good faith when approving or rejecting transactions</li>
+                      <li>Owners are responsible for reviewing transaction details before signing</li>
+                      <li>Owners must maintain secure custody of their private keys</li>
+                      <li>Owners agree not to use the Safe for illegal activities</li>
+                    </ul>
+                  </section>
+
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">5. Blockchain Deployment</h4>
+                    <p>
+                      Creating a Safe will deploy a smart contract to the {safeData.network} network. You are responsible for:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 ml-4 mt-2">
+                      <li>Gas fees required for deployment</li>
+                      <li>Ensuring sufficient balance in your wallet for deployment</li>
+                      <li>Understanding that deployed contracts cannot be deleted, only deactivated</li>
+                    </ul>
+                  </section>
+
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">6. No Refund Policy</h4>
+                    <p>
+                      All fees collected by PrivateCharterX are final and non-refundable. This includes:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 ml-4 mt-2">
+                      <li>Transaction fees ({safeData.feePercentage}%)</li>
+                      <li>Gas fees paid to the blockchain network</li>
+                      <li>Any fees paid for dispute resolution services</li>
+                    </ul>
+                  </section>
+
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">7. Limitation of Liability</h4>
+                    <p>
+                      PrivateCharterX is not liable for:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 ml-4 mt-2">
+                      <li>Loss of funds due to lost private keys or compromised wallets</li>
+                      <li>Network congestion or blockchain failures</li>
+                      <li>Disputes between Safe owners (Classic tier only)</li>
+                      <li>Smart contract vulnerabilities or bugs</li>
+                      <li>Regulatory changes affecting cryptocurrency transactions</li>
+                    </ul>
+                  </section>
+
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">8. Modifications</h4>
+                    <p>
+                      PrivateCharterX reserves the right to modify these terms. Continued use of the service after modifications
+                      constitutes acceptance of the new terms.
+                    </p>
+                  </section>
+
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">9. Contact</h4>
+                    <p>
+                      For questions about these terms, please contact PrivateCharterX support.
+                    </p>
+                  </section>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100">
+                <button
+                  onClick={() => setShowPrivateCharterXTermsModal(false)}
+                  className="px-6 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    setPrivateCharterXTermsAccepted(true);
+                    setShowPrivateCharterXTermsModal(false);
+                  }}
+                  className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors"
+                >
+                  Accept Terms
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Safe Global Terms of Service Modal */}
+        {showSafeGlobalTermsModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-6">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden">
+              <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                <h3 className="text-xl font-medium text-gray-900">Safe Global Terms of Service</h3>
+                <button
+                  onClick={() => setShowSafeGlobalTermsModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X size={20} className="text-gray-400" />
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 140px)' }}>
+                <div className="space-y-4 text-sm text-gray-700">
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">About Safe Global</h4>
+                    <p>
+                      Safe (formerly Gnosis Safe) is a smart contract wallet that requires a minimum number of people to approve a transaction before it can occur (M-of-N). This technology is provided by Safe Global, a leader in digital asset security infrastructure.
+                    </p>
+                  </section>
+
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">1. Acceptance of Terms</h4>
+                    <p>
+                      By using Safe smart contract wallets, you agree to Safe Global's Terms of Service. Safe Global provides the underlying smart contract infrastructure for multi-signature wallets.
+                    </p>
+                  </section>
+
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">2. Smart Contract Technology</h4>
+                    <p className="mb-2">
+                      Safe smart contracts are deployed on the blockchain and operate autonomously. You acknowledge:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 ml-4">
+                      <li>Smart contracts are immutable once deployed to the blockchain</li>
+                      <li>Safe Global does not have custody or control over your assets</li>
+                      <li>You are solely responsible for managing your Safe account</li>
+                      <li>Transactions require the configured threshold of owner signatures to execute</li>
+                    </ul>
+                  </section>
+
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">3. Self-Custody and Responsibility</h4>
+                    <p className="mb-2">
+                      Safe is a self-custody solution. This means:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 ml-4">
+                      <li>You maintain full control and ownership of your assets</li>
+                      <li>You are responsible for securing your private keys</li>
+                      <li>Safe Global cannot recover lost keys or reverse transactions</li>
+                      <li>No third party can access your Safe without the required signatures</li>
+                    </ul>
+                  </section>
+
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">4. No Warranty</h4>
+                    <p>
+                      Safe smart contracts are provided "as is" without warranty of any kind. While Safe contracts are audited and battle-tested,
+                      Safe Global makes no guarantees about the absence of bugs or vulnerabilities. Use at your own risk.
+                    </p>
+                  </section>
+
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">5. Blockchain Risks</h4>
+                    <p className="mb-2">
+                      Using blockchain technology involves inherent risks:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 ml-4">
+                      <li>Network congestion may cause delays or failed transactions</li>
+                      <li>Gas fees are required for all blockchain transactions</li>
+                      <li>Blockchain transactions are irreversible once confirmed</li>
+                      <li>Network forks or upgrades may affect functionality</li>
+                    </ul>
+                  </section>
+
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">6. Limitation of Liability</h4>
+                    <p>
+                      Safe Global shall not be liable for any direct, indirect, incidental, special, consequential, or exemplary damages
+                      resulting from your use of Safe smart contracts, including but not limited to loss of funds, loss of data,
+                      or business interruption.
+                    </p>
+                  </section>
+
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">7. Compliance</h4>
+                    <p>
+                      You are responsible for ensuring your use of Safe complies with all applicable laws and regulations in your jurisdiction.
+                      Safe Global does not provide legal or financial advice.
+                    </p>
+                  </section>
+
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">8. Open Source</h4>
+                    <p>
+                      Safe smart contracts are open source and available for public review. The code is licensed under LGPL-3.0 and can be
+                      found at <a href="https://github.com/safe-global" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">github.com/safe-global</a>.
+                    </p>
+                  </section>
+
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">9. More Information</h4>
+                    <p>
+                      For complete terms and additional information, please visit:{' '}
+                      <a href="https://safe.global/terms" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                        safe.global/terms
+                      </a>
+                    </p>
+                  </section>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100">
+                <button
+                  onClick={() => setShowSafeGlobalTermsModal(false)}
+                  className="px-6 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    setSafeGlobalTermsAccepted(true);
+                    setShowSafeGlobalTermsModal(false);
+                  }}
+                  className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors"
+                >
+                  Accept Terms
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Footer */}
         <div className="flex items-center justify-between p-6 border-t border-gray-100">
           <button
@@ -584,9 +1077,9 @@ function CreateSafeModal({ onClose, onSuccess }) {
             Back
           </button>
           <div className="flex gap-3">
-            {currentStep < 3 ? (
+            {currentStep < 4 ? (
               <button
-                onClick={() => setCurrentStep(prev => Math.min(3, prev + 1))}
+                onClick={() => setCurrentStep(prev => Math.min(4, prev + 1))}
                 className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors flex items-center gap-2"
               >
                 Next
@@ -700,6 +1193,14 @@ function SafeDetailModal({ safe, onClose, onUpdate }) {
                       <span className="text-gray-600">Created:</span>
                       <span className="font-medium">{new Date(safe.created_at).toLocaleDateString()}</span>
                     </div>
+                    {safe.fee_percentage && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Fee Structure:</span>
+                        <span className="font-medium">
+                          {safe.fee_option === 'classic' ? 'Classic' : 'Managed'} ({safe.fee_percentage}%)
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
