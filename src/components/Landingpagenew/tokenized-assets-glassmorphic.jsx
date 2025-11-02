@@ -5,7 +5,7 @@ import {
   Plane, Zap, Mountain, Car, MapPin, Sparkles, Rocket,
   Leaf, Award, Settings, User, ChevronRight, ChevronDown, ChevronUp, X, LogOut, MessageSquare, MessageCircle,
   Users, Calendar, Package, Compass, ArrowLeft, Wallet, History, Crown, Gift, LayoutDashboard,
-  Mail, Phone, Globe, FileText, Edit3, Check, Loader2, Building2, Coins, Share2, Menu, ExternalLink, SlidersHorizontal
+  Mail, Phone, Globe, FileText, Edit3, Check, Loader2, Building2, Coins, Share2, Menu, ExternalLink, SlidersHorizontal, Info
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -3047,6 +3047,15 @@ const TokenizedAssetsGlassmorphic = () => {
                 className="flex items-center justify-center transition-all duration-200"
               >
                 <Settings size={16} className="text-gray-700" />
+              </button>
+
+              {/* Info Icon - Links to Helpdesk */}
+              <button
+                onClick={() => setActiveCategory('support-tickets')}
+                className="flex items-center justify-center transition-all duration-200"
+                title="Helpdesk"
+              >
+                <Info size={16} className="text-gray-700" />
               </button>
 
               {/* User Profile Icon */}

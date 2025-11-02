@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUpRight, ArrowDownLeft, History, Wallet, MessageCircle, Shield, User, Award, Plus, X, ExternalLink } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, History, Wallet, MessageCircle, Shield, User, Award, Plus, X, ExternalLink, LogOut } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer, YAxis, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import { useAccount, useBalance, useChainId } from 'wagmi';
@@ -10,7 +10,7 @@ import { base, mainnet } from 'viem/chains';
 import { web3Service } from '../../lib/web3';
 
 export default function CryptoBalanceDashboard() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { address, isConnected } = useAccount();
   const { open } = useAppKit();
   const chainId = useChainId();
@@ -726,6 +726,14 @@ export default function CryptoBalanceDashboard() {
 
               <button className="w-full mt-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-medium text-gray-900 transition-all">
                 Edit Profile
+              </button>
+
+              <button
+                onClick={signOut}
+                className="w-full mt-2 py-2 bg-red-50 hover:bg-red-100 rounded-lg text-xs font-medium text-red-600 transition-all flex items-center justify-center gap-2"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                Sign Out
               </button>
             </div>
 
