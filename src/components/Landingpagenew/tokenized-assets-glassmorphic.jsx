@@ -3513,7 +3513,7 @@ const TokenizedAssetsGlassmorphic = () => {
           {!isTransitioning && activeCategory === 'overview' && user?.user_role !== 'partner' && (
             <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col">
               {/* Spacer to keep content centered */}
-              <div className="mb-8"></div>
+              <div className="mt-16 mb-8"></div>
               <div className="flex-1 flex flex-col">
                 {/* RWS Mode Only: Search Input & Quick Action Buttons */}
                 {webMode === 'rws' && (
@@ -3818,6 +3818,81 @@ const TokenizedAssetsGlassmorphic = () => {
                         {latestBlogPost ? new Date(latestBlogPost.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '2 hours ago'}
                       </p>
                     </a>
+                  </div>
+
+                  {/* Third Row - Additional Cards */}
+                  <div className="mt-8 grid grid-cols-3 gap-4">
+                    {/* Card #9 - Portfolio Value */}
+                    <button
+                      onClick={() => setActiveCategory('profile')}
+                      className="border rounded-xl p-4 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
+                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                    >
+                      <div className="mb-2">
+                        <Wallet className="w-5 h-5 text-gray-600" />
+                      </div>
+                      <h4 className={`text-xs font-semibold mb-1 font-['DM_Sans'] ${
+                        webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'
+                      }`}>
+                        Portfolio
+                      </h4>
+                      <p className={`text-2xl font-semibold mb-1 font-['DM_Sans'] ${
+                        webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'
+                      }`}>
+                        $0.00
+                      </p>
+                      <p className={`text-[10px] font-['DM_Sans'] text-green-600`}>
+                        +0.0% today
+                      </p>
+                    </button>
+
+                    {/* Card #10 - Active Requests */}
+                    <button
+                      onClick={() => setActiveCategory('my-requests')}
+                      className="border rounded-xl p-4 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
+                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                    >
+                      <div className="mb-2">
+                        <FileText className="w-5 h-5 text-gray-600" />
+                      </div>
+                      <h4 className={`text-xs font-semibold mb-1 font-['DM_Sans'] ${
+                        webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'
+                      }`}>
+                        My Requests
+                      </h4>
+                      <p className={`text-2xl font-semibold mb-1 font-['DM_Sans'] ${
+                        webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'
+                      }`}>
+                        {recentRequests?.length || 0}
+                      </p>
+                      <p className={`text-[10px] font-['DM_Sans'] text-gray-600`}>
+                        Active bookings
+                      </p>
+                    </button>
+
+                    {/* Card #11 - Notifications */}
+                    <button
+                      onClick={() => setShowNotificationCenter(true)}
+                      className="border rounded-xl p-4 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
+                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                    >
+                      <div className="mb-2">
+                        <Bell className="w-5 h-5 text-gray-600" />
+                      </div>
+                      <h4 className={`text-xs font-semibold mb-1 font-['DM_Sans'] ${
+                        webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'
+                      }`}>
+                        Notifications
+                      </h4>
+                      <p className={`text-2xl font-semibold mb-1 font-['DM_Sans'] ${
+                        webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'
+                      }`}>
+                        {unreadCount}
+                      </p>
+                      <p className={`text-[10px] font-['DM_Sans'] text-gray-600`}>
+                        Unread messages
+                      </p>
+                    </button>
                   </div>
                 </div>
               </div>

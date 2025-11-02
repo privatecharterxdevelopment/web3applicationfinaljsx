@@ -529,9 +529,6 @@ export default function CryptoBalanceDashboard() {
                       <div key={request.id} className="py-2 border-b border-gray-200 last:border-0">
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              {getRequestTypeLabel(request.request_type)}
-                            </p>
                             <p className="text-xs text-gray-500">
                               {formatDate(request.created_at)}
                             </p>
