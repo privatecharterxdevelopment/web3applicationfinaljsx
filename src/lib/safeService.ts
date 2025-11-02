@@ -1,5 +1,5 @@
 // Safe Global SDK integration for multi-signature escrow wallets
-import Safe, { EthersAdapter } from '@safe-global/protocol-kit';
+import Safe from '@safe-global/protocol-kit';
 import SafeApiKit from '@safe-global/api-kit';
 import { ethers } from 'ethers';
 
@@ -55,11 +55,7 @@ export interface TransactionProposal {
 export function getSafeApiKit(network: keyof typeof SAFE_NETWORK_CONFIGS): SafeApiKit {
   const config = SAFE_NETWORK_CONFIGS[network];
   return new SafeApiKit({
-    txServiceUrl: config.txServiceUrl,
-    ethAdapter: new EthersAdapter({
-      ethers,
-      signerOrProvider: new ethers.providers.JsonRpcProvider(config.rpcUrl)
-    })
+    chainId: config.chainId
   });
 }
 
@@ -73,21 +69,16 @@ export async function deploySafe(
   try {
     const networkConfig = SAFE_NETWORK_CONFIGS[config.network];
 
-    // Create EthersAdapter with the user's signer
-    const ethAdapter = new EthersAdapter({
-      ethers,
-      signerOrProvider: signer
-    });
-
     // Prepare Safe deployment configuration
     const safeAccountConfig = {
       owners: config.owners,
       threshold: config.threshold,
     };
 
-    // Create Safe instance
-    const safeSdk = await Safe.create({
-      ethAdapter,
+    // Create Safe instance (Safe SDK v6 handles provider internally)
+    const safeSdk = await Safe.init({
+      provider: signer.provider,
+      signer: await signer.getAddress(),
       safeAccountConfig
     });
 
@@ -292,20 +283,15 @@ export async function estimateDeploymentGas(
   config: SafeConfig
 ): Promise<string> {
   try {
-    const ethAdapter = new EthersAdapter({
-      ethers,
-      signerOrProvider: signer
-    });
-
     const safeAccountConfig = {
       owners: config.owners,
       threshold: config.threshold,
     };
 
-    const safeSdk = await Safe.create({
-      ethAdapter,
-      safeAccountConfig,
-      isL1SafeMasterCopy: config.network === 'mainnet'
+    const safeSdk = await Safe.init({
+      provider: signer.provider,
+      signer: await signer.getAddress(),
+      safeAccountConfig
     });
 
     const deploymentTransaction = await safeSdk.createSafeDeploymentTransaction();
