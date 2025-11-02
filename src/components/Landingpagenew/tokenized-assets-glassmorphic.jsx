@@ -3921,7 +3921,7 @@ const TokenizedAssetsGlassmorphic = () => {
                       <p className={`text-2xl font-semibold mb-1 font-['DM_Sans'] ${
                         webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'
                       }`}>
-                        {unreadCount}
+                        {useNotificationCount(user?.id)}
                       </p>
                       <p className={`text-[10px] font-['DM_Sans'] text-gray-600`}>
                         Unread messages
