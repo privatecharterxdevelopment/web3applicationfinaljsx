@@ -248,121 +248,225 @@ function Homepage() {
         </section>
       </div>
 
-        {/* Service Cards - 8 Cards in Clean Grid */}
+        {/* Philosophy Text Section */}
+        <section className="px-4 sm:px-8 py-12 sm:py-16 max-w-4xl mx-auto">
+          <p className="text-center text-base sm:text-lg text-gray-800 leading-relaxed">
+            At PrivateCharterX, we believe in <span className="bg-gray-200 px-2 py-1 rounded">democratizing luxury travel</span> through blockchain technology.
+            Our platform combines <span className="bg-gray-200 px-2 py-1 rounded">transparency</span> with <span className="bg-gray-200 px-2 py-1 rounded">fractional ownership</span>,
+            enabling everyone to access premium aviation services. We're not just chartering flights—we're creating
+            a <span className="bg-gray-200 px-2 py-1 rounded">decentralized ecosystem</span> where trust is built into every transaction.
+            Through <span className="bg-gray-200 px-2 py-1 rounded">smart contracts</span> and <span className="bg-gray-200 px-2 py-1 rounded">tokenization</span>,
+            we eliminate intermediaries and reduce costs while maintaining the highest standards of safety and service.
+          </p>
+        </section>
+
+        {/* Service Cards - 4 Cards in Single Row */}
         <section className="px-4 sm:px-8 py-12 sm:py-16 max-w-6xl mx-auto">
-
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          <div
-            onClick={handleGetStarted}
-            className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
-          >
-            <div className="h-16 sm:h-20 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative">
-              <Plane className="w-6 h-6 text-gray-700" />
+            {/* Global Fleet */}
+            <div
+              onClick={handleGetStarted}
+              className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+            >
+              {/* Header Image/Video Space */}
+              <div className="w-full h-32 bg-gray-100 border-b border-gray-200">
+                {/* Space for image/video - to be added manually */}
+              </div>
+              <div className="p-6">
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
+                  Global Fleet
+                  <br />
+                  <span className="text-gray-400 text-sm">Worldwide Access</span>
+                </h3>
+                <p className="text-gray-600 text-sm leading-snug mb-3">Access worldwide network of luxury aircraft with real-time availability.</p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Real-time</span>
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Global</span>
+                </div>
+                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+                  +
+                </div>
+              </div>
             </div>
-            <div className="p-4 sm:p-6">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2 leading-tight">Charter Booking</h3>
-              <p className="text-gray-600 text-xs sm:text-sm leading-snug">Instant private jet booking with blockchain verification and smart contracts.</p>
-              <ArrowRight className="w-4 h-4 text-black mt-4" />
-            </div>
-          </div>
 
-          <div
-            onClick={handleGetStarted}
-            className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
-          >
-            <div className="h-20 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative">
-              <Coins className="w-6 h-6 text-gray-700" />
+            {/* Web3 Integration */}
+            <div
+              onClick={handleGetStarted}
+              className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+            >
+              {/* Header Image/Video Space */}
+              <div className="w-full h-32 bg-gray-100 border-b border-gray-200">
+                {/* Space for image/video - to be added manually */}
+              </div>
+              <div className="p-6">
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
+                  Web3 Integration
+                  <br />
+                  <span className="text-gray-400 text-sm">Blockchain Powered</span>
+                </h3>
+                <p className="text-gray-600 text-sm leading-snug mb-3">Blockchain-powered bookings with smart contracts and crypto payments.</p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Smart Contracts</span>
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Crypto</span>
+                </div>
+                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+                  +
+                </div>
+              </div>
             </div>
-            <div className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-2 leading-tight">Flight Tokenization</h3>
-              <p className="text-gray-600 text-sm leading-snug">Convert flight hours into tradeable digital tokens for maximum flexibility.</p>
-              <ArrowRight className="w-4 h-4 text-black mt-4" />
-            </div>
-          </div>
 
-          <div
-            onClick={handleGetStarted}
-            className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
-          >
-            <div className="h-20 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative">
-              <Shield className="w-6 h-6 text-gray-700" />
+            {/* Tokenized Assets */}
+            <div
+              onClick={handleGetStarted}
+              className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+            >
+              {/* Header Image/Video Space */}
+              <div className="w-full h-32 bg-gray-100 border-b border-gray-200">
+                {/* Space for image/video - to be added manually */}
+              </div>
+              <div className="p-6">
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
+                  Tokenized Assets
+                  <br />
+                  <span className="text-gray-400 text-sm">Digital Ownership</span>
+                </h3>
+                <p className="text-gray-600 text-sm leading-snug mb-3">Fractional ownership through digital tokens and secure transactions.</p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Fractional</span>
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Secure</span>
+                </div>
+                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+                  +
+                </div>
+              </div>
             </div>
-            <div className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-2 leading-tight">Secure Payments</h3>
-              <p className="text-gray-600 text-sm leading-snug">Encrypted blockchain transactions ensure secure and transparent payments.</p>
-              <ArrowRight className="w-4 h-4 text-black mt-4" />
-            </div>
-          </div>
 
-          <div
-            onClick={handleGetStarted}
-            className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
-          >
-            <div className="h-20 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative">
-              <Clock className="w-6 h-6 text-gray-700" />
-            </div>
-            <div className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-2 leading-tight">Real-Time Tracking</h3>
-              <p className="text-gray-600 text-sm leading-snug">Live flight tracking and updates through decentralized networks.</p>
-              <ArrowRight className="w-4 h-4 text-black mt-4" />
+            {/* Licensed Partners */}
+            <div
+              onClick={handleGetStarted}
+              className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+            >
+              {/* Header Image/Video Space */}
+              <div className="w-full h-32 bg-gray-100 border-b border-gray-200">
+                {/* Space for image/video - to be added manually */}
+              </div>
+              <div className="p-6">
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
+                  Licensed Partners
+                  <br />
+                  <span className="text-gray-400 text-sm">Verified Network</span>
+                </h3>
+                <p className="text-gray-600 text-sm leading-snug mb-3">Verified operators and premium service providers worldwide.</p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Verified</span>
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Premium</span>
+                </div>
+                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+                  +
+                </div>
+              </div>
             </div>
           </div>
+        </section>
 
-          <div
-            onClick={handleGetStarted}
-            className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
-          >
-            <div className="h-20 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative">
-              <Globe className="w-6 h-6 text-gray-700" />
+        {/* Tokenize Your Business Section */}
+        <section className="px-4 sm:px-8 py-12 sm:py-16 max-w-6xl mx-auto">
+          <div className="space-y-4 sm:space-y-6">
+            {/* Ground Transport - Large Card */}
+            <div
+              onClick={handleGetStarted}
+              className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+            >
+              {/* Header Image */}
+              <div
+                className="w-full h-48 bg-gray-100 border-b border-gray-200 bg-cover bg-center"
+                style={{ backgroundImage: 'url(https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/serviceImagesVector/Privatecharterx,map.png)' }}
+              >
+              </div>
+              <div className="p-8">
+                <h3 className="text-2xl font-light text-gray-900 mb-2 leading-tight">
+                  Ground Transport
+                  <br />
+                  <span className="text-gray-400 text-base">Move Smarter</span>
+                </h3>
+                <p className="text-gray-600 text-base leading-relaxed mb-4 max-w-2xl">
+                  Complete end-to-end ground transportation services. Luxury cars, helicopters, and concierge support
+                  integrated directly into your flight booking experience.
+                </p>
+                <div className="flex flex-wrap gap-2 mb-6">
+                  <span className="bg-gray-200 px-3 py-1 rounded-full text-xs text-gray-700">Luxury Cars</span>
+                  <span className="bg-gray-200 px-3 py-1 rounded-full text-xs text-gray-700">Helicopters</span>
+                  <span className="bg-gray-200 px-3 py-1 rounded-full text-xs text-gray-700">Concierge</span>
+                  <span className="bg-gray-200 px-3 py-1 rounded-full text-xs text-gray-700">24/7 Support</span>
+                </div>
+                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+                  +
+                </div>
+              </div>
             </div>
-            <div className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-2 leading-tight">Global Network</h3>
-              <p className="text-gray-600 text-sm leading-snug">Access worldwide fleet of private jets through our blockchain powered platform.</p>
-              <ArrowRight className="w-4 h-4 text-black mt-4" />
-            </div>
-          </div>
 
-          <div
-            onClick={handleGetStarted}
-            className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
-          >
-            <div className="h-20 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative">
-              <Star className="w-6 h-6 text-gray-700" />
-            </div>
-            <div className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-2 leading-tight">Premium Service</h3>
-              <p className="text-gray-600 text-sm leading-snug">Luxury concierge services with transparent pricing and quality assurance.</p>
-              <ArrowRight className="w-4 h-4 text-black mt-4" />
-            </div>
-          </div>
+            {/* Two Cards Below */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              {/* Tokenize Your Business */}
+              <div
+                onClick={handleGetStarted}
+                className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+              >
+                {/* Header Image/Video Space */}
+                <div
+                  className="w-full h-32 bg-gray-100 border-b border-gray-200 bg-contain bg-center bg-no-repeat"
+                  style={{ backgroundImage: 'url(https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/serviceImagesVector/ethereum-logoprivatecharterx-dots.svg)', backgroundSize: '60%' }}
+                >
+                </div>
+                <div className="p-6">
+                  <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
+                    Tokenize Your Business
+                    <br />
+                    <span className="text-gray-400 text-sm">Get Instant Liquidity</span>
+                  </h3>
+                  <p className="text-gray-600 text-sm leading-snug mb-3">Transform your company into a tokenized entity with fractional ownership and equity tokens.</p>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Fractional Ownership</span>
+                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Smart Contracts</span>
+                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Liquidity</span>
+                  </div>
+                  <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+                    +
+                  </div>
+                </div>
+              </div>
 
-          <div
-            onClick={handleGetStarted}
-            className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
-          >
-            <div className="h-20 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative">
-              <Users className="w-6 h-6 text-gray-700" />
+              {/* Become a Partner */}
+              <div
+                onClick={handleGetStarted}
+                className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+              >
+                {/* Header Image */}
+                <div
+                  className="w-full h-32 bg-gray-100 border-b border-gray-200 bg-cover bg-center"
+                  style={{ backgroundImage: 'url(https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/serviceImagesVector/privatecharterxbannergrey.png)' }}
+                >
+                </div>
+                <div className="p-6">
+                  <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
+                    Become a Partner
+                    <br />
+                    <span className="text-gray-400 text-sm">Expand Your Business</span>
+                  </h3>
+                  <p className="text-gray-600 text-sm leading-snug mb-3">
+                    List your services on our platform. Offer luxury cars, taxis, adventure packages, or limousine services to our global clientele.
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Global Exposure</span>
+                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Secure Payments</span>
+                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Easy Management</span>
+                  </div>
+                  <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+                    +
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-2 leading-tight">Shared Ownership</h3>
-              <p className="text-gray-600 text-sm leading-snug">Fractional jet ownership through tokenization and smart contracts.</p>
-              <ArrowRight className="w-4 h-4 text-black mt-4" />
-            </div>
-          </div>
-
-          <div
-            onClick={handleGetStarted}
-            className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
-          >
-            <div className="h-20 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative">
-              <Zap className="w-6 h-6 text-gray-700" />
-            </div>
-            <div className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-2 leading-tight">Instant Verification</h3>
-              <p className="text-gray-600 text-sm leading-snug">Automated identity and payment verification through blockchain technology.</p>
-              <ArrowRight className="w-4 h-4 text-black mt-4" />
-            </div>
-          </div>
           </div>
         </section>
 
@@ -375,43 +479,34 @@ function Homepage() {
                   <br />
                   <span className="text-gray-400">Earn, Swap, Reward</span>
                 </h2>
-                <p className="text-gray-600 mb-8 text-sm md:text-base">
+                <p className="text-gray-600 mb-6 text-sm md:text-base leading-relaxed">
                   Our native token powers the entire ecosystem. Earn rewards from bookings, swap tokens seamlessly, and unlock exclusive benefits.
                 </p>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-3">
-                    <Award className="w-5 h-5 text-gray-700" />
-                    <span className="text-sm md:text-base">Earn 5% CharterTokens on every booking</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <Repeat className="w-5 h-5 text-gray-700" />
-                    <span className="text-sm md:text-base">Swap tokens with zero fees</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <Sparkles className="w-5 h-5 text-gray-700" />
-                    <span className="text-sm md:text-base">Unlock NFT membership benefits</span>
-                  </div>
+                <div className="flex flex-wrap gap-2 mb-6">
+                  <span className="bg-gray-200 px-3 py-1.5 rounded-full text-xs text-gray-700">5% Rewards</span>
+                  <span className="bg-gray-200 px-3 py-1.5 rounded-full text-xs text-gray-700">Zero Fees</span>
+                  <span className="bg-gray-200 px-3 py-1.5 rounded-full text-xs text-gray-700">NFT Benefits</span>
                 </div>
               </div>
-              <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+              <div className="bg-white p-6 sm:p-8 rounded-2xl border border-gray-100 shadow-sm">
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">CharterToken (CTX)</span>
-                    <span className="text-base sm:text-lg font-medium">$12.47</span>
+                  <div className="flex justify-between items-center pb-3 border-b border-gray-100">
+                    <span className="text-sm text-gray-600 font-light">CharterToken (CTX)</span>
+                    <span className="text-base sm:text-lg font-light">$12.47</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Your Balance</span>
-                    <span className="text-base sm:text-lg font-medium">2,847 CTX</span>
+                    <span className="text-sm text-gray-600 font-light">Your Balance</span>
+                    <span className="text-base sm:text-lg font-light">2,847 CTX</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Rewards Earned</span>
-                    <span className="text-base sm:text-lg font-medium">+156 CTX</span>
+                    <span className="text-sm text-gray-600 font-light">Rewards Earned</span>
+                    <span className="text-base sm:text-lg font-light text-green-600">+156 CTX</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">NFT Tier</span>
-                    <span className="text-base sm:text-lg font-medium">Platinum</span>
+                    <span className="text-sm text-gray-600 font-light">NFT Tier</span>
+                    <span className="bg-gray-200 px-3 py-1 rounded-full text-xs text-gray-700">Platinum</span>
                   </div>
-                  <button className="w-full bg-gray-900 text-white py-2 rounded-md font-medium hover:bg-gray-800 transition-colors text-sm sm:text-base">
+                  <button className="w-full bg-gray-900 text-white py-2.5 rounded-lg font-light hover:bg-gray-800 transition-colors text-sm sm:text-base mt-4">
                     Swap Tokens
                   </button>
                 </div>
@@ -422,20 +517,20 @@ function Homepage() {
         {/* Fractional Ownership */}
         <section className="px-4 sm:px-8 py-12 sm:py-20 max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
-            <div className="bg-white p-6 md:p-8 rounded-lg border border-gray-200">
-              <h3 className="text-lg md:text-xl font-medium mb-6">Tokenized Companies</h3>
+            <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm">
+              <h3 className="text-lg md:text-xl font-light mb-6">Tokenized Companies</h3>
               <div className="space-y-4">
                 {[
                   { company: 'Login to see project', ownership: '12.5%', value: '$2.4M' },
                   { company: 'Login to see project', ownership: '8.2%', value: '$1.8M' },
                   { company: 'Login to see project', ownership: '15.8%', value: '$3.2M' }
                 ].map((investment, index) => (
-                  <div key={index} className="bg-gray-100 p-3 rounded-lg">
+                  <div key={index} className="bg-gray-100 p-4 rounded-lg">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-500 italic">{investment.company}</span>
+                      <span className="text-sm text-gray-500 italic font-light">{investment.company}</span>
                       <div className="flex gap-4">
-                        <span className="text-sm text-gray-600">{investment.ownership}</span>
-                        <span className="text-sm text-gray-600">{investment.value}</span>
+                        <span className="text-sm text-gray-600 font-light">{investment.ownership}</span>
+                        <span className="text-sm text-gray-600 font-light">{investment.value}</span>
                       </div>
                     </div>
                   </div>
@@ -443,7 +538,7 @@ function Homepage() {
               </div>
               <button
                 onClick={handleGetStarted}
-                className="w-full bg-gray-900 text-white py-2 rounded-md font-medium hover:bg-gray-800 transition-colors text-sm sm:text-base mt-4"
+                className="w-full bg-gray-900 text-white py-2.5 rounded-lg font-light hover:bg-gray-800 transition-colors text-sm sm:text-base mt-4"
               >
                 See All Ongoing Tokenized Projects
               </button>
@@ -454,150 +549,15 @@ function Homepage() {
                 <br />
                 <span className="text-gray-400">Jets, Helis, Limousines</span>
               </h2>
-              <p className="text-gray-600 mb-8 text-sm md:text-base">
+              <p className="text-gray-600 mb-6 text-sm md:text-base leading-relaxed">
                 Own a piece of tokenized transportation companies. Jets, helicopters, and luxury car firms have tokenized their businesses, making fractional ownership accessible through utility tokens.
               </p>
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <Plane className="w-5 h-5 text-gray-700" />
-                  <span className="text-sm md:text-base">Own shares in private jet companies</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Globe className="w-5 h-5 text-gray-700" />
-                  <span className="text-sm md:text-base">Helicopter fleet participation</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Car className="w-5 h-5 text-gray-700" />
-                  <span className="text-sm md:text-base">Luxury limousine company stakes</span>
-                </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="bg-gray-200 px-3 py-1.5 rounded-full text-xs text-gray-700">Private Jets</span>
+                <span className="bg-gray-200 px-3 py-1.5 rounded-full text-xs text-gray-700">Helicopters</span>
+                <span className="bg-gray-200 px-3 py-1.5 rounded-full text-xs text-gray-700">Limousines</span>
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* Become a Partner Banner */}
-        <section className="px-4 sm:px-8 py-12 max-w-6xl mx-auto">
-          <div className="bg-white rounded-2xl px-8 py-12 border border-gray-200 shadow-sm">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-              {/* Left: Content */}
-              <div className="flex-1">
-                <div className="mb-4 flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-medium tracking-wide uppercase">
-                    Partner Program
-                  </span>
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-light text-gray-900 mb-4 leading-tight">
-                  Become a Partner
-                  <br />
-                  <span className="text-gray-400">Expand Your Business</span>
-                </h2>
-                <p className="text-gray-600 text-sm sm:text-base leading-relaxed max-w-xl mb-6">
-                  List your services on our platform. Offer luxury cars, taxis, adventure packages, or limousine services to our global clientele. Receive location-based booking notifications and grow your revenue.
-                </p>
-                <div className="flex flex-wrap gap-4 mb-6">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm text-gray-700">Global Exposure</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm text-gray-700">Secure Payments</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm text-gray-700">Easy Management</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right: CTA */}
-              <div className="flex flex-col items-center md:items-end gap-4">
-                <button
-                  onClick={handleGetStarted}
-                  className="bg-gray-900 text-white px-8 py-3 rounded-lg text-sm font-medium hover:bg-black transition-all duration-300 hover:scale-105 shadow-lg flex items-center gap-2"
-                >
-                  Join as Partner
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-                <p className="text-xs text-gray-500">Start listing your services today</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Tokenize Your Travel Business & Ground Coordination */}
-        <section className="px-4 sm:px-8 py-12 max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-            {/* Tokenize Your Travel Business Card */}
-            <div
-              onClick={handleGetStarted}
-              className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-8"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center">
-                  <Coins className="w-6 h-6 text-gray-700" />
-                </div>
-                <h3 className="text-xl font-medium text-gray-900">Tokenize Your Travel Business</h3>
-              </div>
-              <p className="text-gray-600 text-sm leading-relaxed mb-6">
-                Transform your travel company into a tokenized entity. Issue utility tokens, raise capital through fractional ownership, and unlock liquidity for your aviation or ground transportation business.
-              </p>
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  <span className="text-sm text-gray-700">Fractional ownership & equity tokens</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  <span className="text-sm text-gray-700">Smart contract governance & voting rights</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  <span className="text-sm text-gray-700">Secondary market liquidity for investors</span>
-                </div>
-              </div>
-              <div className="mt-6 flex items-center text-gray-900 font-medium group-hover:gap-2 transition-all">
-                <span className="text-sm">Learn More</span>
-                <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-
-            {/* Ground Coordination Card */}
-            <div
-              onClick={handleGetStarted}
-              className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-8"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center">
-                  <Car className="w-6 h-6 text-gray-700" />
-                </div>
-                <h3 className="text-xl font-medium text-gray-900">Ground Coordination</h3>
-              </div>
-              <p className="text-gray-600 text-sm leading-relaxed mb-6">
-                Complete end-to-end ground transportation services. Luxury cars, helicopters, and concierge support integrated directly into your flight booking experience.
-              </p>
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  <span className="text-sm text-gray-700">Private chauffeur & limousine service</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  <span className="text-sm text-gray-700">Helicopter transfers to/from airport</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  <span className="text-sm text-gray-700">24/7 concierge assistance</span>
-                </div>
-              </div>
-              <div className="mt-6 flex items-center text-gray-900 font-medium group-hover:gap-2 transition-all">
-                <span className="text-sm">Learn More</span>
-                <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-
           </div>
         </section>
 
@@ -620,9 +580,6 @@ function Homepage() {
           </div>
         </section>
 
-      {/* Partner Logo Carousel */}
-      <CompactPartnerCarousel />
-
         {/* Steps Section - Horizontal Timeline */}
         <section className="px-4 sm:px-8 py-12 sm:py-20 max-w-7xl mx-auto">
           <div className="text-center mb-16">
@@ -644,39 +601,49 @@ function Homepage() {
                 {
                   number: 1,
                   title: "Browse DAOs & Available Assets",
-                  description: "Explore our curated selection of tokenized jets, yachts, and premium assets available for fractional ownership."
+                  description: "Explore our curated selection of tokenized jets, yachts, and premium assets available for fractional ownership.",
+                  tags: ["DAOs", "Assets"]
                 },
                 {
                   number: 2,
                   title: "Buy Assets After Successful KYC/AML",
-                  description: "Complete our secure verification process and purchase your desired asset tokens with full regulatory compliance."
+                  description: "Complete our secure verification process and purchase your desired asset tokens with full regulatory compliance.",
+                  tags: ["KYC/AML", "Secure"]
                 },
                 {
                   number: 3,
                   title: "Own a Piece of Jet, Yacht & More",
-                  description: "Hold fractional ownership of luxury assets through blockchain technology - fully digital, transparent, and tradeable."
+                  description: "Hold fractional ownership of luxury assets through blockchain technology - fully digital, transparent, and tradeable.",
+                  tags: ["Fractional", "Blockchain"]
                 },
                 {
                   number: 4,
                   title: "Get Your Utility Membership",
-                  description: "Unlock exclusive benefits, priority booking, and special rates with your digital asset ownership membership."
+                  description: "Unlock exclusive benefits, priority booking, and special rates with your digital asset ownership membership.",
+                  tags: ["Benefits", "Priority"]
                 },
                 {
                   number: 5,
                   title: "Request, Book, Pay & Enjoy",
-                  description: "Experience seamless blockchain-powered booking for your flights, yacht charters, and luxury services with PrivateCharterX."
+                  description: "Experience seamless blockchain-powered booking for your flights, yacht charters, and luxury services.",
+                  tags: ["Book", "Enjoy"]
                 }
               ].map((step, index) => (
                 <div key={index} className="relative flex flex-col items-center text-center">
                   {/* Step Number Circle */}
-                  <div className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center mb-4 text-lg font-medium relative z-10">
+                  <div className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center mb-4 text-lg font-light relative z-10">
                     {step.number}
                   </div>
 
-                  {/* Step Content */}
-                  <div className="max-w-xs">
-                    <h3 className="text-base font-medium text-gray-900 mb-3 leading-tight">{step.title}</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">{step.description}</p>
+                  {/* Step Content Card */}
+                  <div className="max-w-xs bg-white border border-gray-100 rounded-2xl p-6 shadow-sm h-64 flex flex-col">
+                    <h3 className="text-base font-light text-gray-900 mb-3 leading-tight">{step.title}</h3>
+                    <p className="text-sm text-gray-600 font-light leading-relaxed mb-4 flex-1">{step.description}</p>
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {step.tags.map((tag, tagIndex) => (
+                        <span key={tagIndex} className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">{tag}</span>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Connection Line (mobile only) */}
@@ -706,7 +673,7 @@ function Homepage() {
               </h2>
             </div>
             <div className="max-w-xs">
-              <p className="text-gray-600 text-sm leading-relaxed">
+              <p className="text-gray-600 text-sm font-light leading-relaxed">
                 Powered by blockchain, every crypto asset and smart contract is secure, decentralized.
               </p>
             </div>
@@ -715,67 +682,66 @@ function Homepage() {
           {/* 4 Cards in 2x2 Grid */}
           <div className="grid grid-cols-2 gap-6">
             {/* Top Left - Own Your Identity */}
-            <div className="relative bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200 h-72">
+            <div className="relative bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 h-72">
               {/* Background gradient */}
               <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50"></div>
               <div className="absolute inset-0 bg-gradient-to-t from-white via-white/80 to-transparent"></div>
 
               {/* Content */}
               <div className="relative h-full flex flex-col justify-end p-8">
-                <div className="flex items-center mb-4">
-                  <Users className="w-6 h-6 text-gray-700 mr-3" />
-                  <h3 className="text-lg font-medium text-gray-900">Own your identity</h3>
-                </div>
-                <p className="text-sm text-gray-600 leading-relaxed">
+                <h3 className="text-lg font-light text-gray-900 mb-3">Own your identity</h3>
+                <p className="text-sm text-gray-600 font-light leading-relaxed mb-3">
                   With decentralized identities, you control how and where your personal information is used—no more data harvesting.
                 </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Decentralized</span>
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Privacy</span>
+                </div>
               </div>
             </div>
 
             {/* Top Right - Own Rare Digital Assets */}
-            <div className="relative bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200 h-72">
+            <div className="relative bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 h-72">
               {/* Background gradient */}
               <div className="absolute inset-0 bg-gradient-to-br from-yellow-50 to-orange-50"></div>
               <div className="absolute inset-0 bg-gradient-to-t from-white via-white/80 to-transparent"></div>
 
               {/* Content */}
               <div className="relative h-full flex flex-col justify-end p-8">
-                <div className="flex items-center mb-4">
-                  <Coins className="w-6 h-6 text-gray-700 mr-3" />
-                  <h3 className="text-lg font-medium text-gray-900">Own rare digital assets</h3>
-                </div>
-                <p className="text-sm text-gray-600 leading-relaxed">
+                <h3 className="text-lg font-light text-gray-900 mb-3">Own rare digital assets</h3>
+                <p className="text-sm text-gray-600 font-light leading-relaxed mb-3">
                   From Bitcoin to altcoins, stablecoins to tokens—crypto makes financial ownership borderless and decentralized.
                 </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Crypto</span>
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Borderless</span>
+                </div>
               </div>
             </div>
 
             {/* Bottom Left - Own Your Financial Future */}
-            <div className="relative bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200 h-72">
+            <div className="relative bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 h-72">
               {/* Background gradient */}
               <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-teal-50"></div>
               <div className="absolute inset-0 bg-gradient-to-t from-white via-white/80 to-transparent"></div>
 
               {/* Content */}
               <div className="relative h-full flex flex-col justify-end p-8">
-                <div className="flex items-center mb-4">
-                  <div className="w-8 h-8 mr-4">
-                    <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 text-gray-700">
-                      <path d="M3 3L21 21M9 9L21 3L15 15L9 9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900">Own your financial future</h3>
-                </div>
-                <p className="text-sm text-gray-600 leading-relaxed">
+                <h3 className="text-lg font-light text-gray-900 mb-3">Own your financial future</h3>
+                <p className="text-sm text-gray-600 font-light leading-relaxed mb-3">
                   DeFi (Decentralized Finance) gives you access to borderless financial systems, from earning interest to lending assets—all powered by smart contracts.
                 </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">DeFi</span>
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Smart Contracts</span>
+                </div>
               </div>
             </div>
 
             {/* Bottom Right - Own Your Role in the New Web */}
-            <div className="relative bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200 h-72">
+            <div className="relative bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 h-72">
               {/* DAO badge */}
-              <div className="absolute top-8 right-8 bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-medium z-10">
+              <div className="absolute top-8 right-8 bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-xs z-10">
                 DAO
               </div>
 
@@ -785,13 +751,14 @@ function Homepage() {
 
               {/* Content */}
               <div className="relative h-full flex flex-col justify-end p-8">
-                <div className="flex items-center mb-4">
-                  <Globe className="w-6 h-6 text-gray-700 mr-3" />
-                  <h3 className="text-lg font-medium text-gray-900">Own your role in the new web</h3>
-                </div>
-                <p className="text-sm text-gray-600 leading-relaxed">
+                <h3 className="text-lg font-light text-gray-900 mb-3">Own your role in the new web</h3>
+                <p className="text-sm text-gray-600 font-light leading-relaxed mb-3">
                   Participate in DAOs, support open protocols, and help build a transparent digital economy.
                 </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">DAOs</span>
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Transparent</span>
+                </div>
               </div>
             </div>
           </div>
@@ -809,58 +776,43 @@ function Homepage() {
             <h3 className="text-xl font-light text-gray-500">We've got answers</h3>
           </div>
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-              <div className="bg-gray-50 p-8 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-base font-medium text-gray-900">How does tokenized flight booking work?</h4>
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
-                </div>
-              </div>
-              <div className="bg-gray-50 p-8 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-base font-medium text-gray-900">What cryptocurrencies do you accept?</h4>
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
-                </div>
-              </div>
-              <div className="bg-gray-50 p-8 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-base font-medium text-gray-900">Is my flight data secure on the blockchain?</h4>
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
-                </div>
-              </div>
-              <div className="bg-gray-50 p-8 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-base font-medium text-gray-900">Can I trade my flight tokens with others?</h4>
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-              <div className="bg-gray-50 p-8 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-base font-medium text-gray-900">How do NFT memberships work?</h4>
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
-                </div>
-              </div>
-              <div className="bg-gray-50 p-8 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-base font-medium text-gray-900">What are the benefits of fractional ownership?</h4>
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
-                </div>
-              </div>
-              <div className="bg-gray-50 p-8 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-base font-medium text-gray-900">How are asset valuations determined?</h4>
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
-                </div>
-              </div>
-              <div className="bg-gray-50 p-8 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-base font-medium text-gray-900">What happens if I want to sell my tokens?</h4>
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
-                </div>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                {
+                  question: "How does tokenized flight booking work?",
+                  answer: "Every flight booking is converted into a digital token on the blockchain. This token represents your booking rights and can be securely transferred, traded, or redeemed. Smart contracts automatically handle payment processing, verification, and fulfillment."
+                },
+                {
+                  question: "What cryptocurrencies do you accept?",
+                  answer: "We accept major cryptocurrencies including ETH, BTC, USDC, USDT, and our native CharterToken (PVCX). All payments are processed securely through our blockchain infrastructure with instant confirmation and transparent transaction records."
+                },
+                {
+                  question: "Is my flight data secure on the blockchain?",
+                  answer: "Absolutely. All sensitive data is encrypted and stored using advanced cryptographic methods. Only essential booking information is recorded on-chain, while personal details remain private and protected in compliance with global data protection regulations."
+                },
+                {
+                  question: "Can I trade my flight tokens with others?",
+                  answer: "Yes. Flight tokens are fully transferable on our secondary marketplace. You can list your booking for sale, transfer it to another wallet, or trade it peer-to-peer. All transfers are validated by smart contracts to ensure security and authenticity."
+                },
+                {
+                  question: "How do NFT memberships work?",
+                  answer: "NFT memberships grant you exclusive access to premium benefits, priority bookings, and special rates. Each membership tier (Bronze, Silver, Gold, Platinum) is represented by a unique NFT that proves ownership and unlocks specific perks within the ecosystem."
+                },
+                {
+                  question: "What are the benefits of fractional ownership?",
+                  answer: "Fractional ownership allows you to invest in high-value aviation assets with lower capital requirements. You receive proportional returns, voting rights in asset decisions, and can trade your shares on the secondary market for liquidity."
+                },
+                {
+                  question: "How are asset valuations determined?",
+                  answer: "Asset valuations are conducted by certified third-party appraisers using industry-standard methodologies. Factors include aircraft age, condition, market demand, maintenance history, and comparable sales data. Valuations are updated quarterly and published transparently."
+                },
+                {
+                  question: "What happens if I want to sell my tokens?",
+                  answer: "You can list your tokens on our integrated marketplace or transfer them to any compatible Web3 wallet. Liquidity is enhanced through our automated market maker (AMM) pools, and all transactions are settled instantly on-chain with minimal fees."
+                }
+              ].map((faq, index) => (
+                <FAQCard key={index} question={faq.question} answer={faq.answer} />
+              ))}
             </div>
 
             <div className="text-center mt-12">
@@ -1068,6 +1020,34 @@ function Homepage() {
           </div>
         </footer>
 
+    </div>
+  );
+}
+
+// FAQ Accordion Component
+function FAQCard({ question, answer }: { question: string; answer: string }) {
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  return (
+    <div
+      className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md cursor-pointer"
+      onClick={() => setIsOpen(!isOpen)}
+    >
+      <div className="p-6">
+        <div className="flex items-start justify-between gap-4">
+          <h4 className="text-base font-light text-gray-900 flex-1">{question}</h4>
+          <ChevronDown
+            className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
+          />
+        </div>
+        <div
+          className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0'}`}
+        >
+          <p className="text-sm text-gray-600 font-light leading-relaxed">
+            {answer}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

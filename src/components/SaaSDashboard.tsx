@@ -112,6 +112,7 @@ import {
   Vote,
   Users
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import ProfileSettings from './ProfileSettings';
 import TokenSwap from './Landingpagenew/TokenSwap.tsx';
 import DashboardMap from './DashboardMap';
@@ -1814,14 +1815,17 @@ const Dashboard = () => {
             <div className="text-xs text-green-600 font-light">+3 this week</div>
           </div>
 
-          <div className="bg-white rounded-xl p-3 shadow-sm">
+          <Link to="/empty-legs" className="bg-white rounded-xl p-3 shadow-sm hover:shadow-md transition-shadow block">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-light text-gray-600">Empty Legs</span>
               <Plane size={14} className="text-blue-500" />
             </div>
             <div className="text-xl font-light text-gray-900">8</div>
-            <div className="text-xs text-blue-600 font-light">Available now</div>
-          </div>
+            <div className="text-xs text-blue-600 font-light flex items-center gap-1">
+              Available now
+              <ExternalLink size={10} />
+            </div>
+          </Link>
 
           <div className="bg-white rounded-xl p-3 shadow-sm">
             <div className="flex items-center justify-between mb-2">
@@ -2562,6 +2566,13 @@ const Dashboard = () => {
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Helicopter Charter</h2>
           <p className="text-sm text-gray-600 mt-1">Premium helicopter services for short-distance travel</p>
+          <Link
+            to="/helicopter-charter"
+            className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mt-1"
+          >
+            <ExternalLink size={14} />
+            View full page
+          </Link>
         </div>
       </div>
 
@@ -3254,7 +3265,14 @@ const Dashboard = () => {
             <h2 className="text-2xl font-semibold text-gray-900 mb-2">
               {selectedVehicleType === 'helicopter' ? 'Helicopter Charter' : 'Private Jet Charter'}
             </h2>
-            <p className="text-gray-600 mb-4">Book your private aviation experience</p>
+            <p className="text-gray-600 mb-2">Book your private aviation experience</p>
+            <Link
+              to={selectedVehicleType === 'helicopter' ? '/helicopter-charter' : '/private-jets'}
+              className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-4"
+            >
+              <ExternalLink size={14} />
+              View full page
+            </Link>
 
             {/* Vehicle Type Toggle */}
             <div className="flex justify-center mb-6">

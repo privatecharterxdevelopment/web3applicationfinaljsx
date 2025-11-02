@@ -805,18 +805,6 @@ export default function JetCharter() {
             </div>
           )}
 
-          <div className="bg-black text-white p-12 rounded-2xl text-center mt-16">
-            <h2 className="text-3xl font-bold mb-4">Ready to Experience Private Aviation?</h2>
-            <p className="text-xl mb-8 max-w-2xl mx-auto">
-              Contact us today to book your private jet charter or learn more about our services.
-            </p>
-            <a 
-              href="mailto:bookings@privatecharterx.com" 
-              className="inline-flex items-center gap-2 bg-white text-black px-8 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors"
-            >
-              Request a Quote <ArrowRight size={18} />
-            </a>
-          </div>
         </div>
       </main>
       <Footer />

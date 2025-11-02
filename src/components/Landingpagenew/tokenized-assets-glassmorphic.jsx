@@ -12,6 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import IntelligentSearch from '../IntelligentSearch';
 import { eventsService } from '../../services/eventsService';
 import { useAccount } from 'wagmi';
+import { useAppKit } from '@reown/appkit/react';
 import { web3Service } from '../../lib/web3';
 import WalletMenu from '../WalletMenu';
 import Dashboard from '../Dashboard';
@@ -71,6 +72,8 @@ import TaxiConciergeView from '../TaxiConcierge/TaxiConciergeView';
 import PVCXTokenView from '../PVCXTokenView';
 import PartnerDashboard from '../PartnerDashboard';
 import PartnerRegistrationModal from '../PartnerRegistrationModal';
+import MyDAOs from './MyDAOs';
+import EscrowPage from './EscrowPage';
 
 // Settings Page Component
 const SettingsPage = ({ user, kycStatus, setKycStatus, setActiveCategory }) => {
@@ -633,6 +636,7 @@ const TokenizedAssetsGlassmorphic = () => {
   const [luxuryCarSubmitting, setLuxuryCarSubmitting] = useState(false);
   const [luxuryCarSubmitSuccess, setLuxuryCarSubmitSuccess] = useState(false);
   const { isConnected, address } = useAccount();
+  const { open } = useAppKit();
   const { hasNFT, nftDiscount, isCheckingNFT, checkNFTMembership, showNFTModal, closeNFTModal, nfts, usedBenefits } = useNFT();
 
   const [activeCategory, setActiveCategory] = useState('overview');
@@ -2451,6 +2455,7 @@ const TokenizedAssetsGlassmorphic = () => {
     { id: 'p2p-trading', label: 'P2P', icon: Share2, category: 'p2p-trading' },
     { id: 'swap', label: 'Swap', icon: ArrowLeft, category: 'swap' },
     { id: 'dao', label: 'DAOs', icon: Users, category: 'dao' },
+    { id: 'escrow', label: 'Escrow', icon: Shield, category: 'escrow' },
     { id: 'nft-marketplace', label: 'NFT Marketplace', icon: Shield, category: 'nft-marketplace' },
     { id: 'launchpad', label: 'Launchpad', icon: Zap, category: 'launchpad' }
   ];
@@ -2953,6 +2958,19 @@ const TokenizedAssetsGlassmorphic = () => {
                 <User size={16} className="text-gray-700" />
               </button>
 
+              {/* Connect Wallet Button */}
+              <button
+                onClick={() => open()}
+                className="px-4 py-1.5 bg-black text-white rounded-xl text-xs font-medium hover:bg-gray-800 transition-all duration-200 flex items-center gap-2"
+              >
+                <Wallet size={14} />
+                {isConnected ? (
+                  <span>{address.slice(0, 6)}...{address.slice(-4)}</span>
+                ) : (
+                  <span>Connect</span>
+                )}
+              </button>
+
               {/* Web Mode Switcher */}
               <div className="flex items-center gap-1 border rounded-xl p-0.5 bg-white/20 backdrop-blur-md border-gray-200/30">
                 <button
@@ -2982,7 +3000,10 @@ const TokenizedAssetsGlassmorphic = () => {
           </div>
 
           {/* CONTENT AREA */}
-          <div className={`flex-1 ${activeCategory === 'chat' ? 'overflow-hidden' : 'overflow-y-auto'} ${activeCategory === 'ground-transport' || activeCategory === 'chat' ? 'p-0 pt-4' : 'p-8 pt-20'}`}>
+          <div className={`flex-1 ${activeCategory === 'chat' ? 'overflow-hidden' : 'overflow-y-auto'} ${
+            activeCategory === 'ground-transport' || activeCategory === 'chat' ? 'p-0 pt-4' :
+            webMode === 'web3' ? 'pt-0.5' : 'p-8 pt-20'
+          }`}>
 
           {/* Transition Loader - Video Animation */}
           {isTransitioning && (
@@ -4087,6 +4108,20 @@ const TokenizedAssetsGlassmorphic = () => {
           {!isTransitioning && activeCategory === 'launchpad' && (
             <div className="w-full h-full overflow-y-auto">
               <LaunchpadPageNew />
+            </div>
+          )}
+
+          {/* DAOs */}
+          {!isTransitioning && activeCategory === 'dao' && (
+            <div className="w-full h-full overflow-y-auto">
+              <MyDAOs />
+            </div>
+          )}
+
+          {/* Escrow */}
+          {!isTransitioning && activeCategory === 'escrow' && (
+            <div className="w-full h-full overflow-y-auto">
+              <EscrowPage />
             </div>
           )}
 

@@ -71,11 +71,6 @@ export default function MyLaunches() {
     return (
       <div className="w-full h-full overflow-y-auto p-8">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-light text-gray-900 mb-2">My Launches</h1>
-            <p className="text-gray-600">Track your waitlist entries and launches</p>
-          </div>
-
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
               <Loader2 size={32} className="animate-spin text-gray-400 mx-auto mb-3" />
@@ -90,12 +85,6 @@ export default function MyLaunches() {
   return (
     <div className="w-full h-full overflow-y-auto p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-light text-gray-900 mb-2">My Launches</h1>
-          <p className="text-gray-600">Track your waitlist entries and launches</p>
-        </div>
-
         {/* Launches Grid */}
         {loading ? (
           <div className="flex items-center justify-center py-20">

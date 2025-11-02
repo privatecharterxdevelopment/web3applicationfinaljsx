@@ -649,6 +649,10 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
   useEffect(() => {
     if (serviceCategory !== 'luxury-cars' && coordsA && coordsB && mapLoaded) {
       getRoute();
+      // Auto-minimize panel when route is calculated to show map better
+      setTimeout(() => {
+        setIsPanelMinimized(true);
+      }, 1000); // Short delay to let user see the route first
     }
 
     // For luxury cars, just show the rental location marker
@@ -993,19 +997,23 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
 
       {/* Bottom Booking Panel - Floating modal with proper spacing */}
       <div className={`absolute ${serviceCategory === 'luxury-cars' ? 'left-6' : 'left-1/2 -translate-x-1/2'} pointer-events-auto z-10 ${bookingStep === 3 ? 'top-6 bottom-6' : 'bottom-6'}`} style={{ maxWidth: serviceCategory === 'luxury-cars' ? '480px' : '650px', width: serviceCategory === 'luxury-cars' ? 'auto' : '90%' }}>
-        <div className={`bg-white shadow-2xl rounded-2xl transition-all duration-300 w-full ${bookingStep === 3 ? 'h-full' : ''}`} style={{ overflow: 'visible' }}>
+        <div className={`bg-white shadow-2xl rounded-2xl transition-all duration-300 w-full ${bookingStep === 3 ? 'h-full' : ''}`} style={{ overflow: 'visible', position: 'relative' }}>
           <div className="flex flex-col" style={{ overflow: 'visible', height: bookingStep === 3 ? '100%' : 'auto' }}>
           {/* Minimize/Maximize Toggle Button - Only show when route is calculated */}
           {(eta && distance) && (
             <button
-              onClick={() => setIsPanelMinimized(!isPanelMinimized)}
-              className="absolute top-3 right-3 p-2 hover:bg-gray-100 rounded-lg transition-colors z-10"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsPanelMinimized(!isPanelMinimized);
+              }}
+              className="absolute top-3 right-3 p-2 bg-white hover:bg-gray-100 rounded-lg transition-colors shadow-md border border-gray-200 z-50"
+              style={{ pointerEvents: 'auto' }}
               title={isPanelMinimized ? 'Show details' : 'Hide details'}
             >
               {isPanelMinimized ? (
-                <ChevronUp size={18} className="text-gray-600" />
+                <ChevronUp size={18} className="text-gray-700" />
               ) : (
-                <ChevronDown size={18} className="text-gray-600" />
+                <ChevronDown size={18} className="text-gray-700" />
               )}
             </button>
           )}

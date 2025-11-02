@@ -66,31 +66,31 @@ function Technology({ setCurrentPage }: TechnologyProps) {
           
           {/* Tech Metrics Row */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 mb-8 sm:mb-12">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <Server className="w-6 h-6 text-gray-700" />
               </div>
               <div className="text-xl sm:text-2xl font-light text-gray-900 mb-2">99.9%</div>
-              <h3 className="text-sm sm:text-base font-medium text-gray-900 mb-2">Network Uptime</h3>
-              <p className="text-xs sm:text-sm text-gray-500">Decentralized infrastructure reliability</p>
+              <h3 className="text-sm sm:text-base font-light text-gray-900 mb-2">Network Uptime</h3>
+              <p className="text-xs sm:text-sm text-gray-600">Decentralized infrastructure reliability</p>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <Shield className="w-6 h-6 text-gray-700" />
               </div>
               <div className="text-2xl font-light text-gray-900 mb-2">256-bit</div>
-              <h3 className="text-base font-medium text-gray-900 mb-2">Encryption Standard</h3>
-              <p className="text-sm text-gray-500">Military-grade security protocols</p>
+              <h3 className="text-base font-light text-gray-900 mb-2">Encryption Standard</h3>
+              <p className="text-sm text-gray-600">Military-grade security protocols</p>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <Zap className="w-6 h-6 text-gray-700" />
               </div>
               <div className="text-2xl font-light text-gray-900 mb-2">&lt;2s</div>
-              <h3 className="text-base font-medium text-gray-900 mb-2">Transaction Speed</h3>
-              <p className="text-sm text-gray-500">Average blockchain confirmation time</p>
+              <h3 className="text-base font-light text-gray-900 mb-2">Transaction Speed</h3>
+              <p className="text-sm text-gray-600">Average blockchain confirmation time</p>
             </div>
           </div>
 
@@ -126,100 +126,104 @@ function Technology({ setCurrentPage }: TechnologyProps) {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300">
+          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-8">
             {/* Header Image */}
             <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-6 flex items-center justify-center">
               <Network className="w-12 h-12 text-gray-500" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-3">Blockchain Protocols</h3>
-            <p className="text-gray-600 mb-4 leading-relaxed text-sm">
-              Built on Ethereum mainnet with Polygon Layer 2 scaling solutions for fast, 
-              cost-effective transactions. Multi-chain architecture ensures maximum 
+            <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Blockchain Protocols</h3>
+            <p className="text-gray-600 text-sm leading-snug mb-3">
+              Built on Ethereum mainnet with Polygon Layer 2 scaling solutions for fast,
+              cost-effective transactions. Multi-chain architecture ensures maximum
               compatibility and future-proofing.
             </p>
-            <div className="flex flex-wrap gap-2">
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+            <div className="flex flex-wrap gap-2 mb-4">
+              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                 Ethereum mainnet
               </div>
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                 Polygon Layer 2
               </div>
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                 Cross-chain bridges
               </div>
             </div>
+            <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
           </div>
 
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300">
+          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-8">
             {/* Header Image */}
             <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-6 flex items-center justify-center">
               <Code className="w-12 h-12 text-gray-500" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-3">Smart Contract Languages</h3>
-            <p className="text-gray-600 mb-4 leading-relaxed text-sm">
-              Advanced smart contracts developed in Solidity with Rust components for 
-              high-performance operations. Comprehensive testing and formal verification 
+            <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Smart Contract Languages</h3>
+            <p className="text-gray-600 text-sm leading-snug mb-3">
+              Advanced smart contracts developed in Solidity with Rust components for
+              high-performance operations. Comprehensive testing and formal verification
               ensure bulletproof security.
             </p>
-            <div className="flex flex-wrap gap-2">
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+            <div className="flex flex-wrap gap-2 mb-4">
+              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                 Solidity contracts
               </div>
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                 Rust optimization
               </div>
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                 Formal verification
               </div>
             </div>
+            <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
           </div>
 
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300">
+          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-8">
             {/* Header Image */}
             <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-6 flex items-center justify-center">
               <Coins className="w-12 h-12 text-gray-500" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-3">Token Standards</h3>
-            <p className="text-gray-600 mb-4 leading-relaxed text-sm">
-              Multi-standard token architecture supporting utility tokens, NFT memberships, 
-              and security tokens for fractional asset ownership. Each standard optimized 
+            <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Token Standards</h3>
+            <p className="text-gray-600 text-sm leading-snug mb-3">
+              Multi-standard token architecture supporting utility tokens, NFT memberships,
+              and security tokens for fractional asset ownership. Each standard optimized
               for specific use cases and regulatory compliance.
             </p>
-            <div className="flex flex-wrap gap-2">
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+            <div className="flex flex-wrap gap-2 mb-4">
+              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                 ERC-20 utility tokens
               </div>
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                 ERC-721 NFT memberships
               </div>
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                 ERC-1400 security tokens
               </div>
             </div>
+            <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
           </div>
 
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300">
+          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-8">
             {/* Header Image */}
             <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-6 flex items-center justify-center">
               <Database className="w-12 h-12 text-gray-500" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-3">Oracle Integration</h3>
-            <p className="text-gray-600 mb-4 leading-relaxed text-sm">
-              Real-world data integration through Chainlink oracles for flight tracking, 
-              weather conditions, asset valuations, and market pricing. Ensures accurate 
+            <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Oracle Integration</h3>
+            <p className="text-gray-600 text-sm leading-snug mb-3">
+              Real-world data integration through Chainlink oracles for flight tracking,
+              weather conditions, asset valuations, and market pricing. Ensures accurate
               on-chain representation of off-chain events.
             </p>
-            <div className="flex flex-wrap gap-2">
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+            <div className="flex flex-wrap gap-2 mb-4">
+              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                 Chainlink oracles
               </div>
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                 Flight data feeds
               </div>
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                 Asset valuations
               </div>
             </div>
+            <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
           </div>
         </div>
       </section>
@@ -309,7 +313,7 @@ function Technology({ setCurrentPage }: TechnologyProps) {
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200">
+      <div className="max-w-7xl mx-auto bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
         {/* Decentralized Infrastructure */}
         <section className="px-8 py-20 max-w-6xl mx-auto">
           <div className="text-center mb-16">
@@ -328,16 +332,16 @@ function Technology({ setCurrentPage }: TechnologyProps) {
               <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-6">
                 <Database className="w-8 h-8 text-gray-700" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Decentralized Storage</h3>
-              <p className="text-sm text-gray-600 leading-relaxed mb-4">
-                Critical asset data, flight manifests, and ownership documents stored 
+              <h3 className="text-lg font-light text-gray-900 mb-4 leading-tight">Decentralized Storage</h3>
+              <p className="text-sm text-gray-600 leading-snug mb-4">
+                Critical asset data, flight manifests, and ownership documents stored
                 securely and immutably using IPFS and Arweave protocols.
               </p>
               <div className="flex flex-wrap gap-2 justify-center">
-                <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   IPFS storage
                 </div>
-                <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Arweave backup
                 </div>
               </div>
@@ -347,16 +351,16 @@ function Technology({ setCurrentPage }: TechnologyProps) {
               <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-6">
                 <Server className="w-8 h-8 text-gray-700" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Node Infrastructure</h3>
-              <p className="text-sm text-gray-600 leading-relaxed mb-4">
-                Managed blockchain nodes and RPC endpoints ensure reliable network 
+              <h3 className="text-lg font-light text-gray-900 mb-4 leading-tight">Node Infrastructure</h3>
+              <p className="text-sm text-gray-600 leading-snug mb-4">
+                Managed blockchain nodes and RPC endpoints ensure reliable network
                 access and transaction processing with 99.9% uptime guarantee.
               </p>
               <div className="flex flex-wrap gap-2 justify-center">
-                <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Managed nodes
                 </div>
-                <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Load balancing
                 </div>
               </div>
@@ -366,16 +370,16 @@ function Technology({ setCurrentPage }: TechnologyProps) {
               <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-6">
                 <Layers className="w-8 h-8 text-gray-700" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Scaling Solutions</h3>
-              <p className="text-sm text-gray-600 leading-relaxed mb-4">
-                Layer 2 scaling with optimistic rollups and ZK-proofs for enhanced 
+              <h3 className="text-lg font-light text-gray-900 mb-4 leading-tight">Scaling Solutions</h3>
+              <p className="text-sm text-gray-600 leading-snug mb-4">
+                Layer 2 scaling with optimistic rollups and ZK-proofs for enhanced
                 privacy, reduced costs, and faster transaction processing.
               </p>
               <div className="flex flex-wrap gap-2 justify-center">
-                <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Optimistic rollups
                 </div>
-                <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   ZK-proofs
                 </div>
               </div>
@@ -401,48 +405,48 @@ function Technology({ setCurrentPage }: TechnologyProps) {
               <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                 <Plane className="w-6 h-6 text-gray-600" />
               </div>
-              <h4 className="text-sm font-medium text-gray-900 mb-1">Private Jets</h4>
-              <p className="text-xs text-gray-500">Fractional ownership</p>
+              <h4 className="text-sm font-light text-gray-900 mb-1">Private Jets</h4>
+              <p className="text-xs text-gray-400">Fractional ownership</p>
             </div>
 
             <div className="text-center">
               <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                 <Zap className="w-6 h-6 text-gray-600" />
               </div>
-              <h4 className="text-sm font-medium text-gray-900 mb-1">eVTOLs</h4>
-              <p className="text-xs text-gray-500">Future mobility</p>
+              <h4 className="text-sm font-light text-gray-900 mb-1">eVTOLs</h4>
+              <p className="text-xs text-gray-400">Future mobility</p>
             </div>
 
             <div className="text-center">
               <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                 <Settings className="w-6 h-6 text-gray-600" />
               </div>
-              <h4 className="text-sm font-medium text-gray-900 mb-1">Helicopters</h4>
-              <p className="text-xs text-gray-500">Rotorcraft assets</p>
+              <h4 className="text-sm font-light text-gray-900 mb-1">Helicopters</h4>
+              <p className="text-xs text-gray-400">Rotorcraft assets</p>
             </div>
 
             <div className="text-center">
               <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                 <Anchor className="w-6 h-6 text-gray-600" />
               </div>
-              <h4 className="text-sm font-medium text-gray-900 mb-1">Yachts</h4>
-              <p className="text-xs text-gray-500">Maritime luxury</p>
+              <h4 className="text-sm font-light text-gray-900 mb-1">Yachts</h4>
+              <p className="text-xs text-gray-400">Maritime luxury</p>
             </div>
 
             <div className="text-center">
               <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                 <Car className="w-6 h-6 text-gray-600" />
               </div>
-              <h4 className="text-sm font-medium text-gray-900 mb-1">Luxury Cars</h4>
-              <p className="text-xs text-gray-500">Premium vehicles</p>
+              <h4 className="text-sm font-light text-gray-900 mb-1">Luxury Cars</h4>
+              <p className="text-xs text-gray-400">Premium vehicles</p>
             </div>
 
             <div className="text-center">
               <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                 <Car className="w-6 h-6 text-gray-600" />
               </div>
-              <h4 className="text-sm font-medium text-gray-900 mb-1">Luxury Cars</h4>
-              <p className="text-xs text-gray-500">Premium vehicles</p>
+              <h4 className="text-sm font-light text-gray-900 mb-1">Luxury Cars</h4>
+              <p className="text-xs text-gray-400">Premium vehicles</p>
             </div>
           </div>
         </section>
@@ -464,50 +468,50 @@ function Technology({ setCurrentPage }: TechnologyProps) {
                 <div className="flex items-start">
                   <Shield className="w-5 h-5 text-gray-700 mr-3 mt-0.5" />
                   <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-1">Smart Contract Audits</h4>
-                    <p className="text-sm text-gray-500">Regular third-party security audits by leading blockchain security firms</p>
+                    <h4 className="text-sm font-light text-gray-900 mb-1">Smart Contract Audits</h4>
+                    <p className="text-sm text-gray-600">Regular third-party security audits by leading blockchain security firms</p>
                   </div>
                 </div>
                 <div className="flex items-start">
                   <Lock className="w-5 h-5 text-gray-700 mr-3 mt-0.5" />
                   <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-1">Advanced Encryption</h4>
-                    <p className="text-sm text-gray-500">256-bit AES encryption with elliptic curve cryptography for maximum security</p>
+                    <h4 className="text-sm font-light text-gray-900 mb-1">Advanced Encryption</h4>
+                    <p className="text-sm text-gray-600">256-bit AES encryption with elliptic curve cryptography for maximum security</p>
                   </div>
                 </div>
                 <div className="flex items-start">
                   <Users className="w-5 h-5 text-gray-700 mr-3 mt-0.5" />
                   <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-1">Identity Management</h4>
-                    <p className="text-sm text-gray-500">Decentralized identity (DID) integrated with KYC/AML compliance protocols</p>
+                    <h4 className="text-sm font-light text-gray-900 mb-1">Identity Management</h4>
+                    <p className="text-sm text-gray-600">Decentralized identity (DID) integrated with KYC/AML compliance protocols</p>
                   </div>
                 </div>
                 <div className="flex items-start">
                   <Eye className="w-5 h-5 text-gray-700 mr-3 mt-0.5" />
                   <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-1">Privacy Protection</h4>
-                    <p className="text-sm text-gray-500">Zero-knowledge proofs for enhanced privacy without compromising transparency</p>
+                    <h4 className="text-sm font-light text-gray-900 mb-1">Privacy Protection</h4>
+                    <p className="text-sm text-gray-600">Zero-knowledge proofs for enhanced privacy without compromising transparency</p>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="bg-gray-50 rounded-xl p-8">
-              <h3 className="text-lg font-medium text-gray-900 mb-6">Security Certifications</h3>
+              <h3 className="text-lg font-light text-gray-900 mb-6 leading-tight">Security Certifications</h3>
               <div className="space-y-4">
-                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                <div className="flex justify-between items-center py-3 border-b border-gray-100">
                   <span className="text-sm text-gray-600">SOC 2 Type II</span>
                   <Check className="w-4 h-4 text-green-500" />
                 </div>
-                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                <div className="flex justify-between items-center py-3 border-b border-gray-100">
                   <span className="text-sm text-gray-600">ISO 27001</span>
                   <Check className="w-4 h-4 text-green-500" />
                 </div>
-                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                <div className="flex justify-between items-center py-3 border-b border-gray-100">
                   <span className="text-sm text-gray-600">GDPR Compliant</span>
                   <Check className="w-4 h-4 text-green-500" />
                 </div>
-                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                <div className="flex justify-between items-center py-3 border-b border-gray-100">
                   <span className="text-sm text-gray-600">SEC Registered</span>
                   <Check className="w-4 h-4 text-green-500" />
                 </div>
@@ -536,44 +540,44 @@ function Technology({ setCurrentPage }: TechnologyProps) {
           {/* Modern Timeline */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
-              <div className="w-12 h-12 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-medium mx-auto mb-4">
+              <div className="w-12 h-12 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-light mx-auto mb-4">
                 Q1
               </div>
-              <h3 className="text-base font-medium text-gray-900 mb-3">Platform Launch</h3>
-              <p className="text-sm text-gray-500 mb-3 leading-relaxed">
+              <h3 className="text-base font-light text-gray-900 mb-3">Platform Launch</h3>
+              <p className="text-sm text-gray-600 mb-3 leading-snug">
                 Core tokenization platform with NFT membership program.
               </p>
               <span className="text-xs text-gray-400">2024</span>
             </div>
 
             <div className="text-center">
-              <div className="w-12 h-12 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-medium mx-auto mb-4">
+              <div className="w-12 h-12 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-light mx-auto mb-4">
                 Q2
               </div>
-              <h3 className="text-base font-medium text-gray-900 mb-3">Multi-Chain Expansion</h3>
-              <p className="text-sm text-gray-500 mb-3 leading-relaxed">
+              <h3 className="text-base font-light text-gray-900 mb-3">Multi-Chain Expansion</h3>
+              <p className="text-sm text-gray-600 mb-3 leading-snug">
                 Cross-chain compatibility and Layer 2 scaling solutions.
               </p>
               <span className="text-xs text-gray-400">2024</span>
             </div>
 
             <div className="text-center">
-              <div className="w-12 h-12 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-medium mx-auto mb-4">
+              <div className="w-12 h-12 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-light mx-auto mb-4">
                 Q3
               </div>
-              <h3 className="text-base font-medium text-gray-900 mb-3">AI Integration</h3>
-              <p className="text-sm text-gray-500 mb-3 leading-relaxed">
+              <h3 className="text-base font-light text-gray-900 mb-3">AI Integration</h3>
+              <p className="text-sm text-gray-600 mb-3 leading-snug">
                 Machine learning for asset valuation and market predictions.
               </p>
               <span className="text-xs text-gray-400">2024</span>
             </div>
 
             <div className="text-center">
-              <div className="w-12 h-12 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-medium mx-auto mb-4">
+              <div className="w-12 h-12 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-light mx-auto mb-4">
                 Q4
               </div>
-              <h3 className="text-base font-medium text-gray-900 mb-3">Global Expansion</h3>
-              <p className="text-sm text-gray-500 mb-3 leading-relaxed">
+              <h3 className="text-base font-light text-gray-900 mb-3">Global Expansion</h3>
+              <p className="text-sm text-gray-600 mb-3 leading-snug">
                 International regulatory compliance and market expansion.
               </p>
               <span className="text-xs text-gray-400">2024</span>
@@ -590,36 +594,40 @@ function Technology({ setCurrentPage }: TechnologyProps) {
         </div>
         <div className="relative overflow-hidden">
           <div className="flex animate-pulse">
-            <div className="min-w-80 bg-white border border-gray-200 rounded-xl p-6 mr-6 shadow-sm hover:shadow-lg transition-shadow duration-300">
+            <div className="group min-w-80 bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6 mr-6">
               <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
                 <Network className="w-5 h-5 text-gray-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Cross-Chain Bridges</h3>
-              <p className="text-sm text-gray-500">Seamless asset movement between Ethereum, Polygon, and other networks.</p>
+              <h3 className="text-lg font-light text-gray-900 mb-2 leading-tight">Cross-Chain Bridges</h3>
+              <p className="text-sm text-gray-600 mb-3">Seamless asset movement between Ethereum, Polygon, and other networks.</p>
+              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
             </div>
 
-            <div className="min-w-80 bg-white border border-gray-200 rounded-xl p-6 mr-6 shadow-sm hover:shadow-lg transition-shadow duration-300">
+            <div className="group min-w-80 bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6 mr-6">
               <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
                 <Code className="w-5 h-5 text-gray-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Developer APIs</h3>
-              <p className="text-sm text-gray-500">Comprehensive APIs for third-party integrations and custom applications.</p>
+              <h3 className="text-lg font-light text-gray-900 mb-2 leading-tight">Developer APIs</h3>
+              <p className="text-sm text-gray-600 mb-3">Comprehensive APIs for third-party integrations and custom applications.</p>
+              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
             </div>
 
-            <div className="min-w-80 bg-white border border-gray-200 rounded-xl p-6 mr-6 shadow-sm hover:shadow-lg transition-shadow duration-300">
+            <div className="group min-w-80 bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6 mr-6">
               <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
                 <Wallet className="w-5 h-5 text-gray-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Wallet Compatibility</h3>
-              <p className="text-sm text-gray-500">Support for MetaMask, WalletConnect, and all major Web3 wallets.</p>
+              <h3 className="text-lg font-light text-gray-900 mb-2 leading-tight">Wallet Compatibility</h3>
+              <p className="text-sm text-gray-600 mb-3">Support for MetaMask, WalletConnect, and all major Web3 wallets.</p>
+              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
             </div>
 
-            <div className="min-w-80 bg-white border border-gray-200 rounded-xl p-6 mr-6 shadow-sm hover:shadow-lg transition-shadow duration-300">
+            <div className="group min-w-80 bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6 mr-6">
               <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
                 <Globe className="w-5 h-5 text-gray-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">DeFi Integrations</h3>
-              <p className="text-sm text-gray-500">Native integration with leading DeFi protocols for enhanced liquidity.</p>
+              <h3 className="text-lg font-light text-gray-900 mb-2 leading-tight">DeFi Integrations</h3>
+              <p className="text-sm text-gray-600 mb-3">Native integration with leading DeFi protocols for enhanced liquidity.</p>
+              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
             </div>
           </div>
         </div>

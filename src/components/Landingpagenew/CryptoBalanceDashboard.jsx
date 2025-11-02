@@ -249,12 +249,6 @@ export default function CryptoBalanceDashboard() {
   return (
     <div className="min-h-screen bg-white p-6">
       <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-light text-black mb-1">Portfolio</h1>
-          <p className="text-gray-400 text-xs">Krypto-Übersicht</p>
-        </div>
-
         {/* Wallet Not Connected Banner */}
         {!isConnected && (
           <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 mb-4 border border-gray-200">

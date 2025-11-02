@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, MapPin, Users, Plus, Trash2, Link as LinkIcon } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { sendNotification } from '../../services/notifications';
+import { GoogleCalendarService } from '../../services/googleCalendarService';
+import { scheduleReminderNotification, notifyCalendarEventAdded, getUserTimezone } from '../../services/calendarNotifications';
 
 const CreateEventModal = ({ onClose, onEventCreated, user, linkedChatRequest = null, linkedBooking = null, prefillData = null }) => {
   const [formData, setFormData] = useState({
@@ -188,48 +189,43 @@ const CreateEventModal = ({ onClose, onEventCreated, user, linkedChatRequest = n
         console.log('Sending invitations to:', attendees.map(a => a.email));
       }
 
-      // Sync to Google Calendar if connected (non-blocking)
-      syncToGoogleCalendar(event).catch(err => {
-        console.error('Google Calendar sync failed:', err);
-      });
+      // Check if Google Calendar is connected and sync
+      let googleSynced = false;
+      try {
+        const { data: googleConn } = await supabase
+          .from('google_calendar_connections')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
 
-      // Create reminder notification if reminder is set (non-blocking)
-      if (formData.reminder_minutes > 0) {
-        const reminderDate = new Date(startDateTime);
-        reminderDate.setMinutes(reminderDate.getMinutes() - formData.reminder_minutes);
-
-        const now = new Date();
-
-        // If reminder time is in the future, schedule it
-        // If it's immediate or past (which shouldn't happen), create notification now
-        if (reminderDate <= now) {
-          // Create notification immediately
-          sendNotification({
-            userId: user.id,
-            type: 'calendar_reminder',
-            title: `Reminder: ${formData.title}`,
-            message: `Your event "${formData.title}" is starting ${formData.reminder_minutes === 0 ? 'now' : 'soon'}${formData.location ? ` at ${formData.location}` : ''}.`,
-            smsText: `Reminder: ${formData.title} - ${new Date(startDateTime).toLocaleString()}`
-          }).catch(err => {
-            console.error('Failed to send notification:', err);
-          });
-        } else {
-          // Schedule a notification for the future by creating a scheduled notification record
-          supabase
-            .from('scheduled_notifications')
-            .insert([{
-              user_id: user.id,
-              event_id: event.id,
-              type: 'calendar_reminder',
-              title: `Reminder: ${formData.title}`,
-              message: `Your event "${formData.title}" is starting soon${formData.location ? ` at ${formData.location}` : ''}.`,
-              scheduled_for: reminderDate.toISOString(),
-              sent: false
-            }])
-            .then(({ error }) => {
-              if (error) console.error('Failed to schedule notification:', error);
-            });
+        if (googleConn && googleConn.sync_enabled) {
+          const googleService = new GoogleCalendarService(user.id);
+          await googleService.syncEventToGoogle(event);
+          googleSynced = true;
         }
+      } catch (syncError) {
+        console.error('Google Calendar sync failed:', syncError);
+      }
+
+      // Create calendar addition notification
+      await notifyCalendarEventAdded(
+        user.id,
+        formData.title,
+        startDateTime,
+        googleSynced
+      );
+
+      // Schedule reminder notification if set
+      if (formData.reminder_minutes > 0) {
+        await scheduleReminderNotification(
+          user.id,
+          event.id,
+          formData.title,
+          new Date(startDateTime),
+          formData.reminder_minutes,
+          formData.location,
+          getUserTimezone()
+        );
       }
 
       onEventCreated();
@@ -240,24 +236,6 @@ const CreateEventModal = ({ onClose, onEventCreated, user, linkedChatRequest = n
       alert(`Failed to create event: ${errorMessage}\n\nPlease check the console for details.`);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const syncToGoogleCalendar = async (event) => {
-    try {
-      const { data: connection } = await supabase
-        .from('google_calendar_connections')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (connection && connection.sync_enabled) {
-        // Call Edge Function to sync with Google Calendar
-        console.log('Syncing event to Google Calendar:', event.id);
-        // Implementation would call Supabase Edge Function
-      }
-    } catch (error) {
-      console.log('No Google Calendar connection');
     }
   };
 

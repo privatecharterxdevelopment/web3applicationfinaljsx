@@ -32,6 +32,7 @@ import { AuthProvider, useAuth } from '../../context/AuthContext.tsx';
 import { ThemeProvider } from '../../context/ThemeContext.tsx';
 import { MaintenanceProvider, useMaintenance } from '../../context/MaintenanceContext.tsx';
 import { NFTProvider } from '../../context/NFTContext';
+import { FavouritesProvider } from '../../contexts/FavouritesContext.jsx';
 import MaintenanceMode from '../../components/MaintenanceMode.tsx';
 import ChatSupport from '../../components/ChatSupport.tsx';
 import Dashboard from '../../components/Dashboard.tsx';
@@ -92,6 +93,9 @@ import Tokenized from './Tokenized';
 import TokenizedAssets from './tokenized-assets.jsx';
 import TokenizedAssetsGlassmorphic from './tokenized-assets-glassmorphic.jsx';
 import ProjectPage from './ProjectPage.jsx';
+
+// Import Launchpad page
+import LaunchpadPageNew from './LaunchpadPageNew.jsx';
 
 // Import Charter a Jet page
 import CharterAJet from './CharterAJet.jsx';
@@ -174,6 +178,7 @@ function ScrollToTop() {
 function AppContent() {
   const { isLoading } = useAuth0();
   const { isMaintenanceMode } = useMaintenance();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [showDashboard, setShowDashboard] = useState(false);
   const [dashboardView, setDashboardView] = useState('');
@@ -304,6 +309,9 @@ function AppContent() {
               {/* Charter a Jet Route */}
               <Route path="/charter-a-jet" element={<CharterAJet />} />
 
+              {/* Launchpad Route */}
+              <Route path="/web3/launchpad" element={<LaunchpadPageNew />} />
+
               {/* Auth Routes */}
               <Route path="/login" element={<LoginNew />} />
               <Route path="/register" element={<RegisterNew />} />
@@ -354,15 +362,25 @@ function AppContent() {
 }
 
 // Main App Component with proper provider hierarchy INCLUDING WAGMI
+function AppWithAuth() {
+  const { user } = useAuth();
+
+  return (
+    <FavouritesProvider user={user}>
+      <MaintenanceProvider>
+        <AppContent />
+      </MaintenanceProvider>
+    </FavouritesProvider>
+  );
+}
+
 export default function App() {
   return (
     <WagmiProvider config={wagmiAdapter.wagmiConfig}>
       <NFTProvider>
         <ThemeProvider>
           <AuthProvider>
-            <MaintenanceProvider>
-              <AppContent />
-            </MaintenanceProvider>
+            <AppWithAuth />
           </AuthProvider>
         </ThemeProvider>
       </NFTProvider>

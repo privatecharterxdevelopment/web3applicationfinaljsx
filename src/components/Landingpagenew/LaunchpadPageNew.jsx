@@ -70,9 +70,7 @@ export default function LaunchpadPageNew() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Top Bar - RWS Style */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">Launchpad</h2>
-
+        <div className="flex items-center justify-end mb-6">
           <div className="flex items-center gap-3">
             {/* Compact Search - Expands on focus */}
             <div className={`relative transition-all duration-200 ${searchFocused ? 'w-64' : 'w-48'}`}>

@@ -44,7 +44,7 @@ function Aviation({ setCurrentPage }: AviationProps) {
       }}>
         {/* Dark overlay for text readability */}
         <div className="absolute inset-0 bg-black/60 rounded-2xl"></div>
-        
+
         <div className="relative z-10 text-center text-white">
           <div className="mb-6">
             <span className="bg-white/20 backdrop-blur-sm text-white px-3 sm:px-4 py-2 rounded-full text-xs font-medium tracking-wide uppercase border border-white/30">
@@ -56,7 +56,7 @@ function Aviation({ setCurrentPage }: AviationProps) {
             <span className="font-medium">Blockchain-Powered travel</span>
           </h1>
           <p className="text-sm sm:text-base lg:text-lg text-gray-200 mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed px-4">
-            Experience the future of private aviation with transparent pricing, sustainable flight certificates, 
+            Experience the future of private aviation with transparent pricing, sustainable flight certificates,
             and 24/7 blockchain-integrated service.
           </p>
 
@@ -78,13 +78,13 @@ function Aviation({ setCurrentPage }: AviationProps) {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
-            <button 
+            <button
               onClick={() => setCurrentPage('dashboard')}
               className="bg-white text-gray-900 px-6 sm:px-8 py-2.5 sm:py-3 rounded-md text-sm hover:bg-gray-100 transition-colors font-medium"
             >
               Book Your Flight
             </button>
-            <button 
+            <button
               onClick={() => setCurrentPage('dashboard')}
               className="border border-white/30 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-md text-sm hover:bg-white/10 transition-colors backdrop-blur-sm"
             >
@@ -94,7 +94,7 @@ function Aviation({ setCurrentPage }: AviationProps) {
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200">
+      <div className="max-w-7xl mx-auto bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
         {/* Our Aviation Services */}
         <section className="px-8 py-20 max-w-6xl mx-auto">
           <div className="text-center mb-16">
@@ -103,14 +103,14 @@ function Aviation({ setCurrentPage }: AviationProps) {
               <span className="font-medium">Comprehensive Air Travel Solutions</span>
             </h2>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              From traditional private jets to cutting-edge eVTOLs, we provide access to the world's 
+              From traditional private jets to cutting-edge eVTOLs, we provide access to the world's
               most comprehensive aviation network with full blockchain transparency.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Private Jets */}
-            <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300">
+            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
               {/* Image Header */}
               <div className="h-40 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl flex items-center justify-center">
                 <div className="w-20 h-20 bg-gray-300 rounded-2xl flex items-center justify-center">
@@ -118,26 +118,32 @@ function Aviation({ setCurrentPage }: AviationProps) {
                 </div>
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-medium text-gray-900 mb-4">Private Jets</h3>
-                <p className="text-gray-600 mb-6 leading-relaxed text-sm">
-                  Access to 16,000+ private jets worldwide. From light jets for short trips to 
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Private Jets</h3>
+                <p className="text-gray-600 text-sm leading-snug mb-3">
+                  Access to 16,000+ private jets worldwide. From light jets for short trips to
                   ultra-long-range aircraft for intercontinental travel.
                 </p>
-                {/* Grey Message Bubbles */}
+                {/* Tags */}
                 <div className="space-y-2 mb-6">
-                  <div className="bg-gray-100 text-gray-700 px-3 py-2 rounded-full text-xs inline-block mr-2">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700 inline-block mr-2">
                     Global fleet access
                   </div>
-                  <div className="bg-gray-100 text-gray-700 px-3 py-2 rounded-full text-xs inline-block mr-2">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700 inline-block mr-2">
                     Instant booking
                   </div>
-                  <div className="bg-gray-100 text-gray-700 px-3 py-2 rounded-full text-xs inline-block">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700 inline-block">
                     Transparent pricing
                   </div>
                 </div>
-                <button className="text-gray-900 font-medium text-sm flex items-center hover:text-gray-700 transition-colors">
-                  <span onClick={() => setCurrentPage('dashboard')}>Explore Jets</span> <ArrowRight className="w-4 h-4 ml-2" />
-                </button>
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => setCurrentPage('dashboard')}
+                    className="text-gray-900 font-light text-sm flex items-center hover:text-gray-700 transition-colors"
+                  >
+                    Explore Jets <ArrowRight className="w-4 h-4 ml-2" />
+                  </button>
+                  <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
+                </div>
               </div>
             </div>
 
@@ -153,31 +159,34 @@ function Aviation({ setCurrentPage }: AviationProps) {
                 </div>
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-medium mb-4">Empty Legs</h3>
-                <p className="text-gray-300 mb-6 leading-relaxed text-sm">
-                  Exclusive access to empty leg flights at up to 75% off regular prices. 
+                <h3 className="text-lg font-light mb-3 leading-tight">Empty Legs</h3>
+                <p className="text-gray-300 text-sm leading-snug mb-3">
+                  Exclusive access to empty leg flights at up to 75% off regular prices.
                   NFT members get select free empty legs.
                 </p>
-                {/* Grey Message Bubbles */}
+                {/* Tags */}
                 <div className="space-y-2 mb-6">
-                  <div className="bg-gray-700 text-gray-200 px-3 py-2 rounded-full text-xs inline-block mr-2">
+                  <div className="bg-gray-700 text-gray-200 px-2 py-1 rounded-full text-xs inline-block mr-2">
                     Up to 75% savings
                   </div>
-                  <div className="bg-gray-700 text-gray-200 px-3 py-2 rounded-full text-xs inline-block mr-2">
+                  <div className="bg-gray-700 text-gray-200 px-2 py-1 rounded-full text-xs inline-block mr-2">
                     Free flights for NFT holders
                   </div>
-                  <div className="bg-gray-700 text-gray-200 px-3 py-2 rounded-full text-xs inline-block">
+                  <div className="bg-gray-700 text-gray-200 px-2 py-1 rounded-full text-xs inline-block">
                     Real-time availability
                   </div>
                 </div>
-                <button className="text-white font-medium text-sm flex items-center hover:text-gray-200 transition-colors">
-                  <span onClick={() => setCurrentPage('dashboard')}>View Empty Legs</span> <ArrowRight className="w-4 h-4 ml-2" />
+                <button
+                  onClick={() => setCurrentPage('dashboard')}
+                  className="text-white font-light text-sm flex items-center hover:text-gray-200 transition-colors"
+                >
+                  View Empty Legs <ArrowRight className="w-4 h-4 ml-2" />
                 </button>
               </div>
             </div>
 
             {/* Group Charter */}
-            <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300">
+            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
               {/* Image Header */}
               <div className="h-40 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl flex items-center justify-center">
                 <div className="w-20 h-20 bg-gray-300 rounded-2xl flex items-center justify-center">
@@ -185,31 +194,37 @@ function Aviation({ setCurrentPage }: AviationProps) {
                 </div>
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-medium text-gray-900 mb-4">Group Charter</h3>
-                <p className="text-gray-600 mb-6 leading-relaxed text-sm">
-                  Tailored solutions for corporate events, sports teams, and large group travel 
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Group Charter</h3>
+                <p className="text-gray-600 text-sm leading-snug mb-3">
+                  Tailored solutions for corporate events, sports teams, and large group travel
                   with customized itineraries and dedicated service.
                 </p>
-                {/* Grey Message Bubbles */}
+                {/* Tags */}
                 <div className="space-y-2 mb-6">
-                  <div className="bg-gray-100 text-gray-700 px-3 py-2 rounded-full text-xs inline-block mr-2">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700 inline-block mr-2">
                     Custom itineraries
                   </div>
-                  <div className="bg-gray-100 text-gray-700 px-3 py-2 rounded-full text-xs inline-block mr-2">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700 inline-block mr-2">
                     Dedicated coordinator
                   </div>
-                  <div className="bg-gray-100 text-gray-700 px-3 py-2 rounded-full text-xs inline-block">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700 inline-block">
                     Volume discounts
                   </div>
                 </div>
-                <button className="text-gray-900 font-medium text-sm flex items-center hover:text-gray-700 transition-colors">
-                  <span onClick={() => setCurrentPage('dashboard')}>Plan Group Travel</span> <ArrowRight className="w-4 h-4 ml-2" />
-                </button>
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => setCurrentPage('dashboard')}
+                    className="text-gray-900 font-light text-sm flex items-center hover:text-gray-700 transition-colors"
+                  >
+                    Plan Group Travel <ArrowRight className="w-4 h-4 ml-2" />
+                  </button>
+                  <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
+                </div>
               </div>
             </div>
 
             {/* Helicopter */}
-            <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300">
+            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
               {/* Image Header */}
               <div className="h-40 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl flex items-center justify-center">
                 <div className="w-20 h-20 bg-gray-300 rounded-2xl flex items-center justify-center">
@@ -217,32 +232,38 @@ function Aviation({ setCurrentPage }: AviationProps) {
                 </div>
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-medium text-gray-900 mb-4">Helicopter</h3>
-                <p className="text-gray-600 mb-6 leading-relaxed text-sm">
-                  Perfect for short-distance travel, city transfers, and accessing remote locations 
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Helicopter</h3>
+                <p className="text-gray-600 text-sm leading-snug mb-3">
+                  Perfect for short-distance travel, city transfers, and accessing remote locations
                   with precision and flexibility.
                 </p>
-                {/* Grey Message Bubbles */}
+                {/* Tags */}
                 <div className="space-y-2 mb-6">
-                  <div className="bg-gray-100 text-gray-700 px-3 py-2 rounded-full text-xs inline-block mr-2">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700 inline-block mr-2">
                     City center access
                   </div>
-                  <div className="bg-gray-100 text-gray-700 px-3 py-2 rounded-full text-xs inline-block mr-2">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700 inline-block mr-2">
                     Remote destinations
                   </div>
-                  <div className="bg-gray-100 text-gray-700 px-3 py-2 rounded-full text-xs inline-block">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700 inline-block">
                     Quick transfers
                   </div>
                 </div>
-                <button className="text-gray-900 font-medium text-sm flex items-center hover:text-gray-700 transition-colors">
-                  <span onClick={() => setCurrentPage('dashboard')}>Book Helicopter</span> <ArrowRight className="w-4 h-4 ml-2" />
-                </button>
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => setCurrentPage('dashboard')}
+                    className="text-gray-900 font-light text-sm flex items-center hover:text-gray-700 transition-colors"
+                  >
+                    Book Helicopter <ArrowRight className="w-4 h-4 ml-2" />
+                  </button>
+                  <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
+                </div>
               </div>
             </div>
 
             {/* eVTOL */}
-            <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300">
-              <div className="absolute top-6 right-6 bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-medium z-10">
+            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer relative">
+              <div className="absolute top-6 right-6 bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs z-10">
                 Coming Soon
               </div>
               {/* Image Header */}
@@ -252,31 +273,37 @@ function Aviation({ setCurrentPage }: AviationProps) {
                 </div>
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-medium text-gray-900 mb-4">eVTOL</h3>
-                <p className="text-gray-600 mb-6 leading-relaxed text-sm">
-                  The future of urban air mobility. Electric vertical takeoff and landing aircraft 
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">eVTOL</h3>
+                <p className="text-gray-600 text-sm leading-snug mb-3">
+                  The future of urban air mobility. Electric vertical takeoff and landing aircraft
                   for sustainable, efficient city travel.
                 </p>
-                {/* Grey Message Bubbles */}
+                {/* Tags */}
                 <div className="space-y-2 mb-6">
-                  <div className="bg-gray-100 text-gray-700 px-3 py-2 rounded-full text-xs inline-block mr-2">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700 inline-block mr-2">
                     Zero emissions
                   </div>
-                  <div className="bg-gray-100 text-gray-700 px-3 py-2 rounded-full text-xs inline-block mr-2">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700 inline-block mr-2">
                     Quiet operation
                   </div>
-                  <div className="bg-gray-100 text-gray-700 px-3 py-2 rounded-full text-xs inline-block">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700 inline-block">
                     Urban mobility
                   </div>
                 </div>
-                <button className="text-gray-900 font-medium text-sm flex items-center hover:text-gray-700 transition-colors">
-                  <span onClick={() => setCurrentPage('dashboard')}>Learn More</span> <ArrowRight className="w-4 h-4 ml-2" />
-                </button>
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => setCurrentPage('dashboard')}
+                    className="text-gray-900 font-light text-sm flex items-center hover:text-gray-700 transition-colors"
+                  >
+                    Learn More <ArrowRight className="w-4 h-4 ml-2" />
+                  </button>
+                  <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
+                </div>
               </div>
             </div>
 
             {/* 24/7 Service */}
-            <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300">
+            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
               {/* Image Header */}
               <div className="h-40 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl flex items-center justify-center">
                 <div className="w-20 h-20 bg-gray-300 rounded-2xl flex items-center justify-center">
@@ -284,26 +311,32 @@ function Aviation({ setCurrentPage }: AviationProps) {
                 </div>
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-medium text-gray-900 mb-4">24/7 Concierge</h3>
-                <p className="text-gray-600 mb-6 leading-relaxed text-sm">
-                  Round-the-clock support from our aviation experts. From booking to landing, 
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">24/7 Concierge</h3>
+                <p className="text-gray-600 text-sm leading-snug mb-3">
+                  Round-the-clock support from our aviation experts. From booking to landing,
                   we're here to ensure your journey is seamless.
                 </p>
-                {/* Grey Message Bubbles */}
+                {/* Tags */}
                 <div className="space-y-2 mb-6">
-                  <div className="bg-gray-100 text-gray-700 px-3 py-2 rounded-full text-xs inline-block mr-2">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700 inline-block mr-2">
                     24/7 availability
                   </div>
-                  <div className="bg-gray-100 text-gray-700 px-3 py-2 rounded-full text-xs inline-block mr-2">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700 inline-block mr-2">
                     Expert aviation team
                   </div>
-                  <div className="bg-gray-100 text-gray-700 px-3 py-2 rounded-full text-xs inline-block">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700 inline-block">
                     Personalized service
                   </div>
                 </div>
-                <button className="text-gray-900 font-medium text-sm flex items-center hover:text-gray-700 transition-colors">
-                  <span onClick={() => setCurrentPage('dashboard')}>Contact Support</span> <ArrowRight className="w-4 h-4 ml-2" />
-                </button>
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => setCurrentPage('dashboard')}
+                    className="text-gray-900 font-light text-sm flex items-center hover:text-gray-700 transition-colors"
+                  >
+                    Contact Support <ArrowRight className="w-4 h-4 ml-2" />
+                  </button>
+                  <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
+                </div>
               </div>
             </div>
           </div>
@@ -318,61 +351,61 @@ function Aviation({ setCurrentPage }: AviationProps) {
                 <span className="font-medium">Blockchain-Certified Green Aviation</span>
               </h2>
               <p className="text-gray-600 mb-8 leading-relaxed">
-                Every flight comes with optional blockchain-verified CO2 and SAF (Sustainable Aviation Fuel) 
+                Every flight comes with optional blockchain-verified CO2 and SAF (Sustainable Aviation Fuel)
                 certificates, providing unprecedented transparency in aviation's environmental impact.
               </p>
-              
+
               <div className="space-y-6">
                 <div className="flex items-start">
                   <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mr-4">
                     <Leaf className="w-6 h-6 text-gray-600" />
                   </div>
                   <div>
-                    <h4 className="text-base font-medium text-gray-900 mb-2">CO2 Certificates</h4>
+                    <h4 className="text-base font-light text-gray-900 mb-2">CO2 Certificates</h4>
                     <p className="text-sm text-gray-600">Blockchain-verified carbon footprint tracking for every flight with offset options</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start">
                   <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mr-4">
                     <Award className="w-6 h-6 text-gray-600" />
                   </div>
                   <div>
-                    <h4 className="text-base font-medium text-gray-900 mb-2">SAF Certificates</h4>
+                    <h4 className="text-base font-light text-gray-900 mb-2">SAF Certificates</h4>
                     <p className="text-sm text-gray-600">Sustainable Aviation Fuel usage verification through immutable blockchain records</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start">
                   <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mr-4">
                     <Shield className="w-6 h-6 text-gray-600" />
                   </div>
                   <div>
-                    <h4 className="text-base font-medium text-gray-900 mb-2">Transparent Pricing</h4>
+                    <h4 className="text-base font-light text-gray-900 mb-2">Transparent Pricing</h4>
                     <p className="text-sm text-gray-600">All costs, fees, and environmental impacts clearly displayed and blockchain-verified</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-gray-50 rounded-2xl p-8 border border-gray-200">
-              <h3 className="text-xl font-medium text-gray-900 mb-6">Environmental Impact Dashboard</h3>
+            <div className="bg-gray-50 rounded-2xl p-8 border border-gray-100">
+              <h3 className="text-lg font-light text-gray-900 mb-6 leading-tight">Environmental Impact Dashboard</h3>
               <div className="space-y-4">
-                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                <div className="flex justify-between items-center py-3 border-b border-gray-100">
                   <span className="text-sm text-gray-600">Flights with SAF</span>
-                  <span className="text-lg font-medium text-gray-900">23%</span>
+                  <span className="text-lg font-light text-gray-900">23%</span>
                 </div>
-                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                <div className="flex justify-between items-center py-3 border-b border-gray-100">
                   <span className="text-sm text-gray-600">CO2 Offset Programs</span>
-                  <span className="text-lg font-medium text-gray-900">89%</span>
+                  <span className="text-lg font-light text-gray-900">89%</span>
                 </div>
-                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                <div className="flex justify-between items-center py-3 border-b border-gray-100">
                   <span className="text-sm text-gray-600">Blockchain Certificates</span>
-                  <span className="text-lg font-medium text-gray-900">100%</span>
+                  <span className="text-lg font-light text-gray-900">100%</span>
                 </div>
                 <div className="flex justify-between items-center py-3">
                   <span className="text-sm text-gray-600">Carbon Neutral Flights</span>
-                  <span className="text-lg font-medium text-gray-900">67%</span>
+                  <span className="text-lg font-light text-gray-900">67%</span>
                 </div>
               </div>
             </div>
@@ -387,7 +420,7 @@ function Aviation({ setCurrentPage }: AviationProps) {
               <span className="font-medium">Brokers Today, Operators Tomorrow</span>
             </h2>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              Currently serving as your trusted aviation brokers with full blockchain integration, 
+              Currently serving as your trusted aviation brokers with full blockchain integration,
               we're building toward becoming future operators in the evolving aviation landscape.
             </p>
           </div>
@@ -397,9 +430,9 @@ function Aviation({ setCurrentPage }: AviationProps) {
               <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-6">
                 <Headphones className="w-8 h-8 text-gray-700" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">24/7 Broker Service</h3>
+              <h3 className="text-lg font-light text-gray-900 mb-4 leading-tight">24/7 Broker Service</h3>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Our expert team provides round-the-clock support, ensuring seamless booking 
+                Our expert team provides round-the-clock support, ensuring seamless booking
                 and travel coordination for all your aviation needs.
               </p>
             </div>
@@ -408,9 +441,9 @@ function Aviation({ setCurrentPage }: AviationProps) {
               <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-6">
                 <Shield className="w-8 h-8 text-gray-700" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Blockchain Integration</h3>
+              <h3 className="text-lg font-light text-gray-900 mb-4 leading-tight">Blockchain Integration</h3>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Every transaction, certificate, and booking is secured and verified through 
+                Every transaction, certificate, and booking is secured and verified through
                 blockchain technology for maximum transparency and trust.
               </p>
             </div>
@@ -419,9 +452,9 @@ function Aviation({ setCurrentPage }: AviationProps) {
               <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-6">
                 <TrendingUp className="w-8 h-8 text-gray-700" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Future Operations</h3>
+              <h3 className="text-lg font-light text-gray-900 mb-4 leading-tight">Future Operations</h3>
               <p className="text-sm text-gray-600 leading-relaxed">
-                We're actively developing our capabilities to become direct operators, 
+                We're actively developing our capabilities to become direct operators,
                 bringing even more control and innovation to your aviation experience.
               </p>
             </div>
@@ -433,18 +466,18 @@ function Aviation({ setCurrentPage }: AviationProps) {
       <section className="px-8 py-20 max-w-4xl mx-auto text-center">
         <h2 className="text-3xl font-light text-gray-900 mb-4">Ready to Take Flight?</h2>
         <p className="text-gray-500 mb-12 max-w-2xl mx-auto leading-relaxed">
-          Experience the future of aviation with blockchain-verified transparency, 
+          Experience the future of aviation with blockchain-verified transparency,
           sustainable options, and unmatched service quality.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
-          <button 
+          <button
             onClick={() => setCurrentPage('dashboard')}
             className="bg-gray-900 text-white px-8 py-3 rounded-md text-sm hover:bg-gray-800 transition-colors flex items-center justify-center"
           >
             Book Your Flight
             <ArrowRight className="w-4 h-4 ml-2" />
           </button>
-          <button 
+          <button
             onClick={() => setCurrentPage('dashboard')}
             className="border border-gray-200 text-gray-700 px-8 py-3 rounded-md text-sm hover:bg-gray-50 transition-colors"
           >
@@ -470,37 +503,37 @@ function Aviation({ setCurrentPage }: AviationProps) {
             <div>
               <h4 className="text-sm font-medium text-gray-900 mb-4">Aviation Services</h4>
               <div className="space-y-3">
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Private Jet Charter
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Group Charter
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Helicopter Charter
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   eVTOL Flights
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Adventure Packages
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
@@ -513,43 +546,43 @@ function Aviation({ setCurrentPage }: AviationProps) {
             <div>
               <h4 className="text-sm font-medium text-gray-900 mb-4">Web3 & Digital</h4>
               <div className="space-y-3">
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Web3
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   PVCX Token
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   NFT Aviation
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Asset Licensing
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   JetCard Packages
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   CO2 Certificates
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
@@ -562,19 +595,19 @@ function Aviation({ setCurrentPage }: AviationProps) {
             <div>
               <h4 className="text-sm font-medium text-gray-900 mb-4">Partners & Press</h4>
               <div className="space-y-3">
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Partner With Us
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Blog Posts
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
@@ -587,31 +620,31 @@ function Aviation({ setCurrentPage }: AviationProps) {
             <div>
               <h4 className="text-sm font-medium text-gray-900 mb-4">Quick Links</h4>
               <div className="space-y-3">
-                <button 
+                <button
                   onClick={() => setCurrentPage('home')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Home
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   How It Works
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   About
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   FAQ
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
@@ -625,25 +658,25 @@ function Aviation({ setCurrentPage }: AviationProps) {
           <div className="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-gray-200">
             <p className="text-sm text-gray-400 mb-4 md:mb-0">©2023-2025 PrivateCharterX. All rights reserved.</p>
             <div className="flex space-x-6">
-              <button 
+              <button
                 onClick={() => setCurrentPage('helpdesk')}
                 className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
               >
                 Privacy
               </button>
-              <button 
+              <button
                 onClick={() => setCurrentPage('helpdesk')}
                 className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
               >
                 Terms
               </button>
-              <button 
+              <button
                 onClick={() => setCurrentPage('helpdesk')}
                 className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
               >
                 Support
               </button>
-              <button 
+              <button
                 onClick={() => setCurrentPage('helpdesk')}
                 className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
               >

@@ -62,11 +62,7 @@ const PVCXTokenView = ({ user, onNavigate }) => {
     <div className="w-full h-full overflow-y-auto" style={{ fontFamily: "'DM Sans', sans-serif" }}>
       {/* Header */}
       <div className="px-8 py-6 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">$PVCX Token</h1>
-            <p className="text-sm text-gray-600 mt-1">Reward System & Tokenomics</p>
-          </div>
+        <div className="flex items-center justify-end">
           <img
             src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/PaymentIcons/Title-removebg-preview.png"
             alt="PVCX"

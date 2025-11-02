@@ -1,17 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, Calendar, MapPin, Ticket, Music, Trophy, Theater, Film, Users, Star, Trash2, Plus, Search } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { GoogleCalendarService } from '../../services/googleCalendarService';
+import { sendNotification } from '../../services/notifications';
 
 const FavouritesView = ({ user, onAddToCalendar }) => {
   const [favourites, setFavourites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [addingToCalendar, setAddingToCalendar] = useState(null);
 
   useEffect(() => {
     if (user) {
       loadFavourites();
+      checkGoogleConnection();
     }
   }, [user]);
+
+  const checkGoogleConnection = async () => {
+    try {
+      const { data } = await supabase
+        .from('google_calendar_connections')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      setGoogleConnected(!!data);
+    } catch (error) {
+      setGoogleConnected(false);
+    }
+  };
 
   const loadFavourites = async () => {
     setLoading(true);
@@ -46,9 +64,75 @@ const FavouritesView = ({ user, onAddToCalendar }) => {
     }
   };
 
-  const handleAddToCalendar = (favourite) => {
-    if (onAddToCalendar) {
-      onAddToCalendar(favourite);
+  const handleAddToCalendar = async (favourite) => {
+    setAddingToCalendar(favourite.id);
+
+    try {
+      const eventDate = favourite.event_date ? new Date(favourite.event_date) : new Date();
+
+      // Create simplified calendar event
+      const eventData = {
+        user_id: user.id,
+        title: favourite.event_name,
+        description: `${favourite.category || 'Event'} - ${favourite.source || 'Favourites'}`,
+        event_type: 'event',
+        start_date: eventDate.toISOString(),
+        end_date: new Date(eventDate.getTime() + 2 * 60 * 60 * 1000).toISOString(), // Default 2 hours
+        all_day: false,
+        location: favourite.location || '',
+        color: '#8B5CF6',
+        reminder_minutes: 60, // 1 hour before
+        status: 'confirmed'
+      };
+
+      const { data: event, error: eventError } = await supabase
+        .from('calendar_events')
+        .insert([eventData])
+        .select()
+        .single();
+
+      if (eventError) throw eventError;
+
+      // Create notification for calendar addition
+      await supabase.from('notifications').insert({
+        user_id: user.id,
+        type: 'calendar_entry',
+        title: 'Event Added to Calendar',
+        message: `"${favourite.event_name}" has been added to your calendar`,
+        is_read: false,
+        action_url: '/dashboard?view=calendar'
+      });
+
+      // Sync to Google Calendar if connected
+      if (googleConnected) {
+        try {
+          const googleService = new GoogleCalendarService(user.id);
+          await googleService.syncEventToGoogle(event);
+
+          // Notify about Google sync
+          await supabase.from('notifications').insert({
+            user_id: user.id,
+            type: 'calendar_entry',
+            title: 'Synced to Google Calendar',
+            message: `"${favourite.event_name}" has been synced to your Google Calendar`,
+            is_read: false
+          });
+        } catch (syncError) {
+          console.error('Google Calendar sync failed:', syncError);
+        }
+      }
+
+      alert(`"${favourite.event_name}" has been added to your calendar!`);
+
+      // Legacy callback support
+      if (onAddToCalendar) {
+        onAddToCalendar(favourite);
+      }
+    } catch (error) {
+      console.error('Error adding to calendar:', error);
+      alert('Failed to add event to calendar. Please try again.');
+    } finally {
+      setAddingToCalendar(null);
     }
   };
 
@@ -202,11 +286,25 @@ const FavouritesView = ({ user, onAddToCalendar }) => {
                     {!isPast && (
                       <button
                         onClick={() => handleAddToCalendar(favourite)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-xs font-medium"
-                        title="Add to Calendar"
+                        disabled={addingToCalendar === favourite.id}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors text-xs font-medium ${
+                          addingToCalendar === favourite.id
+                            ? 'bg-gray-400 text-white cursor-not-allowed'
+                            : 'bg-gray-900 text-white hover:bg-gray-800'
+                        }`}
+                        title={googleConnected ? "Add to Calendar & Sync to Google" : "Add to Calendar"}
                       >
-                        <Plus size={14} />
-                        Calendar
+                        {addingToCalendar === favourite.id ? (
+                          <>
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                            Adding...
+                          </>
+                        ) : (
+                          <>
+                            <Plus size={14} />
+                            {googleConnected ? 'Add & Sync' : 'Add to Calendar'}
+                          </>
+                        )}
                       </button>
                     )}
                     <button

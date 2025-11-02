@@ -99,28 +99,28 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
           
           {/* Key Metrics Row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <div className="text-lg sm:text-2xl font-light text-gray-900 mb-2">$2.8B+</div>
-              <h3 className="text-base font-medium text-gray-900 mb-2">Assets Under Management</h3>
-              <p className="text-xs sm:text-sm text-gray-500">Total tokenized value</p>
+              <h3 className="text-base font-light text-gray-900 mb-2">Assets Under Management</h3>
+              <p className="text-xs sm:text-sm text-gray-400">Total tokenized value</p>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <div className="text-2xl font-light text-gray-900 mb-2">847</div>
-              <h3 className="text-base font-medium text-gray-900 mb-2">Tokenized Assets</h3>
-              <p className="text-sm text-gray-500">Across all categories</p>
+              <h3 className="text-base font-light text-gray-900 mb-2">Tokenized Assets</h3>
+              <p className="text-sm text-gray-400">Across all categories</p>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <div className="text-2xl font-light text-gray-900 mb-2">12.4%</div>
-              <h3 className="text-base font-medium text-gray-900 mb-2">Average APY</h3>
-              <p className="text-sm text-gray-500">Annual percentage yield</p>
+              <h3 className="text-base font-light text-gray-900 mb-2">Average APY</h3>
+              <p className="text-sm text-gray-400">Annual percentage yield</p>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <div className="text-2xl font-light text-gray-900 mb-2">45,000+</div>
-              <h3 className="text-base font-medium text-gray-900 mb-2">Token Holders</h3>
-              <p className="text-sm text-gray-500">Global investor community</p>
+              <h3 className="text-base font-light text-gray-900 mb-2">Token Holders</h3>
+              <p className="text-sm text-gray-400">Global investor community</p>
             </div>
           </div>
 
@@ -234,19 +234,19 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="text-center">
               <div className="text-2xl font-light text-gray-900 mb-2">156,847</div>
-              <p className="text-sm text-gray-500">CO2 Certificates Issued</p>
+              <p className="text-sm text-gray-400">CO2 Certificates Issued</p>
             </div>
             <div className="text-center">
               <div className="text-2xl font-light text-gray-900 mb-2">89,234</div>
-              <p className="text-sm text-gray-500">SAF Certificates Generated</p>
+              <p className="text-sm text-gray-400">SAF Certificates Generated</p>
             </div>
             <div className="text-center">
               <div className="text-2xl font-light text-gray-900 mb-2">2.4M</div>
-              <p className="text-sm text-gray-500">Tons CO2 Offset</p>
+              <p className="text-sm text-gray-400">Tons CO2 Offset</p>
             </div>
             <div className="text-center">
               <div className="text-2xl font-light text-gray-900 mb-2">67%</div>
-              <p className="text-sm text-gray-500">Flights with SAF</p>
+              <p className="text-sm text-gray-400">Flights with SAF</p>
             </div>
           </div>
         </section>
@@ -267,19 +267,19 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Step 1 */}
             <div className="text-center">
-              <div className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center text-lg font-medium mx-auto mb-6">
+              <div className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center text-lg font-light mx-auto mb-6">
                 1
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Initial Consultation</h3>
-              <p className="text-sm text-gray-600 leading-relaxed mb-4">
-                Asset evaluation, tokenization strategy, regulatory assessment, and market analysis 
+              <h3 className="text-lg font-light text-gray-900 mb-4">Initial Consultation</h3>
+              <p className="text-sm text-gray-600 leading-snug mb-4">
+                Asset evaluation, tokenization strategy, regulatory assessment, and market analysis
                 to determine optimal token structure and investment potential.
               </p>
               <div className="flex flex-wrap gap-2 justify-center">
-                <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Asset valuation
                 </div>
-                <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Legal review
                 </div>
               </div>
@@ -287,19 +287,19 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
 
             {/* Step 2 */}
             <div className="text-center">
-              <div className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center text-lg font-medium mx-auto mb-6">
+              <div className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center text-lg font-light mx-auto mb-6">
                 2
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">SPV Setup & Structure</h3>
-              <p className="text-sm text-gray-600 leading-relaxed mb-4">
-                Special Purpose Vehicle creation, asset allocation framework, governance structure, 
+              <h3 className="text-lg font-light text-gray-900 mb-4">SPV Setup & Structure</h3>
+              <p className="text-sm text-gray-600 leading-snug mb-4">
+                Special Purpose Vehicle creation, asset allocation framework, governance structure,
                 and regulatory compliance setup for institutional-grade tokenization.
               </p>
               <div className="flex flex-wrap gap-2 justify-center">
-                <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Legal entity
                 </div>
-                <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Asset custody
                 </div>
               </div>
@@ -307,19 +307,19 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
 
             {/* Step 3 */}
             <div className="text-center">
-              <div className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center text-lg font-medium mx-auto mb-6">
+              <div className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center text-lg font-light mx-auto mb-6">
                 3
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Smart Contract Development</h3>
-              <p className="text-sm text-gray-600 leading-relaxed mb-4">
-                Custom smart contract creation on Ethereum or Base, with options for ERC-20 utility 
+              <h3 className="text-lg font-light text-gray-900 mb-4">Smart Contract Development</h3>
+              <p className="text-sm text-gray-600 leading-snug mb-4">
+                Custom smart contract creation on Ethereum or Base, with options for ERC-20 utility
                 tokens, ERC-1400 security tokens, or hybrid tokenomics models.
               </p>
               <div className="flex flex-wrap gap-2 justify-center">
-                <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   ERC-20/1400
                 </div>
-                <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Multi-chain
                 </div>
               </div>
@@ -327,19 +327,19 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
 
             {/* Step 4 */}
             <div className="text-center">
-              <div className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center text-lg font-medium mx-auto mb-6">
+              <div className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center text-lg font-light mx-auto mb-6">
                 4
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Token Minting & Distribution</h3>
-              <p className="text-sm text-gray-600 leading-relaxed mb-4">
-                Professional token minting process with institutional custody, KYC/AML compliance, 
+              <h3 className="text-lg font-light text-gray-900 mb-4">Token Minting & Distribution</h3>
+              <p className="text-sm text-gray-600 leading-snug mb-4">
+                Professional token minting process with institutional custody, KYC/AML compliance,
                 and secure distribution to qualified investors through our platform.
               </p>
               <div className="flex flex-wrap gap-2 justify-center">
-                <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   KYC/AML
                 </div>
-                <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Secure minting
                 </div>
               </div>
@@ -347,19 +347,19 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
 
             {/* Step 5 */}
             <div className="text-center">
-              <div className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center text-lg font-medium mx-auto mb-6">
+              <div className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center text-lg font-light mx-auto mb-6">
                 5
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Custody & Vault Management</h3>
-              <p className="text-sm text-gray-600 leading-relaxed mb-4">
-                Institutional-grade custody through our trusted partners, secure vault storage, 
+              <h3 className="text-lg font-light text-gray-900 mb-4">Custody & Vault Management</h3>
+              <p className="text-sm text-gray-600 leading-snug mb-4">
+                Institutional-grade custody through our trusted partners, secure vault storage,
                 insurance coverage, and professional asset management services.
               </p>
               <div className="flex flex-wrap gap-2 justify-center">
-                <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Institutional custody
                 </div>
-                <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Insurance
                 </div>
               </div>
@@ -367,19 +367,19 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
 
             {/* Step 6 */}
             <div className="text-center">
-              <div className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center text-lg font-medium mx-auto mb-6">
+              <div className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center text-lg font-light mx-auto mb-6">
                 6
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Trading & Yield Generation</h3>
-              <p className="text-sm text-gray-600 leading-relaxed mb-4">
-                Secondary market trading, yield distribution, governance participation, and ongoing 
+              <h3 className="text-lg font-light text-gray-900 mb-4">Trading & Yield Generation</h3>
+              <p className="text-sm text-gray-600 leading-snug mb-4">
+                Secondary market trading, yield distribution, governance participation, and ongoing
                 asset management with transparent reporting and blockchain verification.
               </p>
               <div className="flex flex-wrap gap-2 justify-center">
-                <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Secondary trading
                 </div>
-                <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Yield distribution
                 </div>
               </div>
@@ -402,170 +402,176 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Aviation Assets */}
-            <div className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden">
+            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
               {/* Header Image */}
-              <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-xl mb-6 flex items-center justify-center">
+              <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
                 <Plane className="w-12 h-12 text-gray-500" />
               </div>
               <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-3">Aviation Assets</h3>
-                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Aviation Assets</h3>
+                <p className="text-gray-600 text-sm leading-snug mb-3">
                   Private jets, helicopters, eVTOLs, and aviation operators ready for tokenization.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     Private jet fleets
                   </div>
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     Helicopter operations
                   </div>
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     eVTOL manufacturers
                   </div>
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     Charter operators
                   </div>
                 </div>
+                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
               </div>
             </div>
 
             {/* Ground Transportation */}
-            <div className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden">
+            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
               {/* Header Image */}
-              <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-xl mb-6 flex items-center justify-center">
+              <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
                 <Car className="w-12 h-12 text-gray-500" />
               </div>
               <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-3">Ground Transportation</h3>
-                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Ground Transportation</h3>
+                <p className="text-gray-600 text-sm leading-snug mb-3">
                   Luxury car fleets, limousine services, and premium ground transportation companies.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     Limousine companies
                   </div>
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     Luxury car fleets
                   </div>
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     Chauffeur services
                   </div>
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     Executive transport
                   </div>
                 </div>
+                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
               </div>
             </div>
 
             {/* Maritime Assets */}
-            <div className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden">
+            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
               {/* Header Image */}
-              <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-xl mb-6 flex items-center justify-center">
+              <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
                 <Anchor className="w-12 h-12 text-gray-500" />
               </div>
               <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-3">Maritime Assets</h3>
-                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Maritime Assets</h3>
+                <p className="text-gray-600 text-sm leading-snug mb-3">
                   Luxury yachts, charter operations, and maritime hospitality services.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     Luxury yacht charters
                   </div>
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     Superyacht ownership
                   </div>
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     Marina operations
                   </div>
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     Maritime services
                   </div>
                 </div>
+                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
               </div>
             </div>
 
             {/* Hospitality & Experiences */}
-            <div className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden">
+            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
               {/* Header Image */}
-              <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-xl mb-6 flex items-center justify-center">
+              <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
                 <Crown className="w-12 h-12 text-gray-500" />
               </div>
               <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-3">Hospitality & Experiences</h3>
-                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Hospitality & Experiences</h3>
+                <p className="text-gray-600 text-sm leading-snug mb-3">
                   Luxury hotels, exclusive experiences, and premium hospitality services.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     Luxury resort properties
                   </div>
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     Exclusive experiences
                   </div>
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     Concierge services
                   </div>
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     VIP memberships
                   </div>
                 </div>
+                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
               </div>
             </div>
 
             {/* Real Estate */}
-            <div className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden">
+            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
               {/* Header Image */}
-              <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-xl mb-6 flex items-center justify-center">
+              <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
                 <Building className="w-12 h-12 text-gray-500" />
               </div>
               <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-3">Travel Real Estate</h3>
-                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Travel Real Estate</h3>
+                <p className="text-gray-600 text-sm leading-snug mb-3">
                   Airports, hangars, terminals, and travel-related real estate infrastructure.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     Private hangars
                   </div>
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     Airport terminals
                   </div>
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     FBO facilities
                   </div>
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     Travel hubs
                   </div>
                 </div>
+                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
               </div>
             </div>
 
             {/* Technology & Innovation */}
-            <div className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden">
+            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
               {/* Header Image */}
-              <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-xl mb-6 flex items-center justify-center">
+              <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
                 <Rocket className="w-12 h-12 text-gray-500" />
               </div>
               <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-3">Technology & Innovation</h3>
-                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Technology & Innovation</h3>
+                <p className="text-gray-600 text-sm leading-snug mb-3">
                   Travel tech companies, mobility platforms, and innovative transportation solutions.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     Mobility platforms
                   </div>
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     Travel tech startups
                   </div>
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     Innovation projects
                   </div>
-                  <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                  <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                     Future mobility
                   </div>
                 </div>
+                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
               </div>
             </div>
           </div>
@@ -587,7 +593,7 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
 
         <div className="space-y-8">
           {/* Private Jet Example */}
-          <div className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300">
+          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
             <div className="p-8">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
@@ -599,27 +605,27 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-xl font-medium text-gray-900">Gulfstream G650ER</h3>
-                    <p className="text-sm text-gray-500">Ultra-Long Range Business Jet</p>
+                    <h3 className="text-xl font-light text-gray-900">Gulfstream G650ER</h3>
+                    <p className="text-sm text-gray-400">Ultra-Long Range Business Jet</p>
                   </div>
                 </div>
-                
+
                 {/* Metrics Row */}
                 <div className="flex items-center space-x-8">
                   <div className="text-center">
                     <div className="text-2xl font-light text-gray-900 mb-1">8.7%</div>
-                    <p className="text-sm text-gray-500">Projected APY</p>
+                    <p className="text-sm text-gray-400">Projected APY</p>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-light text-gray-900 mb-1">$1,250</div>
-                    <p className="text-sm text-gray-500">Token Price</p>
+                    <p className="text-sm text-gray-400">Token Price</p>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-light text-gray-900 mb-1">2,500</div>
-                    <p className="text-sm text-gray-500">Max Holders</p>
+                    <p className="text-sm text-gray-400">Max Holders</p>
                   </div>
                   <div className="flex space-x-3">
-                    <button 
+                    <button
                       onClick={() => setCurrentPage('helpdesk')}
                       className="bg-gray-900 text-white px-6 py-3 rounded-md text-sm hover:bg-gray-800 transition-colors"
                     >
@@ -691,7 +697,7 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
           </div>
 
           {/* Luxury Car Fleet */}
-          <div className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300">
+          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
             <div className="p-8">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
@@ -703,27 +709,27 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-xl font-medium text-gray-900">Elite Limousine Fleet</h3>
-                    <p className="text-sm text-gray-500">Premium Ground Transportation</p>
+                    <h3 className="text-xl font-light text-gray-900">Elite Limousine Fleet</h3>
+                    <p className="text-sm text-gray-400">Premium Ground Transportation</p>
                   </div>
                 </div>
-                
+
                 {/* Metrics Row */}
                 <div className="flex items-center space-x-8">
                   <div className="text-center">
                     <div className="text-2xl font-light text-gray-900 mb-1">12.3%</div>
-                    <p className="text-sm text-gray-500">Projected APY</p>
+                    <p className="text-sm text-gray-400">Projected APY</p>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-light text-gray-900 mb-1">$850</div>
-                    <p className="text-sm text-gray-500">Token Price</p>
+                    <p className="text-sm text-gray-400">Token Price</p>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-light text-gray-900 mb-1">5,000</div>
-                    <p className="text-sm text-gray-500">Max Holders</p>
+                    <p className="text-sm text-gray-400">Max Holders</p>
                   </div>
                   <div className="flex space-x-3">
-                    <button 
+                    <button
                       onClick={() => setCurrentPage('helpdesk')}
                       className="bg-gray-900 text-white px-6 py-3 rounded-md text-sm hover:bg-gray-800 transition-colors"
                     >
@@ -795,7 +801,7 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
           </div>
 
           {/* Helicopter Operation */}
-          <div className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300">
+          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
             <div className="p-8">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
@@ -807,27 +813,27 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-xl font-medium text-gray-900">Coastal Helicopter Tours</h3>
-                    <p className="text-sm text-gray-500">Tourism & Charter Operations</p>
+                    <h3 className="text-xl font-light text-gray-900">Coastal Helicopter Tours</h3>
+                    <p className="text-sm text-gray-400">Tourism & Charter Operations</p>
                   </div>
                 </div>
-                
+
                 {/* Metrics Row */}
                 <div className="flex items-center space-x-8">
                   <div className="text-center">
                     <div className="text-2xl font-light text-gray-900 mb-1">15.2%</div>
-                    <p className="text-sm text-gray-500">Projected APY</p>
+                    <p className="text-sm text-gray-400">Projected APY</p>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-light text-gray-900 mb-1">$650</div>
-                    <p className="text-sm text-gray-500">Token Price</p>
+                    <p className="text-sm text-gray-400">Token Price</p>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-light text-gray-900 mb-1">3,000</div>
-                    <p className="text-sm text-gray-500">Max Holders</p>
+                    <p className="text-sm text-gray-400">Max Holders</p>
                   </div>
                   <div className="flex space-x-3">
-                    <button 
+                    <button
                       onClick={() => setCurrentPage('helpdesk')}
                       className="bg-gray-900 text-white px-6 py-3 rounded-md text-sm hover:bg-gray-800 transition-colors"
                     >
@@ -899,7 +905,7 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
           </div>
 
           {/* eVTOL Future Mobility */}
-          <div className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300">
+          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
             <div className="p-8">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
@@ -911,24 +917,24 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-xl font-medium text-gray-900">Urban eVTOL Network</h3>
-                    <p className="text-sm text-gray-500">Future Urban Air Mobility</p>
+                    <h3 className="text-xl font-light text-gray-900">Urban eVTOL Network</h3>
+                    <p className="text-sm text-gray-400">Future Urban Air Mobility</p>
                   </div>
                 </div>
-                
+
                 {/* Metrics Row */}
                 <div className="flex items-center space-x-8">
                   <div className="text-center">
                     <div className="text-2xl font-light text-gray-900 mb-1">TBD</div>
-                    <p className="text-sm text-gray-500">Projected Yield</p>
+                    <p className="text-sm text-gray-400">Projected Yield</p>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-light text-gray-900 mb-1">$2,100</div>
-                    <p className="text-sm text-gray-500">Token Price</p>
+                    <p className="text-sm text-gray-400">Token Price</p>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-light text-gray-900 mb-1">10,000</div>
-                    <p className="text-sm text-gray-500">Max Holders</p>
+                    <p className="text-sm text-gray-400">Max Holders</p>
                   </div>
                   <div className="flex space-x-3">
                     <button
@@ -1010,8 +1016,8 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
       {/* CTA Section */}
       <section className="px-8 py-20 max-w-4xl mx-auto text-center">
         <h2 className="text-3xl font-light text-gray-900 mb-4">Ready to Tokenize Your Assets?</h2>
-        <p className="text-gray-500 mb-12 max-w-2xl mx-auto leading-relaxed">
-          Join the future of asset ownership with blockchain-powered tokenization. 
+        <p className="text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed">
+          Join the future of asset ownership with blockchain-powered tokenization.
           From consultation to trading, we handle the entire process.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">

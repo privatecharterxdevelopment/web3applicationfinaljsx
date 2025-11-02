@@ -1,13 +1,13 @@
 import React from 'react';
 import LandingHeader from './LandingHeader';
-import { 
-  Plane, 
-  Shield, 
-  Coins, 
-  Clock, 
-  Globe, 
-  Star, 
-  Users, 
+import {
+  Plane,
+  Shield,
+  Coins,
+  Clock,
+  Globe,
+  Star,
+  Users,
   Zap,
   ChevronDown,
   ArrowRight,
@@ -52,17 +52,17 @@ function Services({ setCurrentPage }: ServicesProps) {
               <span className="font-medium">decentralized technology</span>
             </h1>
             <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 leading-relaxed">
-              From smart contracts to full-scale DeFi protocols, we provide comprehensive 
+              From smart contracts to full-scale DeFi protocols, we provide comprehensive
               blockchain development services that power the next generation of Web3 applications.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <button 
+              <button
                 onClick={() => setCurrentPage('dashboard')}
                 className="bg-gray-900 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-md text-sm hover:bg-gray-800 transition-colors"
               >
                 Start Your Project
               </button>
-              <button 
+              <button
                 onClick={() => setCurrentPage('dashboard')}
                 className="border border-gray-300 text-gray-700 px-6 sm:px-8 py-3 sm:py-4 rounded-md text-sm hover:bg-gray-50 transition-colors"
               >
@@ -73,7 +73,7 @@ function Services({ setCurrentPage }: ServicesProps) {
 
           {/* Right side - Stats/Features */}
           <div className="space-y-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
                   <Code className="w-6 h-6 text-gray-700" />
@@ -84,7 +84,7 @@ function Services({ setCurrentPage }: ServicesProps) {
               <p className="text-sm text-gray-500">Across multiple blockchain networks</p>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
                   <Users className="w-6 h-6 text-gray-700" />
@@ -95,7 +95,7 @@ function Services({ setCurrentPage }: ServicesProps) {
               <p className="text-sm text-gray-500">From startups to enterprise solutions</p>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
                   <Shield className="w-6 h-6 text-gray-700" />
@@ -116,104 +116,124 @@ function Services({ setCurrentPage }: ServicesProps) {
             What Web3 Services Do We Provide?
           </h2>
           <p className="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed px-4">
-            Comprehensive blockchain infrastructure and development services designed to power 
+            Comprehensive blockchain infrastructure and development services designed to power
             the next generation of decentralized applications and digital economies.
           </p>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300">
+          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
             {/* Header Image */}
-            <div className="h-24 sm:h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-4 sm:mb-6 flex items-center justify-center">
+            <div className="h-24 sm:h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl flex items-center justify-center">
               <Code className="w-12 h-12 text-gray-500" />
             </div>
-            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3">Smart Contract Development</h3>
-            <p className="text-gray-600 mb-4 leading-relaxed text-xs sm:text-sm">
-              Custom smart contracts built with Solidity, Rust, or other blockchain languages. 
-              We handle everything from simple token contracts to complex DeFi protocols with 
-              comprehensive testing and optimization.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
-                ERC-20, ERC-721, ERC-1400 tokens
+            <div className="p-8">
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Smart Contract Development</h3>
+              <p className="text-gray-600 text-sm leading-snug mb-3">
+                Custom smart contracts built with Solidity, Rust, or other blockchain languages.
+                We handle everything from simple token contracts to complex DeFi protocols with
+                comprehensive testing and optimization.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  ERC-20, ERC-721, ERC-1400 tokens
+                </div>
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  Multi-sig wallets
+                </div>
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  Governance contracts
+                </div>
               </div>
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
-                Multi-sig wallets
-              </div>
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
-                Governance contracts
+              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+                +
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300">
+          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
             {/* Header Image */}
-            <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-6 flex items-center justify-center">
+            <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl flex items-center justify-center">
               <Layers className="w-12 h-12 text-gray-500" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-3">DeFi Protocol Development</h3>
-            <p className="text-gray-600 mb-4 leading-relaxed text-sm">
-              Build sophisticated decentralized finance applications including DEXs, lending 
-              platforms, yield farming protocols, and automated market makers with advanced 
-              tokenomics and liquidity management.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
-                Automated Market Makers (AMM)
+            <div className="p-8">
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">DeFi Protocol Development</h3>
+              <p className="text-gray-600 text-sm leading-snug mb-3">
+                Build sophisticated decentralized finance applications including DEXs, lending
+                platforms, yield farming protocols, and automated market makers with advanced
+                tokenomics and liquidity management.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  Automated Market Makers (AMM)
+                </div>
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  Lending protocols
+                </div>
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  Yield farming strategies
+                </div>
               </div>
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
-                Lending protocols
-              </div>
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
-                Yield farming strategies
+              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+                +
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300">
+          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
             {/* Header Image */}
-            <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-6 flex items-center justify-center">
+            <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl flex items-center justify-center">
               <Users className="w-12 h-12 text-gray-500" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-3">DAO & Governance Systems</h3>
-            <p className="text-gray-600 mb-4 leading-relaxed text-sm">
-              Create decentralized autonomous organizations with sophisticated governance 
-              mechanisms, voting systems, treasury management, and proposal execution 
-              frameworks for community-driven decision making.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
-                Governance token design
+            <div className="p-8">
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">DAO & Governance Systems</h3>
+              <p className="text-gray-600 text-sm leading-snug mb-3">
+                Create decentralized autonomous organizations with sophisticated governance
+                mechanisms, voting systems, treasury management, and proposal execution
+                frameworks for community-driven decision making.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  Governance token design
+                </div>
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  Voting mechanisms
+                </div>
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  Treasury management
+                </div>
               </div>
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
-                Voting mechanisms
-              </div>
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
-                Treasury management
+              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+                +
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300">
+          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
             {/* Header Image */}
-            <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-6 flex items-center justify-center">
+            <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl flex items-center justify-center">
               <Network className="w-12 h-12 text-gray-500" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-3">Cross-Chain Solutions</h3>
-            <p className="text-gray-600 mb-4 leading-relaxed text-sm">
-              Enable seamless interoperability between different blockchain networks with 
-              bridge protocols, cross-chain messaging, and multi-chain asset management 
-              for maximum flexibility and reach.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
-                Asset bridge protocols
+            <div className="p-8">
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Cross-Chain Solutions</h3>
+              <p className="text-gray-600 text-sm leading-snug mb-3">
+                Enable seamless interoperability between different blockchain networks with
+                bridge protocols, cross-chain messaging, and multi-chain asset management
+                for maximum flexibility and reach.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  Asset bridge protocols
+                </div>
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  Cross-chain messaging
+                </div>
+                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  Multi-chain deployment
+                </div>
               </div>
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
-                Cross-chain messaging
-              </div>
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
-                Multi-chain deployment
+              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+                +
               </div>
             </div>
           </div>
@@ -228,42 +248,54 @@ function Services({ setCurrentPage }: ServicesProps) {
         </div>
         <div className="relative overflow-hidden">
           <div className="flex animate-pulse">
-            <div className="min-w-80 bg-white border border-gray-200 rounded-xl p-6 mr-6 shadow-sm hover:shadow-lg transition-shadow duration-300">
+            <div className="group min-w-80 bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6 mr-6">
               <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
                 <Shield className="w-5 h-5 text-gray-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Security Audits</h3>
-              <p className="text-sm text-gray-500">Comprehensive smart contract security assessments and vulnerability testing.</p>
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Security Audits</h3>
+              <p className="text-gray-600 text-sm leading-snug mb-4">Comprehensive smart contract security assessments and vulnerability testing.</p>
+              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+                +
+              </div>
             </div>
 
-            <div className="min-w-80 bg-white border border-gray-200 rounded-xl p-6 mr-6 shadow-sm hover:shadow-lg transition-shadow duration-300">
+            <div className="group min-w-80 bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6 mr-6">
               <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
                 <Database className="w-5 h-5 text-gray-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">IPFS Integration</h3>
-              <p className="text-sm text-gray-500">Decentralized storage solutions for your dApp's data and media files.</p>
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">IPFS Integration</h3>
+              <p className="text-gray-600 text-sm leading-snug mb-4">Decentralized storage solutions for your dApp's data and media files.</p>
+              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+                +
+              </div>
             </div>
 
-            <div className="min-w-80 bg-white border border-gray-200 rounded-xl p-6 mr-6 shadow-sm hover:shadow-lg transition-shadow duration-300">
+            <div className="group min-w-80 bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6 mr-6">
               <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
                 <Cpu className="w-5 h-5 text-gray-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Node Infrastructure</h3>
-              <p className="text-sm text-gray-500">Managed blockchain nodes and RPC endpoints for reliable connectivity.</p>
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Node Infrastructure</h3>
+              <p className="text-gray-600 text-sm leading-snug mb-4">Managed blockchain nodes and RPC endpoints for reliable connectivity.</p>
+              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+                +
+              </div>
             </div>
 
-            <div className="min-w-80 bg-white border border-gray-200 rounded-xl p-6 mr-6 shadow-sm hover:shadow-lg transition-shadow duration-300">
+            <div className="group min-w-80 bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6 mr-6">
               <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
                 <Smartphone className="w-5 h-5 text-gray-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Mobile dApp Development</h3>
-              <p className="text-sm text-gray-500">Native mobile applications with Web3 wallet integration and blockchain connectivity.</p>
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Mobile dApp Development</h3>
+              <p className="text-gray-600 text-sm leading-snug mb-4">Native mobile applications with Web3 wallet integration and blockchain connectivity.</p>
+              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+                +
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200">
+      <div className="max-w-7xl mx-auto bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
         {/* How Our Web3 Development Process Works - Timeline Map */}
         <section className="px-8 py-20 max-w-6xl mx-auto">
           <div className="text-center mb-16">
@@ -272,7 +304,7 @@ function Services({ setCurrentPage }: ServicesProps) {
               <span className="font-medium">Development Process Works</span>
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              From initial consultation to post-launch support, our proven methodology 
+              From initial consultation to post-launch support, our proven methodology
               ensures successful Web3 project delivery.
             </p>
           </div>
@@ -333,17 +365,17 @@ function Services({ setCurrentPage }: ServicesProps) {
             Choose Your Development Package
           </h2>
           <p className="text-gray-500 max-w-2xl mx-auto leading-relaxed">
-            Flexible service packages designed to meet your Web3 development needs, 
+            Flexible service packages designed to meet your Web3 development needs,
             from simple smart contracts to complex DeFi protocols.
           </p>
         </div>
-      
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Starter Tier */}
-          <div className="bg-white border border-gray-200 rounded-xl p-8 hover:shadow-lg transition-shadow duration-300">
+          <div className="bg-white border border-gray-100 rounded-xl p-8 hover:shadow-lg transition-shadow duration-300">
             <div className="text-center mb-8">
               <h3 className="text-xl font-medium text-gray-900 mb-2">Starter</h3>
-              <p className="text-sm text-gray-500 mb-6">Perfect for simple projects</p>
+              <p className="text-gray-400 text-sm mb-6">Perfect for simple projects</p>
               <div className="text-3xl font-light text-gray-900 mb-2">$5K - $15K</div>
               <p className="text-xs text-gray-400">One-time project fee</p>
             </div>
@@ -377,7 +409,7 @@ function Services({ setCurrentPage }: ServicesProps) {
             </div>
             <div className="text-center mb-8">
               <h3 className="text-xl font-medium mb-2">Professional</h3>
-              <p className="text-sm text-gray-300 mb-6">For complex dApps</p>
+              <p className="text-gray-400 text-sm mb-6">For complex dApps</p>
               <div className="text-3xl font-light mb-2">$25K - $75K</div>
               <p className="text-xs text-gray-400">Full development cycle</p>
             </div>
@@ -409,10 +441,10 @@ function Services({ setCurrentPage }: ServicesProps) {
           </div>
 
           {/* Enterprise Tier */}
-          <div className="bg-white border border-gray-200 rounded-xl p-8 hover:shadow-lg transition-shadow duration-300">
+          <div className="bg-white border border-gray-100 rounded-xl p-8 hover:shadow-lg transition-shadow duration-300">
             <div className="text-center mb-8">
               <h3 className="text-xl font-medium text-gray-900 mb-2">Enterprise</h3>
-              <p className="text-sm text-gray-500 mb-6">Custom blockchain solutions</p>
+              <p className="text-gray-400 text-sm mb-6">Custom blockchain solutions</p>
               <div className="text-3xl font-light text-gray-900 mb-2">$100K+</div>
               <p className="text-xs text-gray-400">Tailored solutions</p>
             </div>
@@ -478,7 +510,7 @@ function Services({ setCurrentPage }: ServicesProps) {
               </div>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="bg-gray-50 p-6 rounded-lg">
               <div className="flex items-center justify-between">
@@ -512,18 +544,18 @@ function Services({ setCurrentPage }: ServicesProps) {
       <section className="px-8 py-20 max-w-4xl mx-auto text-center">
         <h2 className="text-3xl font-light text-gray-900 mb-4">Ready to Build the Future?</h2>
         <p className="text-gray-500 mb-12 max-w-2xl mx-auto leading-relaxed">
-          Join the Web3 revolution with our expert blockchain development services. 
+          Join the Web3 revolution with our expert blockchain development services.
           Let's build something amazing together.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
-          <button 
+          <button
             onClick={() => setCurrentPage('dashboard')}
             className="bg-gray-900 text-white px-8 py-3 rounded-md text-sm hover:bg-gray-800 transition-colors flex items-center justify-center"
           >
             Start Your Project
             <ArrowRight className="w-4 h-4 ml-2" />
           </button>
-          <button 
+          <button
             onClick={() => setCurrentPage('dashboard')}
             className="border border-gray-200 text-gray-700 px-8 py-3 rounded-md text-sm hover:bg-gray-50 transition-colors"
           >
@@ -549,37 +581,37 @@ function Services({ setCurrentPage }: ServicesProps) {
             <div>
               <h4 className="text-sm font-medium text-gray-900 mb-4">Aviation Services</h4>
               <div className="space-y-3">
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Private Jet Charter
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Group Charter
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Helicopter Charter
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   eVTOL Flights
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Adventure Packages
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
@@ -592,43 +624,43 @@ function Services({ setCurrentPage }: ServicesProps) {
             <div>
               <h4 className="text-sm font-medium text-gray-900 mb-4">Web3 & Digital</h4>
               <div className="space-y-3">
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Web3
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   PVCX Token
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   NFT Aviation
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Asset Licensing
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   JetCard Packages
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   CO2 Certificates
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
@@ -641,19 +673,19 @@ function Services({ setCurrentPage }: ServicesProps) {
             <div>
               <h4 className="text-sm font-medium text-gray-900 mb-4">Partners & Press</h4>
               <div className="space-y-3">
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Partner With Us
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Blog Posts
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
@@ -666,31 +698,31 @@ function Services({ setCurrentPage }: ServicesProps) {
             <div>
               <h4 className="text-sm font-medium text-gray-900 mb-4">Quick Links</h4>
               <div className="space-y-3">
-                <button 
+                <button
                   onClick={() => setCurrentPage('home')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Home
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   How It Works
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   About
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   FAQ
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('helpdesk')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
@@ -704,25 +736,25 @@ function Services({ setCurrentPage }: ServicesProps) {
           <div className="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-gray-200">
             <p className="text-sm text-gray-400 mb-4 md:mb-0">©2023-2025 PrivateCharterX. All rights reserved.</p>
             <div className="flex space-x-6">
-              <button 
+              <button
                 onClick={() => setCurrentPage('helpdesk')}
                 className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
               >
                 Privacy
               </button>
-              <button 
+              <button
                 onClick={() => setCurrentPage('helpdesk')}
                 className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
               >
                 Terms
               </button>
-              <button 
+              <button
                 onClick={() => setCurrentPage('helpdesk')}
                 className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
               >
                 Support
               </button>
-              <button 
+              <button
                 onClick={() => setCurrentPage('helpdesk')}
                 className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
               >
