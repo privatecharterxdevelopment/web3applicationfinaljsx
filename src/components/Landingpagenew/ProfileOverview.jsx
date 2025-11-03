@@ -435,7 +435,7 @@ export default function ProfileOverview() {
           {/* Right Column - KYC & NFT Cards */}
           <div className="space-y-6">
             {/* KYC Verification Card */}
-            <div className="bg-white/35 backdrop-blur-xl border border-gray-300/50 rounded-2xl p-6">
+            <div className="bg-white/35 backdrop-blur-xl border border-gray-300/50 rounded-2xl p-4 sm:p-6">
               <div className="flex items-center gap-3 mb-4">
                 <Shield size={20} className="text-gray-700" />
                 <h2 className="text-lg font-semibold text-gray-900">KYC Verification</h2>
@@ -462,7 +462,7 @@ export default function ProfileOverview() {
             </div>
 
             {/* NFT Membership Card */}
-            <div className="bg-white/35 backdrop-blur-xl border border-gray-300/50 rounded-2xl p-6">
+            <div className="bg-white/35 backdrop-blur-xl border border-gray-300/50 rounded-2xl p-4 sm:p-6">
               <div className="flex items-center gap-3 mb-4">
                 <Sparkles size={20} className="text-gray-700" />
                 <h2 className="text-lg font-semibold text-gray-900">VIP Membership NFT</h2>

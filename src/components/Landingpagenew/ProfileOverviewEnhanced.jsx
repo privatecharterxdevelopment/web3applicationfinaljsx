@@ -439,7 +439,7 @@ export default function ProfileOverviewEnhanced() {
         </div>
 
         {/* User Info Card */}
-        <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 mb-8">
+        <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-200 mb-8">
           <h2 className="text-3xl font-thin text-gray-900 mb-6 tracking-tight">Account Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <InfoRow icon={<Mail size={18} />} label="Email" value={user.email} />
@@ -497,7 +497,7 @@ export default function ProfileOverviewEnhanced() {
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Upcoming Events */}
-            <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-200">
+            <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-200">
               <h3 className="text-2xl font-thin text-gray-900 mb-6 tracking-tight">Upcoming Events</h3>
               {calendarEvents.length === 0 ? (
                 <div className="text-center py-12">
@@ -530,7 +530,7 @@ export default function ProfileOverviewEnhanced() {
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-200">
+            <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-200">
               <h3 className="text-2xl font-thin text-gray-900 mb-6 tracking-tight">Recent Activity</h3>
               {recentRequests.length === 0 ? (
                 <div className="text-center py-12">
@@ -566,7 +566,7 @@ export default function ProfileOverviewEnhanced() {
         )}
 
         {activeTab === 'requests' && (
-          <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-200">
+          <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-200">
             <h3 className="text-3xl font-thin text-gray-900 mb-6 tracking-tight">All Requests</h3>
             {recentRequests.length === 0 ? (
               <div className="text-center py-20">
@@ -610,7 +610,7 @@ export default function ProfileOverviewEnhanced() {
         )}
 
         {activeTab === 'investments' && (
-          <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-200">
+          <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-200">
             <h3 className="text-3xl font-thin text-gray-900 mb-6 tracking-tight">Your Investments</h3>
             {!isConnected ? (
               <div className="text-center py-20">
@@ -683,7 +683,7 @@ export default function ProfileOverviewEnhanced() {
         )}
 
         {activeTab === 'waitlists' && (
-          <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-200">
+          <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-200">
             <h3 className="text-3xl font-thin text-gray-900 mb-6 tracking-tight">Waitlist Activities</h3>
             {waitlistItems.length === 0 ? (
               <div className="text-center py-20">
@@ -745,7 +745,7 @@ export default function ProfileOverviewEnhanced() {
         )}
 
         {activeTab === 'uto' && (
-          <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-200">
+          <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-200">
             <h3 className="text-3xl font-thin text-gray-900 mb-6 tracking-tight">UTO Token Projects</h3>
             <p className="text-gray-600 font-light mb-8">Utility Token Offerings - Your invested projects</p>
             {!isConnected ? (
@@ -820,7 +820,7 @@ export default function ProfileOverviewEnhanced() {
         )}
 
         {activeTab === 'sto' && (
-          <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-200">
+          <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-200">
             <h3 className="text-3xl font-thin text-gray-900 mb-6 tracking-tight">STO Token Projects</h3>
             <p className="text-gray-600 font-light mb-8">Security Token Offerings - Your invested projects</p>
             {!isConnected ? (
@@ -902,7 +902,7 @@ export default function ProfileOverviewEnhanced() {
 // Stat Card Component
 function StatCard({ icon, label, value }) {
   return (
-    <div className="bg-white/50 backdrop-blur-sm rounded-xl p-6 border border-gray-200">
+    <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-gray-200">
       <div className="flex items-center gap-3 mb-3">
         <div className="p-2 bg-gray-100 rounded-lg">
           {icon}

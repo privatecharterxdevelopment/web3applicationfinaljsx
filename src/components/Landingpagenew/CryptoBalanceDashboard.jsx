@@ -311,14 +311,14 @@ export default function CryptoBalanceDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-white p-6">
+    <div className="min-h-screen bg-white p-4 sm:p-6">
       <div className="max-w-5xl mx-auto">
         {/* Wallet Not Connected Banner */}
         {!isConnected && (
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 mb-4 border border-gray-200">
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-4 sm:p-6 mb-4 border border-gray-200">
             <div className="text-center">
               <Wallet className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-              <h2 className="text-xl font-light text-gray-900 mb-2">Wallet nicht verbunden</h2>
+              <h2 className="text-lg sm:text-xl font-light text-gray-900 mb-2">Wallet nicht verbunden</h2>
               <p className="text-gray-600 mb-4 text-sm">
                 Verbinden Sie Ihre Wallet, um Ihre Krypto-Balances und Portfolio zu sehen.
               </p>
@@ -334,11 +334,11 @@ export default function CryptoBalanceDashboard() {
 
         {/* Total Balance Card with Chart - Only show when wallet is connected */}
         {isConnected && (
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 mb-4 border border-gray-200">
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-4 sm:p-6 mb-4 border border-gray-200">
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-gray-500 text-xs mb-1">Gesamtwert</p>
-              <h2 className="text-4xl font-light text-black mb-1">
+              <h2 className="text-3xl sm:text-4xl font-light text-black mb-1">
                 ${totalValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </h2>
               <p className="text-xs text-gray-500 mt-1">+2.4% heute</p>
@@ -396,7 +396,7 @@ export default function CryptoBalanceDashboard() {
 
         {/* Action Buttons - Only show when wallet is connected */}
         {isConnected && (
-        <div className="flex gap-3 mb-4">
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
           <button
             onClick={handleSend}
             className="flex-1 bg-black text-white rounded-xl py-3 px-4 flex items-center justify-center gap-2 hover:bg-gray-800 transition-all active:scale-95"
@@ -415,7 +415,7 @@ export default function CryptoBalanceDashboard() {
         )}
 
         {/* Quick Access Sections */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
           {/* Left Column */}
           <div className="space-y-4">
             {/* My Assets Section - Only show when wallet is connected */}

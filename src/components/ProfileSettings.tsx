@@ -233,7 +233,7 @@ export default function ProfileSettings() {
 
   if (isLoading) {
     return (
-      <div className="p-8 space-y-6">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         <div className="flex items-center justify-center py-12">
           <div className="flex items-center gap-3">
             <Loader2 size={24} className="animate-spin text-gray-400" />
@@ -245,10 +245,10 @@ export default function ProfileSettings() {
   }
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-medium text-gray-800 mb-1">Profile Settings</h1>
+          <h1 className="text-lg sm:text-xl font-medium text-gray-800 mb-1">Profile Settings</h1>
           <p className="text-gray-600 text-xs">Manage your account information</p>
         </div>
         {!isEditing ? (
@@ -305,7 +305,7 @@ export default function ProfileSettings() {
       )}
 
       {/* Profile Information */}
-      <div className="bg-white/20 backdrop-blur-md rounded-2xl border border-gray-600/40 p-6">
+      <div className="bg-white/20 backdrop-blur-md rounded-2xl border border-gray-600/40 p-4 sm:p-6">
         <div className="flex items-center gap-3 mb-6">
           <Shield size={16} className="text-gray-700" />
           <h3 className="text-base font-medium text-gray-800">Personal Information</h3>
