@@ -61,20 +61,20 @@ const PVCXTokenView = ({ user, onNavigate }) => {
   return (
     <div className="w-full h-full overflow-y-auto" style={{ fontFamily: "'DM Sans', sans-serif" }}>
       {/* Header */}
-      <div className="px-8 py-6 border-b border-gray-200">
+      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-gray-200">
         <div className="flex items-center justify-end">
           <img
             src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/PaymentIcons/Title-removebg-preview.png"
             alt="PVCX"
-            className="w-16 h-16 object-contain opacity-80"
+            className="w-12 h-12 sm:w-16 sm:h-16 object-contain opacity-80"
           />
         </div>
       </div>
 
       {/* Content */}
-      <div className="px-8 py-6">
+      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Info Banner */}
-        <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+        <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 border border-gray-200 rounded-lg">
           <p className="text-sm font-semibold text-gray-900 mb-2">
             Reward Phase Active - Building to 1,000 Users
           </p>
@@ -85,35 +85,35 @@ const PVCXTokenView = ({ user, onNavigate }) => {
         </div>
 
         {/* Balance Section */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Your Balance</h2>
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Your Balance</h2>
 
           {loading ? (
             <div className="text-center py-8">
               <p className="text-sm text-gray-600">Loading balance...</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Main Balance */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
                 <p className="text-sm text-gray-600 mb-2">Total Balance</p>
-                <p className="text-5xl font-light text-gray-900 mb-1">
+                <p className="text-3xl sm:text-4xl lg:text-5xl font-light text-gray-900 mb-1">
                   {balance.toLocaleString('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                 </p>
                 <p className="text-sm text-gray-500">$PVCX</p>
               </div>
 
               {/* Breakdown */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
                   <p className="text-xs text-gray-600 mb-1">From Bookings</p>
-                  <p className="text-2xl font-light text-gray-900">
+                  <p className="text-xl sm:text-2xl font-light text-gray-900">
                     {earnedFromBookings.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
                   <p className="text-xs text-gray-600 mb-1">From CO₂ Certificates</p>
-                  <p className="text-2xl font-light text-gray-900">
+                  <p className="text-xl sm:text-2xl font-light text-gray-900">
                     {earnedFromCO2.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </p>
                 </div>

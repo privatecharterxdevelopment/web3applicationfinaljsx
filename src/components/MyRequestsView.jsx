@@ -129,7 +129,7 @@ const MyRequestsView = ({ user }) => {
             </div>
 
             {/* Details Grid */}
-            <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 sm:gap-3 mb-3">
               <div>
                 <p className="text-xs text-gray-600 mb-1">Distance</p>
                 <p className="text-sm font-semibold text-gray-800">{data.distance} km</p>
@@ -925,10 +925,10 @@ const MyRequestsView = ({ user }) => {
   };
 
   return (
-    <div className="w-full h-full px-6 pt-3 pb-6 overflow-y-auto" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="w-full h-full px-4 sm:px-6 pt-3 pb-6 overflow-y-auto" style={{ fontFamily: "'DM Sans', sans-serif" }}>
 
       {/* Filters */}
-      <div className="mb-6 flex items-center gap-4">
+      <div className="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
         {/* Search */}
         <div className="flex-1">
           <div className="relative">
@@ -945,12 +945,12 @@ const MyRequestsView = ({ user }) => {
         </div>
 
         {/* Status Filter */}
-        <div className="flex items-center gap-2 bg-white/35 border border-gray-300/50 rounded-xl p-1" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+        <div className="flex items-center gap-1.5 sm:gap-2 bg-white/35 border border-gray-300/50 rounded-xl p-1 overflow-x-auto" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
           {['all', 'pending', 'confirmed', 'completed'].map((status) => (
             <button
               key={status}
               onClick={() => setFilter(status)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
                 filter === status
                   ? 'bg-gray-800 text-white'
                   : 'text-gray-600 hover:text-gray-800'

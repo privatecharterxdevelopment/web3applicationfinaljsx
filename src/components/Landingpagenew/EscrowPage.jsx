@@ -76,10 +76,10 @@ export default function EscrowPage() {
   }
 
   return (
-    <div className="min-h-screen bg-transparent p-6">
+    <div className="min-h-screen bg-transparent p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-end mb-6">
+        <div className="flex items-center justify-end mb-4 sm:mb-6">
           <button
             onClick={() => setShowCreateModal(true)}
             className="px-4 py-2 bg-gray-100 text-black rounded-xl hover:bg-gray-200 transition-colors flex items-center gap-2 text-sm"
@@ -90,7 +90,7 @@ export default function EscrowPage() {
         </div>
 
         {/* Info Banner */}
-        <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 mb-8">
+        <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8">
           <div className="flex items-start gap-4">
             <Shield className="w-6 h-6 text-gray-600 flex-shrink-0 mt-1" />
             <div>
@@ -118,8 +118,8 @@ export default function EscrowPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-8">
-          <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <div className="bg-gray-50 rounded-xl p-3 sm:p-4 border border-gray-100">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
                 <Shield size={20} className="text-gray-600" />
@@ -130,7 +130,7 @@ export default function EscrowPage() {
               </div>
             </div>
           </div>
-          <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+          <div className="bg-gray-50 rounded-xl p-3 sm:p-4 border border-gray-100">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
                 <CheckCircle size={20} className="text-gray-600" />
@@ -143,7 +143,7 @@ export default function EscrowPage() {
               </div>
             </div>
           </div>
-          <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+          <div className="bg-gray-50 rounded-xl p-3 sm:p-4 border border-gray-100">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
                 <Users size={20} className="text-gray-600" />
@@ -156,7 +156,7 @@ export default function EscrowPage() {
               </div>
             </div>
           </div>
-          <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+          <div className="bg-gray-50 rounded-xl p-3 sm:p-4 border border-gray-100">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
                 <Clock size={20} className="text-gray-600" />
@@ -237,7 +237,7 @@ function SafeCard({ safe, currentAddress, onSelect }) {
   return (
     <div
       onClick={onSelect}
-      className="bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-all cursor-pointer"
+      className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 hover:shadow-lg transition-all cursor-pointer"
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -394,10 +394,10 @@ function CreateSafeModal({ onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[95vh] sm:h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
           <div>
             <h2 className="text-xl font-medium text-gray-900">Create Safe Escrow</h2>
             <p className="text-xs text-gray-500 mt-0.5">Multi-signature wallet with automatic fee collection</p>
@@ -408,9 +408,9 @@ function CreateSafeModal({ onClose, onSuccess }) {
         </div>
 
         {/* Split Content */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
           {/* Left Side - Form */}
-          <div className="w-1/2 overflow-y-auto p-6 space-y-5 border-r border-gray-200">
+          <div className="w-full lg:w-1/2 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5 lg:border-r border-gray-200">
             {/* Basic Info */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1.5">Safe Name *</label>
@@ -585,8 +585,8 @@ function CreateSafeModal({ onClose, onSuccess }) {
           </div>
 
           {/* Right Side - Live Preview */}
-          <div className="w-1/2 bg-gray-50 p-6 flex flex-col">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">Safe Preview</h3>
+          <div className="w-full lg:w-1/2 bg-gray-50 p-4 sm:p-6 flex flex-col border-t lg:border-t-0 border-gray-200">
+            <h3 className="text-sm font-medium text-gray-900 mb-3 sm:mb-4">Safe Preview</h3>
 
             <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4 flex-1">
               {/* Header */}
@@ -969,7 +969,7 @@ function CreateSafeModal({ onClose, onSuccess }) {
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200">
           <button
             onClick={onClose}
             className="px-5 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
@@ -1024,10 +1024,10 @@ function SafeDetailModal({ safe, onClose, onUpdate }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[85vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 lg:p-6">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[95vh] sm:max-h-[85vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-gray-200 rounded-xl flex items-center justify-center">
               <Shield size={32} className="text-gray-600" />
@@ -1048,7 +1048,7 @@ function SafeDetailModal({ safe, onClose, onUpdate }) {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+              className={`flex-1 px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium transition-colors ${
                 activeTab === tab
                   ? 'border-b-2 border-black text-black'
                   : 'text-gray-500 hover:text-gray-900'
@@ -1060,11 +1060,11 @@ function SafeDetailModal({ safe, onClose, onUpdate }) {
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 200px)' }}>
+        <div className="p-4 sm:p-6 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 200px)' }}>
           {activeTab === 'overview' && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="border border-gray-200 rounded-xl p-4">
+            <div className="space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="border border-gray-200 rounded-xl p-3 sm:p-4">
                   <h4 className="text-sm font-medium text-gray-900 mb-3">Configuration</h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
@@ -1092,7 +1092,7 @@ function SafeDetailModal({ safe, onClose, onUpdate }) {
                   </div>
                 </div>
 
-                <div className="border border-gray-200 rounded-xl p-4">
+                <div className="border border-gray-200 rounded-xl p-3 sm:p-4">
                   <h4 className="text-sm font-medium text-gray-900 mb-3">Safe Address</h4>
                   {safe.safe_address ? (
                     <div className="flex items-center justify-between">
@@ -1110,7 +1110,7 @@ function SafeDetailModal({ safe, onClose, onUpdate }) {
                 </div>
               </div>
 
-              <div className="border border-gray-200 rounded-xl p-4">
+              <div className="border border-gray-200 rounded-xl p-3 sm:p-4">
                 <h4 className="text-sm font-medium text-gray-900 mb-3">Owners</h4>
                 <div className="space-y-2">
                   {safe.owners?.map((owner, index) => (
@@ -1155,8 +1155,8 @@ function SafeDetailModal({ safe, onClose, onUpdate }) {
           )}
 
           {activeTab === 'settings' && (
-            <div className="space-y-6">
-              <div className="border border-gray-200 rounded-xl p-4">
+            <div className="space-y-4 sm:space-y-6">
+              <div className="border border-gray-200 rounded-xl p-3 sm:p-4">
                 <h4 className="text-sm font-medium text-gray-900 mb-3">Danger Zone</h4>
                 <p className="text-sm text-gray-600 mb-4">
                   These actions are irreversible. Please proceed with caution.

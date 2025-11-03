@@ -469,10 +469,10 @@ const EventsSportsView = ({ cart = [], setCart, user }) => {
         </div>
 
         {/* Content and Booking Section */}
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Left Column - Content */}
-          <div className="col-span-2">
-            <div className="bg-white/35 rounded-lg border border-gray-300/50 p-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+          <div className="lg:col-span-2">
+            <div className="bg-white/35 rounded-lg border border-gray-300/50 p-4 sm:p-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
               {activeTab === 'details' && (
                 <div className="space-y-6">
                   <div>
@@ -482,7 +482,7 @@ const EventsSportsView = ({ cart = [], setCart, user }) => {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6 pt-6 border-t border-gray-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 pt-4 sm:pt-6 border-t border-gray-200">
                     <div className="flex items-start space-x-3">
                       <Calendar className="text-gray-600 mt-0.5" size={20} />
                       <div>
@@ -518,7 +518,7 @@ const EventsSportsView = ({ cart = [], setCart, user }) => {
               {activeTab === 'venue' && (
                 <div className="space-y-4">
                   <h3 className="text-sm font-semibold text-black mb-4">Venue Information</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="p-3 bg-gray-50/50 rounded">
                       <p className="text-xs text-gray-500 mb-1">Venue Name</p>
                       <p className="text-sm font-semibold text-black">{getVenueInfo(selectedEvent).split(',')[0]}</p>
@@ -571,8 +571,8 @@ const EventsSportsView = ({ cart = [], setCart, user }) => {
           </div>
 
           {/* Right Column - Booking Widget */}
-          <div className="col-span-1">
-            <div className="bg-white/35 rounded-lg border border-gray-300/50 p-6 sticky top-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+          <div className="lg:col-span-1">
+            <div className="bg-white/35 rounded-lg border border-gray-300/50 p-4 sm:p-6 lg:sticky lg:top-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
               <h3 className="text-lg font-semibold text-black mb-4">Purchase Tickets</h3>
 
               <div className="space-y-4 mb-6">
@@ -644,8 +644,8 @@ const EventsSportsView = ({ cart = [], setCart, user }) => {
       </div>
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter font-['DM_Sans']">Events & Sports</h2>
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-light text-gray-900 tracking-tighter font-['DM_Sans']">Events & Sports</h2>
         <div className="flex items-center gap-2 bg-white/35 border border-gray-300/50 rounded-lg p-1" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
           <button
             onClick={() => setViewMode('grid')}
@@ -663,8 +663,8 @@ const EventsSportsView = ({ cart = [], setCart, user }) => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white/35 rounded-lg border border-gray-300/50 p-5 mb-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-        <div className="grid grid-cols-5 gap-4">
+      <div className="bg-white/35 rounded-lg border border-gray-300/50 p-4 sm:p-5 mb-4 sm:mb-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
           <div>
             <label className="block text-xs font-medium text-gray-800 mb-2">Category</label>
             <select
@@ -691,7 +691,7 @@ const EventsSportsView = ({ cart = [], setCart, user }) => {
               ))}
             </select>
           </div>
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <label className="block text-xs font-medium text-gray-800 mb-2">Search</label>
             <input
               type="text"
@@ -734,15 +734,15 @@ const EventsSportsView = ({ cart = [], setCart, user }) => {
       {/* Events Grid View */}
       {!loading && paginatedEvents.length > 0 && viewMode === 'grid' && (
         <>
-          <div className="grid grid-cols-2 gap-5 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 mb-4 sm:mb-6">
             {paginatedEvents.map((event) => (
               <div
                 key={event.id}
                 onClick={() => setSelectedEvent(event)}
-                className="bg-white/35 hover:bg-white/40 rounded-xl flex h-64 hover:shadow-lg transition-all cursor-pointer border border-gray-300/50"
+                className="bg-white/35 hover:bg-white/40 rounded-xl flex flex-col sm:flex-row h-auto sm:h-64 hover:shadow-lg transition-all cursor-pointer border border-gray-300/50"
                 style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
               >
-                <div className="w-2/5 relative rounded-l-xl overflow-hidden bg-white/10">
+                <div className="w-full sm:w-2/5 h-48 sm:h-auto relative rounded-t-xl sm:rounded-l-xl sm:rounded-tr-none overflow-hidden bg-white/10">
                   <img src={getEventImage(event)} alt={event.name} className="w-full h-full object-cover" />
                   <div className="absolute top-3 left-3">
                     <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium text-gray-800 backdrop-blur-sm">
@@ -763,10 +763,10 @@ const EventsSportsView = ({ cart = [], setCart, user }) => {
                   </button>
                 </div>
 
-                <div className="flex-1 p-5 flex flex-col">
-                  <h3 className="text-base font-semibold text-gray-900 mb-3 line-clamp-2">{event.name}</h3>
+                <div className="flex-1 p-4 sm:p-5 flex flex-col">
+                  <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2 sm:mb-3 line-clamp-2">{event.name}</h3>
 
-                  <div className="flex justify-between mb-4">
+                  <div className="flex justify-between mb-3 sm:mb-4">
                     <div className="flex flex-col space-y-1">
                       <span className="text-xs text-gray-600">Date</span>
                       <span className="text-xs font-semibold text-gray-800">{formatDate(event).split(' at ')[0]}</span>

@@ -69,7 +69,7 @@ export default function MyLaunches() {
 
   if (loading) {
     return (
-      <div className="w-full h-full overflow-y-auto p-8">
+      <div className="w-full h-full overflow-y-auto p-4 sm:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
@@ -83,7 +83,7 @@ export default function MyLaunches() {
   }
 
   return (
-    <div className="w-full h-full overflow-y-auto p-8">
+    <div className="w-full h-full overflow-y-auto p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Launches Grid */}
         {loading ? (
@@ -94,7 +94,7 @@ export default function MyLaunches() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {userLaunches.map((entry) => {
               const launch = entry.launch;
               const progress = launch?.current_waitlist || 0;
@@ -102,9 +102,9 @@ export default function MyLaunches() {
               const progressPercentage = target > 0 ? (progress / target) * 100 : 0;
 
               return (
-                <div key={entry.id} className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all">
+                <div key={entry.id} className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-xl p-4 sm:p-6 hover:shadow-lg transition-all">
                   {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-start justify-between mb-3 sm:mb-4">
                     <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
                       <Rocket size={24} className="text-white" />
                     </div>
@@ -114,15 +114,15 @@ export default function MyLaunches() {
                   </div>
 
                   {/* Content */}
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
                     {launch?.name || 'Launch Project'}
                   </h3>
-                  <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                  <p className="text-sm text-gray-600 mb-3 sm:mb-4 line-clamp-2">
                     {launch?.description || 'No description available'}
                   </p>
 
                   {/* Waitlist Progress */}
-                  <div className="mb-4">
+                  <div className="mb-3 sm:mb-4">
                     <div className="flex items-center justify-between text-xs mb-2">
                       <span className="text-gray-500">Waitlist Progress</span>
                       <span className="font-medium text-gray-900">
@@ -144,7 +144,7 @@ export default function MyLaunches() {
 
                   {/* Stats */}
                   {launch?.token_price && (
-                    <div className="grid grid-cols-2 gap-3 mb-4 pb-4 border-b border-gray-200">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-gray-200">
                       <div>
                         <p className="text-xs text-gray-500 mb-1">Token Price</p>
                         <p className="text-sm font-semibold text-gray-900">
@@ -172,7 +172,7 @@ export default function MyLaunches() {
             {/* Empty State */}
             {userLaunches.length === 0 && (
               <div className="col-span-full">
-                <div className="bg-white/60 backdrop-blur-xl border-2 border-dashed border-gray-300 rounded-xl p-12 text-center">
+                <div className="bg-white/60 backdrop-blur-xl border-2 border-dashed border-gray-300 rounded-xl p-8 sm:p-12 text-center">
                   <Rocket size={48} className="text-gray-300 mx-auto mb-3" />
                   <p className="text-sm text-gray-600 mb-1">No launch waitlists yet</p>
                   <p className="text-xs text-gray-500 mb-4">Browse launchpad to join upcoming projects</p>

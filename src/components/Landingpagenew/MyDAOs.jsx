@@ -130,10 +130,10 @@ export default function MyDAOs() {
   }
 
   return (
-    <div className="min-h-screen bg-transparent p-6">
+    <div className="min-h-screen bg-transparent p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-0 mb-4">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-xs text-gray-600">
               <Users size={14} />
@@ -155,7 +155,7 @@ export default function MyDAOs() {
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
           <div className="flex-1 relative">
             <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
@@ -166,10 +166,10 @@ export default function MyDAOs() {
               className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
             />
           </div>
-          <div className="flex gap-1.5">
+          <div className="flex gap-1.5 w-full sm:w-auto">
             <button
               onClick={() => setFilter('all')}
-              className={`px-3 py-2 rounded-lg transition-colors text-xs font-medium ${
+              className={`flex-1 sm:flex-none px-3 py-2 rounded-lg transition-colors text-xs font-medium ${
                 filter === 'all' ? 'bg-black text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -177,7 +177,7 @@ export default function MyDAOs() {
             </button>
             <button
               onClick={() => setFilter('created')}
-              className={`px-3 py-2 rounded-lg transition-colors text-xs font-medium ${
+              className={`flex-1 sm:flex-none px-3 py-2 rounded-lg transition-colors text-xs font-medium ${
                 filter === 'created' ? 'bg-black text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -185,7 +185,7 @@ export default function MyDAOs() {
             </button>
             <button
               onClick={() => setFilter('joined')}
-              className={`px-3 py-2 rounded-lg transition-colors text-xs font-medium ${
+              className={`flex-1 sm:flex-none px-3 py-2 rounded-lg transition-colors text-xs font-medium ${
                 filter === 'joined' ? 'bg-black text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -217,7 +217,7 @@ export default function MyDAOs() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {filteredDAOs.map((dao) => (
               <div
                 key={dao.id}
@@ -226,7 +226,7 @@ export default function MyDAOs() {
               >
                 {/* Header Image */}
                 {dao.header_image_url && (
-                  <div className="h-24 bg-gray-100 overflow-hidden">
+                  <div className="h-20 sm:h-24 bg-gray-100 overflow-hidden">
                     <img
                       src={dao.header_image_url}
                       alt={dao.name}
@@ -235,9 +235,9 @@ export default function MyDAOs() {
                   </div>
                 )}
 
-                <div className="p-4">
+                <div className="p-3 sm:p-4">
                   {/* Logo & Name */}
-                  <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-start justify-between mb-2 sm:mb-3">
                     <div className="flex items-center gap-2">
                       {dao.logo_url ? (
                         <img
@@ -368,10 +368,10 @@ function DAODetailModal({ dao, onClose, onUpdate }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[85vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 lg:p-6">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[95vh] sm:max-h-[85vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100">
           <div className="flex items-center gap-4">
             {dao.logo_url ? (
               <img src={dao.logo_url} alt={dao.name} className="w-16 h-16 rounded-xl object-cover" />
@@ -394,12 +394,12 @@ function DAODetailModal({ dao, onClose, onUpdate }) {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-100">
+        <div className="flex border-b border-gray-100 overflow-x-auto">
           {['overview', 'transactions', 'proposals', 'members'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+              className={`flex-1 min-w-[80px] px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium transition-colors ${
                 activeTab === tab
                   ? 'border-b-2 border-black text-black'
                   : 'text-gray-500 hover:text-gray-900'
@@ -411,16 +411,16 @@ function DAODetailModal({ dao, onClose, onUpdate }) {
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 200px)' }}>
+        <div className="p-4 sm:p-6 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 200px)' }}>
           {activeTab === 'overview' && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Description</h3>
-                <p className="text-gray-600">{dao.description}</p>
+                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">Description</h3>
+                <p className="text-sm sm:text-base text-gray-600">{dao.description}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="border border-gray-200 rounded-xl p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="border border-gray-200 rounded-xl p-3 sm:p-4">
                   <h4 className="text-sm font-medium text-gray-900 mb-3">Configuration</h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
@@ -442,7 +442,7 @@ function DAODetailModal({ dao, onClose, onUpdate }) {
                   </div>
                 </div>
 
-                <div className="border border-gray-200 rounded-xl p-4">
+                <div className="border border-gray-200 rounded-xl p-3 sm:p-4">
                   <h4 className="text-sm font-medium text-gray-900 mb-3">Token Info</h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
@@ -469,10 +469,10 @@ function DAODetailModal({ dao, onClose, onUpdate }) {
 
               {dao.products && dao.products.length > 0 && (
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">Products & Services</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3">Products & Services</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     {dao.products.map((product, index) => (
-                      <div key={index} className="border border-gray-200 rounded-xl p-4">
+                      <div key={index} className="border border-gray-200 rounded-xl p-3 sm:p-4">
                         <h4 className="font-medium text-gray-900 mb-1">{product.name}</h4>
                         <p className="text-sm text-gray-600 mb-2">{product.description}</p>
                         <p className="text-sm font-medium text-gray-900">€{product.price}</p>
