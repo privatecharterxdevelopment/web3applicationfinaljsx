@@ -1184,16 +1184,17 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   }, [isAuthenticated]);
 
-  // Fallback: Ensure dashboard shows on mount (especially important for mobile)
+  // Fallback: Ensure dashboard shows after login (especially important for mobile)
   // This prevents the dashboard from being stuck hidden if auth state loads slowly
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!showDashboard) {
+    // If user is authenticated but dashboard is not showing, force it to show
+    if (isAuthenticated && user && !showDashboard) {
+      const timer = setTimeout(() => {
         setShowDashboard(true);
-      }
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, user, showDashboard]);
 
   // Close profile dropdown when clicking outside
   // Initialize blog sync on mount
