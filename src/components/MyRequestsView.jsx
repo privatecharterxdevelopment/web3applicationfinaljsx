@@ -925,7 +925,7 @@ const MyRequestsView = ({ user }) => {
   };
 
   return (
-    <div className="w-full h-full p-6 overflow-y-auto" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="w-full h-full px-6 pt-3 pb-6 overflow-y-auto" style={{ fontFamily: "'DM Sans', sans-serif" }}>
 
       {/* Filters */}
       <div className="mb-6 flex items-center gap-4">

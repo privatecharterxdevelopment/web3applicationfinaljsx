@@ -1184,6 +1184,17 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   }, [isAuthenticated]);
 
+  // Fallback: Ensure dashboard shows on mount (especially important for mobile)
+  // This prevents the dashboard from being stuck hidden if auth state loads slowly
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!showDashboard) {
+        setShowDashboard(true);
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Close profile dropdown when clicking outside
   // Initialize blog sync on mount
   useEffect(() => {
@@ -3298,9 +3309,6 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* My Requests View */}
           {!isTransitioning && activeCategory === 'requests' && (
             <div className="w-full h-full overflow-y-auto">
-              <div className="mb-6 px-4 pt-4">
-                <h2 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter font-['DM_Sans']">My Requests</h2>
-              </div>
               <style>{`
                 .dashboard-wrapper-glass {
                   font-family: 'DM Sans', sans-serif !important;
