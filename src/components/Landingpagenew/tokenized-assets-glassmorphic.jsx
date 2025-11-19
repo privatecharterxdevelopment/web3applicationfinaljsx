@@ -636,7 +636,7 @@ Happy travels!`,
 
 const TokenizedAssetsGlassmorphic = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user, profile, signOut } = useAuth();
+  const { isAuthenticated, user, profile, signOut, initializing } = useAuth();
   const { toasts, showToast, removeToast } = useToast();
   const notificationCount = useNotificationCount(user?.id);
   const [showDashboard, setShowDashboard] = useState(false);
@@ -1142,13 +1142,13 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   ];
 
-  // Check authentication on mount
+  // Check authentication on mount - ONLY show login if auth is initialized
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !initializing) {
       setShowLoginModal(true);
       setShowDashboard(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, initializing]);
 
   // Handle successful login/register - Show toast and animate dashboard
   useEffect(() => {
@@ -1178,10 +1178,8 @@ const TokenizedAssetsGlassmorphic = () => {
         sessionStorage.setItem(toastShownKey, 'true');
       }
 
-      // Trigger smooth dashboard animation
-      setTimeout(() => {
-        setShowDashboard(true);
-      }, 300);
+      // Show dashboard IMMEDIATELY - no delay on mobile
+      setShowDashboard(true);
     }
   }, [isAuthenticated, user]);
 
@@ -2661,6 +2659,18 @@ const TokenizedAssetsGlassmorphic = () => {
     { id: 2, title: 'Empty Leg Zurich-London', time: '2 days ago' },
     { id: 3, title: 'CO2 Certificate Purchase', time: '3 weeks ago' }
   ];
+
+  // Show loading spinner while auth is initializing
+  if (initializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center">
+          <Loader2 size={40} className="animate-spin text-black mx-auto mb-4" />
+          <p className="text-sm text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen font-['DM_Sans'] relative">
