@@ -657,6 +657,7 @@ const TokenizedAssetsGlassmorphic = () => {
   const [activeCategory, setActiveCategory] = useState('overview');
   const [dashboardView, setDashboardView] = useState('overview');
   const [expandedMenus, setExpandedMenus] = useState({});
+  const [showMobileCategoryMenu, setShowMobileCategoryMenu] = useState(false);
   const [bookingStep, setBookingStep] = useState(0);
   const [bookingVehicleType, setBookingVehicleType] = useState('private-jet');
 
@@ -1205,6 +1206,18 @@ const TokenizedAssetsGlassmorphic = () => {
       setShowDashboard(true);
     }
   }, [isAuthenticated, user, showDashboard]);
+
+  // Close mobile category menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showMobileCategoryMenu && !event.target.closest('.mobile-category-menu-container')) {
+        setShowMobileCategoryMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showMobileCategoryMenu]);
 
   // Close profile dropdown when clicking outside
   // Initialize blog sync on mount
@@ -2961,8 +2974,74 @@ const TokenizedAssetsGlassmorphic = () => {
           <div className={`sticky top-4 z-50 px-2 sm:px-4 lg:px-8 flex justify-between items-center pt-4 sm:pt-6 pr-2 sm:pr-4 lg:pr-6 ${
             activeCategory === 'chat' ? 'hidden' : ''
           }`}>
-            {/* LEFT: Category Menu Links (collapsible, NO ICONS) */}
-            <div className="flex items-center gap-2 lg:gap-3 overflow-x-auto">
+            {/* MOBILE ONLY: Category Menu Toggle Button */}
+            <div className="md:hidden relative mobile-category-menu-container">
+              <button
+                onClick={() => setShowMobileCategoryMenu(!showMobileCategoryMenu)}
+                className="flex items-center justify-center w-10 h-10 bg-white rounded-xl shadow-md border border-gray-200 hover:bg-gray-50 transition-all duration-200"
+                title="Toggle menu"
+              >
+                <Plus
+                  size={20}
+                  strokeWidth={2}
+                  className={`transition-transform duration-300 text-gray-800 ${showMobileCategoryMenu ? 'rotate-45' : ''}`}
+                />
+              </button>
+
+              {/* Mobile Category Dropdown */}
+              {showMobileCategoryMenu && (
+                <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-50">
+                  {/* RWS Categories */}
+                  {webMode === 'rws' && user?.user_role !== 'partner' && rwsCategoryMenu.map((item) => {
+                    const isActive = activeCategory === item.category;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setActiveCategory(item.category);
+                          setShowJetDetail(false);
+                          setShowMobileCategoryMenu(false);
+                        }}
+                        className={`w-full px-4 py-3 text-left text-sm font-medium transition-all duration-200 ${
+                          isActive
+                            ? 'bg-black text-white'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+
+                  {/* Web3 Categories */}
+                  {webMode === 'web3' && user?.user_role !== 'partner' && web3CategoryMenu
+                    .filter(item => item.id !== 'assets')
+                    .map((item) => {
+                      const isActive = activeCategory === item.category;
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setActiveCategory(item.category);
+                            setShowJetDetail(false);
+                            setShowMobileCategoryMenu(false);
+                          }}
+                          className={`w-full px-4 py-3 text-left text-sm font-medium transition-all duration-200 ${
+                            isActive
+                              ? 'bg-black text-white'
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+
+            {/* LEFT: Category Menu Links (collapsible, NO ICONS) - HIDDEN ON MOBILE */}
+            <div className="hidden md:flex items-center gap-2 lg:gap-3 overflow-x-auto">
               {/* COLLAPSIBLE CATEGORY BUTTONS - RWS mode - NO ICONS */}
               {!headersCollapsed && webMode === 'rws' && user?.user_role !== 'partner' && (
                 <>
@@ -3018,10 +3097,10 @@ const TokenizedAssetsGlassmorphic = () => {
 
             {/* RIGHT: Plus Icon + Icons + Switcher */}
             <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3 ml-auto">
-              {/* Plus Icon - Thinner with short separator */}
+              {/* Plus Icon - Thinner with short separator - DESKTOP ONLY */}
               <button
                 onClick={() => setHeadersCollapsed(!headersCollapsed)}
-                className="flex group items-center justify-center transition-all duration-300 hover:scale-110 mr-1"
+                className="hidden md:flex group items-center justify-center transition-all duration-300 hover:scale-110 mr-1"
                 title={headersCollapsed ? "Show menu" : "Hide menu"}
               >
                 <Plus
@@ -3031,8 +3110,8 @@ const TokenizedAssetsGlassmorphic = () => {
                 />
               </button>
 
-              {/* Short separator line */}
-              <div className="w-px h-4 bg-gray-300"></div>
+              {/* Short separator line - DESKTOP ONLY */}
+              <div className="hidden md:block w-px h-4 bg-gray-300"></div>
               {/* Favorites Icon - Only in RWS mode */}
               {webMode !== 'web3' && (
                 <button
