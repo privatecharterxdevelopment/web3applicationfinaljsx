@@ -4367,13 +4367,6 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* Other Category Views */}
           {!isTransitioning && activeCategory === 'private-jet' && (
             <div className="w-full flex-1 flex flex-col">
-              {bookingStep === 0 && (
-                <div className="text-center mb-8">
-                  <h2 className="text-4xl md:text-5xl font-light text-gray-900 tracking-tighter">
-                    Charter the Smart Way
-                  </h2>
-                </div>
-              )}
               <div className="w-full max-w-7xl mx-auto">
                 <UnifiedBookingFlow
                   onStepChange={setBookingStep}
