@@ -96,6 +96,7 @@ const SettingsPage = ({ user, kycStatus, setKycStatus, setActiveCategory }) => {
 
   useEffect(() => {
     if (user?.id) {
+      // Run these in background without blocking - don't await
       fetchProfileData();
       sendWelcomeNotificationIfNeeded();
     }
@@ -105,17 +106,24 @@ const SettingsPage = ({ user, kycStatus, setKycStatus, setActiveCategory }) => {
     if (!user?.id) return;
 
     try {
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Notification query timeout')), 2000)
+      );
+
       // Check if user already has a welcome notification
-      const { data: existingNotification } = await supabase
+      const queryPromise = supabase
         .from('notifications')
         .select('id')
         .eq('user_id', user.id)
         .eq('type', 'welcome')
         .maybeSingle();
 
-      // If no welcome notification exists, create one
+      const { data: existingNotification } = await Promise.race([queryPromise, timeoutPromise]);
+
+      // If no welcome notification exists, create one (fire and forget)
       if (!existingNotification) {
-        await supabase
+        supabase
           .from('notifications')
           .insert({
             user_id: user.id,
@@ -142,26 +150,34 @@ If you have any questions, please contact us through our Ticket System in the Su
 Happy travels!`,
             is_read: false,
             created_at: new Date().toISOString()
-          });
-
-        console.log('Welcome notification sent to user:', user.id);
+          })
+          .then(() => console.log('Welcome notification sent to user:', user.id))
+          .catch(err => console.error('Error inserting notification:', err));
       }
     } catch (error) {
-      console.error('Error sending welcome notification:', error);
+      console.error('Error sending welcome notification (non-blocking):', error);
       // Don't block dashboard if notification fails
     }
   };
 
   const fetchProfileData = async () => {
     if (!user?.id) return;
-    
+
     try {
       setIsLoading(true);
-      const { data: profile, error } = await supabase
+
+      // Add timeout to prevent hanging login
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Profile query timeout')), 3000)
+      );
+
+      const queryPromise = supabase
         .from('user_profiles')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
+
+      const { data: profile, error } = await Promise.race([queryPromise, timeoutPromise]);
 
       if (error && error.code !== 'PGRST116') {
         throw error;
@@ -179,14 +195,12 @@ Happy travels!`,
           postal_code: profile.postal_code || ''
         }));
       } else {
-        await createDefaultProfile();
+        // Create default profile in background - don't wait for it
+        createDefaultProfile();
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
-      setMessage({
-        type: 'error',
-        text: 'Failed to load profile data'
-      });
+      console.error('Error fetching profile (non-blocking):', error);
+      // Don't show error to user, fail gracefully
     } finally {
       setIsLoading(false);
     }
@@ -1187,12 +1201,10 @@ const TokenizedAssetsGlassmorphic = () => {
   // Fallback: Ensure dashboard shows after login (especially important for mobile)
   // This prevents the dashboard from being stuck hidden if auth state loads slowly
   useEffect(() => {
-    // If user is authenticated but dashboard is not showing, force it to show
+    // If user is authenticated but dashboard is not showing, force it to show IMMEDIATELY
     if (isAuthenticated && user && !showDashboard) {
-      const timer = setTimeout(() => {
-        setShowDashboard(true);
-      }, 500);
-      return () => clearTimeout(timer);
+      // CRITICAL: No timeout on mobile - show immediately to prevent blank page
+      setShowDashboard(true);
     }
   }, [isAuthenticated, user, showDashboard]);
 
@@ -1236,17 +1248,24 @@ const TokenizedAssetsGlassmorphic = () => {
     };
   }, []);
 
-  // Fetch user's KYC status
+  // Fetch user's KYC status with timeout to prevent login hang
   useEffect(() => {
     const fetchKycStatus = async () => {
       if (!user?.id) return;
 
       try {
-        const { data, error } = await supabase
+        // Add timeout to prevent hanging login
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('KYC query timeout')), 3000)
+        );
+
+        const queryPromise = supabase
           .from('kyc_applications')
           .select('status')
           .eq('user_id', user.id)
           .maybeSingle();
+
+        const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
 
         if (!error && data) {
           setKycStatus(data.status || 'not_started');
@@ -1254,11 +1273,12 @@ const TokenizedAssetsGlassmorphic = () => {
           setKycStatus('not_started');
         }
       } catch (error) {
-        console.error('Error fetching KYC status:', error);
-        setKycStatus('not_started');
+        console.error('Error fetching KYC status (non-blocking):', error);
+        setKycStatus('not_started'); // Fail gracefully, don't block login
       }
     };
 
+    // Don't await - run in background to avoid blocking login
     fetchKycStatus();
   }, [user?.id]);
 
