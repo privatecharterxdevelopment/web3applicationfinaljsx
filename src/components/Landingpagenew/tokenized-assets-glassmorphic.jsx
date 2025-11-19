@@ -3662,9 +3662,9 @@ const TokenizedAssetsGlassmorphic = () => {
 
           {/* Overview Section (Chat Interface) - Show for regular users */}
           {!isTransitioning && activeCategory === 'overview' && user?.user_role !== 'partner' && (
-            <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col">
-              {/* Spacer to keep content centered */}
-              <div className="mt-16 mb-8"></div>
+            <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col px-4 md:px-0">
+              {/* Spacer to keep content centered - reduced on mobile */}
+              <div className="mt-4 md:mt-16 mb-4 md:mb-8"></div>
               <div className="flex-1 flex flex-col">
                 {/* RWS Mode Only: Search Input & Quick Action Buttons */}
                 {webMode === 'rws' && (
