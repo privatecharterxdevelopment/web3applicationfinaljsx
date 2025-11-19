@@ -2961,8 +2961,8 @@ const TokenizedAssetsGlassmorphic = () => {
           <div className={`sticky top-4 z-50 px-2 sm:px-4 lg:px-8 flex justify-between items-center pt-4 sm:pt-6 pr-2 sm:pr-4 lg:pr-6 ${
             activeCategory === 'chat' ? 'hidden' : ''
           }`}>
-            {/* LEFT: Category Menu Links (collapsible, NO ICONS) - HIDDEN ON MOBILE */}
-            <div className="hidden md:flex items-center gap-2 lg:gap-3 overflow-x-auto">
+            {/* LEFT: Category Menu Links (collapsible, NO ICONS) */}
+            <div className="flex items-center gap-2 lg:gap-3 overflow-x-auto">
               {/* COLLAPSIBLE CATEGORY BUTTONS - RWS mode - NO ICONS */}
               {!headersCollapsed && webMode === 'rws' && user?.user_role !== 'partner' && (
                 <>
@@ -3018,11 +3018,11 @@ const TokenizedAssetsGlassmorphic = () => {
 
             {/* RIGHT: Plus Icon + Icons + Switcher */}
             <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3 ml-auto">
-              {/* Plus Icon - Thinner with short separator - HIDDEN ON MOBILE */}
+              {/* Plus Icon - Thinner with short separator */}
               <button
                 onClick={() => setHeadersCollapsed(!headersCollapsed)}
-                className="hidden md:flex group items-center justify-center transition-all duration-300 hover:scale-110 mr-1"
-                title={headersCollapsed ? "Show header" : "Hide header"}
+                className="flex group items-center justify-center transition-all duration-300 hover:scale-110 mr-1"
+                title={headersCollapsed ? "Show menu" : "Hide menu"}
               >
                 <Plus
                   size={22}
@@ -3031,8 +3031,8 @@ const TokenizedAssetsGlassmorphic = () => {
                 />
               </button>
 
-              {/* Short separator line - HIDDEN ON MOBILE */}
-              <div className="hidden md:block w-px h-4 bg-gray-300"></div>
+              {/* Short separator line */}
+              <div className="w-px h-4 bg-gray-300"></div>
               {/* Favorites Icon - Only in RWS mode */}
               {webMode !== 'web3' && (
                 <button

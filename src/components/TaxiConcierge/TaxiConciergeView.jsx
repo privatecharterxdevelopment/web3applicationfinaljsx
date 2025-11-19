@@ -367,7 +367,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
   const geocodeAddress = async (address) => {
     try {
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&limit=5`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&limit=5&types=address,poi,place&language=en`
       );
       const data = await response.json();
       return data.features;
@@ -381,7 +381,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
   const reverseGeocode = async (longitude, latitude) => {
     try {
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${MAPBOX_TOKEN}`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${MAPBOX_TOKEN}&types=address,poi&language=en`
       );
       const data = await response.json();
       return data.features[0]; // Return the first (most relevant) result
@@ -1136,7 +1136,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                     data-suggestions-a
                     className="absolute w-full bg-white border border-gray-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto"
                     style={{
-                      top: 'calc(100% + 8px)',
+                      bottom: 'calc(100% + 8px)',
                       left: 0,
                       zIndex: 9999
                     }}
@@ -1176,7 +1176,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                       data-suggestions-b
                       className="absolute w-full bg-white border border-gray-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto"
                       style={{
-                        top: 'calc(100% + 8px)',
+                        bottom: 'calc(100% + 8px)',
                         left: 0,
                         zIndex: 9999
                       }}
