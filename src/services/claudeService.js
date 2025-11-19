@@ -6,19 +6,12 @@ class ClaudeService {
     this.apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY || '';
     this.client = null;
     this.systemPrompt = '';
-    
-    console.log('🔑 Claude API Key loaded:', this.apiKey ? 'YES ✅' : 'NO ❌');
-    console.log('🔑 API Key length:', this.apiKey?.length || 0);
-    console.log('🔑 API Key starts with:', this.apiKey?.substring(0, 15) || 'N/A');
-    
+
     if (this.apiKey) {
       this.client = new Anthropic({
         apiKey: this.apiKey,
         dangerouslyAllowBrowser: true // Required for client-side usage
       });
-      console.log('✅ Claude client initialized');
-    } else {
-      console.error('❌ VITE_ANTHROPIC_API_KEY not found in environment');
     }
   }
 
@@ -42,11 +35,6 @@ class ClaudeService {
     }
 
     try {
-      console.log('📤 Sending to Claude:', {
-        messageCount: messages.length,
-        lastMessage: messages[messages.length - 1]?.content?.substring(0, 100)
-      });
-      
       const response = await this.client.messages.create({
         model: 'claude-3-7-sonnet-20250219',
         max_tokens: options.maxTokens || 8192,
@@ -58,22 +46,13 @@ class ClaudeService {
         }))
       });
 
-      console.log('📥 Claude response:', response);
-
       if (!response || !response.content || !response.content[0] || !response.content[0].text) {
-        console.error('❌ Invalid Claude response structure:', response);
         throw new Error('Invalid response from Claude API');
       }
 
       return response.content[0].text;
     } catch (error) {
-      console.error('❌ Claude API Error:', error);
-      console.error('Error details:', {
-        message: error.message,
-        status: error.status,
-        type: error.type,
-        response: error.response
-      });
+      console.error('Claude API Error:', error.message);
       throw error;
     }
   }

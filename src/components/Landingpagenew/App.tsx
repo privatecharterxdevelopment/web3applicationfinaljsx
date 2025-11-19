@@ -88,6 +88,7 @@ import Services from './Services';
 import Technology from './Technology';
 import Aviation from './Aviation';
 import Tokenized from './Tokenized';
+import Helpdesk from './Helpdesk';
 
 // Import your complete dashboard
 import TokenizedAssets from './tokenized-assets.jsx';
@@ -272,6 +273,7 @@ function AppContent() {
               <Route path="/technology" element={<Technology setCurrentPage={() => {}} />} />
               <Route path="/aviation" element={<Aviation setCurrentPage={() => {}} />} />
               <Route path="/tokenized" element={<Tokenized setCurrentPage={() => {}} />} />
+              <Route path="/helpdesk" element={<Helpdesk setCurrentPage={() => {}} />} />
               <Route path="/tokenswap" element={<TokenSwapPage />} />
 
               {/* Dashboard Route - Glassmorphic Dashboard with Empty Legs & RWS */}

@@ -210,13 +210,11 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
 
   // Initialize Claude API
   useEffect(() => {
-    console.log('🔑 API Key present:', !!ANTHROPIC_API_KEY, ANTHROPIC_API_KEY ? `(${ANTHROPIC_API_KEY.substring(0, 15)}...)` : '(none)');
     if (ANTHROPIC_API_KEY) {
       anthropicRef.current = new Anthropic({
         apiKey: ANTHROPIC_API_KEY,
         dangerouslyAllowBrowser: true
       });
-      console.log('✅ Claude API initialized');
     } else {
       console.warn('⚠️ VITE_ANTHROPIC_API_KEY not found');
     }

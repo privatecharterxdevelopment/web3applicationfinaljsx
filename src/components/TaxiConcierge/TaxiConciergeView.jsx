@@ -56,6 +56,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('all');
   const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [isModalExpanded, setIsModalExpanded] = useState(false);
 
   // Country-based pricing configuration
   const countryPricing = {
@@ -496,6 +497,39 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
     }
   };
 
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if click is outside suggestions dropdowns
+      const suggestionsA = document.querySelector('[data-suggestions-a]');
+      const suggestionsB = document.querySelector('[data-suggestions-b]');
+      const inputA = document.querySelector('[data-input-a]');
+      const inputB = document.querySelector('[data-input-b]');
+
+      if (suggestionsA && !suggestionsA.contains(event.target) && !inputA.contains(event.target)) {
+        setShowSuggestionsA(false);
+      }
+      if (suggestionsB && !suggestionsB.contains(event.target) && !inputB.contains(event.target)) {
+        setShowSuggestionsB(false);
+      }
+    };
+
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        setShowSuggestionsA(false);
+        setShowSuggestionsB(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscapeKey);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, []);
+
   // Select location A
   const selectLocationA = (feature) => {
     setLocationA(feature.place_name);
@@ -657,10 +691,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
       // Debounce route calculation to prevent lag
       const timeoutId = setTimeout(() => {
         getRoute();
-        // Auto-minimize panel when route is calculated to show map better
-        setTimeout(() => {
-          setIsPanelMinimized(true);
-        }, 800); // Reduced delay for faster UX
+        // REMOVED: Auto-minimize panel - let user control when to minimize
       }, 300); // 300ms debounce to allow map animations to complete
 
       return () => clearTimeout(timeoutId);
@@ -1007,9 +1038,18 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
 
 
       {/* Bottom Booking Panel - Floating modal with proper spacing */}
-      <div className={`absolute ${serviceCategory === 'luxury-cars' ? 'left-6' : 'left-1/2 -translate-x-1/2'} pointer-events-auto z-10 ${bookingStep === 3 ? 'top-6 bottom-6' : 'bottom-6'}`} style={{ maxWidth: serviceCategory === 'luxury-cars' ? '480px' : '650px', width: serviceCategory === 'luxury-cars' ? 'auto' : '90%' }}>
-        <div className={`bg-white shadow-2xl rounded-2xl transition-all duration-300 w-full ${bookingStep === 3 ? 'h-full' : ''}`} style={{ overflow: 'visible', position: 'relative' }}>
-          <div className="flex flex-col" style={{ overflow: 'visible', height: bookingStep === 3 ? '100%' : 'auto' }}>
+      <div
+        className={`absolute ${serviceCategory === 'luxury-cars' ? 'left-6' : 'left-1/2 -translate-x-1/2'} pointer-events-auto z-10 transition-all duration-300`}
+        style={{
+          maxWidth: serviceCategory === 'luxury-cars' ? '480px' : '650px',
+          width: serviceCategory === 'luxury-cars' ? 'auto' : '90%',
+          bottom: '24px',
+          top: bookingStep === 3 && isModalExpanded ? '24px' : 'auto',
+          maxHeight: bookingStep === 3 ? (isModalExpanded ? 'calc(100vh - 48px)' : '70vh') : 'auto'
+        }}
+      >
+        <div className={`bg-white shadow-2xl rounded-2xl transition-all duration-300 w-full h-full`} style={{ overflow: 'visible', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+          <div className="flex flex-col flex-1" style={{ overflow: 'hidden', minHeight: 0 }}>
           {/* Minimize/Maximize Toggle Button - Only show when route is calculated */}
           {(eta && distance) && (
             <button
@@ -1071,9 +1111,15 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
               <div className="relative flex-1" style={{ zIndex: 60, overflow: 'visible' }}>
                 <div className="relative" style={{ overflow: 'visible' }}>
                   <input
+                    data-input-a
                     type="text"
                     value={locationA}
                     onChange={(e) => handleLocationAChange(e.target.value)}
+                    onFocus={() => {
+                      if (suggestionsA.length > 0) {
+                        setShowSuggestionsA(true);
+                      }
+                    }}
                     placeholder={serviceCategory === 'luxury-cars' ? 'Rental Location (City)' : 'Pick-up location'}
                     className="w-full px-4 py-3 pr-12 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-black text-sm bg-white transition-all"
                   />
@@ -1086,11 +1132,15 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                   </button>
                 </div>
                 {showSuggestionsA && suggestionsA.length > 0 && (
-                  <div className="absolute w-full bg-white border border-gray-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto" style={{
-                    bottom: 'calc(100% + 8px)',
-                    left: 0,
-                    zIndex: 9999
-                  }}>
+                  <div
+                    data-suggestions-a
+                    className="absolute w-full bg-white border border-gray-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto"
+                    style={{
+                      bottom: 'calc(100% + 8px)',
+                      left: 0,
+                      zIndex: 9999
+                    }}
+                  >
                     {suggestionsA.map((suggestion, index) => (
                       <button
                         key={index}
@@ -1109,18 +1159,28 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
               {serviceCategory !== 'luxury-cars' && (
                 <div className="relative flex-1" style={{ zIndex: 60, overflow: 'visible' }}>
                   <input
+                    data-input-b
                     type="text"
                     value={locationB}
                     onChange={(e) => handleLocationBChange(e.target.value)}
+                    onFocus={() => {
+                      if (suggestionsB.length > 0) {
+                        setShowSuggestionsB(true);
+                      }
+                    }}
                     placeholder="Drop-off location"
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-black text-sm bg-white transition-all"
                   />
                   {showSuggestionsB && suggestionsB.length > 0 && (
-                    <div className="absolute w-full bg-white border border-gray-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto" style={{
-                      bottom: 'calc(100% + 8px)',
-                      left: 0,
-                      zIndex: 9999
-                    }}>
+                    <div
+                      data-suggestions-b
+                      className="absolute w-full bg-white border border-gray-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto"
+                      style={{
+                        bottom: 'calc(100% + 8px)',
+                        left: 0,
+                        zIndex: 9999
+                      }}
+                    >
                       {suggestionsB.map((suggestion, index) => (
                         <button
                           key={index}
@@ -1291,10 +1351,32 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
 
               {/* Step 3: Car Selection with Images */}
               {bookingStep === 3 && (
-                <div className="flex-1 overflow-y-auto px-5 pt-4 pb-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-
-                  {/* Search & Filter - Only for Luxury Cars */}
+                <>
+                  {/* Expand/Collapse Button - Centered at top of car list */}
                   {serviceCategory === 'luxury-cars' && (
+                    <div className="flex justify-center py-3 border-b border-gray-100">
+                      <button
+                        onClick={() => setIsModalExpanded(!isModalExpanded)}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all text-sm font-medium text-gray-700"
+                      >
+                        {isModalExpanded ? (
+                          <>
+                            <ChevronDown size={16} />
+                            Show Less
+                          </>
+                        ) : (
+                          <>
+                            <ChevronUp size={16} />
+                            Show More Cars
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="flex-1 overflow-y-auto px-5 pt-4 pb-6" style={{ scrollbarWidth: 'thin', scrollbarColor: '#d1d5db transparent' }}>
+                    {/* Search & Filter - Only for Luxury Cars */}
+                    {serviceCategory === 'luxury-cars' && (
                     <div className="mb-4 space-y-3">
                       {/* Search Bar */}
                       <input
@@ -1434,6 +1516,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                     })}
                   </div>
                 </div>
+              </>
               )}
             </div>
           )}
@@ -1940,6 +2023,21 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
         .scrollbar-hide {
           -ms-overflow-style: none;
           scrollbar-width: none;
+        }
+        /* Custom scrollbar for car list */
+        div[style*="scrollbarWidth"]::-webkit-scrollbar {
+          width: 8px;
+        }
+        div[style*="scrollbarWidth"]::-webkit-scrollbar-track {
+          background: transparent;
+          border-radius: 4px;
+        }
+        div[style*="scrollbarWidth"]::-webkit-scrollbar-thumb {
+          background: #d1d5db;
+          border-radius: 4px;
+        }
+        div[style*="scrollbarWidth"]::-webkit-scrollbar-thumb:hover {
+          background: #9ca3af;
         }
       `}</style>
     </div>

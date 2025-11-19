@@ -76,18 +76,6 @@ export default function Footer() {
                 </a>
               </div>
             </div>
-
-            {/* Mobile Apps - Coming Soon */}
-            <div className="mt-8">
-              <p className="text-xs text-gray-500 font-light mb-3">Mobile Apps Coming Soon</p>
-              <div className="flex items-center gap-3">
-                <img
-                  src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/gb/Google-Play-App-Store-PNG-Transparent-Image.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJnYi9Hb29nbGUtUGxheS1BcHAtU3RvcmUtUE5HLVRyYW5zcGFyZW50LUltYWdlLnBuZyIsImlhdCI6MTc1NzI1Njc0NSwiZXhwIjoxNzg4NzkyNzQ1fQ.rPIzwaEEIzkTNSEb764iXQKhcJfWuT9joDdcdtOyhac"
-                  alt="Download on App Store and Google Play"
-                  className="h-10 opacity-60 hover:opacity-80 transition-opacity cursor-pointer"
-                />
-              </div>
-            </div>
           </div>
 
           <div className="lg:col-span-8">

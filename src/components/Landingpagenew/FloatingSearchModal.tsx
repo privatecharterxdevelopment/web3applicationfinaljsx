@@ -66,7 +66,7 @@ export default function FloatingSearchModal() {
         }
       `}</style>
 
-      <div className="bg-white/15 backdrop-blur-xl rounded-3xl p-8 shadow-[0_20px_60px_rgba(0,0,0,0.1),0_8px_16px_rgba(0,0,0,0.06)] border border-white/20 transition-all duration-300 hover:bg-white/20 hover:shadow-[0_30px_80px_rgba(0,0,0,0.12),0_12px_24px_rgba(0,0,0,0.08)] hover:-translate-y-0.5">
+      <div className="bg-white/8 backdrop-blur-md rounded-3xl p-8 shadow-[0_20px_60px_rgba(0,0,0,0.1),0_8px_16px_rgba(0,0,0,0.06)] border border-white/15 transition-all duration-300 hover:bg-white/12 hover:shadow-[0_30px_80px_rgba(0,0,0,0.12),0_12px_24px_rgba(0,0,0,0.08)] hover:-translate-y-0.5">
 
         {/* Status Bubble */}
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100/60 backdrop-blur-sm rounded-full border border-gray-300/30 mb-5">

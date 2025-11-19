@@ -56,7 +56,7 @@ function Technology({ setCurrentPage }: TechnologyProps) {
           </div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light text-gray-900 mb-6 sm:mb-8 leading-tight tracking-tight max-w-4xl mx-auto">
             The foundation of<br />
-            <span className="font-medium">future mobility</span>
+            <span className="text-gray-400">future mobility</span>
           </h1>
           <p className="text-base sm:text-lg text-gray-600 mb-8 sm:mb-12 leading-relaxed max-w-3xl mx-auto px-4">
             Leveraging cutting-edge Web3 and blockchain technologies to revolutionize 
@@ -126,104 +126,112 @@ function Technology({ setCurrentPage }: TechnologyProps) {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-8">
+          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
             {/* Header Image */}
-            <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-6 flex items-center justify-center">
+            <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
               <Network className="w-12 h-12 text-gray-500" />
             </div>
-            <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Blockchain Protocols</h3>
-            <p className="text-gray-600 text-sm leading-snug mb-3">
-              Built on Ethereum mainnet with Polygon Layer 2 scaling solutions for fast,
-              cost-effective transactions. Multi-chain architecture ensures maximum
-              compatibility and future-proofing.
-            </p>
-            <div className="flex flex-wrap gap-2 mb-4">
-              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                Ethereum mainnet
+            <div className="p-6">
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Blockchain Protocols</h3>
+              <p className="text-gray-600 text-sm leading-snug mb-3">
+                Built on Ethereum mainnet with Polygon Layer 2 scaling solutions for fast,
+                cost-effective transactions. Multi-chain architecture ensures maximum
+                compatibility and future-proofing.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  Ethereum mainnet
+                </span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  Polygon Layer 2
+                </span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  Cross-chain bridges
+                </span>
               </div>
-              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                Polygon Layer 2
-              </div>
-              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                Cross-chain bridges
-              </div>
+              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
             </div>
-            <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
           </div>
 
-          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-8">
+          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
             {/* Header Image */}
-            <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-6 flex items-center justify-center">
+            <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
               <Code className="w-12 h-12 text-gray-500" />
             </div>
-            <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Smart Contract Languages</h3>
-            <p className="text-gray-600 text-sm leading-snug mb-3">
-              Advanced smart contracts developed in Solidity with Rust components for
-              high-performance operations. Comprehensive testing and formal verification
-              ensure bulletproof security.
-            </p>
-            <div className="flex flex-wrap gap-2 mb-4">
-              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                Solidity contracts
+            <div className="p-6">
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Smart Contract Languages</h3>
+              <p className="text-gray-600 text-sm leading-snug mb-3">
+                Advanced smart contracts developed in Solidity with Rust components for
+                high-performance operations. Comprehensive testing and formal verification
+                ensure bulletproof security.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  Solidity contracts
+                </span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  Rust optimization
+                </span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  Formal verification
+                </span>
               </div>
-              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                Rust optimization
-              </div>
-              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                Formal verification
-              </div>
+              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
             </div>
-            <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
           </div>
 
-          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-8">
+          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
             {/* Header Image */}
-            <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-6 flex items-center justify-center">
+            <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
               <Coins className="w-12 h-12 text-gray-500" />
             </div>
-            <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Token Standards</h3>
-            <p className="text-gray-600 text-sm leading-snug mb-3">
-              Multi-standard token architecture supporting utility tokens, NFT memberships,
-              and security tokens for fractional asset ownership. Each standard optimized
-              for specific use cases and regulatory compliance.
-            </p>
-            <div className="flex flex-wrap gap-2 mb-4">
-              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                ERC-20 utility tokens
+            <div className="p-6">
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Token Standards</h3>
+              <p className="text-gray-600 text-sm leading-snug mb-3">
+                Multi-standard token architecture supporting utility tokens, NFT memberships,
+                and security tokens for fractional asset ownership. Each standard optimized
+                for specific use cases and regulatory compliance.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  ERC-20 utility tokens
+                </span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  ERC-721 NFT memberships
+                </span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  ERC-1400 security tokens
+                </span>
               </div>
-              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                ERC-721 NFT memberships
-              </div>
-              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                ERC-1400 security tokens
-              </div>
+              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
             </div>
-            <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
           </div>
 
-          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-8">
+          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
             {/* Header Image */}
-            <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-6 flex items-center justify-center">
+            <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
               <Database className="w-12 h-12 text-gray-500" />
             </div>
-            <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Oracle Integration</h3>
-            <p className="text-gray-600 text-sm leading-snug mb-3">
-              Real-world data integration through Chainlink oracles for flight tracking,
-              weather conditions, asset valuations, and market pricing. Ensures accurate
-              on-chain representation of off-chain events.
-            </p>
-            <div className="flex flex-wrap gap-2 mb-4">
-              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                Chainlink oracles
+            <div className="p-6">
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Oracle Integration</h3>
+              <p className="text-gray-600 text-sm leading-snug mb-3">
+                Real-world data integration through Chainlink oracles for flight tracking,
+                weather conditions, asset valuations, and market pricing. Ensures accurate
+                on-chain representation of off-chain events.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  Chainlink oracles
+                </span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  Flight data feeds
+                </span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                  Asset valuations
+                </span>
               </div>
-              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                Flight data feeds
-              </div>
-              <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                Asset valuations
-              </div>
+              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
             </div>
-            <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
           </div>
         </div>
       </section>
@@ -592,43 +600,41 @@ function Technology({ setCurrentPage }: TechnologyProps) {
           <h3 className="text-2xl font-light text-gray-900 mb-4">Interoperability & Ecosystem</h3>
           <p className="text-gray-600">Connecting with the broader Web3 world through strategic integrations</p>
         </div>
-        <div className="relative overflow-hidden">
-          <div className="flex animate-pulse">
-            <div className="group min-w-80 bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6 mr-6">
-              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-                <Network className="w-5 h-5 text-gray-600" />
-              </div>
-              <h3 className="text-lg font-light text-gray-900 mb-2 leading-tight">Cross-Chain Bridges</h3>
-              <p className="text-sm text-gray-600 mb-3">Seamless asset movement between Ethereum, Polygon, and other networks.</p>
-              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="group bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6">
+            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+              <Network className="w-5 h-5 text-gray-600" />
             </div>
+            <h3 className="text-lg font-light text-gray-900 mb-2 leading-tight">Cross-Chain Bridges</h3>
+            <p className="text-sm text-gray-600 mb-3">Seamless asset movement between Ethereum, Polygon, and other networks.</p>
+            <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
+          </div>
 
-            <div className="group min-w-80 bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6 mr-6">
-              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-                <Code className="w-5 h-5 text-gray-600" />
-              </div>
-              <h3 className="text-lg font-light text-gray-900 mb-2 leading-tight">Developer APIs</h3>
-              <p className="text-sm text-gray-600 mb-3">Comprehensive APIs for third-party integrations and custom applications.</p>
-              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
+          <div className="group bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6">
+            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+              <Code className="w-5 h-5 text-gray-600" />
             </div>
+            <h3 className="text-lg font-light text-gray-900 mb-2 leading-tight">Developer APIs</h3>
+            <p className="text-sm text-gray-600 mb-3">Comprehensive APIs for third-party integrations and custom applications.</p>
+            <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
+          </div>
 
-            <div className="group min-w-80 bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6 mr-6">
-              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-                <Wallet className="w-5 h-5 text-gray-600" />
-              </div>
-              <h3 className="text-lg font-light text-gray-900 mb-2 leading-tight">Wallet Compatibility</h3>
-              <p className="text-sm text-gray-600 mb-3">Support for MetaMask, WalletConnect, and all major Web3 wallets.</p>
-              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
+          <div className="group bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6">
+            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+              <Wallet className="w-5 h-5 text-gray-600" />
             </div>
+            <h3 className="text-lg font-light text-gray-900 mb-2 leading-tight">Wallet Compatibility</h3>
+            <p className="text-sm text-gray-600 mb-3">Support for MetaMask, WalletConnect, and all major Web3 wallets.</p>
+            <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
+          </div>
 
-            <div className="group min-w-80 bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6 mr-6">
-              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-                <Globe className="w-5 h-5 text-gray-600" />
-              </div>
-              <h3 className="text-lg font-light text-gray-900 mb-2 leading-tight">DeFi Integrations</h3>
-              <p className="text-sm text-gray-600 mb-3">Native integration with leading DeFi protocols for enhanced liquidity.</p>
-              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
+          <div className="group bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6">
+            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+              <Globe className="w-5 h-5 text-gray-600" />
             </div>
+            <h3 className="text-lg font-light text-gray-900 mb-2 leading-tight">DeFi Integrations</h3>
+            <p className="text-sm text-gray-600 mb-3">Native integration with leading DeFi protocols for enhanced liquidity.</p>
+            <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
           </div>
         </div>
       </section>

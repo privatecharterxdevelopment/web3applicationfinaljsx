@@ -37,6 +37,10 @@ const ModernAIChat = ({ onClose }) => {
   const sessionIdRef = useRef(`chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const messagesEndRef = useRef(null);
 
+  // Voice recording
+  const recognitionRef = useRef(null);
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+
   // Load chat stats on mount
   useEffect(() => {
     if (user?.id) {
@@ -55,6 +59,70 @@ const ModernAIChat = ({ onClose }) => {
     const systemPrompt = getSystemPrompt();
     claudeService.setSystemPrompt(systemPrompt);
   }, []);
+
+  // Initialize Web Speech API for voice recording
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'en-US';
+
+      recognitionRef.current.onresult = (event) => {
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript + ' ';
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+
+        setVoiceTranscript(finalTranscript || interimTranscript);
+      };
+
+      recognitionRef.current.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        setIsRecording(false);
+
+        if (event.error === 'not-allowed') {
+          alert('Microphone access denied. Please allow microphone access in your browser settings.');
+        } else if (event.error === 'no-speech') {
+          console.log('No speech detected');
+        } else if (event.error !== 'aborted') {
+          alert(`Voice recognition error: ${event.error}`);
+        }
+      };
+
+      recognitionRef.current.onend = () => {
+        if (isRecording) {
+          // If still recording, restart (for continuous recording)
+          try {
+            recognitionRef.current.start();
+          } catch (err) {
+            console.log('Recognition restart failed:', err);
+            setIsRecording(false);
+          }
+        }
+      };
+    } else {
+      console.warn('Speech recognition not supported in this browser');
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (err) {
+          // Ignore errors on cleanup
+        }
+      }
+    };
+  }, [isRecording]);
 
   const loadChatStats = async () => {
     try {
@@ -199,15 +267,40 @@ const ModernAIChat = ({ onClose }) => {
   };
 
   const handleVoiceStart = () => {
-    setIsRecording(true);
-    // TODO: Implement voice recording
-    console.log('Voice recording started');
+    if (!recognitionRef.current) {
+      alert('Voice recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
+      return;
+    }
+
+    try {
+      setVoiceTranscript('');
+      setIsRecording(true);
+      recognitionRef.current.start();
+      console.log('✅ Voice recording started');
+    } catch (error) {
+      console.error('❌ Failed to start voice recording:', error);
+      setIsRecording(false);
+      alert('Failed to start voice recording. Please try again.');
+    }
   };
 
   const handleVoiceStop = () => {
-    setIsRecording(false);
-    // TODO: Implement voice recording stop
-    console.log('Voice recording stopped');
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+        setIsRecording(false);
+        console.log('✅ Voice recording stopped');
+
+        // Send the voice transcript as a message if there's content
+        if (voiceTranscript.trim()) {
+          handleSendMessage(voiceTranscript.trim());
+          setVoiceTranscript('');
+        }
+      } catch (error) {
+        console.error('❌ Error stopping voice recording:', error);
+        setIsRecording(false);
+      }
+    }
   };
 
   const handleNewChat = () => {

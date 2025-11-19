@@ -32,6 +32,11 @@ interface ServicesProps {
 }
 
 function Services({ setCurrentPage }: ServicesProps) {
+  const [expandedFaq, setExpandedFaq] = React.useState<string | null>(null);
+
+  const toggleFaq = (faqId: string) => {
+    setExpandedFaq(expandedFaq === faqId ? null : faqId);
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 px-4 py-4">
@@ -49,7 +54,7 @@ function Services({ setCurrentPage }: ServicesProps) {
             </div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light text-gray-900 mb-6 sm:mb-8 leading-tight tracking-tight">
               Build the future with<br />
-              <span className="font-medium">decentralized technology</span>
+              <span className="text-gray-400">decentralized technology</span>
             </h1>
             <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 leading-relaxed">
               From smart contracts to full-scale DeFi protocols, we provide comprehensive
@@ -124,26 +129,30 @@ function Services({ setCurrentPage }: ServicesProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
           <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
             {/* Header Image */}
-            <div className="h-24 sm:h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl flex items-center justify-center">
+            <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
               <Code className="w-12 h-12 text-gray-500" />
             </div>
-            <div className="p-8">
-              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Smart Contract Development</h3>
+            <div className="p-6">
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
+                Smart Contract Development
+                <br />
+                <span className="text-gray-400 text-sm">Solidity & Rust Experts</span>
+              </h3>
               <p className="text-gray-600 text-sm leading-snug mb-3">
                 Custom smart contracts built with Solidity, Rust, or other blockchain languages.
                 We handle everything from simple token contracts to complex DeFi protocols with
                 comprehensive testing and optimization.
               </p>
               <div className="flex flex-wrap gap-2 mb-4">
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   ERC-20, ERC-721, ERC-1400 tokens
-                </div>
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                </span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Multi-sig wallets
-                </div>
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                </span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Governance contracts
-                </div>
+                </span>
               </div>
               <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
                 +
@@ -153,26 +162,30 @@ function Services({ setCurrentPage }: ServicesProps) {
 
           <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
             {/* Header Image */}
-            <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl flex items-center justify-center">
+            <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
               <Layers className="w-12 h-12 text-gray-500" />
             </div>
-            <div className="p-8">
-              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">DeFi Protocol Development</h3>
+            <div className="p-6">
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
+                DeFi Protocol Development
+                <br />
+                <span className="text-gray-400 text-sm">AMMs & Yield Farming</span>
+              </h3>
               <p className="text-gray-600 text-sm leading-snug mb-3">
                 Build sophisticated decentralized finance applications including DEXs, lending
                 platforms, yield farming protocols, and automated market makers with advanced
                 tokenomics and liquidity management.
               </p>
               <div className="flex flex-wrap gap-2 mb-4">
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Automated Market Makers (AMM)
-                </div>
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                </span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Lending protocols
-                </div>
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                </span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Yield farming strategies
-                </div>
+                </span>
               </div>
               <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
                 +
@@ -182,26 +195,30 @@ function Services({ setCurrentPage }: ServicesProps) {
 
           <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
             {/* Header Image */}
-            <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl flex items-center justify-center">
+            <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
               <Users className="w-12 h-12 text-gray-500" />
             </div>
-            <div className="p-8">
-              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">DAO & Governance Systems</h3>
+            <div className="p-6">
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
+                DAO & Governance Systems
+                <br />
+                <span className="text-gray-400 text-sm">Decentralized Organizations</span>
+              </h3>
               <p className="text-gray-600 text-sm leading-snug mb-3">
                 Create decentralized autonomous organizations with sophisticated governance
                 mechanisms, voting systems, treasury management, and proposal execution
                 frameworks for community-driven decision making.
               </p>
               <div className="flex flex-wrap gap-2 mb-4">
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Governance token design
-                </div>
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                </span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Voting mechanisms
-                </div>
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                </span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Treasury management
-                </div>
+                </span>
               </div>
               <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
                 +
@@ -211,26 +228,30 @@ function Services({ setCurrentPage }: ServicesProps) {
 
           <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
             {/* Header Image */}
-            <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl flex items-center justify-center">
+            <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
               <Network className="w-12 h-12 text-gray-500" />
             </div>
-            <div className="p-8">
-              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Cross-Chain Solutions</h3>
+            <div className="p-6">
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
+                Cross-Chain Solutions
+                <br />
+                <span className="text-gray-400 text-sm">Bridge Protocols</span>
+              </h3>
               <p className="text-gray-600 text-sm leading-snug mb-3">
                 Enable seamless interoperability between different blockchain networks with
                 bridge protocols, cross-chain messaging, and multi-chain asset management
                 for maximum flexibility and reach.
               </p>
               <div className="flex flex-wrap gap-2 mb-4">
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Asset bridge protocols
-                </div>
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                </span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Cross-chain messaging
-                </div>
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
+                </span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
                   Multi-chain deployment
-                </div>
+                </span>
               </div>
               <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
                 +
@@ -240,56 +261,54 @@ function Services({ setCurrentPage }: ServicesProps) {
         </div>
       </section>
 
-      {/* Service Carousel - Additional Services */}
+      {/* Service Grid - Additional Services */}
       <section className="px-8 py-12 max-w-6xl mx-auto">
         <div className="mb-8">
           <h3 className="text-2xl font-light text-gray-900 mb-4">Additional Blockchain Services</h3>
           <p className="text-gray-600">Specialized services to complete your Web3 ecosystem</p>
         </div>
-        <div className="relative overflow-hidden">
-          <div className="flex animate-pulse">
-            <div className="group min-w-80 bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6 mr-6">
-              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-                <Shield className="w-5 h-5 text-gray-600" />
-              </div>
-              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Security Audits</h3>
-              <p className="text-gray-600 text-sm leading-snug mb-4">Comprehensive smart contract security assessments and vulnerability testing.</p>
-              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-                +
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="group bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6">
+            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+              <Shield className="w-5 h-5 text-gray-600" />
             </div>
-
-            <div className="group min-w-80 bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6 mr-6">
-              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-                <Database className="w-5 h-5 text-gray-600" />
-              </div>
-              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">IPFS Integration</h3>
-              <p className="text-gray-600 text-sm leading-snug mb-4">Decentralized storage solutions for your dApp's data and media files.</p>
-              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-                +
-              </div>
+            <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Security Audits</h3>
+            <p className="text-gray-600 text-sm leading-snug mb-4">Comprehensive smart contract security assessments and vulnerability testing.</p>
+            <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+              +
             </div>
+          </div>
 
-            <div className="group min-w-80 bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6 mr-6">
-              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-                <Cpu className="w-5 h-5 text-gray-600" />
-              </div>
-              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Node Infrastructure</h3>
-              <p className="text-gray-600 text-sm leading-snug mb-4">Managed blockchain nodes and RPC endpoints for reliable connectivity.</p>
-              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-                +
-              </div>
+          <div className="group bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6">
+            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+              <Database className="w-5 h-5 text-gray-600" />
             </div>
+            <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">IPFS Integration</h3>
+            <p className="text-gray-600 text-sm leading-snug mb-4">Decentralized storage solutions for your dApp's data and media files.</p>
+            <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+              +
+            </div>
+          </div>
 
-            <div className="group min-w-80 bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6 mr-6">
-              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-                <Smartphone className="w-5 h-5 text-gray-600" />
-              </div>
-              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Mobile dApp Development</h3>
-              <p className="text-gray-600 text-sm leading-snug mb-4">Native mobile applications with Web3 wallet integration and blockchain connectivity.</p>
-              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-                +
-              </div>
+          <div className="group bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6">
+            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+              <Cpu className="w-5 h-5 text-gray-600" />
+            </div>
+            <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Node Infrastructure</h3>
+            <p className="text-gray-600 text-sm leading-snug mb-4">Managed blockchain nodes and RPC endpoints for reliable connectivity.</p>
+            <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+              +
+            </div>
+          </div>
+
+          <div className="group bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6">
+            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+              <Smartphone className="w-5 h-5 text-gray-600" />
+            </div>
+            <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Mobile dApp Development</h3>
+            <p className="text-gray-600 text-sm leading-snug mb-4">Native mobile applications with Web3 wallet integration and blockchain connectivity.</p>
+            <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+              +
             </div>
           </div>
         </div>
@@ -483,59 +502,133 @@ function Services({ setCurrentPage }: ServicesProps) {
           <h2 className="text-3xl font-light text-gray-900 mb-2">Web3 Development Questions?</h2>
           <h3 className="text-xl font-light text-gray-500">We Have Answers</h3>
         </div>
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-gray-900">What blockchain networks do you support?</h4>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* FAQ 1 */}
+          <div
+            onClick={() => toggleFaq('faq1')}
+            className="bg-white border border-gray-100 p-6 rounded-lg cursor-pointer hover:shadow-md transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-light text-gray-900">What blockchain networks do you support?</h4>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedFaq === 'faq1' ? 'rotate-180' : ''}`} />
             </div>
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-gray-900">How long does smart contract development take?</h4>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              </div>
-            </div>
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-gray-900">Do you provide ongoing maintenance and support?</h4>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              </div>
-            </div>
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-gray-900">What's included in a security audit?</h4>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              </div>
-            </div>
+            {expandedFaq === 'faq1' && (
+              <p className="mt-3 text-xs text-gray-600 leading-relaxed">
+                We support Ethereum, Polygon, Binance Smart Chain, Solana, Avalanche, and custom EVM-compatible networks.
+              </p>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-gray-900">Can you integrate with existing systems?</h4>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              </div>
+          {/* FAQ 2 */}
+          <div
+            onClick={() => toggleFaq('faq2')}
+            className="bg-white border border-gray-100 p-6 rounded-lg cursor-pointer hover:shadow-md transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-light text-gray-900">How long does smart contract development take?</h4>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedFaq === 'faq2' ? 'rotate-180' : ''}`} />
             </div>
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-gray-900">What are your development methodologies?</h4>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              </div>
+            {expandedFaq === 'faq2' && (
+              <p className="mt-3 text-xs text-gray-600 leading-relaxed">
+                Simple contracts take 2-4 weeks, while complex DeFi protocols can take 2-4 months including testing and audits.
+              </p>
+            )}
+          </div>
+
+          {/* FAQ 3 */}
+          <div
+            onClick={() => toggleFaq('faq3')}
+            className="bg-white border border-gray-100 p-6 rounded-lg cursor-pointer hover:shadow-md transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-light text-gray-900">Do you provide ongoing maintenance and support?</h4>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedFaq === 'faq3' ? 'rotate-180' : ''}`} />
             </div>
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-gray-900">Do you offer training for our team?</h4>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              </div>
+            {expandedFaq === 'faq3' && (
+              <p className="mt-3 text-xs text-gray-600 leading-relaxed">
+                Yes, all packages include post-launch support. Professional tier includes 3 months, Enterprise includes ongoing support.
+              </p>
+            )}
+          </div>
+
+          {/* FAQ 4 */}
+          <div
+            onClick={() => toggleFaq('faq4')}
+            className="bg-white border border-gray-100 p-6 rounded-lg cursor-pointer hover:shadow-md transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-light text-gray-900">What's included in a security audit?</h4>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedFaq === 'faq4' ? 'rotate-180' : ''}`} />
             </div>
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-gray-900">How do you handle regulatory compliance?</h4>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              </div>
+            {expandedFaq === 'faq4' && (
+              <p className="mt-3 text-xs text-gray-600 leading-relaxed">
+                Comprehensive code review, vulnerability assessment, gas optimization analysis, and detailed security report with recommendations.
+              </p>
+            )}
+          </div>
+
+          {/* FAQ 5 */}
+          <div
+            onClick={() => toggleFaq('faq5')}
+            className="bg-white border border-gray-100 p-6 rounded-lg cursor-pointer hover:shadow-md transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-light text-gray-900">Can you integrate with existing systems?</h4>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedFaq === 'faq5' ? 'rotate-180' : ''}`} />
             </div>
+            {expandedFaq === 'faq5' && (
+              <p className="mt-3 text-xs text-gray-600 leading-relaxed">
+                Absolutely. We can integrate blockchain functionality with your existing web2 infrastructure, databases, and APIs.
+              </p>
+            )}
+          </div>
+
+          {/* FAQ 6 */}
+          <div
+            onClick={() => toggleFaq('faq6')}
+            className="bg-white border border-gray-100 p-6 rounded-lg cursor-pointer hover:shadow-md transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-light text-gray-900">What are your development methodologies?</h4>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedFaq === 'faq6' ? 'rotate-180' : ''}`} />
+            </div>
+            {expandedFaq === 'faq6' && (
+              <p className="mt-3 text-xs text-gray-600 leading-relaxed">
+                We follow Agile development with sprint-based delivery, continuous testing, and regular client communication throughout the project.
+              </p>
+            )}
+          </div>
+
+          {/* FAQ 7 */}
+          <div
+            onClick={() => toggleFaq('faq7')}
+            className="bg-white border border-gray-100 p-6 rounded-lg cursor-pointer hover:shadow-md transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-light text-gray-900">Do you offer training for our team?</h4>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedFaq === 'faq7' ? 'rotate-180' : ''}`} />
+            </div>
+            {expandedFaq === 'faq7' && (
+              <p className="mt-3 text-xs text-gray-600 leading-relaxed">
+                Yes, we provide comprehensive training and documentation to help your team understand and maintain the blockchain solutions.
+              </p>
+            )}
+          </div>
+
+          {/* FAQ 8 */}
+          <div
+            onClick={() => toggleFaq('faq8')}
+            className="bg-white border border-gray-100 p-6 rounded-lg cursor-pointer hover:shadow-md transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-light text-gray-900">How do you handle regulatory compliance?</h4>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedFaq === 'faq8' ? 'rotate-180' : ''}`} />
+            </div>
+            {expandedFaq === 'faq8' && (
+              <p className="mt-3 text-xs text-gray-600 leading-relaxed">
+                We work with legal experts to ensure compliance with relevant regulations including KYC/AML, securities laws, and data protection.
+              </p>
+            )}
           </div>
         </div>
       </section>

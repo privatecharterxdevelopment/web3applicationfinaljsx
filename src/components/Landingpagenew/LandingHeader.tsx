@@ -93,9 +93,9 @@ export default function LandingHeader({ onGetStarted, showInfoButton = true }: L
           </button>
           {showInfoButton && (
             <button
-              onClick={() => navigate('/services')}
+              onClick={() => navigate('/helpdesk')}
               className="w-7 h-7 bg-gray-200 text-gray-600 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors ml-4"
-              title="InfoCenter"
+              title="Helpdesk"
             >
               <Info className="w-4 h-4" />
             </button>

@@ -2928,11 +2928,11 @@ const TokenizedAssetsGlassmorphic = () => {
         {/* Main Content Area - PART OF SAME CONTAINER */}
         <main className={`flex-1 overflow-y-auto flex flex-col ${webMode === 'web3' ? 'bg-white/10' : ''}`}>
           {/* FIXED TOP BAR - Category menu links on left, icons and switcher on right */}
-          <div className={`sticky top-4 z-50 px-8 flex justify-between items-center pt-6 pr-6 ${
+          <div className={`sticky top-4 z-50 px-2 sm:px-4 lg:px-8 flex justify-between items-center pt-4 sm:pt-6 pr-2 sm:pr-4 lg:pr-6 ${
             activeCategory === 'chat' ? 'hidden' : ''
           }`}>
-            {/* LEFT: Category Menu Links (collapsible, NO ICONS) */}
-            <div className="flex items-center gap-3">
+            {/* LEFT: Category Menu Links (collapsible, NO ICONS) - HIDDEN ON MOBILE */}
+            <div className="hidden md:flex items-center gap-2 lg:gap-3 overflow-x-auto">
               {/* COLLAPSIBLE CATEGORY BUTTONS - RWS mode - NO ICONS */}
               {!headersCollapsed && webMode === 'rws' && user?.user_role !== 'partner' && (
                 <>
@@ -2987,11 +2987,11 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
 
             {/* RIGHT: Plus Icon + Icons + Switcher */}
-            <div className="flex items-center gap-3">
-              {/* Plus Icon - Thinner with short separator */}
+            <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3 ml-auto">
+              {/* Plus Icon - Thinner with short separator - HIDDEN ON MOBILE */}
               <button
                 onClick={() => setHeadersCollapsed(!headersCollapsed)}
-                className="group flex items-center justify-center transition-all duration-300 hover:scale-110 mr-1"
+                className="hidden md:flex group items-center justify-center transition-all duration-300 hover:scale-110 mr-1"
                 title={headersCollapsed ? "Show header" : "Hide header"}
               >
                 <Plus
@@ -3001,8 +3001,8 @@ const TokenizedAssetsGlassmorphic = () => {
                 />
               </button>
 
-              {/* Short separator line */}
-              <div className="w-px h-4 bg-gray-300"></div>
+              {/* Short separator line - HIDDEN ON MOBILE */}
+              <div className="hidden md:block w-px h-4 bg-gray-300"></div>
               {/* Favorites Icon - Only in RWS mode */}
               {webMode !== 'web3' && (
                 <button
@@ -3081,25 +3081,25 @@ const TokenizedAssetsGlassmorphic = () => {
                 <User size={16} className="text-gray-700" />
               </button>
 
-              {/* Connect Wallet Button */}
+              {/* Connect Wallet Button - Compact on mobile */}
               <button
                 onClick={() => open()}
-                className="px-4 py-1.5 bg-black text-white rounded-xl text-xs font-medium hover:bg-gray-800 transition-all duration-200 flex items-center gap-2"
+                className="px-2 sm:px-4 py-1.5 bg-black text-white rounded-xl text-xs font-medium hover:bg-gray-800 transition-all duration-200 flex items-center gap-1 sm:gap-2"
               >
                 <Wallet size={14} />
                 {isConnected ? (
-                  <span>{address.slice(0, 6)}...{address.slice(-4)}</span>
+                  <span className="hidden sm:inline">{address.slice(0, 6)}...{address.slice(-4)}</span>
                 ) : (
-                  <span>Connect</span>
+                  <span className="hidden sm:inline">Connect</span>
                 )}
               </button>
 
-              {/* Web Mode Switcher */}
-              <div className="flex items-center gap-1 border rounded-xl p-0.5 bg-white/20 backdrop-blur-md border-gray-200/30">
+              {/* Web Mode Switcher - Compact on mobile */}
+              <div className="flex items-center gap-0.5 sm:gap-1 border rounded-xl p-0.5 bg-white/20 backdrop-blur-md border-gray-200/30">
                 <button
                   onClick={() => handleWebModeSwitch('rws')}
                   disabled={isTransitioning}
-                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-all duration-300 ${
+                  className={`px-2 sm:px-3 py-1 rounded-lg text-[10px] sm:text-xs font-medium transition-all duration-300 ${
                     webMode === 'rws'
                       ? 'bg-black text-white shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
@@ -3110,13 +3110,14 @@ const TokenizedAssetsGlassmorphic = () => {
                 <button
                   onClick={() => handleWebModeSwitch('web3')}
                   disabled={isTransitioning}
-                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-all duration-300 ${
+                  className={`px-2 sm:px-3 py-1 rounded-lg text-[10px] sm:text-xs font-medium transition-all duration-300 ${
                     webMode === 'web3'
                       ? 'bg-black text-white shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                   } ${isTransitioning ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  Web 3.0
+                  <span className="hidden sm:inline">Web 3.0</span>
+                  <span className="sm:hidden">W3</span>
                 </button>
               </div>
             </div>
@@ -3124,8 +3125,8 @@ const TokenizedAssetsGlassmorphic = () => {
 
           {/* CONTENT AREA */}
           <div className={`flex-1 ${activeCategory === 'chat' ? 'overflow-hidden' : 'overflow-y-auto'} ${
-            activeCategory === 'ground-transport' || activeCategory === 'chat' ? 'p-0 pt-4' :
-            webMode === 'web3' ? 'pt-0.5' : 'p-8 pt-20'
+            activeCategory === 'ground-transport' || activeCategory === 'chat' ? 'p-0 pt-2 sm:pt-4' :
+            webMode === 'web3' ? 'pt-0.5' : 'p-2 sm:p-4 lg:p-8 pt-12 sm:pt-16 lg:pt-20'
           }`}>
 
           {/* Transition Loader - Video Animation */}
