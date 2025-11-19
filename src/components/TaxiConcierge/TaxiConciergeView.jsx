@@ -1049,7 +1049,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
         }}
       >
         <div className={`bg-white shadow-2xl rounded-2xl transition-all duration-300 w-full h-full`} style={{ overflow: 'visible', position: 'relative', display: 'flex', flexDirection: 'column' }}>
-          <div className="flex flex-col flex-1" style={{ overflow: 'hidden', minHeight: 0 }}>
+          <div className="flex flex-col flex-1" style={{ overflow: 'visible', minHeight: 0 }}>
           {/* Minimize/Maximize Toggle Button - Show when route is calculated OR locations are set */}
           {((eta && distance) || (coordsA && coordsB) || (serviceCategory === 'luxury-cars' && coordsA)) && bookingStep === 1 && (
             <button
@@ -1062,9 +1062,9 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
               title={isPanelMinimized ? 'Show details' : 'Hide details'}
             >
               {isPanelMinimized ? (
-                <ChevronUp size={18} className="text-gray-700" />
-              ) : (
                 <ChevronDown size={18} className="text-gray-700" />
+              ) : (
+                <ChevronUp size={18} className="text-gray-700" />
               )}
             </button>
           )}
@@ -1136,7 +1136,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                     data-suggestions-a
                     className="absolute w-full bg-white border border-gray-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto"
                     style={{
-                      bottom: 'calc(100% + 8px)',
+                      top: 'calc(100% + 8px)',
                       left: 0,
                       zIndex: 9999
                     }}
@@ -1176,7 +1176,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                       data-suggestions-b
                       className="absolute w-full bg-white border border-gray-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto"
                       style={{
-                        bottom: 'calc(100% + 8px)',
+                        top: 'calc(100% + 8px)',
                         left: 0,
                         zIndex: 9999
                       }}
