@@ -1138,17 +1138,17 @@ export default function UnifiedBookingFlow({ onStepChange, initialVehicleType }:
       <div className="bg-gray-50">
         {/* Initial Search Bar */}
         {!isModalOpen && (
-          <div className="flex items-center justify-center min-h-screen p-4">
+          <div className="flex items-center justify-center min-h-[70vh] md:min-h-[80vh] py-8 px-4">
             <div className="w-full max-w-5xl">
               {/* Extended Title - Two Lines */}
-              <div className="text-center mb-8 mt-12">
+              <div className="text-center mb-6 md:mb-8">
                 <h1 className="text-3xl md:text-4xl lg:text-5xl font-light text-gray-900 tracking-tighter leading-none md:leading-tight">
                   <span className="block">Charter Private Jets and Helicopters</span>
                 </h1>
               </div>
 
               {/* Description */}
-              <p className="text-gray-500 text-center mb-8 max-w-xl mx-auto">
+              <p className="text-gray-500 text-center mb-6 md:mb-8 max-w-xl mx-auto text-sm md:text-base">
                 Blockchain-powered multi-charter services with tokenized certificates and DAO-based governance, ensuring transparency, sustainability, and trust.
               </p>
 

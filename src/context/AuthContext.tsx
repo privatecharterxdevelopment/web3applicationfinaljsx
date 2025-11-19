@@ -85,7 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .single();
 
           const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Database query timeout')), 5000)
+            setTimeout(() => reject(new Error('Database query timeout')), 2000)
           );
 
           const { data: profile, error: profileError } = await Promise.race([
@@ -96,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (!isMounted) return;
 
           if (profileError) {
-            console.error('❌ Error loading profile:', profileError);
+            console.error('❌ Error loading profile (non-blocking):', profileError.message || 'timeout');
             setUser({
               id: session.user.id,
               email: session.user.email || '',
@@ -107,13 +107,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
           } else if (profile) {
             console.log('✅ Profile loaded successfully');
-            
-            // Load subscription data
-            const { data: subscription } = await supabase
+
+            // Load subscription data WITH TIMEOUT
+            const subQueryPromise = supabase
               .from('user_subscriptions')
               .select('*')
               .eq('user_id', session.user.id)
               .single();
+
+            const subTimeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Subscription query timeout')), 2000)
+            );
+
+            const { data: subscription } = await Promise.race([
+              subQueryPromise,
+              subTimeoutPromise
+            ]).catch(err => {
+              console.error('❌ Subscription query failed (non-blocking):', err.message);
+              return { data: null };
+            }) as any;
 
             setUser({
               ...profile,
@@ -167,7 +179,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('🔄 Auth state changed:', event, session?.user?.email);
 
       if (event === 'SIGNED_IN' && session?.user) {
-        // Get user profile data
+        // Get user profile data WITH 2-SECOND TIMEOUT
         const queryPromise = supabase
           .from('users')
           .select('*')
@@ -175,7 +187,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .single();
 
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Database query timeout')), 5000)
+          setTimeout(() => reject(new Error('Database query timeout')), 2000)
         );
 
         const { data: profile, error: profileError } = await Promise.race([

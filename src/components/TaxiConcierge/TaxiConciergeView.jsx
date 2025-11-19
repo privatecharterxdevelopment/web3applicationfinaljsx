@@ -1050,8 +1050,8 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
       >
         <div className={`bg-white shadow-2xl rounded-2xl transition-all duration-300 w-full h-full`} style={{ overflow: 'visible', position: 'relative', display: 'flex', flexDirection: 'column' }}>
           <div className="flex flex-col flex-1" style={{ overflow: 'hidden', minHeight: 0 }}>
-          {/* Minimize/Maximize Toggle Button - Only show when route is calculated */}
-          {(eta && distance) && (
+          {/* Minimize/Maximize Toggle Button - Show when route is calculated OR locations are set */}
+          {((eta && distance) || (coordsA && coordsB) || (serviceCategory === 'luxury-cars' && coordsA)) && bookingStep === 1 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
