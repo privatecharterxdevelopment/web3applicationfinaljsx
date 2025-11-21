@@ -4,7 +4,7 @@ import { useAccount, useBalance, useWriteContract, useWaitForTransactionReceipt 
 import { readContract } from 'wagmi/actions';
 import { parseUnits, formatUnits } from 'viem';
 import { base } from 'wagmi/chains';
-import { config } from '../main';
+import { wagmiConfig } from '../lib/wagmi';
 import {
   DollarSign,
   Users,
@@ -330,7 +330,7 @@ export default function CampaignDetail() {
 
     try {
       const amount = parseUnits(contributionAmount, USDC_DECIMALS);
-      const allowance = await readContract(config, {
+      const allowance = await readContract(wagmiConfig, {
         address: USDC_ADDRESS,
         abi: ERC20_ABI,
         functionName: 'allowance',

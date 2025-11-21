@@ -11,7 +11,7 @@ if (!projectId) {
 }
 
 // Wagmi config
-const wagmiConfig = createConfig({
+export const wagmiConfig = createConfig({
   chains: [base],
   transports: {
     [base.id]: http(),
