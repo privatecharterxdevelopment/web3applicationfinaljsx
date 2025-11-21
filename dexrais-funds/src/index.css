@@ -1,27 +1,74 @@
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400,300&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-gray-300;
   }
 
   body {
-    @apply bg-gray-50 text-gray-900 font-sans antialiased;
+    @apply bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 text-gray-900 antialiased;
+    font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
   }
+
+  h1 { @apply text-3xl font-semibold; }
+  h2 { @apply text-2xl font-semibold; }
+  h3 { @apply text-xl font-medium; }
+  h4 { @apply text-lg font-medium; }
+  h5 { @apply text-base font-medium; }
+  h6 { @apply text-sm font-medium; }
 }
 
 @layer utilities {
   .glassmorphic {
-    @apply bg-white/35 backdrop-blur-xl border border-gray-300/50;
+    @apply bg-white/5 backdrop-blur-md border border-white/20;
   }
 
   .glassmorphic-card {
-    @apply bg-white/35 backdrop-blur-xl border border-gray-300/50 rounded-2xl shadow-xl;
+    @apply bg-white/5 backdrop-blur-md border border-white/20 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.1),0_8px_16px_rgba(0,0,0,0.06)];
   }
 
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-gray-700 to-gray-900;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-gray-700 to-black;
+  }
+
+  /* Subtle animated rainbow line effect for buttons */
+  @keyframes rainbow-shine {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .rainbow-shine {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .rainbow-shine::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 0, 150, 0.6),
+      rgba(0, 204, 255, 0.6),
+      rgba(128, 0, 255, 0.6),
+      rgba(255, 0, 150, 0.6),
+      transparent
+    );
+    animation: rainbow-shine 3s ease-in-out infinite;
+    pointer-events: none;
   }
 }
