@@ -132,6 +132,32 @@ export default function MyDAOs() {
   return (
     <div className="min-h-screen bg-transparent p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
+        {/* Aragon Integration Banner */}
+        <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Users size={24} className="text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-blue-900">DAO Management Powered by Aragon</h3>
+                <p className="text-xs text-blue-700 mt-0.5">
+                  All DAOs are managed through Aragon's battle-tested infrastructure
+                </p>
+              </div>
+            </div>
+            <a
+              href="https://aragon.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
+            >
+              <span className="text-sm font-semibold text-blue-900">Learn More</span>
+              <ExternalLink size={14} className="text-blue-600" />
+            </a>
+          </div>
+        </div>
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-0 mb-4">
           <div className="flex items-center gap-3">
@@ -150,7 +176,7 @@ export default function MyDAOs() {
             className="px-3 py-1.5 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-1.5 text-xs font-medium"
           >
             <Plus size={14} />
-            Create DAO
+            Create DAO via Aragon
           </button>
         </div>
 

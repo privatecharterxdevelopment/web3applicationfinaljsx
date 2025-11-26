@@ -94,8 +94,8 @@ const PaymentModal = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Complete Payment</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Secure checkout</p>
+            <h2 className="text-xl font-semibold text-gray-900">Select Payment Method</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Choose how you'll pay for your ride</p>
           </div>
           <button
             onClick={onClose}
@@ -199,7 +199,7 @@ const PaymentModal = ({
             {activeTab === 'crypto' && (
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs text-gray-600">Powered by CoinGate</p>
+                  <p className="text-xs text-gray-600">Select your preferred cryptocurrency</p>
                   <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full font-medium">
                     +{VAT_PERCENT}% VAT
                   </span>
@@ -236,13 +236,13 @@ const PaymentModal = ({
             {activeTab === 'card' && (
               <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                 <div className="flex items-center gap-2 mb-3">
-                  <Lock size={14} className="text-gray-600" />
-                  <p className="text-xs text-gray-600">Secured by Stripe</p>
+                  <CreditCard size={14} className="text-gray-600" />
+                  <p className="text-sm text-gray-700 font-medium">Bank Transfer / Card Payment</p>
                 </div>
-                <Elements stripe={stripePromise}>
-                  <CardElementWrapper />
-                </Elements>
-                <div className="mt-3 flex items-center justify-center gap-2">
+                <p className="text-xs text-gray-600">
+                  We'll send you payment details via email after reviewing your request. You can pay by bank transfer or card.
+                </p>
+                <div className="mt-3 flex items-center justify-center gap-2 opacity-50">
                   <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" alt="Visa" className="h-6" />
                   <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-6" />
                   <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" alt="Amex" className="h-6" />
@@ -255,7 +255,7 @@ const PaymentModal = ({
           <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden">
             <div className="p-4 space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Ride Cost</span>
+                <span className="text-gray-600">Estimated Ride Cost</span>
                 <span className="font-semibold text-gray-900">
                   {estimatedPrice.toFixed(2)} {currency}
                 </span>
@@ -276,17 +276,15 @@ const PaymentModal = ({
               )}
             </div>
 
-            <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-4 text-white">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 text-white">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Total Amount</span>
+                <span className="text-sm font-medium">Estimated Total</span>
                 <div className="text-right">
                   <div className="text-2xl font-bold">
                     {(selectedPaymentMethod ? total : estimatedPrice).toFixed(2)} {currency}
                   </div>
                   <p className="text-xs opacity-75 mt-0.5">
-                    {selectedPaymentMethod
-                      ? 'Held until driver confirms'
-                      : 'Select payment to continue'}
+                    Final price in manual offer
                   </p>
                 </div>
               </div>
@@ -309,12 +307,12 @@ const PaymentModal = ({
             ) : (
               <>
                 <Lock size={16} />
-                Confirm & Pay {selectedPaymentMethod ? `${total.toFixed(2)} ${currency}` : ''}
+                Submit Request
               </>
             )}
           </button>
           <p className="text-xs text-gray-500 text-center mt-2">
-            Payment will be held and charged after driver confirms arrival
+            We'll send you a manual price offer via {activeTab === 'crypto' ? 'cryptocurrency' : 'bank transfer'}. No payment will be processed now.
           </p>
         </div>
       </div>

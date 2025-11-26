@@ -278,15 +278,19 @@ class SupportTicketService {
 
   /**
    * Create a simple chat support ticket
+   * Stores full user details and queues email notification to support@privatecharterx.com
    */
   async createChatTicket(message, userInfo = {}) {
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
 
       // Allow ticket creation even if not authenticated (guest support)
-      const userId = user?.id || null;
+      const userId = user?.id || userInfo.userId || null;
       const userEmail = user?.email || userInfo.email || 'guest@privatecharterx.com';
+      const userName = userInfo.name || user?.user_metadata?.name || 'Guest User';
+      const userPhone = userInfo.phone || user?.user_metadata?.phone || '';
 
+      // Build comprehensive ticket with all user details
       const ticket = {
         user_id: userId,
         zendesk_ticket_id: null,
@@ -297,9 +301,18 @@ class SupportTicketService {
         tags: ['chat', 'support', 'web'],
         ticket_data: {
           message,
-          source: 'chat_widget',
-          userInfo,
-          timestamp: new Date().toISOString()
+          source: userInfo.source || 'chat_widget',
+          timestamp: userInfo.timestamp || new Date().toISOString(),
+          // Full user details for support team
+          user_details: {
+            name: userName,
+            email: userEmail,
+            phone: userPhone,
+            user_id: userId
+          },
+          // Email recipients
+          support_email: 'support@privatecharterx.com',
+          send_copy_to_user: true
         },
         created_at: new Date().toISOString()
       };
@@ -335,16 +348,42 @@ class SupportTicketService {
         }
       }
 
+      // Send email notifications via Supabase Edge Function (uses AWS SES)
+      try {
+        const { data: emailResult, error: emailError } = await supabase.functions.invoke(
+          'chat-support-notifications',
+          {
+            body: {
+              ticketId: localTicket.id,
+              message: message,
+              userName: userName,
+              userEmail: userEmail,
+              userPhone: userPhone,
+              userId: userId
+            }
+          }
+        );
+
+        if (emailError) {
+          console.warn('Edge function error (continuing with ticket):', emailError);
+        } else {
+          console.log('✅ Email notifications sent:', emailResult);
+        }
+      } catch (emailError) {
+        console.warn('Failed to send email notifications (continuing with ticket):', emailError);
+        // Don't fail ticket creation if email fails
+      }
+
       // Try to create in Zendesk (optional, won't fail if backend is down)
       try {
         const zendeskTicket = {
-          subject: 'Chat Support Request',
-          description: message,
+          subject: `Chat Support Request from ${userName}`,
+          description: `Message: ${message}\n\nUser Details:\nName: ${userName}\nEmail: ${userEmail}\nPhone: ${userPhone}`,
           priority: 'normal',
           tags: ['chat', 'support'],
           requester: {
             email: userEmail,
-            name: userInfo.name || 'Chat User'
+            name: userName
           }
         };
 
@@ -381,6 +420,40 @@ class SupportTicketService {
     } catch (error) {
       console.error('Error creating chat ticket:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Send email notification for chat messages (no ticket creation)
+   * Just triggers email to support team
+   */
+  async sendChatNotificationEmail(userInfo) {
+    try {
+      // Send email notification via Supabase Edge Function
+      const { data: emailResult, error: emailError } = await supabase.functions.invoke(
+        'chat-support-notifications',
+        {
+          body: {
+            message: userInfo.message,
+            userName: userInfo.name || 'Guest User',
+            userEmail: userInfo.email || '',
+            userPhone: userInfo.phone || '',
+            userId: userInfo.userId || null,
+            type: 'chat_notification'
+          }
+        }
+      );
+
+      if (emailError) {
+        console.warn('Edge function error:', emailError);
+        return { success: false, error: emailError };
+      }
+
+      console.log('✅ Chat notification email sent:', emailResult);
+      return { success: true, result: emailResult };
+    } catch (error) {
+      console.error('Error sending chat notification email:', error);
+      return { success: false, error };
     }
   }
 

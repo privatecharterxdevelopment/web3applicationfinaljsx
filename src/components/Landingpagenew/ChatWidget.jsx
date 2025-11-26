@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Minimize2, Maximize2 } from 'lucide-react';
 import { supportTicketService } from '../../services/supportTicketService';
+import { supabase } from '../../lib/supabase';
 
 export default function ChatWidget() {
+  const [userInfo, setUserInfo] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
@@ -13,11 +15,38 @@ export default function ChatWidget() {
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
-  const [awaitingTicketConfirmation, setAwaitingTicketConfirmation] = useState(false);
-  const [userMessage, setUserMessage] = useState('');
+  const [chatHistory, setChatHistory] = useState([]);
+  const [emailSent, setEmailSent] = useState(false);
   const [shouldHide, setShouldHide] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Fetch user info on mount
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Fetch user profile for additional info
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('phone, name')
+            .eq('user_id', user.id)
+            .single();
+
+          setUserInfo({
+            id: user.id,
+            email: user.email,
+            name: profile?.name || user.user_metadata?.name || user.email?.split('@')[0],
+            phone: profile?.phone || user.user_metadata?.phone || ''
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user info:', error);
+      }
+    };
+    fetchUserInfo();
+  }, []);
 
   // Check if we're on taxi/concierge page or AI chat page and hide widget
   useEffect(() => {
@@ -62,86 +91,49 @@ export default function ChatWidget() {
     };
 
     setMessages([...messages, newMessage]);
+    setChatHistory(prev => [...prev, newMessage]);
     const currentInput = inputMessage;
     setInputMessage('');
 
-    // Check if user is responding to ticket confirmation
-    if (awaitingTicketConfirmation) {
-      const response = currentInput.toLowerCase().trim();
-
-      if (response === 'yes' || response === 'y') {
-        // Create support ticket
-        setTimeout(async () => {
-          try {
-            const ticket = await createSupportTicket(userMessage);
-            const ticketResponse = {
-              id: messages.length + 2,
-              text: `Perfect! I've created support ticket #${ticket.id} with your message. Our team will review it and get back to you within 24 hours. You'll receive updates via email. Is there anything else I can help you with?`,
-              sender: 'support',
-              timestamp: new Date()
-            };
-            setMessages(prev => [...prev, ticketResponse]);
-            setAwaitingTicketConfirmation(false);
-          } catch (error) {
-            // Error message already added in createSupportTicket
-            setAwaitingTicketConfirmation(false);
-          }
-        }, 1000);
-      } else {
-        setTimeout(() => {
-          const cancelResponse = {
-            id: messages.length + 2,
-            text: "No problem! Feel free to ask me anything else, or I can connect you with our team if you'd like.",
-            sender: 'support',
-            timestamp: new Date()
-          };
-          setMessages(prev => [...prev, cancelResponse]);
-          setAwaitingTicketConfirmation(false);
-        }, 1000);
+    // Send email notification for first message (only once per session)
+    if (!emailSent && userInfo?.email) {
+      try {
+        await supportTicketService.sendChatNotificationEmail({
+          message: currentInput,
+          name: userInfo?.name || 'Guest User',
+          email: userInfo?.email || '',
+          phone: userInfo?.phone || '',
+          userId: userInfo?.id || null
+        });
+        setEmailSent(true);
+      } catch (error) {
+        console.error('Error sending chat notification email:', error);
       }
-      return;
     }
 
-    // Store user message and ask about creating ticket
-    setUserMessage(currentInput);
+    // Auto-response based on keywords
     setTimeout(() => {
+      let responseText = "Thank you for your message! Our team has been notified and will get back to you shortly. In the meantime, feel free to continue chatting or check our Help Center for quick answers.";
+
+      const lowerInput = currentInput.toLowerCase();
+      if (lowerInput.includes('price') || lowerInput.includes('cost') || lowerInput.includes('quote')) {
+        responseText = "For pricing inquiries, please submit a quote request through our platform. Our team will provide a personalized quote within 24 hours. Is there anything specific you'd like to know about our services?";
+      } else if (lowerInput.includes('book') || lowerInput.includes('charter') || lowerInput.includes('flight')) {
+        responseText = "Great! To book a charter, you can use our booking form or request a quote. Our concierge team is available to assist with your travel needs. What destination are you considering?";
+      } else if (lowerInput.includes('payment') || lowerInput.includes('crypto') || lowerInput.includes('usdc')) {
+        responseText = "We accept various payment methods including crypto (USDC, ETH) and traditional payments. All transactions are secured through our escrow system. Would you like more details about our payment process?";
+      } else if (lowerInput.includes('help') || lowerInput.includes('support')) {
+        responseText = "I'm here to help! You can also check our Help Center for FAQs, or our team will respond to your inquiry via email. What specific assistance do you need?";
+      }
+
       const supportResponse = {
         id: messages.length + 2,
-        text: "Thank you for reaching out! Would you like me to create a support ticket for your inquiry? Our team will get back to you within 24 hours. Reply with 'yes' to create a ticket, or continue chatting with me.",
+        text: responseText,
         sender: 'support',
         timestamp: new Date()
       };
       setMessages(prev => [...prev, supportResponse]);
-      setAwaitingTicketConfirmation(true);
     }, 1500);
-  };
-
-  const createSupportTicket = async (message) => {
-    try {
-      // Create ticket in Supabase support_tickets table
-      const result = await supportTicketService.createChatTicket(message, {
-        source: 'chat_widget',
-        timestamp: new Date().toISOString()
-      });
-
-      if (result.success) {
-        console.log('Support ticket created successfully:', result.ticket);
-        return result.ticket;
-      } else {
-        throw new Error('Failed to create ticket');
-      }
-    } catch (error) {
-      console.error('Error creating support ticket:', error);
-      // Show error message to user
-      const errorMessage = {
-        id: messages.length + 1,
-        text: "I'm sorry, there was an error creating your ticket. Please try contacting us directly at support@privatecharterx.com",
-        sender: 'support',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, errorMessage]);
-      throw error;
-    }
   };
 
   const toggleChat = () => {
@@ -169,7 +161,7 @@ export default function ChatWidget() {
   }
 
   return (
-    <div className="absolute bottom-[50px] right-[55px] z-[9999] flex flex-col items-end">
+    <div className="absolute bottom-[50px] right-[120px] z-[9999] flex flex-col items-end">
       {/* Chat Window - Smaller Square */}
       {isOpen && (
         <div className="mb-2 w-[280px] h-[320px] transition-all duration-300 ease-out">

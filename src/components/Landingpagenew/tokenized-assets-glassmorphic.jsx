@@ -5,7 +5,7 @@ import {
   Plane, Zap, Mountain, Car, MapPin, Sparkles, Rocket,
   Leaf, Award, Settings, User, ChevronRight, ChevronDown, ChevronUp, X, LogOut, MessageSquare, MessageCircle,
   Users, Calendar, Package, Compass, ArrowLeft, Wallet, History, Crown, Gift, LayoutDashboard,
-  Mail, Phone, Globe, FileText, Edit3, Check, Loader2, Building2, Coins, Share2, Menu, ExternalLink, SlidersHorizontal, Info
+  Mail, Phone, Globe, FileText, Edit3, Check, Loader2, Building2, Coins, Share2, Menu, ExternalLink, SlidersHorizontal, Info, CreditCard
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -33,6 +33,7 @@ import ChatRequestsView from '../ChatRequestsView';
 import CalendarView from '../Calendar/CalendarView';
 import FavouritesView from '../Favourites/FavouritesView';
 import MyRequestsView from '../MyRequestsView';
+import MyBookingsView from '../MyBookingsView';
 import MembershipCard from '../MembershipCard';
 import ReferralCard from '../ReferralCard';
 import SubscriptionManagement from '../SubscriptionManagement';
@@ -54,6 +55,7 @@ import MyLaunches from './MyLaunches';
 import { useNFT } from '../../context/NFTContext';
 import NFTBenefitsModal from '../NFTBenefitsModal';
 import CryptoPaymentModal from '../CryptoPaymentModal';
+import { BuyWithCryptoButton, CryptoPaymentModal as NewCryptoPaymentModal } from '../Payment';
 import LaunchpadPageNew from './LaunchpadPageNew';
 import TransactionsPage from './TransactionsPage';
 import NFTsPage from './NFTsPage';
@@ -634,6 +636,453 @@ Happy travels!`,
   );
 };
 
+// Collapsible Contact Banner Component
+const ContactBannerCollapsible = () => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+      {/* Header - Always Visible */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between p-5 hover:bg-gray-50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-gray-900">Still have questions?</span>
+          <span className="text-xs text-gray-400">Get in touch with our team</span>
+        </div>
+        <ChevronDown
+          className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {/* Expandable Content */}
+      <div
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          isExpanded ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'
+        }`}
+      >
+        <div className="px-5 pb-5 pt-2 border-t border-gray-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Email */}
+            <a
+              href="mailto:info@privatecharterx.com"
+              className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors"
+            >
+              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                <Mail className="w-5 h-5 text-gray-700" />
+              </div>
+              <div>
+                <div className="text-xs text-gray-500">Email</div>
+                <div className="text-sm font-medium text-gray-900">info@privatecharterx.com</div>
+              </div>
+            </a>
+
+            {/* Phone */}
+            <a
+              href="tel:+41445869999"
+              className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors"
+            >
+              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                <Phone className="w-5 h-5 text-gray-700" />
+              </div>
+              <div>
+                <div className="text-xs text-gray-500">Phone</div>
+                <div className="text-sm font-medium text-gray-900">+41 44 586 99 99</div>
+              </div>
+            </a>
+          </div>
+
+          {/* Locations */}
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-gray-500">
+              <div className="flex items-center gap-1.5">
+                <Globe className="w-3 h-3" />
+                <span className="font-medium text-gray-700">Zurich</span>
+              </div>
+              <span className="text-gray-300">|</span>
+              <span className="font-medium text-gray-700">Miami</span>
+              <span className="text-gray-300">|</span>
+              <span className="font-medium text-gray-700">London</span>
+              <span className="text-gray-300">|</span>
+              <span className="text-gray-400">Hong Kong <span className="text-[10px]">(coming soon)</span></span>
+            </div>
+            <p className="text-center text-[11px] text-gray-400 mt-3">
+              Available Mon-Sun • Response within 24h
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Inline Helpdesk/FAQ Component - Monochromatic Design
+const HelpdeskInlineView = ({ setActiveCategory }) => {
+  const [expandedTopic, setExpandedTopic] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeSection, setActiveSection] = useState('all');
+
+  // Comprehensive FAQ topics organized by category
+  const faqSections = {
+    aviation: {
+      title: 'Aviation Services',
+      icon: Plane,
+      topics: [
+        {
+          id: 'private-jets',
+          title: 'How do I book a private jet?',
+          answer: 'Navigate to the Charter section, enter your departure and destination airports, select your preferred dates, and choose from our network of 16,000+ aircraft across 150+ countries. Filter by aircraft type (Light, Midsize, Heavy, Ultra-long-range), seating capacity, and amenities. Submit your booking request and receive personalized quotes within minutes from verified operators.'
+        },
+        {
+          id: 'empty-legs',
+          title: 'What are Empty Leg flights?',
+          answer: 'Empty leg flights are repositioning flights offered at up to 75% discount. When an aircraft needs to return to base or travel to its next charter location, these seats become available at significantly reduced rates. Browse real-time availability, set up route alerts, and book instantly. Departure times are typically flexible within a 2-hour window.'
+        },
+        {
+          id: 'helicopters',
+          title: 'Can I book helicopter transfers?',
+          answer: 'Yes! We offer helicopter services for city-to-city transfers, event transport, VIP arrivals, and scenic tours. Perfect for short-range journeys, airport-to-city connections, or arriving at exclusive venues. Helipad permissions and landing arrangements are handled by our concierge team.'
+        },
+        {
+          id: 'aircraft-types',
+          title: 'What aircraft types are available?',
+          answer: 'Our fleet includes: Light Jets (4-6 seats, 1,500nm range) for regional trips, Midsize Jets (6-8 seats, 2,500nm) for cross-country, Heavy Jets (10-16 seats, 4,000nm) for intercontinental, and Ultra-long-range (up to 7,500nm) for non-stop global travel. Each category includes various models from leading manufacturers.'
+        },
+        {
+          id: 'booking-process',
+          title: 'How does the booking process work?',
+          answer: 'Submit a request with your route, dates, and preferences. Receive quotes from verified operators within minutes. Compare options by price, aircraft, and operator ratings. Confirm your booking with secure payment (crypto or fiat). Receive trip details, crew information, and concierge support throughout your journey.'
+        }
+      ]
+    },
+    tokenization: {
+      title: 'Tokenization & RWA',
+      icon: Coins,
+      topics: [
+        {
+          id: 'what-is-tokenization',
+          title: 'What is asset tokenization?',
+          answer: 'Asset tokenization converts real-world aviation assets (aircraft, fleet shares, revenue rights) into blockchain tokens on Base network. Each token represents fractional ownership, enabling investors to own a piece of high-value assets starting from smaller amounts. Tokens are backed by legal documentation, smart contracts, and real asset valuations.'
+        },
+        {
+          id: 'how-tokenization-works',
+          title: 'How does the tokenization process work?',
+          answer: 'Asset owners submit documentation (AOC, insurance, valuations). Our team verifies compliance and creates a legal structure. Smart contracts are deployed on Base blockchain. Tokens are minted representing ownership shares. Investors can purchase tokens during presale or on the secondary marketplace. Revenue is distributed proportionally to token holders.'
+        },
+        {
+          id: 'rwa-marketplace',
+          title: 'What is the RWA Marketplace?',
+          answer: 'The Real World Asset (RWA) Marketplace allows trading of tokenized aviation assets. Browse available aircraft tokens, view performance metrics, dividend history, and asset details. Buy and sell fractional ownership on the secondary market with transparent pricing and instant settlement. All trades are recorded on-chain for full transparency.'
+        },
+        {
+          id: 'token-benefits',
+          title: 'What are the benefits of holding tokens?',
+          answer: 'Token holders receive: proportional revenue share from charter operations, voting rights on asset management decisions, potential capital appreciation, liquidity through secondary market trading, transparent reporting on asset performance, and governance participation in the DAO managing the asset.'
+        },
+        {
+          id: 'tokenization-requirements',
+          title: 'What documents are required for tokenization?',
+          answer: 'Required documentation includes: Air Operator Certificate (AOC), aircraft registration, insurance certificates, maintenance records, professional valuation report, ownership proof, and regulatory compliance documents. Our team guides you through the entire documentation process and legal structuring.'
+        }
+      ]
+    },
+    web3: {
+      title: 'Web3 & Blockchain',
+      icon: Shield,
+      topics: [
+        {
+          id: 'escrow-service',
+          title: 'What is PrivateCharterX Escrow?',
+          answer: 'Our in-house escrow service at escrow.privatecharterx.com enables buyers to create automatic escrows in accordance with terms discussed with sellers. Fully on-chain and transparent, the escrow releases funds only when both parties confirm the transaction is complete. Supports multiple networks including Base, Ethereum, and Polygon.'
+        },
+        {
+          id: 'smart-contracts',
+          title: 'How are smart contracts used?',
+          answer: 'Smart contracts automate: token distribution and vesting, revenue sharing to holders, escrow fund releases, NFT membership benefits, and CO2 certificate issuance. All contracts are audited and deployed on Base blockchain for low fees and fast transactions.'
+        },
+        {
+          id: 'wallet-connection',
+          title: 'How do I connect my wallet?',
+          answer: 'Click "Connect" in the header and select your wallet: MetaMask, WalletConnect, Coinbase Wallet, or other WC-compatible wallets. Approve the connection request. Once connected, you can view balances, make payments, and interact with all Web3 features. Ensure you are on Base network for optimal experience.'
+        },
+        {
+          id: 'token-swap',
+          title: 'How does Token Swap work?',
+          answer: 'Swap between cryptocurrencies directly on-platform using integrated DEX aggregators. Compare rates across liquidity pools, set slippage tolerance, and execute swaps with transparent gas estimation. Supports major tokens on Base network including ETH, USDC, and our native PCX token.'
+        },
+        {
+          id: 'launchpad',
+          title: 'What is the Token Launchpad?',
+          answer: 'The Launchpad hosts presales for new tokenized aviation projects. Browse upcoming launches, review project documentation, participate in early investment rounds, and track your allocations. Features include: vesting schedules, KYC verification, funding goals, and post-launch liquidity provision.'
+        }
+      ]
+    },
+    payments: {
+      title: 'Payments & Crypto',
+      icon: CreditCard,
+      topics: [
+        {
+          id: 'crypto-payments',
+          title: 'How do crypto payments work?',
+          answer: 'We accept 70+ cryptocurrencies via CoinGate integration including BTC, ETH, USDC, USDT, and PCX token. Select crypto at checkout, scan the QR code or copy the payment address, confirm in your wallet. Payments are processed instantly on-chain with automatic confirmation. 2.5% platform fee + 1% processing fee applies.'
+        },
+        {
+          id: 'accepted-currencies',
+          title: 'What cryptocurrencies are accepted?',
+          answer: 'Major currencies: Bitcoin (BTC), Ethereum (ETH), USDC, USDT, DAI. Layer 2: Base ETH, Polygon MATIC, Arbitrum ETH. Platform token: PCX (PrivateCharterX token with 5% booking discount). Plus 60+ additional tokens through our payment processor. Fiat payments via credit card also available.'
+        },
+        {
+          id: 'pcx-token',
+          title: 'What is the PCX token?',
+          answer: 'PCX is our native utility token on Base network. Benefits include: 5% discount on all bookings, staking rewards, governance voting rights, exclusive access to premium empty legs, priority booking, and reduced platform fees. Stake PCX to earn rewards and unlock higher membership tiers.'
+        },
+        {
+          id: 'refunds',
+          title: 'How do refunds work for crypto payments?',
+          answer: 'Refunds are processed to your original wallet address in USDC stablecoin (to avoid volatility). Refund eligibility depends on booking terms and cancellation timing. Full refunds for cancellations 48+ hours before departure, partial refunds for later cancellations. Refunds typically process within 24-48 hours.'
+        }
+      ]
+    },
+    sustainability: {
+      title: 'Sustainability',
+      icon: Leaf,
+      topics: [
+        {
+          id: 'co2-certificates',
+          title: 'How do CO2 offset certificates work?',
+          answer: 'Calculate your flight emissions using our carbon calculator. Purchase Verified Carbon Standard (VCS) certified offsets. Receive an NFT certificate proving your environmental contribution. Each certificate is permanently recorded on-chain and links to verified carbon reduction projects including reforestation, renewable energy, and methane capture.'
+        },
+        {
+          id: 'carbon-calculation',
+          title: 'How is carbon footprint calculated?',
+          answer: 'We calculate emissions based on: aircraft type, fuel consumption rates, flight distance, passenger count, and operational factors. Our methodology follows ICAO standards and includes both direct emissions and lifecycle impacts. Results are displayed in tons of CO2 equivalent with recommended offset amounts.'
+        },
+        {
+          id: 'offset-projects',
+          title: 'What offset projects are supported?',
+          answer: 'We partner with verified projects including: Amazon rainforest protection, wind farms in developing nations, methane capture from landfills, clean cookstove distribution, and ocean plastic collection. All projects are certified by Verra (VCS) or Gold Standard with transparent impact reporting.'
+        }
+      ]
+    },
+    account: {
+      title: 'Account & Security',
+      icon: Shield,
+      topics: [
+        {
+          id: 'kyc-verification',
+          title: 'Why is KYC verification required?',
+          answer: 'KYC (Know Your Customer) is required for: aviation bookings (international security regulations), transactions over $3,000, tokenization participation, and DAO governance. Submit ID and proof of address through our secure Sumsub integration. Verification typically completes within 24-48 hours. Your data is encrypted and never shared.'
+        },
+        {
+          id: 'account-security',
+          title: 'How is my account secured?',
+          answer: 'Multi-layer security includes: email verification, optional 2FA, session management, wallet signature verification for Web3 actions, encrypted data storage, and regular security audits. For high-value transactions, additional verification may be required. Never share your wallet seed phrase with anyone.'
+        },
+        {
+          id: 'data-privacy',
+          title: 'How is my data protected?',
+          answer: 'We follow GDPR and Swiss data protection laws. Personal data is encrypted at rest and in transit. Blockchain transactions are pseudonymous. You can request data export or deletion anytime. We never sell personal data. Booking information is shared only with operators necessary for your trip.'
+        }
+      ]
+    }
+  };
+
+  // Flatten all topics for search
+  const allTopics = Object.entries(faqSections).flatMap(([sectionId, section]) =>
+    section.topics.map(topic => ({ ...topic, sectionId, sectionTitle: section.title }))
+  );
+
+  // Filter topics based on search and active section
+  const filteredTopics = allTopics.filter(topic => {
+    const matchesSearch = !searchQuery ||
+      topic.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      topic.answer.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSection = activeSection === 'all' || topic.sectionId === activeSection;
+    return matchesSearch && matchesSection;
+  });
+
+  return (
+    <div className="min-h-full px-4 py-6">
+      {/* Header Section */}
+      <div className="max-w-5xl mx-auto mb-6">
+        {/* Search Bar */}
+        <div className="relative mb-4">
+          <Search className="w-4 h-4 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search questions..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+          />
+        </div>
+
+        {/* Section Filters - No Icons */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setActiveSection('all')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              activeSection === 'all'
+                ? 'bg-gray-900 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            All Topics
+          </button>
+          {Object.entries(faqSections).map(([id, section]) => (
+            <button
+              key={id}
+              onClick={() => setActiveSection(id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                activeSection === id
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {section.title}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* FAQ Cards Grid - 2 Columns */}
+      <div className="max-w-5xl mx-auto mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {filteredTopics.map((topic) => {
+            const isExpanded = expandedTopic === topic.id;
+
+            return (
+              <div
+                key={topic.id}
+                onClick={() => setExpandedTopic(isExpanded ? null : topic.id)}
+                className={`bg-white border border-gray-200 rounded-xl overflow-hidden cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200 ${
+                  isExpanded ? 'md:col-span-2' : ''
+                }`}
+              >
+                <div className="p-4">
+                  <div className="flex items-start gap-3">
+                    {/* Icon */}
+                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                      <MessageSquare className="w-4 h-4 text-gray-600" />
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">{topic.sectionTitle}</span>
+                          <h3 className="text-sm font-medium text-gray-900 mt-0.5">{topic.title}</h3>
+                        </div>
+                        <ChevronDown
+                          className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200 mt-1 ${isExpanded ? 'rotate-180' : ''}`}
+                        />
+                      </div>
+
+                      {/* Expanded Answer */}
+                      <div
+                        className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-[500px] mt-3 opacity-100' : 'max-h-0 opacity-0'}`}
+                      >
+                        <div className="pt-3 border-t border-gray-100">
+                          <p className="text-sm text-gray-600 leading-relaxed">
+                            {topic.answer}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {filteredTopics.length === 0 && (
+          <div className="text-center py-12 bg-white border border-gray-200 rounded-xl">
+            <Search className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 text-sm">No questions found matching your search.</p>
+            <button
+              onClick={() => { setSearchQuery(''); setActiveSection('all'); }}
+              className="mt-3 text-xs text-gray-900 underline"
+            >
+              Clear filters
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Platform Features Overview */}
+      <div className="max-w-5xl mx-auto mb-8">
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">Platform Overview</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-gray-50 rounded-xl">
+              <div className="text-2xl font-light text-gray-900">16,000+</div>
+              <div className="text-xs text-gray-500 mt-1">Aircraft Worldwide</div>
+            </div>
+            <div className="text-center p-4 bg-gray-50 rounded-xl">
+              <div className="text-2xl font-light text-gray-900">150+</div>
+              <div className="text-xs text-gray-500 mt-1">Countries Covered</div>
+            </div>
+            <div className="text-center p-4 bg-gray-50 rounded-xl">
+              <div className="text-2xl font-light text-gray-900">70+</div>
+              <div className="text-xs text-gray-500 mt-1">Crypto Currencies</div>
+            </div>
+            <div className="text-center p-4 bg-gray-50 rounded-xl">
+              <div className="text-2xl font-light text-gray-900">24/7</div>
+              <div className="text-xs text-gray-500 mt-1">Concierge Support</div>
+            </div>
+          </div>
+
+          {/* Key Features */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+            <div className="flex items-start gap-3 p-4 border border-gray-100 rounded-xl">
+              <Plane className="w-5 h-5 text-gray-700 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-medium text-gray-900">Private Aviation</h4>
+                <p className="text-xs text-gray-500 mt-1">Charter jets, helicopters, empty legs with instant quotes</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-4 border border-gray-100 rounded-xl">
+              <Coins className="w-5 h-5 text-gray-700 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-medium text-gray-900">Asset Tokenization</h4>
+                <p className="text-xs text-gray-500 mt-1">Fractional ownership of aircraft on Base blockchain</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-4 border border-gray-100 rounded-xl">
+              <Shield className="w-5 h-5 text-gray-700 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-medium text-gray-900">Blockchain Escrow</h4>
+                <p className="text-xs text-gray-500 mt-1">In-house escrow service at escrow.privatecharterx.com</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-4 border border-gray-100 rounded-xl">
+              <CreditCard className="w-5 h-5 text-gray-700 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-medium text-gray-900">Crypto Payments</h4>
+                <p className="text-xs text-gray-500 mt-1">70+ cryptocurrencies accepted via CoinGate</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-4 border border-gray-100 rounded-xl">
+              <Leaf className="w-5 h-5 text-gray-700 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-medium text-gray-900">CO2 Certificates</h4>
+                <p className="text-xs text-gray-500 mt-1">Verified carbon offsets as NFTs</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Contact Banner - Collapsible */}
+      <div className="max-w-5xl mx-auto">
+        <ContactBannerCollapsible />
+      </div>
+    </div>
+  );
+};
+
 const TokenizedAssetsGlassmorphic = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user, profile, signOut, initializing } = useAuth();
@@ -702,6 +1151,9 @@ const TokenizedAssetsGlassmorphic = () => {
   // Header collapse state
   const [headersCollapsed, setHeadersCollapsed] = useState(false);
 
+  // Sidebar collapse state (click to toggle instead of hover)
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+
   // AI Chat state
   const [showChatOverview, setShowChatOverview] = useState(false);
   const [activeChat, setActiveChat] = useState(null);
@@ -716,6 +1168,10 @@ const TokenizedAssetsGlassmorphic = () => {
   // Escrow state
   const [userEscrows, setUserEscrows] = useState([]);
   const [loadingEscrows, setLoadingEscrows] = useState(false);
+
+  // Bookings state (empty legs, adventures, CO2 certificates)
+  const [userBookings, setUserBookings] = useState([]);
+  const [loadingBookings, setLoadingBookings] = useState(false);
 
   // SPV state
   const [userSPVs, setUserSPVs] = useState([]);
@@ -823,6 +1279,11 @@ const TokenizedAssetsGlassmorphic = () => {
   const [selectedHelicopter, setSelectedHelicopter] = useState(null);
   const [showHelicopterDetail, setShowHelicopterDetail] = useState(false);
   const [currentHelicopterImageIndex, setCurrentHelicopterImageIndex] = useState(0);
+  const [helicopterPassengers, setHelicopterPassengers] = useState(1);
+  const [helicopterDuration, setHelicopterDuration] = useState(1);
+  const [helicopterSpecialRequests, setHelicopterSpecialRequests] = useState('');
+  const [helicopterSubmitting, setHelicopterSubmitting] = useState(false);
+  const [helicopterSubmitSuccess, setHelicopterSubmitSuccess] = useState(false);
 
   // Empty Legs state variables
   const [emptyLegsData, setEmptyLegsData] = useState([]);
@@ -842,6 +1303,8 @@ const TokenizedAssetsGlassmorphic = () => {
   const [emptyLegLuggage, setEmptyLegLuggage] = useState(0);
   const [emptyLegHasPet, setEmptyLegHasPet] = useState(false);
   const [showEmptyLegSuccess, setShowEmptyLegSuccess] = useState(false);
+  const [showCryptoPaymentModal, setShowCryptoPaymentModal] = useState(false);
+  const [cryptoPaymentService, setCryptoPaymentService] = useState(null);
 
   // Empty Leg Request Function
   const requestEmptyLegFlight = async () => {
@@ -906,6 +1369,86 @@ const TokenizedAssetsGlassmorphic = () => {
     } catch (error) {
       console.error('❌ Request failed:', error);
       alert(`❌ Flight request failed!\n\nError: ${error.message}\n\nUser ID: ${user?.id}\nPlease screenshot this and report it.`);
+    }
+  };
+
+  // Helicopter Charter Request Function
+  const requestHelicopterCharter = async () => {
+    if (!user) {
+      alert('Please sign in to request a helicopter charter');
+      return;
+    }
+
+    if (!selectedHelicopter) {
+      alert('No helicopter selected');
+      return;
+    }
+
+    setHelicopterSubmitting(true);
+
+    try {
+      const rawData = selectedHelicopter.rawData || {};
+
+      const payload = {
+        helicopter_id: rawData.id,
+        helicopter_name: selectedHelicopter.name || rawData.name,
+        helicopter_type: selectedHelicopter.type || rawData.type || rawData.category,
+        capacity: selectedHelicopter.capacity || rawData.capacity,
+        location: selectedHelicopter.location || rawData.location,
+        price_per_hour: rawData.price || rawData.price_per_hour,
+        currency: rawData.currency || 'EUR',
+
+        // Booking details
+        passengers: helicopterPassengers,
+        duration_hours: helicopterDuration,
+        special_requests: helicopterSpecialRequests,
+
+        // Calculated total
+        estimated_total: (rawData.price || 0) * helicopterDuration,
+
+        // Client info
+        client_info: {
+          user_id: user.id,
+          email: user.email,
+          name: user.name || user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim(),
+        },
+
+        // Metadata
+        booking_source: 'glassmorphic_helicopter_detail',
+        timestamp: new Date().toISOString(),
+      };
+
+      // Save to user_requests - triggers email notifications
+      const { error: dbError } = await supabase
+        .from('user_requests')
+        .insert([{
+          user_id: user.id,
+          type: 'helicopter_charter',
+          status: 'pending',
+          client_name: payload.client_info.name,
+          client_email: payload.client_info.email,
+          data: payload
+        }]);
+
+      if (dbError) throw dbError;
+
+      setHelicopterSubmitSuccess(true);
+      showToast('Helicopter charter request submitted successfully!', 'success');
+
+      setTimeout(() => {
+        setHelicopterSubmitSuccess(false);
+        setShowHelicopterDetail(false);
+        setHelicopterPassengers(1);
+        setHelicopterDuration(1);
+        setHelicopterSpecialRequests('');
+        setActiveCategory('requests'); // Navigate to My Requests
+      }, 2500);
+
+    } catch (err) {
+      console.error('Failed to submit helicopter charter request', err);
+      alert('Failed to submit request. Please try again.');
+    } finally {
+      setHelicopterSubmitting(false);
     }
   };
 
@@ -1372,20 +1915,53 @@ const TokenizedAssetsGlassmorphic = () => {
   }, []);
 
   // Fetch latest blog post based on webMode (Aviation for RWS, Web3 for Web3.0)
+  // Caches for 24 hours, then refreshes
   useEffect(() => {
-    const fetchLatestBlogPost = async () => {
+    const BLOG_CACHE_KEY = `blog_post_cache_${webMode}`;
+    const BLOG_VERSION_KEY = 'blog_cache_version';
+    const CURRENT_VERSION = '2'; // Increment this to force cache clear
+    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+    // Clear old cache if version changed (forces fresh fetch)
+    const cachedVersion = localStorage.getItem(BLOG_VERSION_KEY);
+    if (cachedVersion !== CURRENT_VERSION) {
+      console.log('📰 Clearing old blog cache (version update)');
+      localStorage.removeItem('blog_post_cache_rws');
+      localStorage.removeItem('blog_post_cache_web3');
+      localStorage.setItem(BLOG_VERSION_KEY, CURRENT_VERSION);
+    }
+
+    const fetchLatestBlogPost = async (forceRefresh = false) => {
       try {
+        // Check cache first (unless force refresh)
+        if (!forceRefresh) {
+          const cached = localStorage.getItem(BLOG_CACHE_KEY);
+          if (cached) {
+            const { data, timestamp } = JSON.parse(cached);
+            const isValid = Date.now() - timestamp < CACHE_DURATION;
+            if (isValid && data) {
+              console.log('📰 Using cached blog post for', webMode);
+              setLatestBlogPost(data);
+              setBlogLoading(false);
+              return;
+            }
+          }
+        }
+
         setBlogLoading(true);
+        console.log('📰 Fetching fresh blog post for', webMode);
+
         // Aviation category ID: 137, Web3 category ID: 131
         const categoryId = webMode === 'web3' ? '131' : '137';
         const response = await fetch(
-          `https://www.privatecharterx.blog/wp-json/wp/v2/posts?_embed&per_page=1&orderby=date&order=desc&categories=${categoryId}`,
+          `https://www.privatecharterx.blog/wp-json/wp/v2/posts?_embed&per_page=1&orderby=date&order=desc&categories=${categoryId}&_=${Date.now()}`,
           {
             method: 'GET',
             headers: {
               'Accept': 'application/json',
               'Content-Type': 'application/json',
             },
+            cache: 'no-store', // Force fresh fetch
           }
         );
 
@@ -1393,21 +1969,48 @@ const TokenizedAssetsGlassmorphic = () => {
           const posts = await response.json();
           if (posts && posts.length > 0) {
             const post = posts[0];
-            setLatestBlogPost({
+            const blogData = {
               title: post.title.rendered.replace(/<[^>]*>/g, ''),
               link: `https://www.privatecharterx.blog/${post.slug}`,
               date: post.date,
-            });
+              excerpt: post.excerpt?.rendered?.replace(/<[^>]*>/g, '').substring(0, 100) || '',
+            };
+
+            // Cache the result
+            localStorage.setItem(BLOG_CACHE_KEY, JSON.stringify({
+              data: blogData,
+              timestamp: Date.now(),
+            }));
+
+            setLatestBlogPost(blogData);
+            console.log('✅ Blog post fetched and cached:', blogData.title);
           }
+        } else {
+          console.log('❌ Blog fetch failed:', response.status);
         }
       } catch (error) {
         console.log('Failed to fetch blog post:', error);
+        // Try to use stale cache if fetch fails
+        const cached = localStorage.getItem(BLOG_CACHE_KEY);
+        if (cached) {
+          const { data } = JSON.parse(cached);
+          if (data) {
+            setLatestBlogPost(data);
+          }
+        }
       } finally {
         setBlogLoading(false);
       }
     };
 
     fetchLatestBlogPost();
+
+    // Also set up interval to check for new posts every hour (will use cache if still valid)
+    const interval = setInterval(() => {
+      fetchLatestBlogPost();
+    }, 60 * 60 * 1000); // Check every hour
+
+    return () => clearInterval(interval);
   }, [webMode]);
 
   // Fetch Ethereum price and history from CoinGecko API
@@ -1671,6 +2274,28 @@ const TokenizedAssetsGlassmorphic = () => {
       setUserEscrows([]);
     } finally {
       setLoadingEscrows(false);
+    }
+  };
+
+  // Fetch user bookings from user_bookings table (empty legs, adventures, CO2 certificates)
+  const fetchUserBookings = async () => {
+    if (!user?.id) return;
+
+    setLoadingBookings(true);
+    try {
+      const { data, error } = await supabase
+        .from('user_bookings')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setUserBookings(data || []);
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+      setUserBookings([]);
+    } finally {
+      setLoadingBookings(false);
     }
   };
 
@@ -2025,6 +2650,13 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   }, [activeCategory, user?.id, address]);
 
+  // Load user bookings for overview page
+  useEffect(() => {
+    if (activeCategory === 'overview' && user?.id) {
+      fetchUserBookings();
+    }
+  }, [activeCategory, user?.id]);
+
   // Load user DAOs for Web3 overview page
   useEffect(() => {
     if (activeCategory === 'overview' && webMode === 'web3' && user?.id && address) {
@@ -2036,6 +2668,13 @@ const TokenizedAssetsGlassmorphic = () => {
   useEffect(() => {
     fetchTokenizedAssets();
   }, []);
+
+  // Fetch user tokenizations when in web3 mode (for home page display)
+  useEffect(() => {
+    if (webMode === 'web3' && user?.id) {
+      fetchUserTokenizations();
+    }
+  }, [webMode, user?.id]);
 
   // Fetch empty legs on mount and set up rotation
   useEffect(() => {
@@ -2586,7 +3225,7 @@ const TokenizedAssetsGlassmorphic = () => {
     { id: 'helicopter', label: 'Helis', icon: Zap, category: 'helicopter', externalLink: '/helicopter-charter' },
     { id: 'empty-legs', label: 'Empty Legs', icon: MapPin, category: 'empty-legs', externalLink: '/empty-legs' },
     { id: 'adventures', label: 'Adventures', icon: Mountain, category: 'adventures' },
-    { id: 'assets', label: 'Events & Sports', icon: Calendar, category: 'assets' },
+    // { id: 'assets', label: 'Events & Sports', icon: Calendar, category: 'assets' }, // Hidden for MVP
     // { id: 'luxury-cars', label: 'Luxury Cars', icon: Car, category: 'luxury-cars' }, // Hidden - now integrated into Ground Transport
     { id: 'ground-transport', label: 'Ground Transport', icon: Car, category: 'ground-transport' },
     // { id: 'tailored-services', label: 'AI Travel Designer', icon: Compass, category: 'chat' },
@@ -2595,14 +3234,15 @@ const TokenizedAssetsGlassmorphic = () => {
 
   // Web3 Category menu - for Crypto/Blockchain services
   const web3CategoryMenu = [
-    { id: 'assets', label: 'My DeFi Assets', icon: Sparkles, category: 'assets' },
+    // { id: 'assets', label: 'My DeFi Assets', icon: Sparkles, category: 'assets' }, // Hidden for MVP
     { id: 'marketplace', label: 'Marketplace', icon: Package, category: 'marketplace' },
-    { id: 'p2p-trading', label: 'P2P', icon: Share2, category: 'p2p-trading' },
-    { id: 'swap', label: 'Swap', icon: ArrowLeft, category: 'swap' },
-    { id: 'dao', label: 'DAOs', icon: Users, category: 'dao' },
+    { id: 'tokenization', label: 'Tokenization', icon: Coins, category: 'tokenization' },
+    // { id: 'p2p-trading', label: 'P2P', icon: Share2, category: 'p2p-trading' }, // Hidden for MVP
+    // { id: 'swap', label: 'Swap', icon: ArrowLeft, category: 'swap' }, // Hidden - not needed for now
+    // { id: 'dao', label: 'DAOs', icon: Users, category: 'dao' }, // Hidden for MVP
     { id: 'escrow', label: 'Escrow', icon: Shield, category: 'escrow' },
-    { id: 'nft-marketplace', label: 'NFT Marketplace', icon: Shield, category: 'nft-marketplace' },
-    { id: 'launchpad', label: 'Launchpad', icon: Zap, category: 'launchpad' }
+    { id: 'nft-marketplace', label: 'NFT Marketplace', icon: Shield, category: 'nft-marketplace' }
+    // { id: 'launchpad', label: 'Launchpad', icon: Zap, category: 'launchpad' } // Hidden - will be re-enabled when projects are available from admin backend
   ];
 
   // Active category menu based on webMode
@@ -2615,7 +3255,7 @@ const TokenizedAssetsGlassmorphic = () => {
     { id: 'bookings', label: 'Booking Requests', icon: FolderOpen, category: 'partner-bookings' },
     { id: 'earnings', label: 'Earnings', icon: Award, category: 'partner-earnings' },
     { id: 'profile', label: 'Profile', icon: User, category: 'dashboard', dashboardTab: 'profile' },
-    { id: 'chat-support', label: 'Chat Support', icon: MessageSquare, category: 'chat-support' },
+    // { id: 'chat-support', label: 'Chat Support', icon: MessageSquare, category: 'chat-support' }, // Hidden - using footer chat widget instead
     { id: 'settings', label: 'Settings', icon: Settings, category: 'settings' }
   ];
 
@@ -2623,14 +3263,15 @@ const TokenizedAssetsGlassmorphic = () => {
   const userMenuBase = [
     { id: 'overview', label: 'Overview', icon: Home, category: 'overview' },
     { id: 'profile', label: 'Profile', icon: User, category: 'dashboard', dashboardTab: 'profile' },
-    { id: 'calendar', label: 'Calendar', icon: Calendar, category: 'calendar' },
+    // { id: 'calendar', label: 'Calendar', icon: Calendar, category: 'calendar' }, // Hidden - not needed for now
+    { id: 'bookings', label: 'My Bookings', icon: CreditCard, category: 'bookings' }, // Paid crypto bookings
     { id: 'requests', label: 'My Requests', icon: FolderOpen, category: 'requests' },
-    { id: 'my-launches', label: 'My Launches', icon: Rocket, category: 'my-launches', web3Only: true },
+    // { id: 'my-launches', label: 'My Launches', icon: Rocket, category: 'my-launches', web3Only: true }, // Hidden - not needed for now
     // { id: 'chat-requests', label: 'Chat Requests', icon: MessageSquare, category: 'chat-requests' },
     // { id: 'subscription', label: 'Subscription', icon: Crown, category: 'subscription' },
     // { id: 'referral', label: 'Referral Program', icon: Gift, category: 'referral' },
-    { id: 'transactions', label: 'Transactions', icon: Award, category: 'transactions', web3Only: true },
-    { id: 'tokenized-assets', label: 'My DeFi Assets', icon: Sparkles, category: 'assets', web3Only: true },
+    // { id: 'transactions', label: 'Transactions', icon: Award, category: 'transactions', web3Only: true }, // Hidden - not needed for now
+    // { id: 'tokenized-assets', label: 'My DeFi Assets', icon: Sparkles, category: 'assets', web3Only: true }, // Hidden for MVP
     { id: 'pvcx-token', label: '$PVCX Token', icon: Coins, category: 'pvcx-token', web3Only: true },
     {
       id: 'tokenize-asset',
@@ -2654,7 +3295,7 @@ const TokenizedAssetsGlassmorphic = () => {
       ]
     },
     { id: 'co2-certificates', label: 'CO2 Certificates', icon: Leaf, category: 'co2-certificates' },
-    { id: 'chat-support', label: 'Chat Support', icon: MessageSquare, category: 'chat-support' },
+    // { id: 'chat-support', label: 'Chat Support', icon: MessageSquare, category: 'chat-support' }, // Hidden - using footer chat widget instead
     { id: 'nft-marketplace', label: 'NFT Marketplace', icon: Shield, category: 'nft-marketplace', web3Only: true }
   ];
 
@@ -2681,6 +3322,74 @@ const TokenizedAssetsGlassmorphic = () => {
           <Loader2 size={40} className="animate-spin text-black mx-auto mb-4" />
           <p className="text-sm text-gray-600">Loading...</p>
         </div>
+      </div>
+    );
+  }
+
+  // Don't render dashboard content until authenticated and showDashboard is true
+  // This prevents the flash of dashboard content on mobile before login modal appears
+  if (!isAuthenticated || !showDashboard) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center">
+          <Loader2 size={40} className="animate-spin text-black mx-auto mb-4" />
+          <p className="text-sm text-gray-600">Loading...</p>
+        </div>
+        {/* Login modal will be rendered by the modals at the bottom */}
+        {showLoginModal && (
+          <LoginModal
+            onClose={() => setShowLoginModal(false)}
+            onSwitchToRegister={() => {
+              setShowLoginModal(false);
+              setShowRegisterModal(true);
+            }}
+            onSwitchToPartnerRegister={() => {
+              setShowLoginModal(false);
+              setShowPartnerRegisterModal(true);
+            }}
+            onSuccess={() => setShowLoginModal(false)}
+            onSwitchToForgotPassword={() => {
+              setShowLoginModal(false);
+              setShowForgotPasswordModal(true);
+            }}
+          />
+        )}
+        {showRegisterModal && (
+          <RegisterModal
+            onClose={() => setShowRegisterModal(false)}
+            onSwitchToLogin={() => {
+              setShowRegisterModal(false);
+              setShowLoginModal(true);
+            }}
+            onSwitchToPartnerRegister={() => {
+              setShowRegisterModal(false);
+              setShowPartnerRegisterModal(true);
+            }}
+            onSuccess={() => setShowRegisterModal(false)}
+          />
+        )}
+        {showForgotPasswordModal && (
+          <ForgotPasswordModal
+            onClose={() => setShowForgotPasswordModal(false)}
+            onBackToLogin={() => {
+              setShowForgotPasswordModal(false);
+              setShowLoginModal(true);
+            }}
+          />
+        )}
+        {showPartnerRegisterModal && (
+          <GoogleReCaptchaProvider reCaptchaKey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}>
+            <PartnerRegistrationModal
+              isOpen={showPartnerRegisterModal}
+              onClose={() => setShowPartnerRegisterModal(false)}
+              onSuccess={() => {
+                setShowPartnerRegisterModal(false);
+                showToast('Partner registration successful! Please wait for verification.', 'success');
+              }}
+            />
+          </GoogleReCaptchaProvider>
+        )}
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
       </div>
     );
   }
@@ -2724,19 +3433,19 @@ const TokenizedAssetsGlassmorphic = () => {
             />
           )}
 
-          {/* Glassmorphic Sidebar - EXPANDABLE ON HOVER, Mobile Overlay */}
-          <aside className={`group border-r flex flex-col py-4 transition-all duration-300 ease-in-out overflow-hidden z-40 ${
+          {/* Glassmorphic Sidebar - EXPANDABLE ON CLICK, Mobile Overlay */}
+          <aside className={`border-r flex flex-col py-4 transition-all duration-300 ease-in-out overflow-hidden z-40 relative ${
             webMode === 'web3'
               ? 'border-white/30'
               : 'bg-white/70 border-gray-200/70'
           } ${
             isMobileMenuOpen
               ? 'fixed inset-y-0 left-0 w-60'
-              : 'hidden lg:flex lg:relative lg:w-16 lg:hover:w-60'
+              : `hidden lg:flex lg:relative ${sidebarExpanded ? 'lg:w-60' : 'lg:w-16'}`
           }`} style={webMode === 'web3' ? { backgroundColor: '#efefef' } : { backdropFilter: 'blur(20px) saturate(180%)' }}>
           {/* Logo */}
-          <div className={`mb-6 transition-all duration-300 ${isMobileMenuOpen ? 'px-4' : 'px-2 group-hover:px-4'}`}>
-            <div className={`flex items-center justify-center overflow-hidden ${isMobileMenuOpen ? 'w-auto' : 'w-12 h-12 group-hover:w-auto'}`}>
+          <div className={`mb-6 transition-all duration-300 ${isMobileMenuOpen || sidebarExpanded ? 'px-4' : 'px-2'}`}>
+            <div className={`flex items-center justify-center overflow-hidden ${isMobileMenuOpen || sidebarExpanded ? 'w-auto' : 'w-12 h-12'}`}>
               {webMode === 'web3' ? (
                 <>
                   {/* Animated logo when collapsed - Web3.0 only */}
@@ -2745,7 +3454,7 @@ const TokenizedAssetsGlassmorphic = () => {
                     loop
                     muted
                     playsInline
-                    className={`h-12 w-12 object-contain ${isMobileMenuOpen ? 'hidden' : 'group-hover:hidden'}`}
+                    className={`h-12 w-12 object-contain ${isMobileMenuOpen || sidebarExpanded ? 'hidden' : 'block'}`}
                   >
                     <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/videoExport-2025-10-19@14-08-49.871-540x540@60fps.mp4" type="video/mp4" />
                   </video>
@@ -2753,7 +3462,7 @@ const TokenizedAssetsGlassmorphic = () => {
                   <img
                     src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_Logo_written-removebg-preview.png"
                     alt="PrivateCharterX"
-                    className={`h-12 w-auto object-contain ${isMobileMenuOpen ? 'block' : 'hidden group-hover:block'}`}
+                    className={`h-12 w-auto object-contain ${isMobileMenuOpen || sidebarExpanded ? 'block' : 'hidden'}`}
                   />
                 </>
               ) : (
@@ -2762,35 +3471,35 @@ const TokenizedAssetsGlassmorphic = () => {
                   <img
                     src="https://i.imgur.com/iu42DU1.png"
                     alt="PrivateCharterX"
-                    className={`h-12 w-12 object-contain ${isMobileMenuOpen ? 'hidden' : 'group-hover:hidden'}`}
+                    className={`h-12 w-12 object-contain ${isMobileMenuOpen || sidebarExpanded ? 'hidden' : 'block'}`}
                   />
                   {/* Full logo when expanded or mobile open */}
                   <img
                     src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_Logo_written-removebg-preview.png"
                     alt="PrivateCharterX"
-                    className={`h-12 w-auto object-contain ${isMobileMenuOpen ? 'block' : 'hidden group-hover:block'}`}
+                    className={`h-12 w-auto object-contain ${isMobileMenuOpen || sidebarExpanded ? 'block' : 'hidden'}`}
                   />
                 </>
               )}
             </div>
           </div>
 
-          {/* AI Chat Section - Compact Frame */}
-          <div className="px-2 group-hover:px-4 mb-4 transition-all duration-300">
-            {/* Frame Container */}
+          {/* AI Chat Section - HIDDEN FOR NOW - Will be improved later */}
+          {/* <div className={`mb-4 transition-all duration-300 ${isMobileMenuOpen || sidebarExpanded ? 'px-4' : 'px-2'}`}>
             <div className={`border rounded-lg p-2 transition-all duration-300 backdrop-blur-xl ${
               webMode === 'web3'
                 ? 'bg-white/20 border-gray-300/50'
                 : 'bg-gray-200/40 border-gray-300/60'
             }`}>
-              {/* New Chat Button */}
               <button
                 onClick={() => {
                   setActiveChat('new');
                   setActiveCategory('chat');
-                  setAiChatQuery(''); // Clear any existing query
+                  setAiChatQuery('');
                 }}
-                className={`w-full h-8 rounded-md flex items-center justify-center group-hover:justify-start group-hover:gap-2 group-hover:px-3 border transition-all duration-300 mb-2 backdrop-blur-xl ${
+                className={`w-full h-8 rounded-md flex items-center border transition-all duration-300 mb-2 backdrop-blur-xl ${
+                  isMobileMenuOpen || sidebarExpanded ? 'justify-start gap-2 px-3' : 'justify-center'
+                } ${
                   webMode === 'web3'
                     ? 'bg-white/30 hover:bg-white/40 text-gray-900 border-gray-300/50'
                     : 'bg-white/50 hover:bg-white/70 text-gray-800 border-gray-300/50'
@@ -2798,42 +3507,17 @@ const TokenizedAssetsGlassmorphic = () => {
                 title="New Chat"
               >
                 <Plus size={14} />
-                <span className="hidden group-hover:inline-block text-xs font-medium whitespace-nowrap">New Chat</span>
+                <span className={`text-xs font-medium whitespace-nowrap ${isMobileMenuOpen || sidebarExpanded ? 'inline-block' : 'hidden'}`}>New Chat</span>
               </button>
 
-              {/* Latest Chat + History */}
               <div className="space-y-1 overflow-x-hidden">
-                {/* Latest Chat - HIDDEN */}
-                {/* {chatHistory.length > 0 && (
-                  <button
-                    onClick={() => {
-                      setActiveChat(chatHistory[0].id);
-                      setActiveCategory('chat');
-                    }}
-                    className={`w-full h-8 flex items-center justify-center group-hover:justify-start group-hover:gap-2 group-hover:px-2 rounded-md transition-all duration-300 backdrop-blur-xl ${
-                      webMode === 'web3'
-                        ? activeChat === chatHistory[0].id && activeCategory === 'chat'
-                          ? 'bg-white/30 text-gray-900'
-                          : 'text-gray-800 hover:bg-white/20'
-                        : activeChat === chatHistory[0].id && activeCategory === 'chat'
-                        ? 'bg-white/60 text-gray-900'
-                        : 'text-gray-700 hover:bg-white/30'
-                    }`}
-                    title={chatHistory[0].title}
-                  >
-                    <MessageSquare size={12} className="flex-shrink-0" />
-                    <span className="hidden group-hover:inline-block text-xs whitespace-nowrap overflow-hidden text-ellipsis">
-                      {chatHistory[0].title}
-                    </span>
-                  </button>
-                )} */}
-
-                {/* History Button */}
                 <button
                   onClick={() => {
                     setActiveCategory('chat-history');
                   }}
-                  className={`w-full h-8 flex items-center justify-center group-hover:justify-start group-hover:gap-2 group-hover:px-2 rounded-md transition-all duration-300 backdrop-blur-xl ${
+                  className={`w-full h-8 flex items-center rounded-md transition-all duration-300 backdrop-blur-xl ${
+                    isMobileMenuOpen || sidebarExpanded ? 'justify-start gap-2 px-2' : 'justify-center'
+                  } ${
                     webMode === 'web3'
                       ? activeCategory === 'chat-history'
                         ? 'bg-white/30 text-gray-900'
@@ -2845,14 +3529,14 @@ const TokenizedAssetsGlassmorphic = () => {
                   title="Chat History"
                 >
                   <Calendar size={12} className="flex-shrink-0" />
-                  <span className="hidden group-hover:inline-block text-xs font-medium">History</span>
+                  <span className={`text-xs font-medium ${isMobileMenuOpen || sidebarExpanded ? 'inline-block' : 'hidden'}`}>History</span>
                 </button>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Navigation Menu - Expandable (USER MENU ONLY) */}
-          <nav className="flex-1 overflow-y-auto space-y-2 px-2 group-hover:px-4 transition-all duration-300">
+          <nav className={`flex-1 overflow-y-auto space-y-2 transition-all duration-300 ${isMobileMenuOpen || sidebarExpanded ? 'px-4' : 'px-2'}`}>
             {userMenu.map((item) => {
               const isActive = item.dashboardTab
                 ? (activeCategory === item.category && dashboardView === item.dashboardTab)
@@ -2877,33 +3561,37 @@ const TokenizedAssetsGlassmorphic = () => {
                         }
                       }
                     }}
-                    className={`w-10 group-hover:w-full h-8 flex items-center justify-center group-hover:justify-between group-hover:gap-2 group-hover:px-2 rounded-lg transition-all duration-300 backdrop-blur-xl ${
+                    className={`h-8 flex items-center rounded-lg transition-all duration-300 ${
+                      isMobileMenuOpen || sidebarExpanded ? 'w-full justify-between gap-2 px-2' : 'w-10 justify-center'
+                    } ${
                       webMode === 'web3'
                         ? isActive || isExpanded
-                          ? 'bg-white/30 text-gray-900 shadow-lg'
+                          ? 'text-gray-900'
                           : 'text-gray-800 hover:bg-white/20'
                         : isActive || isExpanded
-                        ? 'bg-white/20 text-gray-800 shadow-lg'
+                        ? 'text-gray-800'
                         : 'text-gray-600 hover:bg-white/10'
                     }`}
-                    style={isActive || isExpanded ? { backdropFilter: 'blur(10px)' } : {}}
                     title={item.label}
                   >
                     <div className="flex items-center gap-2">
+                      {(isActive || isExpanded) && (isMobileMenuOpen || sidebarExpanded) && (
+                        <span className="text-gray-400 text-xs">-</span>
+                      )}
                       <item.icon size={12} className="flex-shrink-0" />
-                      <span className="hidden group-hover:inline-block text-xs whitespace-nowrap">{item.label}</span>
+                      <span className={`text-xs whitespace-nowrap ${isMobileMenuOpen || sidebarExpanded ? 'inline-block' : 'hidden'}`}>{item.label}</span>
                     </div>
                     {hasSubmenu && (
                       <ChevronDown
                         size={10}
-                        className={`hidden group-hover:inline-block transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                        className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''} ${isMobileMenuOpen || sidebarExpanded ? 'inline-block' : 'hidden'}`}
                       />
                     )}
                   </button>
 
                   {/* Submenu */}
                   {hasSubmenu && isExpanded && (
-                    <div className="hidden group-hover:block ml-4 mt-1 space-y-1 pl-2 border-l border-white/20">
+                    <div className={`ml-4 mt-1 space-y-1 pl-2 border-l border-white/20 ${isMobileMenuOpen || sidebarExpanded ? 'block' : 'hidden'}`}>
                       {item.submenu.map((subItem) => {
                         const isSubActive = activeCategory === subItem.category;
                         return (
@@ -2912,17 +3600,18 @@ const TokenizedAssetsGlassmorphic = () => {
                             onClick={() => {
                               setActiveCategory(subItem.category);
                             }}
-                            className={`w-full h-7 flex items-center gap-2 px-2 rounded-lg transition-all duration-300 backdrop-blur-xl text-xs ${
+                            className={`w-full h-7 flex items-center gap-2 px-2 rounded-lg transition-all duration-300 text-xs ${
                               webMode === 'web3'
                                 ? isSubActive
-                                  ? 'bg-white/20 text-gray-900'
+                                  ? 'text-gray-900'
                                   : 'text-gray-700 hover:bg-white/10'
                                 : isSubActive
-                                ? 'bg-white/15 text-gray-800'
+                                ? 'text-gray-800'
                                 : 'text-gray-600 hover:bg-white/5'
                             }`}
                             title={subItem.label}
                           >
+                            {isSubActive && <span className="text-gray-400 text-xs">-</span>}
                             <subItem.icon size={10} className="flex-shrink-0" />
                             <span className="whitespace-nowrap">{subItem.label}</span>
                           </button>
@@ -2935,10 +3624,28 @@ const TokenizedAssetsGlassmorphic = () => {
             })}
           </nav>
 
-          {/* Bottom Section - PVCX Balance Only */}
-          <div className="mt-auto pt-4 border-t border-gray-600/30 transition-all duration-300">
+          {/* Sidebar Toggle Button - Above the border line */}
+          <div className={`hidden lg:block transition-all duration-300 mt-auto mb-2 ${isMobileMenuOpen || sidebarExpanded ? 'px-4' : 'px-2'}`}>
+            <button
+              onClick={() => setSidebarExpanded(!sidebarExpanded)}
+              className={`h-8 flex items-center rounded-lg transition-all duration-300 hover:bg-white/10 ${
+                isMobileMenuOpen || sidebarExpanded ? 'w-full justify-between gap-2 px-2' : 'w-10 justify-center'
+              }`}
+              title={sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+            >
+              <div className="flex items-center gap-2">
+                <ChevronRight size={14} className={`text-gray-500 transition-transform duration-300 flex-shrink-0 ${sidebarExpanded ? 'rotate-180' : ''}`} />
+                <span className={`text-xs text-gray-600 whitespace-nowrap ${isMobileMenuOpen || sidebarExpanded ? 'inline-block' : 'hidden'}`}>
+                  {sidebarExpanded ? 'Collapse' : 'Expand'}
+                </span>
+              </div>
+            </button>
+          </div>
+
+          {/* Bottom Section - PVCX Balance */}
+          <div className="pt-4 border-t border-gray-600/30 transition-all duration-300">
             {/* PVCX Balance Widget */}
-            <div className="px-2 group-hover:px-4 transition-all duration-300">
+            <div className={`transition-all duration-300 ${isMobileMenuOpen || sidebarExpanded ? 'px-4' : 'px-2'}`}>
               <button
                 onClick={() => {
                   if (webMode === 'rws') {
@@ -2947,7 +3654,9 @@ const TokenizedAssetsGlassmorphic = () => {
                     setActiveCategory('pvcx-token');
                   }
                 }}
-                className="w-10 group-hover:w-full h-10 rounded-full group-hover:rounded-lg flex items-center justify-center group-hover:justify-start group-hover:gap-2 group-hover:px-2 group-hover:bg-white/10 hover:bg-white/5 transition-all duration-300"
+                className={`h-10 flex items-center hover:bg-white/5 transition-all duration-300 ${
+                  isMobileMenuOpen || sidebarExpanded ? 'w-full rounded-lg justify-start gap-2 px-2 bg-white/10' : 'w-10 rounded-full justify-center'
+                }`}
                 title={webMode === 'rws' ? 'Switch to Web3.0 for $PVCX Token' : '$PVCX Token Balance'}
               >
                 <img
@@ -2955,7 +3664,7 @@ const TokenizedAssetsGlassmorphic = () => {
                   alt="PVCX"
                   className="w-10 h-10 object-contain flex-shrink-0"
                 />
-                <div className="hidden group-hover:flex items-center gap-1">
+                <div className={`items-center gap-1 ${isMobileMenuOpen || sidebarExpanded ? 'flex' : 'hidden'}`}>
                   <span className="text-xs font-semibold text-gray-900">
                     {loadingPvcxBalance ? '...' : pvcxBalance.toFixed(3)}
                   </span>
@@ -3109,22 +3818,24 @@ const TokenizedAssetsGlassmorphic = () => {
               </button>
 
               {/* Short separator line - DESKTOP ONLY */}
-              <div className="hidden md:block w-px h-4 bg-gray-300"></div>
-              {/* Favorites Icon - Only in RWS mode */}
-              {webMode !== 'web3' && (
-                <button
-                  onClick={() => setActiveCategory('favourites')}
-                  className="relative flex items-center justify-center transition-all duration-200"
-                  title="Favourites"
-                >
-                  <Heart size={16} className={activeCategory === 'favourites' ? 'fill-red-500 text-red-500' : 'text-gray-700'} />
-                  {favorites.length > 0 && (
-                    <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full flex items-center justify-center">
-                      <span className="text-[8px] text-white font-medium">{favorites.length}</span>
-                    </div>
-                  )}
-                </button>
-              )}
+              {/* Favorites Icon - Hidden for MVP */}
+              {/* {webMode !== 'web3' && (
+                <>
+                  <div className="hidden md:block w-px h-4 bg-gray-300"></div>
+                  <button
+                    onClick={() => setActiveCategory('favourites')}
+                    className="relative flex items-center justify-center transition-all duration-200"
+                    title="Favourites"
+                  >
+                    <Heart size={16} className={activeCategory === 'favourites' ? 'fill-red-500 text-red-500' : 'text-gray-700'} />
+                    {favorites.length > 0 && (
+                      <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full flex items-center justify-center">
+                        <span className="text-[8px] text-white font-medium">{favorites.length}</span>
+                      </div>
+                    )}
+                  </button>
+                </>
+              )} */}
 
               {/* Notifications Bell */}
               <div className="relative">
@@ -3157,8 +3868,8 @@ const TokenizedAssetsGlassmorphic = () => {
                 />
               </div>
 
-              {/* Settings Icon */}
-              <button
+              {/* Settings Icon - Hidden for now */}
+              {/* <button
                 onClick={() => {
                   setActiveCategory('settings');
                   setShowSettings(false);
@@ -3166,7 +3877,7 @@ const TokenizedAssetsGlassmorphic = () => {
                 className="flex items-center justify-center transition-all duration-200"
               >
                 <Settings size={16} className="text-gray-700" />
-              </button>
+              </button> */}
 
               {/* Info Icon - Links to Helpdesk */}
               <button
@@ -3233,7 +3944,7 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* CONTENT AREA */}
           <div className={`flex-1 ${activeCategory === 'chat' ? 'overflow-hidden' : 'overflow-y-auto'} ${
             activeCategory === 'ground-transport' || activeCategory === 'chat' ? 'p-0 pt-2 sm:pt-4' :
-            webMode === 'web3' ? 'pt-0.5' : 'p-2 sm:p-4 lg:p-8 pt-12 sm:pt-16 lg:pt-20'
+            'pt-0.5'
           }`}>
 
           {/* Transition Loader - Video Animation */}
@@ -3411,7 +4122,7 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* Profile Overview View - Crypto Balance Dashboard */}
           {!isTransitioning && activeCategory === 'dashboard' && dashboardView === 'profile' && (
             <div className="w-full h-full overflow-y-auto">
-              <CryptoBalanceDashboard />
+              <CryptoBalanceDashboard setActiveCategory={setActiveCategory} />
             </div>
           )}
 
@@ -3487,6 +4198,13 @@ const TokenizedAssetsGlassmorphic = () => {
               <div className="dashboard-wrapper-glass">
                 <Dashboard initialTab="requests" />
               </div>
+            </div>
+          )}
+
+          {/* My Bookings View - Paid Crypto Bookings */}
+          {!isTransitioning && activeCategory === 'bookings' && (
+            <div className="w-full h-full overflow-y-auto p-4">
+              <MyBookingsView user={user} />
             </div>
           )}
 
@@ -3652,10 +4370,10 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
-          {/* Chat Support View */}
+          {/* FAQ / Helpdesk View */}
           {!isTransitioning && activeCategory === 'chat-support' && (
             <div className="w-full h-full overflow-y-auto">
-              <SupportTicketsPage />
+              <HelpdeskInlineView setActiveCategory={setActiveCategory} />
             </div>
           )}
 
@@ -3740,8 +4458,8 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* Overview Section (Chat Interface) - Show for regular users */}
           {!isTransitioning && activeCategory === 'overview' && user?.user_role !== 'partner' && (
             <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col px-4 md:px-0">
-              {/* Spacer to keep content centered - reduced on mobile */}
-              <div className="mt-4 md:mt-16 mb-4 md:mb-8"></div>
+              {/* Spacer - Both modes need space from header */}
+              <div className={webMode === 'rws' ? 'mt-20 mb-2' : 'mt-16 mb-2'}></div>
               <div className="flex-1 flex flex-col">
                 {/* RWS Mode Only: Search Input & Quick Action Buttons */}
                 {webMode === 'rws' && (
@@ -3823,11 +4541,21 @@ const TokenizedAssetsGlassmorphic = () => {
 
                 {/* Recent Cards Section - Different for RWS vs Web3 */}
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2 px-1">
-                    <ChevronRight size={12} className={webMode === 'web3' ? 'text-gray-700' : 'text-gray-400'} />
-                    <h3 className={`text-xs font-medium ${webMode === 'web3' ? 'text-gray-800' : 'text-gray-600'}`}>
-                      {webMode === 'web3' ? 'Tokenized Assets' : 'Your recent chats'}
-                    </h3>
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center gap-2">
+                      <ChevronRight size={12} className={webMode === 'web3' ? 'text-gray-700' : 'text-gray-400'} />
+                      <h3 className={`text-xs font-medium ${webMode === 'web3' ? 'text-gray-800' : 'text-gray-600'}`}>
+                        {webMode === 'web3' ? 'My Tokenizations' : 'Your recent chats'}
+                      </h3>
+                    </div>
+                    {webMode === 'web3' && userTokenizations.length > 0 && (
+                      <button
+                        onClick={() => setActiveCategory('my-tokenized-assets')}
+                        className="text-[10px] text-gray-500 hover:text-gray-700 transition-colors"
+                      >
+                        View all →
+                      </button>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
@@ -3876,22 +4604,50 @@ const TokenizedAssetsGlassmorphic = () => {
                               <div className="mb-2">
                                 <span className="text-[10px] font-bold font-['DM_Sans'] text-gray-500 uppercase tracking-wider">Aviation</span>
                               </div>
-                              <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800 transition-all duration-500">
-                                {currentAviationType === 0 ? 'Charter a Helicopter' : 'Charter a Jet'}
-                              </h4>
+                              <div className="relative h-[32px] overflow-hidden">
+                                <h4
+                                  className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800 absolute inset-0 transition-all duration-700 ease-in-out"
+                                  style={{
+                                    opacity: currentAviationType === 0 ? 1 : 0,
+                                    transform: currentAviationType === 0 ? 'translateY(0)' : 'translateY(-100%)'
+                                  }}
+                                >
+                                  Charter a Helicopter
+                                </h4>
+                                <h4
+                                  className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800 absolute inset-0 transition-all duration-700 ease-in-out"
+                                  style={{
+                                    opacity: currentAviationType === 1 ? 1 : 0,
+                                    transform: currentAviationType === 1 ? 'translateY(0)' : 'translateY(100%)'
+                                  }}
+                                >
+                                  Charter a Jet
+                                </h4>
+                              </div>
                               <p className="text-[10px] font-['DM_Sans'] text-gray-600">
                                 Book your private flight
                               </p>
                             </div>
                             <div className="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden relative">
+                              {/* Helicopter Image */}
                               <img
-                                src={currentAviationType === 0
-                                  ? "https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/gb/%20%20(3).png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJnYi8gICgzKS5wbmciLCJpYXQiOjE3NjA5NjIwMDcsImV4cCI6MTc5MjQ5ODAwN30.7yFk178KYOXi874bcWv4v8JBczbebcQFgpfDV0MH_MI"
-                                  : "https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/serviceImagesVector/pngtree-sleek-private-jet-in-flight-ready-for-business-travel-png-image_20073193.png"
-                                }
-                                alt={currentAviationType === 0 ? "Helicopter" : "Private Jet"}
-                                className="w-full h-full object-contain group-hover:scale-110 transition-all duration-500"
-                                key={currentAviationType}
+                                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/gb/%20%20(3).png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJnYi8gICgzKS5wbmciLCJpYXQiOjE3NjA5NjIwMDcsImV4cCI6MTc5MjQ5ODAwN30.7yFk178KYOXi874bcWv4v8JBczbebcQFgpfDV0MH_MI"
+                                alt="Helicopter"
+                                className="w-full h-full object-contain absolute inset-0 transition-all duration-700 ease-in-out group-hover:scale-110"
+                                style={{
+                                  opacity: currentAviationType === 0 ? 1 : 0,
+                                  transform: currentAviationType === 0 ? 'scale(1)' : 'scale(0.8)'
+                                }}
+                              />
+                              {/* Jet Image */}
+                              <img
+                                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/serviceImagesVector/pngtree-sleek-private-jet-in-flight-ready-for-business-travel-png-image_20073193.png"
+                                alt="Private Jet"
+                                className="w-full h-full object-contain absolute inset-0 transition-all duration-700 ease-in-out group-hover:scale-110"
+                                style={{
+                                  opacity: currentAviationType === 1 ? 1 : 0,
+                                  transform: currentAviationType === 1 ? 'scale(1)' : 'scale(0.8)'
+                                }}
                               />
                             </div>
                           </div>
@@ -3899,14 +4655,25 @@ const TokenizedAssetsGlassmorphic = () => {
 
                         {/* My Requests Card */}
                         <button
-                          onClick={() => setActiveCategory('my-requests')}
+                          onClick={() => setActiveCategory('requests')}
                           className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
                           style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                         >
-                          <div className="mb-2">
+                          <div className="mb-2 flex items-center justify-between">
                             <span className="text-[10px] font-bold font-['DM_Sans'] text-gray-500 uppercase tracking-wider">
                               My Requests
                             </span>
+                            {!loadingRequests && userRequests.length > 0 && (
+                              <span className={`text-[9px] px-2 py-0.5 rounded-full font-medium font-['DM_Sans'] ${
+                                userRequests[0].status === 'confirmed'
+                                  ? 'bg-green-100 text-green-700'
+                                  : userRequests[0].status === 'pending'
+                                  ? 'bg-yellow-100 text-yellow-700'
+                                  : 'bg-gray-100 text-gray-700'
+                              }`}>
+                                {userRequests[0].status}
+                              </span>
+                            )}
                           </div>
                           {loadingRequests ? (
                             <>
@@ -3918,18 +4685,9 @@ const TokenizedAssetsGlassmorphic = () => {
                               <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800 line-clamp-1">
                                 {userRequests.length} Active Request{userRequests.length > 1 ? 's' : ''}
                               </h4>
-                              <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-2">
+                              <p className="text-[10px] font-['DM_Sans'] text-gray-600">
                                 Latest: {new Date(userRequests[0].created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                               </p>
-                              <span className={`inline-block text-[9px] px-2 py-0.5 rounded-full font-medium font-['DM_Sans'] ${
-                                userRequests[0].status === 'confirmed'
-                                  ? 'bg-green-100 text-green-700'
-                                  : userRequests[0].status === 'pending'
-                                  ? 'bg-yellow-100 text-yellow-700'
-                                  : 'bg-gray-100 text-gray-700'
-                              }`}>
-                                {userRequests[0].status}
-                              </span>
                             </>
                           ) : (
                             <>
@@ -3941,52 +4699,67 @@ const TokenizedAssetsGlassmorphic = () => {
                       </>
                     )}
 
-                    {/* Web3 Mode - Show marketplace tokenized assets */}
+                    {/* Web3 Mode - Show user's tokenization requests */}
                     {webMode === 'web3' && (
                       <>
-                        {loadingAssets ? (
-                          <div className="col-span-3 flex items-center justify-center py-12">
-                            <video
-                              autoPlay
-                              loop
-                              muted
-                              playsInline
-                              className="w-24 h-24"
-                            >
-                              <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
-                            </video>
+                        {loadingTokenizations ? (
+                          <div className="col-span-3 flex items-center justify-center py-8">
+                            <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
                           </div>
-                        ) : tokenizedAssets.length > 0 ? (
-                          tokenizedAssets.slice(0, 3).map((asset) => (
-                            <button
-                              key={asset.id}
-                              onClick={() => setActiveCategory('marketplace')}
-                              className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
-                              style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                            >
-                              <div className="flex items-start gap-2 mb-2">
-                                <div className="text-sm">{asset.icon}</div>
-                              </div>
-                              <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-900 truncate">
-                                {asset.name}
-                              </h4>
-                              <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-1">{asset.type}</p>
-                              <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-medium text-gray-900">
-                                  ${asset.value?.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                                </span>
-                                <span className={`text-[10px] font-mono ${
-                                  parseFloat(asset.change24h) >= 0 ? 'text-green-600' : 'text-red-600'
-                                }`}>
-                                  {parseFloat(asset.change24h) >= 0 ? '+' : ''}{asset.change24h}%
-                                </span>
-                              </div>
-                            </button>
-                          ))
+                        ) : userTokenizations.length > 0 ? (
+                          userTokenizations.slice(0, 3).map((token) => {
+                            const statusColors = {
+                              'draft': 'bg-gray-200 text-gray-700',
+                              'submitted': 'bg-yellow-100 text-yellow-700',
+                              'pending': 'bg-yellow-100 text-yellow-700',
+                              'under_review': 'bg-blue-100 text-blue-700',
+                              'approved': 'bg-green-100 text-green-700',
+                              'approved_for_sto': 'bg-green-100 text-green-700',
+                              'live_on_marketplace': 'bg-purple-100 text-purple-700',
+                              'rejected': 'bg-red-100 text-red-700'
+                            };
+                            return (
+                              <button
+                                key={token.id}
+                                onClick={() => setActiveCategory('my-tokenized-assets')}
+                                className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
+                                style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                              >
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-sm">
+                                    {token.data?.asset_type?.toLowerCase().includes('jet') ? '✈️' :
+                                     token.data?.asset_type?.toLowerCase().includes('yacht') ? '⛵' :
+                                     token.data?.asset_type?.toLowerCase().includes('car') ? '🚗' :
+                                     token.data?.asset_type?.toLowerCase().includes('art') ? '🎨' :
+                                     token.data?.asset_type?.toLowerCase().includes('real') ? '🏠' : '💎'}
+                                  </span>
+                                  <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-medium ${statusColors[token.status] || 'bg-gray-100 text-gray-600'}`}>
+                                    {token.status?.replace(/_/g, ' ')}
+                                  </span>
+                                </div>
+                                <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-900 truncate">
+                                  {token.data?.asset_name || 'Tokenization Request'}
+                                </h4>
+                                <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-1">
+                                  {token.data?.token_standard || 'Reg-D'} • {token.data?.total_supply?.toLocaleString() || '—'} tokens
+                                </p>
+                                <div className="text-[10px] text-gray-500">
+                                  {new Date(token.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </div>
+                              </button>
+                            );
+                          })
                         ) : (
-                          <div className="col-span-3 border rounded-xl p-6 text-center bg-white/35 border-gray-300/50" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                            <Coins size={20} className="text-gray-600 mx-auto mb-2" />
-                            <p className="text-xs text-gray-600">No assets available</p>
+                          <div className="col-span-3 border rounded-xl p-4 text-center bg-white/35 border-gray-300/50" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                            <Sparkles size={20} className="text-gray-500 mx-auto mb-2" />
+                            <p className="text-xs text-gray-700 font-medium mb-1">No Tokenization Requests</p>
+                            <p className="text-[10px] text-gray-500 mb-2">Connect your real-world assets to blockchain</p>
+                            <button
+                              onClick={() => setActiveCategory('tokenization')}
+                              className="text-[10px] px-3 py-1.5 bg-black text-white rounded-lg hover:bg-gray-800 transition-all"
+                            >
+                              Start Tokenization
+                            </button>
                           </div>
                         )}
                       </>
@@ -3995,25 +4768,22 @@ const TokenizedAssetsGlassmorphic = () => {
 
                   {/* Escrow & News Cards - unterhalb der recent chats */}
                   <div className="mt-8 grid grid-cols-2 gap-4">
-                    {/* Card #7 - Escrow Card */}
+                    {/* Card #7 - Bookings Card */}
                     <button
                       onClick={() => {
-                        if (webMode !== 'web3') {
-                          setWebMode('web3');
-                        }
-                        setActiveCategory('escrow');
+                        setActiveCategory('bookings');
                       }}
                       className="border rounded-xl p-4 bg-white/35 hover:bg-white/40 border-gray-300/50 transition-all text-left"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
                       <h4 className={`text-xs font-semibold mb-1 font-['DM_Sans'] ${webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'}`}>
-                        Safe Escrow
+                        My Bookings
                       </h4>
                       <p className={`text-2xl font-semibold font-['DM_Sans'] ${webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'}`}>
-                        {userEscrows.length}
+                        {loadingBookings ? '...' : userBookings.length}
                       </p>
                       <p className={`text-[10px] font-['DM_Sans'] text-gray-600`}>
-                        {userEscrows.length === 0 ? 'Click to create your first escrow' : 'Active escrow accounts'}
+                        {userBookings.length === 0 ? 'Book your first flight' : 'Flights, Adventures & CO2'}
                       </p>
                     </button>
 
@@ -4053,48 +4823,58 @@ const TokenizedAssetsGlassmorphic = () => {
                   {/* Third Row - Additional Cards (Web3 Mode Only) */}
                   {webMode === 'web3' && (
                     <div className="mt-8 grid grid-cols-3 gap-3">
-                      {/* Card #9 - Portfolio Value */}
+                      {/* Card #9 - NFTs Owned */}
                       <button
-                        onClick={() => setActiveCategory('profile')}
+                        onClick={() => isConnected ? setActiveCategory('wallet-nfts') : open()}
                         className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
                         style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                       >
                         <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-900 truncate">
-                          Portfolio
-                        </h4>
-                        <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-1">Total Value</p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-medium text-gray-900">
-                            $0.00
-                          </span>
-                          <span className="text-[10px] font-mono text-green-600">
-                            +0.0%
-                          </span>
-                        </div>
-                      </button>
-
-                      {/* Card #10 - DAO Participation */}
-                      <button
-                        onClick={() => setActiveCategory('dao')}
-                        className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
-                        style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                      >
-                        <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-900 truncate">
-                          My DAOs
+                          NFTs Owned
                         </h4>
                         <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-1">
-                          {loadingDaos ? 'Loading...' : userDaos.length > 0 ? 'Active participation' : 'No DAOs yet'}
+                          {isConnected ? 'In Your Wallet' : 'Wallet NFTs'}
                         </p>
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-medium text-gray-900">
-                            {userDaos.length} {userDaos.length === 1 ? 'DAO' : 'DAOs'}
+                            {isConnected ? `${nfts?.length || userNFTs?.length || 0} NFTs` : '—'}
+                          </span>
+                          {isConnected ? (
+                            hasNFT && (
+                              <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+                                Member
+                              </span>
+                            )
+                          ) : (
+                            <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium">
+                              Connect
+                            </span>
+                          )}
+                        </div>
+                      </button>
+
+                      {/* Card #10 - PVCX Tokens */}
+                      <button
+                        onClick={() => setActiveCategory('pvcx-token')}
+                        className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
+                        style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                      >
+                        <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-900 truncate">
+                          PVCX Tokens
+                        </h4>
+                        <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-1">
+                          Your Balance
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-medium text-gray-900">
+                            0 $PVCX
                           </span>
                         </div>
                       </button>
 
                       {/* Card #11 - Notifications */}
                       <button
-                        onClick={() => setShowNotificationCenter(true)}
+                        onClick={() => setShowNotifications(true)}
                         className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
                         style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                       >
@@ -4380,6 +5160,161 @@ const TokenizedAssetsGlassmorphic = () => {
                         <Building2 size={48} className="text-gray-300 mx-auto mb-3" />
                         <p className="text-sm text-gray-600 mb-1">No SPV formations yet</p>
                         <p className="text-xs text-gray-500">Click "Create New SPV" to get started</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* My Bookings View */}
+          {!isTransitioning && activeCategory === 'my-bookings' && (
+            <div className="w-full h-full overflow-y-auto p-8">
+              <div className="max-w-7xl mx-auto">
+                <div className="mb-8">
+                  <button
+                    onClick={() => setActiveCategory('overview')}
+                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
+                  >
+                    <ArrowLeft size={16} />
+                    Back
+                  </button>
+                  <h1 className="text-3xl font-light text-gray-900 mb-2">My Bookings</h1>
+                  <p className="text-gray-600">View your flight bookings, adventures, and CO2 certificates</p>
+                </div>
+
+                {/* Bookings List */}
+                {loadingBookings ? (
+                  <div className="flex items-center justify-center py-20">
+                    <div className="flex flex-col items-center">
+                      <video
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="w-32 h-32 mb-3"
+                      >
+                        <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
+                      </video>
+                      <p className="text-sm text-gray-600">Loading bookings...</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* User's Bookings */}
+                    {userBookings.map((booking) => {
+                      const statusColors = {
+                        'pending': 'bg-yellow-100 text-yellow-700',
+                        'paid': 'bg-green-100 text-green-700',
+                        'confirmed': 'bg-blue-100 text-blue-700',
+                        'completed': 'bg-green-100 text-green-700',
+                        'cancelled': 'bg-red-100 text-red-700',
+                        'refunded': 'bg-gray-100 text-gray-700'
+                      };
+
+                      const typeIcons = {
+                        'empty_leg': <Plane size={24} className="text-white" />,
+                        'adventure_package': <Mountain size={24} className="text-white" />,
+                        'co2_certificate': <Leaf size={24} className="text-white" />
+                      };
+
+                      const typeColors = {
+                        'empty_leg': 'from-black to-gray-800',
+                        'adventure_package': 'from-emerald-500 to-emerald-600',
+                        'co2_certificate': 'from-green-500 to-green-600'
+                      };
+
+                      const typeLabels = {
+                        'empty_leg': 'Empty Leg Flight',
+                        'adventure_package': 'Adventure Package',
+                        'co2_certificate': 'CO2 Certificate'
+                      };
+
+                      return (
+                        <div key={booking.id} className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all">
+                          {/* Image or Gradient Header */}
+                          {booking.service_image_url ? (
+                            <div className="h-32 bg-cover bg-center relative" style={{ backgroundImage: `url(${booking.service_image_url})` }}>
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                              <span className={`absolute top-3 right-3 text-xs px-2 py-1 rounded-full ${statusColors[booking.payment_status] || 'bg-gray-100 text-gray-700'}`}>
+                                {booking.payment_status || 'pending'}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className={`h-32 bg-gradient-to-br ${typeColors[booking.booking_type] || 'from-gray-500 to-gray-600'} flex items-center justify-center relative`}>
+                              {typeIcons[booking.booking_type] || <Plane size={32} className="text-white/50" />}
+                              <span className={`absolute top-3 right-3 text-xs px-2 py-1 rounded-full ${statusColors[booking.payment_status] || 'bg-gray-100 text-gray-700'}`}>
+                                {booking.payment_status || 'pending'}
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="p-4">
+                            <p className="text-xs text-gray-500 mb-1">{typeLabels[booking.booking_type] || 'Booking'}</p>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-1">
+                              {booking.service_title || `${booking.origin || ''} → ${booking.destination || ''}`}
+                            </h3>
+
+                            {/* Route info for flights */}
+                            {booking.origin && booking.destination && (
+                              <p className="text-sm text-gray-600 mb-2 flex items-center gap-1">
+                                <MapPin size={14} />
+                                {booking.origin} → {booking.destination}
+                              </p>
+                            )}
+
+                            {/* Date */}
+                            {booking.departure_date && (
+                              <p className="text-sm text-gray-600 mb-2 flex items-center gap-1">
+                                <Calendar size={14} />
+                                {new Date(booking.departure_date).toLocaleDateString('en-US', {
+                                  weekday: 'short',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric'
+                                })}
+                              </p>
+                            )}
+
+                            {/* Price */}
+                            <p className="text-xl font-bold text-gray-900 mb-3">
+                              {booking.currency || 'USD'} {parseFloat(booking.total_amount || 0).toLocaleString()}
+                            </p>
+
+                            <div className="pt-3 border-t border-gray-200 flex items-center justify-between">
+                              <span className="text-xs text-gray-500">
+                                Booked: {new Date(booking.created_at).toLocaleDateString()}
+                              </span>
+                              {booking.coingate_payment_url && booking.payment_status === 'pending' && (
+                                <a
+                                  href={booking.coingate_payment_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-black hover:text-gray-700 font-medium flex items-center gap-1"
+                                >
+                                  Complete Payment
+                                  <ChevronRight size={14} />
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Empty State */}
+                    {userBookings.length === 0 && (
+                      <div className="col-span-full text-center py-12">
+                        <Plane size={48} className="text-gray-300 mx-auto mb-3" />
+                        <p className="text-sm text-gray-600 mb-1">No bookings yet</p>
+                        <p className="text-xs text-gray-500 mb-4">Browse empty legs and adventures to make your first booking</p>
+                        <button
+                          onClick={() => setActiveCategory('overview')}
+                          className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-all text-sm"
+                        >
+                          Browse Services
+                        </button>
                       </div>
                     )}
                   </div>
@@ -5816,24 +6751,38 @@ const TokenizedAssetsGlassmorphic = () => {
                           <div>
                             <label className="block text-xs text-gray-600 mb-2">Passengers</label>
                             <div className="flex items-center justify-between border border-gray-300 rounded px-3 py-2">
-                              <button className="text-gray-600 hover:text-gray-900">−</button>
-                              <span className="text-sm font-medium">1</span>
-                              <button className="text-gray-600 hover:text-gray-900">+</button>
+                              <button
+                                onClick={() => setHelicopterPassengers(Math.max(1, helicopterPassengers - 1))}
+                                className="text-gray-600 hover:text-gray-900"
+                              >−</button>
+                              <span className="text-sm font-medium">{helicopterPassengers}</span>
+                              <button
+                                onClick={() => setHelicopterPassengers(Math.min(selectedHelicopter?.capacity || 10, helicopterPassengers + 1))}
+                                className="text-gray-600 hover:text-gray-900"
+                              >+</button>
                             </div>
                           </div>
 
                           <div>
                             <label className="block text-xs text-gray-600 mb-2">Flight Duration (hours)</label>
                             <div className="flex items-center justify-between border border-gray-300 rounded px-3 py-2">
-                              <button className="text-gray-600 hover:text-gray-900">−</button>
-                              <span className="text-sm font-medium">1</span>
-                              <button className="text-gray-600 hover:text-gray-900">+</button>
+                              <button
+                                onClick={() => setHelicopterDuration(Math.max(1, helicopterDuration - 1))}
+                                className="text-gray-600 hover:text-gray-900"
+                              >−</button>
+                              <span className="text-sm font-medium">{helicopterDuration}</span>
+                              <button
+                                onClick={() => setHelicopterDuration(helicopterDuration + 1)}
+                                className="text-gray-600 hover:text-gray-900"
+                              >+</button>
                             </div>
                           </div>
 
                           <div>
                             <label className="block text-xs text-gray-600 mb-2">Special Requests (optional)</label>
                             <textarea
+                              value={helicopterSpecialRequests}
+                              onChange={(e) => setHelicopterSpecialRequests(e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded text-sm resize-none"
                               rows="3"
                               placeholder="Landing site preferences, special equipment, etc."
@@ -5846,20 +6795,22 @@ const TokenizedAssetsGlassmorphic = () => {
                             <span className="text-gray-600">Hourly Rate:</span>
                             <span className="font-bold text-gray-900">{selectedHelicopter.totalPrice}</span>
                           </div>
-                          <div className="flex justify-between text-lg font-bold">
-                            <span>Total:</span>
-                            <span>1 hour €</span>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Duration:</span>
+                            <span className="font-medium text-gray-900">{helicopterDuration} hour{helicopterDuration > 1 ? 's' : ''}</span>
+                          </div>
+                          <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
+                            <span>Estimated Total:</span>
+                            <span>€{((selectedHelicopter.rawData?.price || 0) * helicopterDuration).toLocaleString()}</span>
                           </div>
                         </div>
 
                         <button
-                          onClick={() => {
-                            setBookingVehicleType('helicopter');
-                            setActiveCategory('private-jet');
-                          }}
-                          className="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition-all mb-4"
+                          onClick={requestHelicopterCharter}
+                          disabled={helicopterSubmitting || helicopterSubmitSuccess}
+                          className="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition-all mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Request Charter
+                          {helicopterSubmitting ? 'Submitting...' : helicopterSubmitSuccess ? 'Request Sent ✓' : 'Request Charter'}
                         </button>
 
                         <p className="text-xs text-gray-500 text-center">Helicopter ID: {rawData.id || 'N/A'}</p>
@@ -6584,6 +7535,26 @@ const TokenizedAssetsGlassmorphic = () => {
                         >
                           Request Flight
                         </button>
+
+                        {/* Pay with Crypto Button */}
+                        <BuyWithCryptoButton
+                          serviceType="empty_leg"
+                          serviceId={selectedEmptyLeg?.rawData?.id || selectedEmptyLeg?.id}
+                          serviceTitle={`${selectedEmptyLeg?.from} → ${selectedEmptyLeg?.to}`}
+                          serviceDescription={selectedEmptyLeg?.aircraft || 'Empty Leg Flight'}
+                          price={selectedEmptyLeg?.rawData?.price_usd || selectedEmptyLeg?.rawData?.price || parseFloat(selectedEmptyLeg?.totalPrice?.replace(/[^0-9.]/g, '') || 0)}
+                          currency="USD"
+                          imageUrl={selectedEmptyLeg?.image}
+                          origin={selectedEmptyLeg?.from}
+                          destination={selectedEmptyLeg?.to}
+                          aircraft={selectedEmptyLeg?.aircraft}
+                          departureDate={selectedEmptyLeg?.rawData?.departure_date}
+                          passengers={selectedEmptyLeg?.rawData?.max_passengers || selectedEmptyLeg?.pax}
+                          rawData={selectedEmptyLeg?.rawData}
+                          user={user}
+                          variant="gradient"
+                          className="mb-3"
+                        />
 
                         <button
                           onClick={checkNFTMembership}
@@ -8884,6 +9855,24 @@ const TokenizedAssetsGlassmorphic = () => {
                     <div className="flex space-x-4 pt-4 border-t border-gray-100 text-xs">
                       <button className="text-gray-600 hover:text-black">Project Documentation ↗</button>
                       <button className="text-gray-600 hover:text-black">Verification Report ⚖</button>
+                    </div>
+
+                    {/* Purchase CO2 Certificate Button */}
+                    <div className="mt-6 pt-4 border-t border-gray-100">
+                      <BuyWithCryptoButton
+                        serviceType="co2_certificate"
+                        serviceId={selectedCO2Project.id}
+                        serviceTitle={selectedCO2Project.name}
+                        serviceDescription={`${selectedCO2Project.minPurchase} ton CO2 offset - ${selectedCO2Project.certificationStandard}`}
+                        price={selectedCO2Project.pricePerTon * selectedCO2Project.minPurchase}
+                        currency="USD"
+                        imageUrl={selectedCO2Project.image}
+                        user={user}
+                        variant="gradient"
+                      />
+                      <p className="text-xs text-gray-500 mt-2 text-center">
+                        Min. {selectedCO2Project.minPurchase} ton{selectedCO2Project.minPurchase > 1 ? 's' : ''} • Earn 1.5% in $PVCX rewards
+                      </p>
                     </div>
                   </div>
                 </div>

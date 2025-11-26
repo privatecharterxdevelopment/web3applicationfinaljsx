@@ -631,13 +631,14 @@ class Web3Service {
     toBlock?: number | 'latest';
   }): Promise<WalletTransaction[]> {
     try {
-      console.log('🔍 Fetching transactions for:', userAddress);
+      console.log('🔍 Fetching Base transactions for:', userAddress);
 
       const limit = options?.limit || 100;
       const toBlock = options?.toBlock || 'latest';
 
       // Use Alchemy's getAssetTransfers method to get transaction history
-      const url = `${RPC_URL}`;
+      const url = BASE_RPC_URL;
+      console.log('📡 Using RPC URL:', url.substring(0, 50) + '...');
 
       // Fetch sent transactions
       const sentResponse = await fetch(url, {
@@ -658,7 +659,12 @@ class Web3Service {
         })
       });
 
+      if (!sentResponse.ok) {
+        console.error('❌ Sent response not ok:', sentResponse.status, sentResponse.statusText);
+      }
+
       const sentData = await sentResponse.json();
+      console.log('📤 Sent data response:', sentData.error ? sentData.error : `${sentData.result?.transfers?.length || 0} transfers`);
 
       // Fetch received transactions
       const receivedResponse = await fetch(url, {
@@ -679,12 +685,17 @@ class Web3Service {
         })
       });
 
+      if (!receivedResponse.ok) {
+        console.error('❌ Received response not ok:', receivedResponse.status, receivedResponse.statusText);
+      }
+
       const receivedData = await receivedResponse.json();
+      console.log('📥 Received data response:', receivedData.error ? receivedData.error : `${receivedData.result?.transfers?.length || 0} transfers`);
 
       const sentTransfers = sentData.result?.transfers || [];
       const receivedTransfers = receivedData.result?.transfers || [];
 
-      console.log(`📤 Sent: ${sentTransfers.length}, 📥 Received: ${receivedTransfers.length}`);
+      console.log(`📊 Base: Sent: ${sentTransfers.length}, Received: ${receivedTransfers.length}`);
 
       // Combine and format transactions
       const allTransfers = [...sentTransfers, ...receivedTransfers];
@@ -767,11 +778,12 @@ class Web3Service {
     toBlock?: number | 'latest';
   }): Promise<WalletTransaction[]> {
     try {
-      console.log('🔍 Fetching Ethereum transactions for:', userAddress);
+      console.log('🔍 Fetching Ethereum mainnet transactions for:', userAddress);
 
       const limit = options?.limit || 100;
       const toBlock = options?.toBlock || 'latest';
       const url = ETH_RPC_URL;
+      console.log('📡 Using ETH RPC URL:', url.substring(0, 50) + '...');
 
       // Fetch sent transactions
       const sentResponse = await fetch(url, {
@@ -815,10 +827,17 @@ class Web3Service {
 
       const receivedData = await receivedResponse.json();
 
+      if (sentData.error) {
+        console.error('❌ ETH sent error:', sentData.error);
+      }
+      if (receivedData.error) {
+        console.error('❌ ETH received error:', receivedData.error);
+      }
+
       const sentTransfers = sentData.result?.transfers || [];
       const receivedTransfers = receivedData.result?.transfers || [];
 
-      console.log(`📤 Ethereum Sent: ${sentTransfers.length}, 📥 Received: ${receivedTransfers.length}`);
+      console.log(`📊 ETH Mainnet: Sent: ${sentTransfers.length}, Received: ${receivedTransfers.length}`);
 
       // Combine and format transactions
       const allTransfers = [...sentTransfers, ...receivedTransfers];

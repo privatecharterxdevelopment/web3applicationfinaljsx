@@ -128,6 +128,10 @@ import PartnerDashboard from '../../components/PartnerDashboard.tsx';
 import NewsletterPreferences from '../../pages/NewsletterPreferences.tsx';
 import NewsletterUnsubscribe from '../../pages/NewsletterUnsubscribe.tsx';
 
+// Import Payment Pages
+import PaymentSuccessPage from '../../pages/PaymentSuccessPage.jsx';
+import PaymentCancelPage from '../../pages/PaymentCancelPage.jsx';
+
 import { supabase } from '../../lib/supabase.ts';
 
 // ===== WAGMI/REOWN CONFIGURATION =====
@@ -340,6 +344,10 @@ function AppContent() {
               {/* Newsletter Routes */}
               <Route path="/newsletter/preferences" element={<NewsletterPreferences />} />
               <Route path="/newsletter/unsubscribe" element={<NewsletterUnsubscribe />} />
+
+              {/* Payment Status Routes */}
+              <Route path="/payment/success" element={<PaymentSuccessPage />} />
+              <Route path="/payment/cancel" element={<PaymentCancelPage />} />
 
               {/* Home Route - New Landing Page */}
               <Route path="/" element={<Homepage />} />

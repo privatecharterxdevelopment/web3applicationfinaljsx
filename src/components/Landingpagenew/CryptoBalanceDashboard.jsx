@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUpRight, ArrowDownLeft, History, Wallet, MessageCircle, Shield, User, Award, Plus, X, ExternalLink, LogOut } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, History, Wallet, MessageCircle, Shield, User, Award, Plus, X, ExternalLink, LogOut, RefreshCw } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer, YAxis, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import { useAccount, useBalance, useChainId } from 'wagmi';
@@ -9,7 +9,7 @@ import { formatEther } from 'viem';
 import { base, mainnet } from 'viem/chains';
 import { web3Service } from '../../lib/web3';
 
-export default function CryptoBalanceDashboard() {
+export default function CryptoBalanceDashboard({ setActiveCategory }) {
   const { user, signOut } = useAuth();
   const { address, isConnected } = useAccount();
   const { open } = useAppKit();
@@ -31,26 +31,53 @@ export default function CryptoBalanceDashboard() {
   const [nftCount, setNftCount] = useState(0);
   const [investments, setInvestments] = useState([]);
 
-  // Fetch ETH balance on Base
-  const { data: baseEthBalance } = useBalance({
+  // State for manual refresh trigger
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Fetch ETH balance on Base - refetch every 30 seconds
+  const { data: baseEthBalance, refetch: refetchBaseEth } = useBalance({
     address: address,
     chainId: base.id,
-    watch: true,
+    query: {
+      enabled: !!address,
+      refetchInterval: 30000, // 30 seconds
+      staleTime: 10000,
+    },
   });
 
   // Fetch ETH balance on Ethereum mainnet
-  const { data: ethMainnetBalance } = useBalance({
+  const { data: ethMainnetBalance, refetch: refetchMainnetEth } = useBalance({
     address: address,
     chainId: mainnet.id,
-    watch: true,
+    query: {
+      enabled: !!address,
+      refetchInterval: 30000,
+      staleTime: 10000,
+    },
   });
 
-  // Fetch USDC balance on Base
-  const { data: usdcBalance } = useBalance({
+  // Fetch USDC balance on Base (USDC has 6 decimals)
+  const { data: usdcBalance, refetch: refetchUsdc } = useBalance({
     address: address,
     token: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
     chainId: base.id,
-    watch: true,
+    query: {
+      enabled: !!address,
+      refetchInterval: 30000,
+      staleTime: 10000,
+    },
+  });
+
+  // Fetch native balance on current chain
+  const { data: currentChainBalance, refetch: refetchCurrentChain } = useBalance({
+    address: address,
+    chainId: chainId,
+    query: {
+      enabled: !!address && !!chainId,
+      refetchInterval: 30000,
+      staleTime: 10000,
+    },
   });
 
   // Fetch user profile and KYC data
@@ -71,9 +98,10 @@ export default function CryptoBalanceDashboard() {
     }
   }, [isConnected, address]);
 
-  // Update balances when wallet data changes
+  // Update balances when wallet data changes OR chainId changes
   useEffect(() => {
     if (isConnected && address) {
+      console.log('🔄 Wallet data changed - updating balances', { chainId, address });
       updateBalances();
       generateChartData();
     } else {
@@ -81,7 +109,15 @@ export default function CryptoBalanceDashboard() {
       setBalances([]);
       setTransactions([]);
     }
-  }, [baseEthBalance, ethMainnetBalance, usdcBalance, isConnected, address]);
+  }, [baseEthBalance, ethMainnetBalance, usdcBalance, currentChainBalance, isConnected, address, chainId, refreshTrigger]);
+
+  // Force refresh when chain changes
+  useEffect(() => {
+    if (isConnected && address && chainId) {
+      console.log('🔗 Chain changed to:', chainId, '- forcing refresh');
+      refetchAllBalances();
+    }
+  }, [chainId]);
 
   // Auto-refresh balances and transactions every 60 seconds
   useEffect(() => {
@@ -89,23 +125,59 @@ export default function CryptoBalanceDashboard() {
 
     const interval = setInterval(() => {
       console.log('🔄 Auto-refreshing balances and transactions (60s interval)');
+      refetchAllBalances();
       fetchAllTransactions();
-      updateBalances();
     }, 60000); // 60 seconds
 
     return () => clearInterval(interval);
   }, [isConnected, address]);
 
+  // Function to manually refetch all balances
+  const refetchAllBalances = async () => {
+    console.log('🔄 Refetching all balances...');
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        refetchBaseEth?.(),
+        refetchMainnetEth?.(),
+        refetchUsdc?.(),
+        refetchCurrentChain?.(),
+      ]);
+      setRefreshTrigger(prev => prev + 1);
+      console.log('✅ All balances refetched');
+    } catch (error) {
+      console.error('Error refetching balances:', error);
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500); // Brief delay for visual feedback
+    }
+  };
+
+  // Manual refresh handler
+  const handleManualRefresh = () => {
+    refetchAllBalances();
+    fetchAllTransactions();
+  };
+
   const fetchAllTransactions = async () => {
     if (!address) return;
 
     setLoadingTransactions(true);
+    console.log('🔍 Fetching real transactions for wallet:', address);
+
     try {
       const allTxs = await web3Service.getAllChainTransactions(address, 50);
-      setTransactions(allTxs);
-      console.log(`✅ Loaded ${allTxs.length} transactions`);
+      console.log(`✅ Loaded ${allTxs.length} real transactions from blockchain`);
+
+      if (allTxs.length > 0) {
+        console.log('📋 First transaction:', allTxs[0]);
+        setTransactions(allTxs);
+      } else {
+        console.log('⚠️ No transactions found for this wallet');
+        setTransactions([]);
+      }
     } catch (error) {
-      console.error('Error fetching transactions:', error);
+      console.error('❌ Error fetching transactions:', error);
+      setTransactions([]);
     } finally {
       setLoadingTransactions(false);
     }
@@ -201,56 +273,84 @@ export default function CryptoBalanceDashboard() {
   const updateBalances = async () => {
     setLoading(true);
     const newBalances = [];
-    const ethPrice = 3000; // Mock price - integrate coingecko API for real prices
+    const ethPrice = 3500; // Mock price - integrate coingecko API for real prices
+
+    console.log('📊 Updating balances...', {
+      baseEthBalance: baseEthBalance?.formatted,
+      ethMainnetBalance: ethMainnetBalance?.formatted,
+      usdcBalance: usdcBalance?.formatted,
+      currentChainBalance: currentChainBalance?.formatted,
+      currentChainId: chainId,
+    });
 
     // Add ETH balance from Base
-    if (baseEthBalance) {
-      const ethValue = parseFloat(formatEther(baseEthBalance.value));
-      if (ethValue > 0) {
-        newBalances.push({
-          symbol: 'ETH',
-          name: 'Ethereum (Base)',
-          balance: ethValue,
-          value: ethValue * ethPrice,
-          change: 2.4,
-          chain: 'Base',
-          chainId: base.id,
-        });
-      }
+    if (baseEthBalance && baseEthBalance.value > 0n) {
+      const ethValue = parseFloat(baseEthBalance.formatted);
+      newBalances.push({
+        symbol: 'ETH',
+        name: 'Ethereum (Base)',
+        balance: ethValue,
+        value: ethValue * ethPrice,
+        change: 2.4,
+        chain: 'Base',
+        chainId: base.id,
+        isCurrentChain: chainId === base.id,
+      });
     }
 
     // Add ETH balance from Ethereum mainnet
-    if (ethMainnetBalance) {
-      const ethValue = parseFloat(formatEther(ethMainnetBalance.value));
-      if (ethValue > 0) {
-        newBalances.push({
-          symbol: 'ETH',
-          name: 'Ethereum (Mainnet)',
-          balance: ethValue,
-          value: ethValue * ethPrice,
-          change: 2.4,
-          chain: 'Ethereum',
-          chainId: mainnet.id,
-        });
-      }
+    if (ethMainnetBalance && ethMainnetBalance.value > 0n) {
+      const ethValue = parseFloat(ethMainnetBalance.formatted);
+      newBalances.push({
+        symbol: 'ETH',
+        name: 'Ethereum (Mainnet)',
+        balance: ethValue,
+        value: ethValue * ethPrice,
+        change: 2.4,
+        chain: 'Ethereum',
+        chainId: mainnet.id,
+        isCurrentChain: chainId === mainnet.id,
+      });
     }
 
-    // Add USDC balance from Base
-    if (usdcBalance) {
-      const usdcValue = parseFloat(formatEther(usdcBalance.value));
-      if (usdcValue > 0) {
-        newBalances.push({
-          symbol: 'USDC',
-          name: 'USD Coin (Base)',
-          balance: usdcValue,
-          value: usdcValue * 1.0,
-          change: 0.0,
-          chain: 'Base',
-          chainId: base.id,
-        });
-      }
+    // Add USDC balance from Base (USDC has 6 decimals - wagmi handles this with .formatted)
+    if (usdcBalance && usdcBalance.value > 0n) {
+      const usdcValue = parseFloat(usdcBalance.formatted);
+      newBalances.push({
+        symbol: 'USDC',
+        name: 'USD Coin (Base)',
+        balance: usdcValue,
+        value: usdcValue * 1.0,
+        change: 0.0,
+        chain: 'Base',
+        chainId: base.id,
+        isCurrentChain: chainId === base.id,
+      });
     }
 
+    // Add current chain balance if it's a different chain (not Base or Mainnet)
+    if (currentChainBalance && currentChainBalance.value > 0n && chainId !== base.id && chainId !== mainnet.id) {
+      const nativeValue = parseFloat(currentChainBalance.formatted);
+      newBalances.push({
+        symbol: currentChainBalance.symbol,
+        name: `${currentChainBalance.symbol} (Chain ${chainId})`,
+        balance: nativeValue,
+        value: nativeValue * ethPrice, // Assume same price as ETH for now
+        change: 0.0,
+        chain: `Chain ${chainId}`,
+        chainId: chainId,
+        isCurrentChain: true,
+      });
+    }
+
+    // Sort: current chain first, then by value
+    newBalances.sort((a, b) => {
+      if (a.isCurrentChain && !b.isCurrentChain) return -1;
+      if (!a.isCurrentChain && b.isCurrentChain) return 1;
+      return b.value - a.value;
+    });
+
+    console.log('✅ Balances updated:', newBalances);
     setBalances(newBalances);
     setLoading(false);
   };
@@ -311,22 +411,22 @@ export default function CryptoBalanceDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-white p-4 sm:p-6">
+    <div className="min-h-screen bg-transparent p-4 sm:p-6">
       <div className="max-w-5xl mx-auto">
         {/* Wallet Not Connected Banner */}
         {!isConnected && (
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-4 sm:p-6 mb-4 border border-gray-200">
+          <div className="bg-white/20 backdrop-blur-xl rounded-2xl p-4 sm:p-6 mb-4 border border-gray-300/50">
             <div className="text-center">
-              <Wallet className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-              <h2 className="text-lg sm:text-xl font-light text-gray-900 mb-2">Wallet nicht verbunden</h2>
+              <Wallet className="w-12 h-12 mx-auto mb-4 text-gray-500" />
+              <h2 className="text-lg sm:text-xl font-light text-gray-900 mb-2">Wallet Not Connected</h2>
               <p className="text-gray-600 mb-4 text-sm">
-                Verbinden Sie Ihre Wallet, um Ihre Krypto-Balances und Portfolio zu sehen.
+                Connect your wallet to view your crypto balances and portfolio.
               </p>
               <button
                 onClick={() => open()}
                 className="px-6 py-2.5 bg-black text-white rounded-xl hover:bg-gray-800 transition-all text-sm"
               >
-                Wallet verbinden
+                Connect Wallet
               </button>
             </div>
           </div>
@@ -334,30 +434,38 @@ export default function CryptoBalanceDashboard() {
 
         {/* Total Balance Card with Chart - Only show when wallet is connected */}
         {isConnected && (
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-4 sm:p-6 mb-4 border border-gray-200">
+          <div className="bg-white/20 backdrop-blur-xl rounded-2xl p-4 sm:p-6 mb-4 border border-gray-300/50">
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
-              <p className="text-gray-500 text-xs mb-1">Gesamtwert</p>
-              <h2 className="text-3xl sm:text-4xl font-light text-black mb-1">
+              <p className="text-gray-500 text-xs mb-1">Total Value</p>
+              <h2 className="text-3xl sm:text-4xl font-light text-gray-900 mb-1">
                 ${totalValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </h2>
-              <p className="text-xs text-gray-500 mt-1">+2.4% heute</p>
+              <p className="text-xs text-gray-500 mt-1">+2.4% today</p>
             </div>
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-2">
               <div className="text-right">
-                <p className="text-xs text-gray-400 mb-1">24h</p>
-                <div className="px-2 py-1 bg-white rounded-full text-xs text-gray-600 border border-gray-200">
+                <p className="text-xs text-gray-400 mb-1">{chainId === base.id ? 'Base' : chainId === mainnet.id ? 'Mainnet' : `Chain ${chainId}`}</p>
+                <div className="px-2 py-1 bg-white/30 backdrop-blur-sm rounded-full text-xs text-gray-700 border border-gray-300/50">
                   Live
                 </div>
               </div>
               <button
+                onClick={handleManualRefresh}
+                disabled={isRefreshing}
+                className="w-10 h-10 rounded-full bg-white/30 backdrop-blur-sm border border-gray-300/50 hover:bg-white/40 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50"
+                title="Refresh balances"
+              >
+                <RefreshCw className={`w-5 h-5 text-gray-700 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </button>
+              <button
                 onClick={() => setShowChart(!showChart)}
-                className="w-12 h-12 rounded-full bg-white border-2 border-gray-200 hover:border-gray-300 flex items-center justify-center transition-all active:scale-95"
+                className="w-10 h-10 rounded-full bg-white/30 backdrop-blur-sm border border-gray-300/50 hover:bg-white/40 flex items-center justify-center transition-all active:scale-95"
               >
                 {showChart ? (
-                  <X className="w-6 h-6 text-black transition-transform duration-300" />
+                  <X className="w-5 h-5 text-gray-700 transition-transform duration-300" />
                 ) : (
-                  <Plus className="w-6 h-6 text-black transition-transform duration-300" />
+                  <Plus className="w-5 h-5 text-gray-700 transition-transform duration-300" />
                 )}
               </button>
             </div>
@@ -386,7 +494,7 @@ export default function CryptoBalanceDashboard() {
                 <div className="flex justify-between text-xs text-gray-400 px-4">
                   <span>00:00</span>
                   <span>12:00</span>
-                  <span>Jetzt</span>
+                  <span>Now</span>
                 </div>
               </>
             )}
@@ -402,14 +510,14 @@ export default function CryptoBalanceDashboard() {
             className="flex-1 bg-black text-white rounded-xl py-3 px-4 flex items-center justify-center gap-2 hover:bg-gray-800 transition-all active:scale-95"
           >
             <ArrowUpRight className="w-4 h-4" />
-            <span className="text-sm font-medium">Senden</span>
+            <span className="text-sm font-medium">Send</span>
           </button>
           <button
             onClick={handleReceive}
             className="flex-1 bg-gray-100 text-black rounded-xl py-3 px-4 flex items-center justify-center gap-2 hover:bg-gray-200 transition-all active:scale-95 border border-gray-200"
           >
             <ArrowDownLeft className="w-4 h-4" />
-            <span className="text-sm font-medium">Empfangen</span>
+            <span className="text-sm font-medium">Receive</span>
           </button>
         </div>
         )}
@@ -420,10 +528,10 @@ export default function CryptoBalanceDashboard() {
           <div className="space-y-4">
             {/* My Assets Section - Only show when wallet is connected */}
             {isConnected && (
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl overflow-hidden">
               <button
                 onClick={() => toggleSection('assets')}
-                className="w-full p-3 flex items-center justify-between hover:bg-gray-50 transition-all"
+                className="w-full p-3 flex items-center justify-between hover:bg-white/10 transition-all"
               >
                 <div className="flex items-center gap-2">
                   <Wallet className="w-4 h-4 text-gray-600" />
@@ -432,7 +540,7 @@ export default function CryptoBalanceDashboard() {
                 <Plus className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${activeSection === 'assets' ? 'rotate-45' : ''}`} />
               </button>
               <div className={`transition-all duration-300 ease-in-out overflow-hidden ${activeSection === 'assets' ? 'max-h-96' : 'max-h-0'}`}>
-                <div className="p-4 bg-gray-50 space-y-2">
+                <div className="p-4 bg-white/10 space-y-2">
                   {balances.length > 0 ? (
                     balances.map((item) => (
                       <div key={item.symbol} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-0">
@@ -446,7 +554,7 @@ export default function CryptoBalanceDashboard() {
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-gray-500">Keine Assets gefunden</p>
+                    <p className="text-sm text-gray-500">No assets found</p>
                   )}
                 </div>
               </div>
@@ -455,63 +563,86 @@ export default function CryptoBalanceDashboard() {
 
             {/* Blockchain Transactions Section - Only show when wallet is connected */}
             {isConnected && (
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl overflow-hidden">
               <button
                 onClick={() => toggleSection('transactions')}
-                className="w-full p-3 flex items-center justify-between hover:bg-gray-50 transition-all"
+                className="w-full p-3 flex items-center justify-between hover:bg-white/10 transition-all"
               >
                 <div className="flex items-center gap-2">
                   <History className="w-4 h-4 text-gray-600" />
-                  <span className="text-sm font-medium text-gray-900">Transactions</span>
+                  <span className="text-sm font-medium text-gray-900">Blockchain Transactions</span>
                   {transactions.length > 0 && (
                     <span className="px-2 py-0.5 bg-black text-white rounded-full text-xs">
                       {transactions.length}
+                    </span>
+                  )}
+                  {loadingTransactions && (
+                    <span className="px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full text-xs animate-pulse">
+                      Loading...
                     </span>
                   )}
                 </div>
                 <Plus className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${activeSection === 'transactions' ? 'rotate-45' : ''}`} />
               </button>
               <div className={`transition-all duration-300 ease-in-out overflow-hidden ${activeSection === 'transactions' ? 'max-h-96 overflow-y-auto' : 'max-h-0'}`}>
-                <div className="p-4 bg-gray-50 space-y-2">
+                <div className="p-4 bg-white/10 space-y-2">
                   {loadingTransactions ? (
-                    <p className="text-sm text-gray-500">Loading transactions...</p>
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                      <span>Fetching from blockchain...</span>
+                    </div>
                   ) : transactions.length > 0 ? (
-                    transactions.slice(0, 10).map((tx) => (
-                      <div key={tx.hash} className="py-2 border-b border-gray-200 last:border-0">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-medium text-gray-900 capitalize">{tx.type}</p>
-                              {tx.type === 'send' ? (
-                                <ArrowUpRight className="w-3 h-3 text-red-500" />
-                              ) : (
-                                <ArrowDownLeft className="w-3 h-3 text-green-500" />
-                              )}
+                    <>
+                      <p className="text-[10px] text-gray-400 mb-2">Real transactions from Base & Ethereum</p>
+                      {transactions.slice(0, 10).map((tx) => (
+                        <div key={tx.hash} className="py-2 border-b border-gray-300/30 last:border-0">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium text-gray-900 capitalize">{tx.type}</p>
+                                {tx.type === 'send' ? (
+                                  <ArrowUpRight className="w-3 h-3 text-red-500" />
+                                ) : (
+                                  <ArrowDownLeft className="w-3 h-3 text-green-500" />
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-500">
+                                {new Date(tx.timestamp).toLocaleDateString('de-DE', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                              <a
+                                href={tx.etherscanUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1"
+                              >
+                                View on Explorer <ExternalLink className="w-3 h-3" />
+                              </a>
                             </div>
-                            <p className="text-xs text-gray-500">
-                              {new Date(tx.timestamp).toLocaleDateString('de-DE')}
-                            </p>
-                            <a
-                              href={tx.etherscanUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1"
-                            >
-                              View on Explorer <ExternalLink className="w-3 h-3" />
-                            </a>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-medium text-gray-900">
-                              {tx.tokenTransfers && tx.tokenTransfers.length > 0
-                                ? tx.tokenTransfers[0].valueFormatted
-                                : `${parseFloat(tx.valueInEth).toFixed(4)} ETH`}
-                            </p>
+                            <div className="text-right">
+                              <p className="text-sm font-medium text-gray-900">
+                                {tx.tokenTransfers && tx.tokenTransfers.length > 0
+                                  ? tx.tokenTransfers[0].valueFormatted
+                                  : `${parseFloat(tx.valueInEth).toFixed(4)} ETH`}
+                              </p>
+                              <p className="text-[10px] text-gray-400">
+                                {tx.etherscanUrl?.includes('basescan') ? 'Base' : 'Ethereum'}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      ))}
+                    </>
                   ) : (
-                    <p className="text-sm text-gray-500">No transactions found</p>
+                    <div className="text-center py-4">
+                      <p className="text-sm text-gray-500">No transactions found</p>
+                      <p className="text-xs text-gray-400 mt-1">Transactions will appear here once you make transfers</p>
+                    </div>
                   )}
                 </div>
               </div>
@@ -519,10 +650,10 @@ export default function CryptoBalanceDashboard() {
             )}
 
             {/* My Requests Section */}
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl overflow-hidden">
               <button
                 onClick={() => toggleSection('requests')}
-                className="w-full p-3 flex items-center justify-between hover:bg-gray-50 transition-all"
+                className="w-full p-3 flex items-center justify-between hover:bg-white/10 transition-all"
               >
                 <div className="flex items-center gap-2">
                   <History className="w-4 h-4 text-gray-600" />
@@ -535,39 +666,70 @@ export default function CryptoBalanceDashboard() {
                 </div>
                 <Plus className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${activeSection === 'requests' ? 'rotate-45' : ''}`} />
               </button>
-              <div className={`transition-all duration-300 ease-in-out overflow-hidden ${activeSection === 'requests' ? 'max-h-96 overflow-y-auto' : 'max-h-0'}`}>
-                <div className="p-4 bg-gray-50 space-y-2">
+              <div className={`transition-all duration-300 ease-in-out overflow-hidden ${activeSection === 'requests' ? 'max-h-[500px] overflow-y-auto' : 'max-h-0'}`}>
+                <div className="p-4 bg-white/10 space-y-3">
                   {userRequests.length > 0 ? (
-                    userRequests.map((request) => (
-                      <div key={request.id} className="py-2 border-b border-gray-200 last:border-0">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="text-xs text-gray-500">
-                              {formatDate(request.created_at)}
-                            </p>
+                    <>
+                      {userRequests.slice(0, 5).map((request) => (
+                        <div key={request.id} className="py-3 px-3 bg-white/5 rounded-lg border border-gray-200/30">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-900">
+                                {getRequestTypeLabel(request.request_type || request.type)}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                {request.departure_airport || request.from_location} → {request.arrival_airport || request.to_location}
+                              </p>
+                            </div>
+                            <span className={`px-2 py-0.5 rounded-full text-xs ${
+                              request.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                              request.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                              request.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                              'bg-gray-100 text-gray-700'
+                            }`}>
+                              {request.status}
+                            </span>
                           </div>
-                          <span className={`px-2 py-0.5 rounded-full text-xs ${
-                            request.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                            request.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {request.status}
-                          </span>
+                          <div className="flex justify-between items-center text-xs text-gray-400">
+                            <span>{formatDate(request.created_at)}</span>
+                            {request.departure_date && (
+                              <span>Travel: {formatDate(request.departure_date)}</span>
+                            )}
+                          </div>
+                          {request.passengers && (
+                            <p className="text-xs text-gray-400 mt-1">{request.passengers} passenger{request.passengers > 1 ? 's' : ''}</p>
+                          )}
                         </div>
-                      </div>
-                    ))
+                      ))}
+                      {userRequests.length > 5 && (
+                        <button
+                          onClick={() => setActiveCategory && setActiveCategory('requests')}
+                          className="w-full py-2 text-xs text-gray-400 hover:text-gray-600 transition-colors text-center"
+                        >
+                          See all {userRequests.length} requests →
+                        </button>
+                      )}
+                      {userRequests.length <= 5 && setActiveCategory && (
+                        <button
+                          onClick={() => setActiveCategory('requests')}
+                          className="w-full py-2 text-xs text-gray-400 hover:text-gray-600 transition-colors text-center"
+                        >
+                          View all requests →
+                        </button>
+                      )}
+                    </>
                   ) : (
-                    <p className="text-sm text-gray-500">Keine aktiven Anfragen</p>
+                    <p className="text-sm text-gray-500">No active requests</p>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Wallet & NFTs Card */}
-            <div className="bg-white border border-gray-200 rounded-xl p-4">
+            {/* Wallet Card */}
+            <div className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Wallet className="w-4 h-4 text-gray-600" />
-                <span className="text-sm font-medium text-gray-900">Wallet & NFTs</span>
+                <span className="text-sm font-medium text-gray-900">Wallet</span>
               </div>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
@@ -590,30 +752,22 @@ export default function CryptoBalanceDashboard() {
                     <span className="text-xs text-gray-500">-</span>
                   )}
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500">NFTs Owned</span>
-                  <span className="text-xs font-medium text-gray-900">{nftCount}</span>
-                </div>
-                {!isConnected ? (
+                {!isConnected && (
                   <button
                     onClick={() => open()}
                     className="w-full py-2 bg-black hover:bg-gray-800 text-white rounded-lg text-xs font-medium transition-all"
                   >
                     Connect Wallet
                   </button>
-                ) : (
-                  <button className="w-full py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-medium text-gray-900 transition-all">
-                    View NFT Gallery
-                  </button>
                 )}
               </div>
             </div>
 
             {/* Support Section */}
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl overflow-hidden">
               <button
                 onClick={() => toggleSection('support')}
-                className="w-full p-3 flex items-center justify-between hover:bg-gray-50 transition-all"
+                className="w-full p-3 flex items-center justify-between hover:bg-white/10 transition-all"
               >
                 <div className="flex items-center gap-2">
                   <MessageCircle className="w-4 h-4 text-gray-600" />
@@ -622,10 +776,17 @@ export default function CryptoBalanceDashboard() {
                 <Plus className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${activeSection === 'support' ? 'rotate-45' : ''}`} />
               </button>
               <div className={`transition-all duration-300 ease-in-out overflow-hidden ${activeSection === 'support' ? 'max-h-96' : 'max-h-0'}`}>
-                <div className="p-4 bg-gray-50">
-                  <p className="text-sm text-gray-500 mb-2">Support ist verfügbar 24/7</p>
-                  <button className="w-full py-2 bg-black hover:bg-gray-800 text-white rounded-lg text-xs font-medium transition-all">
-                    Chat starten
+                <div className="p-4 bg-white/10">
+                  <p className="text-sm text-gray-500 mb-2">Support available 24/7</p>
+                  <button
+                    onClick={() => {
+                      // Find and click the chat widget button
+                      const chatButton = document.querySelector('[aria-label="Open chat"]');
+                      if (chatButton) chatButton.click();
+                    }}
+                    className="w-full py-2 bg-black hover:bg-gray-800 text-white rounded-lg text-xs font-medium transition-all"
+                  >
+                    Start Chat
                   </button>
                 </div>
               </div>
@@ -635,7 +796,7 @@ export default function CryptoBalanceDashboard() {
           {/* Right Column */}
           <div className="space-y-4">
             {/* KYC Badge */}
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-xl p-4">
+            <div className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl p-4">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Shield className="w-4 h-4 text-gray-600" />
@@ -645,7 +806,7 @@ export default function CryptoBalanceDashboard() {
                   kycData?.kyc_status === 'verified' ? 'bg-black' : 'bg-gray-300'
                 }`}>
                   <span className="text-xs text-white font-medium">
-                    {kycData?.kyc_status === 'verified' ? 'Verifiziert' : 'Ausstehend'}
+                    {kycData?.kyc_status === 'verified' ? 'Verified' : 'Pending'}
                   </span>
                 </div>
               </div>
@@ -674,7 +835,7 @@ export default function CryptoBalanceDashboard() {
             </div>
 
             {/* Profile Settings Card */}
-            <div className="bg-white border border-gray-200 rounded-xl p-4">
+            <div className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl p-4">
               <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
                   <User className="w-6 h-6 text-gray-600" />
@@ -738,10 +899,10 @@ export default function CryptoBalanceDashboard() {
             </div>
 
             {/* NFT Memberships Section */}
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl overflow-hidden">
               <button
                 onClick={() => toggleSection('nft')}
-                className="w-full p-3 flex items-center justify-between hover:bg-gray-50 transition-all"
+                className="w-full p-3 flex items-center justify-between hover:bg-white/10 transition-all"
               >
                 <div className="flex items-center gap-2">
                   <Award className="w-4 h-4 text-gray-600" />
@@ -754,24 +915,46 @@ export default function CryptoBalanceDashboard() {
                 </div>
                 <Plus className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${activeSection === 'nft' ? 'rotate-45' : ''}`} />
               </button>
-              <div className={`transition-all duration-300 ease-in-out overflow-hidden ${activeSection === 'nft' ? 'max-h-96' : 'max-h-0'}`}>
-                <div className="p-4 bg-gray-50">
-                  {investments.length > 0 ? (
+              <div className={`transition-all duration-300 ease-in-out overflow-hidden ${activeSection === 'nft' ? 'max-h-[500px]' : 'max-h-0'}`}>
+                <div className="p-4 bg-white/10 space-y-4">
+                  {/* NFTs Owned Counter */}
+                  <div className="flex justify-between items-center py-2 px-3 bg-white/5 rounded-lg border border-gray-200/30">
+                    <span className="text-xs text-gray-500">NFTs Owned</span>
+                    <span className="text-sm font-medium text-gray-900">{nftCount}</span>
+                  </div>
+
+                  {/* Show owned NFTs if any */}
+                  {nftCount > 0 ? (
                     <div className="space-y-2">
+                      <p className="text-xs text-gray-500">Your membership NFTs are detected in your wallet</p>
                       {investments.slice(0, 5).map((inv) => (
-                        <div key={inv.id} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-0">
+                        <div key={inv.id} className="flex justify-between items-center py-2 border-b border-gray-200/30 last:border-0">
                           <span className="text-sm text-gray-900">
-                            {inv.launchpad_projects?.name || 'Investment'}
+                            {inv.launchpad_projects?.name || 'Membership NFT'}
                           </span>
                           <span className="text-xs text-gray-500">
-                            ${inv.amount_invested || '0'}
+                            {inv.token_amount || 1} NFT{(inv.token_amount || 1) > 1 ? 's' : ''}
                           </span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500">Keine Investments</p>
+                    <div className="text-center py-2">
+                      <p className="text-sm text-gray-500 mb-3">No membership NFTs detected</p>
+                      <p className="text-xs text-gray-400 mb-3">Get exclusive benefits with a PrivateCharterX membership NFT</p>
+                    </div>
                   )}
+
+                  {/* OpenSea Link */}
+                  <a
+                    href="https://opensea.io/collection/privatecharterx-membership-card"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-2.5 bg-black hover:bg-gray-800 text-white rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-2"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    {nftCount > 0 ? 'View on OpenSea' : 'Buy Membership NFT'}
+                  </a>
                 </div>
               </div>
             </div>
@@ -784,7 +967,7 @@ export default function CryptoBalanceDashboard() {
             {balances.map((item) => (
               <div
                 key={item.symbol}
-                className="bg-white border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-all"
+                className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl p-4 hover:bg-white/20 transition-all"
               >
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center gap-2">
@@ -820,8 +1003,8 @@ export default function CryptoBalanceDashboard() {
 
         {/* Chart Overview - Only show when wallet is connected */}
         {isConnected && balances.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
-            <h3 className="text-lg font-light text-black mb-6">Verteilung</h3>
+          <div className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl p-6 mb-6">
+            <h3 className="text-lg font-light text-gray-900 mb-6">Distribution</h3>
 
             {/* Donut Chart */}
             <div className="flex items-center justify-center mb-8">

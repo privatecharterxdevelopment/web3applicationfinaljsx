@@ -369,6 +369,23 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
   // Step 1: Token Type Selection
   const renderStep1 = () => (
     <div className="flex-1 flex flex-col items-center justify-center py-12">
+      {/* Disclaimer Banner */}
+      <div className="w-full max-w-4xl px-8 mb-8">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <Info size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-blue-900 mb-1">SEC-Compliant Tokenization</p>
+              <p className="text-xs text-blue-700 leading-relaxed">
+                PrivateCharterX connects Real World Services (RWS) with Web3.0 technology.
+                Tokenization of securities is handled by our SEC-licensed partner company with shared platform access.
+                We do not tokenize assets ourselves.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="text-center mb-12">
         <h2 className="text-3xl font-semibold text-gray-900 mb-3">Choose Token Type</h2>
         <p className="text-gray-700 text-sm">Select the tokenization model that fits your asset</p>
@@ -433,8 +450,9 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
               <Shield size={28} className="text-white" />
             </div>
             <div className="flex gap-2">
-              <span className="px-2 py-1 bg-gray-200 text-gray-900 rounded-md text-[10px] font-medium">ERC-1400</span>
-              <span className="px-2 py-1 bg-gray-200 text-gray-900 rounded-md text-[10px] font-medium">ERC-3643</span>
+              <span className="px-2 py-1 bg-gray-200 text-gray-900 rounded-md text-[10px] font-medium">Reg-D</span>
+              <span className="px-2 py-1 bg-gray-200 text-gray-900 rounded-md text-[10px] font-medium">Reg-S</span>
+              <span className="px-2 py-1 bg-gray-200 text-gray-900 rounded-md text-[10px] font-medium">Reg-CF</span>
             </div>
           </div>
 
@@ -791,33 +809,47 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
         </div>
 
         <div className="space-y-6">
-          {/* Token Standard */}
+          {/* SEC Regulation Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">Token Standard *</label>
-            <div className="grid grid-cols-2 gap-4">
+            <label className="block text-sm font-medium text-gray-900 mb-2">SEC Regulation Type *</label>
+            <div className="grid grid-cols-3 gap-3">
               <button
-                onClick={() => updateFormData('tokenStandard', 'ERC-1400')}
+                onClick={() => updateFormData('tokenStandard', 'Reg-D')}
                 className={`p-4 rounded-xl border-2 transition-all backdrop-blur-xl ${
-                  formData.tokenStandard === 'ERC-1400'
+                  formData.tokenStandard === 'Reg-D'
                     ? 'bg-blue-100 border-blue-500 text-blue-900'
                     : 'bg-white/20 border-gray-300/50 text-gray-900 hover:bg-white/30'
                 }`}
               >
-                <div className="font-medium mb-1">ERC-1400</div>
-                <div className="text-xs opacity-80">Partially fungible security tokens</div>
+                <div className="font-medium mb-1">Reg-D</div>
+                <div className="text-xs opacity-80">Accredited investors only</div>
               </button>
               <button
-                onClick={() => updateFormData('tokenStandard', 'ERC-3643')}
+                onClick={() => updateFormData('tokenStandard', 'Reg-S')}
                 className={`p-4 rounded-xl border-2 transition-all backdrop-blur-xl ${
-                  formData.tokenStandard === 'ERC-3643'
+                  formData.tokenStandard === 'Reg-S'
                     ? 'bg-blue-100 border-blue-500 text-blue-900'
                     : 'bg-white/20 border-gray-300/50 text-gray-900 hover:bg-white/30'
                 }`}
               >
-                <div className="font-medium mb-1">ERC-3643 (T-REX)</div>
-                <div className="text-xs opacity-80">Full compliance & permissioned</div>
+                <div className="font-medium mb-1">Reg-S</div>
+                <div className="text-xs opacity-80">Non-US investors</div>
+              </button>
+              <button
+                onClick={() => updateFormData('tokenStandard', 'Reg-CF')}
+                className={`p-4 rounded-xl border-2 transition-all backdrop-blur-xl ${
+                  formData.tokenStandard === 'Reg-CF'
+                    ? 'bg-blue-100 border-blue-500 text-blue-900'
+                    : 'bg-white/20 border-gray-300/50 text-gray-900 hover:bg-white/30'
+                }`}
+              >
+                <div className="font-medium mb-1">Reg-CF</div>
+                <div className="text-xs opacity-80">Crowdfunding (up to $5M)</div>
               </button>
             </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Tokenization handled by our SEC-licensed partner with shared platform access
+            </p>
           </div>
 
           {/* Total Supply */}
@@ -2120,15 +2152,8 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
 
   return (
     <div className="w-full flex-1 flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={onBack}
-          className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/40 hover:bg-white/50 text-gray-900 transition-all border border-gray-300/50 backdrop-blur-xl"
-        >
-          <ArrowLeft size={18} />
-        </button>
-      </div>
+      {/* Header spacer */}
+      <div className="mb-4"></div>
 
       {/* Progress Bar */}
       {currentStep > 0 && renderProgressBar()}

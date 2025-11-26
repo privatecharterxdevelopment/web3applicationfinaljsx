@@ -42,8 +42,10 @@ import {
 } from 'lucide-react';
 import { useAccount, useConnect } from 'wagmi';
 import { web3Service } from '../lib/web3.ts';
-import { airportsStaticService as airportsService, type AirportSearchResult } from '../services/airportsStaticService';
-// Alternative: import { airportsService } from '../services/airportsService';
+import { airportsJsonService as airportsService, type AirportSearchResult } from '../services/airportsJsonService';
+// Alternative options:
+// import { airportsSupabaseService as airportsService, type AirportSearchResult } from '../services/airportsSupabaseService';
+// import { airportsStaticService as airportsService, type AirportSearchResult } from '../services/airportsStaticService';
 import { bookingService } from '../services/bookingService';
 import type { BookingFormData } from '../types/booking';
 import FlightDetailsStep from './booking-steps/FlightDetailsStep';
@@ -1135,7 +1137,7 @@ export default function UnifiedBookingFlow({ onStepChange, initialVehicleType }:
         }
       `}</style>
 
-      <div className="bg-gray-50">
+      <div className="bg-transparent">
         {/* Initial Search Bar */}
         {!isModalOpen && (
           <div className="flex items-center justify-center min-h-[70vh] md:min-h-[80vh] py-8 px-4">
@@ -1149,7 +1151,7 @@ export default function UnifiedBookingFlow({ onStepChange, initialVehicleType }:
 
               {/* Description */}
               <p className="text-gray-500 text-center mb-6 md:mb-8 max-w-xl mx-auto text-sm md:text-base">
-                Blockchain-powered multi-charter services with tokenized certificates and DAO-based governance, ensuring transparency, sustainability, and trust.
+                Private aviation for the digital age. Seamless bookings, 70+ crypto payment options, competitive pricing, and sustainable journeys backed by certified CO2 certificates.
               </p>
 
               {/* Service Categories Carousel */}

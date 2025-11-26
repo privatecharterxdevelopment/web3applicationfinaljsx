@@ -327,6 +327,69 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
     }
   }, [map.current]);
 
+  // Detect user's country and set currency based on location
+  useEffect(() => {
+    const detectUserCurrency = async () => {
+      try {
+        // Try to get user's geolocation
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const { longitude, latitude } = position.coords;
+
+              // Use Mapbox Geocoding API to reverse geocode and get country
+              const response = await fetch(
+                `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxgl.accessToken}`
+              );
+              const data = await response.json();
+
+              if (data.features && data.features.length > 0) {
+                // Find the country from the context
+                const feature = data.features[0];
+                const countryContext = feature.context?.find(c => c.id.startsWith('country'));
+
+                if (countryContext) {
+                  const countryName = countryContext.text;
+                  console.log('Detected country:', countryName);
+
+                  // Map country to currency
+                  const currencyMap = {
+                    'Switzerland': 'CHF',
+                    'United States': 'USD',
+                    'Germany': 'EUR',
+                    'France': 'EUR',
+                    'Italy': 'EUR',
+                    'Spain': 'EUR',
+                    'Austria': 'EUR',
+                    'Netherlands': 'EUR',
+                    'Belgium': 'EUR',
+                    'Portugal': 'EUR',
+                    'Greece': 'EUR',
+                    'Ireland': 'EUR',
+                    // Add more countries as needed
+                  };
+
+                  const detectedCurrency = currencyMap[countryName] || 'EUR'; // Default to EUR
+                  setSelectedCurrency(detectedCurrency);
+                  console.log(`Auto-selected currency: ${detectedCurrency} for ${countryName}`);
+                }
+              }
+            },
+            (error) => {
+              console.log('Geolocation error, using default currency (CHF):', error);
+              // Keep default CHF
+            }
+          );
+        }
+      } catch (error) {
+        console.error('Error detecting user currency:', error);
+        // Keep default CHF
+      }
+    };
+
+    detectUserCurrency();
+  }, []); // Run once on mount
+
   // Hide "Need Help" widget when component mounts
   useEffect(() => {
     // Find and hide all help widgets
@@ -847,7 +910,9 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
   const handleSubmitRequest = (car = null) => {
     const carToUse = car || selectedCar;
 
-    if (!carToUse || !locationA || !locationB) {
+    // For luxury cars, only locationA is required
+    // For taxi/concierge, both locationA and locationB are required
+    if (!carToUse || !locationA || (serviceCategory !== 'luxury-cars' && !locationB)) {
       alert('Please select locations and a car type');
       return;
     }
@@ -861,16 +926,21 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
 
     const priceRange = calculatePrice(carToUse);
     const requestData = {
+      serviceType: serviceCategory, // 'taxi', 'concierge', or 'luxury-cars'
       from: locationA,
-      to: locationB,
+      to: serviceCategory !== 'luxury-cars' ? locationB : undefined,
       coordsA,
-      coordsB,
+      coordsB: serviceCategory !== 'luxury-cars' ? coordsB : undefined,
       carType: carToUse,
-      distance,
-      eta,
+      distance: serviceCategory !== 'luxury-cars' ? distance : undefined,
+      eta: serviceCategory !== 'luxury-cars' ? eta : undefined,
       priceRange: `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`,
       pickupDate: bookNow ? 'Now' : pickupDate,
       pickupTime: bookNow ? 'Now' : pickupTime,
+      returnDate: serviceCategory === 'luxury-cars' ? returnDate : undefined,
+      returnTime: serviceCategory === 'luxury-cars' ? returnTime : undefined,
+      deliveryAddress: serviceCategory === 'luxury-cars' ? deliveryAddress : undefined,
+      returnAddress: serviceCategory === 'luxury-cars' ? returnAddress : undefined,
       passengers,
       currency: selectedCurrency,
       paymentMethod: paymentMethod, // 'crypto' or 'card'
@@ -891,12 +961,14 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          console.log('Attempting to save ground transportation request for user:', user.id);
+
           // Create request in user_requests table - DIRECT INSERT
-          const { error: dbError } = await supabase
+          const { data: insertedData, error: dbError } = await supabase
             .from('user_requests')
             .insert([{
               user_id: user.id,
-              type: 'taxi_concierge',
+              type: serviceCategory === 'luxury-cars' ? 'luxury_car_rental' : 'taxi_concierge',
               status: 'pending',
               data: {
                 ...requestData,
@@ -905,9 +977,16 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                 carSeats: selectedCar.seats,
                 user_email: user.email
               }
-            }]);
+            }])
+            .select();
 
-          if (dbError) throw dbError;
+          if (dbError) {
+            console.error('Database insert error:', dbError);
+            alert(`Failed to save request: ${dbError.message}`);
+            throw dbError;
+          }
+
+          console.log('Ground transportation request saved successfully:', insertedData);
 
           // Create notification
           const notificationData = {
@@ -1039,17 +1118,17 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
 
       {/* Bottom Booking Panel - Floating modal with proper spacing */}
       <div
-        className={`absolute ${serviceCategory === 'luxury-cars' ? 'left-6' : 'left-1/2 -translate-x-1/2'} pointer-events-auto z-10 transition-all duration-300`}
+        className={`absolute ${serviceCategory === 'luxury-cars' ? 'left-4 md:left-6' : 'left-1/2 -translate-x-1/2'} pointer-events-auto z-10 transition-all duration-300`}
         style={{
           maxWidth: serviceCategory === 'luxury-cars' ? '480px' : '650px',
-          width: serviceCategory === 'luxury-cars' ? 'auto' : '90%',
-          bottom: '24px',
-          top: bookingStep === 3 && isModalExpanded ? '24px' : 'auto',
-          maxHeight: bookingStep === 3 ? (isModalExpanded ? 'calc(100vh - 48px)' : '70vh') : 'auto'
+          width: serviceCategory === 'luxury-cars' ? 'calc(100% - 2rem)' : 'calc(100% - 2rem)',
+          bottom: '16px',
+          top: bookingStep === 3 && isModalExpanded ? '16px' : 'auto',
+          maxHeight: bookingStep === 3 ? (isModalExpanded ? 'calc(100vh - 32px)' : '70vh') : 'auto'
         }}
       >
-        <div className={`bg-white shadow-2xl rounded-2xl transition-all duration-300 w-full h-full`} style={{ overflow: 'visible', position: 'relative', display: 'flex', flexDirection: 'column' }}>
-          <div className="flex flex-col flex-1" style={{ overflow: 'visible', minHeight: 0 }}>
+        <div className={`bg-white shadow-2xl rounded-2xl transition-all duration-300 w-full h-full`} style={{ overflow: bookingStep === 3 ? 'hidden' : 'visible', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+          <div className="flex flex-col flex-1" style={{ overflow: bookingStep === 3 ? 'hidden' : 'visible', minHeight: 0 }}>
           {/* Minimize/Maximize Toggle Button - Show when route is calculated OR locations are set */}
           {((eta && distance) || (coordsA && coordsB) || (serviceCategory === 'luxury-cars' && coordsA)) && bookingStep === 1 && (
             <button
@@ -1121,7 +1200,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                       }
                     }}
                     placeholder={serviceCategory === 'luxury-cars' ? 'Rental Location (City)' : 'Pick-up location'}
-                    className="w-full px-4 py-3 pr-12 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-black text-sm bg-white transition-all"
+                    className="w-full px-3 md:px-4 py-2.5 md:py-3 pr-10 md:pr-12 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-black text-sm bg-white transition-all"
                   />
                   <button
                     onClick={handleUseCurrentLocation}
@@ -1169,7 +1248,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                       }
                     }}
                     placeholder="Drop-off location"
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-black text-sm bg-white transition-all"
+                    className="w-full px-3 md:px-4 py-2.5 md:py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-black text-sm bg-white transition-all"
                   />
                   {showSuggestionsB && suggestionsB.length > 0 && (
                     <div
@@ -1205,14 +1284,14 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                   value={deliveryAddress}
                   onChange={(e) => setDeliveryAddress(e.target.value)}
                   placeholder="Delivery Address (optional +€50-80 for custom delivery)"
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-black text-sm bg-white transition-all"
+                  className="w-full px-3 md:px-4 py-2.5 md:py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-black text-sm bg-white transition-all"
                 />
                 <input
                   type="text"
                   value={returnAddress}
                   onChange={(e) => setReturnAddress(e.target.value)}
                   placeholder="Return Address (optional)"
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-black text-sm bg-white transition-all"
+                  className="w-full px-3 md:px-4 py-2.5 md:py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-black text-sm bg-white transition-all"
                 />
               </div>
             )}
@@ -1281,9 +1360,10 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
 
                       <button
                         onClick={() => setShowDateTimeModal(true)}
-                        className="w-full py-3.5 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors"
+                        className="w-full py-3.5 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
                       >
-                        {serviceCategory === 'luxury-cars' ? 'Continue to Rental Details' : 'Continue to Pickup Details'}
+                        <span>{serviceCategory === 'luxury-cars' ? 'Continue to Rental Details' : 'Continue to Pickup Details'}</span>
+                        <ChevronRight size={20} />
                       </button>
                     </>
                   )}
@@ -1384,11 +1464,11 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search by brand or model..."
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black text-sm"
+                        className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black text-sm"
                       />
 
                       {/* Brand Filter Buttons */}
-                      <div className="flex gap-2 overflow-x-auto pb-2">
+                      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                         {['all', 'Ferrari', 'Lamborghini', 'Porsche', 'McLaren', 'Mercedes', 'BMW', 'Range Rover', 'Rolls-Royce', 'Bentley'].map(brand => (
                           <button
                             key={brand}
@@ -1448,20 +1528,20 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                               : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                           }`}
                         >
-                          <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-3 md:gap-4">
                             {/* Car Image */}
                             <div className="flex-shrink-0">
                               <img
                                 src={car.image}
                                 alt={car.name}
-                                className="w-24 h-16 object-contain"
+                                className="w-20 h-14 md:w-24 md:h-16 object-contain"
                               />
                             </div>
 
                             {/* Car Info */}
-                            <div className="flex-1 text-left">
-                              <h4 className="text-base font-semibold text-gray-800">{car.name}</h4>
-                              <div className="text-xs text-gray-600 mt-1">
+                            <div className="flex-1 text-left min-w-0">
+                              <h4 className="text-sm md:text-base font-semibold text-gray-800 truncate">{car.name}</h4>
+                              <div className="text-xs text-gray-600 mt-1 truncate">
                                 {serviceCategory === 'luxury-cars'
                                   ? `${car.seats} seats - ${car.location || locationA}`
                                   : `${car.seats} seats - ${distance} km - ${bookNow ? 'Now' : pickupTime}`
@@ -1470,9 +1550,9 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                             </div>
 
                             {/* PVCX Earnings & Price */}
-                            <div className="flex-shrink-0 flex items-center gap-3">
+                            <div className="flex-shrink-0 flex items-center gap-2 md:gap-3">
                               {/* PVCX Tokens Earned - different calculation for luxury cars */}
-                              <div className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full">
+                              <div className="hidden md:inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full">
                                 <span className="text-xs font-semibold text-gray-700">
                                   +{serviceCategory === 'luxury-cars'
                                     ? Math.round((car.pricePerDay || 100) / 10)
@@ -1491,7 +1571,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                               >
                                 {serviceCategory === 'luxury-cars' && car.pricePerDay ? (
                                   <>
-                                    <div className="text-base font-bold text-gray-800 animate-fadeInUp">
+                                    <div className="text-sm md:text-base font-bold text-gray-800 animate-fadeInUp">
                                       {formatPrice(car.pricePerDay)}
                                     </div>
                                     <div className="text-[10px] text-gray-600 animate-fadeInUp" style={{ animationDelay: '0.1s' }}>
@@ -1500,7 +1580,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                                   </>
                                 ) : (
                                   <>
-                                    <div className="text-base font-bold text-gray-800 animate-fadeInUp">
+                                    <div className="text-sm md:text-base font-bold text-gray-800 animate-fadeInUp">
                                       {formatPrice(price.min)}
                                     </div>
                                     <div className="text-[10px] text-gray-600 animate-fadeInUp" style={{ animationDelay: '0.1s' }}>
@@ -1543,15 +1623,15 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
 
       {/* Date/Time/Persons Popup Modal */}
       {showDateTimeModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-5 max-w-lg w-full shadow-2xl">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl p-5 md:p-6 max-w-lg w-full shadow-2xl my-auto max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">
+              <h3 className="text-base md:text-lg font-semibold text-gray-800">
                 {serviceCategory === 'luxury-cars' ? 'Rental Details' : 'Pickup Details'}
               </h3>
               <button
                 onClick={() => setShowDateTimeModal(false)}
-                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
               >
                 <X size={18} className="text-gray-600" />
               </button>
@@ -1761,9 +1841,10 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                 setBookingStep(3); // Move to car selection step
                 setIsPanelMinimized(false); // Ensure panel is expanded for car selection
               }}
-              className="w-full py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors text-sm"
+              className="w-full py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors text-sm flex items-center justify-center gap-2"
             >
-              Continue to Car Selection
+              <span>Continue to Car Selection</span>
+              <ChevronRight size={18} />
             </button>
           </div>
         </div>

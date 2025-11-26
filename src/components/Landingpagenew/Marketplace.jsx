@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import {
   Package, TrendingUp, Shield, AlertCircle, Info, Filter,
   ChevronDown, ExternalLink, CheckCircle, Clock, Plane,
-  Ship, Car, Palette, Building2, Sparkles
+  Ship, Car, Palette, Building2, Sparkles, Lock, X
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import AssetDetailModal from './Marketplace/AssetDetailModal';
 import PageHeader from './PageHeader';
 import Button from './Button';
+import KYCVerification from '../KYCVerification';
 
 export default function Marketplace() {
   const { user } = useAuth();
@@ -19,6 +20,7 @@ export default function Marketplace() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [userKYCStatus, setUserKYCStatus] = useState(null);
+  const [showKYCModal, setShowKYCModal] = useState(false);
 
   const categories = [
     { id: 'all', label: 'All Assets', icon: Package },
@@ -31,9 +33,14 @@ export default function Marketplace() {
   ];
 
   useEffect(() => {
+    // Fetch assets for all users (even without KYC)
     fetchAssets();
+
+    // Check KYC status if user is logged in
     if (user) {
       checkKYCStatus();
+    } else {
+      setLoading(false);
     }
   }, [user]);
 
@@ -43,22 +50,43 @@ export default function Marketplace() {
 
   const checkKYCStatus = async () => {
     try {
-      const { data, error } = await supabase
+      // First check user_profiles for kyc_status
+      const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('kyc_status')
         .eq('user_id', user.id)
         .single();
 
-      if (!error && data) {
-        setUserKYCStatus(data.kyc_status);
+      if (!profileError && profile?.kyc_status === 'verified') {
+        setUserKYCStatus('verified');
+        setLoading(false);
+        return;
+      }
+
+      // Also check documents table for KYC form submission
+      const { data: kycDoc, error: docError } = await supabase
+        .from('documents')
+        .select('status')
+        .eq('user_id', user.id)
+        .eq('document_type', 'kyc_form')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!docError && kycDoc) {
+        setUserKYCStatus(kycDoc.status === 'verified' ? 'verified' : 'pending');
+      } else {
+        setUserKYCStatus('not_started');
       }
     } catch (error) {
       console.error('Error checking KYC:', error);
+      setUserKYCStatus('not_started');
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchAssets = async () => {
-    setLoading(true);
     try {
       // Fetch tokenization requests that are approved for STO marketplace
       const { data, error } = await supabase
@@ -103,8 +131,6 @@ export default function Marketplace() {
     } catch (error) {
       console.error('Failed to fetch marketplace assets:', error);
       setAssets([]);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -159,6 +185,23 @@ export default function Marketplace() {
     }).format(amount);
   };
 
+  const handleKYCComplete = () => {
+    setShowKYCModal(false);
+    checkKYCStatus(); // Refresh KYC status
+  };
+
+  // Handle asset click - check KYC before showing details
+  const handleAssetClick = (asset) => {
+    if (userKYCStatus !== 'verified') {
+      // Show KYC modal if not verified
+      setShowKYCModal(true);
+    } else {
+      // Show asset details if KYC is verified
+      setSelectedAsset(asset);
+      setShowDetailModal(true);
+    }
+  };
+
   if (loading) {
     return (
       <div className="w-full h-full bg-transparent flex items-center justify-center py-20">
@@ -170,46 +213,46 @@ export default function Marketplace() {
     );
   }
 
+  // Main Marketplace - shown to all users, KYC checked on buy/sell
   return (
     <div className="w-full h-full bg-transparent">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Header */}
         <div className="mb-12">
-          <PageHeader
-            title="Luxury Asset Marketplace"
-            subtitle="Invest in fractional ownership of premium assets"
-          />
-
-          {/* KYC Warning Banner */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
-            <div className="flex items-start gap-3">
-              <Shield size={24} className="text-yellow-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="text-sm font-semibold text-yellow-900 mb-1">
-                  KYC/AML Verification Required
-                </h3>
-                <p className="text-sm text-yellow-800 mb-3">
-                  All investments require identity verification to comply with securities regulations.
-                  {userKYCStatus === 'verified' ? (
-                    <span className="ml-2 inline-flex items-center gap-1 text-green-700">
-                      <CheckCircle size={14} />
-                      Your account is verified
-                    </span>
-                  ) : (
-                    <span className="ml-2 text-yellow-900 font-medium">
-                      Complete KYC to invest
-                    </span>
-                  )}
-                </p>
-                {userKYCStatus !== 'verified' && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-yellow-900 hover:text-yellow-700 underline"
-                  >
-                    Start Verification →
-                  </Button>
-                )}
+          <div className="flex items-center justify-between mb-6">
+            <PageHeader
+              title="Luxury Asset Marketplace"
+              subtitle="Invest in fractional ownership of premium assets"
+            />
+            <div className="flex items-center gap-4">
+              {/* KYC Status Badge */}
+              {userKYCStatus === 'verified' ? (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
+                  <CheckCircle size={14} className="text-green-600" />
+                  <span className="text-xs font-medium text-green-700">KYC Verified</span>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowKYCModal(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-yellow-50 border border-yellow-200 rounded-lg hover:bg-yellow-100 transition-colors"
+                >
+                  <Shield size={14} className="text-yellow-600" />
+                  <span className="text-xs font-medium text-yellow-700">
+                    {userKYCStatus === 'pending' ? 'KYC Pending' : 'Verify KYC'}
+                  </span>
+                </button>
+              )}
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+                <ExternalLink size={16} className="text-blue-600" />
+                <span className="text-sm font-semibold text-blue-900">Powered by</span>
+                <a
+                  href="https://www.tzero.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-lg font-bold text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                  tZERO
+                </a>
               </div>
             </div>
           </div>
@@ -262,10 +305,7 @@ export default function Marketplace() {
               return (
                 <div
                   key={asset.id}
-                  onClick={() => {
-                    setSelectedAsset(asset);
-                    setShowDetailModal(true);
-                  }}
+                  onClick={() => handleAssetClick(asset)}
                   className="bg-white/35 hover:bg-white/50 rounded-xl border border-gray-300/50 backdrop-blur-xl transition-all duration-300 cursor-pointer hover:shadow-lg group"
                 >
                   {/* Image */}
@@ -396,6 +436,52 @@ export default function Marketplace() {
           }}
           onRefresh={fetchAssets}
         />
+      )}
+
+      {/* KYC Verification Modal - Clean Full Page */}
+      {showKYCModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden relative border border-gray-200">
+            {/* Header Bar */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                  <Shield size={20} className="text-gray-700" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">KYC Verification</h2>
+                  <p className="text-xs text-gray-500">Required for marketplace access</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowKYCModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={20} className="text-gray-400" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="overflow-y-auto max-h-[calc(85vh-80px)]">
+              {userKYCStatus === 'pending' ? (
+                <div className="p-8 text-center">
+                  <div className="w-16 h-16 bg-yellow-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Clock size={32} className="text-yellow-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Verification In Progress</h3>
+                  <p className="text-sm text-gray-600 max-w-md mx-auto">
+                    Your KYC submission is being reviewed. This typically takes 1-2 business days.
+                  </p>
+                </div>
+              ) : (
+                <KYCVerification
+                  onBack={() => setShowKYCModal(false)}
+                  onComplete={handleKYCComplete}
+                />
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
