@@ -3510,9 +3510,9 @@ const TokenizedAssetsGlassmorphic = () => {
 
 
       {/* Main Container - Centered Floating Glassmorphic Dashboard */}
-      <div className="relative z-10 flex h-screen items-center justify-center p-2 lg:p-8">
+      <div className="relative z-10 flex h-screen items-center justify-center p-0 lg:p-8">
         {/* COMPLETE FLOATING GLASSMORPHIC CONTAINER - Sidebar + Content als ein Stück */}
-        <div className={`relative flex w-full max-w-7xl h-screen lg:h-[90vh] rounded-none lg:rounded-3xl shadow-2xl border-0 lg:border overflow-hidden transition-all duration-700 ease-out opacity-100 scale-100 ${
+        <div className={`relative flex w-full max-w-7xl h-full lg:h-[90vh] rounded-none lg:rounded-3xl shadow-2xl border-0 lg:border overflow-hidden transition-all duration-700 ease-out opacity-100 scale-100 ${
           webMode === 'web3'
             ? 'bg-white/30 backdrop-blur-3xl lg:border-white/40'
             : 'bg-white/80 backdrop-blur-3xl lg:border-gray-200/80'
@@ -3782,8 +3782,8 @@ const TokenizedAssetsGlassmorphic = () => {
           <div className={`sticky top-4 z-40 px-2 sm:px-4 lg:px-8 flex justify-between items-center pt-4 sm:pt-6 pr-2 sm:pr-4 lg:pr-6 ${
             activeCategory === 'chat' ? 'hidden' : ''
           }`}>
-            {/* MOBILE ONLY: Category Menu Toggle Button */}
-            <div className="md:hidden relative mobile-category-menu-container">
+            {/* MOBILE ONLY: Category Menu Toggle Button - ml-14 to avoid overlap with fixed burger button */}
+            <div className="md:hidden relative mobile-category-menu-container ml-14">
               <button
                 onClick={() => setShowMobileCategoryMenu(!showMobileCategoryMenu)}
                 className="flex items-center justify-center w-10 h-10 bg-white rounded-xl shadow-md border border-gray-200 hover:bg-gray-50 transition-all duration-200"
