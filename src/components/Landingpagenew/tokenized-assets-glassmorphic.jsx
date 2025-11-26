@@ -58,7 +58,7 @@ import CryptoPaymentModal from '../CryptoPaymentModal';
 import { BuyWithCryptoButton, CryptoPaymentModal as NewCryptoPaymentModal } from '../Payment';
 import LaunchpadPageNew from './LaunchpadPageNew';
 import TransactionsPage from './TransactionsPage';
-import NFTsPage from './NFTsPage';
+// NFTsPage removed - using NFTMarketplace instead
 import NFTMarketplace from './NFTMarketplace';
 import NotificationBell, { useNotificationCount } from '../NotificationBell';
 import NotificationCenter from '../NotificationCenter';
@@ -76,6 +76,7 @@ import PartnerDashboard from '../PartnerDashboard';
 import PartnerRegistrationModal from '../PartnerRegistrationModal';
 import MyDAOs from './MyDAOs';
 import EscrowPage from './EscrowPage';
+import { airportsJsonService } from '../../services/airportsJsonService';
 
 // Settings Page Component
 const SettingsPage = ({ user, kycStatus, setKycStatus, setActiveCategory }) => {
@@ -618,14 +619,14 @@ Happy travels!`,
               <button
                 onClick={() => {
                   setWebMode('web3');
-                  setActiveCategory('wallet-nfts');
+                  setActiveCategory('nft-marketplace');
                 }}
                 className="w-full flex items-center gap-2 p-3 text-left hover:bg-white/20 rounded-lg transition-all duration-200 group"
               >
                 <Wallet size={16} className="text-gray-600 group-hover:text-gray-900" />
                 <div>
-                  <div className="text-sm font-medium text-gray-900">Wallet & NFTs</div>
-                  <div className="text-xs text-gray-600">Manage your assets</div>
+                  <div className="text-sm font-medium text-gray-900">NFT Marketplace</div>
+                  <div className="text-xs text-gray-600">Buy & Sell NFTs</div>
                 </div>
               </button>
             </div>
@@ -1088,7 +1089,12 @@ const TokenizedAssetsGlassmorphic = () => {
   const { isAuthenticated, user, profile, signOut, initializing } = useAuth();
   const { toasts, showToast, removeToast } = useToast();
   const notificationCount = useNotificationCount(user?.id);
-  const [showDashboard, setShowDashboard] = useState(false);
+  // Initialize showDashboard based on isAuthenticated to prevent mobile blank screen
+  const [showDashboard, setShowDashboard] = useState(() => {
+    // Check if there's a session in localStorage (faster than waiting for auth)
+    const hasStoredSession = localStorage.getItem('sb-oubecmstqtzdnevyqavu-auth-token');
+    return !!hasStoredSession;
+  });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [adventureSubmitting, setAdventureSubmitting] = useState(false);
   const [adventureSubmitSuccess, setAdventureSubmitSuccess] = useState(false);
@@ -1176,6 +1182,7 @@ const TokenizedAssetsGlassmorphic = () => {
   // SPV state
   const [userSPVs, setUserSPVs] = useState([]);
   const [loadingSPVs, setLoadingSPVs] = useState(false);
+  const [selectedSPV, setSelectedSPV] = useState(null);
 
   // Tokenization state
   const [userTokenizations, setUserTokenizations] = useState([]);
@@ -1285,6 +1292,18 @@ const TokenizedAssetsGlassmorphic = () => {
   const [helicopterSubmitting, setHelicopterSubmitting] = useState(false);
   const [helicopterSubmitSuccess, setHelicopterSubmitSuccess] = useState(false);
 
+  // Helicopter departure/destination state
+  const [helicopterDeparture, setHelicopterDeparture] = useState(null);
+  const [helicopterDestination, setHelicopterDestination] = useState(null);
+  const [helicopterDepartureInput, setHelicopterDepartureInput] = useState('');
+  const [helicopterDestinationInput, setHelicopterDestinationInput] = useState('');
+  const [helicopterDepartureResults, setHelicopterDepartureResults] = useState([]);
+  const [helicopterDestinationResults, setHelicopterDestinationResults] = useState([]);
+  const [showHelicopterDepartureDropdown, setShowHelicopterDepartureDropdown] = useState(false);
+  const [showHelicopterDestinationDropdown, setShowHelicopterDestinationDropdown] = useState(false);
+  const [isSearchingHelicopterDeparture, setIsSearchingHelicopterDeparture] = useState(false);
+  const [isSearchingHelicopterDestination, setIsSearchingHelicopterDestination] = useState(false);
+
   // Empty Legs state variables
   const [emptyLegsData, setEmptyLegsData] = useState([]);
   const [isLoadingEmptyLegs, setIsLoadingEmptyLegs] = useState(false);
@@ -1372,6 +1391,55 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   };
 
+  // Helicopter airport/location search functions
+  const searchHelicopterDeparture = async (query) => {
+    if (!query || query.length < 2) {
+      setHelicopterDepartureResults([]);
+      return;
+    }
+    setIsSearchingHelicopterDeparture(true);
+    try {
+      const results = await airportsJsonService.searchAirports(query);
+      setHelicopterDepartureResults(results.slice(0, 8));
+    } catch (error) {
+      console.error('Error searching departure airports:', error);
+      setHelicopterDepartureResults([]);
+    } finally {
+      setIsSearchingHelicopterDeparture(false);
+    }
+  };
+
+  const searchHelicopterDestination = async (query) => {
+    if (!query || query.length < 2) {
+      setHelicopterDestinationResults([]);
+      return;
+    }
+    setIsSearchingHelicopterDestination(true);
+    try {
+      const results = await airportsJsonService.searchAirports(query);
+      setHelicopterDestinationResults(results.slice(0, 8));
+    } catch (error) {
+      console.error('Error searching destination airports:', error);
+      setHelicopterDestinationResults([]);
+    } finally {
+      setIsSearchingHelicopterDestination(false);
+    }
+  };
+
+  const selectHelicopterDeparture = (airport) => {
+    setHelicopterDeparture(airport);
+    setHelicopterDepartureInput(airport.name + (airport.code ? ` (${airport.code})` : ''));
+    setShowHelicopterDepartureDropdown(false);
+    setHelicopterDepartureResults([]);
+  };
+
+  const selectHelicopterDestination = (airport) => {
+    setHelicopterDestination(airport);
+    setHelicopterDestinationInput(airport.name + (airport.code ? ` (${airport.code})` : ''));
+    setShowHelicopterDestinationDropdown(false);
+    setHelicopterDestinationResults([]);
+  };
+
   // Helicopter Charter Request Function
   const requestHelicopterCharter = async () => {
     if (!user) {
@@ -1397,6 +1465,26 @@ const TokenizedAssetsGlassmorphic = () => {
         location: selectedHelicopter.location || rawData.location,
         price_per_hour: rawData.price || rawData.price_per_hour,
         currency: rawData.currency || 'EUR',
+
+        // Route/Location details
+        departure: helicopterDeparture ? {
+          name: helicopterDeparture.name,
+          code: helicopterDeparture.code || null,
+          city: helicopterDeparture.city || null,
+          country: helicopterDeparture.country || null,
+          lat: helicopterDeparture.lat || null,
+          lng: helicopterDeparture.lng || null,
+        } : (helicopterDepartureInput ? { custom_address: helicopterDepartureInput } : null),
+        destination: helicopterDestination ? {
+          name: helicopterDestination.name,
+          code: helicopterDestination.code || null,
+          city: helicopterDestination.city || null,
+          country: helicopterDestination.country || null,
+          lat: helicopterDestination.lat || null,
+          lng: helicopterDestination.lng || null,
+        } : (helicopterDestinationInput ? { custom_address: helicopterDestinationInput } : null),
+        departure_display: helicopterDepartureInput || null,
+        destination_display: helicopterDestinationInput || null,
 
         // Booking details
         passengers: helicopterPassengers,
@@ -1427,6 +1515,8 @@ const TokenizedAssetsGlassmorphic = () => {
           status: 'pending',
           client_name: payload.client_info.name,
           client_email: payload.client_info.email,
+          departure_airport: helicopterDepartureInput || null,
+          arrival_airport: helicopterDestinationInput || null,
           data: payload
         }]);
 
@@ -1441,6 +1531,11 @@ const TokenizedAssetsGlassmorphic = () => {
         setHelicopterPassengers(1);
         setHelicopterDuration(1);
         setHelicopterSpecialRequests('');
+        // Reset departure/destination
+        setHelicopterDeparture(null);
+        setHelicopterDestination(null);
+        setHelicopterDepartureInput('');
+        setHelicopterDestinationInput('');
         setActiveCategory('requests'); // Navigate to My Requests
       }, 2500);
 
@@ -3326,14 +3421,20 @@ const TokenizedAssetsGlassmorphic = () => {
     );
   }
 
-  // Don't render dashboard content until authenticated and showDashboard is true
-  // This prevents the flash of dashboard content on mobile before login modal appears
-  if (!isAuthenticated || !showDashboard) {
+  // Don't render dashboard content until authenticated
+  // MOBILE FIX: If authenticated (even without showDashboard flag), show dashboard immediately
+  // This prevents the blank screen flash on mobile devices
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          <Loader2 size={40} className="animate-spin text-black mx-auto mb-4" />
-          <p className="text-sm text-gray-600">Loading...</p>
+          {/* Only show spinner if not showing any auth modal */}
+          {!showLoginModal && !showRegisterModal && !showForgotPasswordModal && !showPartnerRegisterModal && (
+            <>
+              <Loader2 size={40} className="animate-spin text-black mx-auto mb-4" />
+              <p className="text-sm text-gray-600">Loading...</p>
+            </>
+          )}
         </div>
         {/* Login modal will be rendered by the modals at the bottom */}
         {showLoginModal && (
@@ -3678,7 +3779,7 @@ const TokenizedAssetsGlassmorphic = () => {
         {/* Main Content Area - PART OF SAME CONTAINER */}
         <main className={`flex-1 overflow-y-auto flex flex-col ${webMode === 'web3' ? 'bg-white/10' : ''}`}>
           {/* FIXED TOP BAR - Category menu links on left, icons and switcher on right */}
-          <div className={`sticky top-4 z-50 px-2 sm:px-4 lg:px-8 flex justify-between items-center pt-4 sm:pt-6 pr-2 sm:pr-4 lg:pr-6 ${
+          <div className={`sticky top-4 z-40 px-2 sm:px-4 lg:px-8 flex justify-between items-center pt-4 sm:pt-6 pr-2 sm:pr-4 lg:pr-6 ${
             activeCategory === 'chat' ? 'hidden' : ''
           }`}>
             {/* MOBILE ONLY: Category Menu Toggle Button */}
@@ -3944,7 +4045,7 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* CONTENT AREA */}
           <div className={`flex-1 ${activeCategory === 'chat' ? 'overflow-hidden' : 'overflow-y-auto'} ${
             activeCategory === 'ground-transport' || activeCategory === 'chat' ? 'p-0 pt-2 sm:pt-4' :
-            'pt-0.5'
+            'px-4 sm:px-6 lg:px-8 pt-6 pb-8'
           }`}>
 
           {/* Transition Loader - Video Animation */}
@@ -4384,13 +4485,6 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
-          {/* Wallet & NFTs View - Show NFTsPage */}
-          {!isTransitioning && activeCategory === 'wallet-nfts' && (
-            <div className="w-full h-full overflow-y-auto">
-              <NFTsPage />
-            </div>
-          )}
-
           {/* NFT Marketplace View */}
           {!isTransitioning && activeCategory === 'nft-marketplace' && (
             <NFTMarketplace
@@ -4823,33 +4917,25 @@ const TokenizedAssetsGlassmorphic = () => {
                   {/* Third Row - Additional Cards (Web3 Mode Only) */}
                   {webMode === 'web3' && (
                     <div className="mt-8 grid grid-cols-3 gap-3">
-                      {/* Card #9 - NFTs Owned */}
+                      {/* Card #9 - NFT Marketplace */}
                       <button
-                        onClick={() => isConnected ? setActiveCategory('wallet-nfts') : open()}
+                        onClick={() => setActiveCategory('nft-marketplace')}
                         className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
                         style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                       >
                         <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-900 truncate">
-                          NFTs Owned
+                          NFT Marketplace
                         </h4>
                         <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-1">
-                          {isConnected ? 'In Your Wallet' : 'Wallet NFTs'}
+                          Buy & Sell NFTs
                         </p>
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-medium text-gray-900">
-                            {isConnected ? `${nfts?.length || userNFTs?.length || 0} NFTs` : '—'}
+                            Browse
                           </span>
-                          {isConnected ? (
-                            hasNFT && (
-                              <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
-                                Member
-                              </span>
-                            )
-                          ) : (
-                            <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium">
-                              Connect
-                            </span>
-                          )}
+                          <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
+                            Explore
+                          </span>
                         </div>
                       </button>
 
@@ -5066,17 +5152,10 @@ const TokenizedAssetsGlassmorphic = () => {
           )}
 
           {/* My SPVs View */}
-          {!isTransitioning && activeCategory === 'my-spvs' && (
+          {!isTransitioning && activeCategory === 'my-spvs' && !selectedSPV && (
             <div className="w-full h-full overflow-y-auto p-8">
               <div className="max-w-7xl mx-auto">
                 <div className="mb-8">
-                  <button
-                    onClick={() => setActiveCategory('overview')}
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-                  >
-                    <ArrowLeft size={16} />
-                    Back
-                  </button>
                   <h1 className="text-3xl font-light text-gray-900 mb-2">My SPVs</h1>
                   <p className="text-gray-600">View and manage your SPV formations</p>
                 </div>
@@ -5108,32 +5187,44 @@ const TokenizedAssetsGlassmorphic = () => {
                         'rejected': 'bg-red-100 text-red-700'
                       };
 
+                      // Extract data from the spv.data JSON field
+                      const spvData = spv.data || {};
+                      const jurisdictionFlag = spvData.jurisdiction_flag || '🏢';
+                      const companyName = spvData.company_name || spv.service_type || 'SPV Formation';
+                      const jurisdiction = spvData.jurisdiction || '';
+                      const businessActivity = spvData.business_activity || '';
+
                       return (
                         <div key={spv.id} className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all">
                           <div className="flex items-start justify-between mb-4">
-                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                              <Building2 size={24} className="text-white" />
+                            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-3xl">
+                              {jurisdictionFlag}
                             </div>
                             <span className={`text-xs px-2 py-1 rounded-full ${statusColors[spv.status] || 'bg-gray-100 text-gray-700'}`}>
                               {spv.status || 'pending'}
                             </span>
                           </div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                            {spv.service_type || 'SPV Formation'}
+                          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                            {companyName}
                           </h3>
-                          <p className="text-sm text-gray-600 mb-1">
-                            {spv.details || 'SPV formation request'}
-                          </p>
-                          <p className="text-xs text-gray-500 mb-4">
+                          {jurisdiction && (
+                            <p className="text-sm text-gray-600 mb-1">
+                              {jurisdiction} {businessActivity ? `• ${businessActivity}` : ''}
+                            </p>
+                          )}
+                          <p className="text-xs text-gray-500 mb-3">
                             Requested: {new Date(spv.created_at).toLocaleDateString()}
                           </p>
                           {spv.estimated_cost && (
-                            <p className="text-sm font-medium text-gray-900 mb-4">
+                            <p className="text-sm font-medium text-gray-900 mb-3">
                               Est. Cost: ${parseFloat(spv.estimated_cost).toLocaleString()}
                             </p>
                           )}
                           <div className="pt-4 border-t border-gray-200">
-                            <button className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+                            <button
+                              onClick={() => setSelectedSPV(spv)}
+                              className="text-sm text-gray-900 hover:text-black font-medium flex items-center gap-1"
+                            >
                               View Details
                               <ChevronRight size={14} />
                             </button>
@@ -5164,6 +5255,168 @@ const TokenizedAssetsGlassmorphic = () => {
                     )}
                   </div>
                 )}
+
+              </div>
+            </div>
+          )}
+
+          {/* SPV Detail Page */}
+          {!isTransitioning && activeCategory === 'my-spvs' && selectedSPV && (
+            <div className="w-full h-full overflow-y-auto p-8">
+              <div className="max-w-3xl mx-auto">
+                {(() => {
+                  const spvData = selectedSPV.data || {};
+                  const statusColors = {
+                    'pending': 'bg-yellow-100 text-yellow-700',
+                    'in_progress': 'bg-blue-100 text-blue-700',
+                    'completed': 'bg-green-100 text-green-700',
+                    'rejected': 'bg-red-100 text-red-700'
+                  };
+
+                  return (
+                    <>
+                      {/* Back Button */}
+                      <button
+                        onClick={() => setSelectedSPV(null)}
+                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
+                      >
+                        <ArrowLeft size={16} />
+                        Back to My SPVs
+                      </button>
+
+                      {/* Header Card */}
+                      <div className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-xl p-6 mb-6">
+                        <div className="flex items-start gap-4">
+                          <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-4xl">
+                            {spvData.jurisdiction_flag || '🏢'}
+                          </div>
+                          <div className="flex-1">
+                            <h1 className="text-2xl font-semibold text-gray-900 mb-1">
+                              {spvData.company_name || selectedSPV.service_type || 'SPV Formation'}
+                            </h1>
+                            <p className="text-sm text-gray-600 mb-2">{spvData.jurisdiction || ''}</p>
+                            <span className={`inline-block text-xs px-3 py-1 rounded-full ${statusColors[selectedSPV.status] || 'bg-gray-100 text-gray-700'}`}>
+                              {selectedSPV.status || 'pending'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Company Information */}
+                      <div className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-xl p-6 mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Company Information</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-xs text-gray-500 mb-1">Company Name</p>
+                            <p className="text-sm font-medium text-gray-900">{spvData.company_name || 'N/A'}</p>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-xs text-gray-500 mb-1">Business Activity</p>
+                            <p className="text-sm font-medium text-gray-900">{spvData.business_activity || 'N/A'}</p>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-xs text-gray-500 mb-1">Number of Directors</p>
+                            <p className="text-sm font-medium text-gray-900">{spvData.number_of_directors || 'N/A'}</p>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-xs text-gray-500 mb-1">Number of Shareholders</p>
+                            <p className="text-sm font-medium text-gray-900">{spvData.number_of_shareholders || 'N/A'}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Jurisdiction Details */}
+                      <div className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-xl p-6 mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Jurisdiction Details</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-xs text-gray-500 mb-1">Jurisdiction</p>
+                            <p className="text-sm font-medium text-gray-900">{spvData.jurisdiction || 'N/A'}</p>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-xs text-gray-500 mb-1">Tax Rate</p>
+                            <p className="text-sm font-medium text-gray-900">{spvData.jurisdiction_tax_rate || 'N/A'}</p>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-xs text-gray-500 mb-1">Formation Duration</p>
+                            <p className="text-sm font-medium text-gray-900">{spvData.jurisdiction_duration || 'N/A'}</p>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-xs text-gray-500 mb-1">Annual Fee</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {spvData.jurisdiction_annual_fee ? `$${parseFloat(spvData.jurisdiction_annual_fee).toLocaleString()}` : 'N/A'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Cost Summary */}
+                      <div className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-xl p-6 mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Cost Summary</h3>
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center py-2">
+                            <span className="text-sm text-gray-600">Formation Fee</span>
+                            <span className="text-sm font-medium text-gray-900">
+                              {spvData.jurisdiction_formation_fee ? `$${parseFloat(spvData.jurisdiction_formation_fee).toLocaleString()}` : 'N/A'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center py-2">
+                            <span className="text-sm text-gray-600">Annual Fee</span>
+                            <span className="text-sm font-medium text-gray-900">
+                              {spvData.jurisdiction_annual_fee ? `$${parseFloat(spvData.jurisdiction_annual_fee).toLocaleString()}` : 'N/A'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center py-3 border-t border-gray-200">
+                            <span className="text-base font-semibold text-gray-900">Total First Year</span>
+                            <span className="text-xl font-bold text-gray-900">
+                              {selectedSPV.estimated_cost ? `$${parseFloat(selectedSPV.estimated_cost).toLocaleString()}` : 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Contact Information */}
+                      {(spvData.contact_email || spvData.contact_phone) && (
+                        <div className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-xl p-6 mb-6">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+                          <div className="grid grid-cols-2 gap-4">
+                            {spvData.contact_email && (
+                              <div className="bg-gray-50 rounded-lg p-4">
+                                <p className="text-xs text-gray-500 mb-1">Email</p>
+                                <p className="text-sm font-medium text-gray-900">{spvData.contact_email}</p>
+                              </div>
+                            )}
+                            {spvData.contact_phone && (
+                              <div className="bg-gray-50 rounded-lg p-4">
+                                <p className="text-xs text-gray-500 mb-1">Phone</p>
+                                <p className="text-sm font-medium text-gray-900">{spvData.contact_phone}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tokenization Plans */}
+                      {spvData.planning_to_tokenize && (
+                        <div className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-xl p-6 mb-6">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Tokenization Plans</h3>
+                          <div className="bg-blue-50 rounded-lg p-4">
+                            <p className="text-sm text-blue-800">
+                              Planning to tokenize: <span className="font-medium">{spvData.asset_type || 'Assets'}</span>
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Request Info */}
+                      <div className="text-center text-xs text-gray-500 mt-6">
+                        <span>Request ID: {selectedSPV.id?.slice(0, 8)}...</span>
+                        <span className="mx-2">•</span>
+                        <span>Submitted: {new Date(selectedSPV.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           )}
@@ -5615,24 +5868,6 @@ const TokenizedAssetsGlassmorphic = () => {
                             <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium text-gray-800 backdrop-blur-sm">⌂ {jet.category}</div>
                           </div>
                         </div>
-                        <FavouriteButton
-                          item={{
-                            id: jet.id,
-                            type: 'jet',
-                            name: jet.name,
-                            location: jet.location,
-                            image: jet.image,
-                            category: jet.category,
-                            price: jet.totalPrice,
-                            metadata: {
-                              capacity: jet.capacity,
-                              range: jet.range,
-                              manufacturer: jet.rawData?.manufacturer
-                            }
-                          }}
-                          variant="floating"
-                          size={18}
-                        />
                       </div>
                       <div className="flex-1 p-5 flex flex-col">
                         <div className="flex items-center justify-between mb-3">
@@ -5983,11 +6218,6 @@ const TokenizedAssetsGlassmorphic = () => {
                             </div>
                           </div>
 
-                          {/* Links */}
-                          <div className="flex space-x-4 pt-4 border-t border-gray-100 text-xs">
-                            <button className="text-gray-600 hover:text-black">Aircraft specs ↗</button>
-                            <button className="text-gray-600 hover:text-black">Terms & Conditions ⚖</button>
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -6658,8 +6888,6 @@ const TokenizedAssetsGlassmorphic = () => {
                           {/* Tabs */}
                           <div className="flex space-x-6 border-b border-gray-300/50 mb-4">
                             <button className="pb-3 text-sm font-medium text-gray-800 border-b-2 border-gray-800">Details</button>
-                            <button className="pb-3 text-sm font-medium text-gray-600">Specifications</button>
-                            <button className="pb-3 text-sm font-medium text-gray-600">Operator</button>
                           </div>
 
                           {/* Key Info Grid */}
@@ -6678,11 +6906,6 @@ const TokenizedAssetsGlassmorphic = () => {
                             </div>
                           </div>
 
-                          {/* Links */}
-                          <div className="flex space-x-4 text-xs mt-auto">
-                            <a href="#" className="text-gray-600 hover:text-gray-800">Aircraft specs ↗</a>
-                            <a href="#" className="text-gray-600 hover:text-gray-800">Terms & Conditions ⚖</a>
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -6748,6 +6971,96 @@ const TokenizedAssetsGlassmorphic = () => {
                         <div className="space-y-3 mb-6">
                           <h3 className="text-sm font-semibold text-gray-900">Charter Details</h3>
 
+                          {/* Departure Location */}
+                          <div className="relative">
+                            <label className="block text-xs text-gray-600 mb-2">Departure (Airport or Address)</label>
+                            <div className="relative">
+                              <MapPin size={14} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-500" />
+                              <input
+                                type="text"
+                                value={helicopterDepartureInput}
+                                onChange={(e) => {
+                                  setHelicopterDepartureInput(e.target.value);
+                                  setHelicopterDeparture(null);
+                                  searchHelicopterDeparture(e.target.value);
+                                  setShowHelicopterDepartureDropdown(true);
+                                }}
+                                onFocus={() => {
+                                  if (helicopterDepartureInput.length >= 2) {
+                                    setShowHelicopterDepartureDropdown(true);
+                                  }
+                                }}
+                                placeholder="Search airport or enter address..."
+                                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                              />
+                            </div>
+                            {showHelicopterDepartureDropdown && (helicopterDepartureResults.length > 0 || isSearchingHelicopterDeparture) && (
+                              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                {isSearchingHelicopterDeparture ? (
+                                  <div className="px-3 py-2 text-sm text-gray-500">Searching...</div>
+                                ) : (
+                                  helicopterDepartureResults.map((airport) => (
+                                    <button
+                                      key={airport.code || airport.name}
+                                      onClick={() => selectHelicopterDeparture(airport)}
+                                      className="w-full px-3 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                                    >
+                                      <div className="text-sm font-medium text-gray-900">{airport.name}</div>
+                                      <div className="text-xs text-gray-500">
+                                        {airport.code && `${airport.code} · `}{airport.city}{airport.country ? `, ${airport.country}` : ''}
+                                      </div>
+                                    </button>
+                                  ))
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Destination Location */}
+                          <div className="relative">
+                            <label className="block text-xs text-gray-600 mb-2">Destination (Airport or Address)</label>
+                            <div className="relative">
+                              <MapPin size={14} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-red-500" />
+                              <input
+                                type="text"
+                                value={helicopterDestinationInput}
+                                onChange={(e) => {
+                                  setHelicopterDestinationInput(e.target.value);
+                                  setHelicopterDestination(null);
+                                  searchHelicopterDestination(e.target.value);
+                                  setShowHelicopterDestinationDropdown(true);
+                                }}
+                                onFocus={() => {
+                                  if (helicopterDestinationInput.length >= 2) {
+                                    setShowHelicopterDestinationDropdown(true);
+                                  }
+                                }}
+                                placeholder="Search airport or enter address..."
+                                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                              />
+                            </div>
+                            {showHelicopterDestinationDropdown && (helicopterDestinationResults.length > 0 || isSearchingHelicopterDestination) && (
+                              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                {isSearchingHelicopterDestination ? (
+                                  <div className="px-3 py-2 text-sm text-gray-500">Searching...</div>
+                                ) : (
+                                  helicopterDestinationResults.map((airport) => (
+                                    <button
+                                      key={airport.code || airport.name}
+                                      onClick={() => selectHelicopterDestination(airport)}
+                                      className="w-full px-3 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                                    >
+                                      <div className="text-sm font-medium text-gray-900">{airport.name}</div>
+                                      <div className="text-xs text-gray-500">
+                                        {airport.code && `${airport.code} · `}{airport.city}{airport.country ? `, ${airport.country}` : ''}
+                                      </div>
+                                    </button>
+                                  ))
+                                )}
+                              </div>
+                            )}
+                          </div>
+
                           <div>
                             <label className="block text-xs text-gray-600 mb-2">Passengers</label>
                             <div className="flex items-center justify-between border border-gray-300 rounded px-3 py-2">
@@ -6758,21 +7071,6 @@ const TokenizedAssetsGlassmorphic = () => {
                               <span className="text-sm font-medium">{helicopterPassengers}</span>
                               <button
                                 onClick={() => setHelicopterPassengers(Math.min(selectedHelicopter?.capacity || 10, helicopterPassengers + 1))}
-                                className="text-gray-600 hover:text-gray-900"
-                              >+</button>
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-xs text-gray-600 mb-2">Flight Duration (hours)</label>
-                            <div className="flex items-center justify-between border border-gray-300 rounded px-3 py-2">
-                              <button
-                                onClick={() => setHelicopterDuration(Math.max(1, helicopterDuration - 1))}
-                                className="text-gray-600 hover:text-gray-900"
-                              >−</button>
-                              <span className="text-sm font-medium">{helicopterDuration}</span>
-                              <button
-                                onClick={() => setHelicopterDuration(helicopterDuration + 1)}
                                 className="text-gray-600 hover:text-gray-900"
                               >+</button>
                             </div>
@@ -6794,14 +7092,6 @@ const TokenizedAssetsGlassmorphic = () => {
                           <div className="flex justify-between">
                             <span className="text-gray-600">Hourly Rate:</span>
                             <span className="font-bold text-gray-900">{selectedHelicopter.totalPrice}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Duration:</span>
-                            <span className="font-medium text-gray-900">{helicopterDuration} hour{helicopterDuration > 1 ? 's' : ''}</span>
-                          </div>
-                          <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
-                            <span>Estimated Total:</span>
-                            <span>€{((selectedHelicopter.rawData?.price || 0) * helicopterDuration).toLocaleString()}</span>
                           </div>
                         </div>
 
@@ -6998,7 +7288,11 @@ const TokenizedAssetsGlassmorphic = () => {
                         setEmptyLegLuggage(0);
                         setEmptyLegHasPet(false);
                       }}
-                      className="bg-white/35 hover:bg-white/40 rounded-xl flex h-64 hover:shadow-lg transition-all cursor-pointer border border-gray-300/50"
+                      className={`bg-white/35 hover:bg-white/40 rounded-xl flex h-64 hover:shadow-lg cursor-pointer ${
+                        leg.rawData?.price && leg.rawData.price <= 1500
+                          ? 'pulse-green-glow'
+                          : 'border border-gray-300/50'
+                      }`}
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
                       <div className="w-2/5 bg-white/10 relative flex-shrink-0 rounded-l-xl overflow-hidden">
@@ -7015,8 +7309,10 @@ const TokenizedAssetsGlassmorphic = () => {
                               <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
                               <span className="text-gray-800">{leg.location}</span>
                             </div>
-                            {leg.isFreeWithNFT && (
-                              <div className="bg-yellow-400/90 px-2 py-1 rounded text-xs font-medium text-gray-800 backdrop-blur-sm">🎫 Free with NFT</div>
+                            {leg.rawData?.price && leg.rawData.price <= 1500 && (
+                              <div className="bg-green-500 text-white px-2 py-1 rounded text-xs font-bold backdrop-blur-sm animate-pulse">
+                                {leg.rawData.price <= 1500 ? 'FREE with NFT' : 'HOT DEAL'}
+                              </div>
                             )}
                           </div>
                         </div>
@@ -7179,7 +7475,11 @@ const TokenizedAssetsGlassmorphic = () => {
                         setEmptyLegLuggage(0);
                         setEmptyLegHasPet(false);
                       }}
-                      className="bg-white/35 hover:bg-white/40 rounded-lg border border-gray-300/50 overflow-hidden transition-all cursor-pointer"
+                      className={`bg-white/35 hover:bg-white/40 rounded-lg overflow-hidden cursor-pointer ${
+                        leg.rawData?.price && leg.rawData.price <= 1500
+                          ? 'pulse-green-glow'
+                          : 'border border-gray-300/50'
+                      }`}
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
                       <div className="flex items-center p-4 gap-4">
@@ -7194,7 +7494,12 @@ const TokenizedAssetsGlassmorphic = () => {
 
                         {/* Route Name */}
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-base font-semibold text-gray-800">{leg.name}</h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-base font-semibold text-gray-800">{leg.name}</h3>
+                            {leg.rawData?.price && leg.rawData.price <= 1500 && (
+                              <span className="bg-green-500 text-white px-2 py-0.5 rounded text-[10px] font-bold animate-pulse">FREE with NFT</span>
+                            )}
+                          </div>
                           <p className="text-xs text-gray-600">{leg.category}</p>
                         </div>
 
@@ -7657,6 +7962,19 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* ADVENTURES SECTION */}
           {!isTransitioning && activeCategory === 'adventures' && (
             <div className="w-full flex-1 flex flex-col">
+              {/* Pulsing green border animation for NFT free offers */}
+              <style>{`
+                @keyframes pulse-green-glow {
+                  0%, 100% {
+                    box-shadow: 0 0 15px rgba(74, 222, 128, 0.5), 0 0 30px rgba(74, 222, 128, 0.3);
+                    border-color: rgb(74, 222, 128);
+                  }
+                  50% {
+                    box-shadow: 0 0 30px rgba(74, 222, 128, 0.8), 0 0 60px rgba(74, 222, 128, 0.5);
+                    border-color: rgb(34, 197, 94);
+                  }
+                }
+              `}</style>
 
               {/* Adventures Header with View Switcher */}
               {!showAdventureDetail && (
@@ -7823,10 +8141,10 @@ const TokenizedAssetsGlassmorphic = () => {
                         setShowAdventureDetail(true);
                         setCurrentAdventureImageIndex(0);
                       }}
-                      className={`bg-white/35 hover:bg-white/40 rounded-xl flex h-64 hover:shadow-lg transition-all cursor-pointer border ${
+                      className={`bg-white/35 hover:bg-white/40 rounded-xl flex h-64 hover:shadow-lg cursor-pointer ${
                         adventure.isFreeWithNFT
-                          ? 'border-2 border-green-400 shadow-[0_0_20px_rgba(74,222,128,0.3)] hover:shadow-[0_0_30px_rgba(74,222,128,0.5)]'
-                          : 'border-gray-300/50'
+                          ? 'pulse-green-glow'
+                          : 'border border-gray-300/50'
                       }`}
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >

@@ -154,3 +154,5 @@ typechain/
 
 # Exclude duplicate/old project folder from deployment
 thefinalwebapplicationpcx-main/
+.vercel
+.env*.local

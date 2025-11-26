@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUpRight, ArrowDownLeft, History, Wallet, MessageCircle, Shield, User, Award, Plus, X, ExternalLink, LogOut, RefreshCw } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, History, Wallet, MessageCircle, Shield, User, Award, Plus, X, ExternalLink, LogOut, RefreshCw, Coins, Plane, Leaf } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer, YAxis, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import { useAccount, useBalance, useChainId } from 'wagmi';
@@ -31,9 +31,31 @@ export default function CryptoBalanceDashboard({ setActiveCategory }) {
   const [nftCount, setNftCount] = useState(0);
   const [investments, setInvestments] = useState([]);
 
+  // State for PVCX data
+  const [pvcxData, setPvcxData] = useState({
+    balance: 0,
+    earned_from_bookings: 0,
+    earned_from_co2: 0
+  });
+
   // State for manual refresh trigger
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // State for Edit Profile modal
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [editProfileData, setEditProfileData] = useState({
+    // From KYC (read-only after submission)
+    first_name: '',
+    last_name: '',
+    // Editable fields (stored in user_profiles)
+    phone: '',
+    address: '',
+    city: '',
+    country: ''
+  });
+  const [kycSubmitted, setKycSubmitted] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
 
   // Fetch ETH balance on Base - refetch every 30 seconds
   const { data: baseEthBalance, refetch: refetchBaseEth } = useBalance({
@@ -88,6 +110,7 @@ export default function CryptoBalanceDashboard({ setActiveCategory }) {
       fetchUserRequests();
       fetchInvestments();
       fetchNFTCount();
+      fetchPVCXData();
     }
   }, [user?.id]);
 
@@ -215,14 +238,136 @@ export default function CryptoBalanceDashboard({ setActiveCategory }) {
     }
   };
 
+  // Open Edit Profile modal and populate with current data from KYC submission
+  const handleOpenEditProfile = async () => {
+    console.log('📝 Opening Edit Profile modal...');
+    console.log('👤 User ID:', user?.id);
+
+    try {
+      // Fetch KYC form data from documents table (contains firstName, lastName, etc.)
+      console.log('🔍 Fetching KYC data from documents table...');
+      const { data: kycDoc, error: kycError } = await supabase
+        .from('documents')
+        .select('verification_notes, document_type, created_at, status')
+        .eq('user_id', user.id)
+        .eq('document_type', 'kyc_form')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      console.log('📄 KYC Document result:', { kycDoc, kycError });
+
+      // Fetch user_profiles for editable fields (phone, address, city, country)
+      console.log('🔍 Fetching user_profiles data...');
+      const { data: profileData, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('phone, address, city, country')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      console.log('👤 Profile data result:', { profileData, profileError });
+
+      let kycFormData = null;
+      if (!kycError && kycDoc?.verification_notes) {
+        try {
+          console.log('📋 Raw verification_notes:', kycDoc.verification_notes);
+          kycFormData = JSON.parse(kycDoc.verification_notes);
+          console.log('✅ Parsed KYC Form Data:', kycFormData);
+          setKycSubmitted(true);
+        } catch (parseError) {
+          console.error('❌ Error parsing KYC data:', parseError);
+        }
+      }
+
+      // Populate form:
+      // - Names from KYC (read-only)
+      // - Phone/Address/City/Country: use user_profiles first (user may have updated), fallback to KYC
+      const formData = {
+        first_name: kycFormData?.firstName || '',
+        last_name: kycFormData?.lastName || '',
+        phone: profileData?.phone || kycFormData?.phoneNumber || '',
+        address: profileData?.address || kycFormData?.address || '',
+        city: profileData?.city || kycFormData?.city || '',
+        country: profileData?.country || kycFormData?.country || ''
+      };
+
+      console.log('✅ Form data to display:', formData);
+      setEditProfileData(formData);
+
+    } catch (error) {
+      console.error('❌ Error fetching data for edit profile:', error);
+      setEditProfileData({
+        first_name: '',
+        last_name: '',
+        phone: userProfile?.phone || '',
+        address: userProfile?.address || '',
+        city: userProfile?.city || '',
+        country: userProfile?.country || ''
+      });
+    }
+    setShowEditProfile(true);
+  };
+
+  // Save profile changes (only editable fields: phone, address, city, country)
+  const handleSaveProfile = async () => {
+    if (!user?.id) return;
+
+    setSavingProfile(true);
+    try {
+      // Check if profile exists
+      const { data: existingProfile } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      // Only save editable fields (NOT first_name/last_name - those come from KYC)
+      const profileUpdate = {
+        phone: editProfileData.phone,
+        address: editProfileData.address,
+        city: editProfileData.city,
+        country: editProfileData.country,
+        updated_at: new Date().toISOString()
+      };
+
+      if (existingProfile) {
+        // Update existing profile
+        const { error } = await supabase
+          .from('user_profiles')
+          .update(profileUpdate)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      } else {
+        // Insert new profile
+        const { error } = await supabase
+          .from('user_profiles')
+          .insert({
+            user_id: user.id,
+            ...profileUpdate
+          });
+
+        if (error) throw error;
+      }
+
+      // Refresh profile data
+      await fetchUserProfile();
+      setShowEditProfile(false);
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      alert('Failed to save profile. Please try again.');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   const fetchUserRequests = async () => {
     try {
       const { data, error } = await supabase
         .from('user_requests')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
+        .order('created_at', { ascending: false });
 
       if (!error && data) {
         setUserRequests(data);
@@ -267,6 +412,28 @@ export default function CryptoBalanceDashboard({ setActiveCategory }) {
       console.error('Error fetching NFT count:', error);
       // Default to showing 0 if table doesn't exist
       setNftCount(0);
+    }
+  };
+
+  const fetchPVCXData = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_pvcx_balances')
+        .select('balance, earned_from_bookings, earned_from_co2')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!error && data) {
+        setPvcxData({
+          balance: parseFloat(data.balance) || 0,
+          earned_from_bookings: parseFloat(data.earned_from_bookings) || 0,
+          earned_from_co2: parseFloat(data.earned_from_co2) || 0
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching PVCX data:', error);
     }
   };
 
@@ -725,6 +892,80 @@ export default function CryptoBalanceDashboard({ setActiveCategory }) {
               </div>
             </div>
 
+            {/* PVCX Token Section */}
+            <div className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl overflow-hidden">
+              <button
+                onClick={() => toggleSection('pvcx')}
+                className="w-full p-3 flex items-center justify-between hover:bg-white/10 transition-all"
+              >
+                <div className="flex items-center gap-2">
+                  <Coins className="w-4 h-4 text-gray-600" />
+                  <span className="text-sm font-medium text-gray-900">$PVCX Tokens</span>
+                  {pvcxData.balance > 0 && (
+                    <span className="px-2 py-0.5 bg-black text-white rounded-full text-xs">
+                      {pvcxData.balance.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                    </span>
+                  )}
+                </div>
+                <Plus className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${activeSection === 'pvcx' ? 'rotate-45' : ''}`} />
+              </button>
+              <div className={`transition-all duration-300 ease-in-out overflow-hidden ${activeSection === 'pvcx' ? 'max-h-[400px]' : 'max-h-0'}`}>
+                <div className="p-4 bg-white/10 space-y-3">
+                  {/* Total Balance */}
+                  <div className="py-3 px-3 bg-white/5 rounded-lg border border-gray-200/30">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <Coins className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-700">Total Balance</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-medium text-gray-900">
+                          {pvcxData.balance.toLocaleString('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                        </p>
+                        <p className="text-xs text-gray-500">$PVCX</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* From Bookings */}
+                  <div className="py-3 px-3 bg-white/5 rounded-lg border border-gray-200/30">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <Plane className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-700">From Bookings</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-gray-900">
+                          {pvcxData.earned_from_bookings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* From CO₂ Certificates */}
+                  <div className="py-3 px-3 bg-white/5 rounded-lg border border-gray-200/30">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <Leaf className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-700">From CO₂ Certificates</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-gray-900">
+                          {pvcxData.earned_from_co2.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {pvcxData.balance === 0 && (
+                    <p className="text-xs text-gray-400 text-center py-2">
+                      Earn $PVCX tokens by completing bookings and purchasing CO₂ certificates
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Wallet Card */}
             <div className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-3">
@@ -851,41 +1092,33 @@ export default function CryptoBalanceDashboard({ setActiveCategory }) {
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between opacity-40">
                   <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-gray-600" />
-                    <span className="text-sm text-gray-900">2FA Authentication</span>
+                    <MessageCircle className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-400">Email Notifications</span>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
-                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>
+                  <label className="relative inline-flex items-center cursor-not-allowed">
+                    <input type="checkbox" className="sr-only peer" disabled />
+                    <div className="w-9 h-5 bg-gray-200 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-200 after:border after:rounded-full after:h-4 after:w-4"></div>
                   </label>
                 </div>
 
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between opacity-40">
                   <div className="flex items-center gap-2">
-                    <MessageCircle className="w-4 h-4 text-gray-600" />
-                    <span className="text-sm text-gray-900">Email Notifications</span>
+                    <History className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-400">Trade Notifications</span>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
-                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>
-                  </label>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <History className="w-4 h-4 text-gray-600" />
-                    <span className="text-sm text-gray-900">Trade Notifications</span>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" />
-                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>
+                  <label className="relative inline-flex items-center cursor-not-allowed">
+                    <input type="checkbox" className="sr-only peer" disabled />
+                    <div className="w-9 h-5 bg-gray-200 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-200 after:border after:rounded-full after:h-4 after:w-4"></div>
                   </label>
                 </div>
               </div>
 
-              <button className="w-full mt-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-medium text-gray-900 transition-all">
+              <button
+                onClick={handleOpenEditProfile}
+                className="w-full mt-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-medium text-gray-900 transition-all"
+              >
                 Edit Profile
               </button>
 
@@ -1088,6 +1321,139 @@ export default function CryptoBalanceDashboard({ setActiveCategory }) {
           </div>
         </div>
       </div>
+
+      {/* Edit Profile Modal */}
+      {showEditProfile && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <h2 className="text-lg font-medium text-gray-900">Edit Profile</h2>
+              <button
+                onClick={() => setShowEditProfile(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+              {/* KYC Info Section (Read-Only) */}
+              {kycSubmitted && (editProfileData.first_name || editProfileData.last_name) && (
+                <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                  <p className="text-xs font-medium text-gray-500 mb-2">From KYC Verification (Read-Only)</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">First Name</label>
+                      <p className="text-sm text-gray-900 font-medium">{editProfileData.first_name || '-'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Last Name</label>
+                      <p className="text-sm text-gray-900 font-medium">{editProfileData.last_name || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Email (Read Only) */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={user?.email || ''}
+                  disabled
+                  className="w-full px-3 py-2.5 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-500 cursor-not-allowed"
+                />
+                <p className="text-xs text-gray-400 mt-1">Email cannot be changed</p>
+              </div>
+
+              {/* Editable Fields */}
+              <div className="pt-2 border-t border-gray-100">
+                <p className="text-xs font-medium text-gray-500 mb-3">Editable Information</p>
+
+                {/* Phone */}
+                <div className="mb-4">
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    value={editProfileData.phone}
+                    onChange={(e) => setEditProfileData({ ...editProfileData, phone: e.target.value })}
+                    placeholder="+1 234 567 8900"
+                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors"
+                  />
+                </div>
+
+                {/* Address */}
+                <div className="mb-4">
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                    Address
+                  </label>
+                  <input
+                    type="text"
+                    value={editProfileData.address}
+                    onChange={(e) => setEditProfileData({ ...editProfileData, address: e.target.value })}
+                    placeholder="Enter your street address"
+                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors"
+                  />
+                </div>
+
+                {/* City and Country Row */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* City */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                      City
+                    </label>
+                    <input
+                      type="text"
+                      value={editProfileData.city}
+                      onChange={(e) => setEditProfileData({ ...editProfileData, city: e.target.value })}
+                      placeholder="City"
+                      className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors"
+                    />
+                  </div>
+
+                  {/* Country */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                      Country
+                    </label>
+                    <input
+                      type="text"
+                      value={editProfileData.country}
+                      onChange={(e) => setEditProfileData({ ...editProfileData, country: e.target.value })}
+                      placeholder="Country"
+                      className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-gray-100 flex gap-3">
+              <button
+                onClick={() => setShowEditProfile(false)}
+                className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveProfile}
+                disabled={savingProfile}
+                className="flex-1 py-2.5 bg-black hover:bg-gray-800 disabled:bg-gray-400 rounded-lg text-sm font-medium text-white transition-colors"
+              >
+                {savingProfile ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
