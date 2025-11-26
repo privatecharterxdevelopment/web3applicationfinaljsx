@@ -218,28 +218,12 @@ function Homepage() {
       <LandingHeader onGetStarted={handleGetStarted} />
 
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto rounded-2xl overflow-visible relative backdrop-blur-3xl bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 min-h-[600px]">
-        {/* Frosted Glass Texture Overlay */}
-        <div className="absolute inset-0 pointer-events-none z-[1]" style={{
-          backgroundImage: `
-            url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E"),
-            repeating-linear-gradient(0deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 1px, transparent 1px, transparent 2px),
-            repeating-linear-gradient(90deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 1px, transparent 1px, transparent 2px),
-            radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.3), transparent 50%),
-            radial-gradient(ellipse at 70% 80%, rgba(200,200,200,0.2), transparent 50%),
-            radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.15), transparent 70%)
-          `,
-          backgroundSize: '200px 200px, 2px 2px, 2px 2px, 100% 100%, 100% 100%, 100% 100%',
-          filter: 'blur(0.3px)'
-        }}></div>
-
+      <div className="max-w-7xl mx-auto rounded-2xl overflow-visible relative min-h-[600px]">
         {/* Background Globe - Full Color - Centered */}
         <div className="absolute inset-0 z-0 flex items-center justify-center">
           <div className="w-full h-full">
             <Globe3D />
           </div>
-          {/* Grey Overlay */}
-          <div className="absolute inset-0 bg-gray-100/40 pointer-events-none"></div>
         </div>
 
         {/* Content overlay - Centered Floating Search Modal */}
