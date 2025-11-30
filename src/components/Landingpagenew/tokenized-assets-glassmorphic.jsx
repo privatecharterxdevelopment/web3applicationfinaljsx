@@ -1513,10 +1513,7 @@ const TokenizedAssetsGlassmorphic = () => {
           user_id: user.id,
           type: 'helicopter_charter',
           status: 'pending',
-          client_name: payload.client_info.name,
           client_email: payload.client_info.email,
-          departure_airport: helicopterDepartureInput || null,
-          arrival_airport: helicopterDestinationInput || null,
           data: payload
         }])
         .select()
