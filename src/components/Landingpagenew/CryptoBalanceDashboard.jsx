@@ -420,7 +420,7 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
 
     try {
       const { data, error } = await supabase
-        .from('user_pvcx_balances')
+        .from('pvcx_balance')
         .select('balance, earned_from_bookings, earned_from_co2')
         .eq('user_id', user.id)
         .maybeSingle();

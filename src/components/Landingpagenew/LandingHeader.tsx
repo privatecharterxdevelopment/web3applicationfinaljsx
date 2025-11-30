@@ -29,7 +29,7 @@ export default function LandingHeader({ onGetStarted, showInfoButton = true }: L
   const handleGetStarted = onGetStarted || defaultGetStarted;
 
   const handleDashboardClick = () => {
-    navigate('/glasdashboard');
+    navigate('/dashboard');
   };
 
   // Helper to check if current page is active
@@ -99,12 +99,14 @@ export default function LandingHeader({ onGetStarted, showInfoButton = true }: L
       <div className="flex items-center space-x-2 sm:space-x-3">
         {isAuthenticated ? (
           <>
-            {/* Connected Wallet Address */}
-            <button className="border border-gray-200 text-gray-700 px-5 py-2 rounded-md text-sm hover:bg-gray-50 transition-colors flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              {isConnected && address ? shortenAddress(address) : 'Wallet'}
-            </button>
-            {/* Dashboard Button with Green Pulse */}
+            {/* Only show wallet button when wallet is connected */}
+            {isConnected && address && (
+              <button className="border border-gray-200 text-gray-700 px-5 py-2 rounded-md text-sm hover:bg-gray-50 transition-colors flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                {shortenAddress(address)}
+              </button>
+            )}
+            {/* Dashboard Button with Green Pulse - only when logged in */}
             <div className="flex items-center space-x-2">
               <button
                 onClick={handleDashboardClick}
@@ -129,10 +131,7 @@ export default function LandingHeader({ onGetStarted, showInfoButton = true }: L
           </>
         ) : (
           <>
-            {/* Connect Wallet - Not Authenticated */}
-            <button className="border border-gray-200 text-gray-700 px-5 py-2 rounded-md text-sm hover:bg-gray-50 transition-colors">
-              Connect Wallet
-            </button>
+            {/* Not logged in - just show Get Started button, no Connect Wallet */}
             <div className="flex items-center space-x-2">
               <button
                 onClick={handleGetStarted}
