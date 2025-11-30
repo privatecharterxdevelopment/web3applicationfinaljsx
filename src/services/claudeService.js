@@ -1,49 +1,39 @@
-// Claude 3.5 Sonnet API Service for AIChat
-import Anthropic from '@anthropic-ai/sdk';
+// Claude Service - Now using secure Edge Function (API key stays server-side)
+// This is a wrapper around claudeEdgeService for backwards compatibility
+import { claudeEdgeService } from './claudeEdgeService';
 
 class ClaudeService {
   constructor() {
-    this.apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY || '';
-    this.client = null;
     this.systemPrompt = '';
-
-    if (this.apiKey) {
-      this.client = new Anthropic({
-        apiKey: this.apiKey,
-        dangerouslyAllowBrowser: true // Required for client-side usage
-      });
-    }
   }
 
   setSystemPrompt(prompt) {
     this.systemPrompt = prompt;
+    claudeEdgeService.setSystemPrompt(prompt);
   }
 
   isEnabled() {
-    return !!this.client;
+    // Always enabled - edge function handles auth
+    return true;
   }
 
   /**
-   * Send a message to Claude and get a response
+   * Send a message to Claude via Edge Function and get a response
    * @param {Array} messages - Conversation history [{role: 'user'|'assistant', content: string}]
    * @param {Object} options - Additional options
    * @returns {Promise<string>} - Claude's response
    */
   async sendMessage(messages, options = {}) {
-    if (!this.client) {
-      throw new Error('Claude API key not configured. Please set VITE_ANTHROPIC_API_KEY in your .env file.');
-    }
-
     try {
-      const response = await this.client.messages.create({
-        model: 'claude-3-7-sonnet-20250219',
-        max_tokens: options.maxTokens || 8192,
-        temperature: options.temperature || 0.7,
-        system: this.systemPrompt,
+      const response = await claudeEdgeService.messages.create({
         messages: messages.map(msg => ({
           role: msg.role,
           content: msg.content
-        }))
+        })),
+        system: this.systemPrompt,
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: options.maxTokens || 8192,
+        temperature: options.temperature || 0.7
       });
 
       if (!response || !response.content || !response.content[0] || !response.content[0].text) {
@@ -58,44 +48,17 @@ class ClaudeService {
   }
 
   /**
-   * Stream a response from Claude (for real-time typing effect)
+   * Stream a response from Claude (NOTE: streaming not yet supported via edge function)
+   * Falls back to regular message for now
    * @param {Array} messages - Conversation history
    * @param {Function} onChunk - Callback for each text chunk
    * @param {Object} options - Additional options
    */
   async streamMessage(messages, onChunk, options = {}) {
-    if (!this.client) {
-      throw new Error('Claude API key not configured.');
-    }
-
-    try {
-      const stream = await this.client.messages.create({
-        model: 'claude-3-5-sonnet-latest',
-        max_tokens: options.maxTokens || 16384,
-        temperature: options.temperature || 0.7,
-        system: this.systemPrompt,
-        messages: messages.map(msg => ({
-          role: msg.role,
-          content: msg.content
-        })),
-        stream: true
-      });
-
-      let fullText = '';
-      
-      for await (const chunk of stream) {
-        if (chunk.type === 'content_block_delta' && chunk.delta?.text) {
-          const text = chunk.delta.text;
-          fullText += text;
-          onChunk(text, fullText);
-        }
-      }
-
-      return fullText;
-    } catch (error) {
-      console.error('Claude Streaming Error:', error);
-      throw error;
-    }
+    // Edge function doesn't support streaming yet, use regular message
+    const fullText = await this.sendMessage(messages, options);
+    onChunk(fullText, fullText);
+    return fullText;
   }
 
   /**
@@ -105,16 +68,12 @@ class ClaudeService {
    * @returns {Promise<Object>} - Extracted parameters
    */
   async extractSearchParameters(userMessage, conversationHistory = []) {
-    if (!this.client) {
-      return this.fallbackExtraction(userMessage);
-    }
-
     try {
       const extractionPrompt = `Extract search parameters from the user's message. Return ONLY a JSON object with these fields (use null if not mentioned):
 {
   "serviceType": "jet|helicopter|yacht|car|empty_leg",
   "from": "city name",
-  "to": "city name", 
+  "to": "city name",
   "passengers": number,
   "date": "YYYY-MM-DD or relative like 'next week'",
   "location": "city name for single-location services like cars/helicopters"
@@ -125,19 +84,19 @@ class ClaudeService {
         { role: 'user', content: userMessage }
       ];
 
-      const response = await this.client.messages.create({
-        model: 'claude-3-5-sonnet-latest',
-        max_tokens: 2048,
-        temperature: 0.3,
+      const response = await claudeEdgeService.messages.create({
+        messages,
         system: extractionPrompt,
-        messages: messages
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2048,
+        temperature: 0.3
       });
 
       const jsonMatch = response.content[0].text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0]);
       }
-      
+
       return this.fallbackExtraction(userMessage);
     } catch (error) {
       console.error('Parameter extraction error:', error);
@@ -150,8 +109,8 @@ class ClaudeService {
    */
   fallbackExtraction(message) {
     const lower = message.toLowerCase();
-    
-    const serviceType = 
+
+    const serviceType =
       lower.match(/helicopter/i) ? 'helicopter' :
       lower.match(/empty\s*leg/i) ? 'empty_leg' :
       lower.match(/yacht/i) ? 'yacht' :
@@ -159,11 +118,11 @@ class ClaudeService {
       lower.match(/jet|aircraft/i) ? 'jet' : null;
 
     const passengers = parseInt(lower.match(/(\d+)\s+(?:passenger|person|people|pax)/)?.[1]) || null;
-    
+
     const fromMatch = lower.match(/\bfrom\s+([a-z\s]+?)(?:\s+to|\s+for|,|$)/i);
     const toMatch = lower.match(/\bto\s+([a-z\s]+?)(?:\s+for|,|$)/i);
     const inMatch = lower.match(/\bin\s+([a-z\s]+?)(?:\s+for|\s+next|\s+this|,|$)/i);
-    
+
     return {
       serviceType,
       from: fromMatch?.[1]?.trim() || null,

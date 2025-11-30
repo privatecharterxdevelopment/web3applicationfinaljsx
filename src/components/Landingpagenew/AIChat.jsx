@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   ArrowLeft, Mic, Send, X, Volume2, VolumeX, Edit2, Shield, Wallet, ShoppingCart, MessageSquare, Plus, Crown, AlertCircle, Calendar, Trash2, ChevronRight, Plane, Clock, Upload, FileText, DollarSign
 } from 'lucide-react';
-import Anthropic from '@anthropic-ai/sdk';
+// Secure Claude API via Edge Function - API key stays server-side
+import { claudeEdgeService } from '../../services/claudeEdgeService';
 import * as pdfjsLib from 'pdfjs-dist';
 
 // Set PDF.js worker path
@@ -127,10 +128,10 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
 
   console.log('👤 User info:', { userId: user?.id, isAdmin, hasAuthContext: !!authContext });
 
-  // Read Vite-style env vars; if missing, voice will be skipped gracefully
-  const ANTHROPIC_API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY || '';
+  // Voice API keys (optional - voice will be skipped gracefully if missing)
   const HUME_API_KEY = (import.meta.env?.VITE_HUME_API_KEY) || '';
   const HUME_SECRET_KEY = (import.meta.env?.VITE_HUME_SECRET_KEY) || '';
+  // NOTE: ANTHROPIC_API_KEY removed - now using secure Edge Function via claudeEdgeService
 
   // =======================
   // ALL STATE & REFS FIRST
@@ -216,7 +217,7 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
   const { signMessageAsync } = useSignMessage();
 
   // All refs
-  const anthropicRef = useRef(null);
+  // NOTE: anthropicRef removed - now using claudeEdgeService for secure API calls
   const humeClientRef = useRef(null);
   const audioContextRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -231,17 +232,7 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
   // EFFECTS & CALLBACKS
   // =======================
 
-  // Initialize Claude API
-  useEffect(() => {
-    if (ANTHROPIC_API_KEY) {
-      anthropicRef.current = new Anthropic({
-        apiKey: ANTHROPIC_API_KEY,
-        dangerouslyAllowBrowser: true
-      });
-    } else {
-      console.warn('⚠️ VITE_ANTHROPIC_API_KEY not found');
-    }
-  }, [ANTHROPIC_API_KEY]);
+  // NOTE: Claude API initialization removed - now using claudeEdgeService for secure server-side API calls
 
   // Initialize Hume AI Client for voice
   useEffect(() => {
@@ -824,7 +815,7 @@ Then ask the user to confirm if the extracted data is correct, and explain that 
       let extractedData = null;
 
       try {
-        const response = await anthropicRef.current.messages.create({
+        const response = await claudeEdgeService.messages.create({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 1024,
           messages: [{
@@ -1500,13 +1491,10 @@ As their luxury travel consultant, provide an enthusiastic response that:
     }
   };
 
-  // NEW CLAUDE-BASED MESSAGE HANDLER
+  // NEW CLAUDE-BASED MESSAGE HANDLER (via secure Edge Function)
   const handleSendMessage = async (message) => {
     if (!message.trim() || isProcessing) return;
-    if (!anthropicRef.current) {
-      setToast({ message: 'AI not initialized', type: 'error' });
-      return;
-    }
+    // NOTE: anthropicRef check removed - claudeEdgeService is always available
 
     // Check message limit (20 messages per chat, except Elite which has unlimited)
     const existingChat = chatHistory.find(c => c.id === activeChat);
@@ -1733,7 +1721,7 @@ As their luxury travel consultant, provide an enthusiastic response that:
           content: msg.content
         }));
 
-      const response = await anthropicRef.current.messages.create({
+      const response = await claudeEdgeService.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4096,
         system: [
@@ -1897,7 +1885,7 @@ As their luxury travel consultant, provide an enthusiastic response that:
           }
 
           // Get AI response about results - MUST use proper tool_result format
-          const followUp = await anthropicRef.current.messages.create({
+          const followUp = await claudeEdgeService.messages.create({
             model: 'claude-sonnet-4-20250514',
             max_tokens: 1024,
             system: [
