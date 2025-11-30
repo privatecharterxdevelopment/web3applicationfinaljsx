@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
-  ArrowLeft, Mic, Send, X, Volume2, VolumeX, Edit2, Shield, Wallet, ShoppingCart, MessageSquare, Plus, Crown, AlertCircle, Calendar, Trash2, ChevronRight, Plane, Clock, Upload, FileText, DollarSign
+  ArrowLeft, Mic, Send, X, Volume2, VolumeX, Edit2, Shield, Wallet, ShoppingCart, MessageSquare, Plus, Crown, AlertCircle, Calendar, Trash2, ChevronRight, Plane, Clock, Upload, FileText, DollarSign, Users, MapPin, Anchor, Mountain, Car
 } from 'lucide-react';
 // Secure Claude API via Edge Function - API key stays server-side
 import { claudeEdgeService } from '../../services/claudeEdgeService';
@@ -99,24 +99,79 @@ const TypingAnimation = () => (
   </div>
 );
 
-// Typing Text Effect Component
-const TypingText = ({ text, speed = 20, onComplete }) => {
+// Typing Text Effect Component - Smooth word-by-word streaming like ChatGPT
+const TypingText = ({ text, speed = 30, onComplete }) => {
   const [displayedText, setDisplayedText] = useState('');
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
+  const requestRef = useRef();
+  const startTimeRef = useRef();
+  const textRef = useRef(text);
 
   useEffect(() => {
-    if (currentIndex < text.length) {
-      const timeout = setTimeout(() => {
-        setDisplayedText(prev => prev + text[currentIndex]);
-        setCurrentIndex(prev => prev + 1);
-      }, speed);
-      return () => clearTimeout(timeout);
-    } else if (currentIndex === text.length && onComplete) {
-      onComplete();
-    }
-  }, [currentIndex, text, speed, onComplete]);
+    textRef.current = text;
+    setDisplayedText('');
+    setIsComplete(false);
+    startTimeRef.current = null;
 
-  return <p className="text-sm leading-relaxed whitespace-pre-line">{displayedText}<span className="animate-pulse">|</span></p>;
+    // Split text into words for smoother typing
+    const words = text.split(/(\s+)/); // Keep whitespace
+    let currentWordIndex = 0;
+    let currentCharInWord = 0;
+    let result = '';
+
+    const animate = (timestamp) => {
+      if (!startTimeRef.current) startTimeRef.current = timestamp;
+      const elapsed = timestamp - startTimeRef.current;
+
+      // Calculate how many characters should be shown based on elapsed time
+      // Use variable speed: faster for common words, slight pause after punctuation
+      const baseCharsToShow = Math.floor(elapsed / speed);
+
+      // Build the displayed text
+      let charsShown = 0;
+      result = '';
+
+      for (let i = 0; i < words.length && charsShown < baseCharsToShow; i++) {
+        const word = words[i];
+        const remainingChars = baseCharsToShow - charsShown;
+
+        if (remainingChars >= word.length) {
+          result += word;
+          charsShown += word.length;
+        } else {
+          result += word.slice(0, remainingChars);
+          charsShown += remainingChars;
+        }
+      }
+
+      setDisplayedText(result);
+
+      if (result.length < text.length) {
+        requestRef.current = requestAnimationFrame(animate);
+      } else {
+        setDisplayedText(text);
+        setIsComplete(true);
+        if (onComplete) {
+          setTimeout(onComplete, 100);
+        }
+      }
+    };
+
+    requestRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+      }
+    };
+  }, [text, speed, onComplete]);
+
+  return (
+    <p className="text-sm leading-relaxed whitespace-pre-line">
+      {displayedText}
+      {!isComplete && <span className="inline-block w-0.5 h-4 bg-gray-500 ml-0.5 animate-pulse" />}
+    </p>
+  );
 };
 
 // Main Component
