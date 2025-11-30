@@ -6,7 +6,6 @@ const PVCXTokenView = ({ user, onNavigate }) => {
   const [balance, setBalance] = useState(0);
   const [earnedFromBookings, setEarnedFromBookings] = useState(0);
   const [earnedFromCO2, setEarnedFromCO2] = useState(0);
-  const [potentialEarnings, setPotentialEarnings] = useState({ km_reward: 0, co2_reward: 0, total_potential: 0 });
   const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -16,7 +15,6 @@ const PVCXTokenView = ({ user, onNavigate }) => {
   useEffect(() => {
     if (user) {
       fetchPVCXBalance();
-      fetchPotentialEarnings();
     }
   }, [user]);
 
@@ -45,236 +43,119 @@ const PVCXTokenView = ({ user, onNavigate }) => {
     }
   };
 
-  const fetchPotentialEarnings = async () => {
-    try {
-      const { data, error } = await supabase
-        .rpc('calculate_potential_pvcx_earnings', { p_user_id: user.id });
-
-      if (data && data.length > 0) {
-        setPotentialEarnings(data[0]);
-      }
-    } catch (error) {
-      console.error('Error fetching potential earnings:', error);
-    }
-  };
-
   return (
     <div className="w-full h-full overflow-y-auto" style={{ fontFamily: "'DM Sans', sans-serif" }}>
       {/* Header */}
-      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-gray-200">
-        <div className="flex items-center justify-end">
+      <div className="px-4 sm:px-6 py-4 sm:py-6 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl sm:text-2xl font-light text-gray-900 tracking-tight">PVCX Token</h1>
           <img
             src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/PaymentIcons/Title-removebg-preview.png"
             alt="PVCX"
-            className="w-12 h-12 sm:w-16 sm:h-16 object-contain opacity-80"
+            className="w-10 h-10 sm:w-12 sm:h-12 object-contain opacity-80"
           />
         </div>
       </div>
 
       {/* Content */}
-      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-        {/* Info Banner */}
-        <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 border border-gray-200 rounded-lg">
-          <p className="text-sm font-semibold text-gray-900 mb-2">
-            Reward Phase Active - Building to 1,000 Users
-          </p>
-          <p className="text-xs text-gray-700 leading-relaxed">
-            Earn PVCX tokens through every booking and CO₂ certificate. Your balance is tracked securely.
-            Once we reach 1,000 token holders, trading & withdrawals will be enabled on DEX (Uniswap).
-          </p>
-        </div>
-
-        {/* Balance Section */}
-        <div className="mb-6 sm:mb-8">
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Your Balance</h2>
-
-          {loading ? (
-            <div className="text-center py-8">
-              <p className="text-sm text-gray-600">Loading balance...</p>
+      <div className="px-4 sm:px-6 py-6 space-y-6">
+        {/* Balance Card */}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
+          </div>
+        ) : (
+          <>
+            {/* Main Balance */}
+            <div className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6">
+              <p className="text-xs sm:text-sm text-gray-500 mb-2">Total Balance</p>
+              <p className="text-4xl sm:text-5xl font-light text-gray-900 tracking-tight">
+                {balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-sm text-gray-400 mt-1">$PVCX</p>
             </div>
-          ) : (
-            <div className="space-y-3 sm:space-y-4">
-              {/* Main Balance */}
-              <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
-                <p className="text-sm text-gray-600 mb-2">Total Balance</p>
-                <p className="text-3xl sm:text-4xl lg:text-5xl font-light text-gray-900 mb-1">
-                  {balance.toLocaleString('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+
+            {/* Breakdown */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white border border-gray-200 rounded-xl p-4">
+                <p className="text-xs text-gray-500 mb-1">From Bookings</p>
+                <p className="text-lg sm:text-xl font-light text-gray-900">
+                  {earnedFromBookings.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </p>
-                <p className="text-sm text-gray-500">$PVCX</p>
               </div>
+              <div className="bg-white border border-gray-200 rounded-xl p-4">
+                <p className="text-xs text-gray-500 mb-1">From CO₂</p>
+                <p className="text-lg sm:text-xl font-light text-gray-900">
+                  {earnedFromCO2.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+            </div>
 
-              {/* Breakdown */}
-              <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
-                  <p className="text-xs text-gray-600 mb-1">From Bookings</p>
-                  <p className="text-xl sm:text-2xl font-light text-gray-900">
-                    {earnedFromBookings.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                  </p>
-                </div>
-                <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
-                  <p className="text-xs text-gray-600 mb-1">From CO₂ Certificates</p>
-                  <p className="text-xl sm:text-2xl font-light text-gray-900">
-                    {earnedFromCO2.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                  </p>
-                </div>
-              </div>
+            {/* Withdrawal Button */}
+            {isLiquidityPoolLive ? (
+              <button
+                onClick={() => setShowWithdrawalModal(true)}
+                disabled={balance <= 0}
+                className="w-full py-3.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Request Withdrawal
+              </button>
+            ) : (
+              <button
+                disabled
+                className="w-full py-3.5 bg-gray-100 text-gray-400 text-sm font-medium rounded-xl cursor-not-allowed"
+              >
+                Withdrawals at 1,000 Users
+              </button>
+            )}
+          </>
+        )}
 
-              {/* Withdrawal Button */}
-              {isLiquidityPoolLive ? (
-                <button
-                  onClick={() => setShowWithdrawalModal(true)}
-                  disabled={balance <= 0}
-                  className="w-full py-3 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Request Withdrawal
-                </button>
-              ) : (
-                <div className="text-center">
-                  <button
-                    disabled
-                    className="w-full py-3 bg-gray-200 text-gray-500 text-sm font-medium rounded-lg cursor-not-allowed"
-                  >
-                    Withdrawals at 1,000 Users
-                  </button>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Trading & withdrawals enabled once milestone reached
-                  </p>
-                </div>
-              )}
+        {/* Token Info - Minimal */}
+        <div className="bg-gray-50 rounded-xl p-4 sm:p-5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+            <div>
+              <p className="text-xs text-gray-400 mb-0.5">Symbol</p>
+              <p className="text-sm font-medium text-gray-900">PVCX</p>
             </div>
-          )}
-        </div>
-
-        {/* Earning Potential */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Earning Potential</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <p className="text-xs text-gray-600 mb-2">Estimated Booking Rewards</p>
-              <p className="text-2xl font-light text-gray-900 mb-1">
-                {potentialEarnings.km_reward?.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-              </p>
-              <p className="text-xs text-gray-500">Every km × 1.5 multiplier</p>
+            <div>
+              <p className="text-xs text-gray-400 mb-0.5">Supply</p>
+              <p className="text-sm font-medium text-gray-900">10M</p>
             </div>
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <p className="text-xs text-gray-600 mb-2">Estimated CO₂ Rewards</p>
-              <p className="text-2xl font-light text-gray-900 mb-1">
-                {potentialEarnings.co2_reward?.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-              </p>
-              <p className="text-xs text-gray-500">CO₂ tons saved × 2.0 multiplier</p>
+            <div>
+              <p className="text-xs text-gray-400 mb-0.5">Network</p>
+              <p className="text-sm font-medium text-gray-900">Ethereum</p>
             </div>
-            <div className="bg-gray-900 text-white rounded-lg p-4">
-              <p className="text-xs opacity-70 mb-2">Total Potential</p>
-              <p className="text-2xl font-light mb-1">
-                {potentialEarnings.total_potential?.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-              </p>
-              <p className="text-xs opacity-70">$PVCX</p>
-            </div>
-          </div>
-          <p className="text-xs text-gray-500 mt-3 italic">
-            * CO₂ rewards require admin certification
-          </p>
-        </div>
-
-        {/* Token Information */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Token Information</h2>
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-              <div>
-                <p className="text-xs text-gray-600 mb-1">Symbol</p>
-                <p className="text-sm font-semibold text-gray-900">PVCX</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-600 mb-1">Total Supply</p>
-                <p className="text-sm font-semibold text-gray-900">10,000,000</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-600 mb-1">Network</p>
-                <p className="text-sm font-semibold text-gray-900">Ethereum</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-600 mb-1">Standard</p>
-                <p className="text-sm font-semibold text-gray-900">ERC-20</p>
-              </div>
-            </div>
-            <div className="border-t border-gray-200 pt-4">
-              <p className="text-xs text-gray-600 mb-2">Contract Address</p>
-              <div className="bg-gray-50 rounded px-3 py-2 text-center">
-                <p className="text-xs text-gray-500">Available at 1,000 users</p>
-              </div>
+            <div>
+              <p className="text-xs text-gray-400 mb-0.5">Standard</p>
+              <p className="text-sm font-medium text-gray-900">ERC-20</p>
             </div>
           </div>
         </div>
 
-        {/* Tokenomics */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Distribution & Tokenomics</h2>
-          <div className="space-y-3">
-            <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Presale Investors</p>
-                <p className="text-xs text-gray-600">Early backers & strategic partners</p>
-              </div>
-              <p className="text-sm font-semibold text-gray-900">30% (3M)</p>
+        {/* How to Earn - Simple */}
+        <div className="border-t border-gray-100 pt-6">
+          <h3 className="text-sm font-medium text-gray-900 mb-3">How to Earn</h3>
+          <div className="space-y-2.5">
+            <div className="flex items-start gap-3">
+              <div className="w-5 h-5 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs flex-shrink-0 mt-0.5">1</div>
+              <p className="text-sm text-gray-600">Book flights, transfers, or concierge services</p>
             </div>
-            <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Customer Rewards</p>
-                <p className="text-xs text-gray-600">Earned through platform usage</p>
-              </div>
-              <p className="text-sm font-semibold text-gray-900">25% (2.5M)</p>
+            <div className="flex items-start gap-3">
+              <div className="w-5 h-5 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs flex-shrink-0 mt-0.5">2</div>
+              <p className="text-sm text-gray-600">Earn PVCX rewards based on distance traveled</p>
             </div>
-            <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Operational Growth</p>
-                <p className="text-xs text-gray-600">Team, marketing & development</p>
-              </div>
-              <p className="text-sm font-semibold text-gray-900">45% (4.5M)</p>
+            <div className="flex items-start gap-3">
+              <div className="w-5 h-5 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">3</div>
+              <p className="text-sm text-gray-400">Trade on DEX once milestone is reached</p>
             </div>
           </div>
         </div>
 
-        {/* Reward Mechanics */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">How It Works</h2>
-          <div className="space-y-3">
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <p className="text-sm font-semibold text-gray-900 mb-2">1. Book Services</p>
-              <p className="text-xs text-gray-600">
-                Every taxi/concierge or private jet booking earns you PVCX tokens based on distance traveled (km × 1.5).
-              </p>
-            </div>
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <p className="text-sm font-semibold text-gray-900 mb-2">2. Earn CO₂ Credits</p>
-              <p className="text-xs text-gray-600">
-                Get certified CO₂ savings from eco-friendly travel choices with 2x multiplier (tons × 2.0).
-              </p>
-            </div>
-            <div className="bg-gray-100 border border-gray-200 rounded-lg p-4 opacity-60">
-              <p className="text-sm font-semibold text-gray-700 mb-2">3. Trade & Withdraw</p>
-              <p className="text-xs text-gray-600">
-                Available once we reach 1,000 token holders. Tokens will be tradable on Uniswap.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Platform Contribution */}
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Platform Impact</h2>
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <p className="text-sm text-gray-700 leading-relaxed mb-4">
-              Every booking generates 2% back in PVCX rewards, creating a self-reinforcing economy where platform
-              growth directly drives token demand. With strategic distribution and customer incentives, PVCX transforms
-              luxury travel from a transaction into an investment.
-            </p>
-            <p className="text-sm text-gray-700 leading-relaxed">
-              In addition, 2% of every booking flows directly into verified NGO projects, ensuring that each journey
-              delivers value to clients while making a meaningful global impact.
-            </p>
-          </div>
-        </div>
+        {/* Note */}
+        <p className="text-xs text-gray-400 text-center pt-2">
+          Trading & withdrawals enabled at 1,000 token holders
+        </p>
       </div>
 
       {/* Withdrawal Modal */}
