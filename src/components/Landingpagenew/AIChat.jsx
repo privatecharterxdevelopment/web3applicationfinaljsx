@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
-  ArrowLeft, Mic, Send, X, Volume2, VolumeX, Edit2, Shield, Wallet, ShoppingCart, MessageSquare, Plus, Crown, AlertCircle, Calendar, Trash2, ChevronRight
+  ArrowLeft, Mic, Send, X, Volume2, VolumeX, Edit2, Shield, Wallet, ShoppingCart, MessageSquare, Plus, Crown, AlertCircle, Calendar, Trash2, ChevronRight, Plane, Clock, Upload, FileText, DollarSign
 } from 'lucide-react';
 import Anthropic from '@anthropic-ai/sdk';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Set PDF.js worker path
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 // Services
 import { UnifiedSearchService, ImageUtils } from '../../services/supabaseService';
@@ -35,6 +39,7 @@ import WalletConnect from '../WalletConnect';
 import LoadingMessage from '../LoadingMessage';
 import BulkOrderInterface from '../BulkOrderInterface';
 import SubscriptionModal from '../SubscriptionModal';
+import CryptoPaymentModal from '../CryptoPaymentModal';
 
 // Web3
 import { useAccount, useDisconnect, useSignMessage } from 'wagmi';
@@ -141,7 +146,7 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
 
   const [chatHistory, setChatHistory] = useState([]);
   const [activeChat, setActiveChat] = useState('new');
-  const [chatsLoaded, setChatsLoaded] = useState(false);
+  const [chatsLoaded, setChatsLoaded] = useState(true); // Start as true so new chats work immediately
   const [currentMessage, setCurrentMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
@@ -170,6 +175,9 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
   const [showCart, setShowCart] = useState(false);
   const [showChatSessions, setShowChatSessions] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [showReportIssueModal, setShowReportIssueModal] = useState(false);
+  const [reportIssueForm, setReportIssueForm] = useState({ message: '', rating: 0 });
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [toast, setToast] = useState(null);
   const [limitWarningShown, setLimitWarningShown] = useState(false);
@@ -178,7 +186,22 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
   const [showCartSidebar, setShowCartSidebar] = useState(false);
   const [showRequestForm, setShowRequestForm] = useState(false);
+  const [showCryptoPayment, setShowCryptoPayment] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Break the Price feature
+  const [showBreakThePrice, setShowBreakThePrice] = useState(false);
+  const [breakThePriceFile, setBreakThePriceFile] = useState(null);
+  const [isUploadingQuote, setIsUploadingQuote] = useState(false);
+  const [userSubscriptionLimits, setUserSubscriptionLimits] = useState(null);
+
+  // Message limit tracking (20 messages per chat)
+  const [messageCount, setMessageCount] = useState(0);
+  const [messageLimitReached, setMessageLimitReached] = useState(false);
+  const MAX_MESSAGES_PER_CHAT = 20;
+
+  // Chat limit tracking (for free users)
+  const [chatLimitReached, setChatLimitReached] = useState(false);
 
   // Voice Interaction State
   const [isVoiceMode, setIsVoiceMode] = useState(false);
@@ -588,6 +611,324 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
     setShowAdjustModal(true);
   };
 
+  // Break the Price - check if user has access
+  const canUseBreakThePrice = useCallback(() => {
+    if (!userSubscriptionLimits) return false;
+    return userSubscriptionLimits.break_the_price === true;
+  }, [userSubscriptionLimits]);
+
+  // Convert PDF to images for Claude Vision analysis
+  const convertPdfToImages = useCallback(async (file) => {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+    const images = [];
+    // Only process first 3 pages max (quotes are usually 1-2 pages)
+    const maxPages = Math.min(pdf.numPages, 3);
+
+    for (let i = 1; i <= maxPages; i++) {
+      const page = await pdf.getPage(i);
+      const scale = 2; // Higher = better quality but more tokens
+      const viewport = page.getViewport({ scale });
+
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      await page.render({
+        canvasContext: context,
+        viewport: viewport
+      }).promise;
+
+      // Convert to base64
+      const base64 = canvas.toDataURL('image/png').split(',')[1];
+      images.push({
+        page: i,
+        base64,
+        mediaType: 'image/png'
+      });
+    }
+
+    return images;
+  }, []);
+
+  // Parse extracted quote data from Claude's response
+  const parseExtractedQuoteData = useCallback((text) => {
+    const extractField = (fieldName) => {
+      const regex = new RegExp(`\\*\\*${fieldName}:\\*\\*\\s*(.+?)(?=\\n|$)`, 'i');
+      const match = text.match(regex);
+      return match ? match[1].trim() : null;
+    };
+
+    return {
+      route: extractField('Route'),
+      date: extractField('Date'),
+      time: extractField('Time'),
+      aircraft: extractField('Aircraft'),
+      passengers: extractField('Passengers'),
+      price: extractField('Price'),
+      broker: extractField('Broker'),
+      validUntil: extractField('Valid Until')
+    };
+  }, []);
+
+  // Break the Price - handle file upload with Claude Vision analysis
+  const handleBreakThePriceUpload = useCallback(async (file) => {
+    if (!file) return;
+    if (!user?.id) {
+      setToast({ message: 'Please log in to use Break the Price', type: 'error' });
+      return;
+    }
+
+    // Check if user has Break the Price access
+    if (!canUseBreakThePrice()) {
+      setToast({ message: 'Upgrade to Starter or higher to use Break the Price', type: 'warning' });
+      setShowSubscriptionModal(true);
+      return;
+    }
+
+    // Check file type
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setToast({ message: 'Please upload a PDF or image file (JPG, PNG, WebP)', type: 'error' });
+      return;
+    }
+
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setToast({ message: 'File too large. Maximum size is 10MB.', type: 'error' });
+      return;
+    }
+
+    setIsUploadingQuote(true);
+    setBreakThePriceFile(file);
+    setShowBreakThePrice(false);
+
+    try {
+      // For non-Elite users, check if they have chats remaining (costs 1 chat)
+      if (userSubscriptionLimits?.tier !== 'elite') {
+        const { canStart, chatsRemaining } = await subscriptionService.canStartNewChat(user.id);
+        if (!canStart || chatsRemaining < 1) {
+          setToast({ message: 'No chats remaining. Break the Price costs 1 chat.', type: 'warning' });
+          setShowSubscriptionModal(true);
+          setIsUploadingQuote(false);
+          return;
+        }
+      }
+
+      // Upload file to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${activeChat || 'new'}_${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('price-break-quotes')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('price-break-quotes')
+        .getPublicUrl(fileName);
+
+      // Add upload message to chat
+      const uploadMessage = {
+        role: 'user',
+        content: `[Break the Price] I've uploaded a competitor quote for analysis.`,
+        attachment: {
+          type: 'price_break_quote',
+          fileName: file.name,
+          fileUrl: publicUrl
+        }
+      };
+
+      // Add analyzing message
+      const analyzingMessage = {
+        role: 'assistant',
+        content: file.type === 'application/pdf'
+          ? 'Converting PDF and analyzing your quote...'
+          : 'Analyzing your quote...',
+        isLoading: true
+      };
+
+      setChatHistory(prev => prev.map(c =>
+        c.id === activeChat
+          ? { ...c, messages: [...c.messages, uploadMessage, analyzingMessage] }
+          : c
+      ));
+
+      // Prepare image content for Claude Vision
+      let imageContent = [];
+      let pagesAnalyzed = 1;
+
+      if (file.type === 'application/pdf') {
+        // Convert PDF pages to images
+        const pdfImages = await convertPdfToImages(file);
+        pagesAnalyzed = pdfImages.length;
+
+        imageContent = pdfImages.map(img => ({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: img.mediaType,
+            data: img.base64
+          }
+        }));
+      } else {
+        // Regular image - convert to base64
+        const base64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result.split(',')[1]);
+          reader.readAsDataURL(file);
+        });
+
+        imageContent = [{
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: file.type,
+            data: base64
+          }
+        }];
+      }
+
+      // Send to Claude for analysis
+      const analysisPrompt = `Analyze this charter/travel quote and extract:
+
+1. Route (departure → destination with airport codes if visible)
+2. Date and time of service
+3. Aircraft/Vehicle type and model
+4. Number of passengers
+5. Total price and currency
+6. Broker or Operator name
+7. Quote validity/expiration date
+
+Format your response as:
+
+**EXTRACTED QUOTE DATA:**
+- **Route:** [FROM] → [TO]
+- **Date:** [DATE]
+- **Time:** [TIME]
+- **Aircraft:** [TYPE]
+- **Passengers:** [NUMBER]
+- **Price:** [CURRENCY] [AMOUNT]
+- **Broker:** [NAME]
+- **Valid Until:** [DATE]
+
+If any field is not visible or unclear, write "Not specified".
+
+Then ask the user to confirm if the extracted data is correct, and explain that if confirmed, our team will find them a better price within 12 hours.`;
+
+      let analysisText = '';
+      let extractedData = null;
+
+      try {
+        const response = await anthropicRef.current.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1024,
+          messages: [{
+            role: 'user',
+            content: [
+              ...imageContent,
+              { type: 'text', text: analysisPrompt }
+            ]
+          }]
+        });
+
+        analysisText = response.content[0].text;
+        extractedData = parseExtractedQuoteData(analysisText);
+      } catch (analysisError) {
+        console.warn('Claude analysis failed, using fallback:', analysisError);
+        analysisText = `I couldn't automatically analyze this document, but no worries - our coordinators will review it manually.
+
+Your quote has been received and will be reviewed within 12 hours.`;
+      }
+
+      // Create price break request in database with extracted data
+      const requestRef = `BTP-${Date.now().toString().slice(-6)}`;
+      const { error: requestError } = await supabase
+        .from('price_break_requests')
+        .insert({
+          user_id: user.id,
+          chat_id: activeChat || 'new',
+          service_type: extractedData?.aircraft ? 'jet' : 'unknown',
+          service_details: extractedData || {},
+          quote_file_url: publicUrl,
+          quote_file_type: file.type.includes('pdf') ? 'pdf' : 'image',
+          quote_extracted_data: extractedData || {},
+          competitor_price: extractedData?.price ? parseFloat(extractedData.price.replace(/[^0-9.]/g, '')) : null,
+          status: extractedData ? 'analyzing' : 'pending',
+          metadata: {
+            reference: requestRef,
+            fileName: file.name,
+            fileSize: file.size,
+            pagesAnalyzed: pagesAnalyzed
+          }
+        });
+
+      if (requestError) console.warn('Error saving request:', requestError);
+
+      // Deduct 1 chat for non-Elite users
+      if (userSubscriptionLimits?.tier !== 'elite') {
+        await subscriptionService.incrementChatUsage(user.id);
+      }
+
+      // Show analysis result
+      const resultMessage = {
+        role: 'assistant',
+        content: extractedData
+          ? `${analysisText}\n\n---\n\n**Reference:** #${requestRef}\n\nIf the above information is correct, reply "confirm" and our coordinators will find you a better price within 12 hours.`
+          : `${analysisText}\n\n**Reference:** #${requestRef}`,
+        action: extractedData ? 'price_break_confirm' : null,
+        extractedData: extractedData,
+        requestRef: requestRef
+      };
+
+      setChatHistory(prev => prev.map(c =>
+        c.id === activeChat
+          ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), resultMessage] }
+          : c
+      ));
+
+      setToast({ message: 'Quote analyzed! Review the extracted data.', type: 'info' });
+
+    } catch (error) {
+      console.error('Error uploading quote:', error);
+
+      // Remove loading message and show error
+      setChatHistory(prev => prev.map(c =>
+        c.id === activeChat
+          ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), {
+              role: 'assistant',
+              content: 'Sorry, there was an error processing your quote. Please try again or contact support.'
+            }] }
+          : c
+      ));
+
+      setToast({ message: 'Failed to process quote. Please try again.', type: 'error' });
+    } finally {
+      setIsUploadingQuote(false);
+      setBreakThePriceFile(null);
+    }
+  }, [user?.id, activeChat, canUseBreakThePrice, userSubscriptionLimits, convertPdfToImages, parseExtractedQuoteData]);
+
+  // Fetch user subscription limits on mount
+  useEffect(() => {
+    const fetchSubscriptionLimits = async () => {
+      if (!user?.id) return;
+      try {
+        const { data, error } = await supabase.rpc('get_chat_limits', { p_user_id: user.id });
+        if (!error && data) {
+          setUserSubscriptionLimits(data);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch subscription limits:', err);
+      }
+    };
+    fetchSubscriptionLimits();
+  }, [user?.id]);
+
   const handleSaveAdjustment = (adjustedItem) => {
     setCartItems(prev => prev.map(item => 
       item.id === adjustedItem.id ? { ...item, ...adjustedItem } : item
@@ -683,8 +1024,26 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
           },
           status: 'pending'
         };
-        const { error: insertError } = await supabase.from('user_requests').insert([payload]);
-        if (insertError) console.error('Failed to save to user_requests:', insertError);
+        const { data: insertedRequest, error: insertError } = await supabase
+          .from('user_requests')
+          .insert([payload])
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('Failed to save to user_requests:', insertError);
+        } else if (insertedRequest?.id) {
+          // Trigger email notification via Supabase Edge Function
+          try {
+            await supabase.functions.invoke('user-request-notifications', {
+              body: { record: { id: insertedRequest.id } }
+            });
+            console.log('Email notification triggered for request:', insertedRequest.id);
+          } catch (emailErr) {
+            console.error('Failed to send email notification:', emailErr);
+            // Don't block the flow if email fails
+          }
+        }
       } else {
         console.warn('Not logged in; skipping user_requests insert');
       }
@@ -1149,12 +1508,27 @@ As their luxury travel consultant, provide an enthusiastic response that:
       return;
     }
 
+    // Check message limit (20 messages per chat, except Elite which has unlimited)
+    const existingChat = chatHistory.find(c => c.id === activeChat);
+    const currentMsgCount = existingChat?.messages?.filter(m => m.role === 'user').length || 0;
+
+    // Elite tier has unlimited messages per chat
+    const hasUnlimitedMessages = userSubscriptionLimits?.unlimited_messages === true;
+
+    if (!hasUnlimitedMessages && currentMsgCount >= MAX_MESSAGES_PER_CHAT && activeChat !== 'new') {
+      setMessageLimitReached(true);
+      // Don't block - just show the limit reached UI
+      return;
+    }
+
+    // Update message count (still track for non-Elite users)
+    if (!hasUnlimitedMessages) {
+      setMessageCount(currentMsgCount + 1);
+    }
+
     setShowWelcomeMessage(false);
     const userMessage = { role: 'user', content: message };
     let workingChatId = activeChat;
-
-    // Update chat with user message
-    const existingChat = chatHistory.find(c => c.id === activeChat);
 
     // Check if this is the first user message (chat only has welcome message)
     const isFirstUserMessage = existingChat && existingChat.messages.length === 1 &&
@@ -1192,6 +1566,28 @@ As their luxury travel consultant, provide an enthusiastic response that:
         return;
       }
 
+      // Check if user can start a new chat (subscription limit)
+      if (!isAdmin) {
+        try {
+          const { canStart, chatsUsed, chatsLimit } = await subscriptionService.canStartNewChat(user.id);
+          if (!canStart) {
+            setChatLimitReached(true);
+            setToast({
+              message: `You've used your free chat. Upgrade to continue booking luxury travel.`,
+              type: 'warning'
+            });
+            return;
+          }
+        } catch (error) {
+          console.warn('Failed to check chat limit:', error);
+          // Continue anyway on error
+        }
+      }
+
+      // Reset message count for new chat
+      setMessageCount(0);
+      setMessageLimitReached(false);
+
       let chatId, chatTitle;
 
       try {
@@ -1201,6 +1597,17 @@ As their luxury travel consultant, provide an enthusiastic response that:
           chatId = chat.id;
           chatTitle = chat.title;
           console.log('✅ Chat created in database:', { id: chatId, title: chatTitle });
+
+          // Increment chat usage count for subscription tracking
+          if (!isAdmin) {
+            try {
+              await subscriptionService.incrementChatUsage(user.id);
+              // Also create chat usage record for message tracking
+              await subscriptionService.createChatSession(user.id, chatId);
+            } catch (usageError) {
+              console.warn('Failed to update chat usage:', usageError);
+            }
+          }
         } else {
           throw new Error('Chat creation returned false');
         }
@@ -1248,6 +1655,40 @@ As their luxury travel consultant, provide an enthusiastic response that:
 
     setCurrentMessage('');
     setIsProcessing(true);
+
+    // Check if user is confirming a charter request
+    const lowerMessage = message.toLowerCase().trim();
+    const isConfirmation = /^(confirm|send it|yes send|submit|book it|go ahead|yes please|ja|bestätigen|abschicken)$/i.test(lowerMessage);
+
+    // Check if previous messages contain a charter request context
+    const recentMessages = existingChat?.messages?.slice(-5) || [];
+    const hasCharterRequestContext = recentMessages.some(m =>
+      m.role === 'assistant' &&
+      (m.content?.includes('custom charter request') ||
+       m.content?.includes('booking request') ||
+       m.content?.includes('Route:') && m.content?.includes('Date:') && m.content?.includes('Passengers:'))
+    );
+
+    if (isConfirmation && hasCharterRequestContext) {
+      // Extract details from previous assistant message
+      const lastAssistantMsg = [...recentMessages].reverse().find(m => m.role === 'assistant');
+
+      // Add confirmation message with action button
+      const confirmationMsg = {
+        role: 'assistant',
+        content: '✅ Perfect! Click the button below to submit your charter request:',
+        action: 'send_charter_request',
+        requestDetails: lastAssistantMsg?.content || ''
+      };
+
+      setChatHistory(prev => prev.map(c =>
+        c.id === workingChatId
+          ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), confirmationMsg] }
+          : c
+      ));
+      setIsProcessing(false);
+      return;
+    }
 
     // Build conversation history - handle new chat creation case
     let conversationHistory;
@@ -1347,8 +1788,18 @@ As their luxury travel consultant, provide an enthusiastic response that:
           if (toolResult.success) {
             let tabs = [];
 
-            // Handle different tool types
-            if (toolUse.name === 'searchEmptyLegs' && toolResult.results && toolResult.results.length > 0) {
+            // Handle location restrictions (sanctioned/limited coverage)
+            if (toolResult.restriction) {
+              toolResults.push({
+                type: "tool_result",
+                tool_use_id: toolUse.id,
+                content: JSON.stringify({
+                  restriction: toolResult.restriction.type,
+                  message: toolResult.restriction.message
+                })
+              });
+              // Don't process results, let Claude handle the restriction message
+            } else if (toolUse.name === 'searchEmptyLegs' && toolResult.results && toolResult.results.length > 0) {
               tabs.push({
                 id: 'emptylegs',
                 title: 'Empty Legs',
@@ -1393,6 +1844,38 @@ As their luxury travel consultant, provide an enthusiastic response that:
                 count: toolResult.results.length,
                 items: toolResult.results
               });
+            } else if (toolUse.name === 'addToCart' && toolResult.action === 'ADD_TO_CART' && toolResult.cartItem) {
+              // Instead of auto-adding to cart, show action buttons for user to confirm
+              const confirmMessage = {
+                role: 'assistant',
+                content: `Ready to proceed with your booking:\n\n✈️ **${toolResult.cartItem.name}**\n${toolResult.cartItem.from && toolResult.cartItem.to ? `📍 ${toolResult.cartItem.from} → ${toolResult.cartItem.to}\n` : ''}${toolResult.cartItem.date ? `📅 ${toolResult.cartItem.date}${toolResult.cartItem.time ? ` at ${toolResult.cartItem.time}` : ''}\n` : ''}${toolResult.cartItem.passengers ? `👥 ${toolResult.cartItem.passengers} passengers\n` : ''}${toolResult.cartItem.catering ? `🥤 ${toolResult.cartItem.catering === 'complimentary' ? 'Complimentary refreshments' : toolResult.cartItem.catering}\n` : ''}\nChoose how you'd like to proceed:`,
+                action: 'confirm_booking',
+                bookingData: toolResult.cartItem
+              };
+
+              setChatHistory(prev => prev.map(c =>
+                c.id === workingChatId
+                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), confirmMessage] }
+                  : c
+              ));
+              setIsProcessing(false);
+              return; // Exit early - don't continue to AI follow-up
+            } else if (toolUse.name === 'addCustomExtra' && toolResult.cartItem) {
+              // Show action buttons for custom extras too
+              const confirmMessage = {
+                role: 'assistant',
+                content: `Ready to add this custom item:\n\n🍷 **${toolResult.cartItem.name}**\n📦 Category: ${toolResult.cartItem.category}\n💰 Est. Price: €${(toolResult.cartItem.price || 0).toLocaleString()}\n${toolResult.cartItem.quantity > 1 ? `📊 Quantity: ${toolResult.cartItem.quantity}\n` : ''}\nChoose how you'd like to proceed:`,
+                action: 'confirm_booking',
+                bookingData: toolResult.cartItem
+              };
+
+              setChatHistory(prev => prev.map(c =>
+                c.id === workingChatId
+                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), confirmMessage] }
+                  : c
+              ));
+              setIsProcessing(false);
+              return; // Exit early - don't continue to AI follow-up
             }
 
             // Only add results message if we have tabs to display
@@ -2305,45 +2788,110 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         {/* FIXED INPUT - Floating bottom */}
         <div className="flex-shrink-0 px-6 pb-6">
           <div className="max-w-3xl mx-auto">
-            <div className="flex items-center gap-2 bg-white/60 backdrop-blur-xl border border-gray-300 rounded-xl px-3 py-2 focus-within:border-gray-400 transition-colors shadow-lg">
-              <button
-                onClick={toggleVoiceMode}
-                className={`flex-shrink-0 p-2 rounded-lg transition-colors ${
-                  isVoiceMode
-                    ? 'bg-red-500 text-white animate-pulse'
-                    : 'text-gray-600 hover:bg-gray-200'
-                }`}
-                title={isVoiceMode ? 'Voice Mode Active - Click to Stop' : 'Click for Voice Mode'}
-              >
-                {isVoiceMode ? <X size={16} /> : <Mic size={16} />}
-              </button>
+            {/* Chat Limit Reached (Free users - no more chats) */}
+            {chatLimitReached ? (
+              <div className="bg-white/90 backdrop-blur-xl border border-gray-300 rounded-xl p-4 shadow-lg">
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <AlertCircle size={20} className="text-amber-500" />
+                    <span className="font-medium text-gray-900">Chat Limit Reached</span>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    You've used your free chat. Upgrade to continue booking luxury travel.
+                  </p>
+                  <button
+                    onClick={() => setShowSubscriptionModal(true)}
+                    className="w-full py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
+                  >
+                    <Crown size={18} />
+                    Upgrade Now
+                  </button>
+                </div>
+              </div>
+            ) : messageLimitReached ? (
+              /* Message Limit Reached (20 messages per chat) */
+              <div className="bg-white/90 backdrop-blur-xl border border-gray-300 rounded-xl p-4 shadow-lg">
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <MessageSquare size={20} className="text-blue-500" />
+                    <span className="font-medium text-gray-900">Message Limit Reached</span>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    You've reached 20 messages for this conversation. Ready to send your request?
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowRequestForm(true)}
+                      className="flex-1 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
+                    >
+                      <Send size={18} />
+                      Send Request
+                    </button>
+                    <button
+                      onClick={() => setShowSubscriptionModal(true)}
+                      className="flex-1 py-3 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-colors font-medium border border-gray-300 flex items-center justify-center gap-2"
+                    >
+                      <Crown size={18} />
+                      Upgrade
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Normal Input */
+              <div className="flex items-center gap-2 bg-white/60 backdrop-blur-xl border border-gray-300 rounded-xl px-3 py-2 focus-within:border-gray-400 transition-colors shadow-lg">
+                {/* Voice input button hidden for now
+                <button
+                  onClick={toggleVoiceMode}
+                  className={`flex-shrink-0 p-2 rounded-lg transition-colors ${
+                    isVoiceMode
+                      ? 'bg-red-500 text-white animate-pulse'
+                      : 'text-gray-600 hover:bg-gray-200'
+                  }`}
+                  title={isVoiceMode ? 'Voice Mode Active - Click to Stop' : 'Click for Voice Mode'}
+                >
+                  {isVoiceMode ? <X size={16} /> : <Mic size={16} />}
+                </button>
+                */}
 
-              <input
-                type="text"
-                value={currentMessage}
-                onChange={(e) => setCurrentMessage(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && currentMessage.trim()) {
-                    handleSendMessage(currentMessage);
-                  }
-                }}
-                placeholder={isVoiceMode ? "🎤 Listening... speak naturally" : "Or type your request here... e.g. 'Private jet from London to Monaco'"}
-                disabled={isVoiceMode}
-                className="flex-1 bg-transparent border-none outline-none text-sm text-gray-900 placeholder-gray-500 disabled:text-gray-400"
-              />
+                <input
+                  type="text"
+                  value={currentMessage}
+                  onChange={(e) => setCurrentMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && currentMessage.trim()) {
+                      handleSendMessage(currentMessage);
+                    }
+                  }}
+                  placeholder={isVoiceMode ? "🎤 Listening... speak naturally" : "Or type your request here... e.g. 'Private jet from London to Monaco'"}
+                  disabled={isVoiceMode}
+                  className="flex-1 bg-transparent border-none outline-none text-sm text-gray-900 placeholder-gray-500 disabled:text-gray-400"
+                />
 
-              <button
-                onClick={() => handleSendMessage(currentMessage)}
-                disabled={!currentMessage.trim()}
-                className={`flex-shrink-0 p-2 rounded-lg transition-colors ${
-                  currentMessage.trim()
-                    ? 'bg-black text-white hover:bg-gray-800'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
-              >
-                <Send size={16} />
-              </button>
-            </div>
+                {/* Message counter */}
+                {messageCount > 0 && (
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    messageCount >= MAX_MESSAGES_PER_CHAT - 3
+                      ? 'bg-amber-100 text-amber-700'
+                      : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {messageCount}/{MAX_MESSAGES_PER_CHAT}
+                  </span>
+                )}
+
+                <button
+                  onClick={() => handleSendMessage(currentMessage)}
+                  disabled={!currentMessage.trim()}
+                  className={`flex-shrink-0 p-2 rounded-lg transition-colors ${
+                    currentMessage.trim()
+                      ? 'bg-black text-white hover:bg-gray-800'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  <Send size={16} />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -2501,7 +3049,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               Send Request
             </button>
 
-            {/* Voice Mute Toggle */}
+            {/* Voice Mute Toggle - hidden for now
             <button
               onClick={toggleVoiceMute}
               className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -2509,6 +3057,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             >
               {isVoiceMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
             </button>
+            */}
 
             {/* Chat Counter - Clickable to open subscriptions */}
             <button
@@ -2525,6 +3074,16 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   {userProfile?.chats_used || 0}/{userProfile?.chats_limit || 2}
                 </span>
               )}
+            </button>
+
+            {/* Report Issue Button */}
+            <button
+              onClick={() => setShowReportIssueModal(true)}
+              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-600 transition-colors flex items-center gap-1.5"
+              title="Report an issue"
+            >
+              <AlertCircle size={14} />
+              <span className="hidden md:inline">Report</span>
             </button>
 
             {/* Chat Sessions Dropdown - Hidden, can be accessed via menu if needed */}
@@ -2691,6 +3250,108 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                         <p className="text-sm leading-relaxed whitespace-pre-line">{msg.content}</p>
                       )}
                     </div>
+                    {/* Action Buttons for Booking Confirmation */}
+                    {msg.action === 'send_charter_request' && (
+                      <button
+                        onClick={() => {
+                          sendRequest();
+                          setChatHistory(prev => prev.map(c =>
+                            c.id === activeChat
+                              ? {
+                                  ...c,
+                                  messages: [...c.messages, {
+                                    role: 'assistant',
+                                    content: 'Your charter request has been submitted successfully. Our team will contact you shortly to confirm the details.'
+                                  }]
+                                }
+                              : c
+                          ));
+                        }}
+                        className="mt-3 px-6 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-all duration-300 flex items-center gap-2 shadow-lg hover:scale-105"
+                      >
+                        <Send size={18} />
+                        Submit Charter Request
+                      </button>
+                    )}
+
+                    {/* Booking Action Buttons - Add to Cart & Send Custom Request */}
+                    {msg.action === 'confirm_booking' && msg.bookingData && (
+                      <div className="mt-3 flex flex-col gap-2">
+                        {/* Add to Cart Button - Light Grey */}
+                        <button
+                          onClick={() => {
+                            const cartItem = {
+                              ...msg.bookingData,
+                              cartId: Date.now(),
+                              addedAt: new Date().toISOString()
+                            };
+                            setCartItems(prev => [...prev, cartItem]);
+                            setToast({ message: `Added ${msg.bookingData.name || 'item'} to cart`, type: 'success' });
+                            setChatHistory(prev => prev.map(c =>
+                              c.id === activeChat
+                                ? {
+                                    ...c,
+                                    messages: [...c.messages, {
+                                      role: 'assistant',
+                                      content: `Added to your cart. You can review and adjust details (catering, dates, etc.) in your cart before checkout.`
+                                    }]
+                                  }
+                                : c
+                            ));
+                          }}
+                          className="w-full px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 border border-gray-300"
+                        >
+                          <ShoppingCart size={18} />
+                          Add to Cart
+                        </button>
+
+                        {/* Send Custom Request Button - Green */}
+                        <button
+                          onClick={async () => {
+                            try {
+                              // Save custom request to database
+                              const requestData = {
+                                type: 'custom_request',
+                                source: 'ai_chat',
+                                ...msg.bookingData,
+                                conversation_id: activeChat,
+                                submitted_at: new Date().toISOString()
+                              };
+
+                              const result = await createRequest(
+                                'custom_request',
+                                requestData,
+                                user?.id
+                              );
+
+                              if (result.success) {
+                                setToast({ message: 'Custom request sent successfully', type: 'success' });
+                                setChatHistory(prev => prev.map(c =>
+                                  c.id === activeChat
+                                    ? {
+                                        ...c,
+                                        messages: [...c.messages, {
+                                          role: 'assistant',
+                                          content: `Your custom request has been sent to our team. You can track its status in your AI Requests. We'll get back to you within 2-4 hours.`
+                                        }]
+                                      }
+                                    : c
+                                ));
+                              } else {
+                                throw new Error(result.error || 'Failed to send request');
+                              }
+                            } catch (error) {
+                              console.error('Error sending custom request:', error);
+                              setToast({ message: 'Failed to send request. Please try again.', type: 'error' });
+                            }
+                          }}
+                          className="w-full px-5 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2"
+                        >
+                          <Send size={18} />
+                          Send Custom Request
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -2754,45 +3415,114 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       {/* 3. INPUT - STICKY AT BOTTOM */}
       <div className="flex-shrink-0 px-6 pb-6 pt-4">
         <div className="max-w-3xl mx-auto">
-          <div className="flex items-center gap-3 bg-gray-50 border border-gray-300 rounded-xl px-4 py-3">
-            <button
-              onClick={toggleRecording}
-              disabled={isSearching}
-              className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                isRecording
-                  ? 'bg-red-500 text-white'
-                  : 'bg-black text-white hover:bg-gray-800'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              {isRecording ? <X size={18} /> : <Mic size={18} />}
-            </button>
+          {/* Message Limit Reached (20 messages per chat) */}
+          {messageLimitReached ? (
+            <div className="bg-white border border-gray-300 rounded-xl p-4 shadow-sm">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <MessageSquare size={20} className="text-blue-500" />
+                  <span className="font-medium text-gray-900">Message Limit Reached</span>
+                </div>
+                <p className="text-sm text-gray-600 mb-4">
+                  You've reached 20 messages for this conversation. Ready to send your request?
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowRequestForm(true)}
+                    className="flex-1 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
+                  >
+                    <Send size={18} />
+                    Send Request
+                  </button>
+                  <button
+                    onClick={() => setShowSubscriptionModal(true)}
+                    className="flex-1 py-3 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-colors font-medium border border-gray-300 flex items-center justify-center gap-2"
+                  >
+                    <Crown size={18} />
+                    Upgrade
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Normal Input */
+            <div className="flex items-center gap-3 bg-gray-50 border border-gray-300 rounded-xl px-4 py-3">
+              <button
+                onClick={toggleRecording}
+                disabled={isSearching}
+                className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                  isRecording
+                    ? 'bg-red-500 text-white'
+                    : 'bg-black text-white hover:bg-gray-800'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {isRecording ? <X size={18} /> : <Mic size={18} />}
+              </button>
 
-            <input
-              type="text"
-              value={currentMessage}
-              onChange={(e) => setCurrentMessage(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && currentMessage.trim() && !isSearching) {
-                  handleSendMessage(currentMessage);
-                }
-              }}
-              placeholder={isRecording ? "Listening..." : "Message Sphera..."}
-              disabled={isSearching || isRecording}
-              className="flex-1 bg-transparent border-none outline-none text-sm text-gray-700 placeholder-gray-400 disabled:cursor-not-allowed"
-            />
+              <input
+                type="text"
+                value={currentMessage}
+                onChange={(e) => setCurrentMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && currentMessage.trim() && !isSearching) {
+                    handleSendMessage(currentMessage);
+                  }
+                }}
+                placeholder={isRecording ? "Listening..." : "Message Sphera..."}
+                disabled={isSearching || isRecording}
+                className="flex-1 bg-transparent border-none outline-none text-sm text-gray-700 placeholder-gray-400 disabled:cursor-not-allowed"
+              />
 
-            <button
-              onClick={() => handleSendMessage(currentMessage)}
-              disabled={!currentMessage.trim() || isSearching}
-              className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
-                currentMessage.trim() && !isSearching
-                  ? 'bg-gray-200 text-gray-600 hover:bg-gray-300 hover:scale-110'
-                  : 'bg-gray-100 text-gray-300 cursor-not-allowed'
-              }`}
-            >
-              <Send size={18} />
-            </button>
-          </div>
+              {/* Message counter - hide for Elite (unlimited) */}
+              {messageCount > 0 && !userSubscriptionLimits?.unlimited_messages && (
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  messageCount >= MAX_MESSAGES_PER_CHAT - 3
+                    ? 'bg-amber-100 text-amber-700'
+                    : 'bg-gray-100 text-gray-500'
+                }`}>
+                  {messageCount}/{MAX_MESSAGES_PER_CHAT}
+                </span>
+              )}
+
+              <button
+                onClick={() => handleSendMessage(currentMessage)}
+                disabled={!currentMessage.trim() || isSearching}
+                className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                  currentMessage.trim() && !isSearching
+                    ? 'bg-gray-200 text-gray-600 hover:bg-gray-300 hover:scale-110'
+                    : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                }`}
+              >
+                <Send size={18} />
+              </button>
+            </div>
+          )}
+
+          {/* Break the Price Button - Below Input */}
+          {!messageLimitReached && activeChat !== 'new' && (
+            <div className="mt-3 flex justify-center">
+              <button
+                onClick={() => setShowBreakThePrice(true)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  canUseBreakThePrice()
+                    ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 hover:border-amber-300'
+                    : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
+                }`}
+                disabled={!canUseBreakThePrice()}
+                title={canUseBreakThePrice() ? 'Upload a competitor quote for a better price' : 'Upgrade to Starter or higher to unlock'}
+              >
+                <DollarSign size={16} />
+                Break the Price
+                {userSubscriptionLimits?.tier === 'elite' ? (
+                  <span className="text-xs bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded-full">Unlimited</span>
+                ) : canUseBreakThePrice() ? (
+                  <span className="text-xs bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded-full">1 chat</span>
+                ) : (
+                  <Crown size={14} className="text-gray-400" />
+                )}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -2817,33 +3547,610 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               </div>
             ) : (
               <>
-                <div className="p-6 space-y-3 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
-                  {cartItems.map((item, idx) => (
-                    <div key={idx} className="bg-gray-50 rounded-lg p-3 border border-gray-200 animate-fade-in hover:bg-gray-100 transition-all duration-300">
-                      <div className="flex justify-between items-start mb-2">
-                        <p className="text-sm font-medium text-gray-900">{item.name || item.title || item.aircraft_type}</p>
-                        <button
-                          onClick={() => removeFromCart(item.cartId || idx)}
-                          className="p-1 hover:bg-gray-200 rounded transition-all duration-300 hover:scale-110"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                <div className="p-4 space-y-3 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+                  {cartItems.map((item, idx) => {
+                    const isEmptyLeg = item.type === 'empty_legs' || item.type === 'emptyleg';
+                    const isAdventure = item.type === 'adventure' || item.type === 'fixed_offer';
+                    const isTransfer = item.type === 'taxi' || item.type === 'transfer' || item.type === 'ground_transport';
+                    const isJet = item.type === 'jets' || item.type === 'jet';
+                    const isHelicopter = item.type === 'helicopters' || item.type === 'helicopter';
+                    const isYacht = item.type === 'yachts' || item.type === 'yacht';
+                    const isLuxuryCar = item.type === 'luxury_cars' || item.type === 'luxury_car';
+                    const isCustomExtra = item.type === 'custom_extra';
+                    const canDirectCheckout = isEmptyLeg || isAdventure;
+                    const hasAirportFee = item.airportPickupFee && item.airportPickupFee > 0;
+
+                    // Custom Extra - Special horizontal layout
+                    if (isCustomExtra) {
+                      return (
+                        <div key={idx} className="bg-gray-50 rounded-xl p-3 border border-gray-200 animate-fade-in hover:border-amber-300 transition-all duration-300">
+                          <div className="flex gap-3">
+                            {/* Left: Product Image */}
+                            <div className="flex-shrink-0">
+                              {item.image ? (
+                                <div className="w-14 h-18 rounded-lg overflow-hidden bg-white border border-gray-200 shadow-sm">
+                                  <img
+                                    src={item.image}
+                                    alt={item.name}
+                                    className="w-full h-full object-contain"
+                                    onError={(e) => {
+                                      e.target.parentElement.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-amber-50 text-amber-600 text-lg">${item.category === 'wine' ? '🍷' : item.category === 'champagne' ? '🍾' : item.category === 'cigars' ? '🚬' : item.category === 'caviar' ? '🥄' : item.category === 'flowers' ? '💐' : '✨'}</div>`;
+                                    }}
+                                  />
+                                </div>
+                              ) : (
+                                <div className="w-14 h-18 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 text-lg">
+                                  {item.category === 'wine' ? '🍷' : item.category === 'champagne' ? '🍾' : item.category === 'cigars' ? '🚬' : item.category === 'caviar' ? '🥄' : item.category === 'flowers' ? '💐' : '✨'}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Center: Title & Details */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-amber-600 text-white">
+                                  {item.category?.toUpperCase() || 'EXTRA'}
+                                </span>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-gray-200 text-gray-600">
+                                  TBC
+                                </span>
+                              </div>
+                              <p className="text-sm font-semibold text-gray-900 truncate">{item.name}</p>
+                              <p className="text-[10px] text-amber-600 mt-0.5">Availability to be confirmed</p>
+
+                              {/* Quantity selector */}
+                              <div className="flex items-center gap-2 mt-2">
+                                <span className="text-[10px] text-gray-500">Qty:</span>
+                                <button
+                                  onClick={() => {
+                                    const qty = Math.max(1, (item.quantity || 1) - 1);
+                                    setCartItems(prev => prev.map((ci, i) =>
+                                      (ci.cartId === item.cartId || i === idx)
+                                        ? { ...ci, quantity: qty, price: (ci.unitPrice || ci.price) * qty, basePrice: (ci.unitPrice || ci.price) * qty, totalWithFee: (ci.unitPrice || ci.price) * qty }
+                                        : ci
+                                    ));
+                                  }}
+                                  className="w-5 h-5 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded text-gray-700 text-xs"
+                                >
+                                  -
+                                </button>
+                                <span className="text-xs font-medium w-4 text-center">{item.quantity || 1}</span>
+                                <button
+                                  onClick={() => {
+                                    const qty = (item.quantity || 1) + 1;
+                                    setCartItems(prev => prev.map((ci, i) =>
+                                      (ci.cartId === item.cartId || i === idx)
+                                        ? { ...ci, quantity: qty, price: (ci.unitPrice || ci.price) * qty, basePrice: (ci.unitPrice || ci.price) * qty, totalWithFee: (ci.unitPrice || ci.price) * qty }
+                                        : ci
+                                    ));
+                                  }}
+                                  className="w-5 h-5 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded text-gray-700 text-xs"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Right: Price & Remove */}
+                            <div className="flex flex-col items-end justify-between">
+                              <button
+                                onClick={() => removeFromCart(item.cartId || idx)}
+                                className="p-1 hover:bg-gray-200 text-gray-400 hover:text-gray-600 rounded transition-all"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                              <div className="text-right">
+                                <p className="text-xs text-gray-500">Est.</p>
+                                <p className="text-sm font-bold text-gray-900">~€{(item.price || item.basePrice || 0).toLocaleString()}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Regular cart items (jets, helicopters, yachts, etc.)
+                    return (
+                      <div key={idx} className="bg-gray-50 rounded-xl p-4 border border-gray-200 animate-fade-in hover:border-gray-300 transition-all duration-300">
+                        {/* Header with title and remove button */}
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            {/* Type badge */}
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                                isJet ? 'bg-gray-800 text-white' :
+                                isHelicopter ? 'bg-gray-700 text-white' :
+                                isYacht ? 'bg-gray-600 text-white' :
+                                isLuxuryCar ? 'bg-gray-900 text-white' :
+                                isEmptyLeg ? 'bg-gray-500 text-white' :
+                                isTransfer ? 'bg-gray-400 text-white' :
+                                isAdventure ? 'bg-gray-800 text-white' :
+                                'bg-gray-300 text-gray-700'
+                              }`}>
+                                {isJet ? 'JET' : isHelicopter ? 'HELI' : isYacht ? 'YACHT' : isLuxuryCar ? 'SUPERCAR' : isEmptyLeg ? 'EMPTY LEG' : isTransfer ? 'TRANSFER' : isAdventure ? 'EXPERIENCE' : 'SERVICE'}
+                              </span>
+                            </div>
+                            <p className="text-sm font-semibold text-gray-900">
+                              {isEmptyLeg ? `${item.from_iata || item.from_city || item.from || ''} → ${item.to_iata || item.to_city || item.to || ''}` : (item.name || item.title || item.aircraft_type || item.model)}
+                            </p>
+                            {isEmptyLeg && item.aircraft_type && (
+                              <p className="text-xs text-gray-500 mt-0.5">{item.aircraft_type}</p>
+                            )}
+                            {isTransfer && (
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                {item.from} → {item.to}
+                              </p>
+                            )}
+                            {isJet && item.category && (
+                              <p className="text-xs text-gray-500 mt-0.5">{item.category}</p>
+                            )}
+                            {isLuxuryCar && item.brand && (
+                              <p className="text-xs text-gray-500 mt-0.5">{item.brand} {item.model}</p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => removeFromCart(item.cartId || idx)}
+                            className="p-1.5 hover:bg-gray-200 text-gray-400 hover:text-gray-600 rounded-lg transition-all duration-300"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+
+                        {/* Jet Details */}
+                        {isJet && (
+                          <div className="space-y-2 text-xs text-gray-600 mb-3">
+                            <div className="grid grid-cols-2 gap-2">
+                              {item.max_passengers && (
+                                <div className="flex items-center gap-1.5">
+                                  <Users size={12} className="text-gray-400" />
+                                  <span>{item.max_passengers} passengers</span>
+                                </div>
+                              )}
+                              {item.range_km && (
+                                <div className="flex items-center gap-1.5">
+                                  <Plane size={12} className="text-gray-400" />
+                                  <span>{item.range_km.toLocaleString()} km range</span>
+                                </div>
+                              )}
+                              {item.speed_kts && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-gray-400">⚡</span>
+                                  <span>{item.speed_kts} kts</span>
+                                </div>
+                              )}
+                              {item.hourly_rate_eur && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-gray-400">💰</span>
+                                  <span>€{item.hourly_rate_eur.toLocaleString()}/hr</span>
+                                </div>
+                              )}
+                            </div>
+                            {/* Catering Options - Monochromatic */}
+                            <div className="mt-3 pt-3 border-t border-gray-200">
+                              <p className="text-xs font-medium text-gray-700 mb-2">Catering Options</p>
+                              <div className="space-y-1.5">
+                                {[
+                                  { id: 'standard', label: 'Standard (snacks & drinks)', price: 0 },
+                                  { id: 'premium', label: 'Premium dining', price: 350 },
+                                  { id: 'gourmet', label: 'Gourmet experience', price: 750 }
+                                ].map(option => (
+                                  <label key={option.id} className="flex items-center gap-2 cursor-pointer group">
+                                    <input
+                                      type="radio"
+                                      name={`catering-${item.cartId || idx}`}
+                                      checked={(item.catering || 'standard') === option.id}
+                                      onChange={() => {
+                                        setCartItems(prev => prev.map((ci, i) =>
+                                          (ci.cartId === item.cartId || i === idx)
+                                            ? { ...ci, catering: option.id, cateringPrice: option.price }
+                                            : ci
+                                        ));
+                                      }}
+                                      className="w-3 h-3 text-gray-900 border-gray-400 focus:ring-gray-500 focus:ring-1"
+                                    />
+                                    <span className="text-xs text-gray-600 group-hover:text-gray-900">{option.label}</span>
+                                    {option.price > 0 && (
+                                      <span className="text-xs text-gray-500 ml-auto">+€{option.price}</span>
+                                    )}
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Helicopter Details */}
+                        {isHelicopter && (
+                          <div className="space-y-2 text-xs text-gray-600 mb-3">
+                            <div className="grid grid-cols-2 gap-2">
+                              {item.max_passengers && (
+                                <div className="flex items-center gap-1.5">
+                                  <Users size={12} className="text-gray-400" />
+                                  <span>{item.max_passengers} passengers</span>
+                                </div>
+                              )}
+                              {item.range_km && (
+                                <div className="flex items-center gap-1.5">
+                                  <Plane size={12} className="text-gray-400" />
+                                  <span>{item.range_km} km range</span>
+                                </div>
+                              )}
+                              {item.hourly_rate_eur && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-gray-400">💰</span>
+                                  <span>€{item.hourly_rate_eur.toLocaleString()}/hr</span>
+                                </div>
+                              )}
+                              {item.location && (
+                                <div className="flex items-center gap-1.5">
+                                  <MapPin size={12} className="text-gray-400" />
+                                  <span>{item.location}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Yacht Details */}
+                        {isYacht && (
+                          <div className="space-y-2 text-xs text-gray-600 mb-3">
+                            <div className="grid grid-cols-2 gap-2">
+                              {item.length_ft && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-gray-400">📏</span>
+                                  <span>{item.length_ft} ft</span>
+                                </div>
+                              )}
+                              {item.max_passengers && (
+                                <div className="flex items-center gap-1.5">
+                                  <Users size={12} className="text-gray-400" />
+                                  <span>{item.max_passengers} guests</span>
+                                </div>
+                              )}
+                              {item.cabins && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-gray-400">🛏️</span>
+                                  <span>{item.cabins} cabins</span>
+                                </div>
+                              )}
+                              {item.crew && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-gray-400">👥</span>
+                                  <span>{item.crew} crew</span>
+                                </div>
+                              )}
+                              {item.daily_rate_eur && (
+                                <div className="flex items-center gap-1.5 col-span-2">
+                                  <span className="text-gray-400">💰</span>
+                                  <span>€{item.daily_rate_eur.toLocaleString()}/day</span>
+                                </div>
+                              )}
+                            </div>
+                            {item.location && (
+                              <div className="flex items-center gap-1.5 pt-1">
+                                <MapPin size={12} className="text-gray-400" />
+                                <span>{item.location}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Luxury Car Details */}
+                        {isLuxuryCar && (
+                          <div className="space-y-2 text-xs text-gray-600 mb-3">
+                            <div className="grid grid-cols-2 gap-2">
+                              {item.year && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-gray-400">📅</span>
+                                  <span>{item.year}</span>
+                                </div>
+                              )}
+                              {(item.seats || item.max_passengers) && (
+                                <div className="flex items-center gap-1.5">
+                                  <Users size={12} className="text-gray-400" />
+                                  <span>{item.seats || item.max_passengers} seats</span>
+                                </div>
+                              )}
+                              {item.transmission && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-gray-400">⚙️</span>
+                                  <span>{item.transmission}</span>
+                                </div>
+                              )}
+                              {item.daily_rate_eur && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-gray-400">💰</span>
+                                  <span>€{item.daily_rate_eur.toLocaleString()}/day</span>
+                                </div>
+                              )}
+                            </div>
+                            {/* Rental days selector */}
+                            <div className="mt-2 pt-2 border-t border-gray-200">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-gray-600">Rental days:</span>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => {
+                                      const days = Math.max(1, (item.rentalDays || 1) - 1);
+                                      setCartItems(prev => prev.map((ci, i) =>
+                                        (ci.cartId === item.cartId || i === idx)
+                                          ? { ...ci, rentalDays: days, price: (ci.daily_rate_eur || ci.price) * days }
+                                          : ci
+                                      ));
+                                    }}
+                                    className="w-6 h-6 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded text-gray-700"
+                                  >
+                                    -
+                                  </button>
+                                  <span className="text-sm font-medium w-8 text-center">{item.rentalDays || 1}</span>
+                                  <button
+                                    onClick={() => {
+                                      const days = (item.rentalDays || 1) + 1;
+                                      setCartItems(prev => prev.map((ci, i) =>
+                                        (ci.cartId === item.cartId || i === idx)
+                                          ? { ...ci, rentalDays: days, price: (ci.daily_rate_eur || ci.price) * days }
+                                          : ci
+                                      ));
+                                    }}
+                                    className="w-6 h-6 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded text-gray-700"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-[10px] text-gray-400 mt-1">
+                              Insurance included • Min. age 18 • Valid license required
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Empty Leg Details */}
+                        {isEmptyLeg && (
+                          <div className="space-y-2 text-xs text-gray-600 mb-3">
+                            <div className="flex items-center gap-2">
+                              <Plane size={12} className="text-gray-400" />
+                              <span>{item.from_city || item.from} → {item.to_city || item.to}</span>
+                            </div>
+                            {item.departure_date && (
+                              <div className="flex items-center gap-2">
+                                <Clock size={12} className="text-gray-400" />
+                                <span>{item.departure_date} {item.departure_time && `at ${item.departure_time}`}</span>
+                              </div>
+                            )}
+                            {item.available_seats && (
+                              <div className="flex items-center gap-2">
+                                <Users size={12} className="text-gray-400" />
+                                <span>Up to {item.available_seats} passengers</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Transfer Details */}
+                        {isTransfer && (
+                          <div className="space-y-2 text-xs text-gray-600 mb-3">
+                            {item.passengers && (
+                              <div className="flex items-center gap-2">
+                                <Users size={12} className="text-gray-400" />
+                                <span>{item.passengers} passengers</span>
+                              </div>
+                            )}
+                            {item.vehiclesNeeded && item.vehiclesNeeded > 1 && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-400">🚐</span>
+                                <span>{item.vehiclesNeeded} vehicles</span>
+                              </div>
+                            )}
+                            {item.durationMinutes && (
+                              <div className="flex items-center gap-2">
+                                <Clock size={12} className="text-gray-400" />
+                                <span>~{item.durationMinutes} min drive</span>
+                              </div>
+                            )}
+                            <div className="text-[10px] text-gray-400 mt-1">
+                              Chauffeur • Meet & greet • Flight tracking
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Adventure Details */}
+                        {isAdventure && (
+                          <div className="space-y-2 text-xs text-gray-600 mb-3">
+                            {item.description && (
+                              <p className="text-gray-600 line-clamp-2">{item.description}</p>
+                            )}
+                            {item.duration && (
+                              <div className="flex items-center gap-2">
+                                <Clock size={12} className="text-gray-400" />
+                                <span>{item.duration}</span>
+                              </div>
+                            )}
+                            {item.location && (
+                              <div className="flex items-center gap-2">
+                                <MapPin size={12} className="text-gray-400" />
+                                <span>{item.location}</span>
+                              </div>
+                            )}
+                            {item.max_participants && (
+                              <div className="flex items-center gap-2">
+                                <Users size={12} className="text-gray-400" />
+                                <span>Up to {item.max_participants} participants</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Price breakdown */}
+                        <div className="pt-2 border-t border-gray-200 space-y-1">
+                          {/* Estimated badge for transfers */}
+                          {(isTransfer || item.isEstimate) && (
+                            <div className="flex items-center gap-1 mb-1">
+                              <span className="text-[10px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded font-medium">
+                                ESTIMATED
+                              </span>
+                              <span className="text-[10px] text-gray-400">Price may vary</span>
+                            </div>
+                          )}
+
+                          {/* Distance for transfers */}
+                          {isTransfer && item.distanceKm && (
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-gray-500">Distance</span>
+                              <span className="text-gray-600">~{item.distanceKm} km</span>
+                            </div>
+                          )}
+
+                          {/* Base Price */}
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-500">
+                              {isLuxuryCar ? `${item.rentalDays || 1} day${(item.rentalDays || 1) > 1 ? 's' : ''} rental` :
+                               isJet ? 'Charter quote' :
+                               isCustomExtra ? `${item.quantity || 1}x ${item.category || 'item'}` :
+                               item.isEstimate ? 'Base price (est.)' : 'Base price'}
+                            </span>
+                            <span className="text-gray-700">
+                              {item.isEstimate && isCustomExtra ? '~' : ''}€{(item.basePrice || item.price_usd || item.price || 0).toLocaleString()}
+                            </span>
+                          </div>
+
+                          {/* Catering for jets */}
+                          {isJet && item.cateringPrice > 0 && (
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-gray-500">Catering upgrade</span>
+                              <span className="text-gray-600">+€{item.cateringPrice}</span>
+                            </div>
+                          )}
+
+                          {/* Airport Pickup Fee (Sonderanfahrt) */}
+                          {hasAirportFee && (
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-gray-500 flex items-center gap-1">
+                                Airfield pickup fee
+                              </span>
+                              <span className="text-gray-600">
+                                +€{item.airportPickupFee}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* VAT if applicable */}
+                          {item.vat && (
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-gray-500">VAT (8.1%)</span>
+                              <span className="text-gray-600">
+                                +€{item.vat.toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Total */}
+                          <div className="flex justify-between items-center pt-1 mt-1 border-t border-gray-100">
+                            <span className="text-xs text-gray-600 font-medium">
+                              {canDirectCheckout ? 'Direct booking' : (item.isEstimate ? 'Est. total' : 'Request quote')}
+                            </span>
+                            <span className="text-sm font-bold text-gray-900">
+                              {item.isEstimate ? '~' : ''}€{((item.totalWithFee || item.price_usd || item.price || 0) + (item.cateringPrice || 0)).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-xs text-gray-600">€{item.price?.toLocaleString()}</p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
-                <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 p-6 bg-white">
-                  <button
-                    onClick={() => {
-                      setShowCartSidebar(false);
-                      setShowRequestForm(true);
-                    }}
-                    className="w-full bg-black text-white py-3 rounded-xl hover:bg-gray-800 transition-all duration-300 hover:scale-105"
-                  >
-                    Send Request
-                  </button>
+                {/* Cart Total & Actions */}
+                <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 p-4 bg-white">
+                  {/* Subtotal breakdown */}
+                  {(() => {
+                    const mainServices = cartItems.filter(item => item.type !== 'custom_extra');
+                    const customExtras = cartItems.filter(item => item.type === 'custom_extra');
+                    const servicesSubtotal = mainServices.reduce((sum, item) => sum + (item.basePrice || item.price_usd || item.price || 0), 0);
+                    const extrasSubtotal = customExtras.reduce((sum, item) => sum + (item.basePrice || item.price_usd || item.price || 0), 0);
+                    const airportFees = cartItems.reduce((sum, item) => sum + (item.airportPickupFee || 0), 0);
+                    const cateringTotal = cartItems.reduce((sum, item) => sum + (item.cateringPrice || 0), 0);
+                    const vatAmount = cartItems.reduce((sum, item) => sum + (item.vat || 0), 0);
+                    const grandTotal = cartItems.reduce((sum, item) => sum + (item.totalWithFee || item.price_usd || item.price || 0) + (item.cateringPrice || 0), 0);
+                    const hasEstimates = cartItems.some(item => item.isEstimate);
+                    const hasCustomExtras = customExtras.length > 0;
+
+                    return (
+                      <div className="space-y-2 mb-3">
+                        {hasEstimates && (
+                          <div className="flex items-center gap-1.5 mb-2 pb-2 border-b border-gray-100">
+                            <span className="text-[10px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded font-medium">
+                              ESTIMATED
+                            </span>
+                            <span className="text-[10px] text-gray-400">Final price confirmed upon booking</span>
+                          </div>
+                        )}
+                        {hasCustomExtras && (
+                          <div className="flex items-center gap-1.5 mb-2 pb-2 border-b border-gray-100">
+                            <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-medium">
+                              {customExtras.length} CUSTOM REQUEST{customExtras.length > 1 ? 'S' : ''}
+                            </span>
+                            <span className="text-[10px] text-gray-400">Availability TBC</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-500">Services</span>
+                          <span className="text-gray-700">{hasEstimates ? '~' : ''}€{servicesSubtotal.toLocaleString()}</span>
+                        </div>
+                        {extrasSubtotal > 0 && (
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-amber-600">Custom extras</span>
+                            <span className="text-amber-600">~€{extrasSubtotal.toLocaleString()}</span>
+                          </div>
+                        )}
+                        {cateringTotal > 0 && (
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-500">Catering upgrades</span>
+                            <span className="text-gray-600">+€{cateringTotal.toLocaleString()}</span>
+                          </div>
+                        )}
+                        {airportFees > 0 && (
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-500">Airfield pickup fees</span>
+                            <span className="text-gray-600">+€{airportFees.toLocaleString()}</span>
+                          </div>
+                        )}
+                        {vatAmount > 0 && (
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-500">VAT (8.1%)</span>
+                            <span className="text-gray-600">+€{vatAmount.toLocaleString()}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                          <span className="text-sm font-semibold text-gray-700">{hasEstimates ? 'Est. Total' : 'Total'}</span>
+                          <span className="text-lg font-bold text-gray-900">{hasEstimates ? '~' : ''}€{grandTotal.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Check if all items support direct checkout (empty legs or adventures) */}
+                  {cartItems.every(item => item.type === 'empty_legs' || item.type === 'emptyleg' || item.type === 'adventure' || item.type === 'fixed_offer') ? (
+                    <button
+                      onClick={() => {
+                        setShowCartSidebar(false);
+                        setShowCryptoPayment(true);
+                      }}
+                      className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all duration-300 flex items-center justify-center gap-2 font-medium"
+                    >
+                      <Wallet size={18} />
+                      Pay with Crypto
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setShowCartSidebar(false);
+                        setShowRequestForm(true);
+                      }}
+                      className="w-full bg-black text-white py-3 rounded-xl hover:bg-gray-800 transition-all duration-300"
+                    >
+                      Send Request
+                    </button>
+                  )}
                 </div>
               </>
             )}
@@ -2882,20 +4189,102 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   onClick={async () => {
                     try {
                       setIsProcessing(true);
-                      for (const item of cartItems) {
-                        await createRequest({
-                          user_id: user.id,
-                          service_type: item.type || 'aircraft',
-                          from_location: item.from || item.from_city || '',
-                          to_location: item.to || item.to_city || '',
-                          details: JSON.stringify(item),
-                          status: 'pending'
-                        });
+
+                      // Calculate totals
+                      const mainServices = cartItems.filter(item => item.type !== 'custom_extra');
+                      const customExtras = cartItems.filter(item => item.type === 'custom_extra');
+                      const servicesSubtotal = mainServices.reduce((sum, item) => sum + (item.basePrice || item.price_usd || item.price || 0), 0);
+                      const extrasSubtotal = customExtras.reduce((sum, item) => sum + (item.basePrice || item.price || 0), 0);
+                      const cateringTotal = cartItems.reduce((sum, item) => sum + (item.cateringPrice || 0), 0);
+                      const airportFees = cartItems.reduce((sum, item) => sum + (item.airportPickupFee || 0), 0);
+                      const vatAmount = cartItems.reduce((sum, item) => sum + (item.vat || 0), 0);
+                      const grandTotal = cartItems.reduce((sum, item) => sum + (item.totalWithFee || item.price_usd || item.price || 0) + (item.cateringPrice || 0), 0);
+
+                      // Create ONE bulk request with all cart items
+                      const bulkRequestData = {
+                        source: 'ai_chat',  // Mark as AI-generated
+                        request_id: `AI-${Date.now()}`,
+                        items: cartItems.map(item => ({
+                          ...item,
+                          // Ensure all relevant fields are included
+                          type: item.type,
+                          name: item.name || item.title || item.aircraft_type || item.model,
+                          price: item.price || item.basePrice || item.price_usd,
+                          // Route info
+                          from: item.from || item.from_city || item.origin,
+                          to: item.to || item.to_city || item.destination,
+                          // Date/time
+                          date: item.date || item.departure_date,
+                          time: item.time || item.departure_time,
+                          // Additional details
+                          passengers: item.passengers || item.pax,
+                          category: item.category,
+                          // For luxury cars
+                          brand: item.brand,
+                          model: item.model,
+                          year: item.year,
+                          location: item.location,
+                          rental_days: item.rentalDays,
+                          // For transfers
+                          distanceKm: item.distanceKm,
+                          duration: item.duration,
+                          vehicles_needed: item.vehiclesNeeded,
+                          // For extras
+                          quantity: item.quantity,
+                          isCustomRequest: item.isCustomRequest,
+                          requiresConfirmation: item.requiresConfirmation,
+                          // Pricing
+                          cateringOption: item.cateringOption,
+                          cateringPrice: item.cateringPrice,
+                          airportPickupFee: item.airportPickupFee,
+                          vat: item.vat,
+                          isEstimate: item.isEstimate
+                        })),
+                        summary: {
+                          total_items: cartItems.length,
+                          services_count: mainServices.length,
+                          extras_count: customExtras.length,
+                          services_subtotal: servicesSubtotal,
+                          extras_subtotal: extrasSubtotal,
+                          catering_total: cateringTotal,
+                          airport_fees: airportFees,
+                          vat_amount: vatAmount,
+                          grand_total: grandTotal,
+                          has_estimates: cartItems.some(item => item.isEstimate),
+                          has_custom_requests: customExtras.length > 0
+                        },
+                        payment_method: selectedPaymentMethod || 'bank_transfer',
+                        created_via: 'sphera_ai_assistant',
+                        conversation_id: activeChat
+                      };
+
+                      // Create single bulk request - using correct API parameters
+                      const { request, error: requestError } = await createRequest({
+                        userId: user.id,
+                        type: 'ai_chat_bulk',
+                        data: bulkRequestData  // Pass object directly, not JSON.stringify
+                      });
+
+                      if (requestError) {
+                        throw new Error(requestError);
+                      }
+
+                      // Trigger email notification via Supabase Edge Function
+                      if (request?.id) {
+                        try {
+                          await supabase.functions.invoke('user-request-notifications', {
+                            body: { record: { id: request.id } }
+                          });
+                          console.log('Email notification triggered for request:', request.id);
+                        } catch (emailErr) {
+                          console.error('Failed to send email notification:', emailErr);
+                          // Don't block the flow if email fails
+                        }
                       }
 
                       const confirmMsg = {
                         role: 'assistant',
-                        content: `✅ Booking request sent! We've received your request for ${cartItems.length} item(s). Our team will contact you within 2-4 hours.`
+                        content: `✅ **Booking Request Sent!**\n\nWe've received your request containing:\n• ${mainServices.length} service(s)${customExtras.length > 0 ? `\n• ${customExtras.length} custom extra(s) (availability TBC)` : ''}\n\n**Estimated Total:** ~€${grandTotal.toLocaleString()}\n\nOur team will review and contact you within 2-4 hours to confirm details and availability.`
                       };
 
                       setChatHistory(prev => prev.map(c =>
@@ -3019,6 +4408,321 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
           await loadUserProfile();
         }}
       />
+
+      {/* Break the Price Modal */}
+      {showBreakThePrice && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-xl">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                    <DollarSign className="text-amber-500" size={24} />
+                    Break the Price
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">Upload a competitor quote and we'll beat it</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowBreakThePrice(false);
+                    setBreakThePriceFile(null);
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X size={20} className="text-gray-400" />
+                </button>
+              </div>
+
+              {/* Info Box */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                <h3 className="text-sm font-medium text-amber-800 mb-2">How it works:</h3>
+                <ul className="text-sm text-amber-700 space-y-1">
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-500">1.</span>
+                    Upload a quote from another provider (PDF or image)
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-500">2.</span>
+                    Our team reviews and verifies the quote
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-500">3.</span>
+                    We respond within 12 hours with a better price
+                  </li>
+                </ul>
+                {userSubscriptionLimits?.tier !== 'elite' && (
+                  <p className="text-xs text-amber-600 mt-3 pt-3 border-t border-amber-200">
+                    Note: Using Break the Price costs 1 chat from your monthly allowance.
+                  </p>
+                )}
+              </div>
+
+              {/* File Upload Area */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Upload Competitor Quote
+                </label>
+                <div
+                  className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${
+                    breakThePriceFile
+                      ? 'border-green-300 bg-green-50'
+                      : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                  }`}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.add('border-amber-400', 'bg-amber-50');
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50');
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50');
+                    const file = e.dataTransfer.files[0];
+                    if (file) setBreakThePriceFile(file);
+                  }}
+                >
+                  {breakThePriceFile ? (
+                    <div className="flex items-center justify-center gap-3">
+                      <FileText className="text-green-600" size={24} />
+                      <div className="text-left">
+                        <p className="text-sm font-medium text-gray-900">{breakThePriceFile.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {(breakThePriceFile.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setBreakThePriceFile(null)}
+                        className="p-1 hover:bg-gray-200 rounded-full"
+                      >
+                        <X size={16} className="text-gray-500" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="mx-auto text-gray-400 mb-3" size={32} />
+                      <p className="text-sm text-gray-600 mb-2">
+                        Drag and drop your quote here, or
+                      </p>
+                      <label className="inline-block">
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png,.webp"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) setBreakThePriceFile(file);
+                          }}
+                        />
+                        <span className="text-sm text-amber-600 hover:text-amber-700 font-medium cursor-pointer">
+                          browse to upload
+                        </span>
+                      </label>
+                      <p className="text-xs text-gray-400 mt-2">
+                        Supports PDF, JPG, PNG, WebP (max 10MB)
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowBreakThePrice(false);
+                    setBreakThePriceFile(null);
+                  }}
+                  className="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                  disabled={isUploadingQuote}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleBreakThePriceUpload(breakThePriceFile)}
+                  disabled={!breakThePriceFile || isUploadingQuote}
+                  className="flex-1 py-3 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isUploadingQuote ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={18} />
+                      Submit Quote
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Report Issue Modal */}
+      {showReportIssueModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-xl">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">Report an Issue</h2>
+                  <p className="text-sm text-gray-500 mt-1">Help us improve your experience</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowReportIssueModal(false);
+                    setReportIssueForm({ message: '', rating: 0 });
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X size={20} className="text-gray-400" />
+                </button>
+              </div>
+
+              {/* User Info */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <p className="text-xs text-gray-500 mb-2">Reporting as:</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                    <span className="text-gray-600 font-medium">
+                      {(user?.email || user?.name || 'U').charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{user?.name || 'User'}</p>
+                    <p className="text-xs text-gray-500">{user?.email || 'No email'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Star Rating */}
+              <div className="mb-4">
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Rate your experience</label>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onClick={() => setReportIssueForm(prev => ({ ...prev, rating: star }))}
+                      className="p-1 hover:scale-110 transition-transform"
+                    >
+                      <svg
+                        className={`w-8 h-8 ${reportIssueForm.rating >= star ? 'text-yellow-400' : 'text-gray-300'}`}
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    </button>
+                  ))}
+                  <span className="ml-2 text-sm text-gray-500">
+                    {reportIssueForm.rating > 0 ? `${reportIssueForm.rating}/5` : 'Select rating'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Message */}
+              <div className="mb-6">
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Describe the issue</label>
+                <textarea
+                  value={reportIssueForm.message}
+                  onChange={(e) => setReportIssueForm(prev => ({ ...prev, message: e.target.value }))}
+                  placeholder="Please describe what went wrong or how we can improve..."
+                  className="w-full h-32 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none text-sm"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowReportIssueModal(false);
+                    setReportIssueForm({ message: '', rating: 0 });
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!reportIssueForm.message.trim()) {
+                      setToast({ message: 'Please describe the issue', type: 'warning' });
+                      return;
+                    }
+                    setIsSubmittingReport(true);
+                    try {
+                      // Save report to database
+                      const { error } = await supabase
+                        .from('ai_chat_reports')
+                        .insert({
+                          user_id: user?.id,
+                          user_email: user?.email,
+                          user_name: user?.name,
+                          chat_id: currentChat?.id,
+                          rating: reportIssueForm.rating,
+                          message: reportIssueForm.message,
+                          chat_context: JSON.stringify(currentChat?.messages?.slice(-5) || [])
+                        });
+
+                      if (error) throw error;
+
+                      setToast({ message: 'Report submitted successfully. Thank you for your feedback!', type: 'success' });
+                      setShowReportIssueModal(false);
+                      setReportIssueForm({ message: '', rating: 0 });
+                    } catch (err) {
+                      console.error('Error submitting report:', err);
+                      setToast({ message: 'Failed to submit report. Please try again.', type: 'error' });
+                    } finally {
+                      setIsSubmittingReport(false);
+                    }
+                  }}
+                  disabled={isSubmittingReport}
+                  className="flex-1 px-4 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium disabled:bg-gray-400"
+                >
+                  {isSubmittingReport ? 'Submitting...' : 'Submit Report'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Crypto Payment Modal - for Empty Legs and Adventures */}
+      {showCryptoPayment && (
+        <CryptoPaymentModal
+          isOpen={showCryptoPayment}
+          onClose={() => setShowCryptoPayment(false)}
+          amount={cartItems.reduce((sum, item) => sum + (item.price_usd || item.price || 0), 0)}
+          currency="USD"
+          items={cartItems}
+          onSuccess={(paymentId) => {
+            console.log('✅ Crypto payment successful:', paymentId);
+            setShowCryptoPayment(false);
+            setCartItems([]);
+            setToast({ message: 'Payment successful! Your booking is confirmed.', type: 'success' });
+
+            // Add confirmation message to chat
+            const confirmMsg = {
+              role: 'assistant',
+              content: `✅ Payment confirmed! Your booking for ${cartItems.length} item(s) has been processed successfully.\n\nPayment ID: ${paymentId}\n\nYou will receive a confirmation email shortly with all the details.`
+            };
+            setChatHistory(prev => prev.map(c =>
+              c.id === activeChat
+                ? { ...c, messages: [...c.messages, confirmMsg] }
+                : c
+            ));
+          }}
+          onError={(error) => {
+            console.error('❌ Crypto payment error:', error);
+            setToast({ message: `Payment failed: ${error}`, type: 'error' });
+          }}
+        />
+      )}
 
       {/* Toast Notifications */}
       {toast && (

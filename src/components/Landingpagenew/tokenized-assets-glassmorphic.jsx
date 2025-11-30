@@ -39,8 +39,8 @@ import ReferralCard from '../ReferralCard';
 import SubscriptionManagement from '../SubscriptionManagement';
 import ChatSupport from '../ChatSupport';
 import ChatWidget from './ChatWidget';
-import SupportTicketsPage from '../SupportTicketsPage';
-import AIChatComingSoon from '../AIChatComingSoon';
+import { chatService } from '../../services/chatService';
+import { subscriptionService } from '../../services/subscriptionService';
 import KYCForm from '../KYCForm';
 import ProfileSettings from '../ProfileSettings';
 import ProfileOverview from './ProfileOverview';
@@ -1507,7 +1507,7 @@ const TokenizedAssetsGlassmorphic = () => {
       };
 
       // Save to user_requests - triggers email notifications
-      const { error: dbError } = await supabase
+      const { data: insertedData, error: dbError } = await supabase
         .from('user_requests')
         .insert([{
           user_id: user.id,
@@ -1518,9 +1518,20 @@ const TokenizedAssetsGlassmorphic = () => {
           departure_airport: helicopterDepartureInput || null,
           arrival_airport: helicopterDestinationInput || null,
           data: payload
-        }]);
+        }])
+        .select()
+        .single();
 
       if (dbError) throw dbError;
+
+      // Trigger email notification via edge function
+      try {
+        await supabase.functions.invoke('user-request-notifications', {
+          body: { record: { id: insertedData.id } }
+        });
+      } catch (emailError) {
+        console.error('Email notification error (non-blocking):', emailError);
+      }
 
       setHelicopterSubmitSuccess(true);
       showToast('Helicopter charter request submitted successfully!', 'success');
@@ -1592,6 +1603,7 @@ const TokenizedAssetsGlassmorphic = () => {
   const [co2ActiveTab, setCO2ActiveTab] = useState('details');
   const [co2ViewMode, setCo2ViewMode] = useState('tabs');
   const [co2FiltersVisible, setCo2FiltersVisible] = useState(false);
+  const [chatHistoryViewMode, setChatHistoryViewMode] = useState('grid');
 
   // Blog post state
   const [latestBlogPost, setLatestBlogPost] = useState(null);
@@ -1856,6 +1868,19 @@ const TokenizedAssetsGlassmorphic = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showMobileCategoryMenu]);
+
+  // Listen for navigation events from DashboardOverviewNew search
+  useEffect(() => {
+    const handleNavigate = (event) => {
+      const { category } = event.detail;
+      if (category) {
+        setActiveCategory(category);
+      }
+    };
+
+    window.addEventListener('navigate-to-category', handleNavigate);
+    return () => window.removeEventListener('navigate-to-category', handleNavigate);
+  }, []);
 
   // Close profile dropdown when clicking outside
   // Initialize blog sync on mount
@@ -2265,6 +2290,9 @@ const TokenizedAssetsGlassmorphic = () => {
     return () => clearInterval(interval);
   }, [ongoingBooking]);
 
+  // Subscription success state (for subpage)
+  const [successSubscriptionTier, setSuccessSubscriptionTier] = useState('');
+
   // Check for dashboard tab from user menu navigation
   useEffect(() => {
     const dashboardTab = sessionStorage.getItem('dashboardTab');
@@ -2272,6 +2300,47 @@ const TokenizedAssetsGlassmorphic = () => {
       setActiveCategory('dashboard');
       setDashboardView(dashboardTab);
       sessionStorage.removeItem('dashboardTab'); // Clear after using
+    }
+  }, []);
+
+  // Check for subscription success from Stripe redirect
+  // Supports both formats:
+  // - New format: /dashboard?subscription=starter&success=true
+  // - Legacy format: /dashboard?subscription=success&tier=starter
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const subscriptionParam = params.get('subscription');
+    const successParam = params.get('success');
+    const tierParam = params.get('tier');
+
+    // New format: subscription=tier&success=true
+    if (successParam === 'true' && subscriptionParam && subscriptionParam !== 'success' && subscriptionParam !== 'cancelled') {
+      // Store the tier for the success page
+      setSuccessSubscriptionTier(subscriptionParam);
+
+      // Navigate to subscription success subpage
+      setActiveCategory('subscription-success');
+
+      // Clean up URL
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+    // Legacy format: subscription=success&tier=X
+    else if (subscriptionParam === 'success') {
+      setSuccessSubscriptionTier(tierParam || 'starter');
+      setActiveCategory('subscription-success');
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    } else if (subscriptionParam === 'cancelled') {
+      // Show cancelled notification
+      showToast('info', 'Subscription checkout was cancelled. You can try again anytime.');
+
+      // Navigate to plans page
+      setActiveCategory('subscription-plans');
+
+      // Clean up URL
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
     }
   }, []);
 
@@ -2337,7 +2406,7 @@ const TokenizedAssetsGlassmorphic = () => {
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(100); // Increased limit to show more requests
 
       if (error) throw error;
       setUserRequests(data || []);
@@ -2731,12 +2800,84 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   }, [activeCategory, user?.id]);
 
-  // Load user requests for overview page
+  // Fetch chat history from database
+  const fetchChatHistory = async () => {
+    if (!user?.id) return;
+
+    try {
+      const result = await chatService.loadUserChats(user.id);
+      if (result.success && result.chats) {
+        // Transform database format to component format
+        const formattedChats = result.chats.map(chat => ({
+          id: chat.id,
+          title: chat.title || 'New Conversation',
+          date: new Date(chat.updated_at || chat.created_at).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          messages: chat.messages || [],
+          created_at: chat.created_at,
+          updated_at: chat.updated_at
+        }));
+        setChatHistory(formattedChats);
+      }
+    } catch (error) {
+      console.error('Error fetching chat history:', error);
+    }
+  };
+
+  // Load chat history when viewing chat-history page or on initial load
   useEffect(() => {
-    if (activeCategory === 'overview' && user?.id) {
+    if ((activeCategory === 'chat-history' || activeCategory === 'chat') && user?.id) {
+      fetchChatHistory();
+    }
+  }, [activeCategory, user?.id]);
+
+  // Load user requests for overview page and AI requests page
+  useEffect(() => {
+    if ((activeCategory === 'overview' || activeCategory === 'ai-requests' || activeCategory === 'requests') && user?.id) {
       fetchUserRequests();
     }
   }, [activeCategory, user?.id]);
+
+  // Load subscription data when viewing subscriptions page
+  useEffect(() => {
+    if ((activeCategory === 'subscriptions' || activeCategory === 'overview') && user?.id) {
+      fetchSubscriptionData();
+    }
+  }, [activeCategory, user?.id]);
+
+  // Fetch subscription data
+  const fetchSubscriptionData = async () => {
+    if (!user?.id) return;
+    try {
+      const profile = await subscriptionService.getUserProfile(user.id);
+      const stats = await subscriptionService.getChatStats(user.id);
+      setSubscriptionTier(profile?.subscription_tier || 'explorer');
+      setSubscriptionData({
+        chatsUsed: stats?.chatsUsed || 0,
+        chatsLimit: stats?.chatsLimit,
+        chatsRemaining: stats?.chatsRemaining,
+        unlimited: stats?.unlimited || false,
+        chatsResetDate: profile?.chats_reset_date,
+        currentPeriodEnd: profile?.current_period_end,
+        status: profile?.subscription_status || 'active'
+      });
+    } catch (error) {
+      console.error('Error fetching subscription:', error);
+      // Set defaults on error
+      setSubscriptionTier('explorer');
+      setSubscriptionData({
+        chatsUsed: 0,
+        chatsLimit: 2,
+        chatsRemaining: 2,
+        unlimited: false
+      });
+    }
+  };
 
   // Load user escrows for overview page
   useEffect(() => {
@@ -3360,10 +3501,28 @@ const TokenizedAssetsGlassmorphic = () => {
     { id: 'profile', label: 'Profile', icon: User, category: 'dashboard', dashboardTab: 'profile' },
     // { id: 'calendar', label: 'Calendar', icon: Calendar, category: 'calendar' }, // Hidden - not needed for now
     { id: 'bookings', label: 'My Bookings', icon: CreditCard, category: 'bookings' }, // Paid crypto bookings
-    { id: 'requests', label: 'My Requests', icon: FolderOpen, category: 'requests' },
+    {
+      id: 'requests',
+      label: 'My Requests',
+      icon: FolderOpen,
+      category: 'requests',
+      submenu: [
+        { id: 'all-requests', label: 'All Requests', icon: FolderOpen, category: 'requests' },
+        { id: 'ai-requests', label: 'AI Requests', icon: Sparkles, category: 'ai-requests' }
+      ]
+    },
+    {
+      id: 'subscriptions',
+      label: 'Subscriptions',
+      icon: Crown,
+      category: 'subscriptions',
+      submenu: [
+        { id: 'subscription-overview', label: 'Manage Plan', icon: Crown, category: 'subscriptions' },
+        { id: 'subscription-plans', label: 'Plans & Pricing', icon: CreditCard, category: 'subscription-plans' }
+      ]
+    },
     // { id: 'my-launches', label: 'My Launches', icon: Rocket, category: 'my-launches', web3Only: true }, // Hidden - not needed for now
     // { id: 'chat-requests', label: 'Chat Requests', icon: MessageSquare, category: 'chat-requests' },
-    // { id: 'subscription', label: 'Subscription', icon: Crown, category: 'subscription' },
     // { id: 'referral', label: 'Referral Program', icon: Gift, category: 'referral' },
     // { id: 'transactions', label: 'Transactions', icon: Award, category: 'transactions', web3Only: true }, // Hidden - not needed for now
     // { id: 'tokenized-assets', label: 'My DeFi Assets', icon: Sparkles, category: 'assets', web3Only: true }, // Hidden for MVP
@@ -3512,7 +3671,7 @@ const TokenizedAssetsGlassmorphic = () => {
       {/* Main Container - Centered Floating Glassmorphic Dashboard */}
       <div className="relative z-10 flex h-screen items-center justify-center p-0 lg:p-8">
         {/* COMPLETE FLOATING GLASSMORPHIC CONTAINER - Sidebar + Content als ein Stück */}
-        <div className={`relative flex w-full max-w-7xl h-full lg:h-[90vh] rounded-none lg:rounded-3xl shadow-2xl border-0 lg:border overflow-hidden transition-all duration-700 ease-out opacity-100 scale-100 ${
+        <div className={`relative flex w-full max-w-7xl h-full lg:h-[90vh] rounded-none lg:rounded-3xl shadow-2xl border-0 lg:border overflow-hidden lg:transition-all lg:duration-700 lg:ease-out opacity-100 scale-100 ${
           webMode === 'web3'
             ? 'bg-white/30 backdrop-blur-3xl lg:border-white/40'
             : 'bg-white/80 backdrop-blur-3xl lg:border-gray-200/80'
@@ -3585,25 +3744,26 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           </div>
 
-          {/* AI Chat Section - HIDDEN FOR NOW - Will be improved later */}
-          {/* <div className={`mb-4 transition-all duration-300 ${isMobileMenuOpen || sidebarExpanded ? 'px-4' : 'px-2'}`}>
+          {/* AI Chat Section - New Chat + History */}
+          <div className={`mb-4 transition-all duration-300 ${isMobileMenuOpen || sidebarExpanded ? 'px-4' : 'px-2'}`}>
             <div className={`border rounded-lg p-2 transition-all duration-300 backdrop-blur-xl ${
               webMode === 'web3'
                 ? 'bg-white/20 border-gray-300/50'
-                : 'bg-gray-200/40 border-gray-300/60'
+                : 'bg-gray-100/80 border-gray-300/60'
             }`}>
               <button
                 onClick={() => {
-                  setActiveChat('new');
+                  // Start a new chat - reset conversation and go to chat view
                   setActiveCategory('chat');
-                  setAiChatQuery('');
+                  // Dispatch event to reset the AI chat conversation
+                  window.dispatchEvent(new CustomEvent('ai-chat-new-conversation'));
                 }}
                 className={`w-full h-8 rounded-md flex items-center border transition-all duration-300 mb-2 backdrop-blur-xl ${
                   isMobileMenuOpen || sidebarExpanded ? 'justify-start gap-2 px-3' : 'justify-center'
                 } ${
                   webMode === 'web3'
                     ? 'bg-white/30 hover:bg-white/40 text-gray-900 border-gray-300/50'
-                    : 'bg-white/50 hover:bg-white/70 text-gray-800 border-gray-300/50'
+                    : 'bg-white/70 hover:bg-white/90 text-gray-800 border-gray-300/50'
                 }`}
                 title="New Chat"
               >
@@ -3611,30 +3771,28 @@ const TokenizedAssetsGlassmorphic = () => {
                 <span className={`text-xs font-medium whitespace-nowrap ${isMobileMenuOpen || sidebarExpanded ? 'inline-block' : 'hidden'}`}>New Chat</span>
               </button>
 
-              <div className="space-y-1 overflow-x-hidden">
-                <button
-                  onClick={() => {
-                    setActiveCategory('chat-history');
-                  }}
-                  className={`w-full h-8 flex items-center rounded-md transition-all duration-300 backdrop-blur-xl ${
-                    isMobileMenuOpen || sidebarExpanded ? 'justify-start gap-2 px-2' : 'justify-center'
-                  } ${
-                    webMode === 'web3'
-                      ? activeCategory === 'chat-history'
-                        ? 'bg-white/30 text-gray-900'
-                        : 'text-gray-800 hover:bg-white/20'
-                      : activeCategory === 'chat-history'
-                        ? 'bg-white/60 text-gray-900'
-                        : 'text-gray-600 hover:bg-white/30'
-                  }`}
-                  title="Chat History"
-                >
-                  <Calendar size={12} className="flex-shrink-0" />
-                  <span className={`text-xs font-medium ${isMobileMenuOpen || sidebarExpanded ? 'inline-block' : 'hidden'}`}>History</span>
-                </button>
-              </div>
+              <button
+                onClick={() => {
+                  setActiveCategory('chat-history');
+                }}
+                className={`w-full h-7 flex items-center rounded-md transition-all duration-300 backdrop-blur-xl ${
+                  isMobileMenuOpen || sidebarExpanded ? 'justify-start gap-2 px-2' : 'justify-center'
+                } ${
+                  webMode === 'web3'
+                    ? activeCategory === 'chat-history'
+                      ? 'bg-white/30 text-gray-900'
+                      : 'text-gray-800 hover:bg-white/20'
+                    : activeCategory === 'chat-history'
+                      ? 'bg-white/60 text-gray-900'
+                      : 'text-gray-600 hover:bg-white/40'
+                }`}
+                title="Chat History"
+              >
+                <History size={12} className="flex-shrink-0" />
+                <span className={`text-xs font-medium ${isMobileMenuOpen || sidebarExpanded ? 'inline-block' : 'hidden'}`}>History</span>
+              </button>
             </div>
-          </div> */}
+          </div>
 
           {/* Navigation Menu - Expandable (USER MENU ONLY) */}
           <nav className={`flex-1 overflow-y-auto space-y-2 transition-all duration-300 ${isMobileMenuOpen || sidebarExpanded ? 'px-4' : 'px-2'}`}>
@@ -4302,6 +4460,251 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
+          {/* AI Requests View - Shows AI-generated requests with full details */}
+          {!isTransitioning && activeCategory === 'ai-requests' && (
+            <div className="p-6 md:p-8">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-light text-gray-900 tracking-tight mb-1">AI Requests</h1>
+                  <p className="text-sm text-gray-600">Requests generated via AI Concierge (Sphera)</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setActiveCategory('subscriptions')}
+                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border border-gray-200"
+                  >
+                    <Crown size={16} />
+                    Subscriptions
+                  </button>
+                  <button
+                    onClick={() => setActiveCategory('chat-history')}
+                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+                  >
+                    <History size={16} />
+                    Chat History
+                  </button>
+                </div>
+              </div>
+
+              {/* AI Requests List */}
+              {(() => {
+                const aiRequests = userRequests.filter(r =>
+                  r.type === 'ai_chat_bulk' ||
+                  r.type === 'custom_request' ||
+                  r.data?.source?.toLowerCase?.()?.includes?.('ai') ||
+                  r.data?.source?.toLowerCase?.()?.includes?.('sphera') ||
+                  r.data?.source === 'ai_chat'
+                );
+
+                if (aiRequests.length === 0) {
+                  return (
+                    <div className="text-center py-16">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Sparkles size={32} className="text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No AI requests yet</h3>
+                      <p className="text-sm text-gray-600 mb-6">Start a conversation with Sphera to create requests</p>
+                      <button
+                        onClick={() => {
+                          setActiveCategory('chat');
+                          window.dispatchEvent(new CustomEvent('ai-chat-new-conversation'));
+                        }}
+                        className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-all inline-flex items-center gap-2"
+                      >
+                        <MessageSquare size={18} />
+                        Start New Chat
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-4">
+                    {aiRequests.map((request) => (
+                      <div
+                        key={request.id}
+                        className="bg-white/50 backdrop-blur-xl border border-gray-200/60 rounded-2xl p-6 hover:shadow-lg transition-all"
+                      >
+                        {/* Request Header */}
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                              request.type === 'custom_request' ? 'bg-green-100' : 'bg-gray-100'
+                            }`}>
+                              <Sparkles size={20} className={request.type === 'custom_request' ? 'text-green-600' : 'text-gray-600'} />
+                            </div>
+                            <div>
+                              <h3 className="font-medium text-gray-900">
+                                {request.type === 'ai_chat_bulk' ? 'AI Concierge Request' :
+                                 request.type === 'custom_request' ? 'Custom Request' :
+                                 request.type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              </h3>
+                              <p className="text-xs text-gray-500">
+                                {new Date(request.created_at).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            request.status === 'completed' ? 'bg-green-100 text-green-700' :
+                            request.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                            request.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {request.status?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Pending'}
+                          </span>
+                        </div>
+
+                        {/* Request Summary */}
+                        {request.data?.summary && (
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 p-4 bg-gray-50/80 rounded-xl">
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Services</p>
+                              <p className="text-lg font-semibold text-gray-900">{request.data.summary.services_count || 0}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Custom Extras</p>
+                              <p className="text-lg font-semibold text-gray-900">{request.data.summary.extras_count || 0}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Payment</p>
+                              <p className="text-sm font-medium text-gray-900 capitalize">{request.data.payment_method || 'TBD'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Est. Total</p>
+                              <p className="text-lg font-semibold text-gray-900">€{(request.data.summary.grand_total || 0).toLocaleString()}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Custom Request Details (single item) */}
+                        {request.type === 'custom_request' && !request.data?.items && (
+                          <div className="p-4 bg-green-50/50 border border-green-200/50 rounded-xl mb-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              {request.data?.name && (
+                                <div>
+                                  <p className="text-xs text-gray-500 mb-1">Service</p>
+                                  <p className="text-sm font-medium text-gray-900">{request.data.name}</p>
+                                </div>
+                              )}
+                              {request.data?.from && request.data?.to && (
+                                <div>
+                                  <p className="text-xs text-gray-500 mb-1">Route</p>
+                                  <p className="text-sm font-medium text-gray-900">{request.data.from} → {request.data.to}</p>
+                                </div>
+                              )}
+                              {request.data?.date && (
+                                <div>
+                                  <p className="text-xs text-gray-500 mb-1">Date</p>
+                                  <p className="text-sm font-medium text-gray-900">{request.data.date}{request.data?.time ? ` at ${request.data.time}` : ''}</p>
+                                </div>
+                              )}
+                              {request.data?.passengers && (
+                                <div>
+                                  <p className="text-xs text-gray-500 mb-1">Passengers</p>
+                                  <p className="text-sm font-medium text-gray-900">{request.data.passengers}</p>
+                                </div>
+                              )}
+                              {request.data?.catering && (
+                                <div>
+                                  <p className="text-xs text-gray-500 mb-1">Catering</p>
+                                  <p className="text-sm font-medium text-gray-900 capitalize">{request.data.catering}</p>
+                                </div>
+                              )}
+                              {request.data?.price && (
+                                <div>
+                                  <p className="text-xs text-gray-500 mb-1">Est. Price</p>
+                                  <p className="text-sm font-medium text-gray-900">€{request.data.price.toLocaleString()}</p>
+                                </div>
+                              )}
+                            </div>
+                            {request.data?.notes && (
+                              <div className="mt-3 pt-3 border-t border-green-200/50">
+                                <p className="text-xs text-gray-500 mb-1">Notes</p>
+                                <p className="text-sm text-gray-700">{request.data.notes}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Items List (bulk requests) */}
+                        {request.data?.items && request.data.items.length > 0 && (
+                          <div className="space-y-2">
+                            <p className="text-xs font-medium text-gray-700 mb-2">Requested Items ({request.data.items.length})</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              {request.data.items.slice(0, 4).map((item, idx) => (
+                                <div key={idx} className="flex items-center justify-between p-3 bg-white/80 border border-gray-200/50 rounded-lg">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-base">
+                                      {item.type === 'empty_legs' ? '🛩️' :
+                                       item.type === 'jets' || item.type === 'aircraft' ? '✈️' :
+                                       item.type === 'helicopters' ? '🚁' :
+                                       item.type === 'luxury_cars' || item.type === 'cars' ? '🚗' :
+                                       item.type === 'yachts' ? '🛥️' :
+                                       item.type === 'transfers' ? '🚐' :
+                                       item.isCustomRequest ? '🍷' : '📦'}
+                                    </span>
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-900 line-clamp-1">{item.name || item.model || 'Service'}</p>
+                                      {item.from && item.to && (
+                                        <p className="text-xs text-gray-500">{item.from} → {item.to}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <p className="text-sm font-semibold text-gray-900">
+                                    {item.isEstimate && '~'}€{(item.price || 0).toLocaleString()}
+                                  </p>
+                                </div>
+                              ))}
+                              {request.data.items.length > 4 && (
+                                <div className="flex items-center justify-center p-3 bg-gray-50 border border-gray-200/50 rounded-lg text-sm text-gray-600">
+                                  +{request.data.items.length - 4} more items
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Admin Notes */}
+                        {request.admin_notes && (
+                          <div className="mt-4 p-3 bg-blue-50/80 border border-blue-200/50 rounded-lg">
+                            <p className="text-xs font-medium text-blue-700 mb-1">Admin Response</p>
+                            <p className="text-sm text-blue-900">{request.admin_notes}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {/* Footer Stats */}
+              {userRequests.filter(r => r.type === 'ai_chat_bulk' || r.type === 'custom_request' || r.data?.source?.toLowerCase?.()?.includes?.('ai') || r.data?.source === 'ai_chat').length > 0 && (
+                <div className="mt-8 flex items-center justify-between text-sm text-gray-600">
+                  <p>
+                    Total: {userRequests.filter(r => r.type === 'ai_chat_bulk' || r.type === 'custom_request' || r.data?.source?.toLowerCase?.()?.includes?.('ai') || r.data?.source === 'ai_chat').length} AI request(s)
+                  </p>
+                  <button
+                    onClick={() => {
+                      setActiveCategory('chat');
+                      window.dispatchEvent(new CustomEvent('ai-chat-new-conversation'));
+                    }}
+                    className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-all flex items-center gap-2"
+                  >
+                    <Plus size={16} />
+                    New AI Request
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* My Bookings View - Paid Crypto Bookings */}
           {!isTransitioning && activeCategory === 'bookings' && (
             <div className="w-full h-full overflow-y-auto p-4">
@@ -4372,10 +4775,125 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
-          {/* Subscription Management View */}
+          {/* Subscription Management View - Legacy (redirects to new) */}
           {!isTransitioning && activeCategory === 'subscription' && (
             <div className="w-full h-full overflow-y-auto">
               <Subscriptionplans onClose={() => setActiveCategory('chat')} />
+            </div>
+          )}
+
+          {/* Subscriptions Manage Plan View */}
+          {!isTransitioning && activeCategory === 'subscriptions' && (
+            <div className="w-full h-full overflow-y-auto">
+              <SubscriptionManagement onNavigateToPlans={() => setActiveCategory('subscription-plans')} />
+            </div>
+          )}
+
+          {/* Subscription Plans & Pricing View */}
+          {!isTransitioning && activeCategory === 'subscription-plans' && (
+            <div className="w-full h-full overflow-y-auto">
+              <Subscriptionplans onClose={() => setActiveCategory('subscriptions')} />
+            </div>
+          )}
+
+          {/* Subscription Success View - After Stripe Checkout */}
+          {!isTransitioning && activeCategory === 'subscription-success' && (
+            <div className="w-full h-full overflow-y-auto">
+              <div className="max-w-2xl mx-auto px-4 py-12">
+                {/* Success Card */}
+                <div className="bg-white/50 backdrop-blur-sm border border-gray-200/50 rounded-2xl p-8 text-center">
+                  {/* Success Icon */}
+                  <div className="w-20 h-20 bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Check size={40} className="text-white" />
+                  </div>
+
+                  {/* Title */}
+                  <h1 className="text-3xl font-light text-gray-900 mb-3">
+                    Subscription Activated
+                  </h1>
+
+                  {/* Subtitle */}
+                  <p className="text-gray-500 mb-8">
+                    Welcome to the <span className="font-medium capitalize">{successSubscriptionTier}</span> plan.
+                    Your AI Chat and premium features are now unlocked.
+                  </p>
+
+                  {/* Benefits Card */}
+                  <div className="bg-gray-50/80 rounded-xl p-6 mb-8 text-left border border-gray-100">
+                    <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-4">Your Benefits</h3>
+                    <ul className="space-y-4">
+                      <li className="flex items-center gap-4">
+                        <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center flex-shrink-0">
+                          <MessageSquare size={16} className="text-white" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {successSubscriptionTier === 'elite' ? 'Unlimited' : successSubscriptionTier === 'pro' ? '30' : '15'} AI Conversations
+                          </div>
+                          <div className="text-sm text-gray-500">Per month, resets automatically</div>
+                        </div>
+                      </li>
+                      <li className="flex items-center gap-4">
+                        <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center flex-shrink-0">
+                          <Zap size={16} className="text-white" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">Break the Price</div>
+                          <div className="text-sm text-gray-500">Submit quotes for better pricing</div>
+                        </div>
+                      </li>
+                      <li className="flex items-center gap-4">
+                        <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center flex-shrink-0">
+                          <Crown size={16} className="text-white" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {successSubscriptionTier === 'elite' ? '24/7 VIP Support' : successSubscriptionTier === 'pro' ? 'Priority Support' : 'Email & Voice Support'}
+                          </div>
+                          <div className="text-sm text-gray-500">Dedicated assistance when you need it</div>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => setActiveCategory('subscriptions')}
+                      className="flex-1 px-6 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                    >
+                      Manage Plan
+                    </button>
+                    <button
+                      onClick={() => setActiveCategory('ai-chat')}
+                      className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
+                    >
+                      <Sparkles size={18} />
+                      Start AI Chat
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Links */}
+                <div className="mt-6 grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() => setActiveCategory('overview')}
+                    className="p-4 bg-white/30 backdrop-blur-sm border border-gray-200/50 rounded-xl hover:bg-white/50 transition-colors text-left"
+                  >
+                    <Home size={20} className="text-gray-600 mb-2" />
+                    <div className="font-medium text-gray-900">Dashboard</div>
+                    <div className="text-xs text-gray-500">Return to overview</div>
+                  </button>
+                  <button
+                    onClick={() => setActiveCategory('my-requests')}
+                    className="p-4 bg-white/30 backdrop-blur-sm border border-gray-200/50 rounded-xl hover:bg-white/50 transition-colors text-left"
+                  >
+                    <History size={20} className="text-gray-600 mb-2" />
+                    <div className="font-medium text-gray-900">My Requests</div>
+                    <div className="text-xs text-gray-500">View your bookings</div>
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -4475,13 +4993,6 @@ const TokenizedAssetsGlassmorphic = () => {
           {!isTransitioning && activeCategory === 'chat-support' && (
             <div className="w-full h-full overflow-y-auto">
               <HelpdeskInlineView setActiveCategory={setActiveCategory} />
-            </div>
-          )}
-
-          {/* AI Chat Coming Soon View */}
-          {!isTransitioning && activeCategory === 'ai-chat-coming-soon' && (
-            <div className="w-full h-full overflow-y-auto">
-              <AIChatComingSoon />
             </div>
           )}
 
@@ -4596,19 +5107,20 @@ const TokenizedAssetsGlassmorphic = () => {
                             } else if (category?.includes('helicopter')) {
                               setActiveCategory('helicopter');
                             }
-                          } else if (item.action === 'chat') {
-                            // Never open travel concierge - show contact instead
-                            // This should not happen, but just in case
-                            setActiveCategory('overview');
+                          } else if (item.action === 'chat' || item.action === 'ai-chat') {
+                            // Navigate to AI Chat with query
+                            const queryText = item.query || item.label || '';
+                            setAiChatQuery(queryText);
+                            setActiveCategory('chat');
                           } else {
                             // Navigate to category
                             setActiveCategory(item.action);
                           }
                         }}
                         onOpenAIChat={(query) => {
-                          // Open AI chat with the search query
-                          setActiveCategory('chat');
+                          // Navigate to AI Chat with the query
                           setAiChatQuery(query);
+                          setActiveCategory('chat');
                         }}
                         placeholder="I need a..."
                       />
@@ -9722,11 +10234,44 @@ const TokenizedAssetsGlassmorphic = () => {
 
           {/* CHAT HISTORY VIEW */}
           {!isTransitioning && activeCategory === 'chat-history' && (
-            <div className="p-8">
+            <div className="p-6 md:p-8">
               {/* Header */}
-              <div className="mb-8">
-                <h1 className="text-3xl font-semibold text-gray-900 mb-2">Chat History</h1>
-                <p className="text-sm text-gray-600">View and manage your AI conversations with Sphera</p>
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-light text-gray-900 tracking-tight mb-1">Chat History</h1>
+                  <p className="text-sm text-gray-600">View and manage your AI conversations with Sphera</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  {/* View Mode Switcher */}
+                  <div className="flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl">
+                    <button
+                      onClick={() => setChatHistoryViewMode('grid')}
+                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                        chatHistoryViewMode === 'grid'
+                          ? 'bg-gray-800 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Grid
+                    </button>
+                    <button
+                      onClick={() => setChatHistoryViewMode('list')}
+                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                        chatHistoryViewMode === 'list'
+                          ? 'bg-gray-800 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      List
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => setActiveCategory('ai-requests')}
+                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+                  >
+                    View Requests
+                  </button>
+                </div>
               </div>
 
               {/* Chat List */}
@@ -9748,7 +10293,8 @@ const TokenizedAssetsGlassmorphic = () => {
                     Start New Chat
                   </button>
                 </div>
-              ) : (
+              ) : chatHistoryViewMode === 'grid' ? (
+                /* Grid View */
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {chatHistory.map((chat) => (
                     <div
@@ -9759,11 +10305,6 @@ const TokenizedAssetsGlassmorphic = () => {
                       }}
                       className="bg-white/30 backdrop-blur-xl border border-gray-300/50 rounded-2xl p-6 cursor-pointer hover:shadow-lg hover:border-gray-400/50 transition-all group"
                     >
-                      {/* Chat Icon */}
-                      <div className="w-12 h-12 bg-gradient-to-br from-gray-900 to-gray-700 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                        <MessageSquare size={24} className="text-white" />
-                      </div>
-
                       {/* Chat Info */}
                       <h3 className="text-base font-semibold text-gray-900 mb-2 line-clamp-2">
                         {chat.title}
@@ -9782,6 +10323,41 @@ const TokenizedAssetsGlassmorphic = () => {
                           {chat.messages[chat.messages.length - 1].content}
                         </p>
                       )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                /* List View */
+                <div className="space-y-3">
+                  {chatHistory.map((chat) => (
+                    <div
+                      key={chat.id}
+                      onClick={() => {
+                        setActiveChat(chat.id);
+                        setActiveCategory('chat');
+                      }}
+                      className="bg-white/30 backdrop-blur-xl border border-gray-300/50 rounded-xl p-4 cursor-pointer hover:shadow-lg hover:border-gray-400/50 transition-all flex items-center justify-between"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-1">
+                          <h3 className="text-sm font-semibold text-gray-900 truncate">
+                            {chat.title}
+                          </h3>
+                          <span className="text-xs text-gray-500 whitespace-nowrap">{chat.date}</span>
+                        </div>
+                        {chat.messages.length > 0 && (
+                          <p className="text-xs text-gray-600 truncate">
+                            {chat.messages[chat.messages.length - 1].content}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                          {chat.messages.length}
+                        </div>
+                        <ChevronRight size={16} className="text-gray-400" />
+                      </div>
                     </div>
                   ))}
                 </div>

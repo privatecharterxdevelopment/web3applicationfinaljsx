@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 import { useAppKit } from '@reown/appkit/react';
-import { Search, ShoppingBag, Settings, User, Shield, MapPin } from 'lucide-react';
+import { Search, ShoppingBag, Settings, User, Shield, MapPin, Calendar, Clock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { web3Service } from '../../lib/web3';
 import { createRequest } from '../../services/requests';
@@ -22,6 +22,10 @@ const HelicopterDetail = () => {
   const [passengers, setPassengers] = useState(1);
   const [flightDuration, setFlightDuration] = useState(1);
   const [specialRequests, setSpecialRequests] = useState('');
+  const [departure, setDeparture] = useState('');
+  const [arrival, setArrival] = useState('');
+  const [flightDate, setFlightDate] = useState('');
+  const [flightTime, setFlightTime] = useState('');
   const [showSuccessNotification, setShowSuccessNotification] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -66,32 +70,67 @@ const HelicopterDetail = () => {
       const totalPrice = hourlyRate * flightDuration;
       const discountedPrice = hasNFT ? totalPrice * (1 - nftDiscount / 100) : totalPrice;
 
-      // Create request - DIRECT INSERT
-      const { error: dbError } = await supabase
+      // Validate required fields
+      if (!departure || !arrival) {
+        alert('Please enter both departure and arrival locations');
+        return;
+      }
+      if (!flightDate) {
+        alert('Please select a preferred flight date');
+        return;
+      }
+
+      // Create request - DIRECT INSERT with search_criteria for email template
+      const { data: insertedData, error: dbError } = await supabase
         .from('user_requests')
         .insert([{
           user_id: user.id,
           type: 'helicopter_charter',
           status: 'pending',
+          client_email: user.email,
           data: {
             wallet_address: address,
             helicopter_id: helicopter.id,
             helicopter_name: helicopter.name,
+            helicopter_type: helicopter.type,
             manufacturer: helicopter.manufacturer,
+            capacity: helicopter.capacity,
+            location: helicopter.location,
             passengers,
             flight_duration: flightDuration,
             hourly_rate: hourlyRate,
             total_price: totalPrice,
             discounted_price: discountedPrice,
+            price: discountedPrice,
             has_nft: hasNFT,
             nft_discount: nftDiscount,
             special_requests: specialRequests,
             request_date: new Date().toISOString(),
-            user_email: user.email
+            user_email: user.email,
+            // Search criteria for email template
+            search_criteria: {
+              departure: departure,
+              arrival: arrival,
+              date: flightDate,
+              time: flightTime || 'Flexible',
+              duration: flightDuration,
+              passengers: passengers
+            }
           }
-        }]);
+        }])
+        .select()
+        .single();
 
       if (dbError) throw dbError;
+
+      // Trigger email notification via edge function
+      try {
+        await supabase.functions.invoke('user-request-notifications', {
+          body: { record: { id: insertedData.id } }
+        });
+      } catch (emailError) {
+        console.error('Email notification error (non-blocking):', emailError);
+      }
 
       // Track benefit usage
       if (hasNFT) {
@@ -439,6 +478,65 @@ const HelicopterDetail = () => {
                 <h4 className="text-sm font-semibold text-black mb-4">Charter Details</h4>
 
                 <div className="space-y-3">
+                  {/* Departure Location */}
+                  <div>
+                    <label className="text-xs text-gray-500 block mb-2">Departure Location *</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
+                      <input
+                        type="text"
+                        value={departure}
+                        onChange={(e) => setDeparture(e.target.value)}
+                        placeholder="e.g., Monaco Heliport, Nice"
+                        className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Arrival Location */}
+                  <div>
+                    <label className="text-xs text-gray-500 block mb-2">Arrival Location *</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
+                      <input
+                        type="text"
+                        value={arrival}
+                        onChange={(e) => setArrival(e.target.value)}
+                        placeholder="e.g., Cannes, Saint-Tropez"
+                        className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Date and Time */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-2">Flight Date *</label>
+                      <div className="relative">
+                        <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
+                        <input
+                          type="date"
+                          value={flightDate}
+                          onChange={(e) => setFlightDate(e.target.value)}
+                          min={new Date().toISOString().split('T')[0]}
+                          className="w-full pl-9 pr-2 py-2 border border-gray-300 rounded text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-2">Time (optional)</label>
+                      <div className="relative">
+                        <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
+                        <input
+                          type="time"
+                          value={flightTime}
+                          onChange={(e) => setFlightTime(e.target.value)}
+                          className="w-full pl-9 pr-2 py-2 border border-gray-300 rounded text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Passengers */}
                   <div>
                     <label className="text-xs text-gray-500 block mb-2">Passengers</label>
@@ -461,7 +559,7 @@ const HelicopterDetail = () => {
 
                   {/* Flight Duration */}
                   <div>
-                    <label className="text-xs text-gray-500 block mb-2">Flight Duration (hours)</label>
+                    <label className="text-xs text-gray-500 block mb-2">Estimated Duration (hours)</label>
                     <div className="flex items-center justify-between border border-gray-300 rounded px-3 py-2">
                       <button
                         onClick={() => setFlightDuration(Math.max(0.5, flightDuration - 0.5))}
@@ -487,7 +585,7 @@ const HelicopterDetail = () => {
                       onChange={(e) => setSpecialRequests(e.target.value)}
                       placeholder="Landing site preferences, special equipment, etc."
                       className="w-full px-3 py-2 border border-gray-300 rounded text-sm resize-none"
-                      rows="3"
+                      rows="2"
                     />
                   </div>
                 </div>

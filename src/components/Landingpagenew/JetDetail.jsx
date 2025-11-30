@@ -62,28 +62,43 @@ const JetDetail = () => {
         return;
       }
 
-      // Create request - DIRECT INSERT
-      const { error: dbError } = await supabase
+      // Create request - DIRECT INSERT with client_email for notifications
+      const { data: insertedData, error: dbError } = await supabase
         .from('user_requests')
         .insert([{
           user_id: user.id,
           type: 'private_jet_charter',
           status: 'pending',
+          client_email: user.email,
           data: {
             wallet_address: address,
             jet_id: jet.id,
             aircraft_model: jet.aircraft_model,
+            aircraft: jet.aircraft_model,
             manufacturer: jet.manufacturer,
             passenger_capacity: jet.passenger_capacity,
+            capacity: jet.passenger_capacity,
             range: jet.range,
+            category: jet.category,
             has_nft: hasNFT,
             nft_discount: nftDiscount,
             request_date: new Date().toISOString(),
             user_email: user.email
           }
-        }]);
+        }])
+        .select()
+        .single();
 
       if (dbError) throw dbError;
+
+      // Trigger email notification via edge function
+      try {
+        await supabase.functions.invoke('user-request-notifications', {
+          body: { record: { id: insertedData.id } }
+        });
+      } catch (emailError) {
+        console.error('Email notification error (non-blocking):', emailError);
+      }
 
       // Track benefit usage
       if (hasNFT) {

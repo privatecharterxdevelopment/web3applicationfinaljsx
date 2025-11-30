@@ -185,16 +185,24 @@ const AdventureDetail = () => {
       const finalPrice = isFree ? 0 : discountedPrice;
       const requestType = isFree ? 'nft_free_flight' : 'adventure_package';
 
-      // Save to database - DIRECT INSERT
-      const { error: dbError } = await supabase
+      // Validate required date
+      if (!selectedDate) {
+        alert('Please select a preferred date for your adventure');
+        return;
+      }
+
+      // Save to database - DIRECT INSERT with client_email for notifications
+      const { data: insertedData, error: dbError } = await supabase
         .from('user_requests')
         .insert([{
           user_id: user.id,
           type: requestType,
           status: 'pending',
+          client_email: user.email,
           data: {
             adventure_id: adventure.id,
             adventure_title: adventure.title,
+            offer_title: adventure.title,
             package_type: adventure.package_type,
             origin: adventure.origin,
             destination: adventure.destination,
@@ -202,10 +210,14 @@ const AdventureDetail = () => {
             destination_city: adventure.destination_city,
             duration: adventure.duration,
             participants: participants,
+            passengers: participants,
             preferred_date: selectedDate,
+            departure_date: selectedDate,
             original_price: adventure.price,
             discounted_price: finalPrice,
+            converted_price: finalPrice,
             currency: 'EUR',
+            selected_currency: 'EUR',
             wallet_address: isConnected && address ? address : null,
             has_nft: hasNFT,
             nft_discount: nftDiscount,
@@ -223,11 +235,24 @@ const AdventureDetail = () => {
             inclusions: adventure.inclusions || [],
             guide_included: adventure.guide_included || false,
             equipment_provided: adventure.equipment_provided || false,
-            insurance_included: adventure.insurance_included || false
+            insurance_included: adventure.insurance_included || false,
+            user_email: user.email,
+            booking_source: 'adventure_detail_page'
           }
-        }]);
+        }])
+        .select()
+        .single();
 
       if (dbError) throw dbError;
+
+      // Trigger email notification via edge function
+      try {
+        await supabase.functions.invoke('user-request-notifications', {
+          body: { record: { id: insertedData.id } }
+        });
+      } catch (emailError) {
+        console.error('Email notification error (non-blocking):', emailError);
+      }
 
       // Track benefit usage (isFree already calculated on line 183)
       if (isFree) {

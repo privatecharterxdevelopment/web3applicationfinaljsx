@@ -89,27 +89,31 @@ const LuxuryCarDetail = () => {
 
       const discountedPrice = hasNFT ? price * (1 - nftDiscount / 100) : price;
 
-      // Save to database - DIRECT INSERT
-      const { error: dbError } = await supabase
+      // Save to database - DIRECT INSERT with client_email for notifications
+      const { data: insertedData, error: dbError } = await supabase
         .from('user_requests')
         .insert([{
           user_id: user.id,
           type: 'luxury_car',
           status: 'pending',
+          client_email: user.email,
           data: {
             car_id: car.id,
             car_name: `${car.brand} ${car.model}`,
+            car_type: `${car.brand} ${car.model}`,
             brand: car.brand,
             model: car.model,
             year: car.year,
             category: car.category,
             rental_duration_type: rentalDuration,
             rental_duration_count: rentalDays,
+            rental_dates: `${pickupDate} to ${dropoffDate}`,
             pickup_date: pickupDate,
             pickup_time: pickupTime,
             dropoff_date: dropoffDate,
             dropoff_time: dropoffTime,
             pickup_location: car.location,
+            dropoff_location: car.location,
             original_price: price,
             discounted_price: discountedPrice,
             currency: 'EUR',
@@ -124,11 +128,23 @@ const LuxuryCarDetail = () => {
             seats: car.seats,
             acceleration: car.acceleration,
             top_speed: car.top_speed,
-            features: car.features || []
+            features: car.features || [],
+            user_email: user.email
           }
-        }]);
+        }])
+        .select()
+        .single();
 
       if (dbError) throw dbError;
+
+      // Trigger email notification via edge function
+      try {
+        await supabase.functions.invoke('user-request-notifications', {
+          body: { record: { id: insertedData.id } }
+        });
+      } catch (emailError) {
+        console.error('Email notification error (non-blocking):', emailError);
+      }
 
       // Track benefit usage
       if (hasNFT) {

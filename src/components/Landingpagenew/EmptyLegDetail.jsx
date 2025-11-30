@@ -204,20 +204,26 @@ const EmptyLegDetail = () => {
 
       const requestType = isFree ? 'nft_free_flight' : hasNFT ? 'nft_discount_empty_leg' : 'empty_leg';
 
-      // Save to database - DIRECT INSERT
-      const { error: dbError } = await supabase
+      // Save to database - DIRECT INSERT with client_email for notifications
+      const { data: insertedData, error: dbError } = await supabase
         .from('user_requests')
         .insert([{
           user_id: user.id,
           type: requestType,
           status: 'pending',
+          client_email: user.email,
           data: {
             empty_leg_id: emptyLeg.id,
             flight_route: `${emptyLeg.from_iata} → ${emptyLeg.to_iata}`,
+            route: `${emptyLeg.from_city || emptyLeg.from_iata} → ${emptyLeg.to_city || emptyLeg.to_iata}`,
             from_city: emptyLeg.from_city,
             to_city: emptyLeg.to_city,
             from_iata: emptyLeg.from_iata,
             to_iata: emptyLeg.to_iata,
+            departure: emptyLeg.from_city || emptyLeg.from_iata,
+            destination: emptyLeg.to_city || emptyLeg.to_iata,
+            departure_airport: emptyLeg.from_iata,
+            arrival_airport: emptyLeg.to_iata,
             departure_date: emptyLeg.departure_date,
             departure_time: emptyLeg.departure_time,
             arrival_date: emptyLeg.arrival_date,
@@ -226,8 +232,10 @@ const EmptyLegDetail = () => {
             capacity: emptyLeg.capacity,
             original_price: emptyLeg.price,
             discounted_price: finalPrice,
+            final_price: finalPrice,
             currency: 'EUR',
             passengers: passengers,
+            passenger_count: passengers,
             luggage: luggage,
             has_pet: hasPet,
             wallet_address: isConnected && address ? address : null,
@@ -236,11 +244,23 @@ const EmptyLegDetail = () => {
             is_free: isFree,
             co2_emissions: co2Data.emissions,
             co2_offset_cost: co2Data.offset,
-            distance_km: co2Data.distance
+            distance_km: co2Data.distance,
+            user_email: user.email
           }
-        }]);
+        }])
+        .select()
+        .single();
 
       if (dbError) throw dbError;
+
+      // Trigger email notification via edge function
+      try {
+        await supabase.functions.invoke('user-request-notifications', {
+          body: { record: { id: insertedData.id } }
+        });
+      } catch (emailError) {
+        console.error('Email notification error (non-blocking):', emailError);
+      }
 
       // Track benefit usage
       if (isFree) {
