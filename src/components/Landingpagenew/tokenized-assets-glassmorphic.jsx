@@ -3395,9 +3395,9 @@ const TokenizedAssetsGlassmorphic = () => {
     { id: 'adventures', label: 'Adventures', icon: Mountain, category: 'adventures' },
     // { id: 'assets', label: 'Events & Sports', icon: Calendar, category: 'assets' }, // Hidden for MVP
     // { id: 'luxury-cars', label: 'Luxury Cars', icon: Car, category: 'luxury-cars' }, // Hidden - now integrated into Ground Transport
-    { id: 'ground-transport', label: 'Ground Transport', icon: Car, category: 'ground-transport' },
+    { id: 'ground-transport', label: 'Ground Transport', icon: Car, category: 'ground-transport' }
     // { id: 'tailored-services', label: 'AI Travel Designer', icon: Compass, category: 'chat' },
-    { id: 'co2-saf', label: 'CO₂/SAF', icon: Leaf, category: 'co2-saf' }
+    // { id: 'co2-saf', label: 'CO₂/SAF', icon: Leaf, category: 'co2-saf' } // Hidden for now
   ];
 
   // Web3 Category menu - for Crypto/Blockchain services
@@ -3480,7 +3480,7 @@ const TokenizedAssetsGlassmorphic = () => {
         { id: 'create-spv', label: 'Create SPV', icon: Plus, category: 'spv-formation' }
       ]
     },
-    { id: 'co2-certificates', label: 'CO2 Certificates', icon: Leaf, category: 'co2-certificates' },
+    // { id: 'co2-certificates', label: 'CO2 Certificates', icon: Leaf, category: 'co2-certificates' }, // Hidden for now
     // { id: 'chat-support', label: 'Chat Support', icon: MessageSquare, category: 'chat-support' }, // Hidden - using footer chat widget instead
     { id: 'nft-marketplace', label: 'NFT Marketplace', icon: Shield, category: 'nft-marketplace', web3Only: true }
   ];
