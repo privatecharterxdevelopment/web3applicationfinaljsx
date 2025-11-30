@@ -306,10 +306,15 @@ class SubscriptionService {
 
   /**
    * Upgrade user subscription
+   * When upgrading, ADD new chats to remaining instead of resetting
+   * e.g., if 5 of 10 chats used and upgrading to 20 chats plan, user gets 5 remaining + 20 new = 25 total available
    */
   async upgradeSubscription(userId, newTier, stripeSubscriptionId, stripeCustomerId) {
     try {
-      // Get tier details
+      // Get current profile to calculate remaining chats
+      const currentProfile = await this.getUserProfile(userId);
+
+      // Get new tier details
       const { data: tierData } = await supabase
         .from('subscription_tiers')
         .select('*')
@@ -321,13 +326,27 @@ class SubscriptionService {
       const now = new Date();
       const nextMonth = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
+      // Calculate new chats limit: remaining chats + new tier's chats
+      let newChatsLimit = tierData.chats_limit;
+
+      // If upgrading (not first subscription), add remaining chats to new limit
+      if (currentProfile && currentProfile.chats_limit !== null) {
+        const remainingChats = Math.max(0, (currentProfile.chats_limit || 0) - (currentProfile.chats_used || 0));
+        // For unlimited tier (null), keep null
+        if (tierData.chats_limit === null) {
+          newChatsLimit = null;
+        } else {
+          newChatsLimit = tierData.chats_limit + remainingChats;
+        }
+      }
+
       const { data, error } = await supabase
         .from('user_profiles')
         .update({
           subscription_tier: newTier,
           subscription_status: 'active',
-          chats_limit: tierData.chats_limit,
-          chats_used: 0, // Reset on upgrade
+          chats_limit: newChatsLimit,
+          chats_used: 0, // Reset used counter since we've added remaining to limit
           chats_reset_date: nextMonth,
           stripe_subscription_id: stripeSubscriptionId,
           stripe_customer_id: stripeCustomerId,

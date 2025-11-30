@@ -62,24 +62,40 @@ const WeatherWidget = ({ location, weather }) => {
   );
 };
 
-// Toast notification component
+// Toast notification component - minimalistic monochromatic design
 const Toast = ({ message, type = 'info', onClose }) => {
   useEffect(() => {
-    const timer = setTimeout(onClose, 5000);
+    // Cart notifications disappear faster (2s), others stay longer (4s)
+    const duration = type === 'cart' ? 2000 : 4000;
+    const timer = setTimeout(onClose, duration);
     return () => clearTimeout(timer);
-  }, [onClose]);
+  }, [onClose, type]);
+
+  // Minimalistic cart toast
+  if (type === 'cart') {
+    return (
+      <div className="fixed top-4 right-4 z-[9999] animate-slide-in">
+        <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded-lg shadow-lg">
+          <ShoppingCart size={16} />
+          <p className="text-sm">{message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed top-4 right-4 z-[9999] animate-slide-in">
       <div className={`flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border ${
         type === 'warning'
-          ? 'bg-yellow-50 border-yellow-200 text-yellow-900'
+          ? 'bg-gray-100 border-gray-300 text-gray-900'
           : type === 'error'
-          ? 'bg-red-50 border-red-200 text-red-900'
+          ? 'bg-gray-100 border-gray-300 text-gray-900'
+          : type === 'success'
+          ? 'bg-gray-900 text-white border-gray-700'
           : 'bg-gray-50 border-gray-200 text-gray-900'
       }`}>
         <AlertCircle size={20} className={
-          type === 'warning' ? 'text-yellow-600' : type === 'error' ? 'text-red-600' : 'text-gray-600'
+          type === 'warning' ? 'text-gray-600' : type === 'error' ? 'text-gray-600' : 'text-gray-400'
         } />
         <p className="text-sm font-medium">{message}</p>
         <button onClick={onClose} className="ml-2 hover:opacity-70">
@@ -447,14 +463,65 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
     } catch {}
   }, [currentChat?.messages?.length, isSearching, assistantTyping]);
 
+  // Calculate distance between two coordinates using Haversine formula
+  const calculateDistance = useCallback((origin, destination) => {
+    if (!origin || !destination) return 0;
+    const R = 6371; // Earth's radius in km
+    const dLat = (destination.lat - origin.lat) * Math.PI / 180;
+    const dLon = (destination.lng - origin.lng) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(origin.lat * Math.PI / 180) * Math.cos(destination.lat * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }, []);
+
+  // Calculate item price with estimated flight time for jets/helicopters
+  const calculateItemPrice = useCallback((item) => {
+    // If item has a fixed price (empty legs, adventures, cars), use it directly
+    if (item.price && item.type !== 'jet' && item.type !== 'helicopter' && item.type !== 'aircraft') {
+      return item.price;
+    }
+
+    // For jets/helicopters with hourly rate, calculate based on estimated flight time
+    const hourlyRate = item.hourly_rate || item.price_per_hour || item.pricePerHour || item.rate;
+    const speed = item.speed || item.speed_kmh || 800; // Default 800 km/h for jets
+
+    if (hourlyRate && (item.origin || item.from_city) && (item.destination || item.to_city)) {
+      // Try to get coordinates from item
+      const origin = item.origin_coords || item.origin ||
+        (item.from_lat && item.from_lng ? { lat: item.from_lat, lng: item.from_lng } : null);
+      const destination = item.destination_coords || item.destination ||
+        (item.to_lat && item.to_lng ? { lat: item.to_lat, lng: item.to_lng } : null);
+
+      if (origin?.lat && destination?.lat) {
+        const distance = calculateDistance(origin, destination);
+        const flightHours = Math.max(1, distance / speed); // Minimum 1 hour
+        return Math.round(flightHours * hourlyRate);
+      }
+
+      // Fallback: Use estimated hours if provided
+      if (item.estimated_hours || item.flightHours) {
+        const hours = item.estimated_hours || item.flightHours;
+        return Math.round(hours * hourlyRate);
+      }
+
+      // Fallback: Show 1 hour price (minimum booking)
+      return hourlyRate;
+    }
+
+    // Fallback to item price or 0
+    return item.price || item.estimated_price || 0;
+  }, [calculateDistance]);
+
   const cartTotal = useMemo(() => {
     return cartItems.reduce((sum, item) => {
       if (conversationalAI.isEligibleForNFTBenefit(item, userHasNFT, usedNFTBenefitThisYear)) {
         return sum;
       }
-      return sum + (item.price || 0);
+      return sum + calculateItemPrice(item);
     }, 0);
-  }, [cartItems, userHasNFT, usedNFTBenefitThisYear, conversationalAI]);
+  }, [cartItems, userHasNFT, usedNFTBenefitThisYear, conversationalAI, calculateItemPrice]);
 
   useEffect(() => {
     const lastVisit = localStorage.getItem('last_visit');
@@ -637,14 +704,22 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
       addedAt: new Date().toISOString()
     };
     setCartItems(prev => [...prev, cartItem]);
-    
+
     const isFree = conversationalAI.isEligibleForNFTBenefit(item, userHasNFT, usedNFTBenefitThisYear);
-    
-    let msg = `Added ${item.name || item.title}`;
+
+    // Show minimalistic toast notification
+    const itemName = item.name || item.title || 'Item';
+    setToast({
+      message: isFree ? `${itemName} added (FREE with NFT)` : `${itemName} added to cart`,
+      type: 'cart'
+    });
+
+    // Add message to chat
+    let msg = `Added ${itemName}`;
     if (isFree) msg += ` (FREE with NFT!)`;
     msg += `\n\nContinue browsing or say "send request" when ready.`;
-    
-    setChatHistory(prev => prev.map(c => 
+
+    setChatHistory(prev => prev.map(c =>
       c.id === activeChat ? { ...c, messages: [...c.messages, { role: 'assistant', content: msg }] } : c
     ));
   }, [activeChat, conversationalAI, userHasNFT, usedNFTBenefitThisYear]);
@@ -2857,28 +2932,59 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               <div className="bg-white/90 backdrop-blur-xl border border-gray-300 rounded-xl p-4 shadow-lg">
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-2 mb-2">
-                    <MessageSquare size={20} className="text-blue-500" />
+                    <MessageSquare size={20} className="text-gray-500" />
                     <span className="font-medium text-gray-900">Message Limit Reached</span>
                   </div>
                   <p className="text-sm text-gray-600 mb-4">
-                    You've reached 20 messages for this conversation. Ready to send your request?
+                    You've reached 20 messages for this conversation.
+                    {cartItems.length > 0 && ` You have ${cartItems.length} item${cartItems.length > 1 ? 's' : ''} in your cart.`}
                   </p>
                   <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowRequestForm(true)}
-                      className="flex-1 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
-                    >
-                      <Send size={18} />
-                      Send Request
-                    </button>
-                    <button
-                      onClick={() => setShowSubscriptionModal(true)}
-                      className="flex-1 py-3 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-colors font-medium border border-gray-300 flex items-center justify-center gap-2"
-                    >
-                      <Crown size={18} />
-                      Upgrade
-                    </button>
+                    {/* Show View Cart button if items in cart */}
+                    {cartItems.length > 0 ? (
+                      <>
+                        <button
+                          onClick={() => setShowCartSidebar(true)}
+                          className="flex-1 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
+                        >
+                          <ShoppingCart size={18} />
+                          View Cart ({cartItems.length})
+                        </button>
+                        <button
+                          onClick={() => setShowRequestForm(true)}
+                          className="flex-1 py-3 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-colors font-medium border border-gray-300 flex items-center justify-center gap-2"
+                        >
+                          <Send size={18} />
+                          Send Request
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => setShowRequestForm(true)}
+                          className="flex-1 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
+                        >
+                          <Send size={18} />
+                          Send Request
+                        </button>
+                        <button
+                          onClick={() => setShowSubscriptionModal(true)}
+                          className="flex-1 py-3 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-colors font-medium border border-gray-300 flex items-center justify-center gap-2"
+                        >
+                          <Crown size={18} />
+                          Upgrade
+                        </button>
+                      </>
+                    )}
                   </div>
+                  {/* Upgrade option for more messages */}
+                  <button
+                    onClick={() => setShowSubscriptionModal(true)}
+                    className="mt-3 w-full py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors flex items-center justify-center gap-1"
+                  >
+                    <Crown size={14} />
+                    Need more messages? Upgrade your plan
+                  </button>
                 </div>
               </div>
             ) : (
@@ -3524,20 +3630,14 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     </>
                   )}
                 </div>
-                {/* Option to continue chat for checkout purposes */}
-                {cartItems.length > 0 && (
-                  <button
-                    onClick={() => {
-                      setMessageLimitReached(false);
-                      // Allow 5 more messages for checkout purposes
-                      setMessageCount(MAX_MESSAGES_PER_CHAT - 5);
-                      setToast({ message: 'You can send 5 more messages to finalize your booking.', type: 'success' });
-                    }}
-                    className="mt-3 w-full py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                  >
-                    Continue chatting to finalize checkout
-                  </button>
-                )}
+                {/* Upgrade option for more messages */}
+                <button
+                  onClick={() => setShowSubscriptionModal(true)}
+                  className="mt-3 w-full py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors flex items-center justify-center gap-1"
+                >
+                  <Crown size={14} />
+                  Need more messages? Upgrade your plan
+                </button>
               </div>
             </div>
           ) : (
