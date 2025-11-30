@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   User, Mail, Phone, MapPin, Calendar, Shield, CheckCircle, Clock, XCircle,
   AlertCircle, Edit, Plus, ExternalLink, Sparkles, DollarSign, Plane,
-  Coins, Building2, Leaf, Users, Activity
+  Coins, Building2, Leaf, Users, Activity, Crown, ChevronRight, MessageSquare
 } from 'lucide-react';
 import { format, startOfMonth } from 'date-fns';
 import { supabase } from '../../lib/supabase';
@@ -10,6 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 import { web3Service } from '../../lib/web3';
 import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
+import { subscriptionService } from '../../services/subscriptionService';
 
 // Dashboard components
 import MultiLineChart from '../Dashboard/MultiLineChart';
@@ -42,6 +43,10 @@ export default function ProfileOverview() {
     income: 0,
     expense: 0
   });
+
+  // Subscription state
+  const [subscriptionData, setSubscriptionData] = useState(null);
+  const [loadingSubscription, setLoadingSubscription] = useState(true);
 
   useEffect(() => {
     if (user?.id) {
@@ -83,12 +88,43 @@ export default function ProfileOverview() {
         fetchDashboardMetrics(),
         fetchRecentActivities(),
         calculateMonthlyStats(),
-        calculateQuickStats()
+        calculateQuickStats(),
+        fetchSubscriptionData()
       ]);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSubscriptionData = async () => {
+    setLoadingSubscription(true);
+    try {
+      const profile = await subscriptionService.getUserProfile(user.id);
+      const stats = await subscriptionService.getChatStats(user.id);
+      setSubscriptionData({
+        tier: profile?.subscription_tier || 'explorer',
+        status: profile?.subscription_status || 'active',
+        chatsUsed: stats?.chatsUsed || 0,
+        chatsLimit: stats?.chatsLimit || 1,
+        chatsRemaining: stats?.chatsRemaining,
+        unlimited: stats?.unlimited || false,
+        resetDate: profile?.chats_reset_date,
+        currentPeriodEnd: profile?.current_period_end
+      });
+    } catch (error) {
+      console.error('Error fetching subscription:', error);
+      setSubscriptionData({
+        tier: 'explorer',
+        status: 'active',
+        chatsUsed: 0,
+        chatsLimit: 1, // Free tier: 1 chat only
+        chatsRemaining: 1,
+        unlimited: false
+      });
+    } finally {
+      setLoadingSubscription(false);
     }
   };
 
@@ -273,15 +309,15 @@ export default function ProfileOverview() {
   };
 
   const handleBookingsClick = () => {
-    navigate('/glas/my-requests');
+    navigate('/dashboard/my-requests');
   };
 
   const handleTokenizationClick = () => {
-    navigate('/glas/tokenization');
+    navigate('/dashboard/tokenization');
   };
 
   const handleDAOClick = () => {
-    navigate('/glas/daos');
+    navigate('/dashboard/daos');
   };
 
   const handlePVCXClick = () => {
@@ -290,7 +326,7 @@ export default function ProfileOverview() {
   };
 
   const handleCO2Click = () => {
-    navigate('/glas/co2-certificates');
+    navigate('/dashboard/co2-certificates');
   };
 
   if (loading) {
@@ -573,6 +609,160 @@ export default function ProfileOverview() {
                       Buy on OpenSea
                     </a>
                   </div>
+                </div>
+              )}
+            </div>
+
+            {/* Subscription Card */}
+            <div className="bg-white/35 backdrop-blur-xl border border-gray-300/50 rounded-2xl p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <Crown size={20} className="text-gray-700" />
+                  <h2 className="text-lg font-semibold text-gray-900">Subscription</h2>
+                </div>
+                <button
+                  onClick={() => navigate('/dashboard/subscriptions')}
+                  className="text-xs text-gray-500 hover:text-gray-900 flex items-center gap-1 transition-colors"
+                >
+                  Manage <ChevronRight size={14} />
+                </button>
+              </div>
+
+              {loadingSubscription ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-8 h-8 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin"></div>
+                </div>
+              ) : (
+                <div>
+                  {/* Current Plan Badge */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+                      subscriptionData?.tier === 'elite' ? 'bg-gray-900 text-white' :
+                      subscriptionData?.tier === 'business' ? 'bg-gray-800 text-white' :
+                      subscriptionData?.tier === 'pro' ? 'bg-gray-700 text-white' :
+                      subscriptionData?.tier === 'starter' ? 'bg-gray-600 text-white' :
+                      'bg-gray-100 text-gray-700 border border-gray-300'
+                    }`}>
+                      {subscriptionData?.tier === 'elite' ? 'Elite' :
+                       subscriptionData?.tier === 'business' ? 'Business' :
+                       subscriptionData?.tier === 'pro' ? 'Professional' :
+                       subscriptionData?.tier === 'starter' ? 'Starter' : 'Explorer'}
+                    </div>
+                    {subscriptionData?.status === 'active' && (
+                      <span className="text-xs text-green-600 flex items-center gap-1">
+                        <CheckCircle size={12} />
+                        Active
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Chat Usage */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between text-sm mb-2">
+                      <span className="text-gray-600 flex items-center gap-1.5">
+                        <MessageSquare size={14} />
+                        AI Conversations
+                      </span>
+                      <span className="font-medium text-gray-900">
+                        {subscriptionData?.unlimited ? (
+                          'Unlimited'
+                        ) : (
+                          `${subscriptionData?.chatsUsed || 0} / ${subscriptionData?.chatsLimit || 2}`
+                        )}
+                      </span>
+                    </div>
+                    {!subscriptionData?.unlimited && (
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full transition-all duration-300 ${
+                            (subscriptionData?.chatsUsed / subscriptionData?.chatsLimit) >= 0.9
+                              ? 'bg-red-500'
+                              : (subscriptionData?.chatsUsed / subscriptionData?.chatsLimit) >= 0.7
+                                ? 'bg-yellow-500'
+                                : 'bg-gray-900'
+                          }`}
+                          style={{
+                            width: `${Math.min(100, ((subscriptionData?.chatsUsed || 0) / (subscriptionData?.chatsLimit || 2)) * 100)}%`
+                          }}
+                        ></div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Quick Stats */}
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="bg-gray-50/50 rounded-lg p-3 border border-gray-200/50">
+                      <p className="text-xs text-gray-500 mb-1">Remaining</p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {subscriptionData?.unlimited ? '∞' : (subscriptionData?.chatsRemaining || 0)}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50/50 rounded-lg p-3 border border-gray-200/50">
+                      <p className="text-xs text-gray-500 mb-1">Resets</p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {subscriptionData?.resetDate
+                          ? format(new Date(subscriptionData.resetDate), 'MMM d')
+                          : subscriptionData?.tier === 'explorer' ? 'Never' : '-'
+                        }
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Upgrade CTA for free users */}
+                  {subscriptionData?.tier === 'explorer' && (
+                    <button
+                      onClick={() => navigate('/dashboard/subscriptions')}
+                      className="w-full px-4 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                    >
+                      <Crown size={16} />
+                      Upgrade Plan
+                    </button>
+                  )}
+
+                  {/* Plan Features for paid users */}
+                  {subscriptionData?.tier !== 'explorer' && (
+                    <div>
+                      <div className="bg-gray-50/50 rounded-lg p-3 border border-gray-200/50 mb-3">
+                        <p className="text-xs text-gray-500 mb-2">Your Plan Includes:</p>
+                        <ul className="space-y-1.5 text-xs text-gray-700">
+                          {subscriptionData?.tier === 'starter' && (
+                            <>
+                              <li className="flex items-center gap-1.5"><CheckCircle size={12} className="text-green-500" /> 5 AI chats/month</li>
+                              <li className="flex items-center gap-1.5"><CheckCircle size={12} className="text-green-500" /> 50 messages per chat</li>
+                              <li className="flex items-center gap-1.5"><CheckCircle size={12} className="text-green-500" /> Email support</li>
+                            </>
+                          )}
+                          {subscriptionData?.tier === 'pro' && (
+                            <>
+                              <li className="flex items-center gap-1.5"><CheckCircle size={12} className="text-green-500" /> 25 AI chats/month</li>
+                              <li className="flex items-center gap-1.5"><CheckCircle size={12} className="text-green-500" /> 100 messages per chat</li>
+                              <li className="flex items-center gap-1.5"><CheckCircle size={12} className="text-green-500" /> Priority support</li>
+                              <li className="flex items-center gap-1.5"><CheckCircle size={12} className="text-green-500" /> Quote comparison</li>
+                            </>
+                          )}
+                          {subscriptionData?.tier === 'elite' && (
+                            <>
+                              <li className="flex items-center gap-1.5"><CheckCircle size={12} className="text-green-500" /> Unlimited AI chats</li>
+                              <li className="flex items-center gap-1.5"><CheckCircle size={12} className="text-green-500" /> Unlimited messages</li>
+                              <li className="flex items-center gap-1.5"><CheckCircle size={12} className="text-green-500" /> 24/7 VIP support</li>
+                              <li className="flex items-center gap-1.5"><CheckCircle size={12} className="text-green-500" /> Personal concierge</li>
+                            </>
+                          )}
+                        </ul>
+                      </div>
+                      {subscriptionData?.currentPeriodEnd && (
+                        <p className="text-xs text-gray-500 text-center mb-3">
+                          Renews: {format(new Date(subscriptionData.currentPeriodEnd), 'MMM d, yyyy')}
+                        </p>
+                      )}
+                      <button
+                        onClick={() => navigate('/dashboard/subscriptions')}
+                        className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium border border-gray-300"
+                      >
+                        Manage Subscription
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
