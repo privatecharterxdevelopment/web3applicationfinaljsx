@@ -283,6 +283,16 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
   // Cart visibility
   const [showCartWidget, setShowCartWidget] = useState(false);
 
+  // Add Extras Modal
+  const [showExtrasModal, setShowExtrasModal] = useState(false);
+  const [selectedExtraCategory, setSelectedExtraCategory] = useState(null);
+  const [customExtraForm, setCustomExtraForm] = useState({
+    name: '',
+    category: '',
+    quantity: 1,
+    notes: ''
+  });
+
   // Web3 Wallet
   const { address: walletAddress, isConnected: isWalletConnected } = useAccount();
   const { disconnect: disconnectWallet } = useDisconnect();
@@ -3703,13 +3713,21 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         <>
           <div className="fixed inset-0 bg-black/50 z-40 animate-fade-in" onClick={() => setShowCartSidebar(false)} />
           <div className="fixed right-0 top-0 h-full w-80 bg-white border-l border-gray-200 shadow-xl z-50 animate-fade-in-right">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex justify-between items-center mb-4">
+            <div className="p-4 border-b border-gray-200">
+              <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-900">Cart ({cartItems.length})</h3>
                 <button onClick={() => setShowCartSidebar(false)} className="p-2 hover:bg-gray-100 rounded-lg">
                   <X size={18} />
                 </button>
               </div>
+              {/* Add Extra Button */}
+              <button
+                onClick={() => setShowExtrasModal(true)}
+                className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+              >
+                <Plus size={16} />
+                Add Extra Service
+              </button>
             </div>
 
             {cartItems.length === 0 ? (
@@ -4680,8 +4698,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           isCustomRequest: item.isCustomRequest,
                           requiresConfirmation: item.requiresConfirmation,
                           // Pricing
-                          cateringOption: item.cateringOption,
-                          cateringPrice: item.cateringPrice,
+                          cateringOption: item.catering || 'standard',
+                          cateringPrice: item.cateringPrice || 0,
                           airportPickupFee: item.airportPickupFee,
                           vat: item.vat,
                           isEstimate: item.isEstimate
@@ -5291,6 +5309,380 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             </button>
           </div>
         </div>
+      )}
+
+      {/* Add Extras Modal */}
+      {showExtrasModal && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/60 z-[60] animate-fade-in"
+            onClick={() => {
+              setShowExtrasModal(false);
+              setSelectedExtraCategory(null);
+              setCustomExtraForm({ name: '', category: '', quantity: 1, notes: '' });
+            }}
+          />
+          <div className="fixed inset-0 z-[61] flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden animate-fade-in">
+              {/* Modal Header */}
+              <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {selectedExtraCategory ? `Add ${selectedExtraCategory.charAt(0).toUpperCase() + selectedExtraCategory.slice(1)}` : 'Add Extra Service'}
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowExtrasModal(false);
+                    setSelectedExtraCategory(null);
+                    setCustomExtraForm({ name: '', category: '', quantity: 1, notes: '' });
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Category Selection */}
+              {!selectedExtraCategory ? (
+                <div className="p-4 space-y-2 max-h-[60vh] overflow-y-auto">
+                  <p className="text-sm text-gray-500 mb-3">Select a category to add extras to your booking</p>
+
+                  {/* Category Grid */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: 'wine', icon: '🍷', label: 'Wine & Winery', price: '€150+' },
+                      { id: 'champagne', icon: '🍾', label: 'Champagne', price: '€120+' },
+                      { id: 'cigars', icon: '🚬', label: 'Cigars & Smoking', price: '€500+' },
+                      { id: 'caviar', icon: '🥄', label: 'Caviar', price: '€300+' },
+                      { id: 'flowers', icon: '💐', label: 'Flowers', price: '€150+' },
+                      { id: 'cake', icon: '🎂', label: 'Cakes & Desserts', price: '€200+' },
+                      { id: 'decorations', icon: '🎈', label: 'Decorations', price: '€300+' },
+                      { id: 'music', icon: '🎵', label: 'Live Music/DJ', price: '€500+' },
+                      { id: 'photography', icon: '📸', label: 'Photography', price: '€800+' },
+                      { id: 'catering', icon: '🍽️', label: 'Special Catering', price: '€100+' },
+                      { id: 'spirits', icon: '🥃', label: 'Spirits & Whisky', price: '€200+' },
+                      { id: 'other', icon: '✨', label: 'Other Request', price: 'TBC' }
+                    ].map(cat => (
+                      <button
+                        key={cat.id}
+                        onClick={() => {
+                          setSelectedExtraCategory(cat.id);
+                          setCustomExtraForm(prev => ({ ...prev, category: cat.id }));
+                        }}
+                        className="flex flex-col items-center gap-1 p-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors text-center border border-gray-200 hover:border-gray-300"
+                      >
+                        <span className="text-2xl">{cat.icon}</span>
+                        <span className="text-xs font-medium text-gray-900">{cat.label}</span>
+                        <span className="text-[10px] text-gray-500">{cat.price}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                /* Extra Details Form */
+                <div className="p-4 space-y-4">
+                  <button
+                    onClick={() => setSelectedExtraCategory(null)}
+                    className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+                  >
+                    <ChevronLeft size={16} />
+                    Back to categories
+                  </button>
+
+                  {/* Quick Suggestions based on category */}
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-2">Popular choices</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedExtraCategory === 'wine' && ['Dom Pérignon', 'Château Margaux', 'Opus One', 'Sassicaia', 'Winery Visit'].map(item => (
+                        <button
+                          key={item}
+                          onClick={() => setCustomExtraForm(prev => ({ ...prev, name: item }))}
+                          className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+                            customExtraForm.name === item
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                      {selectedExtraCategory === 'champagne' && ['Moët & Chandon', 'Veuve Clicquot', 'Krug', 'Louis Roederer Cristal', 'Dom Pérignon Rosé'].map(item => (
+                        <button
+                          key={item}
+                          onClick={() => setCustomExtraForm(prev => ({ ...prev, name: item }))}
+                          className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+                            customExtraForm.name === item
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                      {selectedExtraCategory === 'cigars' && ['Cohiba Behike', 'Montecristo No. 2', 'Davidoff', 'Romeo y Julieta', 'Smoking Lounge Access'].map(item => (
+                        <button
+                          key={item}
+                          onClick={() => setCustomExtraForm(prev => ({ ...prev, name: item }))}
+                          className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+                            customExtraForm.name === item
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                      {selectedExtraCategory === 'caviar' && ['Beluga', 'Oscietra', 'Sevruga', 'Kaluga Queen', 'Caviar Tasting Set'].map(item => (
+                        <button
+                          key={item}
+                          onClick={() => setCustomExtraForm(prev => ({ ...prev, name: item }))}
+                          className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+                            customExtraForm.name === item
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                      {selectedExtraCategory === 'flowers' && ['Red Roses Bouquet', 'White Orchids', 'Mixed Seasonal', 'Luxury Arrangement', 'Cabin Decoration'].map(item => (
+                        <button
+                          key={item}
+                          onClick={() => setCustomExtraForm(prev => ({ ...prev, name: item }))}
+                          className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+                            customExtraForm.name === item
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                      {selectedExtraCategory === 'cake' && ['Birthday Cake', 'Wedding Cake', 'Chocolate Cake', 'Custom Design', 'Macaron Tower'].map(item => (
+                        <button
+                          key={item}
+                          onClick={() => setCustomExtraForm(prev => ({ ...prev, name: item }))}
+                          className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+                            customExtraForm.name === item
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                      {selectedExtraCategory === 'decorations' && ['Birthday Setup', 'Anniversary', 'Proposal Setup', 'Corporate Branding', 'Custom Theme'].map(item => (
+                        <button
+                          key={item}
+                          onClick={() => setCustomExtraForm(prev => ({ ...prev, name: item }))}
+                          className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+                            customExtraForm.name === item
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                      {selectedExtraCategory === 'music' && ['Jazz Musician', 'String Quartet', 'DJ Service', 'Pianist', 'Live Band'].map(item => (
+                        <button
+                          key={item}
+                          onClick={() => setCustomExtraForm(prev => ({ ...prev, name: item }))}
+                          className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+                            customExtraForm.name === item
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                      {selectedExtraCategory === 'photography' && ['Event Photographer', 'Videographer', 'Drone Coverage', 'Photo+Video Package', 'Portrait Session'].map(item => (
+                        <button
+                          key={item}
+                          onClick={() => setCustomExtraForm(prev => ({ ...prev, name: item }))}
+                          className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+                            customExtraForm.name === item
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                      {selectedExtraCategory === 'catering' && ['Vegan Menu', 'Halal Menu', 'Kosher Menu', 'Michelin Chef', 'Tasting Menu'].map(item => (
+                        <button
+                          key={item}
+                          onClick={() => setCustomExtraForm(prev => ({ ...prev, name: item }))}
+                          className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+                            customExtraForm.name === item
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                      {selectedExtraCategory === 'spirits' && ['Macallan 25', 'Hennessy XO', 'Rémy Martin Louis XIII', 'Yamazaki 18', 'Custom Selection'].map(item => (
+                        <button
+                          key={item}
+                          onClick={() => setCustomExtraForm(prev => ({ ...prev, name: item }))}
+                          className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+                            customExtraForm.name === item
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                      {selectedExtraCategory === 'other' && ['Pet Transport', 'Security Escort', 'Interpreter', 'Butler Service', 'Custom Request'].map(item => (
+                        <button
+                          key={item}
+                          onClick={() => setCustomExtraForm(prev => ({ ...prev, name: item }))}
+                          className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+                            customExtraForm.name === item
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Custom Name Input */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                      Item Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={customExtraForm.name}
+                      onChange={(e) => setCustomExtraForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder={`Enter ${selectedExtraCategory} name or details...`}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Quantity */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1.5">Quantity</label>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setCustomExtraForm(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
+                        className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-lg"
+                      >
+                        <Minus size={14} />
+                      </button>
+                      <span className="text-lg font-semibold w-8 text-center">{customExtraForm.quantity}</span>
+                      <button
+                        onClick={() => setCustomExtraForm(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
+                        className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-lg"
+                      >
+                        <Plus size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Notes */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1.5">Special Notes (optional)</label>
+                    <textarea
+                      value={customExtraForm.notes}
+                      onChange={(e) => setCustomExtraForm(prev => ({ ...prev, notes: e.target.value }))}
+                      placeholder="Any special requests, dietary restrictions, timing preferences..."
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none"
+                    />
+                  </div>
+
+                  {/* Price Estimate */}
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Estimated Price</span>
+                      <span className="text-sm font-semibold text-gray-900">
+                        ~€{(({
+                          wine: 150,
+                          champagne: 120,
+                          spirits: 200,
+                          caviar: 300,
+                          cigars: 500,
+                          flowers: 150,
+                          cake: 200,
+                          decorations: 300,
+                          music: 500,
+                          photography: 800,
+                          catering: 100,
+                          other: 100
+                        }[selectedExtraCategory] || 100) * customExtraForm.quantity).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-1">Final price confirmed by our team</p>
+                  </div>
+
+                  {/* Add to Cart Button */}
+                  <button
+                    onClick={() => {
+                      if (!customExtraForm.name.trim()) {
+                        setToast({ message: 'Please enter item name', type: 'error' });
+                        return;
+                      }
+
+                      const defaultPrices = {
+                        wine: 150,
+                        champagne: 120,
+                        spirits: 200,
+                        caviar: 300,
+                        cigars: 500,
+                        flowers: 150,
+                        cake: 200,
+                        decorations: 300,
+                        music: 500,
+                        photography: 800,
+                        catering: 100,
+                        other: 100
+                      };
+
+                      const unitPrice = defaultPrices[selectedExtraCategory] || 100;
+                      const totalPrice = unitPrice * customExtraForm.quantity;
+
+                      const newExtra = {
+                        id: `extra-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        cartId: `extra-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        type: 'custom_extra',
+                        name: customExtraForm.name,
+                        title: customExtraForm.name,
+                        category: selectedExtraCategory,
+                        quantity: customExtraForm.quantity,
+                        unitPrice,
+                        price: totalPrice,
+                        basePrice: totalPrice,
+                        totalWithFee: totalPrice,
+                        isEstimate: true,
+                        isCustomRequest: true,
+                        requiresConfirmation: true,
+                        notes: customExtraForm.notes || `${selectedExtraCategory} item - requires confirmation`,
+                        addedAt: new Date().toISOString()
+                      };
+
+                      setCartItems(prev => [...prev, newExtra]);
+                      setShowExtrasModal(false);
+                      setSelectedExtraCategory(null);
+                      setCustomExtraForm({ name: '', category: '', quantity: 1, notes: '' });
+                      setToast({ message: `Added ${customExtraForm.name} to cart`, type: 'cart' });
+                    }}
+                    disabled={!customExtraForm.name.trim()}
+                    className="w-full py-3 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+                  >
+                    <ShoppingCart size={16} />
+                    Add to Cart
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

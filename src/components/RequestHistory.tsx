@@ -782,23 +782,113 @@ export default function RequestHistory({ onBack, onOpenChat }: RequestHistoryPro
                                   {parseRoute(route)}
                                 </div>
                               )}
-                              {(request.data?.passengers || request.data?.Passengers) && (
+                              {(request.data?.passengers || request.data?.Passengers || request.data?.pax) && (
                                 <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
                                   <Users size={12} className="text-gray-400" />
-                                  {request.data?.passengers || request.data?.Passengers} pax
+                                  {request.data?.passengers || request.data?.Passengers || request.data?.pax} pax
                                 </div>
                               )}
-                              {(request.data?.SelectedAircraft || request.data?.selectedAircraft) && (
+                              {(request.data?.SelectedAircraft || request.data?.selectedAircraft || request.data?.aircraft || request.data?.aircraft_type) && (
                                 <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
                                   <Plane size={12} className="text-gray-400" />
-                                  {request.data?.SelectedAircraft || request.data?.selectedAircraft}
+                                  {request.data?.SelectedAircraft || request.data?.selectedAircraft || request.data?.aircraft || request.data?.aircraft_type}
                                 </div>
                               )}
-                              <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
-                                <Calendar size={12} className="text-gray-400" />
-                                {formatDate(request.created_at)}
+                              {/* Travel Date (not created_at) */}
+                              {(request.data?.date || request.data?.Date || request.data?.departure_date || request.data?.travel_date) && (
+                                <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
+                                  <Calendar size={12} className="text-gray-400" />
+                                  {request.data?.date || request.data?.Date || request.data?.departure_date || request.data?.travel_date}
+                                </div>
+                              )}
+                              {/* Time */}
+                              {(request.data?.time || request.data?.Time || request.data?.departure_time) && (
+                                <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
+                                  <Clock size={12} className="text-gray-400" />
+                                  {request.data?.time || request.data?.Time || request.data?.departure_time}
+                                </div>
+                              )}
+                              {/* Price/Total */}
+                              {(request.data?.price || request.data?.Price || request.data?.total || request.data?.Total || request.data?.estimated_price || request.data?.grand_total) && (
+                                <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-900 text-white px-2 py-1 rounded">
+                                  <DollarSign size={12} />
+                                  €{(request.data?.price || request.data?.Price || request.data?.total || request.data?.Total || request.data?.estimated_price || request.data?.grand_total || 0).toLocaleString()}
+                                </div>
+                              )}
+                              {/* Request submitted date */}
+                              <div className="flex items-center gap-1.5 text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded">
+                                Submitted: {formatDate(request.created_at)}
                               </div>
                             </div>
+
+                            {/* Items Details */}
+                            {request.data?.items && Array.isArray(request.data.items) && request.data.items.length > 0 && (
+                              <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                                <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-2">
+                                  Requested Items ({request.data.items.length})
+                                </div>
+                                <div className="space-y-2 max-h-48 overflow-y-auto">
+                                  {request.data.items.map((item: any, idx: number) => (
+                                    <div key={idx} className="bg-white p-2 rounded border border-gray-200">
+                                      <div className="flex justify-between items-start">
+                                        <div className="flex-1">
+                                          <div className="text-xs font-medium text-gray-900">
+                                            {item.name || item.aircraft_model || item.title ||
+                                             (item.brand && item.model ? `${item.brand} ${item.model}` : 'Item')}
+                                          </div>
+                                          <div className="flex flex-wrap gap-1 mt-1">
+                                            {item.type && (
+                                              <span className={`text-[10px] px-1.5 py-0.5 rounded capitalize ${
+                                                item.type === 'jets' ? 'bg-blue-100 text-blue-700' :
+                                                item.type === 'helicopters' ? 'bg-green-100 text-green-700' :
+                                                item.type === 'yachts' ? 'bg-cyan-100 text-cyan-700' :
+                                                item.type === 'luxury_cars' ? 'bg-gray-200 text-gray-700' :
+                                                item.type === 'ground_transport' ? 'bg-teal-100 text-teal-700' :
+                                                'bg-gray-100 text-gray-600'
+                                              }`}>
+                                                {item.type === 'luxury_cars' ? 'Car' :
+                                                 item.type === 'ground_transport' ? 'Transfer' :
+                                                 item.type.replace('_', ' ')}
+                                              </span>
+                                            )}
+                                            {(item.from || item.origin) && (item.to || item.destination) && (
+                                              <span className="text-[10px] text-gray-500">
+                                                {item.from || item.origin} → {item.to || item.destination}
+                                              </span>
+                                            )}
+                                            {item.date && (
+                                              <span className="text-[10px] text-gray-500">{item.date}</span>
+                                            )}
+                                            {item.time && (
+                                              <span className="text-[10px] text-gray-500">{item.time}</span>
+                                            )}
+                                            {item.passengers && (
+                                              <span className="text-[10px] text-gray-500">{item.passengers} pax</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                        {(item.price || item.estimated_price || item.price_per_day) && (
+                                          <div className="text-xs font-semibold text-gray-900 ml-2">
+                                            €{(item.price || item.estimated_price || item.price_per_day || 0).toLocaleString()}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                                {/* Summary */}
+                                {request.data?.summary && (
+                                  <div className="mt-2 pt-2 border-t border-gray-200 flex justify-between items-center">
+                                    <span className="text-[10px] text-gray-500">
+                                      {request.data.summary.services_count || request.data.items.length} service(s)
+                                    </span>
+                                    <span className="text-xs font-bold text-gray-900">
+                                      Total: €{(request.data.summary.grand_total || request.data.total || 0).toLocaleString()}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
 
                             {/* Conversation Preview */}
                             {hasConversation && (
