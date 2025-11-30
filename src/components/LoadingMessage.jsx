@@ -27,12 +27,6 @@ const LoadingMessage = ({ stage = 'searching' }) => {
       'Checking availability',
       'Calculating pricing',
       'Creating reservation'
-    ],
-    events: [
-      'Searching events',
-      'Checking Ticketmaster',
-      'Checking Eventbrite',
-      'Compiling results'
     ]
   };
 

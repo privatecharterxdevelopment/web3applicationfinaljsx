@@ -10,7 +10,6 @@ import {
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import IntelligentSearch from '../IntelligentSearch';
-import { eventsService } from '../../services/eventsService';
 import { useAccount } from 'wagmi';
 import { useAppKit } from '@reown/appkit/react';
 import { web3Service } from '../../lib/web3';
@@ -63,8 +62,6 @@ import NFTMarketplace from './NFTMarketplace';
 import NotificationBell, { useNotificationCount } from '../NotificationBell';
 import NotificationCenter from '../NotificationCenter';
 
-import EventsSportsView from '../EventsSports/EventsSportsView_NEW';
-import EventCart from '../EventsSports/EventCart';
 import SearchIndexPage from '../SearchIndexPage';
 import FavouriteButton from '../Favourites/FavouriteButton';
 import ReferralPage from './ReferralPage';
@@ -1147,9 +1144,6 @@ const TokenizedAssetsGlassmorphic = () => {
   const [favorites, setFavorites] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
 
-  // Event Cart state
-  const [eventCart, setEventCart] = useState([]);
-
   // Web Mode state
   const [webMode, setWebMode] = useState('rws'); // 'rws' or 'web3'
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -1196,11 +1190,6 @@ const TokenizedAssetsGlassmorphic = () => {
   const [emptyLegs, setEmptyLegs] = useState([]);
   const [currentEmptyLegIndex, setCurrentEmptyLegIndex] = useState(0);
   const [loadingEmptyLegs, setLoadingEmptyLegs] = useState(false);
-
-  // Events state
-  const [events, setEvents] = useState([]);
-  const [currentEventIndex, setCurrentEventIndex] = useState(0);
-  const [loadingEvents, setLoadingEvents] = useState(false);
 
   // Aviation card animation state (helicopter/jet switching)
   const [currentAviationType, setCurrentAviationType] = useState(0); // 0 = helicopter, 1 = jet
@@ -2571,102 +2560,6 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   };
 
-  // Fetch events for rotating display from Events API (Ticketmaster & Eventbrite)
-  const fetchEvents = async () => {
-    setLoadingEvents(true);
-    try {
-      // Use user's city from profile, fallback to Miami, then New York
-      const userCity = profileData?.city || 'Miami';
-      console.log('🎫 Fetching events from Ticketmaster and Eventbrite for:', userCity);
-
-      // Fetch upcoming events from Ticketmaster and Eventbrite via eventsService
-      const now = new Date();
-      const events = await eventsService.searchEvents({
-        startDate: now.toISOString(),
-        city: userCity,
-        size: 10
-      });
-
-      console.log(`✅ Events fetched from Events API (${userCity}):`, events?.length || 0);
-      if (events && events.length > 0) {
-        console.log('📍 First event:', events[0]);
-      } else {
-        console.warn(`⚠️ No events returned from API for ${userCity}`);
-
-        // If no events found for user's city, try New York as fallback
-        if (userCity !== 'New York' && userCity !== 'Miami') {
-          console.log('🔄 Trying New York as fallback...');
-          const fallbackEvents = await eventsService.searchEvents({
-            startDate: now.toISOString(),
-            city: 'New York',
-            size: 10
-          });
-
-          if (fallbackEvents && fallbackEvents.length > 0) {
-            console.log('✅ Found events in New York:', fallbackEvents.length);
-            const transformedFallback = (fallbackEvents || []).map(event => ({
-              id: event.id,
-              name: event.name,
-              event_name: event.name,
-              description: event.description,
-              date: event.date,
-              event_date: event.date,
-              location: event.venue?.city || event.venue?.name || 'TBA',
-              venue: event.venue,
-              category: event.category,
-              subcategory: event.subcategory,
-              price_min: event.price?.min,
-              price_max: event.price?.max,
-              currency: event.price?.currency,
-              is_free: event.price?.min === 0 && event.price?.max === 0,
-              status: event.status,
-              url: event.url,
-              image: event.image,
-              platform: event.platform,
-              source: event.platform
-            }));
-            setEvents(transformedFallback);
-            setLoadingEvents(false);
-            return;
-          }
-        }
-      }
-
-      // The eventsService already returns normalized events with the correct format
-      // Just need to ensure compatibility with our display format
-      const transformedEvents = (events || []).map(event => ({
-        id: event.id,
-        name: event.name,
-        event_name: event.name,
-        description: event.description,
-        date: event.date,
-        event_date: event.date,
-        location: event.venue?.city || event.venue?.name || 'TBA',
-        venue: event.venue,
-        category: event.category,
-        subcategory: event.subcategory,
-        price_min: event.price?.min,
-        price_max: event.price?.max,
-        currency: event.price?.currency,
-        is_free: event.price?.min === 0 && event.price?.max === 0,
-        status: event.status,
-        url: event.url,
-        image: event.image,
-        platform: event.platform,
-        source: event.platform // 'ticketmaster' or 'eventbrite'
-      }));
-
-      console.log('🔄 Transformed events:', transformedEvents.length);
-      setEvents(transformedEvents);
-    } catch (error) {
-      console.error('❌ Error fetching events:', error);
-      console.error('Error details:', error.message, error.stack);
-      setEvents([]);
-    } finally {
-      setLoadingEvents(false);
-    }
-  };
-
   // Fetch ongoing booking (Taxi/Concierge or Empty Leg)
   const fetchOngoingBooking = async () => {
     setLoadingBooking(true);
@@ -2967,21 +2860,6 @@ const TokenizedAssetsGlassmorphic = () => {
 
     return () => clearInterval(rotationInterval);
   }, [emptyLegs.length]);
-
-  // Fetch events on mount and set up rotation
-  useEffect(() => {
-    fetchEvents();
-
-    // Rotate events every 5 minutes (300000ms)
-    const rotationInterval = setInterval(() => {
-      setCurrentEventIndex((prevIndex) => {
-        if (events.length === 0) return 0;
-        return (prevIndex + 1) % events.length;
-      });
-    }, 300000); // 5 minutes
-
-    return () => clearInterval(rotationInterval);
-  }, [events.length]);
 
   // Fetch jets from Supabase
   useEffect(() => {
@@ -4959,15 +4837,6 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
-          {/* Event Cart View - HIDDEN */}
-          {/* {!isTransitioning && activeCategory === 'cart' && (
-            <div className="w-full h-full overflow-y-auto">
-              <EventCart cart={eventCart} setCart={setEventCart} />
-            </div>
-          )} */}
-
-          {/* Tokenized Assets View - User's Portfolio (Removed old Dashboard, now handled by 'assets' category) */}
-
           {/* CO2 Certificates View */}
           {!isTransitioning && activeCategory === 'co2-certificates' && (
             <div className="w-full h-full overflow-y-auto">
@@ -6213,19 +6082,10 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
-          {/* Assets View - Events & Sports (RWS) or Tokenized Assets (Web3) */}
+          {/* Tokenized Assets View */}
           {!isTransitioning && activeCategory === 'assets' && (
             <div className="w-full flex-1 flex flex-col">
-              {/* Show EventsSportsView for RWS mode */}
-              {webMode === 'rws' ? (
-                <EventsSportsView
-                  cart={eventCart}
-                  setCart={setEventCart}
-                  user={user}
-                />
-              ) : (
-                <TokenizedAssetsShowcase />
-              )}
+              <TokenizedAssetsShowcase />
             </div>
           )}
 

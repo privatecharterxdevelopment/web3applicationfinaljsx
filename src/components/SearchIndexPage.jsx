@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Calendar, MapPin, Plane, Mountain, Car, Zap, Leaf, Trophy, Music, Theater, ArrowRight, Mail } from 'lucide-react';
+import { Search, MapPin, Plane, Mountain, Car, Zap, Leaf, ArrowRight, Mail } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { ticketmasterService } from '../services/ticketmasterService';
-import { eventbriteService } from '../services/eventbriteService';
 
 const SearchIndexPage = ({ query, onNavigate, onSelectItem }) => {
   const [results, setResults] = useState({
@@ -11,7 +9,6 @@ const SearchIndexPage = ({ query, onNavigate, onSelectItem }) => {
     helicopters: [],
     luxuryCars: [],
     adventures: [],
-    events: [],
     co2Certificates: []
   });
   const [loading, setLoading] = useState(true);
@@ -41,7 +38,6 @@ const SearchIndexPage = ({ query, onNavigate, onSelectItem }) => {
         helicopters: [],
         luxuryCars: [],
         adventures: [],
-        events: [],
         co2Certificates: []
       };
 
@@ -125,21 +121,6 @@ const SearchIndexPage = ({ query, onNavigate, onSelectItem }) => {
         console.error('Error searching fixed offers:', error);
       }
 
-      // Search Events from Ticketmaster and Eventbrite
-      try {
-        const [tmData, ebData] = await Promise.allSettled([
-          ticketmasterService.searchEvents({ keyword: searchTerm, size: 5 }),
-          eventbriteService.searchEvents({ q: searchTerm })
-        ]);
-
-        const tmEvents = tmData.status === 'fulfilled' ? (tmData.value?.events || []).map(e => ({ ...e, source: 'ticketmaster' })) : [];
-        const ebEvents = ebData.status === 'fulfilled' ? (ebData.value?.events || []).slice(0, 5).map(e => ({ ...e, source: 'eventbrite' })) : [];
-
-        allResults.events = [...tmEvents, ...ebEvents];
-      } catch (error) {
-        console.error('Error searching events:', error);
-      }
-
       // Search CO2/SAF Certificates
       try {
         const { data: co2Data } = await supabase
@@ -175,7 +156,6 @@ const SearchIndexPage = ({ query, onNavigate, onSelectItem }) => {
       helicopters: Zap,
       luxuryCars: Car,
       adventures: Mountain,
-      events: Calendar,
       co2Certificates: Leaf
     };
     return icons[category] || Search;
@@ -278,7 +258,6 @@ const SearchIndexPage = ({ query, onNavigate, onSelectItem }) => {
           {renderResultSection('helicopters', results.helicopters, 'Helicopters')}
           {renderResultSection('luxuryCars', results.luxuryCars, 'Luxury Cars')}
           {renderResultSection('adventures', results.adventures, 'Adventures')}
-          {renderResultSection('events', results.events, 'Events & Sports')}
           {renderResultSection('co2Certificates', results.co2Certificates, 'CO2 / SAF Certificates')}
         </>
       )}

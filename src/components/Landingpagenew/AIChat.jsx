@@ -40,7 +40,7 @@ import WalletConnect from '../WalletConnect';
 import LoadingMessage from '../LoadingMessage';
 import BulkOrderInterface from '../BulkOrderInterface';
 import SubscriptionModal from '../SubscriptionModal';
-import CryptoPaymentModal from '../CryptoPaymentModal';
+import CryptoPaymentModal from '../Payment/CryptoPaymentModal';
 
 // Web3
 import { useAccount, useDisconnect, useSignMessage } from 'wagmi';
@@ -243,6 +243,7 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
   const [showCartSidebar, setShowCartSidebar] = useState(false);
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [showCryptoPayment, setShowCryptoPayment] = useState(false);
+  const [selectedPaymentItem, setSelectedPaymentItem] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Break the Price feature
@@ -4173,11 +4174,13 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     const payableTotal = payableItems.reduce((sum, item) => sum + (item.totalWithFee || item.price_usd || item.price || 0), 0);
 
                     if (allPayable) {
-                      // All items can be paid directly
+                      // All items can be paid directly - process first item
+                      const firstPayableItem = payableItems[0];
                       return (
                         <button
                           onClick={() => {
                             setShowCartSidebar(false);
+                            setSelectedPaymentItem(firstPayableItem);
                             setShowCryptoPayment(true);
                           }}
                           className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all duration-300 flex items-center justify-center gap-2 font-medium"
@@ -4261,8 +4264,9 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                 console.error('Error creating request for mixed cart:', err);
                               }
 
-                              // Then open payment for payable items
+                              // Then open payment for first payable item
                               setShowCartSidebar(false);
+                              setSelectedPaymentItem(payableItems[0]);
                               setShowCryptoPayment(true);
                             }}
                             className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all duration-300 flex items-center justify-center gap-2 font-medium"
@@ -4825,50 +4829,50 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       )}
 
       {/* Crypto Payment Modal - for Empty Legs and Adventures */}
-      {showCryptoPayment && (() => {
-        const payableTypes = ['empty_legs', 'emptyleg', 'adventure', 'fixed_offer'];
-        const payableItems = cartItems.filter(item => payableTypes.includes(item.type));
-        const requestOnlyItems = cartItems.filter(item => !payableTypes.includes(item.type));
-        const itemsToProcess = payableItems.length > 0 ? payableItems : cartItems;
-        const payableTotal = itemsToProcess.reduce((sum, item) => sum + (item.price_usd || item.price || 0), 0);
+      {showCryptoPayment && selectedPaymentItem && (
+        <CryptoPaymentModal
+          isOpen={showCryptoPayment}
+          onClose={() => {
+            setShowCryptoPayment(false);
+            setSelectedPaymentItem(null);
+          }}
+          service={{
+            ...selectedPaymentItem,
+            // Ensure price field is set correctly
+            price: selectedPaymentItem.price_usd || selectedPaymentItem.price || selectedPaymentItem.discounted_price || 0,
+            // Use original EmptyLegs_ id if available
+            id: selectedPaymentItem.original_id || selectedPaymentItem.id
+          }}
+          serviceType={
+            selectedPaymentItem.type === 'empty_legs' || selectedPaymentItem.type === 'emptyleg'
+              ? 'empty_leg'
+              : selectedPaymentItem.type === 'adventure'
+                ? 'adventure'
+                : 'charter'
+          }
+          onSuccess={(paymentData) => {
+            console.log('✅ Crypto payment initiated:', paymentData);
+            setShowCryptoPayment(false);
+            setSelectedPaymentItem(null);
 
-        return (
-          <CryptoPaymentModal
-            isOpen={showCryptoPayment}
-            onClose={() => setShowCryptoPayment(false)}
-            amount={payableTotal}
-            currency="USD"
-            items={itemsToProcess}
-            onSuccess={(paymentId) => {
-              console.log('✅ Crypto payment successful:', paymentId);
-              setShowCryptoPayment(false);
-              setCartItems([]);
+            // Remove the paid item from cart
+            setCartItems(prev => prev.filter(item => item.cartId !== selectedPaymentItem.cartId));
 
-              const hasMixedCart = requestOnlyItems.length > 0;
-              const successMessage = hasMixedCart
-                ? `✅ Payment confirmed for ${payableItems.length} item(s)!\n\nPayment ID: ${paymentId}\n\nAdditionally, we've sent a booking request for: ${requestOnlyItems.map(i => i.name || i.title || i.aircraft_type).join(', ')}. Our team will contact you within 2-4 hours.\n\nYou will receive confirmation emails shortly.`
-                : `✅ Payment confirmed! Your booking for ${itemsToProcess.length} item(s) has been processed successfully.\n\nPayment ID: ${paymentId}\n\nYou will receive a confirmation email shortly with all the details.`;
+            setToast({ message: 'Payment initiated! Complete the payment on CoinGate.', type: 'success' });
 
-              setToast({ message: 'Payment successful! Your booking is confirmed.', type: 'success' });
-
-              // Add confirmation message to chat
-              const confirmMsg = {
-                role: 'assistant',
-                content: successMessage
-              };
-              setChatHistory(prev => prev.map(c =>
-                c.id === activeChat
-                  ? { ...c, messages: [...c.messages, confirmMsg] }
-                  : c
-              ));
-            }}
-            onError={(error) => {
-              console.error('❌ Crypto payment error:', error);
-              setToast({ message: `Payment failed: ${error}`, type: 'error' });
-            }}
-          />
-        );
-      })()}
+            // Add confirmation message to chat
+            const confirmMsg = {
+              role: 'assistant',
+              content: `🎉 Payment initiated for ${selectedPaymentItem.name || selectedPaymentItem.title || 'your booking'}!\n\nPlease complete the payment on CoinGate. Once confirmed:\n• You'll receive a confirmation email\n• Your booking will appear in "My Bookings"\n• You'll earn 1.5% PVCX rewards\n\nThank you for choosing Sphera World!`
+            };
+            setChatHistory(prev => prev.map(c =>
+              c.id === activeChat
+                ? { ...c, messages: [...c.messages, confirmMsg] }
+                : c
+            ));
+          }}
+        />
+      )}
 
       {/* Toast Notifications */}
       {toast && (
