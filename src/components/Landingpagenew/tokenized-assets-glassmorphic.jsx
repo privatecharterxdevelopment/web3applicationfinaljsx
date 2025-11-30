@@ -3637,7 +3637,13 @@ const TokenizedAssetsGlassmorphic = () => {
           }`} style={webMode === 'web3' ? { backgroundColor: '#efefef' } : { backdropFilter: 'blur(20px) saturate(180%)' }}>
           {/* Logo */}
           <div className={`mb-6 transition-all duration-300 ${isMobileMenuOpen || sidebarExpanded ? 'px-4' : 'px-2'}`}>
-            <div className={`flex items-center justify-center overflow-hidden ${isMobileMenuOpen || sidebarExpanded ? 'w-auto' : 'w-12 h-12'}`}>
+            <div
+              onClick={() => {
+                if (!sidebarExpanded && !isMobileMenuOpen) {
+                  setSidebarExpanded(true);
+                }
+              }}
+              className={`flex items-center justify-center overflow-hidden cursor-pointer ${isMobileMenuOpen || sidebarExpanded ? 'w-auto' : 'w-12 h-12'}`}>
               {webMode === 'web3' ? (
                 <>
                   {/* Animated logo when collapsed - Web3.0 only */}
@@ -3685,6 +3691,11 @@ const TokenizedAssetsGlassmorphic = () => {
             }`}>
               <button
                 onClick={() => {
+                  // If sidebar is collapsed, expand it first
+                  if (!sidebarExpanded && !isMobileMenuOpen) {
+                    setSidebarExpanded(true);
+                    return;
+                  }
                   // Start a new chat - reset conversation and go to chat view
                   setActiveCategory('chat');
                   // Dispatch event to reset the AI chat conversation
@@ -3705,6 +3716,11 @@ const TokenizedAssetsGlassmorphic = () => {
 
               <button
                 onClick={() => {
+                  // If sidebar is collapsed, expand it first
+                  if (!sidebarExpanded && !isMobileMenuOpen) {
+                    setSidebarExpanded(true);
+                    return;
+                  }
                   setActiveCategory('chat-history');
                 }}
                 className={`w-full h-7 flex items-center rounded-md transition-all duration-300 backdrop-blur-xl ${
@@ -3740,6 +3756,12 @@ const TokenizedAssetsGlassmorphic = () => {
                 <div key={item.id}>
                   <button
                     onClick={() => {
+                      // If sidebar is collapsed, expand it first
+                      if (!sidebarExpanded && !isMobileMenuOpen) {
+                        setSidebarExpanded(true);
+                        return;
+                      }
+
                       if (hasSubmenu) {
                         setExpandedMenus(prev => ({
                           ...prev,
