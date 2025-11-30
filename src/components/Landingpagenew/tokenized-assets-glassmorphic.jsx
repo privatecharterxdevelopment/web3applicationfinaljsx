@@ -1109,6 +1109,7 @@ const TokenizedAssetsGlassmorphic = () => {
   const [activeCategory, setActiveCategory] = useState('overview');
   const [dashboardView, setDashboardView] = useState('overview');
   const [expandedMenus, setExpandedMenus] = useState({});
+  const [expandedAIRequestId, setExpandedAIRequestId] = useState(null);
   const [showMobileCategoryMenu, setShowMobileCategoryMenu] = useState(false);
   const [bookingStep, setBookingStep] = useState(0);
   const [bookingVehicleType, setBookingVehicleType] = useState('private-jet');
@@ -4388,242 +4389,282 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
-          {/* AI Requests View - Shows AI-generated requests with full details */}
+          {/* AI Requests View - Clean Expandable List Design */}
           {!isTransitioning && activeCategory === 'ai-requests' && (
-            <div className="p-6 md:p-8">
+            <div className="h-full overflow-y-auto" style={{ fontFamily: "'DM Sans', sans-serif" }}>
               {/* Header */}
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-light text-gray-900 tracking-tight mb-1">AI Requests</h1>
-                  <p className="text-sm text-gray-600">Requests generated via AI Concierge (Sphera)</p>
+              <div className="px-6 py-5 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-xl font-light text-gray-900">AI Requests</h1>
+                    <p className="text-xs text-gray-400 mt-0.5">Requests generated via AI Concierge (Sphera)</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setActiveCategory('subscriptions')}
+                      className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-all flex items-center gap-1.5"
+                    >
+                      <Crown size={14} />
+                      Subscriptions
+                    </button>
+                    <button
+                      onClick={() => setActiveCategory('chat-history')}
+                      className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-all flex items-center gap-1.5"
+                    >
+                      <History size={14} />
+                      Chat History
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setActiveCategory('subscriptions')}
-                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border border-gray-200"
-                  >
-                    <Crown size={16} />
-                    Subscriptions
-                  </button>
-                  <button
-                    onClick={() => setActiveCategory('chat-history')}
-                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
-                  >
-                    <History size={16} />
-                    Chat History
-                  </button>
-                </div>
+
+                {/* Stats - Minimal Inline */}
+                {(() => {
+                  const aiRequests = userRequests.filter(r =>
+                    r.type === 'ai_chat_bulk' ||
+                    r.type === 'custom_request' ||
+                    r.data?.source?.toLowerCase?.()?.includes?.('ai') ||
+                    r.data?.source?.toLowerCase?.()?.includes?.('sphera') ||
+                    r.data?.source === 'ai_chat'
+                  );
+                  const pendingCount = aiRequests.filter(r => r.status === 'pending' || !r.status).length;
+                  const completedCount = aiRequests.filter(r => r.status === 'completed').length;
+
+                  return (
+                    <div className="flex items-center gap-6 mt-4 text-sm">
+                      <div>
+                        <span className="text-gray-400">Total</span>
+                        <span className="ml-2 font-medium text-gray-900">{aiRequests.length}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Pending</span>
+                        <span className="ml-2 font-medium text-gray-900">{pendingCount}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Completed</span>
+                        <span className="ml-2 font-medium text-gray-900">{completedCount}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* AI Requests List */}
-              {(() => {
-                const aiRequests = userRequests.filter(r =>
-                  r.type === 'ai_chat_bulk' ||
-                  r.type === 'custom_request' ||
-                  r.data?.source?.toLowerCase?.()?.includes?.('ai') ||
-                  r.data?.source?.toLowerCase?.()?.includes?.('sphera') ||
-                  r.data?.source === 'ai_chat'
-                );
-
-                if (aiRequests.length === 0) {
-                  return (
-                    <div className="text-center py-16">
-                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Sparkles size={32} className="text-gray-400" />
-                      </div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No AI requests yet</h3>
-                      <p className="text-sm text-gray-600 mb-6">Start a conversation with Sphera to create requests</p>
-                      <button
-                        onClick={() => {
-                          setActiveCategory('chat');
-                          window.dispatchEvent(new CustomEvent('ai-chat-new-conversation'));
-                        }}
-                        className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-all inline-flex items-center gap-2"
-                      >
-                        <MessageSquare size={18} />
-                        Start New Chat
-                      </button>
-                    </div>
+              <div className="px-6 py-4">
+                {(() => {
+                  const aiRequests = userRequests.filter(r =>
+                    r.type === 'ai_chat_bulk' ||
+                    r.type === 'custom_request' ||
+                    r.data?.source?.toLowerCase?.()?.includes?.('ai') ||
+                    r.data?.source?.toLowerCase?.()?.includes?.('sphera') ||
+                    r.data?.source === 'ai_chat'
                   );
-                }
 
-                return (
-                  <div className="space-y-4">
-                    {aiRequests.map((request) => (
-                      <div
-                        key={request.id}
-                        className="bg-white/50 backdrop-blur-xl border border-gray-200/60 rounded-2xl p-6 hover:shadow-lg transition-all"
-                      >
-                        {/* Request Header */}
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                              request.type === 'custom_request' ? 'bg-green-100' : 'bg-gray-100'
-                            }`}>
-                              <Sparkles size={20} className={request.type === 'custom_request' ? 'text-green-600' : 'text-gray-600'} />
-                            </div>
-                            <div>
-                              <h3 className="font-medium text-gray-900">
-                                {request.type === 'ai_chat_bulk' ? 'AI Concierge Request' :
-                                 request.type === 'custom_request' ? 'Custom Request' :
-                                 request.type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                              </h3>
-                              <p className="text-xs text-gray-500">
-                                {new Date(request.created_at).toLocaleDateString('en-US', {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </p>
-                            </div>
-                          </div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            request.status === 'completed' ? 'bg-green-100 text-green-700' :
-                            request.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                            request.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {request.status?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Pending'}
-                          </span>
+                  if (aiRequests.length === 0) {
+                    return (
+                      <div className="text-center py-16">
+                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <Sparkles size={20} className="text-gray-400" />
                         </div>
+                        <p className="text-sm text-gray-500 mb-4">No AI requests yet</p>
+                        <button
+                          onClick={() => {
+                            setActiveCategory('chat');
+                            window.dispatchEvent(new CustomEvent('ai-chat-new-conversation'));
+                          }}
+                          className="px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 transition-all inline-flex items-center gap-2"
+                        >
+                          <MessageSquare size={14} />
+                          Start New Chat
+                        </button>
+                      </div>
+                    );
+                  }
 
-                        {/* Request Summary */}
-                        {request.data?.summary && (
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 p-4 bg-gray-50/80 rounded-xl">
-                            <div>
-                              <p className="text-xs text-gray-500 mb-1">Services</p>
-                              <p className="text-lg font-semibold text-gray-900">{request.data.summary.services_count || 0}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-500 mb-1">Custom Extras</p>
-                              <p className="text-lg font-semibold text-gray-900">{request.data.summary.extras_count || 0}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-500 mb-1">Payment</p>
-                              <p className="text-sm font-medium text-gray-900 capitalize">{request.data.payment_method || 'TBD'}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-500 mb-1">Est. Total</p>
-                              <p className="text-lg font-semibold text-gray-900">€{(request.data.summary.grand_total || 0).toLocaleString()}</p>
-                            </div>
-                          </div>
-                        )}
+                  return (
+                    <div className="space-y-2">
+                      {aiRequests.map((request) => {
+                        const isExpanded = expandedAIRequestId === request.id;
+                        const requestTitle = request.type === 'ai_chat_bulk' ? 'AI Concierge Request' :
+                          request.type === 'custom_request' ? 'Custom Request' :
+                          request.type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-                        {/* Custom Request Details (single item) */}
-                        {request.type === 'custom_request' && !request.data?.items && (
-                          <div className="p-4 bg-green-50/50 border border-green-200/50 rounded-xl mb-4">
-                            <div className="grid grid-cols-2 gap-4">
-                              {request.data?.name && (
-                                <div>
-                                  <p className="text-xs text-gray-500 mb-1">Service</p>
-                                  <p className="text-sm font-medium text-gray-900">{request.data.name}</p>
+                        return (
+                          <div
+                            key={request.id}
+                            className="bg-white border border-gray-100 rounded-xl overflow-hidden hover:border-gray-200 transition-all"
+                          >
+                            {/* Main Row */}
+                            <div
+                              className="px-4 py-3 flex items-center gap-4 cursor-pointer"
+                              onClick={() => setExpandedAIRequestId(isExpanded ? null : request.id)}
+                            >
+                              {/* Icon */}
+                              <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 flex-shrink-0">
+                                <Sparkles size={14} />
+                              </div>
+
+                              {/* Title & Info */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-medium text-gray-900 truncate">
+                                    {requestTitle}
+                                  </p>
+                                  <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${
+                                    request.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
+                                    request.status === 'in_progress' ? 'bg-blue-50 text-blue-600' :
+                                    request.status === 'cancelled' ? 'bg-gray-50 text-gray-400' :
+                                    'bg-amber-50 text-amber-600'
+                                  }`}>
+                                    {request.status?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Pending'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
+                                  <span>
+                                    {new Date(request.created_at).toLocaleDateString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </span>
+                                  {request.data?.items && (
+                                    <>
+                                      <span>•</span>
+                                      <span>{request.data.items.length} item{request.data.items.length !== 1 ? 's' : ''}</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Price if available */}
+                              {request.data?.summary?.grand_total && (
+                                <div className="text-right flex-shrink-0">
+                                  <p className="text-sm font-semibold text-gray-900">
+                                    €{request.data.summary.grand_total.toLocaleString()}
+                                  </p>
                                 </div>
                               )}
-                              {request.data?.from && request.data?.to && (
-                                <div>
-                                  <p className="text-xs text-gray-500 mb-1">Route</p>
-                                  <p className="text-sm font-medium text-gray-900">{request.data.from} → {request.data.to}</p>
-                                </div>
-                              )}
-                              {request.data?.date && (
-                                <div>
-                                  <p className="text-xs text-gray-500 mb-1">Date</p>
-                                  <p className="text-sm font-medium text-gray-900">{request.data.date}{request.data?.time ? ` at ${request.data.time}` : ''}</p>
-                                </div>
-                              )}
-                              {request.data?.passengers && (
-                                <div>
-                                  <p className="text-xs text-gray-500 mb-1">Passengers</p>
-                                  <p className="text-sm font-medium text-gray-900">{request.data.passengers}</p>
-                                </div>
-                              )}
-                              {request.data?.catering && (
-                                <div>
-                                  <p className="text-xs text-gray-500 mb-1">Catering</p>
-                                  <p className="text-sm font-medium text-gray-900 capitalize">{request.data.catering}</p>
-                                </div>
-                              )}
-                              {request.data?.price && (
-                                <div>
-                                  <p className="text-xs text-gray-500 mb-1">Est. Price</p>
-                                  <p className="text-sm font-medium text-gray-900">€{request.data.price.toLocaleString()}</p>
-                                </div>
-                              )}
+
+                              {/* Expand Icon */}
+                              <ChevronDown
+                                size={16}
+                                className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                              />
                             </div>
-                            {request.data?.notes && (
-                              <div className="mt-3 pt-3 border-t border-green-200/50">
-                                <p className="text-xs text-gray-500 mb-1">Notes</p>
-                                <p className="text-sm text-gray-700">{request.data.notes}</p>
+
+                            {/* Expanded Details */}
+                            {isExpanded && (
+                              <div className="px-4 pb-4 pt-2 border-t border-gray-50">
+                                {/* Summary Stats */}
+                                {request.data?.summary && (
+                                  <div className="flex flex-wrap gap-3 mb-4">
+                                    <div className="px-3 py-1.5 bg-gray-50 rounded-lg">
+                                      <span className="text-[10px] text-gray-400 uppercase">Services</span>
+                                      <p className="text-sm font-medium text-gray-900">{request.data.summary.services_count || 0}</p>
+                                    </div>
+                                    <div className="px-3 py-1.5 bg-gray-50 rounded-lg">
+                                      <span className="text-[10px] text-gray-400 uppercase">Extras</span>
+                                      <p className="text-sm font-medium text-gray-900">{request.data.summary.extras_count || 0}</p>
+                                    </div>
+                                    <div className="px-3 py-1.5 bg-gray-50 rounded-lg">
+                                      <span className="text-[10px] text-gray-400 uppercase">Payment</span>
+                                      <p className="text-sm font-medium text-gray-900 capitalize">{request.data.payment_method || 'TBD'}</p>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Custom Request Details */}
+                                {request.type === 'custom_request' && !request.data?.items && (
+                                  <div className="flex flex-wrap gap-2 mb-4">
+                                    {request.data?.name && (
+                                      <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600">
+                                        {request.data.name}
+                                      </div>
+                                    )}
+                                    {request.data?.from && request.data?.to && (
+                                      <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600">
+                                        {request.data.from} → {request.data.to}
+                                      </div>
+                                    )}
+                                    {request.data?.date && (
+                                      <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600">
+                                        {request.data.date}
+                                      </div>
+                                    )}
+                                    {request.data?.passengers && (
+                                      <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600">
+                                        {request.data.passengers} pax
+                                      </div>
+                                    )}
+                                    {request.data?.price && (
+                                      <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600">
+                                        €{request.data.price.toLocaleString()}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Items List */}
+                                {request.data?.items && request.data.items.length > 0 && (
+                                  <div className="space-y-1 mb-4">
+                                    <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2">Items</p>
+                                    {request.data.items.slice(0, 4).map((item, idx) => (
+                                      <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm">
+                                            {item.type === 'empty_legs' ? '🛩️' :
+                                             item.type === 'jets' || item.type === 'aircraft' ? '✈️' :
+                                             item.type === 'helicopters' ? '🚁' :
+                                             item.type === 'luxury_cars' || item.type === 'cars' ? '🚗' :
+                                             item.type === 'yachts' ? '🛥️' :
+                                             item.type === 'transfers' ? '🚐' :
+                                             item.isCustomRequest ? '🍷' : '📦'}
+                                          </span>
+                                          <span className="text-sm text-gray-700">{item.name || item.model || 'Service'}</span>
+                                        </div>
+                                        <span className="text-sm font-medium text-gray-900">
+                                          {item.isEstimate && '~'}€{(item.price || 0).toLocaleString()}
+                                        </span>
+                                      </div>
+                                    ))}
+                                    {request.data.items.length > 4 && (
+                                      <p className="text-xs text-gray-400 pt-2">+{request.data.items.length - 4} more items</p>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Admin Notes */}
+                                {request.admin_notes && (
+                                  <div className="bg-gray-900 rounded-lg p-3 mb-4">
+                                    <p className="text-[10px] text-gray-400 uppercase mb-1">Response</p>
+                                    <p className="text-xs text-white">{request.admin_notes}</p>
+                                  </div>
+                                )}
+
+                                {/* Footer */}
+                                <div className="flex items-center justify-between pt-2">
+                                  <span className="text-[10px] text-gray-300 font-mono">{request.id?.slice(0, 8)}</span>
+                                </div>
                               </div>
                             )}
                           </div>
-                        )}
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
 
-                        {/* Items List (bulk requests) */}
-                        {request.data?.items && request.data.items.length > 0 && (
-                          <div className="space-y-2">
-                            <p className="text-xs font-medium text-gray-700 mb-2">Requested Items ({request.data.items.length})</p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                              {request.data.items.slice(0, 4).map((item, idx) => (
-                                <div key={idx} className="flex items-center justify-between p-3 bg-white/80 border border-gray-200/50 rounded-lg">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-base">
-                                      {item.type === 'empty_legs' ? '🛩️' :
-                                       item.type === 'jets' || item.type === 'aircraft' ? '✈️' :
-                                       item.type === 'helicopters' ? '🚁' :
-                                       item.type === 'luxury_cars' || item.type === 'cars' ? '🚗' :
-                                       item.type === 'yachts' ? '🛥️' :
-                                       item.type === 'transfers' ? '🚐' :
-                                       item.isCustomRequest ? '🍷' : '📦'}
-                                    </span>
-                                    <div>
-                                      <p className="text-sm font-medium text-gray-900 line-clamp-1">{item.name || item.model || 'Service'}</p>
-                                      {item.from && item.to && (
-                                        <p className="text-xs text-gray-500">{item.from} → {item.to}</p>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <p className="text-sm font-semibold text-gray-900">
-                                    {item.isEstimate && '~'}€{(item.price || 0).toLocaleString()}
-                                  </p>
-                                </div>
-                              ))}
-                              {request.data.items.length > 4 && (
-                                <div className="flex items-center justify-center p-3 bg-gray-50 border border-gray-200/50 rounded-lg text-sm text-gray-600">
-                                  +{request.data.items.length - 4} more items
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Admin Notes */}
-                        {request.admin_notes && (
-                          <div className="mt-4 p-3 bg-blue-50/80 border border-blue-200/50 rounded-lg">
-                            <p className="text-xs font-medium text-blue-700 mb-1">Admin Response</p>
-                            <p className="text-sm text-blue-900">{request.admin_notes}</p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-
-              {/* Footer Stats */}
+              {/* Footer with New Request button */}
               {userRequests.filter(r => r.type === 'ai_chat_bulk' || r.type === 'custom_request' || r.data?.source?.toLowerCase?.()?.includes?.('ai') || r.data?.source === 'ai_chat').length > 0 && (
-                <div className="mt-8 flex items-center justify-between text-sm text-gray-600">
-                  <p>
-                    Total: {userRequests.filter(r => r.type === 'ai_chat_bulk' || r.type === 'custom_request' || r.data?.source?.toLowerCase?.()?.includes?.('ai') || r.data?.source === 'ai_chat').length} AI request(s)
-                  </p>
+                <div className="px-6 pb-6">
                   <button
                     onClick={() => {
                       setActiveCategory('chat');
                       window.dispatchEvent(new CustomEvent('ai-chat-new-conversation'));
                     }}
-                    className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-all flex items-center gap-2"
+                    className="w-full px-4 py-3 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-all flex items-center justify-center gap-2"
                   >
                     <Plus size={16} />
                     New AI Request
