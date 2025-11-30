@@ -61,6 +61,7 @@
     "nft.storage": "^7.1.1",
     "nodemailer": "^7.0.5",
     "openai": "^6.2.0",
+    "pdfjs-dist": "^5.4.449",
     "react": "^18.2.0",
     "react-chatbot-kit": "^2.2.2",
     "react-datepicker": "^8.3.0",
