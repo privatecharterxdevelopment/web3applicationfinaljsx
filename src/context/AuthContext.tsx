@@ -25,13 +25,21 @@ interface User {
   partner_verified?: boolean;
 }
 
+interface SignInOptions {
+  captchaToken?: string;
+}
+
+interface SignUpOptions {
+  captchaToken?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
   initializing: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, firstName: string, lastName?: string) => Promise<void>;
+  signIn: (email: string, password: string, options?: SignInOptions) => Promise<void>;
+  signUp: (email: string, password: string, firstName: string, lastName?: string, options?: SignUpOptions) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -233,14 +241,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, options?: SignInOptions) => {
     try {
       console.log('🔐 Attempting sign in for:', email);
 
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const signInOptions: any = {
         email: email.trim(),
         password
-      });
+      };
+
+      // Add captcha token if provided (for Supabase CAPTCHA verification)
+      if (options?.captchaToken) {
+        signInOptions.options = {
+          captchaToken: options.captchaToken
+        };
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword(signInOptions);
 
       if (error) {
         console.error('❌ Sign in error:', error);
@@ -259,20 +276,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signUp = async (email: string, password: string, firstName: string, lastName?: string) => {
+  const signUp = async (email: string, password: string, firstName: string, lastName?: string, options?: SignUpOptions) => {
     try {
       console.log('📝 Attempting sign up for:', email);
+
+      const signUpOptions: any = {
+        data: {
+          first_name: firstName.trim(),
+          last_name: lastName?.trim() || '',
+          role: 'user'
+        }
+      };
+
+      // Add captcha token if provided (for Supabase CAPTCHA verification)
+      if (options?.captchaToken) {
+        signUpOptions.captchaToken = options.captchaToken;
+      }
 
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: {
-          data: {
-            first_name: firstName.trim(),
-            last_name: lastName?.trim() || '',
-            role: 'user'
-          }
-        }
+        options: signUpOptions
       });
 
       if (error) {

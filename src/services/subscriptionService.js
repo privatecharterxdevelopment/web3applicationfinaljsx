@@ -29,6 +29,7 @@ class SubscriptionService {
 
   /**
    * Create default explorer profile for new users
+   * Free tier: 1 chat with 20 messages (lifetime limit)
    */
   async createDefaultProfile(userId) {
     try {
@@ -42,9 +43,9 @@ class SubscriptionService {
           email: email,
           subscription_tier: 'explorer',
           subscription_status: 'active',
-          chats_limit: 2,
+          chats_limit: 1, // Free tier: 1 chat only
           chats_used: 0,
-          chats_reset_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year from now for explorer
+          chats_reset_date: null // No reset for free tier - lifetime limit
         })
         .select()
         .single();
@@ -88,6 +89,7 @@ class SubscriptionService {
         return {
           canStart: true,
           unlimited: true,
+          unlimitedMessages: true, // Elite gets unlimited messages per chat
           chatsUsed: profile.chats_used,
           tier: profile.subscription_tier
         };
@@ -99,6 +101,7 @@ class SubscriptionService {
       return {
         canStart,
         unlimited: false,
+        unlimitedMessages: false,
         chatsUsed: profile.chats_used,
         chatsLimit: profile.chats_limit,
         chatsRemaining: profile.chats_limit - profile.chats_used,
@@ -108,6 +111,32 @@ class SubscriptionService {
     } catch (error) {
       console.error('Error checking chat availability:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Check if user has unlimited messages per chat (Elite tier)
+   */
+  async hasUnlimitedMessages(userId) {
+    try {
+      const profile = await this.getUserProfile(userId);
+      return profile.subscription_tier === 'elite';
+    } catch (error) {
+      console.error('Error checking unlimited messages:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if user has Break the Price access
+   */
+  async hasBreakThePriceAccess(userId) {
+    try {
+      const profile = await this.getUserProfile(userId);
+      return ['starter', 'pro', 'elite'].includes(profile.subscription_tier);
+    } catch (error) {
+      console.error('Error checking Break the Price access:', error);
+      return false;
     }
   }
 
@@ -194,6 +223,83 @@ class SubscriptionService {
       return data;
     } catch (error) {
       console.error('Error completing chat:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get message count for a chat session
+   * Returns the current message count and if limit is reached
+   */
+  async getMessageCount(sessionId) {
+    try {
+      const { data, error } = await supabase
+        .from('chat_usage')
+        .select('message_count')
+        .eq('chat_session_id', sessionId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+
+      const count = data?.message_count || 0;
+      const MAX_MESSAGES_PER_CHAT = 20;
+
+      return {
+        messageCount: count,
+        maxMessages: MAX_MESSAGES_PER_CHAT,
+        limitReached: count >= MAX_MESSAGES_PER_CHAT,
+        messagesRemaining: MAX_MESSAGES_PER_CHAT - count
+      };
+    } catch (error) {
+      console.error('Error getting message count:', error);
+      // Return default values on error
+      return {
+        messageCount: 0,
+        maxMessages: 20,
+        limitReached: false,
+        messagesRemaining: 20
+      };
+    }
+  }
+
+  /**
+   * Increment message count for a chat session
+   */
+  async incrementMessageCount(sessionId) {
+    try {
+      // First get current count
+      const { data: current, error: fetchError } = await supabase
+        .from('chat_usage')
+        .select('message_count')
+        .eq('chat_session_id', sessionId)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+
+      const newCount = (current?.message_count || 0) + 1;
+      const MAX_MESSAGES_PER_CHAT = 20;
+
+      // Update message count
+      const { data, error } = await supabase
+        .from('chat_usage')
+        .update({
+          message_count: newCount,
+          last_message_at: new Date().toISOString()
+        })
+        .eq('chat_session_id', sessionId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return {
+        messageCount: newCount,
+        maxMessages: MAX_MESSAGES_PER_CHAT,
+        limitReached: newCount >= MAX_MESSAGES_PER_CHAT,
+        messagesRemaining: MAX_MESSAGES_PER_CHAT - newCount
+      };
+    } catch (error) {
+      console.error('Error incrementing message count:', error);
       throw error;
     }
   }
@@ -370,6 +476,161 @@ class SubscriptionService {
     } catch (error) {
       console.error('Error getting chat stats:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Get subscription transaction history
+   */
+  async getTransactionHistory(userId, limit = 50) {
+    try {
+      const { data, error } = await supabase
+        .from('subscription_transactions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error getting transaction history:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get spending summary for subscription page
+   */
+  async getSpendingSummary(userId) {
+    try {
+      // Try using the RPC function first
+      const { data: rpcData, error: rpcError } = await supabase.rpc('get_subscription_spending_summary', {
+        p_user_id: userId
+      });
+
+      if (!rpcError && rpcData) {
+        return rpcData;
+      }
+
+      // Fallback: calculate manually if RPC not available
+      const transactions = await this.getTransactionHistory(userId);
+      const profile = await this.getUserProfile(userId);
+
+      const now = new Date();
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+
+      const totalSpent = transactions
+        .filter(t => t.status === 'completed' && t.type !== 'refund')
+        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+
+      const thisMonth = transactions
+        .filter(t => {
+          const date = new Date(t.created_at);
+          return t.status === 'completed' && t.type !== 'refund' && date >= thisMonthStart;
+        })
+        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+
+      const lastMonth = transactions
+        .filter(t => {
+          const date = new Date(t.created_at);
+          return t.status === 'completed' && t.type !== 'refund' && date >= lastMonthStart && date <= lastMonthEnd;
+        })
+        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+
+      return {
+        total_spent: totalSpent,
+        this_month: thisMonth,
+        last_month: lastMonth,
+        total_transactions: transactions.length,
+        current_tier: profile?.subscription_tier || 'explorer',
+        member_since: transactions.length > 0
+          ? transactions[transactions.length - 1].created_at
+          : profile?.created_at
+      };
+    } catch (error) {
+      console.error('Error getting spending summary:', error);
+      return {
+        total_spent: 0,
+        this_month: 0,
+        last_month: 0,
+        total_transactions: 0,
+        current_tier: 'explorer',
+        member_since: null
+      };
+    }
+  }
+
+  /**
+   * Record a subscription transaction
+   */
+  async recordTransaction(userId, transactionData) {
+    try {
+      const { data, error } = await supabase
+        .from('subscription_transactions')
+        .insert({
+          user_id: userId,
+          type: transactionData.type,
+          tier: transactionData.tier,
+          previous_tier: transactionData.previousTier,
+          amount: transactionData.amount,
+          currency: transactionData.currency || 'USD',
+          payment_method: transactionData.paymentMethod,
+          stripe_payment_intent_id: transactionData.stripePaymentIntentId,
+          stripe_invoice_id: transactionData.stripeInvoiceId,
+          stripe_subscription_id: transactionData.stripeSubscriptionId,
+          status: transactionData.status || 'completed',
+          period_start: transactionData.periodStart,
+          period_end: transactionData.periodEnd,
+          description: transactionData.description,
+          metadata: transactionData.metadata || {}
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error recording transaction:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get Break the Price statistics
+   */
+  async getPriceBreakStats(userId) {
+    try {
+      const { data, error } = await supabase.rpc('get_price_break_stats', {
+        p_user_id: userId
+      });
+
+      if (error) {
+        // Fallback if function doesn't exist
+        const { data: requests } = await supabase
+          .from('price_break_requests')
+          .select('status, savings_amount')
+          .eq('user_id', userId);
+
+        if (!requests) return { total_requests: 0, pending: 0, offers_waiting: 0, accepted: 0, total_savings: 0 };
+
+        return {
+          total_requests: requests.length,
+          pending: requests.filter(r => ['pending', 'analyzing', 'reviewed'].includes(r.status)).length,
+          offers_waiting: requests.filter(r => r.status === 'offer_made').length,
+          accepted: requests.filter(r => r.status === 'accepted').length,
+          total_savings: requests
+            .filter(r => r.status === 'accepted' && r.savings_amount)
+            .reduce((sum, r) => sum + parseFloat(r.savings_amount), 0)
+        };
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error getting price break stats:', error);
+      return { total_requests: 0, pending: 0, offers_waiting: 0, accepted: 0, total_savings: 0 };
     }
   }
 }

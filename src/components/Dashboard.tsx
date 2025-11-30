@@ -1765,9 +1765,15 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
   }, []);
 
   // NAVIGATION ITEMS
+  // Count AI-generated requests for badge
+  const aiRequestsCount = userRequests.filter((r: any) =>
+    r.type === 'ai_chat_bulk' || r.data?.source?.toLowerCase?.()?.includes?.('ai')
+  ).length;
+
   const navigationItems = [
     { id: 'overview', label: 'Overview', icon: Home },
     { id: 'requests', label: 'My Requests', icon: History, badge: userRequests.length },
+    { id: 'ai-requests', label: 'AI Requests', icon: Sparkles, badge: aiRequestsCount, isSubMenu: true },
     { id: 'messages', label: 'Notifications', icon: Bell, badge: notifications.filter(n => n.unread).length },
     // Web 3.0 only items
     ...(isWeb3Mode ? [
@@ -2224,15 +2230,31 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
   );
 
   // Render Requests Tab
-  const renderRequests = () => (
+  const renderRequests = (forceFilter?: string) => {
+    // Filter requests based on forceFilter (for AI Requests view)
+    const isAIView = forceFilter === 'ai_chat_bulk';
+    const baseRequests = isAIView
+      ? userRequests.filter((r: any) => r.type === 'ai_chat_bulk' || r.data?.source?.toLowerCase?.()?.includes?.('ai'))
+      : userRequests;
+
+    return (
     <div className="p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-medium text-gray-800 mb-1">My Requests</h1>
+          <h1 className="text-xl font-medium text-gray-800 mb-1 flex items-center gap-2">
+            {isAIView ? (
+              <>
+                <Sparkles size={20} className="text-gray-600" />
+                AI Requests
+              </>
+            ) : (
+              'My Requests'
+            )}
+          </h1>
           <p className="text-gray-600 text-xs">
             {(() => {
               if (searchTerm) {
-                const filteredCount = userRequests.filter(request => {
+                const filteredCount = baseRequests.filter((request: any) => {
                   const matchesFilter = requestFilter === 'all' || request.type === requestFilter;
                   const matchesSearch = searchInRequest(request, searchTerm);
                   return matchesFilter && matchesSearch;
@@ -2242,12 +2264,14 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
               }
 
               const filteredCount = requestFilter === 'all'
-                ? userRequests.length
-                : userRequests.filter(r => r.type === requestFilter).length;
+                ? baseRequests.length
+                : baseRequests.filter((r: any) => r.type === requestFilter).length;
 
-              return requestFilter === 'all'
-                ? `${userRequests.length} total requests`
-                : `${filteredCount} ${requestFilter} request${filteredCount !== 1 ? 's' : ''}`;
+              return isAIView
+                ? `${baseRequests.length} AI-generated request${baseRequests.length !== 1 ? 's' : ''}`
+                : requestFilter === 'all'
+                  ? `${baseRequests.length} total requests`
+                  : `${filteredCount} ${requestFilter} request${filteredCount !== 1 ? 's' : ''}`;
             })()}
           </p>
         </div>
@@ -2642,37 +2666,125 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
                       {/* Private Jet Charter Details */}
                       {selectedRequest.type === 'private_jet_charter' && (
                         <>
-                          <div>
-                            <div className="text-xs text-gray-500 mb-1">Aircraft</div>
-                            <div className="text-sm font-medium text-gray-900">{data.aircraft_model || data.manufacturer}</div>
-                          </div>
-                          {/* Aircraft Specifications */}
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                            <div className="text-xs text-blue-700 mb-2 font-medium">✈️ Aircraft Specifications</div>
-                            <div className="grid grid-cols-2 gap-4">
-                              {data.passenger_capacity && (
-                                <div>
-                                  <div className="text-xs text-blue-600 mb-1">Capacity</div>
-                                  <div className="text-sm font-bold text-blue-900">{data.passenger_capacity} passengers</div>
-                                </div>
+                          {/* Aircraft Info */}
+                          {(data.aircraft_model || data.manufacturer || data.aircraft || data.aircraft_type) && (
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Aircraft</div>
+                              <div className="text-sm font-medium text-gray-900">{data.aircraft_model || data.manufacturer || data.aircraft || data.aircraft_type}</div>
+                            </div>
+                          )}
+                          {/* Route Info */}
+                          {(data.from || data.origin || data.departure_city || data.to || data.destination || data.arrival_city) && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                              <div className="text-xs text-blue-700 mb-2 font-medium">📍 Route</div>
+                              <div className="text-sm font-medium text-blue-900">
+                                {data.from || data.origin || data.departure_city || data.from_city || '—'} → {data.to || data.destination || data.arrival_city || data.to_city || '—'}
+                              </div>
+                              {(data.from_iata || data.to_iata) && (
+                                <div className="text-xs text-blue-600 mt-1">{data.from_iata} → {data.to_iata}</div>
                               )}
-                              {data.range && (
+                            </div>
+                          )}
+                          {/* Date/Time */}
+                          {(data.date || data.departure_date || data.travel_date) && (
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">Date</div>
+                                <div className="text-sm font-medium text-gray-900">{data.date || data.departure_date || data.travel_date}</div>
+                              </div>
+                              {(data.time || data.departure_time) && (
                                 <div>
-                                  <div className="text-xs text-blue-600 mb-1">Range</div>
-                                  <div className="text-sm font-bold text-blue-900">{data.range}</div>
+                                  <div className="text-xs text-gray-500 mb-1">Time</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.time || data.departure_time}</div>
                                 </div>
                               )}
                             </div>
-                          </div>
+                          )}
+                          {/* Aircraft Specifications */}
+                          {(data.passenger_capacity || data.passengers || data.range || data.pax) && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                              <div className="text-xs text-blue-700 mb-2 font-medium">✈️ Flight Details</div>
+                              <div className="grid grid-cols-2 gap-4">
+                                {(data.passenger_capacity || data.passengers || data.pax) && (
+                                  <div>
+                                    <div className="text-xs text-blue-600 mb-1">Passengers</div>
+                                    <div className="text-sm font-bold text-blue-900">{data.passenger_capacity || data.passengers || data.pax}</div>
+                                  </div>
+                                )}
+                                {data.range && (
+                                  <div>
+                                    <div className="text-xs text-blue-600 mb-1">Range</div>
+                                    <div className="text-sm font-bold text-blue-900">{data.range}</div>
+                                  </div>
+                                )}
+                                {data.distance_km && (
+                                  <div>
+                                    <div className="text-xs text-blue-600 mb-1">Distance</div>
+                                    <div className="text-sm font-bold text-blue-900">{data.distance_km.toLocaleString()} km</div>
+                                  </div>
+                                )}
+                                {data.estimated_flight_time && (
+                                  <div>
+                                    <div className="text-xs text-blue-600 mb-1">Flight Time</div>
+                                    <div className="text-sm font-bold text-blue-900">{data.estimated_flight_time}</div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          {/* Price */}
+                          {(data.price || data.total || data.estimated_price || data.total_price) && (
+                            <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                              <div className="text-xs text-green-700 mb-1 font-medium">💰 Estimated Price</div>
+                              <div className="text-2xl font-bold text-green-900">
+                                €{(data.price || data.total || data.estimated_price || data.total_price || 0).toLocaleString()}
+                              </div>
+                            </div>
+                          )}
+                          {/* Payment Method */}
+                          {data.payment_method && (
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Payment Method</div>
+                              <div className="text-sm font-medium text-gray-900 capitalize">
+                                {data.payment_method === 'crypto' ? '💰 Cryptocurrency' :
+                                 data.payment_method === 'bank' ? '🏦 Bank Transfer' :
+                                 data.payment_method === 'card' ? '💳 Credit Card' : data.payment_method}
+                              </div>
+                            </div>
+                          )}
+                          {/* Special Requests */}
+                          {(data.notes || data.special_requests || data.message) && (
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                              <div className="text-xs text-gray-700 mb-1 font-medium">Notes</div>
+                              <div className="text-sm text-gray-900">{data.notes || data.special_requests || data.message}</div>
+                            </div>
+                          )}
                           {data.has_nft && (
                             <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-3">
                               <div className="text-sm font-medium text-purple-900">🎫 NFT Discount Applied: {data.nft_discount}% OFF</div>
                               <div className="text-xs text-purple-700 mt-1">Request quote for discounted pricing</div>
                             </div>
                           )}
-                          {!data.has_nft && (
+                          {!data.has_nft && Object.keys(data).length === 0 && (
                             <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                               <div className="text-xs text-gray-700">📝 Quote request submitted - we'll contact you within 24 hours</div>
+                            </div>
+                          )}
+                          {/* Show additional fields not covered above */}
+                          {Object.entries(data).filter(([key]) => !['aircraft_model', 'manufacturer', 'aircraft', 'aircraft_type', 'from', 'to', 'origin', 'destination', 'departure_city', 'arrival_city', 'from_city', 'to_city', 'from_iata', 'to_iata', 'date', 'departure_date', 'travel_date', 'time', 'departure_time', 'passenger_capacity', 'passengers', 'pax', 'range', 'distance_km', 'estimated_flight_time', 'price', 'total', 'estimated_price', 'total_price', 'payment_method', 'notes', 'special_requests', 'message', 'has_nft', 'nft_discount', 'items', 'summary'].includes(key)).length > 0 && (
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              <div className="text-xs text-gray-500 mb-2 font-medium">Additional Details</div>
+                              <div className="grid grid-cols-2 gap-2">
+                                {Object.entries(data)
+                                  .filter(([key]) => !['aircraft_model', 'manufacturer', 'aircraft', 'aircraft_type', 'from', 'to', 'origin', 'destination', 'departure_city', 'arrival_city', 'from_city', 'to_city', 'from_iata', 'to_iata', 'date', 'departure_date', 'travel_date', 'time', 'departure_time', 'passenger_capacity', 'passengers', 'pax', 'range', 'distance_km', 'estimated_flight_time', 'price', 'total', 'estimated_price', 'total_price', 'payment_method', 'notes', 'special_requests', 'message', 'has_nft', 'nft_discount', 'items', 'summary'].includes(key))
+                                  .map(([key, value]) => (
+                                    <div key={key}>
+                                      <div className="text-xs text-gray-500">{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                                      <div className="text-sm text-gray-900">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</div>
+                                    </div>
+                                  ))
+                                }
+                              </div>
                             </div>
                           )}
                         </>
@@ -2992,6 +3104,93 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
                         </>
                       )}
 
+                      {/* Fallback: Display all data fields if no specific handler matched */}
+                      {Object.keys(data).length > 0 && !['emptyleg', 'empty_leg', 'luxury_car', 'luxury_car_rental', 'private_jet_charter', 'helicopter_charter', 'co2_certificate', 'fixed_offer', 'taxi_concierge', 'adventure_package', 'spv_formation', 'tokenization'].includes(selectedRequest.type) && (
+                        <div className="space-y-3">
+                          {/* Route info */}
+                          {(data.from || data.origin || data.departure_city || data.to || data.destination || data.arrival_city) && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                              <div className="text-xs text-blue-700 mb-2 font-medium">📍 Route</div>
+                              <div className="text-sm font-medium text-blue-900">
+                                {data.from || data.origin || data.departure_city || data.from_city || '—'} → {data.to || data.destination || data.arrival_city || data.to_city || '—'}
+                              </div>
+                              {(data.from_iata || data.to_iata) && (
+                                <div className="text-xs text-blue-600 mt-1">{data.from_iata} → {data.to_iata}</div>
+                              )}
+                            </div>
+                          )}
+                          {/* Date/Time */}
+                          {(data.date || data.departure_date || data.travel_date) && (
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">Date</div>
+                                <div className="text-sm font-medium text-gray-900">{data.date || data.departure_date || data.travel_date}</div>
+                              </div>
+                              {(data.time || data.departure_time) && (
+                                <div>
+                                  <div className="text-xs text-gray-500 mb-1">Time</div>
+                                  <div className="text-sm font-medium text-gray-900">{data.time || data.departure_time}</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {/* Passengers */}
+                          {(data.passengers || data.pax || data.guests) && (
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Passengers</div>
+                              <div className="text-sm font-medium text-gray-900">{data.passengers || data.pax || data.guests}</div>
+                            </div>
+                          )}
+                          {/* Aircraft/Vehicle */}
+                          {(data.aircraft || data.aircraft_type || data.aircraft_model || data.vehicle || data.yacht_name) && (
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Aircraft/Vehicle</div>
+                              <div className="text-sm font-medium text-gray-900">{data.aircraft || data.aircraft_type || data.aircraft_model || data.vehicle || data.yacht_name}</div>
+                            </div>
+                          )}
+                          {/* Price */}
+                          {(data.price || data.total || data.estimated_price || data.total_price) && (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                              <div className="text-xs text-green-700 mb-1 font-medium">💰 Price</div>
+                              <div className="text-lg font-bold text-green-900">
+                                €{(data.price || data.total || data.estimated_price || data.total_price || 0).toLocaleString()}
+                              </div>
+                            </div>
+                          )}
+                          {/* Payment Method */}
+                          {data.payment_method && (
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Payment Method</div>
+                              <div className="text-sm font-medium text-gray-900 capitalize">{data.payment_method}</div>
+                            </div>
+                          )}
+                          {/* Notes/Special Requests */}
+                          {(data.notes || data.special_requests || data.message) && (
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                              <div className="text-xs text-gray-700 mb-1 font-medium">Notes</div>
+                              <div className="text-sm text-gray-900">{data.notes || data.special_requests || data.message}</div>
+                            </div>
+                          )}
+                          {/* Show all other fields in a debug-like format */}
+                          {Object.entries(data).filter(([key]) => !['from', 'to', 'origin', 'destination', 'departure_city', 'arrival_city', 'from_city', 'to_city', 'from_iata', 'to_iata', 'date', 'departure_date', 'travel_date', 'time', 'departure_time', 'passengers', 'pax', 'guests', 'aircraft', 'aircraft_type', 'aircraft_model', 'vehicle', 'yacht_name', 'price', 'total', 'estimated_price', 'total_price', 'payment_method', 'notes', 'special_requests', 'message', 'items', 'summary'].includes(key)).length > 0 && (
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              <div className="text-xs text-gray-500 mb-2 font-medium">Additional Details</div>
+                              <div className="grid grid-cols-2 gap-2">
+                                {Object.entries(data)
+                                  .filter(([key]) => !['from', 'to', 'origin', 'destination', 'departure_city', 'arrival_city', 'from_city', 'to_city', 'from_iata', 'to_iata', 'date', 'departure_date', 'travel_date', 'time', 'departure_time', 'passengers', 'pax', 'guests', 'aircraft', 'aircraft_type', 'aircraft_model', 'vehicle', 'yacht_name', 'price', 'total', 'estimated_price', 'total_price', 'payment_method', 'notes', 'special_requests', 'message', 'items', 'summary'].includes(key))
+                                  .map(([key, value]) => (
+                                    <div key={key}>
+                                      <div className="text-xs text-gray-500">{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                                      <div className="text-sm text-gray-900">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</div>
+                                    </div>
+                                  ))
+                                }
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* Submitted Date (always show) */}
                       <div className="pt-3 border-t border-gray-200">
                         <div className="text-xs text-gray-500 mb-1">Submitted</div>
@@ -3145,6 +3344,7 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
       )}
     </div>
   );
+  };
 
   // Render Tokenized Assets Tab
   const renderTokenizedAssets = () => (
@@ -4519,8 +4719,9 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
               sidebarCollapsed ? 'w-16' : 'w-48'
             }`}>
               <nav className={`p-3 space-y-0.5 ${sidebarCollapsed ? 'px-2' : ''}`}>
-                {navigationItems.map((item) => {
+                {navigationItems.map((item: any) => {
                   const Icon = item.icon;
+                  const isSubMenu = item.isSubMenu;
                   return (
                     <button
                       key={item.id}
@@ -4530,12 +4731,12 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
                         currentView === item.id
                           ? 'bg-white/10 text-white'
                           : 'text-gray-400 hover:text-white hover:bg-white/5'
-                      } ${sidebarCollapsed ? 'justify-center' : ''}`}
+                      } ${sidebarCollapsed ? 'justify-center' : ''} ${isSubMenu && !sidebarCollapsed ? 'pl-6' : ''}`}
                     >
-                      <Icon size={16} className="flex-shrink-0" />
+                      <Icon size={isSubMenu ? 14 : 16} className={`flex-shrink-0 ${isSubMenu ? 'text-gray-400' : ''}`} />
                       {!sidebarCollapsed && (
                         <>
-                          <span className="text-xs font-medium flex-1">{item.label}</span>
+                          <span className={`font-medium flex-1 ${isSubMenu ? 'text-[11px]' : 'text-xs'}`}>{item.label}</span>
                           {item.badge !== undefined && item.badge > 0 && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-700 text-gray-300">
                               {item.badge}
@@ -4544,7 +4745,7 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
                         </>
                       )}
                       {sidebarCollapsed && item.badge !== undefined && item.badge > 0 && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-gray-600 rounded-full flex items-center justify-center">
                           <span className="text-[10px] text-white font-medium">{item.badge}</span>
                         </div>
                       )}
@@ -4591,6 +4792,7 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
             <main className="flex-1 min-h-0 max-h-full">
               {currentView === 'overview' && renderOverview()}
               {currentView === 'requests' && renderRequests()}
+              {currentView === 'ai-requests' && renderRequests('ai_chat_bulk')}
               {currentView === 'messages' && renderMessages()}
               {/* Web 3.0 only views */}
               {isWeb3Mode && currentView === 'transactions' && renderTransactions()}

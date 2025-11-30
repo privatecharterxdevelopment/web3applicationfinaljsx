@@ -47,6 +47,15 @@ import AdminManagement from '../../pages/admin/Management.tsx';
 import AdminNewsletter from '../../pages/admin/Newsletter.tsx';
 import AdminPartners from '../../pages/admin/Partners.tsx';
 import AdminTransactions from '../../pages/admin/Transactions.tsx';
+import AdminSPVFormations from '../../pages/admin/SPVFormations.tsx';
+import AdminTokenization from '../../pages/admin/Tokenization.tsx';
+import AdminSupportTickets from '../../pages/admin/SupportTickets.tsx';
+import AdminChatMessages from '../../pages/admin/ChatMessages.tsx';
+import AdminSubscriptions from '../../pages/admin/Subscriptions.tsx';
+import AdminBookings from '../../pages/admin/Bookings.tsx';
+import AdminEmptyLegs from '../../pages/admin/EmptyLegs.tsx';
+import AdminEarnings from '../../pages/admin/Earnings.tsx';
+import AdminNotifications from '../../pages/admin/Notifications.tsx';
 import Faq from '../../components/faq.tsx';  // LOWERCASE faq.tsx
 
 // Import pages
@@ -251,13 +260,22 @@ function AppContent() {
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<Navigate to="/admin/analytics" replace />} />
                 <Route path="analytics" element={<AdminAnalytics />} />
+                <Route path="earnings" element={<AdminEarnings />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="booking-requests" element={<AdminBookingRequests />} />
+                <Route path="empty-legs" element={<AdminEmptyLegs />} />
                 <Route path="user-requests" element={<AdminUserRequests />} />
                 <Route path="kyc-verification" element={<AdminKYCVerification />} />
                 <Route path="co2-certificates" element={<AdminCO2Certificates />} />
                 <Route path="partners" element={<AdminPartners />} />
                 <Route path="transactions" element={<AdminTransactions />} />
+                <Route path="bookings" element={<AdminBookings />} />
+                <Route path="subscriptions" element={<AdminSubscriptions />} />
+                <Route path="spv-formations" element={<AdminSPVFormations />} />
+                <Route path="tokenization" element={<AdminTokenization />} />
+                <Route path="support-tickets" element={<AdminSupportTickets />} />
+                <Route path="chat-messages" element={<AdminChatMessages />} />
+                <Route path="notifications" element={<AdminNotifications />} />
                 <Route path="management" element={<AdminManagement />} />
                 <Route path="newsletter" element={<AdminNewsletter />} />
               </Route>
@@ -289,8 +307,8 @@ function AppContent() {
               {/* Tokenized Assets Route */}
               <Route path="/tokenized-assets" element={<TokenizedAssets />} />
 
-              {/* Glassmorphic Version */}
-              <Route path="/glas" element={<TokenizedAssetsGlassmorphic />} />
+              {/* Legacy redirect - /glas now redirects to /dashboard */}
+              <Route path="/glas" element={<Navigate to="/dashboard" replace />} />
 
               {/* AI Chat direct route */}
               <Route path="/chat" element={<AIChat />} />
@@ -330,13 +348,22 @@ function AppContent() {
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<Navigate to="/admin/analytics" replace />} />
                 <Route path="analytics" element={<AdminAnalytics />} />
+                <Route path="earnings" element={<AdminEarnings />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="booking-requests" element={<AdminBookingRequests />} />
+                <Route path="empty-legs" element={<AdminEmptyLegs />} />
                 <Route path="user-requests" element={<AdminUserRequests />} />
                 <Route path="kyc-verification" element={<AdminKYCVerification />} />
                 <Route path="co2-certificates" element={<AdminCO2Certificates />} />
                 <Route path="partners" element={<AdminPartners />} />
                 <Route path="transactions" element={<AdminTransactions />} />
+                <Route path="bookings" element={<AdminBookings />} />
+                <Route path="subscriptions" element={<AdminSubscriptions />} />
+                <Route path="spv-formations" element={<AdminSPVFormations />} />
+                <Route path="tokenization" element={<AdminTokenization />} />
+                <Route path="support-tickets" element={<AdminSupportTickets />} />
+                <Route path="chat-messages" element={<AdminChatMessages />} />
+                <Route path="notifications" element={<AdminNotifications />} />
                 <Route path="management" element={<AdminManagement />} />
                 <Route path="newsletter" element={<AdminNewsletter />} />
               </Route>

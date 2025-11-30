@@ -253,26 +253,34 @@ class StripeService {
         throw new Error('User not authenticated');
       }
 
-      const customer = await this.getOrCreateCustomer();
+      // Try to get customer ID from user_profiles
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('stripe_customer_id')
+        .eq('user_id', user.id)
+        .single();
 
-      const response = await fetch(`${this.apiBaseUrl}/create-portal-session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-        },
-        body: JSON.stringify({
-          customerId: customer.stripe_customer_id,
-          returnUrl: `${window.location.origin}/dashboard`
-        })
-      });
+      const customerId = profile?.stripe_customer_id;
 
-      if (!response.ok) {
-        throw new Error('Failed to create portal session');
+      if (!customerId) {
+        throw new Error('No Stripe customer found. Please subscribe to a plan first.');
       }
 
-      const { url } = await response.json();
-      return { url };
+      // Call Supabase Edge Function to create portal session
+      const { data, error } = await supabase.functions.invoke('create-stripe-portal', {
+        body: {
+          customerId: customerId,
+          returnUrl: `${window.location.origin}/dashboard`
+        }
+      });
+
+      if (error) throw error;
+
+      if (!data?.url) {
+        throw new Error('No portal URL returned');
+      }
+
+      return { url: data.url };
     } catch (error) {
       console.error('Error creating portal session:', error);
       throw error;

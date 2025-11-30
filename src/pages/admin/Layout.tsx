@@ -1,6 +1,24 @@
 import React from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { Users, FileCheck, Settings, Plane, BarChart3, UserCog, Mail, DollarSign, Handshake } from 'lucide-react';
+import {
+  Users,
+  FileCheck,
+  Settings,
+  Plane,
+  BarChart3,
+  UserCog,
+  Mail,
+  DollarSign,
+  Handshake,
+  Building2,
+  Coins,
+  MessageSquare,
+  MessageCircle,
+  CreditCard,
+  ShoppingBag,
+  Bell,
+  TrendingUp
+} from 'lucide-react';
 import AdminRoute from '../../components/AdminRoute';
 import { useAdminPermissions } from '../../hooks/useAdminPermissions';
 
@@ -22,6 +40,12 @@ export default function AdminLayout() {
       permission: true
     },
     {
+      path: '/admin/earnings',
+      name: 'Earnings',
+      icon: TrendingUp,
+      permission: isSuperAdmin
+    },
+    {
       path: '/admin/users',
       name: 'Users',
       icon: Users,
@@ -32,6 +56,12 @@ export default function AdminLayout() {
       name: 'Booking Requests',
       icon: Plane,
       permission: canManageBookings
+    },
+    {
+      path: '/admin/empty-legs',
+      name: 'Empty Legs',
+      icon: Plane,
+      permission: canManageBookings || isSuperAdmin
     },
     {
       path: '/admin/user-requests',
@@ -62,6 +92,48 @@ export default function AdminLayout() {
       name: 'Transactions',
       icon: DollarSign,
       permission: canManageBookings || isSuperAdmin
+    },
+    {
+      path: '/admin/bookings',
+      name: 'User Bookings',
+      icon: ShoppingBag,
+      permission: canManageBookings || isSuperAdmin
+    },
+    {
+      path: '/admin/subscriptions',
+      name: 'Subscriptions',
+      icon: CreditCard,
+      permission: isSuperAdmin
+    },
+    {
+      path: '/admin/spv-formations',
+      name: 'SPV Formations',
+      icon: Building2,
+      permission: isSuperAdmin
+    },
+    {
+      path: '/admin/tokenization',
+      name: 'Tokenization',
+      icon: Coins,
+      permission: isSuperAdmin
+    },
+    {
+      path: '/admin/support-tickets',
+      name: 'Support Tickets',
+      icon: MessageSquare,
+      permission: isSuperAdmin
+    },
+    {
+      path: '/admin/chat-messages',
+      name: 'Chat Messages',
+      icon: MessageCircle,
+      permission: isSuperAdmin
+    },
+    {
+      path: '/admin/notifications',
+      name: 'User Notifications',
+      icon: Bell,
+      permission: isSuperAdmin
     },
     {
       path: '/admin/management',

@@ -131,7 +131,7 @@ export default function PartnerRegistrationModal({ isOpen, onClose, onSuccess }:
             last_name: formData.last_name,
             role: 'partner'
           },
-          emailRedirectTo: window.location.origin + '/glas'
+          emailRedirectTo: window.location.origin + '/dashboard'
         }
       });
 

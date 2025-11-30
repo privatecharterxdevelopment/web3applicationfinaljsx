@@ -24,6 +24,7 @@ BEGIN
     WHEN 'co2_certificate' THEN 'CO₂ Certificate'
     WHEN 'spv_formation' THEN 'SPV Formation'
     WHEN 'tokenization' THEN 'Asset Tokenization'
+    WHEN 'ai_chat_bulk' THEN 'AI Concierge Bulk'
     ELSE 'Service Request'
   END;
 
@@ -131,6 +132,7 @@ BEGIN
     WHEN 'co2_certificate' THEN 'CO₂ Certificate'
     WHEN 'spv_formation' THEN 'SPV Formation'
     WHEN 'tokenization' THEN 'Asset Tokenization'
+    WHEN 'ai_chat_bulk' THEN 'AI Concierge Bulk'
     ELSE 'Service Request'
   END;
 

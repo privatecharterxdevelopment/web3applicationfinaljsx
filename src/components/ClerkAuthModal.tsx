@@ -35,7 +35,7 @@ export default function ClerkAuthModal({ onClose, mode }: ClerkAuthModalProps) {
                   }
                 }}
                 routing="hash"
-                afterSignUpUrl="/glas"
+                afterSignUpUrl="/dashboard"
               />
             ) : (
               <SignIn
@@ -46,7 +46,7 @@ export default function ClerkAuthModal({ onClose, mode }: ClerkAuthModalProps) {
                   }
                 }}
                 routing="hash"
-                afterSignInUrl="/glas"
+                afterSignInUrl="/dashboard"
               />
             )}
           </div>

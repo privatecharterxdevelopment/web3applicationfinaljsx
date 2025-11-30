@@ -183,7 +183,8 @@ serve(async (req) => {
         'yacht_charter': { name: 'Yacht Charter Request', emoji: '🛥️', color: '#06b6d4' },
         'luxury_car': { name: 'Luxury Car Rental', emoji: '🚗', color: '#ec4899' },
         'helicopter': { name: 'Helicopter Charter', emoji: '🚁', color: '#f97316' },
-        'adventure_package': { name: 'Adventure Package', emoji: '🏔️', color: '#84cc16' }
+        'adventure_package': { name: 'Adventure Package', emoji: '🏔️', color: '#84cc16' },
+        'ai_chat_bulk': { name: 'AI Concierge Bulk Request', emoji: '🤖', color: '#8b5cf6' }
       };
 
       return typeMap[type] || { name: type.replace('_', ' ').toUpperCase(), emoji: '📋', color: '#6b7280' };
@@ -390,6 +391,97 @@ serve(async (req) => {
           if (data.dropoff_location) details += `<div class="detail-row"><span class="detail-label">Drop-off Location</span><span class="detail-value">${data.dropoff_location}</span></div>`;
           if (data.rental_dates) details += `<div class="detail-row"><span class="detail-label">Rental Period</span><span class="detail-value">${data.rental_dates}</span></div>`;
           if (data.car_type) details += `<div class="detail-row"><span class="detail-label">Vehicle Type</span><span class="detail-value">${data.car_type}</span></div>`;
+          break;
+
+        case 'ai_chat_bulk':
+          // AI Chat Bulk Request - contains multiple services
+          if (data.summary) {
+            const summary = data.summary;
+            details += `<div style="background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); color: white; padding: 16px; border-radius: 12px; margin: 16px 0;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <span style="font-size: 20px;">🤖</span>
+                <span style="font-weight: 600; font-size: 16px;">AI Concierge Request</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div style="background: rgba(255,255,255,0.15); padding: 12px; border-radius: 8px;">
+                  <div style="font-size: 12px; opacity: 0.9;">Services</div>
+                  <div style="font-size: 20px; font-weight: 700;">${summary.services_count || 0}</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.15); padding: 12px; border-radius: 8px;">
+                  <div style="font-size: 12px; opacity: 0.9;">Custom Extras</div>
+                  <div style="font-size: 20px; font-weight: 700;">${summary.extras_count || 0}</div>
+                </div>
+              </div>
+            </div>`;
+          }
+
+          // List all items in the bulk request
+          if (data.items && Array.isArray(data.items) && data.items.length > 0) {
+            details += `<div style="margin-top: 20px;"><h4 style="margin: 0 0 12px 0; color: #374151;">Requested Services</h4>`;
+
+            data.items.forEach((item: any, index: number) => {
+              const itemEmoji = item.type === 'empty_legs' ? '🛩️' :
+                               item.type === 'jets' || item.type === 'aircraft' ? '✈️' :
+                               item.type === 'helicopters' ? '🚁' :
+                               item.type === 'luxury_cars' || item.type === 'cars' ? '🚗' :
+                               item.type === 'yachts' ? '🛥️' :
+                               item.type === 'transfers' ? '🚐' :
+                               item.isCustomRequest ? '🍷' : '📦';
+
+              const isEstimate = item.isEstimate || item.requiresConfirmation;
+              const priceLabel = isEstimate ? '~' : '';
+
+              details += `<div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                  <div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                      <span style="font-size: 18px;">${itemEmoji}</span>
+                      <span style="font-weight: 600; color: #111827;">${item.name || item.model || 'Service'}</span>
+                      ${isEstimate ? '<span style="background: #fef3c7; color: #92400e; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600;">TBC</span>' : ''}
+                    </div>
+                    ${item.from && item.to ? `<div style="color: #6b7280; font-size: 13px;">${item.from} → ${item.to}</div>` : ''}
+                    ${item.date ? `<div style="color: #6b7280; font-size: 13px;">📅 ${item.date}${item.time ? ' at ' + item.time : ''}</div>` : ''}
+                    ${item.passengers ? `<div style="color: #6b7280; font-size: 13px;">👥 ${item.passengers} passengers</div>` : ''}
+                    ${item.quantity && item.quantity > 1 ? `<div style="color: #6b7280; font-size: 13px;">Qty: ${item.quantity}</div>` : ''}
+                    ${item.category ? `<div style="color: #6b7280; font-size: 13px; text-transform: capitalize;">${item.category}</div>` : ''}
+                  </div>
+                  <div style="text-align: right;">
+                    <div style="font-weight: 700; font-size: 16px; color: #111827;">${priceLabel}€${(item.price || 0).toLocaleString()}</div>
+                  </div>
+                </div>
+              </div>`;
+            });
+
+            details += `</div>`;
+          }
+
+          // Payment preference
+          if (data.payment_method || data.preferred_payment) {
+            const paymentMethod = data.payment_method || data.preferred_payment;
+            const paymentEmoji = paymentMethod === 'crypto' ? '₿' : paymentMethod === 'card' ? '💳' : '🏦';
+            details += `<div class="detail-row">
+              <span class="detail-label">Preferred Payment</span>
+              <span class="detail-value">${paymentEmoji} ${paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1)}</span>
+            </div>`;
+          }
+
+          // Totals summary
+          if (data.summary) {
+            const summary = data.summary;
+            details += `<div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 12px; padding: 16px; margin-top: 16px;">
+              <h4 style="margin: 0 0 12px 0; color: #166534;">Pricing Summary</h4>
+              ${summary.services_subtotal ? `<div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span style="color: #6b7280;">Services</span><span>€${summary.services_subtotal.toLocaleString()}</span></div>` : ''}
+              ${summary.extras_subtotal ? `<div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span style="color: #6b7280;">Custom Extras</span><span>~€${summary.extras_subtotal.toLocaleString()}</span></div>` : ''}
+              ${summary.catering_total ? `<div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span style="color: #6b7280;">Catering</span><span>€${summary.catering_total.toLocaleString()}</span></div>` : ''}
+              ${summary.airport_fees ? `<div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span style="color: #6b7280;">Airport Fees</span><span>€${summary.airport_fees.toLocaleString()}</span></div>` : ''}
+              ${summary.vat_amount ? `<div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span style="color: #6b7280;">VAT (8.1%)</span><span>€${summary.vat_amount.toLocaleString()}</span></div>` : ''}
+              <div style="display: flex; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px solid #86efac;">
+                <span style="font-weight: 700; color: #166534;">Estimated Total</span>
+                <span style="font-weight: 700; font-size: 18px; color: #166534;">€${(summary.grand_total || 0).toLocaleString()}</span>
+              </div>
+              ${summary.has_estimates || summary.has_custom_requests ? '<div style="font-size: 11px; color: #6b7280; margin-top: 8px;">* Some items require confirmation - final pricing may vary</div>' : ''}
+            </div>`;
+          }
           break;
 
         case 'support':

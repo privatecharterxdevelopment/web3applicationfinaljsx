@@ -159,14 +159,18 @@ CREATE TABLE IF NOT EXISTS subscription_tiers (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Insert default tiers
+-- Insert default tiers (Updated pricing: Free $0/1 chat, Starter $20/15 chats, Pro $40/30 chats, Elite $130/unlimited)
 INSERT INTO subscription_tiers (id, name, description, price_monthly_usd, chats_limit, features) VALUES
-('explorer', 'Explorer', 'Try Sphera AI for free', 0, 2, '["2 AI Conversations (lifetime)", "Text Only", "Browse all services", "View prices"]'),
-('starter', 'Starter', 'Perfect for occasional travelers', 29, 10, '["10 Full Conversations/month", "Voice & Text Support", "Real-time Availability", "Basic Route Planning", "Email Support (24h)"]'),
-('pro', 'Professional', 'Most popular for regular users', 79, 30, '["30 Full Conversations/month", "Everything in Starter", "Priority Support (12h)", "Advanced Analytics", "Booking History", "Multi-service cart"]'),
-('business', 'Business', 'For frequent travelers', 199, 100, '["100 Full Conversations/month", "Everything in Pro", "Dedicated Concierge", "24/7 Priority Support", "Team collaboration (5 users)", "Custom integrations"]'),
-('elite', 'Elite', 'Unlimited VIP access', 499, NULL, '["Unlimited Conversations", "Everything in Business", "Dedicated Account Team", "Instant Support (30min)", "Custom API Access", "VIP Treatment"]')
-ON CONFLICT (id) DO NOTHING;
+('explorer', 'Free', 'Try Sphera AI for free', 0, 1, '["1 AI Conversation (lifetime)", "20 messages per chat", "Text Only", "Browse all services", "View prices"]'),
+('starter', 'Starter', 'Get started with AI booking', 20, 15, '["15 AI Conversations/month", "20 messages per chat", "Break the Price (costs 1 chat)", "Voice & Text Support", "Email Support"]'),
+('pro', 'Professional', 'Most popular for regular travelers', 40, 30, '["30 AI Conversations/month", "20 messages per chat", "Break the Price (costs 1 chat)", "Priority Support", "Dedicated Manager"]'),
+('elite', 'Elite', 'Unlimited VIP access', 130, NULL, '["Unlimited AI Conversations", "Unlimited messages per chat", "Unlimited Break the Price", "24/7 Live Broker Assistance", "White Glove Treatment"]')
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  description = EXCLUDED.description,
+  price_monthly_usd = EXCLUDED.price_monthly_usd,
+  chats_limit = EXCLUDED.chats_limit,
+  features = EXCLUDED.features;
 
 -- Enable RLS
 ALTER TABLE subscription_tiers ENABLE ROW LEVEL SECURITY;
