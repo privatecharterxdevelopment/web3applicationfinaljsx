@@ -7,12 +7,16 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Eye,
   X,
   User,
   MapPin,
-  DollarSign,
-  Users
+  ChevronDown,
+  Calendar,
+  Info,
+  Globe,
+  Users,
+  Briefcase,
+  Plus
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -33,8 +37,10 @@ export default function MySPVs() {
   const navigate = useNavigate();
   const [requests, setRequests] = useState<SPVRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedRequest, setSelectedRequest] = useState<SPVRequest | null>(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 9;
 
   useEffect(() => {
     if (!user) {
@@ -68,40 +74,23 @@ export default function MySPVs() {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-amber-50 text-amber-700';
       case 'in_progress':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-50 text-blue-700';
       case 'completed':
-        return 'bg-green-100 text-green-800';
+        return 'bg-emerald-50 text-emerald-700';
       case 'cancelled':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-50 text-red-700';
       default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return <Clock className="w-5 h-5" />;
-      case 'in_progress':
-        return <AlertCircle className="w-5 h-5" />;
-      case 'completed':
-        return <CheckCircle className="w-5 h-5" />;
-      case 'cancelled':
-        return <XCircle className="w-5 h-5" />;
-      default:
-        return <FileText className="w-5 h-5" />;
+        return 'bg-gray-100 text-gray-700';
     }
   };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
+      month: 'short',
       day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric'
     });
   };
 
@@ -112,371 +101,329 @@ export default function MySPVs() {
     }).format(amount);
   };
 
-  const openDetails = (request: SPVRequest) => {
-    setSelectedRequest(request);
-    setShowDetailsModal(true);
-  };
-
-  const closeDetails = () => {
-    setSelectedRequest(null);
-    setShowDetailsModal(false);
-  };
+  // Pagination
+  const totalPages = Math.ceil(requests.length / ITEMS_PER_PAGE);
+  const paginatedRequests = requests.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-indigo-600" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">My SPV Formations</h1>
-              <p className="text-gray-600">Track and manage your SPV formation requests</p>
-            </div>
+    <div className="min-h-screen bg-white">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Header - Left aligned with info icon */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">My SPVs</h1>
+            <button
+              onClick={() => setShowInfoModal(true)}
+              className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <Info size={16} className="text-gray-400" />
+            </button>
           </div>
+          <p className="text-sm text-gray-500">Track your SPV formation requests</p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Requests</p>
-                <p className="text-2xl font-bold text-gray-900">{requests.length}</p>
-              </div>
-              <FileText className="w-8 h-8 text-gray-400" />
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Pending</p>
-                <p className="text-2xl font-bold text-yellow-600">
-                  {requests.filter(r => r.status === 'pending').length}
-                </p>
-              </div>
-              <Clock className="w-8 h-8 text-yellow-400" />
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">In Progress</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {requests.filter(r => r.status === 'in_progress').length}
-                </p>
-              </div>
-              <AlertCircle className="w-8 h-8 text-blue-400" />
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Completed</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {requests.filter(r => r.status === 'completed').length}
-                </p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-green-400" />
-            </div>
-          </div>
-        </div>
-
-        {/* Requests List */}
+        {/* Content */}
         {requests.length === 0 ? (
-          <div className="bg-white rounded-xl p-12 shadow-sm border border-gray-200 text-center">
-            <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No SPV Formations Yet</h3>
-            <p className="text-gray-600 mb-6">
+          <div className="text-center py-16">
+            <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Building2 size={28} className="text-gray-300" />
+            </div>
+            <h3 className="text-base font-medium text-gray-900 mb-1">No SPV Formations</h3>
+            <p className="text-sm text-gray-500 mb-6 max-w-xs mx-auto">
               You haven't submitted any SPV formation requests yet.
             </p>
             <button
               onClick={() => navigate('/spv-formation')}
-              className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
             >
+              <Plus size={16} />
               Start SPV Formation
             </button>
           </div>
         ) : (
-          <div className="space-y-4">
-            {requests.map((request) => (
-              <div
-                key={request.id}
-                className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${getStatusColor(request.status).replace('text-', 'bg-').replace('-800', '-100')}`}>
-                      {getStatusIcon(request.status)}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {request.data.companyInfo?.companyName || 'SPV Formation Request'}
-                        </h3>
-                        <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
-                          {request.status.replace('_', ' ').toUpperCase()}
-                        </span>
+          <div className="space-y-1">
+            {/* Stats Bar */}
+            <div className="flex items-center justify-between text-xs text-gray-500 py-2 px-1">
+              <span>{requests.length} formation{requests.length !== 1 ? 's' : ''}</span>
+              <div className="flex gap-3">
+                <span>{requests.filter(r => r.status === 'pending').length} pending</span>
+                <span>{requests.filter(r => r.status === 'in_progress').length} in progress</span>
+                <span>{requests.filter(r => r.status === 'completed').length} completed</span>
+              </div>
+            </div>
+
+            {/* Pagination Info */}
+            {requests.length > ITEMS_PER_PAGE && (
+              <div className="text-xs text-gray-400 pb-2">
+                Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, requests.length)}-{Math.min(currentPage * ITEMS_PER_PAGE, requests.length)} of {requests.length}
+              </div>
+            )}
+
+            {/* SPV List */}
+            <div className="border border-gray-100 rounded-lg overflow-hidden divide-y divide-gray-100">
+              {paginatedRequests.map((request) => {
+                const isExpanded = expandedId === request.id;
+                const companyName = request.data?.companyName || request.data?.companyInfo?.companyName || 'SPV Formation';
+                const jurisdiction = request.data?.jurisdiction?.name || request.data?.jurisdiction || request.data?.jurisdictionDetails?.name || '';
+                const tier = request.data?.selectedTier || request.data?.tier || '';
+                const totalCost = request.data?.pricing?.total || request.data?.totalCost;
+                const directors = request.data?.directors || [];
+
+                return (
+                  <div key={request.id} className="bg-white">
+                    {/* Collapsed Row */}
+                    <div
+                      onClick={() => setExpandedId(isExpanded ? null : request.id)}
+                      className="flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                    >
+                      {/* Icon */}
+                      <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Building2 size={14} className="text-gray-400" />
                       </div>
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                          {request.data.tier && (
-                            <div>
-                              <span className="text-gray-500">Tier:</span>
-                              <span className="ml-2 font-medium text-gray-900">{request.data.tier}</span>
-                            </div>
-                          )}
-                          {request.data.jurisdiction && (
-                            <div>
-                              <span className="text-gray-500">Jurisdiction:</span>
-                              <span className="ml-2 font-medium text-gray-900">
-                                {request.data.jurisdiction.name || request.data.jurisdiction}
-                              </span>
-                            </div>
-                          )}
-                          <div>
-                            <span className="text-gray-500">Submitted:</span>
-                            <span className="ml-2 font-medium text-gray-900">
-                              {new Date(request.created_at).toLocaleDateString()}
+
+                      {/* Main Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-900 truncate">
+                            {companyName}
+                          </span>
+                          {tier && (
+                            <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded capitalize">
+                              {tier}
                             </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-400 truncate">
+                          {jurisdiction || formatDate(request.created_at)}
+                        </div>
+                      </div>
+
+                      {/* Cost */}
+                      {totalCost && (
+                        <div className="text-sm font-medium text-gray-900 hidden sm:block">
+                          {formatCurrency(totalCost)}
+                        </div>
+                      )}
+
+                      {/* Status */}
+                      <span className={`px-2 py-0.5 text-[10px] font-medium rounded capitalize ${getStatusColor(request.status)}`}>
+                        {request.status.replace('_', ' ')}
+                      </span>
+
+                      {/* Chevron */}
+                      <ChevronDown
+                        size={16}
+                        className={`text-gray-300 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                      />
+                    </div>
+
+                    {/* Expanded Content */}
+                    {isExpanded && (
+                      <div className="px-3 pb-3 pt-0 border-t border-gray-50">
+                        {/* Quick Details */}
+                        <div className="flex flex-wrap gap-2 py-3">
+                          {jurisdiction && (
+                            <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
+                              <Globe size={12} className="text-gray-400" />
+                              {jurisdiction}
+                            </div>
+                          )}
+                          {tier && (
+                            <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
+                              <Briefcase size={12} className="text-gray-400" />
+                              {tier} tier
+                            </div>
+                          )}
+                          {directors.length > 0 && (
+                            <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
+                              <Users size={12} className="text-gray-400" />
+                              {directors.length} director{directors.length !== 1 ? 's' : ''}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
+                            <Calendar size={12} className="text-gray-400" />
+                            {formatDate(request.created_at)}
                           </div>
                         </div>
-                        {/* PRICE - Prominently Displayed */}
-                        {request.data.pricing?.total && (
-                          <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium text-indigo-900">💰 Total First Year Cost</span>
-                              <span className="text-xl font-bold text-indigo-600">
-                                {formatCurrency(request.data.pricing.total, 'EUR')}
-                              </span>
+
+                        {/* Company Info */}
+                        {(request.data?.businessActivity || request.data?.companyInfo?.activity) && (
+                          <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                            <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-2">Business Activity</div>
+                            <p className="text-xs text-gray-600">
+                              {request.data?.businessActivity || request.data?.companyInfo?.activity}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Directors Preview */}
+                        {directors.length > 0 && (
+                          <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                            <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-2">Directors</div>
+                            <div className="space-y-2">
+                              {directors.slice(0, 3).map((director: any, idx: number) => (
+                                <div key={idx} className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
+                                      <User size={12} className="text-gray-500" />
+                                    </div>
+                                    <span className="text-xs text-gray-700">{director.fullName || director.name}</span>
+                                  </div>
+                                  {director.sharePercentage && (
+                                    <span className="text-xs text-gray-500">{director.sharePercentage}%</span>
+                                  )}
+                                </div>
+                              ))}
+                              {directors.length > 3 && (
+                                <p className="text-xs text-gray-400">+{directors.length - 3} more</p>
+                              )}
                             </div>
                           </div>
                         )}
-                      </div>
-                      {request.admin_notes && (
-                        <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                          <p className="text-sm font-medium text-yellow-900 mb-1">Admin Notes:</p>
-                          <p className="text-sm text-yellow-800">{request.admin_notes}</p>
+
+                        {/* Pricing */}
+                        {totalCost && (
+                          <div className="bg-gray-900 rounded-lg p-3 mb-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-gray-400">Total First Year Cost</span>
+                              <span className="text-lg font-semibold text-white">{formatCurrency(totalCost)}</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Admin Notes */}
+                        {request.admin_notes && (
+                          <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 mb-3">
+                            <div className="text-[10px] font-medium text-amber-600 uppercase tracking-wide mb-1">Admin Response</div>
+                            <p className="text-xs text-amber-800">{request.admin_notes}</p>
+                          </div>
+                        )}
+
+                        {/* Footer */}
+                        <div className="flex items-center justify-between pt-2">
+                          <span className="text-[10px] text-gray-300 font-mono">{request.id.slice(0, 8)}</span>
+                          {request.completed_at && (
+                            <span className="text-[10px] text-emerald-600">
+                              Completed {formatDate(request.completed_at)}
+                            </span>
+                          )}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
-                  <button
-                    onClick={() => openDetails(request)}
-                    className="ml-4 p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                    title="View details"
-                  >
-                    <Eye className="w-5 h-5" />
-                  </button>
+                );
+              })}
+            </div>
+
+            {/* Pagination Controls */}
+            {requests.length > ITEMS_PER_PAGE && (
+              <div className="flex items-center justify-center gap-2 pt-4">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-2.5 py-1 text-xs font-medium rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Prev
+                </button>
+                <div className="flex gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .slice(0, 5)
+                    .map(page => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-6 h-6 text-xs font-medium rounded transition-colors ${
+                          currentPage === page
+                            ? 'bg-gray-900 text-white'
+                            : 'hover:bg-gray-100 text-gray-500'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
                 </div>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage >= totalPages}
+                  className="px-2.5 py-1 text-xs font-medium rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                </button>
               </div>
-            ))}
+            )}
           </div>
         )}
       </div>
 
-      {/* Details Modal */}
-      {showDetailsModal && selectedRequest && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${getStatusColor(selectedRequest.status).replace('text-', 'bg-').replace('-800', '-100')}`}>
-                  <Building2 className="w-6 h-6 text-indigo-600" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    {selectedRequest.data.companyInfo?.companyName || 'SPV Formation Request'}
-                  </h2>
-                  <p className="text-sm text-gray-600">ID: {selectedRequest.id.slice(0, 8)}</p>
-                </div>
-              </div>
+      {/* Info Modal */}
+      {showInfoModal && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden">
+            <div className="border-b border-gray-100 px-5 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">About SPV Formations</h2>
               <button
-                onClick={closeDetails}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                onClick={() => setShowInfoModal(false)}
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X size={18} className="text-gray-400" />
               </button>
             </div>
-
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
-              <div className="space-y-6">
-                {/* Status Overview */}
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-4">Request Overview</h3>
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <div className="text-xs text-gray-500 mb-1">Status</div>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedRequest.status)}`}>
-                          {selectedRequest.status.replace('_', ' ').toUpperCase()}
-                        </span>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-500 mb-1">Submitted</div>
-                        <div className="text-sm font-medium text-gray-900">{formatDate(selectedRequest.created_at)}</div>
-                      </div>
-                      {selectedRequest.completed_at && (
-                        <div>
-                          <div className="text-xs text-gray-500 mb-1">Completed</div>
-                          <div className="text-sm font-medium text-green-600">{formatDate(selectedRequest.completed_at)}</div>
-                        </div>
-                      )}
-                    </div>
+            <div className="px-5 py-4 space-y-4">
+              <p className="text-sm text-gray-600">
+                A Special Purpose Vehicle (SPV) is a legal entity created for a specific, limited purpose.
+                SPVs are commonly used for asset protection, investment structuring, and risk isolation.
+              </p>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Building2 size={14} className="text-gray-500" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900">Asset Protection</h4>
+                    <p className="text-xs text-gray-500">Isolate assets and limit liability exposure</p>
                   </div>
                 </div>
-
-                {/* Tier & Jurisdiction */}
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-4">Tier & Jurisdiction</h3>
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      {selectedRequest.data.tier && (
-                        <div>
-                          <div className="text-xs text-gray-500 mb-1">Tier</div>
-                          <div className="text-sm font-medium text-gray-900">{selectedRequest.data.tier}</div>
-                        </div>
-                      )}
-                      {selectedRequest.data.jurisdiction && (
-                        <div>
-                          <div className="text-xs text-gray-500 mb-1">Jurisdiction</div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {selectedRequest.data.jurisdiction.name || selectedRequest.data.jurisdiction}
-                          </div>
-                        </div>
-                      )}
-                      {selectedRequest.data.pricing?.total && (
-                        <div className="col-span-2">
-                          <div className="text-xs text-gray-500 mb-1">Total Cost</div>
-                          <div className="text-2xl font-bold text-green-600">
-                            {formatCurrency(selectedRequest.data.pricing.total, 'EUR')}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Globe size={14} className="text-gray-500" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900">Multiple Jurisdictions</h4>
+                    <p className="text-xs text-gray-500">Choose from UAE, Malta, BVI, and more</p>
                   </div>
                 </div>
-
-                {/* Company Information */}
-                {selectedRequest.data.companyInfo && (
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-4">Company Information</h3>
-                    <div className="bg-gray-50 rounded-xl p-4 space-y-4">
-                      {selectedRequest.data.companyInfo.companyName && (
-                        <div>
-                          <div className="text-xs text-gray-500 mb-1">Company Name</div>
-                          <div className="text-sm font-medium text-gray-900">{selectedRequest.data.companyInfo.companyName}</div>
-                        </div>
-                      )}
-                      {selectedRequest.data.companyInfo.activity && (
-                        <div>
-                          <div className="text-xs text-gray-500 mb-1">Business Activity</div>
-                          <div className="text-sm text-gray-700">{selectedRequest.data.companyInfo.activity}</div>
-                        </div>
-                      )}
-                      {selectedRequest.data.companyInfo.description && (
-                        <div>
-                          <div className="text-xs text-gray-500 mb-1">Description</div>
-                          <div className="text-sm text-gray-700">{selectedRequest.data.companyInfo.description}</div>
-                        </div>
-                      )}
-                    </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <FileText size={14} className="text-gray-500" />
                   </div>
-                )}
-
-                {/* Directors & Shareholders */}
-                {selectedRequest.data.directors && selectedRequest.data.directors.length > 0 && (
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-4">Directors & Shareholders</h3>
-                    <div className="space-y-3">
-                      {selectedRequest.data.directors.map((director: any, idx: number) => (
-                        <div key={idx} className="bg-gray-50 rounded-xl p-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <div className="text-xs text-gray-500 mb-1">Full Name</div>
-                              <div className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                                <User className="w-4 h-4 text-gray-400" />
-                                {director.fullName}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="text-xs text-gray-500 mb-1">Nationality</div>
-                              <div className="text-sm text-gray-700">{director.nationality}</div>
-                            </div>
-                            <div>
-                              <div className="text-xs text-gray-500 mb-1">Role</div>
-                              <div className="text-sm text-gray-700">{director.role || 'Director'}</div>
-                            </div>
-                            {director.sharePercentage && (
-                              <div>
-                                <div className="text-xs text-gray-500 mb-1">Share Percentage</div>
-                                <div className="text-sm font-medium text-blue-600">{director.sharePercentage}%</div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    <h4 className="text-sm font-medium text-gray-900">Full Documentation</h4>
+                    <p className="text-xs text-gray-500">Receive all legal documents upon completion</p>
                   </div>
-                )}
-
-                {/* Additional Services */}
-                {selectedRequest.data.additionalServices && Object.keys(selectedRequest.data.additionalServices).length > 0 && (
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-4">Additional Services</h3>
-                    <div className="bg-blue-50 rounded-xl p-4 space-y-2">
-                      {Object.entries(selectedRequest.data.additionalServices).map(([key, value]) => {
-                        if (value) {
-                          return (
-                            <div key={key} className="flex items-center gap-2">
-                              <CheckCircle className="w-5 h-5 text-green-600" />
-                              <span className="text-sm text-gray-700">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                            </div>
-                          );
-                        }
-                        return null;
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Documents */}
-                {selectedRequest.data.documents && selectedRequest.data.documents.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-4">Uploaded Documents</h3>
-                    <div className="space-y-2">
-                      {selectedRequest.data.documents.map((doc: any, idx: number) => (
-                        <div key={idx} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
-                          <FileText className="w-5 h-5 text-gray-400" />
-                          <span className="text-sm text-gray-700">{doc.name || `Document ${idx + 1}`}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Admin Notes */}
-                {selectedRequest.admin_notes && (
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-4">Admin Notes</h3>
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedRequest.admin_notes}</p>
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
+            </div>
+            <div className="px-5 py-4 bg-gray-50 border-t border-gray-100">
+              <button
+                onClick={() => {
+                  setShowInfoModal(false);
+                  navigate('/spv-formation');
+                }}
+                className="w-full py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                Start New Formation
+              </button>
             </div>
           </div>
         </div>
