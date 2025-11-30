@@ -6,18 +6,12 @@ import { supabase } from '../../lib/supabase';
 export default function ChatWidget() {
   const [userInfo, setUserInfo] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      text: "Hello! Welcome to PrivateCharterX. How can we assist you today?",
-      sender: 'support',
-      timestamp: new Date()
-    }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
-  const [chatHistory, setChatHistory] = useState([]);
   const [emailSent, setEmailSent] = useState(false);
   const [shouldHide, setShouldHide] = useState(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -47,6 +41,112 @@ export default function ChatWidget() {
     };
     fetchUserInfo();
   }, []);
+
+  // Load chat messages from database when user is available
+  useEffect(() => {
+    if (userInfo?.id) {
+      loadChatMessages();
+      subscribeToMessages();
+    }
+  }, [userInfo?.id]);
+
+  const loadChatMessages = async () => {
+    if (!userInfo?.id) return;
+
+    try {
+      setIsLoadingMessages(true);
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('user_id', userInfo.id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setMessages(data.map(msg => ({
+          id: msg.id,
+          text: msg.content,
+          sender: msg.sender_type === 'user' ? 'user' : 'support',
+          timestamp: new Date(msg.created_at),
+          adminName: msg.admin_name
+        })));
+      } else {
+        // Show welcome message if no messages
+        setMessages([{
+          id: 'welcome',
+          text: "Hello! Welcome to PrivateCharterX. How can we assist you today?",
+          sender: 'support',
+          timestamp: new Date()
+        }]);
+      }
+    } catch (error) {
+      console.error('Error loading chat messages:', error);
+      // Show welcome message on error
+      setMessages([{
+        id: 'welcome',
+        text: "Hello! Welcome to PrivateCharterX. How can we assist you today?",
+        sender: 'support',
+        timestamp: new Date()
+      }]);
+    } finally {
+      setIsLoadingMessages(false);
+    }
+  };
+
+  const subscribeToMessages = () => {
+    if (!userInfo?.id) return;
+
+    const subscription = supabase
+      .channel(`chat_messages_${userInfo.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'chat_messages',
+        filter: `user_id=eq.${userInfo.id}`
+      }, payload => {
+        const newMsg = payload.new;
+        // Only add if it's from admin (user messages are added immediately)
+        if (newMsg.sender_type === 'admin') {
+          setMessages(prev => [...prev, {
+            id: newMsg.id,
+            text: newMsg.content,
+            sender: 'support',
+            timestamp: new Date(newMsg.created_at),
+            adminName: newMsg.admin_name
+          }]);
+          // Increment unread count if chat is closed
+          setUnreadCount(prev => prev + 1);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  };
+
+  const saveChatMessage = async (content, senderType) => {
+    if (!userInfo?.id) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .insert([{
+          user_id: userInfo.id,
+          content: content,
+          sender_type: senderType
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error saving chat message:', error);
+      return null;
+    }
+  };
 
   // Check if we're on taxi/concierge page or AI chat page and hide widget
   useEffect(() => {
@@ -83,17 +183,30 @@ export default function ChatWidget() {
     e.preventDefault();
     if (!inputMessage.trim()) return;
 
-    const newMessage = {
-      id: messages.length + 1,
-      text: inputMessage,
+    const currentInput = inputMessage;
+    setInputMessage('');
+
+    // Add message to UI immediately
+    const tempMessage = {
+      id: `temp-${Date.now()}`,
+      text: currentInput,
       sender: 'user',
       timestamp: new Date()
     };
+    setMessages(prev => [...prev, tempMessage]);
 
-    setMessages([...messages, newMessage]);
-    setChatHistory(prev => [...prev, newMessage]);
-    const currentInput = inputMessage;
-    setInputMessage('');
+    // Save to database if user is logged in
+    if (userInfo?.id) {
+      const savedMsg = await saveChatMessage(currentInput, 'user');
+      if (savedMsg) {
+        // Update temp message with real ID
+        setMessages(prev => prev.map(msg =>
+          msg.id === tempMessage.id
+            ? { ...msg, id: savedMsg.id }
+            : msg
+        ));
+      }
+    }
 
     // Send email notification for first message (only once per session)
     if (!emailSent && userInfo?.email) {
@@ -111,32 +224,37 @@ export default function ChatWidget() {
       }
     }
 
-    // Auto-response based on keywords
-    setTimeout(() => {
-      let responseText = "Thank you for your message! Our team has been notified and will get back to you shortly. In the meantime, feel free to continue chatting or check our Help Center for quick answers.";
+    // Auto-response only for non-logged-in users or if no admin has responded yet
+    // For logged-in users, admin will respond via the admin panel
+    if (!userInfo?.id) {
+      setTimeout(() => {
+        let responseText = "Thank you for your message! Please log in to chat with our support team, or our team will reach out to you via email.";
 
-      const lowerInput = currentInput.toLowerCase();
-      if (lowerInput.includes('price') || lowerInput.includes('cost') || lowerInput.includes('quote')) {
-        responseText = "For pricing inquiries, please submit a quote request through our platform. Our team will provide a personalized quote within 24 hours. Is there anything specific you'd like to know about our services?";
-      } else if (lowerInput.includes('book') || lowerInput.includes('charter') || lowerInput.includes('flight')) {
-        responseText = "Great! To book a charter, you can use our booking form or request a quote. Our concierge team is available to assist with your travel needs. What destination are you considering?";
-      } else if (lowerInput.includes('payment') || lowerInput.includes('crypto') || lowerInput.includes('usdc')) {
-        responseText = "We accept various payment methods including crypto (USDC, ETH) and traditional payments. All transactions are secured through our escrow system. Would you like more details about our payment process?";
-      } else if (lowerInput.includes('help') || lowerInput.includes('support')) {
-        responseText = "I'm here to help! You can also check our Help Center for FAQs, or our team will respond to your inquiry via email. What specific assistance do you need?";
-      }
+        const lowerInput = currentInput.toLowerCase();
+        if (lowerInput.includes('price') || lowerInput.includes('cost') || lowerInput.includes('quote')) {
+          responseText = "For pricing inquiries, please log in and submit a quote request. Our team will provide a personalized quote within 24 hours.";
+        } else if (lowerInput.includes('book') || lowerInput.includes('charter') || lowerInput.includes('flight')) {
+          responseText = "Great! To book a charter, please log in and use our booking form. Our concierge team is available to assist with your travel needs.";
+        } else if (lowerInput.includes('help') || lowerInput.includes('support')) {
+          responseText = "I'm here to help! Please log in to chat with our support team, or check our Help Center for FAQs.";
+        }
 
-      const supportResponse = {
-        id: messages.length + 2,
-        text: responseText,
-        sender: 'support',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, supportResponse]);
-    }, 1500);
+        const supportResponse = {
+          id: `auto-${Date.now()}`,
+          text: responseText,
+          sender: 'support',
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, supportResponse]);
+      }, 1500);
+    }
   };
 
   const toggleChat = () => {
+    if (!isOpen) {
+      // Clear unread count when opening chat
+      setUnreadCount(0);
+    }
     setIsOpen(!isOpen);
   };
 
@@ -273,6 +391,14 @@ export default function ChatWidget() {
           className="group relative px-3 py-2 bg-black border border-white/20 rounded-lg shadow-lg hover:bg-gray-900 transition-all duration-300 hover:scale-105"
           aria-label="Open chat"
         >
+          {/* Notification Badge */}
+          {unreadCount > 0 && (
+            <div className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1.5 bg-red-500 rounded-full flex items-center justify-center animate-bounce-subtle">
+              <span className="text-white text-[10px] font-bold">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            </div>
+          )}
           {/* Text with Icon */}
           <div className="flex items-center gap-1.5">
             <MessageCircle className="w-3.5 h-3.5 text-white" />
@@ -320,6 +446,17 @@ export default function ChatWidget() {
         }
         .animate-gradient {
           animation: gradient 3s ease-in-out infinite;
+        }
+        @keyframes bounce-subtle {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-3px);
+          }
+        }
+        .animate-bounce-subtle {
+          animation: bounce-subtle 1s ease-in-out infinite;
         }
       `}</style>
     </div>

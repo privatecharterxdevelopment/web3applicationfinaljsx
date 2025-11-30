@@ -36,6 +36,13 @@ export default defineConfig({
     strictPort: true,
     host: true
   },
+  esbuild: {
+    // Strip debugger statements in production; console.log is kept for now to aid debugging
+    // To fully strip console: drop: ['console', 'debugger']
+    drop: process.env.NODE_ENV === 'production' ? ['debugger'] : [],
+    // Optionally, use pure to strip only console.log while keeping error/warn:
+    pure: process.env.NODE_ENV === 'production' ? ['console.log'] : []
+  },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',

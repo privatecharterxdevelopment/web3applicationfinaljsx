@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ChevronRight, Clock, TrendingUp, Sparkles, MessageSquare, Plane, Zap, Mail } from 'lucide-react';
+import { Search, ChevronRight, Clock, TrendingUp, Sparkles, Plane, Zap, Mail } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 /**
@@ -76,6 +76,7 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
   // All available services - RWS & Web3.0
   const allServices = {
     rwsServices: [
+      { label: 'Break the Price', icon: '💰', category: 'RWS Services', action: 'break-the-price', highlight: true },
       { label: 'Private Jets', icon: '✈️', category: 'RWS Services', action: 'jets' },
       { label: 'Helicopters', icon: '🚁', category: 'RWS Services', action: 'helicopter' },
       { label: 'Empty Legs', icon: '🛫', category: 'RWS Services', action: 'empty-legs' },
@@ -190,40 +191,68 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
     return () => clearTimeout(timeout);
   }, [currentPhraseIndex, query, isOpen]);
 
-  // Fetch actual offers from database
+  // Fetch actual offers from database - All PrivateCharterX services
   const fetchActualOffers = async (searchQuery) => {
     setLoadingOffers(true);
     try {
-      // Search jets
-      const { data: jets } = await supabase
-        .from('jets')
-        .select('*')
-        .or(`name.ilike.%${searchQuery}%,type.ilike.%${searchQuery}%`)
-        .limit(3);
+      // Extract meaningful keywords from the query (remove common words, limit length)
+      const stopWords = ['i', 'need', 'want', 'a', 'an', 'the', 'to', 'from', 'for', 'in', 'on', 'at', 'with', 'and', 'or', 'please', 'can', 'you', 'me', 'my', 'private'];
+      const keywords = searchQuery
+        .toLowerCase()
+        .replace(/[^\w\s]/g, '') // Remove special characters
+        .split(/\s+/)
+        .filter(word => word.length > 2 && !stopWords.includes(word))
+        .slice(0, 3); // Max 3 keywords
 
-      // Search empty legs
-      const { data: emptyLegs } = await supabase
-        .from('empty_legs')
-        .select('*')
-        .or(`route.ilike.%${searchQuery}%,departure_city.ilike.%${searchQuery}%,arrival_city.ilike.%${searchQuery}%`)
-        .limit(3);
+      // If no keywords, just fetch some results without filter
+      const hasKeywords = keywords.length > 0;
+      const searchKeyword = keywords[0] || ''; // Use first keyword for search
 
-      // Search adventures
-      const { data: adventures } = await supabase
-        .from('tokenization_services')
-        .select('*')
-        .eq('type_category', 'adventure-package')
-        .or(`title.ilike.%${searchQuery}%,destination.ilike.%${searchQuery}%`)
-        .limit(3);
+      // Search jets - no text filter (table may not have searchable columns)
+      const { data: jets } = await supabase.from('jets').select('*').limit(3);
+
+      // Search empty legs - use location keywords if available
+      let emptyLegsQuery = supabase.from('EmptyLegs_').select('*').limit(3);
+      if (hasKeywords) {
+        const locationKeyword = keywords.find(k => k.length >= 3) || '';
+        if (locationKeyword) {
+          emptyLegsQuery = supabase
+            .from('EmptyLegs_')
+            .select('*')
+            .or(`from_city.ilike.%${locationKeyword}%,to_city.ilike.%${locationKeyword}%`)
+            .limit(3);
+        }
+      }
+      const { data: emptyLegs } = await emptyLegsQuery;
+
+      // Search helicopters - no text filter (table may not have searchable columns)
+      const { data: helicopters } = await supabase.from('helicopter_charters').select('*').limit(3);
+
+      // Search luxury cars - no text filter
+      const { data: luxuryCars } = await supabase.from('luxury_cars').select('*').limit(3);
+
+      // Search ground transport - no filter
+      const { data: groundTransport } = await supabase.from('taxi_cars').select('*').limit(3);
+
+      // Search fixed offers - use keywords if available
+      let fixedOffersQuery = supabase.from('fixed_offers').select('*').limit(3);
+      if (hasKeywords && searchKeyword.length >= 3) {
+        fixedOffersQuery = supabase
+          .from('fixed_offers')
+          .select('*')
+          .or(`title.ilike.%${searchKeyword}%,destination.ilike.%${searchKeyword}%`)
+          .limit(3);
+      }
+      const { data: fixedOffers } = await fixedOffersQuery;
 
       const offers = [];
-      
+
       if (jets && jets.length > 0) {
         offers.push({
           category: 'Private Jets',
           icon: '✈️',
           items: jets.map(jet => ({
-            label: `${jet.name} - €${jet.hourly_rate_eur?.toLocaleString()}/hr`,
+            label: `${jet.name} - €${jet.hourly_rate_eur?.toLocaleString() || 'Quote'}/hr`,
             action: 'jets',
             data: jet
           }))
@@ -235,21 +264,57 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
           category: 'Empty Legs',
           icon: '🛫',
           items: emptyLegs.map(leg => ({
-            label: `${leg.route || leg.departure_city + ' → ' + leg.arrival_city} - €${leg.price_eur?.toLocaleString()}`,
+            label: `${leg.from_city || leg.from} → ${leg.to_city || leg.to} - ${leg.price_usd ? '$' + leg.price_usd.toLocaleString() : '€' + (leg.price_eur?.toLocaleString() || 'Quote')}`,
             action: 'empty-legs',
             data: leg
           }))
         });
       }
 
-      if (adventures && adventures.length > 0) {
+      if (helicopters && helicopters.length > 0) {
         offers.push({
-          category: 'Adventure Packages',
+          category: 'Helicopters',
+          icon: '🚁',
+          items: helicopters.map(heli => ({
+            label: `${heli.name} - €${heli.hourly_rate_eur?.toLocaleString() || 'Quote'}/hr`,
+            action: 'helicopter',
+            data: heli
+          }))
+        });
+      }
+
+      if (luxuryCars && luxuryCars.length > 0) {
+        offers.push({
+          category: 'Luxury Cars',
+          icon: '🚗',
+          items: luxuryCars.map(car => ({
+            label: `${car.brand || ''} ${car.model || car.name || car.type} - €${car.daily_rate?.toLocaleString() || car.price_per_day?.toLocaleString() || 'Quote'}/day`,
+            action: 'luxury-cars',
+            data: car
+          }))
+        });
+      }
+
+      if (groundTransport && groundTransport.length > 0) {
+        offers.push({
+          category: 'Ground Transport',
+          icon: '🚙',
+          items: groundTransport.map(car => ({
+            label: `${car.name || car.type} - €${car.price_per_hour?.toLocaleString() || car.hourly_rate?.toLocaleString() || 'Quote'}/hr`,
+            action: 'ground-transport',
+            data: car
+          }))
+        });
+      }
+
+      if (fixedOffers && fixedOffers.length > 0) {
+        offers.push({
+          category: 'Adventures & Packages',
           icon: '🏔️',
-          items: adventures.map(adv => ({
-            label: `${adv.title} - €${adv.price_eur?.toLocaleString()}`,
+          items: fixedOffers.map(offer => ({
+            label: `${offer.title} - €${offer.price_eur?.toLocaleString() || 'Quote'}`,
             action: 'adventures',
-            data: adv
+            data: offer
           }))
         });
       }
@@ -348,18 +413,18 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
       e.preventDefault();
       if (query.trim().length > 0) {
         setIsOpen(false);
-        // Directly open AI chat instead of search index page
+        // Navigate to AI Chat with the query
         if (onOpenAIChat) {
           onOpenAIChat(query);
           setQuery('');
         } else if (onSearch) {
-          // Fallback to traditional search if AI chat not available
           onSearch({
             label: query,
-            action: 'search-index',
+            action: 'ai-chat',
             query: query,
-            category: 'Search Results'
+            category: 'AI Chat'
           }, true);
+          setQuery('');
         }
       }
     } else if (e.key === 'Escape') {
@@ -393,26 +458,29 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
           </kbd>
         </div>
 
-        {/* Talk to Sphera AI Button - Elegant & Fine */}
-        {query.length > 0 && onOpenAIChat && (
+        {/* AI Chat Button - Opens AI assistant with query */}
+        {query.length > 0 && (
           <button
             onClick={() => {
-              if (onOpenAIChat) onOpenAIChat(query);
+              if (onOpenAIChat) {
+                onOpenAIChat(query);
+              } else if (onSearch) {
+                onSearch({
+                  label: query,
+                  action: 'ai-chat',
+                  query: query,
+                  category: 'AI Chat'
+                }, true);
+              }
               setIsOpen(false);
               setQuery('');
             }}
-            className="flex-shrink-0 group relative px-4 py-3 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg"
+            className="flex-shrink-0 group relative px-4 py-3 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg bg-black"
           >
-            {/* Gradient Background */}
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/90 to-purple-600/90 group-hover:from-blue-600 group-hover:to-purple-700 transition-all"></div>
-
-            {/* Glass Effect */}
-            <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
-
             {/* Content */}
             <div className="relative flex items-center gap-2 text-white">
-              <MessageSquare size={16} className="group-hover:scale-110 transition-transform" />
-              <span className="text-sm font-medium whitespace-nowrap">Talk to Sphera AI</span>
+              <Sparkles size={16} className="group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-medium whitespace-nowrap">Ask Sphera AI</span>
             </div>
           </button>
         )}
@@ -541,9 +609,21 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
                     <button
                       key={index}
                       onClick={() => handleSelect(item)}
-                      className="w-full px-4 py-1.5 hover:bg-gray-50 transition-colors text-left"
+                      className={`w-full px-4 py-1.5 transition-colors text-left flex items-center gap-2 ${
+                        item.highlight
+                          ? 'bg-amber-50 hover:bg-amber-100 border-l-2 border-amber-500'
+                          : 'hover:bg-gray-50'
+                      }`}
                     >
-                      <span className="text-sm text-gray-800">{item.label}</span>
+                      <span>{item.icon}</span>
+                      <span className={`text-sm ${item.highlight ? 'font-medium text-amber-700' : 'text-gray-800'}`}>
+                        {item.label}
+                      </span>
+                      {item.highlight && (
+                        <span className="ml-auto text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full">
+                          Beat any quote
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>

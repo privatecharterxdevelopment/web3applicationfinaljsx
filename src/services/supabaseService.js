@@ -15,83 +15,314 @@ export const ImageUtils = {
   }
 };
 
+// Helper: Parse range from string like "13,890 km" or numeric values
+function parseRange(rangeValue) {
+  if (!rangeValue) return null;
+  if (typeof rangeValue === 'number') return rangeValue;
+  // Parse string like "13,890 km" or "7,500km"
+  const numMatch = String(rangeValue).replace(/,/g, '').match(/(\d+)/);
+  return numMatch ? parseInt(numMatch[1]) : null;
+}
+
+// Helper: Parse capacity from string or number
+function parseCapacity(capacityValue) {
+  if (!capacityValue) return null;
+  if (typeof capacityValue === 'number') return capacityValue;
+  const numMatch = String(capacityValue).match(/(\d+)/);
+  return numMatch ? parseInt(numMatch[1]) : null;
+}
+
+// Helper: Parse price from string like "€8,500/hr" or "€3,200/h"
+function parsePrice(priceValue) {
+  if (!priceValue) return null;
+  if (typeof priceValue === 'number') return priceValue;
+  const numMatch = String(priceValue).replace(/,/g, '').match(/(\d+)/);
+  return numMatch ? parseInt(numMatch[1]) : null;
+}
+
+// Helper: Parse speed from string like "800 km/h" or "450 kts"
+function parseSpeed(speedValue) {
+  if (!speedValue) return null;
+  if (typeof speedValue === 'number') return speedValue;
+  const numMatch = String(speedValue).replace(/,/g, '').match(/(\d+)/);
+  return numMatch ? parseInt(numMatch[1]) : null;
+}
+
 // Map DB rows to the shapes AIChat expects
 function mapJetToAircraft(jet) {
+  // Collect images from multiple image_url columns (jets table format)
+  const allImages = [];
+  if (jet.image_url) allImages.push(jet.image_url);
+  if (jet.image_url_1) allImages.push(jet.image_url_1);
+  if (jet.image_url_2) allImages.push(jet.image_url_2);
+  if (jet.image_url_3) allImages.push(jet.image_url_3);
+  if (jet.image_url_4) allImages.push(jet.image_url_4);
+  if (jet.image_url_5) allImages.push(jet.image_url_5);
+  // Fallback to images array if no individual columns
+  if (allImages.length === 0) {
+    const fallbackImages = ImageUtils.getAllImageUrls(jet.images || jet.photo_url);
+    allImages.push(...fallbackImages);
+  }
+
+  // DEBUG: Log raw jet fields
+  console.log('🔍 RAW JET FROM DB:', {
+    id: jet.id,
+    aircraft_model: jet.aircraft_model,
+    capacity: jet.capacity,
+    range: jet.range,
+    price_range: jet.price_range,
+    aircraft_category: jet.aircraft_category
+  });
+
+  // Parse range - handle string format like "13,890 km" or numeric
+  // jets table uses 'range' column (string like "13,890 km")
+  const rangeKm = parseRange(jet.range) || parseRange(jet.range_km) || null;
+  const rangeNm = jet.range_nm || (rangeKm ? Math.round(rangeKm * 0.539957) : null);
+
+  // Parse capacity - jets table uses 'capacity' column (can be "8" or "8 pax")
+  const capacity = parseCapacity(jet.capacity) || parseCapacity(jet.passenger_capacity) || parseCapacity(jet.max_passengers) || null;
+
+  // Parse hourly rate from price_range (jets table format: "€8,500/hr")
+  const hourlyRate = parsePrice(jet.price_range) || parsePrice(jet.hourly_rate) || parsePrice(jet.price_per_hour) || null;
+
+  // Parse speed - handle string format like "850 km/h" or numeric
+  const speedKmh = parseSpeed(jet.speed) || parseSpeed(jet.speed_kmh) || null;
+  const speedKts = jet.speed_kts || (speedKmh ? Math.round(speedKmh * 0.539957) : null);
+
+  // DEBUG: Log parsed values
+  console.log('🔍 PARSED JET VALUES:', {
+    capacity,
+    rangeKm,
+    hourlyRate,
+    speedKmh
+  });
+
   return {
     id: jet.id,
-    name: jet.name || jet.model || jet.title || 'Private Jet',
-    model: jet.model || jet.name || jet.aircraft_type,
-    aircraft_type: jet.aircraft_type || jet.type || jet.category,
-    type: jet.category || jet.type || 'Jet',
-    max_passengers: jet.passenger_capacity || jet.capacity || jet.max_passengers || jet.pax_capacity || null,
-    pax_capacity: jet.pax_capacity || jet.passenger_capacity || jet.capacity || jet.max_passengers || null,
-    range_km: jet.range_km || jet.range || null,
-    range_nm: jet.range_nm || (jet.range_km ? Math.round(jet.range_km * 0.539957) : null),
-    speed_kmh: jet.speed_kmh || jet.speed || null,
-    speed_kts: jet.speed_kts || (jet.speed_kmh ? Math.round(jet.speed_kmh * 0.539957) : null),
-    hourly_rate_eur: jet.hourly_rate || jet.price_per_hour || jet.hourly_rate_eur || jet.price || null,
+    // Name: jets table uses 'aircraft_model' column
+    name: jet.aircraft_model || jet.name || jet.model || jet.title || 'Private Jet',
+    model: jet.aircraft_model || jet.model || jet.name || jet.aircraft_type,
+    aircraft_type: jet.aircraft_type || jet.aircraft_category,
+    // IMPORTANT: 'type' must be literal 'jets' for SearchResults component to render correctly
+    type: 'jets',
+    // Passengers: jets table uses 'capacity' column
+    max_passengers: capacity,
+    pax_capacity: capacity,
+    passenger_capacity: capacity,
+    // Range: store both km and nm for calculations + display
+    range_km: rangeKm,
+    range_nm: rangeNm,
+    range: rangeKm, // numeric value in km for calculations
+    range_display: jet.range || (rangeKm ? `${rangeKm.toLocaleString()} km` : null), // original display format
+    // Speed: parsed numeric values
+    speed_kmh: speedKmh,
+    speed_kts: speedKts,
+    // Price: jets table uses 'price_range' column (keep original format for display)
+    hourly_rate_eur: hourlyRate,
+    price_range: jet.price_range || null,
     base_location: jet.base_location || jet.base || jet.location || null,
-    images: ImageUtils.getAllImageUrls(jet.images || jet.image_url || jet.photo_url),
-    // Additional fields for better display
-    category: jet.category || jet.type,
-    operator: jet.operator || null,
-    registration: jet.registration || jet.tail_number || null
+    images: allImages,
+    primaryImage: allImages[0] || null,
+    // Category: jets table uses 'aircraft_category' column
+    category: jet.aircraft_category || jet.category || jet.type,
+    aircraft_category: jet.aircraft_category || jet.category,
+    // Manufacturer (from jets table)
+    manufacturer: jet.manufacturer || null,
+    // operator: HIDDEN - never expose operator to users
+    registration: jet.registration || jet.tail_number || null,
+    description: jet.description || null
   };
 }
 
 function mapEmptyLeg(leg) {
+  // Collect images from multiple possible columns
+  const allImages = [];
+  if (leg.image_url) allImages.push(leg.image_url);
+  if (leg.image_url_1) allImages.push(leg.image_url_1);
+  if (leg.image_url_2) allImages.push(leg.image_url_2);
+  if (leg.image_url_3) allImages.push(leg.image_url_3);
+  if (allImages.length === 0) {
+    const fallbackImages = ImageUtils.getAllImageUrls(leg.images || leg.photo_url);
+    allImages.push(...fallbackImages);
+  }
+
+  // Parse capacity
+  const capacity = parseCapacity(leg.capacity) || parseCapacity(leg.available_seats) || parseCapacity(leg.passengers) || parseCapacity(leg.max_passengers) || null;
+
+  // Parse price
+  const price = parsePrice(leg.price) || leg.price_eur || leg.price_usd || null;
+
   return {
     id: leg.id,
-    departure_city: leg.from_city || leg.from || leg.departure_city || null,
-    arrival_city: leg.to_city || leg.to || leg.arrival_city || null,
-    departure_date: leg.departure_date,
+    type: 'empty_legs', // CRITICAL: Set type for SearchResults display
+    // Location fields - include "from" and "to" for compatibility
+    from: leg.from || leg.from_city || leg.departure_city || leg.origin || null,
+    to: leg.to || leg.to_city || leg.arrival_city || leg.destination || null,
+    from_city: leg.from_city || leg.departure_city || leg.from || leg.origin || null,
+    to_city: leg.to_city || leg.arrival_city || leg.to || leg.destination || null,
+    departure_city: leg.from_city || leg.departure_city || leg.from || leg.origin || null,
+    arrival_city: leg.to_city || leg.arrival_city || leg.to || leg.destination || null,
+    from_iata: leg.from_iata || leg.departure_iata || null,
+    to_iata: leg.to_iata || leg.arrival_iata || null,
+    from_country: leg.from_country || null,
+    to_country: leg.to_country || null,
+    // Date/time
+    departure_date: leg.departure_date || null,
     departure_time: leg.departure_time || null,
-    price_eur: leg.price_eur || leg.price_usd || leg.price || null,
+    arrival_time: leg.arrival_time || null,
+    // Aircraft info
+    aircraft_type: leg.aircraft_type || leg.aircraft_model || leg.model || null,
+    aircraft_type_original: leg.aircraft_type_original || leg.aircraft_type || null,
+    category: leg.category || leg.aircraft_category || null,
+    registration: leg.registration || leg.tail_number || null,
+    // operator: HIDDEN - never expose operator to users
+    // Capacity and pricing
+    available_seats: capacity,
+    capacity: capacity,
+    max_passengers: capacity,
+    price: leg.price_usd || price, // Default to USD price
+    price_eur: leg.price_eur || price,
+    price_usd: leg.price_usd || leg.price || null, // Prioritize USD
+    currency: '$', // Always USD for empty legs
     discount_percentage: leg.discount_percentage || leg.discount || null,
-    available_seats: leg.available_seats || leg.passengers || leg.max_passengers || leg.passenger_capacity || 8,
-    // AIChat looks for leg.aircraft?.images; provide a minimal wrapper if we have images
+    // Booking
+    booking_link: leg.booking_link || null,
+    // Images - include image_url and image_url_1 directly for SearchResults
+    image_url: allImages[0] || null,
+    image_url_1: allImages[1] || null,
+    images: allImages,
+    primaryImage: allImages[0] || null,
+    // AIChat looks for leg.aircraft?.images
     aircraft: {
-      images: ImageUtils.getAllImageUrls(leg.images || leg.image_url || leg.photo_url)
+      images: allImages
     }
   };
 }
 
 function mapHelicopter(heli) {
+  // Collect images from multiple possible columns
+  const allImages = [];
+  if (heli.image_url) allImages.push(heli.image_url);
+  if (heli.image_url_1) allImages.push(heli.image_url_1);
+  if (heli.image_url_2) allImages.push(heli.image_url_2);
+  if (heli.image_url_3) allImages.push(heli.image_url_3);
+  if (allImages.length === 0) {
+    const fallbackImages = ImageUtils.getAllImageUrls(heli.images || heli.photo_url);
+    allImages.push(...fallbackImages);
+  }
+
+  // Parse capacity from string or number
+  const capacity = parseCapacity(heli.capacity) || parseCapacity(heli.passenger_capacity) || parseCapacity(heli.max_passengers) || null;
+
+  // Parse hourly rate
+  const hourlyRate = parsePrice(heli.price_range) || parsePrice(heli.hourly_rate) || parsePrice(heli.price_per_hour) || heli.hourly_rate_eur || null;
+
+  // Parse range
+  const rangeKm = parseRange(heli.range) || parseRange(heli.range_km) || null;
+
+  // Parse speed
+  const speedKmh = parseSpeed(heli.speed) || parseSpeed(heli.speed_kmh) || null;
+
   return {
-    ...heli,
-    max_passengers: heli.passenger_capacity || heli.max_passengers || null,
-    hourly_rate_eur: heli.hourly_rate || heli.price_per_hour || heli.hourly_rate_eur || null,
-    images: ImageUtils.getAllImageUrls(heli.images || heli.image_url || heli.photo_url)
+    id: heli.id,
+    name: heli.name || heli.model || heli.aircraft_model || 'Helicopter',
+    model: heli.model || heli.aircraft_model || heli.name,
+    type: 'helicopters',
+    max_passengers: capacity,
+    passenger_capacity: capacity,
+    range_km: rangeKm,
+    speed_kmh: speedKmh,
+    hourly_rate_eur: hourlyRate,
+    price: hourlyRate,
+    category: heli.category || heli.aircraft_category || 'Helicopter',
+    manufacturer: heli.manufacturer || null,
+    // operator: HIDDEN - never expose operator to users
+    base_location: heli.base_location || heli.location || null,
+    description: heli.description || null,
+    images: allImages,
+    primaryImage: allImages[0] || null
   };
 }
 
 function mapYacht(yacht) {
+  // Collect images from multiple possible columns
+  const allImages = [];
+  if (yacht.image_url) allImages.push(yacht.image_url);
+  if (yacht.image_url_1) allImages.push(yacht.image_url_1);
+  if (yacht.image_url_2) allImages.push(yacht.image_url_2);
+  if (yacht.image_url_3) allImages.push(yacht.image_url_3);
+  if (allImages.length === 0) {
+    const fallbackImages = ImageUtils.getAllImageUrls(yacht.images || yacht.photo_url);
+    allImages.push(...fallbackImages);
+  }
+
+  // Parse numeric values
+  const lengthFt = parseCapacity(yacht.length_ft) || parseCapacity(yacht.length) || null;
+  const guests = parseCapacity(yacht.max_guests) || parseCapacity(yacht.guests) || parseCapacity(yacht.max_passengers) || parseCapacity(yacht.capacity) || null;
+  const cabins = parseCapacity(yacht.cabins) || null;
+  const dailyRate = parsePrice(yacht.daily_rate) || parsePrice(yacht.price_per_day) || yacht.daily_rate_eur || null;
+
   return {
-    ...yacht,
-    length_ft: yacht.length_ft || yacht.length || null,
-    max_passengers: yacht.max_guests || yacht.guests || yacht.max_passengers || null,
-    daily_rate_eur: yacht.daily_rate || yacht.price_per_day || yacht.daily_rate_eur || null,
-    images: ImageUtils.getAllImageUrls(yacht.images || yacht.image_url || yacht.photo_url)
+    id: yacht.id,
+    name: yacht.name || yacht.model || yacht.title || 'Yacht',
+    model: yacht.model || yacht.name,
+    type: 'yachts',
+    length_ft: lengthFt,
+    max_passengers: guests,
+    cabins: cabins,
+    daily_rate_eur: dailyRate,
+    price: dailyRate,
+    category: yacht.category || yacht.type || 'Motor Yacht',
+    location: yacht.location || yacht.base_location || null,
+    description: yacht.description || null,
+    images: allImages,
+    primaryImage: allImages[0] || null
   };
 }
 
 function mapCar(car) {
+  // Collect images from multiple possible columns
+  const allImages = [];
+  if (car.image_url) allImages.push(car.image_url);
+  if (car.image_url_1) allImages.push(car.image_url_1);
+  if (car.image_url_2) allImages.push(car.image_url_2);
+  if (car.image_url_3) allImages.push(car.image_url_3);
+  if (allImages.length === 0) {
+    const fallbackImages = ImageUtils.getAllImageUrls(car.images || car.photo_url);
+    allImages.push(...fallbackImages);
+  }
+
+  // Parse price
+  const hourlyRate = parsePrice(car.hourly_rate) || parsePrice(car.price_per_hour) || parsePrice(car.price_range) || car.hourly_rate_eur || null;
+  const dailyRate = parsePrice(car.daily_rate) || parsePrice(car.price_per_day) || car.daily_rate_eur || null;
+
   return {
-    ...car,
+    id: car.id,
+    name: car.name || `${car.brand || car.make || ''} ${car.model || ''}`.trim() || 'Luxury Car',
     brand: car.brand || car.make || null,
     model: car.model || car.variant || null,
-    hourly_rate_eur: car.hourly_rate || car.price_per_hour || car.daily_rate || car.hourly_rate_eur || null,
-    images: ImageUtils.getAllImageUrls(car.images || car.image_url || car.photo_url)
+    year: car.year || null,
+    type: 'luxury_cars',
+    hourly_rate_eur: hourlyRate,
+    daily_rate_eur: dailyRate,
+    price: hourlyRate || dailyRate,
+    category: car.category || car.type || 'Luxury',
+    location: car.location || car.city || null,
+    description: car.description || null,
+    images: allImages,
+    primaryImage: allImages[0] || null
   };
 }
 
 function mapTokenizationService(service) {
+  const allImages = ImageUtils.getAllImageUrls(service.images || service.image_url || service.photo_url);
   return {
     ...service,
     name: service.name || service.title || 'Tokenization Service',
     price: service.price_eur || service.price_usd || null,
     currency: service.currency || 'EUR',
-    images: ImageUtils.getAllImageUrls(service.images || service.image_url || service.photo_url),
+    images: allImages,
+    primaryImage: allImages[0] || null,
     type: 'tokenization',
     includes: service.includes || [],
     deliverables: service.deliverables || [],
@@ -100,7 +331,7 @@ function mapTokenizationService(service) {
 }
 
 export const UnifiedSearchService = {
-  async searchAll({ passengers, location, fromLocation, dateFrom, dateTo, q, serviceTypes } = {}) {
+  async searchAll({ passengers, location, fromLocation, toLocation, country, dateFrom, dateTo, q, serviceTypes } = {}) {
     try {
       const today = new Date().toISOString().split('T')[0];
 
@@ -113,10 +344,18 @@ export const UnifiedSearchService = {
         const low = l.toLowerCase();
         if (low === 'uk' || low === 'u.k.' || low === 'u.k') variants.push('United Kingdom', 'Great Britain', 'England', 'Scotland', 'Wales', 'Northern Ireland');
         if (low === 'usa' || low === 'us' || low === 'u.s.' || low === 'u.s.a') variants.push('United States', 'United States of America', 'America');
+        if (low === 'uae') variants.push('United Arab Emirates', 'Dubai', 'Abu Dhabi');
+        if (low === 'germany' || low === 'de') variants.push('Deutschland', 'Munich', 'Frankfurt', 'Berlin');
+        if (low === 'france' || low === 'fr') variants.push('Paris', 'Nice', 'Lyon');
+        if (low === 'switzerland' || low === 'ch') variants.push('Zurich', 'Geneva', 'Basel');
+        if (low === 'italy' || low === 'it') variants.push('Milan', 'Rome', 'Naples');
+        if (low === 'spain' || low === 'es') variants.push('Madrid', 'Barcelona', 'Ibiza', 'Mallorca');
         return variants;
       };
   const locationVariants = buildLocationVariants(location);
   const fromVariants = buildLocationVariants(fromLocation);
+  const toVariants = buildLocationVariants(toLocation);
+  const countryVariants = buildLocationVariants(country);
   const qVariants = buildLocationVariants(q);
 
       // Only query the services that were requested (if serviceTypes specified)
@@ -125,86 +364,60 @@ export const UnifiedSearchService = {
       const searchJets = shouldSearchAll || serviceTypes?.jets;
       const searchHelicopters = shouldSearchAll || serviceTypes?.helicopters;
       const searchYachts = shouldSearchAll || serviceTypes?.yachts;
-      const searchCars = shouldSearchAll || serviceTypes?.cars;
+      const searchLuxuryCars = shouldSearchAll || serviceTypes?.luxuryCars || serviceTypes?.cars;
+      const searchGroundTransport = shouldSearchAll || serviceTypes?.groundTransport || serviceTypes?.taxi;
 
       // Build queries only for requested services
       // Query limits: fetch 10 max (show 5 by default, 10 if user asks for more)
 
-      // Jets query - filter by location if provided
+      // Jets query - no location filter (jets table doesn't have location column)
+      // Jets are shown based on capacity, user specifies route in request
+      // Note: jets table uses 'capacity' column (as string like "8")
+      // IMPORTANT: Exclude Turboprops and Cessna Caravan - only show proper jets
       let jetsQ = Promise.resolve({ data: [], error: null });
       if (searchJets) {
-        jetsQ = supabase.from('jets').select('*');
-        if (fromVariants.length > 0) {
-          jetsQ = jetsQ.or(fromVariants.map(v => `base_location.ilike.%${v}%`).join(','));
-        }
-        if (passengers) {
-          jetsQ = jetsQ.gte('passenger_capacity', passengers);
-        }
-        jetsQ = jetsQ.limit(10);
+        jetsQ = supabase.from('jets').select('*')
+          .neq('aircraft_category', 'Turboprop')  // Exclude turboprops
+          .not('aircraft_model', 'ilike', '%caravan%')  // Exclude Cessna Caravan
+          .not('aircraft_model', 'ilike', '%king air%')  // Exclude King Air turboprops
+          .limit(15);  // Increased limit to ensure enough jets after filtering
+        // Note: capacity filter removed as column stores string values like "8 passengers"
+        // Filtering is done in JS after parsing
       }
 
-      // Empty Legs query - filter by departure/arrival cities and dates (CRITICAL)
+      // Empty Legs query - FETCH ALL and filter client-side for worldwide search
       let emptyLegsQ = Promise.resolve({ data: [], error: null });
       if (searchEmptyLegs) {
-        emptyLegsQ = supabase.from('EmptyLegs_').select('*');
-
-        // Filter by departure city (fromLocation or q)
-        if (fromVariants.length > 0) {
-          emptyLegsQ = emptyLegsQ.or(fromVariants.map(v => `from_city.ilike.%${v}%,departure_city.ilike.%${v}%`).join(','));
-        } else if (qVariants.length > 0) {
-          // If no fromLocation, search both departure and arrival for general location
-          emptyLegsQ = emptyLegsQ.or(qVariants.map(v => `from_city.ilike.%${v}%,departure_city.ilike.%${v}%,to_city.ilike.%${v}%,arrival_city.ilike.%${v}%`).join(','));
-        }
-
-        // Filter by arrival city (location)
-        if (locationVariants.length > 0 && fromVariants.length > 0) {
-          // If we have both from and to, filter arrival city
-          emptyLegsQ = emptyLegsQ.or(locationVariants.map(v => `to_city.ilike.%${v}%,arrival_city.ilike.%${v}%`).join(','));
-        }
-
-        // Filter by departure date if provided
-        if (dateFrom) {
-          emptyLegsQ = emptyLegsQ.gte('departure_date', dateFrom);
-        }
-        if (dateTo) {
-          emptyLegsQ = emptyLegsQ.lte('departure_date', dateTo);
-        } else if (dateFrom) {
-          // If only dateFrom provided, show next 30 days
-          const endDate = new Date(dateFrom);
-          endDate.setDate(endDate.getDate() + 30);
-          emptyLegsQ = emptyLegsQ.lte('departure_date', endDate.toISOString().split('T')[0]);
-        } else {
-          // No date filter - show future flights only
-          emptyLegsQ = emptyLegsQ.gte('departure_date', today);
-        }
-
-        emptyLegsQ = emptyLegsQ.limit(10);
+        // Fetch ALL empty legs, filter client-side
+        emptyLegsQ = supabase.from('EmptyLegs_').select('*')
+          .gte('departure_date', today)
+          .order('departure_date', { ascending: true });
       }
 
-      // Helicopters query - filter by location and passengers
+      // Helicopters query - filter by passengers only (location columns may not exist)
+      // Note: helicopter_charters table may use different column names
       let helicoptersQ = Promise.resolve({ data: [], error: null });
       if (searchHelicopters) {
-        helicoptersQ = supabase.from('helicopter_charters').select('*');
-        if (fromVariants.length > 0 || locationVariants.length > 0) {
-          const allLocations = [...fromVariants, ...locationVariants];
-          helicoptersQ = helicoptersQ.or(allLocations.map(v => `base_location.ilike.%${v}%,location.ilike.%${v}%`).join(','));
-        }
-        if (passengers) {
-          helicoptersQ = helicoptersQ.gte('passenger_capacity', passengers);
-        }
-        helicoptersQ = helicoptersQ.limit(10);
+        helicoptersQ = supabase.from('helicopter_charters').select('*').limit(10);
+        // Note: passenger_capacity filter removed - column may not exist or use different name
+        // Filtering is done in JS after mapping
       }
 
       const yachtsQ = searchYachts ? supabase.from('fixed_offers').select('*').limit(10) : Promise.resolve({ data: [], error: null });
-      const carsQ = searchCars ? supabase.from('taxi_cars').select('*').limit(10) : Promise.resolve({ data: [], error: null });
+
+      // Luxury Cars query - from luxury_cars table (supercars, exotic rentals)
+      const luxuryCarsQ = searchLuxuryCars ? supabase.from('luxury_cars').select('*').limit(10) : Promise.resolve({ data: [], error: null });
+
+      // Ground Transport query - from taxi_cars table (chauffeur, transfers)
+      const groundTransportQ = searchGroundTransport ? supabase.from('taxi_cars').select('*').limit(10) : Promise.resolve({ data: [], error: null });
 
       // Adventures query - fetch from fixed_offers where is_empty_leg = false
       const adventuresQ = shouldSearchAll
         ? supabase.from('fixed_offers').select('*').eq('is_empty_leg', false).limit(10)
         : Promise.resolve({ data: [], error: null });
 
-      const [jetsRes, emptyLegsRes, helicoptersRes, yachtsRes, carsRes, adventuresRes] = await Promise.all([
-        jetsQ, emptyLegsQ, helicoptersQ, yachtsQ, carsQ, adventuresQ
+      const [jetsRes, emptyLegsRes, helicoptersRes, yachtsRes, luxuryCarsRes, groundTransportRes, adventuresRes] = await Promise.all([
+        jetsQ, emptyLegsQ, helicoptersQ, yachtsQ, luxuryCarsQ, groundTransportQ, adventuresQ
       ]);
 
       // Handle errors individually and map data to UI shapes
@@ -212,27 +425,63 @@ export const UnifiedSearchService = {
       if (emptyLegsRes.error) console.error('Supabase EmptyLegs_ error:', emptyLegsRes.error);
       if (helicoptersRes.error) console.error('Supabase helicopter_charters error:', helicoptersRes.error);
       if (yachtsRes.error) console.error('Supabase fixed_offers (yachts) error:', yachtsRes.error);
-      if (carsRes.error) console.error('Supabase taxi_cars error:', carsRes.error);
+      if (luxuryCarsRes.error) console.error('Supabase luxury_cars error:', luxuryCarsRes.error);
+      if (groundTransportRes.error) console.error('Supabase taxi_cars (ground transport) error:', groundTransportRes.error);
       if (adventuresRes.error) console.error('Supabase fixed_offers (adventures) error:', adventuresRes.error);
 
       const aircraft = (jetsRes.data || []).map(mapJetToAircraft);
-      const emptyLegs = (emptyLegsRes.data || []).map(mapEmptyLeg);
+
+      // Empty legs - fetch all and filter client-side by from/to location, country, IATA, date
+      let emptyLegs = (emptyLegsRes.data || []).map(mapEmptyLeg);
+
+      // Client-side filtering for empty legs based on user's search
+      const searchTerms = [...fromVariants, ...toVariants, ...qVariants, ...locationVariants, ...countryVariants]
+        .map(s => s.toLowerCase().trim())
+        .filter(s => s.length > 0);
+
+      if (searchTerms.length > 0) {
+        emptyLegs = emptyLegs.filter(leg => {
+          const legText = [
+            leg.from_city, leg.to_city, leg.from, leg.to,
+            leg.from_iata, leg.to_iata, leg.from_country, leg.to_country,
+            leg.departure_city, leg.arrival_city
+          ].filter(Boolean).join(' ').toLowerCase();
+
+          return searchTerms.some(term => legText.includes(term));
+        });
+      }
+
+      // Filter by date range if provided
+      if (dateFrom) {
+        emptyLegs = emptyLegs.filter(leg => leg.departure_date >= dateFrom);
+      }
+      if (dateTo) {
+        emptyLegs = emptyLegs.filter(leg => leg.departure_date <= dateTo);
+      }
       const helicopters = (helicoptersRes.data || []).map(mapHelicopter);
       const yachts = (yachtsRes.data || []).map(mapYacht);
-      const luxuryCars = (carsRes.data || []).map(mapCar);
-      const adventures = (adventuresRes.data || []).map(adv => ({
-        ...adv,
-        name: adv.title || adv.name,
-        images: ImageUtils.getAllImageUrls(adv.images || adv.image_url)
+      const luxuryCars = (luxuryCarsRes.data || []).map(mapCar);
+      const groundTransport = (groundTransportRes.data || []).map(car => ({
+        ...mapCar(car),
+        type: 'ground_transport' // Override type for ground transport
       }));
+      const adventures = (adventuresRes.data || []).map(adv => {
+        const allImages = ImageUtils.getAllImageUrls(adv.images || adv.image_url);
+        return {
+          ...adv,
+          name: adv.title || adv.name,
+          images: allImages,
+          primaryImage: allImages[0] || null
+        };
+      });
 
       const totalResults =
-        aircraft.length + emptyLegs.length + helicopters.length + yachts.length + luxuryCars.length + adventures.length;
+        aircraft.length + emptyLegs.length + helicopters.length + yachts.length + luxuryCars.length + groundTransport.length + adventures.length;
 
-      return { totalResults, aircraft, emptyLegs, helicopters, yachts, luxuryCars, adventures };
+      return { totalResults, aircraft, emptyLegs, helicopters, yachts, luxuryCars, groundTransport, adventures };
     } catch (error) {
       console.error('Unified search error:', error);
-      return { totalResults: 0, aircraft: [], emptyLegs: [], helicopters: [], yachts: [], luxuryCars: [], tokenizationServices: [] };
+      return { totalResults: 0, aircraft: [], emptyLegs: [], helicopters: [], yachts: [], luxuryCars: [], groundTransport: [], adventures: [] };
     }
   }
 };

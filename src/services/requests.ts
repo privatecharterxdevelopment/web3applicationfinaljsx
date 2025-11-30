@@ -1,9 +1,41 @@
 import { supabase } from '../lib/supabase';
 import { logger } from '../utils/logger';
 
+// All supported request types for the user_requests table
+// The 'type' column in Supabase is TEXT, so any string is accepted
+// This list covers all service types in the platform
+export type RequestType =
+  | 'flight_quote'
+  | 'support'
+  | 'document'
+  | 'visa'
+  | 'payment'
+  | 'booking'
+  | 'cancellation'
+  | 'modification'
+  | 'private_jet_charter'
+  | 'fixed_offer'
+  | 'helicopter_charter'
+  | 'empty_leg'
+  | 'luxury_car_rental'
+  | 'adventure_package'
+  | 'spv_formation'
+  | 'tokenization'
+  | 'taxi_concierge'
+  | 'event_booking'
+  | 'co2_certificate'
+  | 'custom_request'          // Custom AI chat requests
+  | 'cart_checkout'           // Cart checkout with multiple items
+  | 'restaurant_reservation'  // Restaurant bookings
+  | 'yacht_charter'           // Yacht bookings
+  | 'ground_transport'        // Ground transport/taxi
+  | 'consultation'            // Consultation requests
+  | 'ai_chat_bulk'            // AI Chat bulk requests (multiple items)
+  | string;                   // Allow any other string for flexibility
+
 interface CreateRequestOptions {
   userId: string;
-  type: 'flight_quote' | 'support' | 'document' | 'visa' | 'payment' | 'booking' | 'cancellation' | 'modification' | 'private_jet_charter' | 'fixed_offer' | 'helicopter_charter' | 'empty_leg' | 'luxury_car_rental' | 'adventure_package' | 'spv_formation' | 'tokenization' | 'taxi_concierge' | 'event_booking' | 'co2_certificate';
+  type: RequestType;
   data: any;
 }
 

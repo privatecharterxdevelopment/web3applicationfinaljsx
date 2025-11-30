@@ -12,7 +12,7 @@ export default function LandingHeader({ onGetStarted, showInfoButton = true }: L
   const location = useLocation();
 
   const defaultGetStarted = () => {
-    navigate('/glas');
+    navigate('/dashboard');
   };
 
   const handleGetStarted = onGetStarted || defaultGetStarted;

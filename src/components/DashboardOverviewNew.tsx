@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Search,
   Sparkles,
@@ -14,7 +14,11 @@ import {
   MapPin,
   Clock,
   ChevronRight,
-  Send
+  Send,
+  ExternalLink,
+  BookOpen,
+  HelpCircle,
+  Tag
 } from 'lucide-react';
 
 interface DashboardOverviewNewProps {
@@ -25,6 +29,39 @@ interface DashboardOverviewNewProps {
   onChatSubmit: (message: string) => void;
 }
 
+// Search topics with categories
+const searchTopics = [
+  { id: 1, title: 'Private Jet Charter', category: 'Services', keywords: ['jet', 'private', 'charter', 'flight', 'aviation'], link: '/jets' },
+  { id: 2, title: 'Empty Leg Flights', category: 'Services', keywords: ['empty', 'leg', 'discount', 'one-way', 'deal'], link: '/empty-legs' },
+  { id: 3, title: 'Helicopter Charter', category: 'Services', keywords: ['helicopter', 'heli', 'chopper', 'rotary'], link: '/helicopter' },
+  { id: 4, title: 'Luxury Car Rental', category: 'Services', keywords: ['car', 'luxury', 'rental', 'supercar', 'exotic'], link: '/luxury-cars' },
+  { id: 5, title: 'Adventure Experiences', category: 'Services', keywords: ['adventure', 'experience', 'safari', 'yacht', 'exclusive'], link: '/adventures' },
+  { id: 6, title: 'Ground Transportation', category: 'Services', keywords: ['ground', 'transport', 'transfer', 'limousine', 'chauffeur'], link: '/ground-transport' },
+  { id: 7, title: 'CO2 Certificates', category: 'Sustainability', keywords: ['co2', 'carbon', 'offset', 'certificate', 'environment', 'green'], link: '/co2-certificates' },
+  { id: 8, title: 'NFT Membership Benefits', category: 'Web3', keywords: ['nft', 'membership', 'benefit', 'discount', 'exclusive'], link: '/nft-marketplace' },
+  { id: 9, title: 'PVCX Token', category: 'Web3', keywords: ['pvcx', 'token', 'crypto', 'reward', 'earn'], link: '/pvcx-token' },
+  { id: 10, title: 'KYC Verification', category: 'Account', keywords: ['kyc', 'verification', 'identity', 'verify', 'document'], link: '/kyc-verification' },
+  { id: 11, title: 'Booking a Flight', category: 'Help', keywords: ['book', 'booking', 'how', 'reserve', 'request'], link: '/requests' },
+  { id: 12, title: 'Payment Methods', category: 'Help', keywords: ['payment', 'pay', 'crypto', 'usdc', 'card', 'wire'], link: '/transactions' },
+  { id: 13, title: 'Escrow Services', category: 'Services', keywords: ['escrow', 'secure', 'payment', 'protection'], link: '/escrow' },
+  { id: 14, title: 'Asset Tokenization', category: 'Web3', keywords: ['tokenization', 'tokenize', 'asset', 'rwa', 'real world'], link: '/tokenization' },
+  { id: 15, title: 'DAO Governance', category: 'Web3', keywords: ['dao', 'governance', 'vote', 'voting', 'proposal'], link: '/dao' },
+];
+
+// Blog posts from privatecharterx.blog
+const blogPosts = [
+  { id: 1, title: 'The Ultimate Guide to Private Jet Charter', keywords: ['guide', 'jet', 'charter', 'private', 'how'], url: 'https://privatecharterx.blog/ultimate-guide-private-jet-charter' },
+  { id: 2, title: 'Empty Leg Flights: How to Save Up to 75%', keywords: ['empty', 'leg', 'save', 'discount', 'cheap'], url: 'https://privatecharterx.blog/empty-leg-flights-save-money' },
+  { id: 3, title: 'Understanding Carbon Offsetting in Aviation', keywords: ['carbon', 'offset', 'co2', 'environment', 'green', 'aviation'], url: 'https://privatecharterx.blog/carbon-offsetting-aviation' },
+  { id: 4, title: 'NFT Memberships: The Future of Luxury Travel', keywords: ['nft', 'membership', 'luxury', 'travel', 'future', 'web3'], url: 'https://privatecharterx.blog/nft-memberships-luxury-travel' },
+  { id: 5, title: 'Top 10 Private Jet Destinations for 2025', keywords: ['destination', 'travel', 'jet', 'top', '2025', 'vacation'], url: 'https://privatecharterx.blog/top-destinations-2025' },
+  { id: 6, title: 'Helicopter vs Private Jet: Which to Choose?', keywords: ['helicopter', 'jet', 'compare', 'choose', 'difference'], url: 'https://privatecharterx.blog/helicopter-vs-private-jet' },
+  { id: 7, title: 'How Blockchain is Revolutionizing Aviation', keywords: ['blockchain', 'aviation', 'crypto', 'web3', 'technology'], url: 'https://privatecharterx.blog/blockchain-aviation' },
+  { id: 8, title: 'Luxury Yacht Charter: A Complete Guide', keywords: ['yacht', 'charter', 'luxury', 'guide', 'boat', 'sea'], url: 'https://privatecharterx.blog/luxury-yacht-charter-guide' },
+  { id: 9, title: 'Corporate Jet Travel: Best Practices', keywords: ['corporate', 'business', 'jet', 'travel', 'company'], url: 'https://privatecharterx.blog/corporate-jet-travel' },
+  { id: 10, title: 'The Rise of Sustainable Private Aviation', keywords: ['sustainable', 'green', 'eco', 'environment', 'saf', 'fuel'], url: 'https://privatecharterx.blog/sustainable-private-aviation' },
+];
+
 const DashboardOverviewNew: React.FC<DashboardOverviewNewProps> = ({
   user,
   locationData,
@@ -32,7 +69,11 @@ const DashboardOverviewNew: React.FC<DashboardOverviewNewProps> = ({
   recentRequests,
   onChatSubmit
 }) => {
-  const [chatInput, setChatInput] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [filteredTopics, setFilteredTopics] = useState<typeof searchTopics>([]);
+  const [filteredBlogs, setFilteredBlogs] = useState<typeof blogPosts>([]);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   const getWeatherIcon = (condition: string) => {
     if (condition?.includes('rain') || condition?.includes('drizzle')) return <CloudRain className="w-10 h-10 text-gray-700" />;
@@ -40,10 +81,65 @@ const DashboardOverviewNew: React.FC<DashboardOverviewNewProps> = ({
     return <Sun className="w-10 h-10 text-yellow-500" />;
   };
 
-  const handleChatSubmit = () => {
-    if (chatInput.trim()) {
-      onChatSubmit(chatInput);
-      setChatInput('');
+  // Filter results based on search input
+  useEffect(() => {
+    if (searchInput.trim().length > 0) {
+      const query = searchInput.toLowerCase();
+
+      // Filter topics
+      const matchedTopics = searchTopics.filter(topic =>
+        topic.title.toLowerCase().includes(query) ||
+        topic.keywords.some(k => k.includes(query))
+      ).slice(0, 5);
+
+      // Filter blog posts
+      const matchedBlogs = blogPosts.filter(post =>
+        post.title.toLowerCase().includes(query) ||
+        post.keywords.some(k => k.includes(query))
+      ).slice(0, 3);
+
+      setFilteredTopics(matchedTopics);
+      setFilteredBlogs(matchedBlogs);
+      setShowDropdown(matchedTopics.length > 0 || matchedBlogs.length > 0);
+    } else {
+      setFilteredTopics([]);
+      setFilteredBlogs([]);
+      setShowDropdown(false);
+    }
+  }, [searchInput]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleTopicClick = (link: string) => {
+    setShowDropdown(false);
+    setSearchInput('');
+    // Navigate to the internal page - this will be handled by the parent component
+    window.dispatchEvent(new CustomEvent('navigate-to-category', { detail: { category: link.replace('/', '') } }));
+  };
+
+  const handleBlogClick = (url: string) => {
+    setShowDropdown(false);
+    setSearchInput('');
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'Services': return <Plane className="w-4 h-4" />;
+      case 'Web3': return <Sparkles className="w-4 h-4" />;
+      case 'Sustainability': return <Tag className="w-4 h-4" />;
+      case 'Account': return <FileText className="w-4 h-4" />;
+      case 'Help': return <HelpCircle className="w-4 h-4" />;
+      default: return <Search className="w-4 h-4" />;
     }
   };
 
@@ -59,48 +155,133 @@ const DashboardOverviewNew: React.FC<DashboardOverviewNewProps> = ({
           <p className="text-gray-500 text-sm">How can I help you?</p>
         </div>
 
-        {/* Central Chat Input - Glassmorphic */}
-        <div className="relative">
+        {/* Central Search Input - Glassmorphic */}
+        <div className="relative" ref={searchRef}>
           <div className="backdrop-blur-md bg-white/60 border border-white/20 rounded-2xl shadow-xl p-1">
             <div className="flex items-center gap-3 p-3">
+              <Search className="w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleChatSubmit()}
-                placeholder="Ask PrivateCharterX AI..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onFocus={() => searchInput.trim() && setShowDropdown(true)}
+                placeholder="Search services, topics, or articles..."
                 className="flex-1 bg-transparent outline-none text-sm text-gray-900 placeholder-gray-400"
               />
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <Search className="w-4 h-4 text-gray-500" />
-              </button>
-              <button
-                onClick={handleChatSubmit}
-                disabled={!chatInput.trim()}
-                className="bg-black text-white p-2 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-40"
-              >
-                <Sparkles className="w-4 h-4" />
-              </button>
+              {searchInput && (
+                <button
+                  onClick={() => { setSearchInput(''); setShowDropdown(false); }}
+                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-600"
+                >
+                  ×
+                </button>
+              )}
             </div>
           </div>
 
+          {/* Search Results Dropdown */}
+          {showDropdown && (filteredTopics.length > 0 || filteredBlogs.length > 0) && (
+            <div className="absolute top-full left-0 right-0 mt-2 backdrop-blur-xl bg-white/95 border border-gray-200/50 rounded-xl shadow-2xl overflow-hidden z-50">
+              {/* Topics Section */}
+              {filteredTopics.length > 0 && (
+                <div className="p-2">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Topics & Services
+                  </div>
+                  {filteredTopics.map((topic) => (
+                    <button
+                      key={topic.id}
+                      onClick={() => handleTopicClick(topic.link)}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-100 rounded-lg transition-colors text-left group"
+                    >
+                      <div className="w-8 h-8 bg-gray-100 group-hover:bg-gray-200 rounded-lg flex items-center justify-center text-gray-600 transition-colors">
+                        {getCategoryIcon(topic.category)}
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900">{topic.title}</div>
+                        <div className="text-xs text-gray-500">{topic.category}</div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Divider */}
+              {filteredTopics.length > 0 && filteredBlogs.length > 0 && (
+                <div className="border-t border-gray-100" />
+              )}
+
+              {/* Blog Posts Section */}
+              {filteredBlogs.length > 0 && (
+                <div className="p-2">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
+                    <BookOpen className="w-3 h-3" />
+                    From Our Blog
+                  </div>
+                  {filteredBlogs.map((post) => (
+                    <button
+                      key={post.id}
+                      onClick={() => handleBlogClick(post.url)}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-blue-50 rounded-lg transition-colors text-left group"
+                    >
+                      <div className="w-8 h-8 bg-blue-100 group-hover:bg-blue-200 rounded-lg flex items-center justify-center text-blue-600 transition-colors">
+                        <BookOpen className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900">{post.title}</div>
+                        <div className="text-xs text-blue-600">privatecharterx.blog</div>
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* View All Blog Link */}
+              <div className="border-t border-gray-100 p-2">
+                <a
+                  href="https://privatecharterx.blog"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                >
+                  <span>View all articles on privatecharterx.blog</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
+          )}
+
           {/* Quick Actions */}
           <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-2">
-            <button className="flex items-center gap-2 px-3 py-2 bg-white/60 backdrop-blur-md border border-white/20 rounded-lg hover:bg-white/80 transition-all text-xs text-gray-700 whitespace-nowrap">
+            <button
+              onClick={() => handleTopicClick('/jets')}
+              className="flex items-center gap-2 px-3 py-2 bg-white/60 backdrop-blur-md border border-white/20 rounded-lg hover:bg-white/80 transition-all text-xs text-gray-700 whitespace-nowrap"
+            >
               <Plane className="w-3 h-3" />
               Book flight
             </button>
-            <button className="flex items-center gap-2 px-3 py-2 bg-white/60 backdrop-blur-md border border-white/20 rounded-lg hover:bg-white/80 transition-all text-xs text-gray-700 whitespace-nowrap">
+            <button
+              onClick={() => handleTopicClick('/empty-legs')}
+              className="flex items-center gap-2 px-3 py-2 bg-white/60 backdrop-blur-md border border-white/20 rounded-lg hover:bg-white/80 transition-all text-xs text-gray-700 whitespace-nowrap"
+            >
+              <Tag className="w-3 h-3" />
+              Empty Legs
+            </button>
+            <button
+              onClick={() => handleTopicClick('/co2-certificates')}
+              className="flex items-center gap-2 px-3 py-2 bg-white/60 backdrop-blur-md border border-white/20 rounded-lg hover:bg-white/80 transition-all text-xs text-gray-700 whitespace-nowrap"
+            >
               <FileText className="w-3 h-3" />
-              Summarize
+              CO2 Offset
             </button>
-            <button className="flex items-center gap-2 px-3 py-2 bg-white/60 backdrop-blur-md border border-white/20 rounded-lg hover:bg-white/80 transition-all text-xs text-gray-700 whitespace-nowrap">
-              <MessageCircle className="w-3 h-3" />
-              Help me write
-            </button>
-            <button className="flex items-center gap-2 px-3 py-2 bg-white/60 backdrop-blur-md border border-white/20 rounded-lg hover:bg-white/80 transition-all text-xs text-gray-700 whitespace-nowrap">
+            <button
+              onClick={() => handleTopicClick('/nft-marketplace')}
+              className="flex items-center gap-2 px-3 py-2 bg-white/60 backdrop-blur-md border border-white/20 rounded-lg hover:bg-white/80 transition-all text-xs text-gray-700 whitespace-nowrap"
+            >
               <Sparkles className="w-3 h-3" />
-              Brainstorm
+              NFT Benefits
             </button>
           </div>
         </div>

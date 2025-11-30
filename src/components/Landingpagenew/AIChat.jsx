@@ -3062,16 +3062,31 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             {/* Chat Counter - Clickable to open subscriptions */}
             <button
               onClick={() => setShowSubscriptionModal(true)}
-              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-900 transition-colors"
+              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-900 transition-colors flex items-center gap-2"
+              title="Click to manage subscription"
             >
-              {userProfile?.chats_limit === null ? (
-                <span className="flex items-center gap-1 text-yellow-600">
+              {userSubscriptionLimits?.tier === 'elite' ? (
+                <span className="flex items-center gap-1.5 text-amber-600">
                   <Crown size={14} />
-                  <span>∞</span>
+                  <span>Elite</span>
+                </span>
+              ) : userSubscriptionLimits?.tier === 'pro' ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="text-gray-600">Pro</span>
+                  <span className="text-gray-400">•</span>
+                  <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 20}</span>
+                </span>
+              ) : userSubscriptionLimits?.tier === 'starter' ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="text-gray-600">Starter</span>
+                  <span className="text-gray-400">•</span>
+                  <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 5}</span>
                 </span>
               ) : (
-                <span>
-                  {userProfile?.chats_used || 0}/{userProfile?.chats_limit || 2}
+                <span className="flex items-center gap-1.5">
+                  <span className="text-gray-500">Free</span>
+                  <span className="text-gray-400">•</span>
+                  <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 2}</span>
                 </span>
               )}
             </button>
@@ -3447,16 +3462,18 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
           ) : (
             /* Normal Input */
             <div className="flex items-center gap-3 bg-gray-50 border border-gray-300 rounded-xl px-4 py-3">
+              {/* Break the Price Button - Left side of input */}
               <button
-                onClick={toggleRecording}
-                disabled={isSearching}
+                onClick={() => setShowBreakThePrice(true)}
+                disabled={!canUseBreakThePrice() || isSearching}
                 className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                  isRecording
-                    ? 'bg-red-500 text-white'
-                    : 'bg-black text-white hover:bg-gray-800'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  canUseBreakThePrice()
+                    ? 'bg-amber-500 text-white hover:bg-amber-600'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                } disabled:opacity-50`}
+                title={canUseBreakThePrice() ? 'Break the Price - Upload competitor quote' : 'Upgrade to unlock Break the Price'}
               >
-                {isRecording ? <X size={18} /> : <Mic size={18} />}
+                <Upload size={18} />
               </button>
 
               <input
@@ -3468,8 +3485,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     handleSendMessage(currentMessage);
                   }
                 }}
-                placeholder={isRecording ? "Listening..." : "Message Sphera..."}
-                disabled={isSearching || isRecording}
+                placeholder="Message Sphera..."
+                disabled={isSearching}
                 className="flex-1 bg-transparent border-none outline-none text-sm text-gray-700 placeholder-gray-400 disabled:cursor-not-allowed"
               />
 
@@ -3494,32 +3511,6 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 }`}
               >
                 <Send size={18} />
-              </button>
-            </div>
-          )}
-
-          {/* Break the Price Button - Below Input */}
-          {!messageLimitReached && activeChat !== 'new' && (
-            <div className="mt-3 flex justify-center">
-              <button
-                onClick={() => setShowBreakThePrice(true)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  canUseBreakThePrice()
-                    ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 hover:border-amber-300'
-                    : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
-                }`}
-                disabled={!canUseBreakThePrice()}
-                title={canUseBreakThePrice() ? 'Upload a competitor quote for a better price' : 'Upgrade to Starter or higher to unlock'}
-              >
-                <DollarSign size={16} />
-                Break the Price
-                {userSubscriptionLimits?.tier === 'elite' ? (
-                  <span className="text-xs bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded-full">Unlimited</span>
-                ) : canUseBreakThePrice() ? (
-                  <span className="text-xs bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded-full">1 chat</span>
-                ) : (
-                  <Crown size={14} className="text-gray-400" />
-                )}
               </button>
             </div>
           )}
@@ -4128,29 +4119,127 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     );
                   })()}
 
-                  {/* Check if all items support direct checkout (empty legs or adventures) */}
-                  {cartItems.every(item => item.type === 'empty_legs' || item.type === 'emptyleg' || item.type === 'adventure' || item.type === 'fixed_offer') ? (
-                    <button
-                      onClick={() => {
-                        setShowCartSidebar(false);
-                        setShowCryptoPayment(true);
-                      }}
-                      className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all duration-300 flex items-center justify-center gap-2 font-medium"
-                    >
-                      <Wallet size={18} />
-                      Pay with Crypto
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setShowCartSidebar(false);
-                        setShowRequestForm(true);
-                      }}
-                      className="w-full bg-black text-white py-3 rounded-xl hover:bg-gray-800 transition-all duration-300"
-                    >
-                      Send Request
-                    </button>
-                  )}
+                  {/* Smart checkout: split payable vs request-only items */}
+                  {(() => {
+                    const payableTypes = ['empty_legs', 'emptyleg', 'adventure', 'fixed_offer'];
+                    const payableItems = cartItems.filter(item => payableTypes.includes(item.type));
+                    const requestOnlyItems = cartItems.filter(item => !payableTypes.includes(item.type));
+                    const allPayable = requestOnlyItems.length === 0;
+                    const allRequestOnly = payableItems.length === 0;
+                    const hasMixedCart = payableItems.length > 0 && requestOnlyItems.length > 0;
+                    const payableTotal = payableItems.reduce((sum, item) => sum + (item.totalWithFee || item.price_usd || item.price || 0), 0);
+
+                    if (allPayable) {
+                      // All items can be paid directly
+                      return (
+                        <button
+                          onClick={() => {
+                            setShowCartSidebar(false);
+                            setShowCryptoPayment(true);
+                          }}
+                          className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all duration-300 flex items-center justify-center gap-2 font-medium"
+                        >
+                          <Wallet size={18} />
+                          Pay with Crypto
+                        </button>
+                      );
+                    } else if (allRequestOnly) {
+                      // All items need to be requested
+                      return (
+                        <button
+                          onClick={() => {
+                            setShowCartSidebar(false);
+                            setShowRequestForm(true);
+                          }}
+                          className="w-full bg-black text-white py-3 rounded-xl hover:bg-gray-800 transition-all duration-300"
+                        >
+                          Send Request
+                        </button>
+                      );
+                    } else {
+                      // Mixed cart: some payable, some request-only
+                      return (
+                        <div className="space-y-2">
+                          <div className="bg-gray-50 rounded-lg p-3 mb-2">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                              <span className="text-xs font-medium text-gray-700">Pay now: €{payableTotal.toLocaleString()}</span>
+                            </div>
+                            <div className="text-[10px] text-gray-500 pl-4">
+                              {payableItems.map(i => i.name || i.title).join(', ')}
+                            </div>
+                            <div className="flex items-center gap-2 mt-2">
+                              <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                              <span className="text-xs font-medium text-gray-700">Send as request</span>
+                            </div>
+                            <div className="text-[10px] text-gray-500 pl-4">
+                              {requestOnlyItems.map(i => i.name || i.title || i.aircraft_type).join(', ')}
+                            </div>
+                          </div>
+                          <button
+                            onClick={async () => {
+                              // First, create request for request-only items
+                              try {
+                                if (user?.id) {
+                                  const requestData = {
+                                    source: 'ai_chat_mixed_cart',
+                                    request_id: `AI-MIX-${Date.now()}`,
+                                    items: requestOnlyItems.map(item => ({
+                                      ...item,
+                                      type: item.type,
+                                      name: item.name || item.title || item.aircraft_type || item.model,
+                                      price: item.price || item.basePrice || item.price_usd,
+                                      from: item.from || item.from_city || item.origin,
+                                      to: item.to || item.to_city || item.destination,
+                                      date: item.date || item.departure_date,
+                                      passengers: item.passengers || item.pax,
+                                    })),
+                                    summary: {
+                                      total_items: requestOnlyItems.length,
+                                      grand_total: requestOnlyItems.reduce((sum, item) => sum + (item.price || 0), 0),
+                                      note: 'Auto-created from mixed cart - user paid for other items'
+                                    },
+                                    paid_items_reference: payableItems.map(i => i.name || i.title).join(', '),
+                                    created_via: 'sphera_ai_mixed_cart',
+                                    conversation_id: activeChat
+                                  };
+
+                                  await supabase
+                                    .from('user_requests')
+                                    .insert([{
+                                      user_id: user.id,
+                                      type: 'ai_chat_bulk',
+                                      status: 'pending',
+                                      client_email: user.email,
+                                      data: requestData
+                                    }]);
+                                }
+                              } catch (err) {
+                                console.error('Error creating request for mixed cart:', err);
+                              }
+
+                              // Then open payment for payable items
+                              setShowCartSidebar(false);
+                              setShowCryptoPayment(true);
+                            }}
+                            className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all duration-300 flex items-center justify-center gap-2 font-medium"
+                          >
+                            <Wallet size={18} />
+                            Pay €{payableTotal.toLocaleString()} & Send Request
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowCartSidebar(false);
+                              setShowRequestForm(true);
+                            }}
+                            className="w-full bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 transition-all duration-300 text-sm"
+                          >
+                            Send All as Request Instead
+                          </button>
+                        </div>
+                      );
+                    }
+                  })()}
                 </div>
               </>
             )}
@@ -4693,36 +4782,50 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       )}
 
       {/* Crypto Payment Modal - for Empty Legs and Adventures */}
-      {showCryptoPayment && (
-        <CryptoPaymentModal
-          isOpen={showCryptoPayment}
-          onClose={() => setShowCryptoPayment(false)}
-          amount={cartItems.reduce((sum, item) => sum + (item.price_usd || item.price || 0), 0)}
-          currency="USD"
-          items={cartItems}
-          onSuccess={(paymentId) => {
-            console.log('✅ Crypto payment successful:', paymentId);
-            setShowCryptoPayment(false);
-            setCartItems([]);
-            setToast({ message: 'Payment successful! Your booking is confirmed.', type: 'success' });
+      {showCryptoPayment && (() => {
+        const payableTypes = ['empty_legs', 'emptyleg', 'adventure', 'fixed_offer'];
+        const payableItems = cartItems.filter(item => payableTypes.includes(item.type));
+        const requestOnlyItems = cartItems.filter(item => !payableTypes.includes(item.type));
+        const itemsToProcess = payableItems.length > 0 ? payableItems : cartItems;
+        const payableTotal = itemsToProcess.reduce((sum, item) => sum + (item.price_usd || item.price || 0), 0);
 
-            // Add confirmation message to chat
-            const confirmMsg = {
-              role: 'assistant',
-              content: `✅ Payment confirmed! Your booking for ${cartItems.length} item(s) has been processed successfully.\n\nPayment ID: ${paymentId}\n\nYou will receive a confirmation email shortly with all the details.`
-            };
-            setChatHistory(prev => prev.map(c =>
-              c.id === activeChat
-                ? { ...c, messages: [...c.messages, confirmMsg] }
-                : c
-            ));
-          }}
-          onError={(error) => {
-            console.error('❌ Crypto payment error:', error);
-            setToast({ message: `Payment failed: ${error}`, type: 'error' });
-          }}
-        />
-      )}
+        return (
+          <CryptoPaymentModal
+            isOpen={showCryptoPayment}
+            onClose={() => setShowCryptoPayment(false)}
+            amount={payableTotal}
+            currency="USD"
+            items={itemsToProcess}
+            onSuccess={(paymentId) => {
+              console.log('✅ Crypto payment successful:', paymentId);
+              setShowCryptoPayment(false);
+              setCartItems([]);
+
+              const hasMixedCart = requestOnlyItems.length > 0;
+              const successMessage = hasMixedCart
+                ? `✅ Payment confirmed for ${payableItems.length} item(s)!\n\nPayment ID: ${paymentId}\n\nAdditionally, we've sent a booking request for: ${requestOnlyItems.map(i => i.name || i.title || i.aircraft_type).join(', ')}. Our team will contact you within 2-4 hours.\n\nYou will receive confirmation emails shortly.`
+                : `✅ Payment confirmed! Your booking for ${itemsToProcess.length} item(s) has been processed successfully.\n\nPayment ID: ${paymentId}\n\nYou will receive a confirmation email shortly with all the details.`;
+
+              setToast({ message: 'Payment successful! Your booking is confirmed.', type: 'success' });
+
+              // Add confirmation message to chat
+              const confirmMsg = {
+                role: 'assistant',
+                content: successMessage
+              };
+              setChatHistory(prev => prev.map(c =>
+                c.id === activeChat
+                  ? { ...c, messages: [...c.messages, confirmMsg] }
+                  : c
+              ));
+            }}
+            onError={(error) => {
+              console.error('❌ Crypto payment error:', error);
+              setToast({ message: `Payment failed: ${error}`, type: 'error' });
+            }}
+          />
+        );
+      })()}
 
       {/* Toast Notifications */}
       {toast && (

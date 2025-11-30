@@ -157,8 +157,8 @@ function Homepage() {
 
   const handleGetStarted = () => {
     console.log('Get Started clicked!');
-    console.log('Navigating to /glas (glassmorphic dashboard)');
-    navigate('/glas');
+    console.log('Navigating to /dashboard');
+    navigate('/dashboard');
   };
 
   const handleInfoClick = () => {

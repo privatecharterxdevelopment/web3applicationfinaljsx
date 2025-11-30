@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Scan, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import { useAuth } from '../context/AuthContext';
 import Portal from './Portal';
 import { VideoHero, FaceLoginModal } from './auth';
 import { checkFaceAuthEnabled } from '../services/faceAuthService';
+
+const RECAPTCHA_SITE_KEY = '6LdA4fcrAAAAAEE-ojHle6bq-Xbhdz2yS5myYlSG';
 
 interface LoginModalProps {
   onClose: () => void;
@@ -27,15 +30,16 @@ const videos = [
   'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/moreVideos/19948847-uhd_3840_2160_60fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzE5OTQ4ODQ3LXVoZF8zODQwXzIxNjBfNjBmcHMubXA0IiwiaWF0IjoxNzYwOTEzNjY5LCJleHAiOjE3OTI0NDk2Njl9.F-uRmmODnG2dLtVGSunChWYYnE3RvUPtab3fhU8lhpQ'
 ];
 
-export default function LoginModal({
+// Inner component that uses reCAPTCHA v3
+function LoginForm({
   onClose,
   onSwitchToRegister,
-  onSwitchToPartnerRegister,
   onSuccess,
   onSwitchToForgotPassword
-}: LoginModalProps) {
+}: Omit<LoginModalProps, 'onSwitchToPartnerRegister'>) {
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -47,10 +51,25 @@ export default function LoginModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!executeRecaptcha) {
+      setError('reCAPTCHA is loading. Please wait a moment and try again.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      await signIn(email, password);
+      // Execute reCAPTCHA v3 (invisible)
+      const captchaToken = await executeRecaptcha('login');
+
+      if (!captchaToken) {
+        setError('reCAPTCHA verification failed. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      await signIn(email, password, { captchaToken });
       if (onSuccess) onSuccess();
       onClose();
     } catch (error: any) {
@@ -230,6 +249,13 @@ export default function LoginModal({
                 </div>
               </div>
 
+              {/* reCAPTCHA v3 notice (invisible) */}
+              <div className="text-xs text-center text-gray-500 mb-4">
+                This site is protected by reCAPTCHA and the Google{' '}
+                <a href="https://policies.google.com/privacy" className="underline hover:text-gray-700">Privacy Policy</a> and{' '}
+                <a href="https://policies.google.com/terms" className="underline hover:text-gray-700">Terms of Service</a> apply.
+              </div>
+
               {/* Sign In Button - Monochromatic */}
               <button
                 type="submit"
@@ -246,16 +272,15 @@ export default function LoginModal({
                 )}
               </button>
 
-              {/* Face ID Button - Interactive Monochromatic */}
+              {/* Face ID Button - Coming Soon */}
               <button
                 type="button"
-                onClick={handleFaceLoginClick}
-                disabled={isLoading || !email}
-                className="group w-full py-3 bg-gray-100 hover:bg-gray-900 text-gray-900 hover:text-white rounded-lg text-sm font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative overflow-hidden"
+                disabled={true}
+                className="w-full py-3 bg-gray-100 text-gray-400 rounded-lg text-sm font-medium cursor-not-allowed flex items-center justify-center gap-2"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-gray-900/0 via-gray-900/10 to-gray-900/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                <Scan size={18} className="relative z-10 group-hover:scale-110 transition-transform" />
-                <span className="relative z-10">Verify with Face ID</span>
+                <Scan size={18} />
+                <span>Face ID</span>
+                <span className="ml-1 px-2 py-0.5 bg-gray-200 text-gray-500 text-[10px] font-medium rounded-full">Coming Soon</span>
               </button>
 
               {/* Footer */}
@@ -278,5 +303,14 @@ export default function LoginModal({
         </div>
       </div>
     </Portal>
+  );
+}
+
+// Main export with reCAPTCHA provider
+export default function LoginModal(props: LoginModalProps) {
+  return (
+    <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_SITE_KEY}>
+      <LoginForm {...props} />
+    </GoogleReCaptchaProvider>
   );
 }

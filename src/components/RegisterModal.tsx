@@ -297,7 +297,7 @@ function RegisterModalWithRecaptcha({
       <SuccessModal
         show={showSuccess}
         title="Account Created!"
-        message="Please check your email to verify your account before signing in."
+        message="Your account is ready. You can now sign in. You've received 100 PVCX tokens as a welcome bonus!"
         countdown="Closing..."
       />
     </>
