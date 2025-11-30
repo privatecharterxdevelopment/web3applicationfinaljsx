@@ -12,11 +12,14 @@ import RegisterModalNew from '../RegisterModalNew';
 import ForgotPasswordModal from '../ForgotPasswordModal';
 import UnifiedBookingFlow from '../../components/UnifiedBookingFlow';
 import DashboardOverviewNew from '../../components/DashboardOverviewNew';
+import { useToast } from '../../hooks/useToast';
+import { ToastContainer } from '../Toast';
 
 const TokenizedAssets = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user, profile } = useAuth();
+  const { isAuthenticated, user, profile, signOut } = useAuth();
   const { isConnected, address } = useAccount();
+  const { toasts, showToast, removeToast } = useToast();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [activeCategory, setActiveCategory] = useState('services');
@@ -101,9 +104,17 @@ const TokenizedAssets = () => {
     }
   };
 
-  const handleLogout = useCallback(() => {
-    console.log('User logged out');
-  }, []);
+  const handleLogout = useCallback(async () => {
+    console.log('User logging out...');
+    try {
+      await signOut();
+      showToast('Successfully logged out', 'success');
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      showToast('Error logging out', 'error');
+    }
+  }, [signOut, showToast, navigate]);
 
   const handleShowDashboard = useCallback(() => {
     console.log('🚀 Opening dashboard...');
@@ -1046,6 +1057,9 @@ const TokenizedAssets = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 font-['DM_Sans']">
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+
       {/* Header - Exact same style as SaasDashboard */}
       <header className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-5 py-6">

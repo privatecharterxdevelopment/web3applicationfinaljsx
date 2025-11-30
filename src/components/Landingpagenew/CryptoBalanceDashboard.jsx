@@ -9,8 +9,8 @@ import { formatEther } from 'viem';
 import { base, mainnet } from 'viem/chains';
 import { web3Service } from '../../lib/web3';
 
-export default function CryptoBalanceDashboard({ setActiveCategory }) {
-  const { user, signOut } = useAuth();
+export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) {
+  const { user } = useAuth();
   const { address, isConnected } = useAccount();
   const { open } = useAppKit();
   const chainId = useChainId();
@@ -1123,7 +1123,7 @@ export default function CryptoBalanceDashboard({ setActiveCategory }) {
               </button>
 
               <button
-                onClick={signOut}
+                onClick={onLogout}
                 className="w-full mt-2 py-2 bg-red-50 hover:bg-red-100 rounded-lg text-xs font-medium text-red-600 transition-all flex items-center justify-center gap-2"
               >
                 <LogOut className="w-3.5 h-3.5" />

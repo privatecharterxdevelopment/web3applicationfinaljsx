@@ -9,6 +9,8 @@ import UserMenu from '../UserMenu';
 import WalletMenu from '../WalletMenu';
 import { createRequest } from '../../services/requests';
 import SuccessNotification from '../SuccessNotification';
+import { useToast } from '../../hooks/useToast';
+import { ToastContainer } from '../Toast';
 
 // Real CO2 Projects from Marketplace
 const realProjects = {
@@ -161,8 +163,9 @@ const realProjects = {
 export default function CO2CertificateDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, signOut } = useAuth();
   const { isConnected, address } = useAccount();
+  const { toasts, showToast, removeToast } = useToast();
 
   const [project, setProject] = useState(null);
   const [activeTab, setActiveTab] = useState('details');
@@ -173,9 +176,17 @@ export default function CO2CertificateDetail() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const handleLogout = useCallback(() => {
-    console.log('User logged out');
-  }, []);
+  const handleLogout = useCallback(async () => {
+    console.log('User logging out...');
+    try {
+      await signOut();
+      showToast('Successfully logged out', 'success');
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      showToast('Error logging out', 'error');
+    }
+  }, [signOut, showToast, navigate]);
 
   const handleShowDashboard = useCallback(() => {
     console.log('🚀 Opening dashboard...');
@@ -255,6 +266,9 @@ export default function CO2CertificateDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-['DM_Sans']">
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+
       {/* Header - EXACT COPY from EmptyLegDetail */}
       <header className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-5 py-6">

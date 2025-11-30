@@ -2343,6 +2343,48 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   }, []);
 
+  // State to store pending AI query (when user needs to login first)
+  const [pendingAiQuery, setPendingAiQuery] = useState('');
+
+  // Check for AI Chat query from homepage search (FloatingSearchModal)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const queryParam = params.get('query');
+    const loginParam = params.get('login');
+
+    if (queryParam) {
+      if (isAuthenticated && !initializing) {
+        // User is logged in - go directly to AI Chat with query
+        setAiChatQuery(queryParam);
+        setActiveCategory('ai-chat');
+        setShowDashboard(true);
+
+        // Clean up URL
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      } else if (loginParam === 'true' && !initializing) {
+        // User needs to login - store query and show login modal
+        setPendingAiQuery(queryParam);
+        setShowLoginModal(true);
+
+        // Clean up URL but keep query in state
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+    }
+  }, [isAuthenticated, initializing]);
+
+  // Process pending AI query after successful login
+  useEffect(() => {
+    if (isAuthenticated && pendingAiQuery && !initializing) {
+      // User just logged in and has a pending query
+      setAiChatQuery(pendingAiQuery);
+      setActiveCategory('ai-chat');
+      setShowDashboard(true);
+      setPendingAiQuery(''); // Clear pending query
+    }
+  }, [isAuthenticated, pendingAiQuery, initializing]);
+
   // Check for secret admin route
   useEffect(() => {
     const checkAdminRoute = () => {
@@ -3242,9 +3284,18 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   };
 
-  const handleLogout = useCallback(() => {
-    console.log('User logged out');
-  }, []);
+  const handleLogout = useCallback(async () => {
+    console.log('User logging out...');
+    try {
+      await signOut();
+      showToast('Successfully logged out', 'success');
+      setShowDashboard(false);
+      setActiveCategory('home');
+    } catch (error) {
+      console.error('Logout error:', error);
+      showToast('Error logging out', 'error');
+    }
+  }, [signOut, showToast]);
 
   const handleShowDashboard = useCallback(() => {
     console.log('🚀 Opening dashboard...');
@@ -4380,7 +4431,7 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* Profile Overview View - Crypto Balance Dashboard */}
           {!isTransitioning && activeCategory === 'dashboard' && dashboardView === 'profile' && (
             <div className="w-full h-full overflow-y-auto">
-              <CryptoBalanceDashboard setActiveCategory={setActiveCategory} />
+              <CryptoBalanceDashboard setActiveCategory={setActiveCategory} onLogout={handleLogout} />
             </div>
           )}
 

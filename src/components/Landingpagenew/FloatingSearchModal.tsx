@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 export default function FloatingSearchModal() {
   const navigate = useNavigate();
+  const auth = useAuth();
+  const isAuthenticated = auth?.isAuthenticated || false;
   const [currentTitleIndex, setCurrentTitleIndex] = useState(0);
   const [titleOpacity, setTitleOpacity] = useState(1);
   const [currentOpenSection, setCurrentOpenSection] = useState<string | null>(null);
@@ -31,7 +34,14 @@ export default function FloatingSearchModal() {
 
   const handleSphereAISearch = (query: string) => {
     if (query.trim()) {
-      navigate(`/glasdashboard?query=${encodeURIComponent(query)}`);
+      // Always navigate to glasdashboard with query
+      // If not authenticated, also include login=true to trigger login modal
+      if (isAuthenticated) {
+        navigate(`/glasdashboard?query=${encodeURIComponent(query)}`);
+      } else {
+        // Navigate with login flag - the dashboard will show login modal and then process query
+        navigate(`/glasdashboard?query=${encodeURIComponent(query)}&login=true`);
+      }
     }
   };
 

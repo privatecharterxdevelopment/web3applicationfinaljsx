@@ -26,24 +26,24 @@ export default function Toast({ message, type = 'success', duration = 3000, onCl
 
   return (
     <div
-      className={`fixed top-6 right-6 z-[99999] transform transition-all duration-300 ease-out ${
-        isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+      className={`fixed top-6 left-1/2 -translate-x-1/2 z-[99999] transform transition-all duration-300 ease-out ${
+        isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
       }`}
     >
-      <div className="bg-gray-900 text-white rounded-xl shadow-2xl px-5 py-4 flex items-center gap-3 min-w-[300px] max-w-md border border-gray-800">
+      <div className="bg-white text-gray-900 rounded-xl shadow-2xl px-5 py-4 flex items-center gap-3 min-w-[300px] max-w-md border border-gray-200">
         {/* Icon */}
         <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-          type === 'success' ? 'bg-white/20' : 'bg-red-500/20'
+          type === 'success' ? 'bg-green-100' : 'bg-red-100'
         }`}>
           {type === 'success' ? (
-            <Check size={18} className="text-white" />
+            <Check size={18} className="text-green-600" />
           ) : (
-            <X size={18} className="text-red-400" />
+            <X size={18} className="text-red-500" />
           )}
         </div>
 
         {/* Message */}
-        <p className="flex-1 text-sm font-medium text-white">
+        <p className="flex-1 text-sm font-medium text-gray-900">
           {message}
         </p>
 
@@ -53,9 +53,9 @@ export default function Toast({ message, type = 'success', duration = 3000, onCl
             setIsVisible(false);
             setTimeout(onClose, 300);
           }}
-          className="flex-shrink-0 p-1 hover:bg-white/10 rounded-lg transition-colors"
+          className="flex-shrink-0 p-1 hover:bg-gray-100 rounded-lg transition-colors"
         >
-          <X size={16} className="text-white/70" />
+          <X size={16} className="text-gray-500" />
         </button>
       </div>
     </div>
@@ -74,12 +74,12 @@ interface ToastContainerProps {
 
 export function ToastContainer({ toasts, removeToast }: ToastContainerProps) {
   return (
-    <div className="fixed top-0 right-0 z-[99999] pointer-events-none">
-      <div className="pointer-events-auto">
+    <div className="fixed top-0 left-0 right-0 z-[99999] pointer-events-none flex flex-col items-center">
+      <div className="pointer-events-auto flex flex-col items-center">
         {toasts.map((toast, index) => (
           <div
             key={toast.id}
-            style={{ marginTop: index * 80 }}
+            style={{ marginTop: index === 0 ? 0 : 12 }}
           >
             <Toast
               message={toast.message}
