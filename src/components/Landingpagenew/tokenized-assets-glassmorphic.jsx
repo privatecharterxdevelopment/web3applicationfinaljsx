@@ -2393,13 +2393,13 @@ const TokenizedAssetsGlassmorphic = () => {
 
       // Secret admin path: /x8833gulfstream66admin or #x8833gulfstream66admin
       if (path.includes('x8833gulfstream66admin') || hash.includes('x8833gulfstream66admin')) {
-        // Verify user is admin
-        if (user && (user.email === 'admin@domain.com' || profile?.role === 'admin' || user?.role === 'admin')) {
+        // Verify user is admin (check user_role field from AuthContext)
+        if (user && (user.user_role === 'admin' || profile?.role === 'admin' || profile?.user_role === 'admin')) {
           setActiveCategory('admin-dashboard');
           // Clean URL without reloading
           window.history.replaceState({}, document.title, window.location.pathname.replace('/x8833gulfstream66admin', ''));
         } else {
-          console.log('Unauthorized admin access attempt');
+          console.log('Unauthorized admin access attempt - user_role:', user?.user_role);
         }
       }
     };
