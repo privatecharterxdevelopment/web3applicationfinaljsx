@@ -1110,6 +1110,7 @@ const TokenizedAssetsGlassmorphic = () => {
   const [dashboardView, setDashboardView] = useState('overview');
   const [expandedMenus, setExpandedMenus] = useState({});
   const [expandedAIRequestId, setExpandedAIRequestId] = useState(null);
+  const [expandedRequestId, setExpandedRequestId] = useState(null);
   const [showMobileCategoryMenu, setShowMobileCategoryMenu] = useState(false);
   const [bookingStep, setBookingStep] = useState(0);
   const [bookingVehicleType, setBookingVehicleType] = useState('private-jet');
@@ -4314,77 +4315,244 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
-          {/* My Requests View */}
+          {/* My Requests View - Clean Expandable List Design */}
           {!isTransitioning && activeCategory === 'requests' && (
-            <div className="w-full h-full overflow-y-auto">
-              <style>{`
-                .dashboard-wrapper-glass {
-                  font-family: 'DM Sans', sans-serif !important;
-                  height: auto !important;
-                  min-height: 100%;
-                  overflow: visible !important;
-                }
-                .dashboard-wrapper-glass aside,
-                .dashboard-wrapper-glass header {
-                  display: none !important;
-                }
-                .dashboard-wrapper-glass main {
-                  width: 100% !important;
-                  max-width: 100% !important;
-                  padding: 1rem !important;
-                  background: transparent !important;
-                  overflow: visible !important;
-                  height: auto !important;
-                }
-                /* Make all white boxes transparent with grey borders */
-                .dashboard-wrapper-glass .bg-white,
-                .dashboard-wrapper-glass [class*="bg-white"] {
-                  background: transparent !important;
-                  border: 1px solid rgba(156, 163, 175, 0.3) !important;
-                  border-radius: 0.5rem !important;
-                  box-shadow: none !important;
-                }
-                /* Hide page titles inside dashboard */
-                .dashboard-wrapper-glass h1,
-                .dashboard-wrapper-glass h2.text-2xl,
-                .dashboard-wrapper-glass h2.text-3xl {
-                  display: none !important;
-                }
-                .dashboard-wrapper-glass p.text-gray-600:first-of-type,
-                .dashboard-wrapper-glass p.text-gray-500:first-of-type {
-                  display: none !important;
-                }
-                /* Remove ALL internal scrollbars and make content compact */
-                .dashboard-wrapper-glass * {
-                  overflow: visible !important;
-                }
-                .dashboard-wrapper-glass [class*="overflow-"],
-                .dashboard-wrapper-glass [class*="h-screen"],
-                .dashboard-wrapper-glass [class*="min-h-screen"] {
-                  overflow: visible !important;
-                  height: auto !important;
-                  min-height: auto !important;
-                }
-                /* Reduce padding and margins for compact layout */
-                .dashboard-wrapper-glass [class*="p-8"],
-                .dashboard-wrapper-glass [class*="py-8"],
-                .dashboard-wrapper-glass [class*="px-8"] {
-                  padding: 0.75rem !important;
-                }
-                .dashboard-wrapper-glass [class*="p-6"],
-                .dashboard-wrapper-glass [class*="py-6"],
-                .dashboard-wrapper-glass [class*="px-6"] {
-                  padding: 0.5rem !important;
-                }
-                .dashboard-wrapper-glass [class*="gap-8"] {
-                  gap: 1rem !important;
-                }
-                .dashboard-wrapper-glass [class*="gap-6"] {
-                  gap: 0.75rem !important;
-                }
-              `}</style>
-              <div className="dashboard-wrapper-glass">
-                <Dashboard initialTab="requests" />
+            <div className="h-full overflow-y-auto" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              {/* Header */}
+              <div className="px-6 py-5 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">My Requests</h1>
+                    <p className="text-xs text-gray-400 mt-0.5">All service requests and inquiries</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setActiveCategory('ai-requests')}
+                      className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-all flex items-center gap-1.5"
+                    >
+                      <Sparkles size={14} />
+                      AI Requests
+                    </button>
+                  </div>
+                </div>
+
+                {/* Stats - Minimal Inline */}
+                {(() => {
+                  const allRequests = userRequests.filter(r =>
+                    r.type !== 'ai_chat_bulk' &&
+                    r.type !== 'custom_request' &&
+                    !r.data?.source?.toLowerCase?.()?.includes?.('ai') &&
+                    !r.data?.source?.toLowerCase?.()?.includes?.('sphera') &&
+                    r.data?.source !== 'ai_chat'
+                  );
+                  const pendingCount = allRequests.filter(r => r.status === 'pending' || !r.status).length;
+                  const completedCount = allRequests.filter(r => r.status === 'completed').length;
+
+                  return (
+                    <div className="flex items-center gap-6 mt-4 text-sm">
+                      <div>
+                        <span className="text-gray-400">Total</span>
+                        <span className="ml-2 font-medium text-gray-900">{allRequests.length}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Pending</span>
+                        <span className="ml-2 font-medium text-gray-900">{pendingCount}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Completed</span>
+                        <span className="ml-2 font-medium text-gray-900">{completedCount}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Requests List */}
+              <div className="px-6 py-4">
+                {(() => {
+                  const allRequests = userRequests.filter(r =>
+                    r.type !== 'ai_chat_bulk' &&
+                    r.type !== 'custom_request' &&
+                    !r.data?.source?.toLowerCase?.()?.includes?.('ai') &&
+                    !r.data?.source?.toLowerCase?.()?.includes?.('sphera') &&
+                    r.data?.source !== 'ai_chat'
+                  );
+
+                  if (loadingRequests) {
+                    return (
+                      <div className="flex items-center justify-center py-16">
+                        <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin"></div>
+                      </div>
+                    );
+                  }
+
+                  if (allRequests.length === 0) {
+                    return (
+                      <div className="text-center py-16">
+                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <FolderOpen size={20} className="text-gray-400" />
+                        </div>
+                        <p className="text-sm text-gray-500 mb-4">No requests yet</p>
+                        <button
+                          onClick={() => setActiveCategory('jets')}
+                          className="px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 transition-all inline-flex items-center gap-2"
+                        >
+                          <Plane size={14} />
+                          Browse Services
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-2">
+                      {allRequests.map((request) => {
+                        const isExpanded = expandedRequestId === request.id;
+                        const requestTitle = request.type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Request';
+                        const getTypeIcon = (type) => {
+                          if (type?.includes('jet') || type?.includes('aircraft')) return '✈️';
+                          if (type?.includes('helicopter')) return '🚁';
+                          if (type?.includes('yacht')) return '🛥️';
+                          if (type?.includes('car') || type?.includes('vehicle')) return '🚗';
+                          if (type?.includes('transfer')) return '🚐';
+                          if (type?.includes('empty') && type?.includes('leg')) return '🛩️';
+                          return '📋';
+                        };
+
+                        return (
+                          <div
+                            key={request.id}
+                            className="bg-white border border-gray-100 rounded-xl overflow-hidden hover:border-gray-200 transition-all"
+                          >
+                            {/* Main Row */}
+                            <div
+                              className="px-4 py-3 flex items-center gap-4 cursor-pointer"
+                              onClick={() => setExpandedRequestId(isExpanded ? null : request.id)}
+                            >
+                              {/* Icon */}
+                              <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center text-lg flex-shrink-0">
+                                {getTypeIcon(request.type)}
+                              </div>
+
+                              {/* Title & Info */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-medium text-gray-900 truncate">
+                                    {requestTitle}
+                                  </p>
+                                  <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${
+                                    request.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
+                                    request.status === 'in_progress' ? 'bg-blue-50 text-blue-600' :
+                                    request.status === 'cancelled' ? 'bg-gray-50 text-gray-400' :
+                                    'bg-amber-50 text-amber-600'
+                                  }`}>
+                                    {request.status?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Pending'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
+                                  <span>
+                                    {new Date(request.created_at).toLocaleDateString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      year: 'numeric'
+                                    })}
+                                  </span>
+                                  {request.data?.from && request.data?.to && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="truncate">{request.data.from} → {request.data.to}</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Price if available */}
+                              {(request.data?.price || request.data?.estimated_price) && (
+                                <div className="text-right flex-shrink-0">
+                                  <p className="text-sm font-semibold text-gray-900">
+                                    €{(request.data.price || request.data.estimated_price).toLocaleString()}
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* Expand Icon */}
+                              <ChevronDown
+                                size={16}
+                                className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                              />
+                            </div>
+
+                            {/* Expanded Details */}
+                            {isExpanded && (
+                              <div className="px-4 pb-4 pt-2 border-t border-gray-50">
+                                {/* Quick Info Badges */}
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                  {request.data?.from && (
+                                    <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600 flex items-center gap-1">
+                                      <MapPin size={10} className="text-gray-400" />
+                                      From: {request.data.from}
+                                    </div>
+                                  )}
+                                  {request.data?.to && (
+                                    <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600 flex items-center gap-1">
+                                      <MapPin size={10} className="text-gray-400" />
+                                      To: {request.data.to}
+                                    </div>
+                                  )}
+                                  {request.data?.date && (
+                                    <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600 flex items-center gap-1">
+                                      <Calendar size={10} className="text-gray-400" />
+                                      {request.data.date}
+                                    </div>
+                                  )}
+                                  {request.data?.passengers && (
+                                    <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600 flex items-center gap-1">
+                                      <Users size={10} className="text-gray-400" />
+                                      {request.data.passengers} pax
+                                    </div>
+                                  )}
+                                  {request.data?.aircraft && (
+                                    <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600 flex items-center gap-1">
+                                      <Plane size={10} className="text-gray-400" />
+                                      {request.data.aircraft}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Notes/Details */}
+                                {request.data?.notes && (
+                                  <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                                    <p className="text-[10px] text-gray-400 uppercase mb-1">Notes</p>
+                                    <p className="text-xs text-gray-700">{request.data.notes}</p>
+                                  </div>
+                                )}
+
+                                {/* Admin Notes */}
+                                {request.admin_notes && (
+                                  <div className="bg-gray-900 rounded-lg p-3 mb-4">
+                                    <p className="text-[10px] text-gray-400 uppercase mb-1">Response</p>
+                                    <p className="text-xs text-white">{request.admin_notes}</p>
+                                  </div>
+                                )}
+
+                                {/* Footer */}
+                                <div className="flex items-center justify-between pt-2">
+                                  <span className="text-[10px] text-gray-300 font-mono">{request.id?.slice(0, 8)}</span>
+                                  <span className="text-[10px] text-gray-400">
+                                    {new Date(request.created_at).toLocaleTimeString('en-US', {
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}
