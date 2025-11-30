@@ -5161,7 +5161,7 @@ const TokenizedAssetsGlassmorphic = () => {
                             // Navigate to AI Chat with query
                             const queryText = item.query || item.label || '';
                             setAiChatQuery(queryText);
-                            setActiveCategory('chat');
+                            setActiveCategory('ai-chat');
                           } else {
                             // Navigate to category
                             setActiveCategory(item.action);
@@ -5170,7 +5170,7 @@ const TokenizedAssetsGlassmorphic = () => {
                         onOpenAIChat={(query) => {
                           // Navigate to AI Chat with the query
                           setAiChatQuery(query);
-                          setActiveCategory('chat');
+                          setActiveCategory('ai-chat');
                         }}
                         placeholder="I need a..."
                       />
