@@ -1016,7 +1016,8 @@ export default function RequestHistory({ onBack, onOpenChat }: RequestHistoryPro
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium capitalize">
-                          {getTypeName(request.type)}
+                          {/* Show specific title if available, otherwise type name */}
+                          {request.data?.offer_title || request.data?.adventure_title || request.data?.helicopter_name || request.data?.jet_name || request.data?.car_name || request.data?.yacht_name || getTypeName(request.type)}
                         </span>
                         {/* Items count badge for bulk requests */}
                         {request.data?.summary?.total_items > 0 && (
@@ -1025,6 +1026,12 @@ export default function RequestHistory({ onBack, onOpenChat }: RequestHistoryPro
                           </span>
                         )}
                       </div>
+                      {/* Show type as subtitle when we have a specific title */}
+                      {(request.data?.offer_title || request.data?.adventure_title || request.data?.helicopter_name || request.data?.jet_name || request.data?.car_name || request.data?.yacht_name) && (
+                        <div className="text-xs text-gray-400">
+                          {getTypeName(request.type)}
+                        </div>
+                      )}
                       <div className="text-sm text-gray-500">
                         {formatDate(request.created_at)}
                       </div>
