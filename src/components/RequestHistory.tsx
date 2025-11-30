@@ -1555,6 +1555,7 @@ export default function RequestHistory({ onBack, onOpenChat }: RequestHistoryPro
                                         item.type === 'helicopters' ? 'bg-green-100 text-green-700' :
                                         item.type === 'yachts' ? 'bg-cyan-100 text-cyan-700' :
                                         item.type === 'luxury_cars' ? 'bg-gray-200 text-gray-800' :
+                                        item.type === 'ground_transport' ? 'bg-teal-100 text-teal-700' :
                                         'bg-gray-100 text-gray-700'
                                       }`}>
                                         {item.type === 'luxury_cars' ? 'Supercar' :
@@ -1570,37 +1571,113 @@ export default function RequestHistory({ onBack, onOpenChat }: RequestHistoryPro
                                     {item.requiresConfirmation && (
                                       <span className="inline-block px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-[10px]">TBC</span>
                                     )}
-                                    {/* Route for flights */}
+
+                                    {/* Route for flights - with IATA codes */}
                                     {(item.from || item.origin) && (item.to || item.destination) && (
-                                      <div>{item.from || item.origin} → {item.to || item.destination}</div>
+                                      <div className="font-medium text-gray-700">
+                                        {item.from || item.origin} → {item.to || item.destination}
+                                        {(item.from_iata || item.to_iata) && (
+                                          <span className="text-gray-500 ml-1">
+                                            ({item.from_iata || ''}{item.from_iata && item.to_iata ? ' → ' : ''}{item.to_iata || ''})
+                                          </span>
+                                        )}
+                                      </div>
                                     )}
+
+                                    {/* Date & Time - CRITICAL */}
+                                    {(item.date || item.departure_date) && (
+                                      <div className="flex items-center gap-1">
+                                        <Calendar size={10} className="text-gray-400" />
+                                        <span>{item.date || item.departure_date}</span>
+                                        {(item.time || item.departure_time) && (
+                                          <span className="ml-1">at {item.time || item.departure_time}</span>
+                                        )}
+                                      </div>
+                                    )}
+                                    {item.return_date && (
+                                      <div className="text-gray-500">Return: {item.return_date}</div>
+                                    )}
+
+                                    {/* Passengers */}
+                                    {(item.passengers || item.pax) && (
+                                      <div className="flex items-center gap-1">
+                                        <Users size={10} className="text-gray-400" />
+                                        <span>{item.passengers || item.pax} passengers</span>
+                                      </div>
+                                    )}
+
+                                    {/* Flight details for jets/helicopters */}
+                                    {(item.type === 'jets' || item.type === 'helicopters') && (
+                                      <>
+                                        {item.aircraft_model && <div>Aircraft: {item.aircraft_model}</div>}
+                                        {item.estimated_flight_time && <div>Flight time: {item.estimated_flight_time}</div>}
+                                        {item.distance_km && <div>Distance: {item.distance_km.toLocaleString()} km</div>}
+                                        {item.range_km && <div>Range: {item.range_km.toLocaleString()} km</div>}
+                                      </>
+                                    )}
+
                                     {/* Custom extra details */}
-                                    {item.type === 'custom_extra' && item.quantity && item.quantity > 1 && (
-                                      <div>Qty: {item.quantity}</div>
+                                    {item.type === 'custom_extra' && (
+                                      <>
+                                        {item.quantity && item.quantity > 1 && <div>Qty: {item.quantity}</div>}
+                                        {item.notes && <div className="text-gray-500 italic">"{item.notes}"</div>}
+                                      </>
                                     )}
+
                                     {/* Luxury car details */}
                                     {item.type === 'luxury_cars' && (
                                       <>
                                         {item.category && <div>Category: {item.category}</div>}
                                         {item.year && <div>Year: {item.year}</div>}
+                                        {item.transmission && <div>Transmission: {item.transmission}</div>}
+                                        {item.seats && <div>Seats: {item.seats}</div>}
+                                        {item.horsepower && <div>Power: {item.horsepower} HP</div>}
                                         {item.location && <div>Location: {item.location}</div>}
                                         {item.rental_days && <div>Rental: {item.rental_days} day(s)</div>}
+                                        {item.price_per_day && <div>Rate: €{item.price_per_day.toLocaleString()}/day</div>}
                                       </>
                                     )}
+
                                     {/* Ground transport details */}
                                     {item.type === 'ground_transport' && (
                                       <>
-                                        {item.category && <div>Service: {item.category}</div>}
+                                        {(item.service_type || item.category) && <div>Service: {item.service_type || item.category}</div>}
                                         {item.seats && <div>Seats: {item.seats}</div>}
                                         {(item.pickup_location || item.from) && <div>Pickup: {item.pickup_location || item.from}</div>}
                                         {(item.dropoff_location || item.to) && <div>Drop-off: {item.dropoff_location || item.to}</div>}
+                                        {item.duration && <div>Duration: {item.duration}</div>}
+                                        {item.distanceKm && <div>Distance: {item.distanceKm} km</div>}
                                       </>
                                     )}
-                                    {item.date && <div>Date: {item.date}</div>}
-                                    {item.time && <div>Time: {item.time}</div>}
-                                    {item.passengers && <div>{item.passengers} pax</div>}
-                                    {item.cateringOption && <div>Catering: {item.cateringOption}</div>}
-                                    {item.airportPickupFee > 0 && <div>Airport fee: €{item.airportPickupFee}</div>}
+
+                                    {/* Yacht details */}
+                                    {item.type === 'yachts' && (
+                                      <>
+                                        {item.length_m && <div>Length: {item.length_m}m</div>}
+                                        {item.cabins && <div>Cabins: {item.cabins}</div>}
+                                        {item.crew && <div>Crew: {item.crew}</div>}
+                                        {item.price_per_week && <div>Rate: €{item.price_per_week.toLocaleString()}/week</div>}
+                                      </>
+                                    )}
+
+                                    {/* Catering */}
+                                    {item.cateringOption && item.cateringOption !== 'standard' && (
+                                      <div className="flex items-center gap-1">
+                                        <Utensils size={10} className="text-gray-400" />
+                                        <span>Catering: {item.cateringOption}</span>
+                                        {item.cateringPrice > 0 && <span className="text-gray-500">(+€{item.cateringPrice})</span>}
+                                      </div>
+                                    )}
+
+                                    {/* Airport fee */}
+                                    {item.airportPickupFee > 0 && (
+                                      <div className="text-gray-500">Airport fee: €{item.airportPickupFee}</div>
+                                    )}
+
+                                    {/* Notes */}
+                                    {item.notes && item.type !== 'custom_extra' && (
+                                      <div className="text-gray-500 italic mt-1">Note: {item.notes}</div>
+                                    )}
                                   </div>
                                 </div>
                               ))}

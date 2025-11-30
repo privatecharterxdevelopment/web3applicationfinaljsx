@@ -4673,36 +4673,72 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           // Ensure all relevant fields are included
                           type: item.type,
                           name: item.name || item.title || item.aircraft_type || item.model,
+                          title: item.title || item.name || item.aircraft_type,
                           price: item.price || item.basePrice || item.price_usd,
+                          estimated_price: item.totalWithFee || item.price || item.basePrice,
                           // Route info
                           from: item.from || item.from_city || item.origin,
                           to: item.to || item.to_city || item.destination,
-                          // Date/time
-                          date: item.date || item.departure_date,
-                          time: item.time || item.departure_time,
-                          // Additional details
-                          passengers: item.passengers || item.pax,
+                          origin: item.origin || item.from || item.from_city,
+                          destination: item.destination || item.to || item.to_city,
+                          from_iata: item.from_iata || item.originIata,
+                          to_iata: item.to_iata || item.destinationIata,
+                          // Date/time - CRITICAL for booking
+                          date: item.date || item.departure_date || item.selectedDate,
+                          time: item.time || item.departure_time || item.selectedTime,
+                          departure_date: item.departure_date || item.date,
+                          departure_time: item.departure_time || item.time,
+                          return_date: item.return_date || item.returnDate,
+                          // Passengers
+                          passengers: item.passengers || item.pax || item.max_passengers,
+                          pax: item.pax || item.passengers,
+                          // Aircraft/vehicle details
+                          aircraft_model: item.aircraft_model || item.model,
+                          aircraft_type: item.aircraft_type || item.type,
                           category: item.category,
+                          // For jets/helicopters
+                          range_km: item.range_km,
+                          speed_kts: item.speed_kts,
+                          hourly_rate_eur: item.hourly_rate_eur,
+                          estimated_flight_time: item.estimated_flight_time || item.flightTime,
+                          distance_km: item.distance_km || item.distanceKm,
                           // For luxury cars
                           brand: item.brand,
                           model: item.model,
                           year: item.year,
                           location: item.location,
-                          rental_days: item.rentalDays,
+                          rental_days: item.rentalDays || item.rental_days,
+                          transmission: item.transmission,
+                          seats: item.seats,
+                          horsepower: item.horsepower,
+                          price_per_day: item.price_per_day || item.pricePerDay,
+                          // For yachts
+                          length_m: item.length_m,
+                          cabins: item.cabins,
+                          crew: item.crew,
+                          price_per_week: item.price_per_week,
                           // For transfers
-                          distanceKm: item.distanceKm,
+                          distanceKm: item.distanceKm || item.distance_km,
                           duration: item.duration,
-                          vehicles_needed: item.vehiclesNeeded,
+                          vehicles_needed: item.vehiclesNeeded || item.vehicles_needed,
+                          pickup_location: item.pickup_location || item.from,
+                          dropoff_location: item.dropoff_location || item.to,
+                          service_type: item.service_type || item.category,
                           // For extras
-                          quantity: item.quantity,
+                          quantity: item.quantity || 1,
                           isCustomRequest: item.isCustomRequest,
                           requiresConfirmation: item.requiresConfirmation,
+                          notes: item.notes,
                           // Pricing
                           cateringOption: item.catering || 'standard',
                           cateringPrice: item.cateringPrice || 0,
-                          airportPickupFee: item.airportPickupFee,
-                          vat: item.vat,
-                          isEstimate: item.isEstimate
+                          airportPickupFee: item.airportPickupFee || 0,
+                          vat: item.vat || 0,
+                          isEstimate: item.isEstimate,
+                          // Images
+                          image: item.image || item.image_url,
+                          // ID for tracking
+                          itemId: item.id || item.cartId
                         })),
                         summary: {
                           total_items: cartItems.length,
