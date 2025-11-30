@@ -4159,6 +4159,19 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           <span className="text-sm font-semibold text-gray-700">{hasEstimates ? 'Est. Total' : 'Total'}</span>
                           <span className="text-lg font-bold text-gray-900">{hasEstimates ? '~' : ''}€{grandTotal.toLocaleString()}</span>
                         </div>
+
+                        {/* PVCX Rewards Estimate */}
+                        {grandTotal > 0 && (
+                          <div className="flex justify-between items-center pt-2 mt-2 border-t border-dashed border-gray-200 bg-gradient-to-r from-emerald-50 to-green-50 -mx-4 px-4 py-2 -mb-3 rounded-b-lg">
+                            <span className="text-xs text-emerald-700 flex items-center gap-1.5">
+                              <span className="text-sm">✨</span>
+                              PVCX Reward (1.5%)
+                            </span>
+                            <span className="text-sm font-bold text-emerald-600">
+                              +{(grandTotal * 0.015).toFixed(2)} PVCX
+                            </span>
+                          </div>
+                        )}
                       </div>
                     );
                   })()}

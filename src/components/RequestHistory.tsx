@@ -70,6 +70,8 @@ export default function RequestHistory({ onBack, onOpenChat }: RequestHistoryPro
   const [typeFilter, setTypeFilter] = useState('all');
   const [activeTab, setActiveTab] = useState<'requests' | 'ai_requests' | 'pricebreak' | 'chat_history'>('chat_history');
   const [expandedChatId, setExpandedChatId] = useState<string | null>(null);
+  const [chatPage, setChatPage] = useState(1);
+  const CHATS_PER_PAGE = 9;
 
   useEffect(() => {
     fetchRequests();
@@ -533,7 +535,16 @@ export default function RequestHistory({ onBack, onOpenChat }: RequestHistoryPro
             </div>
           ) : (
             <div className="space-y-3">
-              {chatSessions.map((chat) => {
+              {/* Pagination Info */}
+              {chatSessions.length > CHATS_PER_PAGE && (
+                <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
+                  <span>Showing {Math.min((chatPage - 1) * CHATS_PER_PAGE + 1, chatSessions.length)}-{Math.min(chatPage * CHATS_PER_PAGE, chatSessions.length)} of {chatSessions.length} conversations</span>
+                </div>
+              )}
+
+              {chatSessions
+                .slice((chatPage - 1) * CHATS_PER_PAGE, chatPage * CHATS_PER_PAGE)
+                .map((chat) => {
                 const messageCount = chat.messages?.length || 0;
                 const lastMessage = chat.messages?.[chat.messages.length - 1];
                 const isExpanded = expandedChatId === chat.id;
@@ -634,6 +645,43 @@ export default function RequestHistory({ onBack, onOpenChat }: RequestHistoryPro
                   </div>
                 );
               })}
+
+              {/* Pagination Controls */}
+              {chatSessions.length > CHATS_PER_PAGE && (
+                <div className="flex items-center justify-center gap-2 mt-6 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => setChatPage(p => Math.max(1, p - 1))}
+                    disabled={chatPage === 1}
+                    className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Previous
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.ceil(chatSessions.length / CHATS_PER_PAGE) }, (_, i) => i + 1).map(page => (
+                      <button
+                        key={page}
+                        onClick={() => setChatPage(page)}
+                        className={`w-8 h-8 text-sm font-medium rounded-lg transition-colors ${
+                          chatPage === page
+                            ? 'bg-gray-900 text-white'
+                            : 'hover:bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => setChatPage(p => Math.min(Math.ceil(chatSessions.length / CHATS_PER_PAGE), p + 1))}
+                    disabled={chatPage >= Math.ceil(chatSessions.length / CHATS_PER_PAGE)}
+                    className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </>
@@ -779,15 +827,51 @@ export default function RequestHistory({ onBack, onOpenChat }: RequestHistoryPro
                       </div>
                     )}
 
-                    {/* Request ID Footer */}
-                    <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-                      <span>Request ID: {request.id.slice(0, 8)}</span>
-                      {request.completed_at && (
+                    {/* Request Details Footer */}
+                    <div className="mt-4 pt-3 border-t border-gray-100">
+                      {/* Info Row */}
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mb-3">
                         <span className="flex items-center gap-1">
-                          <Clock size={12} />
-                          Completed: {formatDate(request.completed_at)}
+                          <Calendar size={12} />
+                          Created: {formatDate(request.created_at)}
                         </span>
-                      )}
+                        {request.completed_at && (
+                          <span className="flex items-center gap-1">
+                            <Clock size={12} />
+                            Completed: {formatDate(request.completed_at)}
+                          </span>
+                        )}
+                        {request.data?.source && (
+                          <span className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600">
+                            Source: {request.data.source}
+                          </span>
+                        )}
+                        {request.data?.conversation_id && (
+                          <span className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 font-mono">
+                            Chat: {request.data.conversation_id.slice(0, 8)}...
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Action Row */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-400 font-mono">ID: {request.id.slice(0, 8)}</span>
+                        <div className="flex items-center gap-2">
+                          {request.data?.conversation_id && onOpenChat && (
+                            <button
+                              onClick={() => onOpenChat(request.data.conversation_id)}
+                              className="px-3 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-1.5"
+                            >
+                              <MessageSquare size={12} />
+                              Continue Chat
+                            </button>
+                          )}
+                          <button className="px-3 py-1.5 text-xs font-medium border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1.5">
+                            <Eye size={12} />
+                            View Details
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
