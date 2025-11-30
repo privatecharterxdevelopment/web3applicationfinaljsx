@@ -35,13 +35,22 @@ export default function NotificationBell({ isOpen, setIsOpen, onNavigate, onView
         .order('created_at', { ascending: false })
         .limit(20);
 
-      if (error) throw error;
+      if (error) {
+        // Log error but don't crash - notifications are non-critical
+        console.warn('Notifications fetch failed (non-critical):', error.message);
+        setNotifications([]);
+        setUnreadCount(0);
+        return;
+      }
 
       setNotifications(data || []);
       const unread = (data || []).filter(n => !n.is_read).length;
       setUnreadCount(unread);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      // Gracefully handle errors - don't block UI
+      console.warn('Notifications error (non-critical):', error);
+      setNotifications([]);
+      setUnreadCount(0);
     } finally {
       setIsLoading(false);
     }
@@ -53,55 +62,62 @@ export default function NotificationBell({ isOpen, setIsOpen, onNavigate, onView
 
     fetchNotifications();
 
-    // Subscribe to new notifications
-    const channel = supabase
-      .channel('notifications-channel')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Notification event:', payload);
+    // Subscribe to new notifications - wrapped in try/catch for graceful failure
+    let channel = null;
+    try {
+      channel = supabase
+        .channel('notifications-channel')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Notification event:', payload);
 
-          if (payload.eventType === 'INSERT') {
-            // Add new notification to the top
-            setNotifications(prev => [payload.new, ...prev]);
-            setUnreadCount(prev => prev + 1);
+            if (payload.eventType === 'INSERT') {
+              // Add new notification to the top
+              setNotifications(prev => [payload.new, ...prev]);
+              setUnreadCount(prev => prev + 1);
 
-            // Optional: Show browser notification
-            if (Notification.permission === 'granted') {
-              new Notification(payload.new.title, {
-                body: payload.new.message,
-                icon: payload.new.image_url || '/logo.png'
-              });
+              // Optional: Show browser notification
+              if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                new Notification(payload.new.title, {
+                  body: payload.new.message,
+                  icon: payload.new.image_url || '/logo.png'
+                });
+              }
+            } else if (payload.eventType === 'UPDATE') {
+              // Update existing notification
+              setNotifications(prev =>
+                prev.map(n => n.id === payload.new.id ? payload.new : n)
+              );
+              // Recalculate unread count
+              fetchNotifications();
+            } else if (payload.eventType === 'DELETE') {
+              // Remove notification
+              setNotifications(prev => prev.filter(n => n.id !== payload.old.id));
+              fetchNotifications();
             }
-          } else if (payload.eventType === 'UPDATE') {
-            // Update existing notification
-            setNotifications(prev =>
-              prev.map(n => n.id === payload.new.id ? payload.new : n)
-            );
-            // Recalculate unread count
-            fetchNotifications();
-          } else if (payload.eventType === 'DELETE') {
-            // Remove notification
-            setNotifications(prev => prev.filter(n => n.id !== payload.old.id));
-            fetchNotifications();
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    } catch (err) {
+      console.warn('Notification subscription failed (non-critical):', err);
+    }
 
     // Request browser notification permission
-    if (Notification.permission === 'default') {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
       Notification.requestPermission();
     }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [user]);
 
@@ -324,36 +340,52 @@ export function useNotificationCount(userId) {
     if (!userId) return;
 
     const fetchCount = async () => {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('id', { count: 'exact' })
-        .eq('user_id', userId)
-        .eq('is_read', false);
+      try {
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('id', { count: 'exact' })
+          .eq('user_id', userId)
+          .eq('is_read', false);
 
-      if (!error) {
-        setUnreadCount(data?.length || 0);
+        if (!error) {
+          setUnreadCount(data?.length || 0);
+        } else {
+          // Gracefully handle errors
+          console.warn('Notification count fetch failed (non-critical):', error.message);
+          setUnreadCount(0);
+        }
+      } catch (err) {
+        console.warn('Notification count error (non-critical):', err);
+        setUnreadCount(0);
       }
     };
 
     fetchCount();
 
-    // Subscribe to changes
-    const channel = supabase
-      .channel('notification-count')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${userId}`
-        },
-        () => fetchCount()
-      )
-      .subscribe();
+    // Subscribe to changes - wrapped in try/catch
+    let channel;
+    try {
+      channel = supabase
+        .channel('notification-count')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${userId}`
+          },
+          () => fetchCount()
+        )
+        .subscribe();
+    } catch (err) {
+      console.warn('Notification subscription failed (non-critical):', err);
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [userId]);
 

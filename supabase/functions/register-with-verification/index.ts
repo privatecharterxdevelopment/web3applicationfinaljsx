@@ -256,11 +256,11 @@ serve(async (req) => {
       });
     }
 
-    // Create user in auth.users
+    // Create user in auth.users (auto-verified - no email verification required)
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email.trim(),
       password: password,
-      email_confirm: false, // User must verify email
+      email_confirm: true, // Auto-verify email - no verification required
       user_metadata: {
         firstName: firstName.trim(),
         lastName: lastName?.trim() || null
@@ -270,20 +270,27 @@ serve(async (req) => {
     if (authError || !authData.user) {
       console.error('Error creating auth user:', authError);
       await ensureMinimumDelay();
+
+      // Provide more specific error messages
+      let errorMessage = 'Failed to create user account';
+      if (authError?.message?.includes('already registered')) {
+        errorMessage = 'This email is already registered. Please sign in instead.';
+      } else if (authError?.message?.includes('password')) {
+        errorMessage = 'Password does not meet requirements.';
+      } else if (authError?.message) {
+        errorMessage = authError.message;
+      }
+
       return new Response(JSON.stringify({
         success: false,
-        error: 'Failed to create user account'
+        error: errorMessage
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Generate email confirmation token
-    const confirmationToken = crypto.randomUUID();
-    const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-    // Create user record in public.users table
+    // Create user record in public.users table (auto-verified, active immediately)
     const { error: userInsertError } = await supabaseAdmin
       .from('users')
       .insert({
@@ -291,12 +298,10 @@ serve(async (req) => {
         email: email.trim(),
         first_name: firstName.trim(),
         last_name: lastName?.trim() || null,
-        email_verified: false,
-        is_active: false,
+        email_verified: true,
+        is_active: true,
         is_admin: false,
         user_role: 'user',
-        email_confirmation_token: confirmationToken,
-        email_confirmation_sent_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       });
@@ -329,7 +334,7 @@ serve(async (req) => {
       console.warn('Failed to create user profile (non-critical):', profileError);
     }
 
-    // Send confirmation email
+    // Send welcome email (non-blocking - don't wait for it)
     const sesClient = new SESv2Client({
       region: Deno.env.get('AWS_REGION') || 'eu-north-1',
       credentials: {
@@ -342,7 +347,6 @@ serve(async (req) => {
 
     const fromEmail = Deno.env.get('FROM_EMAIL') || 'noreply@www.privatecharterx.com';
     const siteUrl = Deno.env.get('SITE_URL') || 'https://privatecharterx.com';
-    const verificationUrl = `${siteUrl}/verify-email?token=${confirmationToken}`;
 
     const emailParams = {
       FromEmailAddress: `PrivateCharterX <${fromEmail}>`,
@@ -352,7 +356,7 @@ serve(async (req) => {
       Content: {
         Simple: {
           Subject: {
-            Data: 'Welcome to PrivateCharterX - Please verify your email',
+            Data: 'Welcome to PrivateCharterX!',
             Charset: 'UTF-8'
           },
           Body: {
@@ -364,17 +368,21 @@ serve(async (req) => {
                   </div>
                   <div style="padding: 20px; border: 1px solid #eee; border-top: none;">
                     <h2>Welcome ${firstName}!</h2>
-                    <p>Thank you for creating an account with PrivateCharterX. To complete your registration, please verify your email address by clicking the button below:</p>
+                    <p>Thank you for joining PrivateCharterX. Your account is now active and ready to use.</p>
+                    <p>You can now:</p>
+                    <ul>
+                      <li>Book private charter flights</li>
+                      <li>Search for available routes</li>
+                      <li>Manage your bookings</li>
+                      <li>Access exclusive member benefits</li>
+                    </ul>
                     <div style="text-align: center; margin: 30px 0;">
-                      <a href="${verificationUrl}" 
+                      <a href="${siteUrl}/login"
                         style="background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
-                        Verify Email Address
+                        Sign In Now
                       </a>
                     </div>
-                    <p>This verification link will expire in 24 hours.</p>
-                    <p>If you did not create this account, you can safely ignore this email.</p>
-                    <p>If the button doesn't work, copy and paste this URL into your browser:</p>
-                    <p style="word-break: break-all;">${verificationUrl}</p>
+                    <p>If you have any questions, our support team is here to help.</p>
                   </div>
                   <div style="background-color: #f5f5f5; padding: 15px; text-align: center; font-size: 12px; color: #666;">
                     <p>&copy; ${new Date().getFullYear()} PrivateCharterX. All rights reserved.</p>
@@ -389,12 +397,14 @@ serve(async (req) => {
       ReplyToAddresses: ['support@privatecharterx.com']
     };
 
+    // Send email in background (don't block registration)
     const command = new SendEmailCommand(emailParams);
-    const emailResult = await sesClient.send(command);
+    sesClient.send(command).catch((err: Error) => {
+      console.warn('Welcome email failed to send:', err);
+    });
 
     // Log successful registration
     console.log(`User registered successfully: ${authData.user.id}`, {
-      messageId: emailResult.MessageId,
       email: email,
       timestamp: new Date().toISOString()
     });
@@ -402,8 +412,8 @@ serve(async (req) => {
     await ensureMinimumDelay();
     return new Response(JSON.stringify({
       success: true,
-      message: 'Thank you for registering! Please check your email for verification instructions.',
-      user_id: authData.user.id
+      message: 'Account created successfully! You can now sign in.',
+      userId: authData.user.id
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

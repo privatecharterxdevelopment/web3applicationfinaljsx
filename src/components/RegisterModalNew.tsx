@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { Mail, Lock, User, Phone, X, CheckCircle, ArrowRight } from 'lucide-react';
+import React, { useState, useRef, useCallback } from 'react';
+import { Mail, Lock, User, Phone, X, ArrowRight } from 'lucide-react';
 import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import Portal from './Portal';
 import { supabase } from '../lib/supabase';
 import { VideoHero } from './auth';
 import FaceRegisterModal from './auth/FaceRegisterModal';
+
+const RECAPTCHA_SITE_KEY = '6LdA4fcrAAAAAEE-ojHle6bq-Xbhdz2yS5myYlSG';
 
 // Same videos as LoginModalNew
 const videos = [
@@ -27,9 +29,9 @@ interface RegisterModalNewProps {
   onSuccess?: () => void;
 }
 
-type RegistrationStep = 'basic-info' | 'phone-submit' | 'success' | 'face-choice' | 'face-register';
+type RegistrationStep = 'basic-info' | 'phone-submit' | 'face-choice' | 'face-register';
 
-// Step 2 Component with reCAPTCHA
+// Step 2 Component with reCAPTCHA v3
 function Step2WithRecaptcha({
   formData,
   onClose,
@@ -59,14 +61,14 @@ function Step2WithRecaptcha({
     }
 
     if (!executeRecaptcha) {
-      setError('reCAPTCHA not available. Please refresh the page and try again.');
+      setError('reCAPTCHA is loading. Please wait a moment and try again.');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Execute reCAPTCHA v3
+      // Execute reCAPTCHA v3 (invisible)
       const recaptchaToken = await executeRecaptcha('register');
 
       if (!recaptchaToken) {
@@ -187,13 +189,23 @@ function Step2WithRecaptcha({
 
         }
 
-        setCurrentStep('success');
+        // Auto-login the user after successful registration
+        try {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: formData.email.trim(),
+            password: formData.password
+          });
 
-        // Auto-close after 2 seconds (Face ID disabled)
-        setTimeout(() => {
-          if (onSuccess) onSuccess();
-          onClose();
-        }, 2000);
+          if (signInError) {
+            console.warn('Auto-login failed, user will need to login manually:', signInError.message);
+          }
+        } catch (loginError) {
+          console.warn('Auto-login error:', loginError);
+        }
+
+        // Close modal immediately - toast will be shown by dashboard on auth state change
+        if (onSuccess) onSuccess();
+        onClose();
       } else {
         setError(data?.error || 'Registration failed. Please try again.');
       }
@@ -296,26 +308,6 @@ function Step2WithRecaptcha({
     );
   }
 
-  // Success Screen
-  if (currentStep === 'success') {
-    return (
-      <Portal>
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 font-['DM_Sans']">
-          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 text-center">
-            <CheckCircle size={80} className="text-emerald-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Registration Complete!</h1>
-            <p className="text-gray-600 mb-4">
-              Your account has been created successfully.
-            </p>
-            <p className="text-sm text-gray-500">
-              Please check your email to verify your account.
-            </p>
-          </div>
-        </div>
-      </Portal>
-    );
-  }
-
   // Phone & Submit Step
   return (
     <Portal>
@@ -390,7 +382,7 @@ function Step2WithRecaptcha({
                 </div>
               </div>
 
-              {/* reCAPTCHA v3 notice */}
+              {/* reCAPTCHA v3 notice (invisible verification) */}
               <div className="text-xs text-center text-gray-500 mb-4">
                 This site is protected by reCAPTCHA and the Google{' '}
                 <a href="https://policies.google.com/privacy" className="underline hover:text-gray-700">Privacy Policy</a> and{' '}
@@ -527,12 +519,10 @@ export default function RegisterModalNew({
     onClose();
   };
 
-  // Step 2: Load reCAPTCHA and show final form
+  // Step 2: Show final form with reCAPTCHA v3
   if (step === 2) {
     return (
-      <GoogleReCaptchaProvider
-        reCaptchaKey={import.meta.env.VITE_RECAPTCHA_SITE_KEY!}
-      >
+      <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_SITE_KEY}>
         <Step2WithRecaptcha
           formData={formData}
           onClose={handleClose}
@@ -724,7 +714,8 @@ export default function RegisterModalNew({
                   </button>
                 </div>
 
-                {/* Partner Registration Link */}
+                {/* Partner Registration Link - Hidden for now */}
+                {/* TODO: Re-enable partner onboarding when ready
                 {onSwitchToPartnerRegister && (
                   <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg">
                     <div className="flex-1">
@@ -744,6 +735,7 @@ export default function RegisterModalNew({
                     </button>
                   </div>
                 )}
+                */}
               </div>
 
               {/* Next Button */}

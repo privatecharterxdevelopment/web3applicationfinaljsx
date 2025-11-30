@@ -1811,14 +1811,16 @@ const TokenizedAssetsGlassmorphic = () => {
       const toastAlreadyShown = sessionStorage.getItem(toastShownKey);
 
       if (!toastAlreadyShown) {
-        // Determine if returning user or new user
-        const isReturning = user.last_sign_in_at && user.created_at !== user.last_sign_in_at;
+        // Determine if returning user or new user based on created_at timestamp
+        const createdAt = new Date(user.created_at);
+        const now = new Date();
+        const isNewUser = (now.getTime() - createdAt.getTime()) < 60000; // Within 1 minute = new registration
         const firstName = user.first_name || user.name || user.email?.split('@')[0] || 'User';
 
         // Show personalized toast
-        const message = isReturning
-          ? `Welcome back, ${firstName}!`
-          : `Successfully logged in, ${firstName}!`;
+        const message = isNewUser
+          ? `Welcome ${firstName}! You've received 100 PVCX tokens as a welcome bonus!`
+          : `Welcome back, ${firstName}!`;
 
         showToast(message, 'success');
 

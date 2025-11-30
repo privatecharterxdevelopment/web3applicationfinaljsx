@@ -30,24 +30,31 @@ export default function NotificationCenter() {
       fetchNotifications();
 
       // Subscribe to real-time updates
-      const channel = supabase
-        .channel('notifications-page')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'notifications',
-            filter: `user_id=eq.${user.id}`
-          },
-          () => {
-            fetchNotifications();
-          }
-        )
-        .subscribe();
+      let channel: ReturnType<typeof supabase.channel> | null = null;
+      try {
+        channel = supabase
+          .channel('notifications-page')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'notifications',
+              filter: `user_id=eq.${user.id}`
+            },
+            () => {
+              fetchNotifications();
+            }
+          )
+          .subscribe();
+      } catch (err) {
+        console.warn('Notification realtime subscription failed (non-critical):', err);
+      }
 
       return () => {
-        supabase.removeChannel(channel);
+        if (channel) {
+          supabase.removeChannel(channel);
+        }
       };
     }
   }, [user]);
@@ -69,12 +76,19 @@ export default function NotificationCenter() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        // Handle gracefully - user may not have permissions yet
+        console.warn('Notifications fetch error (may be RLS issue):', error.message);
+        setNotifications([]);
+        setError(null); // Don't show error to user for permission issues
+        return;
+      }
 
       setNotifications(data || []);
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-      setError('Failed to load notifications');
+    } catch (error: any) {
+      console.warn('Error fetching notifications:', error);
+      setNotifications([]);
+      setError(null); // Gracefully fail without showing error
     } finally {
       setLoading(false);
     }
