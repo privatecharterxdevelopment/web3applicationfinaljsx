@@ -1,754 +1,721 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  Shield,
   Building2,
-  Globe,
-  DollarSign,
+  Info,
   X,
-  MapPin,
-  Clock,
   Loader2,
-  Plane,
-  Ship,
-  Home
+  Briefcase,
+  DollarSign,
+  Clock,
+  CheckCircle2,
+  Check,
+  Users,
+  MapPin
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 
-const SPVFormationFlow = ({ onBack }) => {
+const SPVFormationFlow = ({ onBack, onSuccess }) => {
   const { user } = useAuth();
-  const [showModal, setShowModal] = useState(false);
-  const [selectedTier, setSelectedTier] = useState(null);
-  const [modalStep, setModalStep] = useState(1);
-  const totalModalSteps = 6;
+  const [activeTab, setActiveTab] = useState('tier');
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [selectedTierTab, setSelectedTierTab] = useState('standard');
 
+  // Form data state - persisted during form filling
   const [formData, setFormData] = useState({
-    jurisdiction: null,
-    planningToTokenizeAssets: false,
-    assetType: null, // 'jet', 'helicopter', 'evtol', 'yacht', 'real-estate', 'multiple'
+    // Step 1: Tier & Jurisdiction
+    selectedTier: 'standard',
+    jurisdiction: '',
+    jurisdictionDetails: null,
+    // Step 2: Company Info
     companyName: '',
     businessActivity: '',
+    companyDescription: '',
     numberOfDirectors: '1',
     numberOfShareholders: '1',
-    contactEmail: '',
-    contactPhone: ''
+    planningToTokenizeAssets: false,
+    assetType: '',
+    // Step 3: Directors & Shareholders
+    directors: [{ fullName: '', nationality: '', residency: '', email: '', phone: '', passportNumber: '' }],
+    shareholders: [{ fullName: '', nationality: '', ownership: '100', email: '', phone: '', passportNumber: '' }],
+    // Step 4: Additional Services
+    needsNomineeDirector: false,
+    needsNomineeShareholder: false,
+    needsBankAccountGuarantee: false,
+    needsAccounting: false,
+    needsSubstancePackage: false,
+    needsVATRegistration: false,
+    needsExpressService: false,
+    // Step 5: Contact
+    contactEmail: user?.email || '',
+    contactPhone: '',
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const tabs = [
+    { id: 'tier', label: 'Jurisdiction' },
+    { id: 'company', label: 'Company' },
+    { id: 'people', label: 'Directors' },
+    { id: 'services', label: 'Services' },
+    { id: 'review', label: 'Review' }
+  ];
 
-  // Jurisdiction Data with realistic pricing
   const jurisdictions = {
     premium: [
-      {
-        name: 'Switzerland',
-        flag: '🇨🇭',
-        formation: 7500,
-        annual: 3500,
-        tax: '11.9-21.6%',
-        duration: '3-4 weeks',
-        popularFor: ['jet', 'yacht', 'multiple'],
-        description: 'Excellence in banking, top-tier reputation'
-      },
-      {
-        name: 'Singapore',
-        flag: '🇸🇬',
-        formation: 6500,
-        annual: 3000,
-        tax: '17%',
-        duration: '2-3 weeks',
-        popularFor: ['jet', 'helicopter', 'yacht', 'multiple'],
-        description: 'Asian financial hub, strong legal framework'
-      },
-      {
-        name: 'Luxembourg',
-        flag: '🇱🇺',
-        formation: 8500,
-        annual: 4000,
-        tax: '24.94%',
-        duration: '3-4 weeks',
-        popularFor: ['jet', 'multiple'],
-        description: 'EU jurisdiction, excellent for funds'
-      },
-      {
-        name: 'Liechtenstein',
-        flag: '🇱🇮',
-        formation: 8000,
-        annual: 3800,
-        tax: '12.5%',
-        duration: '3-4 weeks',
-        popularFor: ['yacht', 'multiple'],
-        description: 'Privacy protection, Swiss banking access'
-      }
+      { name: 'Switzerland', formation: 8500, annual: 4500, tax: '11.9% - 21%', duration: '10-14 days', description: 'AG/GmbH Formation, Registered Office, Nominee Director, Bank Account Intro' },
+      { name: 'Singapore', formation: 6500, annual: 3500, tax: '17%', duration: '3-5 days', description: 'Private Limited Company, Local Director, Registered Office' },
+      { name: 'Luxembourg', formation: 7500, annual: 4000, tax: '24.94%', duration: '5-7 days', description: 'SARL/SA Formation, Registered Office, Domiciliation' },
+      { name: 'Liechtenstein', formation: 8000, annual: 4000, tax: '12.5%', duration: '7-10 days', description: 'AG/Anstalt/Stiftung, Registered Office Vaduz' },
+      { name: 'Isle of Man', formation: 6500, annual: 3000, tax: '0%', duration: '3-5 days', description: 'Limited Company, Aircraft/Yacht friendly' },
+      { name: 'Jersey', formation: 6000, annual: 3000, tax: '0%', duration: '3-5 days', description: 'Limited Company, Trust Services available' },
+      { name: 'Guernsey', formation: 6000, annual: 3000, tax: '0%', duration: '3-5 days', description: 'Limited Company, Protected Cell Company possible' }
     ],
     standard: [
-      {
-        name: 'Cayman Islands',
-        flag: '🇰🇾',
-        formation: 5500,
-        annual: 2800,
-        tax: '0%',
-        duration: '2-3 weeks',
-        popularFor: ['yacht', 'jet', 'multiple'],
-        description: 'Zero tax, strong offshore reputation'
-      },
-      {
-        name: 'British Virgin Islands',
-        flag: '🇻🇬',
-        formation: 4500,
-        annual: 2500,
-        tax: '0%',
-        duration: '1-2 weeks',
-        popularFor: ['yacht', 'helicopter'],
-        description: 'Fast formation, privacy protection'
-      },
-      {
-        name: 'Dubai (UAE)',
-        flag: '🇦🇪',
-        formation: 6000,
-        annual: 3200,
-        tax: '0%',
-        duration: '2-3 weeks',
-        popularFor: ['jet', 'yacht', 'helicopter', 'multiple'],
-        description: 'Middle East hub, zero tax, banking access'
-      },
-      {
-        name: 'Hong Kong',
-        flag: '🇭🇰',
-        formation: 5000,
-        annual: 2400,
-        tax: '16.5%',
-        duration: '1-2 weeks',
-        popularFor: ['jet', 'multiple'],
-        description: 'Asia gateway, strong financial system'
-      },
-      {
-        name: 'Malta',
-        flag: '🇲🇹',
-        formation: 5200,
-        annual: 2600,
-        tax: '5-35%',
-        duration: '2-3 weeks',
-        popularFor: ['yacht'],
-        description: 'EU member, yacht registration specialist'
-      }
+      { name: 'Cayman Islands', formation: 5500, annual: 2800, tax: '0%', duration: '3-5 days', description: 'Exempted Company, Optional Nominees' },
+      { name: 'Bermuda', formation: 6000, annual: 3200, tax: '0%', duration: '5-7 days', description: 'Exempted Company, Compliance Services' },
+      { name: 'British Virgin Islands', formation: 4500, annual: 2200, tax: '0%', duration: '1-3 days', description: 'Business Company, Optional Nominees' },
+      { name: 'Hong Kong', formation: 4000, annual: 2000, tax: '16.5%', duration: '4-7 days', description: 'Private Limited Company' },
+      { name: 'Cyprus', formation: 4500, annual: 2500, tax: '12.5%', duration: '7-10 days', description: 'Limited Company, VAT Registration' },
+      { name: 'Malta', formation: 5000, annual: 2800, tax: '35%', duration: '5-7 days', description: 'Limited Company, Tax refundable to 5%' },
+      { name: 'Gibraltar', formation: 4800, annual: 2400, tax: '10%', duration: '5-7 days', description: 'Limited Company' },
+      { name: 'Dubai (UAE)', formation: 5500, annual: 2800, tax: '0% - 9%', duration: '7-14 days', description: 'Free Zone Company, Residence Visa' },
+      { name: 'Panama', formation: 4000, annual: 1800, tax: '0%', duration: '3-5 days', description: 'Sociedad Anonima' }
     ],
     budget: [
-      {
-        name: 'Seychelles',
-        flag: '🇸🇨',
-        formation: 3500,
-        annual: 1800,
-        tax: '0%',
-        duration: '2-3 days',
-        popularFor: ['yacht', 'helicopter'],
-        description: 'Fast, affordable, zero tax'
-      },
-      {
-        name: 'Belize',
-        flag: '🇧🇿',
-        formation: 3200,
-        annual: 1600,
-        tax: '0%',
-        duration: '1-2 days',
-        popularFor: ['yacht'],
-        description: 'Quick formation, minimal compliance'
-      },
-      {
-        name: 'Nevis',
-        flag: '🇰🇳',
-        formation: 3800,
-        annual: 1900,
-        tax: '0%',
-        duration: '1-2 days',
-        popularFor: ['helicopter'],
-        description: 'Asset protection specialist'
-      },
-      {
-        name: 'Vanuatu',
-        flag: '🇻🇺',
-        formation: 3000,
-        annual: 1500,
-        tax: '0%',
-        duration: '1 day',
-        popularFor: [],
-        description: 'Fastest formation, maximum privacy'
-      },
-      {
-        name: 'Marshall Islands',
-        flag: '🇲🇭',
-        formation: 4200,
-        annual: 2000,
-        tax: '0%',
-        duration: '2-3 days',
-        popularFor: ['yacht'],
-        description: 'Popular for yacht registration'
-      }
+      { name: 'Seychelles', formation: 3500, annual: 1400, tax: '0%', duration: '1-2 days', description: 'IBC, Optional Nominees' },
+      { name: 'Belize', formation: 3800, annual: 1500, tax: '0%', duration: '1-3 days', description: 'IBC, Registered Agent' },
+      { name: 'Marshall Islands', formation: 3800, annual: 1600, tax: '0%', duration: '2-5 days', description: 'IBC/LLC' },
+      { name: 'St. Vincent', formation: 3000, annual: 1200, tax: '0%', duration: '1-3 days', description: 'IBC' },
+      { name: 'Mauritius', formation: 4200, annual: 2000, tax: '15%', duration: '5-7 days', description: 'GBC' },
+      { name: 'Labuan', formation: 4000, annual: 2000, tax: '3%', duration: '7-10 days', description: 'Trading/Holding Company' },
+      { name: 'St. Kitts & Nevis', formation: 3500, annual: 1500, tax: '0%', duration: '2-5 days', description: 'LLC/IBC' },
+      { name: 'Anguilla', formation: 3200, annual: 1300, tax: '0%', duration: '2-4 days', description: 'IBC' },
+      { name: 'Vanuatu', formation: 3000, annual: 1200, tax: '0%', duration: '1-2 days', description: 'IBC' }
     ],
     usa: [
-      {
-        name: 'Delaware',
-        flag: '🇺🇸',
-        formation: 3200,
-        annual: 1800,
-        tax: 'State varies',
-        duration: '1-2 weeks',
-        popularFor: ['jet', 'multiple'],
-        description: 'Business-friendly, strong legal framework'
-      },
-      {
-        name: 'Wyoming',
-        flag: '🇺🇸',
-        formation: 3000,
-        annual: 1600,
-        tax: '0% state tax',
-        duration: '1 week',
-        popularFor: ['helicopter'],
-        description: 'No state tax, privacy protection'
-      },
-      {
-        name: 'Nevada',
-        flag: '🇺🇸',
-        formation: 3500,
-        annual: 1900,
-        tax: '0% state tax',
-        duration: '1-2 weeks',
-        popularFor: ['jet', 'helicopter'],
-        description: 'Privacy laws, no state income tax'
-      }
+      { name: 'Delaware', formation: 3500, annual: 1500, tax: '8.7% + Federal', duration: '1-3 days', description: 'LLC/Corporation, EIN Number' },
+      { name: 'Wyoming', formation: 3200, annual: 1300, tax: '0% + Federal', duration: '1-3 days', description: 'LLC, Anonymity Protection' },
+      { name: 'Nevada', formation: 3500, annual: 1600, tax: '0% + Federal', duration: '1-3 days', description: 'LLC/Corporation, No State Tax' }
     ]
   };
 
   const tiers = [
-    {
-      id: 'premium',
-      label: 'Premium',
-      icon: Shield,
-      description: 'Top-tier jurisdictions with excellent reputation',
-      priceRange: '€6,500 - €8,500',
-      features: ['Excellent Banking', 'Top Reputation', 'Full Substance Support']
-    },
-    {
-      id: 'standard',
-      label: 'Standard',
-      icon: Building2,
-      description: 'Well-established offshore centers with zero/low tax',
-      priceRange: '€4,500 - €6,000',
-      features: ['0% Tax Options', 'Good Banking', 'Strong Privacy'],
-      popular: true
-    },
-    {
-      id: 'budget',
-      label: 'Budget',
-      icon: DollarSign,
-      description: 'Cost-effective jurisdictions with fast formation',
-      priceRange: '€3,000 - €4,200',
-      features: ['0% Tax', 'Fast Formation', 'Minimal Reporting']
-    },
-    {
-      id: 'usa',
-      label: 'USA',
-      icon: Globe,
-      description: 'US-based formation for domestic operations',
-      priceRange: '€3,000 - €3,500',
-      features: ['US Market Access', 'Strong Legal System', 'Credibility']
-    }
+    { id: 'premium', label: 'Premium', flag: '🇨🇭', price: '€6,000 - €8,500', tax: 'Low tax (8-17%)' },
+    { id: 'standard', label: 'Standard', flag: '🇰🇾', price: '€4,000 - €6,000', tax: '0% corporate tax', popular: true },
+    { id: 'budget', label: 'Budget', flag: '🇸🇨', price: '€3,000 - €4,200', tax: '0% tax' },
+    { id: 'usa', label: 'USA', flag: '🇺🇸', price: '€3,200 - €3,500', tax: 'US market access' }
   ];
 
-  const assetTypes = [
-    { id: 'jet', label: 'Private Jet', icon: Plane, emoji: '✈️' },
-    { id: 'helicopter', label: 'Helicopter', icon: Plane, emoji: '🚁' },
-    { id: 'evtol', label: 'eVTOL', icon: Plane, emoji: '🛸' },
-    { id: 'yacht', label: 'Yacht', icon: Ship, emoji: '🛥️' },
-    { id: 'real-estate', label: 'Real Estate', icon: Home, emoji: '🏠' },
-    { id: 'multiple', label: 'Multiple Assets', icon: Building2, emoji: '🏢' }
-  ];
-
-  const handleTierSelect = (tier) => {
-    setSelectedTier(tier);
-    setShowModal(true);
-    setModalStep(1);
+  const updateFormData = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const closeModal = () => {
-    setShowModal(false);
-    setModalStep(1);
-    setSelectedTier(null);
-  };
+  const calculateTotalCost = () => {
+    if (!formData.jurisdictionDetails) return { formation: 0, annual: 0 };
 
-  const nextModalStep = () => {
-    if (modalStep < totalModalSteps) {
-      setModalStep(modalStep + 1);
-    }
-  };
+    let formation = formData.jurisdictionDetails.formation;
+    let annual = formData.jurisdictionDetails.annual;
 
-  const prevModalStep = () => {
-    if (modalStep > 1) {
-      setModalStep(modalStep - 1);
-    }
-  };
+    if (formData.needsNomineeDirector) annual += 1800;
+    if (formData.needsNomineeShareholder) annual += 1500;
+    if (formData.needsBankAccountGuarantee) formation += 2500;
+    if (formData.needsAccounting) annual += 2000;
+    if (formData.needsSubstancePackage) annual += 5000;
+    if (formData.needsVATRegistration) formation += 1500;
+    if (formData.needsExpressService) formation = Math.round(formation * 1.5);
 
-  const updateFormData = (key, value) => {
-    setFormData(prev => ({ ...prev, [key]: value }));
-  };
-
-  const handleJurisdictionSelect = (jurisdiction) => {
-    updateFormData('jurisdiction', jurisdiction);
-    nextModalStep();
+    return { formation, annual };
   };
 
   const handleSubmit = async () => {
-    if (!user?.id) {
-      alert('Please login to submit SPV formation request');
-      return;
-    }
+    if (!user?.id) return;
 
     setIsSubmitting(true);
-
     try {
-      // Calculate total costs
-      const formationFee = formData.jurisdiction?.formation || 0;
-      const annualFee = formData.jurisdiction?.annual || 0;
-      const totalFirstYearCost = formationFee + annualFee;
-
-      // Prepare request data
+      const costs = calculateTotalCost();
       const requestData = {
-        tier: selectedTier,
-        jurisdiction: formData.jurisdiction?.name,
-        jurisdiction_flag: formData.jurisdiction?.flag,
-        jurisdiction_formation_fee: formationFee,
-        jurisdiction_annual_fee: annualFee,
-        jurisdiction_tax_rate: formData.jurisdiction?.tax,
-        jurisdiction_duration: formData.jurisdiction?.duration,
-        company_name: formData.companyName,
-        business_activity: formData.businessActivity,
-        number_of_directors: formData.numberOfDirectors,
-        number_of_shareholders: formData.numberOfShareholders,
-        planning_to_tokenize: formData.planningToTokenizeAssets,
-        asset_type: formData.assetType,
-        contact_email: formData.contactEmail,
-        contact_phone: formData.contactPhone,
-        total_first_year_cost: totalFirstYearCost,
-        submitted_at: new Date().toISOString()
+        tier: formData.selectedTier,
+        jurisdiction: formData.jurisdiction,
+        jurisdictionDetails: formData.jurisdictionDetails,
+        companyName: formData.companyName,
+        businessActivity: formData.businessActivity,
+        companyDescription: formData.companyDescription,
+        numberOfDirectors: formData.numberOfDirectors,
+        numberOfShareholders: formData.numberOfShareholders,
+        planningToTokenizeAssets: formData.planningToTokenizeAssets,
+        assetType: formData.assetType,
+        directors: formData.directors,
+        shareholders: formData.shareholders,
+        services: {
+          nomineeDirector: formData.needsNomineeDirector,
+          nomineeShareholder: formData.needsNomineeShareholder,
+          bankAccountGuarantee: formData.needsBankAccountGuarantee,
+          accounting: formData.needsAccounting,
+          substancePackage: formData.needsSubstancePackage,
+          vatRegistration: formData.needsVATRegistration,
+          expressService: formData.needsExpressService,
+        },
+        contactEmail: formData.contactEmail,
+        contactPhone: formData.contactPhone,
+        totalFormationCost: costs.formation,
+        totalAnnualCost: costs.annual,
+        submittedAt: new Date().toISOString()
       };
 
-      // Insert into user_requests table
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('user_requests')
         .insert([{
           user_id: user.id,
           type: 'spv_formation',
-          status: 'pending',
-          service_type: `${formData.jurisdiction?.name} SPV Formation`,
-          details: `${formData.companyName} - ${formData.businessActivity}`,
-          estimated_cost: totalFirstYearCost,
           data: requestData,
-          created_at: new Date().toISOString()
-        }])
-        .select()
-        .single();
+          status: 'pending'
+        }]);
 
       if (error) throw error;
-
-      console.log('SPV Formation request saved:', data);
-
-      setIsSubmitting(false);
-      setShowModal(false);
-      setShowSuccessModal(true);
+      setSubmitSuccess(true);
     } catch (error) {
       console.error('Error submitting SPV formation:', error);
-      alert('Failed to submit request. Please try again.');
+    } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Modal Step 1: Jurisdiction Selection
-  const renderModalStep1 = () => {
-    const tierJurisdictions = jurisdictions[selectedTier] || [];
-    const selectedAssetType = formData.assetType;
+  const canProceed = () => {
+    switch (activeTab) {
+      case 'tier': return formData.jurisdictionDetails !== null;
+      case 'company': return formData.companyName && formData.businessActivity;
+      case 'people': return formData.directors[0]?.fullName && formData.shareholders[0]?.fullName;
+      case 'services': return true;
+      case 'review': return formData.contactEmail;
+      default: return true;
+    }
+  };
+
+  const goToNextTab = () => {
+    const currentIndex = tabs.findIndex(t => t.id === activeTab);
+    if (currentIndex < tabs.length - 1) {
+      setActiveTab(tabs[currentIndex + 1].id);
+    }
+  };
+
+  // Info Modal
+  const InfoModal = () => (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowInfoModal(false)}>
+      <div className="bg-white rounded-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+          <h3 className="text-lg font-medium text-gray-900">About SPV Formation</h3>
+          <button onClick={() => setShowInfoModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X size={18} className="text-gray-500" /></button>
+        </div>
+        <div className="p-5 space-y-4 text-sm text-gray-600">
+          <p><strong className="text-gray-900">What is an SPV?</strong><br/>A Special Purpose Vehicle (SPV) is a legal entity created for a specific, limited purpose - typically to isolate financial risk, hold assets, or structure investments.</p>
+          <p><strong className="text-gray-900">Why form an SPV?</strong></p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Asset protection and liability isolation</li>
+            <li>Tax optimization for international operations</li>
+            <li>Investment structuring and fundraising</li>
+            <li>Real estate and aircraft/yacht ownership</li>
+            <li>Tokenization of assets</li>
+          </ul>
+          <p><strong className="text-gray-900">Our Service Includes:</strong></p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Full company formation and registration</li>
+            <li>Registered office address</li>
+            <li>Corporate documents and certificates</li>
+            <li>Bank account introduction</li>
+            <li>Optional nominee services</li>
+            <li>Ongoing compliance support</li>
+          </ul>
+          <p className="text-xs text-gray-400 pt-2">Processing times vary by jurisdiction. Our team will contact you within 24 hours of submission.</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Tab 1: Tier & Jurisdiction Selection
+  const renderTierTab = () => {
+    const tierJurisdictions = jurisdictions[selectedTierTab] || [];
 
     return (
-      <div className="space-y-3">
-        <div className="mb-3">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">Select Jurisdiction</h3>
-          <p className="text-xs text-gray-600">Choose the country for your SPV formation</p>
+      <div className="space-y-4">
+        {/* Tier Tabs */}
+        <div className="flex items-center gap-1 bg-gray-100/60 border border-gray-200/50 rounded-lg p-1">
+          {tiers.map(tier => (
+            <button
+              key={tier.id}
+              onClick={() => {
+                setSelectedTierTab(tier.id);
+                updateFormData('selectedTier', tier.id);
+              }}
+              className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                selectedTierTab === tier.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <span className="mr-1">{tier.flag}</span> {tier.label}
+            </button>
+          ))}
         </div>
 
-        <div className="grid gap-3">
-          {tierJurisdictions.map((jurisdiction) => {
-            const isPopularForAsset = selectedAssetType && jurisdiction.popularFor.includes(selectedAssetType);
+        {/* Selected Tier Info */}
+        <div className="bg-gray-50 rounded-lg p-3 flex items-center justify-between text-xs">
+          <span className="text-gray-500">{tiers.find(t => t.id === selectedTierTab)?.price}</span>
+          <span className="text-gray-500">{tiers.find(t => t.id === selectedTierTab)?.tax}</span>
+        </div>
 
-            return (
-              <button
-                key={jurisdiction.name}
-                onClick={() => handleJurisdictionSelect(jurisdiction)}
-                className={`p-3 rounded-lg border-2 bg-white/40 hover:bg-white/60 transition-all text-left ${
-                  isPopularForAsset ? 'border-green-500 ring-2 ring-green-200' : 'border-gray-300/50'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-3xl">{jurisdiction.flag}</span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-gray-900 text-sm">{jurisdiction.name}</span>
-                        {isPopularForAsset && (
-                          <span className="px-1.5 py-0.5 bg-green-500 text-white rounded text-[9px] font-bold">
-                            POPULAR FOR {formData.assetType?.toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-gray-600 mt-0.5">{jurisdiction.description}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold text-gray-900 text-sm">€{jurisdiction.formation.toLocaleString()}</div>
-                    <div className="text-[10px] text-gray-600">Formation</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 mt-2 pt-2 border-t border-gray-300/50">
-                  <div className="flex items-center gap-1 text-[11px] text-gray-700">
-                    <Clock size={10} />
-                    <span>{jurisdiction.duration}</span>
-                  </div>
-                  <div className="text-[11px] text-gray-700">Tax: {jurisdiction.tax}</div>
-                  <div className="text-[11px] text-gray-700">Annual: €{jurisdiction.annual.toLocaleString()}</div>
-                </div>
-              </button>
-            );
-          })}
+        {/* Jurisdictions Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {tierJurisdictions.map((j) => (
+            <div
+              key={j.name}
+              onClick={() => {
+                updateFormData('jurisdiction', j.name);
+                updateFormData('jurisdictionDetails', j);
+              }}
+              className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                formData.jurisdiction === j.name
+                  ? 'border-gray-900 bg-gray-50'
+                  : 'border-gray-100 hover:border-gray-200 bg-white'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium text-gray-900">{j.name}</span>
+                <span className="text-xs font-semibold text-gray-900">€{j.formation.toLocaleString()}</span>
+              </div>
+              <p className="text-[10px] text-gray-500 mb-1.5 line-clamp-1">{j.description}</p>
+              <div className="flex items-center gap-3 text-[10px] text-gray-400">
+                <span><Clock size={9} className="inline mr-0.5" />{j.duration}</span>
+                <span><DollarSign size={9} className="inline mr-0.5" />{j.tax}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
   };
 
-  // Modal Step 2: Asset Type Selection (if tokenization is desired)
-  const renderModalStep2 = () => (
-    <div className="space-y-6">
+  // Tab 2: Company Information
+  const renderCompanyTab = () => (
+    <div className="space-y-4">
       <div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">Asset Tokenization</h3>
-        <p className="text-sm text-gray-700">Are you planning to tokenize assets under this SPV?</p>
+        <label className="block text-xs font-medium text-gray-700 mb-1.5">Company Name *</label>
+        <input
+          type="text"
+          value={formData.companyName}
+          onChange={(e) => updateFormData('companyName', e.target.value)}
+          placeholder="e.g., Global Investment Holdings Ltd."
+          className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+        />
       </div>
 
-      <div className="space-y-4">
-        <label className="flex items-center gap-3 p-4 bg-white/40 rounded-xl cursor-pointer hover:bg-white/60 transition-all">
-          <input
-            type="checkbox"
-            checked={formData.planningToTokenizeAssets}
-            onChange={(e) => updateFormData('planningToTokenizeAssets', e.target.checked)}
-            className="w-5 h-5"
-          />
-          <span className="text-sm font-medium text-gray-900">Yes, I'm planning to tokenize assets</span>
-        </label>
-
-        {formData.planningToTokenizeAssets && (
-          <div className="space-y-3 pl-4">
-            <p className="text-sm font-medium text-gray-900">Select Asset Type:</p>
-            <div className="grid grid-cols-2 gap-3">
-              {assetTypes.map((asset) => (
-                <button
-                  key={asset.id}
-                  onClick={() => updateFormData('assetType', asset.id)}
-                  className={`p-4 rounded-xl border-2 transition-all ${
-                    formData.assetType === asset.id
-                      ? 'border-gray-900 bg-gray-900 text-white'
-                      : 'border-gray-300 bg-white/40 hover:bg-white/60 text-gray-900'
-                  }`}
-                >
-                  <div className="text-3xl mb-2">{asset.emoji}</div>
-                  <div className="text-sm font-medium">{asset.label}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+      <div>
+        <label className="block text-xs font-medium text-gray-700 mb-1.5">Business Activity *</label>
+        <select
+          value={formData.businessActivity}
+          onChange={(e) => updateFormData('businessActivity', e.target.value)}
+          className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+        >
+          <option value="">Select activity</option>
+          <option value="holding">Holding Company</option>
+          <option value="investment">Investment Management</option>
+          <option value="real-estate">Real Estate Holding</option>
+          <option value="trading">International Trading</option>
+          <option value="consulting">Consulting Services</option>
+          <option value="crypto">Cryptocurrency/Blockchain</option>
+          <option value="fintech">Fintech Services</option>
+          <option value="other">Other</option>
+        </select>
       </div>
-    </div>
-  );
 
-  // Modal Step 3-6: Other form steps (simplified)
-  const renderModalStep3 = () => (
-    <div className="space-y-4">
-      <h3 className="text-xl font-semibold text-gray-900 mb-2">Company Information</h3>
-      <input
-        type="text"
-        placeholder="Company Name"
-        value={formData.companyName}
-        onChange={(e) => updateFormData('companyName', e.target.value)}
-        className="w-full px-4 py-3 bg-white/40 border border-gray-300/50 rounded-xl"
-      />
-      <textarea
-        placeholder="Business Activity"
-        value={formData.businessActivity}
-        onChange={(e) => updateFormData('businessActivity', e.target.value)}
-        className="w-full px-4 py-3 bg-white/40 border border-gray-300/50 rounded-xl"
-        rows="4"
-      />
-    </div>
-  );
+      <div>
+        <label className="block text-xs font-medium text-gray-700 mb-1.5">Business Description</label>
+        <textarea
+          value={formData.companyDescription}
+          onChange={(e) => updateFormData('companyDescription', e.target.value)}
+          placeholder="Brief description of planned activities..."
+          rows={3}
+          className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200 resize-none"
+        />
+      </div>
 
-  const renderModalStep4 = () => (
-    <div className="space-y-4">
-      <h3 className="text-xl font-semibold text-gray-900 mb-2">Directors & Shareholders</h3>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium mb-2">Number of Directors</label>
-          <input
-            type="number"
+          <label className="block text-xs font-medium text-gray-700 mb-1.5">Number of Directors</label>
+          <select
             value={formData.numberOfDirectors}
             onChange={(e) => updateFormData('numberOfDirectors', e.target.value)}
-            className="w-full px-4 py-3 bg-white/40 border border-gray-300/50 rounded-xl"
-            min="1"
-          />
+            className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+          >
+            {[1,2,3,4].map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-2">Number of Shareholders</label>
-          <input
-            type="number"
+          <label className="block text-xs font-medium text-gray-700 mb-1.5">Number of Shareholders</label>
+          <select
             value={formData.numberOfShareholders}
             onChange={(e) => updateFormData('numberOfShareholders', e.target.value)}
-            className="w-full px-4 py-3 bg-white/40 border border-gray-300/50 rounded-xl"
-            min="1"
-          />
+            className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+          >
+            {[1,2,3,4].map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
         </div>
       </div>
-    </div>
-  );
 
-  const renderModalStep5 = () => (
-    <div className="space-y-4">
-      <h3 className="text-xl font-semibold text-gray-900 mb-2">Summary & Costs</h3>
-      {formData.jurisdiction && (
-        <div className="p-6 bg-gray-900 text-white rounded-xl">
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span>Jurisdiction:</span>
-              <span className="font-semibold">{formData.jurisdiction.name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Formation Fee:</span>
-              <span className="font-semibold">€{formData.jurisdiction.formation.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Annual Fee:</span>
-              <span className="font-semibold">€{formData.jurisdiction.annual.toLocaleString()}</span>
-            </div>
-            {formData.planningToTokenizeAssets && (
-              <div className="pt-3 border-t border-gray-700">
-                <div className="flex items-center gap-2 text-green-400">
-                  <Check size={16} />
-                  <span>Asset Tokenization: {formData.assetType}</span>
-                </div>
-              </div>
-            )}
-            <div className="pt-3 border-t border-gray-700 flex justify-between text-lg font-bold">
-              <span>Total (Year 1):</span>
-              <span>€{(formData.jurisdiction.formation + formData.jurisdiction.annual).toLocaleString()}</span>
-            </div>
-          </div>
+      <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer">
+        <input
+          type="checkbox"
+          checked={formData.planningToTokenizeAssets}
+          onChange={(e) => updateFormData('planningToTokenizeAssets', e.target.checked)}
+          className="w-4 h-4 rounded border-gray-300"
+        />
+        <div>
+          <p className="text-sm font-medium text-gray-900">Planning to tokenize assets</p>
+          <p className="text-[10px] text-gray-500">We'll prepare the necessary legal structure</p>
+        </div>
+      </label>
+
+      {formData.planningToTokenizeAssets && (
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1.5">Asset Type</label>
+          <select
+            value={formData.assetType}
+            onChange={(e) => updateFormData('assetType', e.target.value)}
+            className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+          >
+            <option value="">Select asset type</option>
+            <option value="jet">Private Jet</option>
+            <option value="helicopter">Helicopter</option>
+            <option value="yacht">Yacht</option>
+            <option value="real-estate">Real Estate</option>
+            <option value="multiple">Multiple Assets</option>
+          </select>
         </div>
       )}
     </div>
   );
 
-  const renderModalStep6 = () => (
+  // Tab 3: Directors & Shareholders
+  const renderPeopleTab = () => (
     <div className="space-y-4">
-      <h3 className="text-xl font-semibold text-gray-900 mb-2">Contact Information</h3>
-      <input
-        type="email"
-        placeholder="Your Email"
-        value={formData.contactEmail}
-        onChange={(e) => updateFormData('contactEmail', e.target.value)}
-        className="w-full px-4 py-3 bg-white/40 border border-gray-300/50 rounded-xl"
-      />
-      <input
-        type="tel"
-        placeholder="Your Phone"
-        value={formData.contactPhone}
-        onChange={(e) => updateFormData('contactPhone', e.target.value)}
-        className="w-full px-4 py-3 bg-white/40 border border-gray-300/50 rounded-xl"
-      />
+      {/* Director */}
+      <div className="border border-gray-100 rounded-xl p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Users size={14} className="text-gray-400" />
+          <span className="text-sm font-medium text-gray-900">Director #1</span>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <input
+            type="text"
+            value={formData.directors[0]?.fullName || ''}
+            onChange={(e) => updateFormData('directors', [{ ...formData.directors[0], fullName: e.target.value }])}
+            placeholder="Full Name *"
+            className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+          />
+          <input
+            type="text"
+            value={formData.directors[0]?.nationality || ''}
+            onChange={(e) => updateFormData('directors', [{ ...formData.directors[0], nationality: e.target.value }])}
+            placeholder="Nationality *"
+            className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+          />
+          <input
+            type="text"
+            value={formData.directors[0]?.residency || ''}
+            onChange={(e) => updateFormData('directors', [{ ...formData.directors[0], residency: e.target.value }])}
+            placeholder="Country of Residence"
+            className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+          />
+          <input
+            type="email"
+            value={formData.directors[0]?.email || ''}
+            onChange={(e) => updateFormData('directors', [{ ...formData.directors[0], email: e.target.value }])}
+            placeholder="Email"
+            className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+          />
+        </div>
+      </div>
+
+      {/* Shareholder */}
+      <div className="border border-gray-100 rounded-xl p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Briefcase size={14} className="text-gray-400" />
+          <span className="text-sm font-medium text-gray-900">Shareholder #1</span>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <input
+            type="text"
+            value={formData.shareholders[0]?.fullName || ''}
+            onChange={(e) => updateFormData('shareholders', [{ ...formData.shareholders[0], fullName: e.target.value }])}
+            placeholder="Full Name *"
+            className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+          />
+          <input
+            type="number"
+            value={formData.shareholders[0]?.ownership || '100'}
+            onChange={(e) => updateFormData('shareholders', [{ ...formData.shareholders[0], ownership: e.target.value }])}
+            placeholder="Ownership %"
+            className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+          />
+          <input
+            type="text"
+            value={formData.shareholders[0]?.nationality || ''}
+            onChange={(e) => updateFormData('shareholders', [{ ...formData.shareholders[0], nationality: e.target.value }])}
+            placeholder="Nationality"
+            className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+          />
+          <input
+            type="email"
+            value={formData.shareholders[0]?.email || ''}
+            onChange={(e) => updateFormData('shareholders', [{ ...formData.shareholders[0], email: e.target.value }])}
+            placeholder="Email"
+            className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+          />
+        </div>
+      </div>
+
+      <div className="bg-blue-50 rounded-lg p-3 text-xs text-blue-700">
+        Additional KYC documents (passport copies, proof of address) will be requested after initial review.
+      </div>
     </div>
   );
 
-  const renderModalContent = () => {
-    switch(modalStep) {
-      case 1: return renderModalStep1();
-      case 2: return renderModalStep2();
-      case 3: return renderModalStep3();
-      case 4: return renderModalStep4();
-      case 5: return renderModalStep5();
-      case 6: return renderModalStep6();
-      default: return null;
-    }
+  // Tab 4: Additional Services
+  const renderServicesTab = () => {
+    const costs = calculateTotalCost();
+    const services = [
+      { key: 'needsNomineeDirector', label: 'Nominee Director', price: '€1,800/year', desc: 'Professional nominee for privacy' },
+      { key: 'needsNomineeShareholder', label: 'Nominee Shareholder', price: '€1,500/year', desc: 'Confidential ownership' },
+      { key: 'needsBankAccountGuarantee', label: 'Bank Account Guarantee', price: '€2,500', desc: 'Guaranteed opening within 30 days' },
+      { key: 'needsAccounting', label: 'Accounting & Bookkeeping', price: '€2,000/year', desc: 'Full financial statements' },
+      { key: 'needsSubstancePackage', label: 'Substance Package', price: '€5,000/year', desc: 'Physical office, local employees' },
+      { key: 'needsVATRegistration', label: 'VAT/GST Registration', price: '€1,500', desc: 'For eligible jurisdictions' },
+      { key: 'needsExpressService', label: 'Express Service (24-48h)', price: '+50%', desc: 'Priority processing' }
+    ];
+
+    return (
+      <div className="space-y-3">
+        {services.map(s => (
+          <label key={s.key} className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl cursor-pointer hover:border-gray-200 transition-all">
+            <input
+              type="checkbox"
+              checked={formData[s.key]}
+              onChange={(e) => updateFormData(s.key, e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300"
+            />
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-900">{s.label}</span>
+                <span className="text-xs font-semibold text-gray-700">{s.price}</span>
+              </div>
+              <p className="text-[10px] text-gray-500">{s.desc}</p>
+            </div>
+          </label>
+        ))}
+
+        {/* Running Total */}
+        <div className="bg-gray-900 text-white rounded-xl p-4 mt-4">
+          <div className="flex justify-between text-sm mb-1">
+            <span className="text-gray-400">Formation</span>
+            <span>€{costs.formation.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between text-sm mb-2">
+            <span className="text-gray-400">Annual (Year 1)</span>
+            <span>€{costs.annual.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between text-base font-semibold pt-2 border-t border-gray-700">
+            <span>Total</span>
+            <span>€{(costs.formation + costs.annual).toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
+    );
   };
 
-  // Main Landing Page with 4 Cards
-  return (
-    <div className="w-full h-full overflow-y-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-4xl font-light text-gray-900 text-center mb-4 tracking-tighter">
-            SPV Formation Services
-          </h1>
-          <p className="text-gray-500 text-center mb-12 max-w-2xl mx-auto font-light">
-            Choose your jurisdiction tier and start your SPV formation process. We offer premium, standard, budget, and USA-specific options tailored to your needs.
-          </p>
+  // Tab 5: Review & Submit
+  const renderReviewTab = () => {
+    const costs = calculateTotalCost();
+
+    if (submitSuccess) {
+      return (
+        <div className="text-center py-12">
+          <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Check size={32} className="text-emerald-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Application Submitted!</h3>
+          <p className="text-sm text-gray-500 mb-6">Our team will review your submission and contact you within 24 hours.</p>
+          <button
+            onClick={() => onBack?.()}
+            className="px-6 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            View My SPVs
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Jurisdiction</p>
+            <p className="text-sm font-medium text-gray-900">{formData.jurisdiction || '-'}</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Company</p>
+            <p className="text-sm font-medium text-gray-900 truncate">{formData.companyName || '-'}</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Activity</p>
+            <p className="text-sm font-medium text-gray-900 capitalize">{formData.businessActivity?.replace('-', ' ') || '-'}</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Duration</p>
+            <p className="text-sm font-medium text-gray-900">{formData.jurisdictionDetails?.duration || '-'}</p>
+          </div>
         </div>
 
-        {/* 4 Tier Cards */}
-        <div className="grid grid-cols-2 gap-6">
-          {tiers.map((tier) => {
-            const IconComponent = tier.icon;
+        {/* Selected Services */}
+        {(formData.needsNomineeDirector || formData.needsNomineeShareholder || formData.needsBankAccountGuarantee ||
+          formData.needsAccounting || formData.needsSubstancePackage || formData.needsVATRegistration || formData.needsExpressService) && (
+          <div className="border border-gray-100 rounded-lg p-3">
+            <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2">Additional Services</p>
+            <div className="space-y-1">
+              {formData.needsNomineeDirector && <div className="flex items-center gap-2 text-xs text-gray-700"><CheckCircle2 size={12} className="text-emerald-500" /> Nominee Director</div>}
+              {formData.needsNomineeShareholder && <div className="flex items-center gap-2 text-xs text-gray-700"><CheckCircle2 size={12} className="text-emerald-500" /> Nominee Shareholder</div>}
+              {formData.needsBankAccountGuarantee && <div className="flex items-center gap-2 text-xs text-gray-700"><CheckCircle2 size={12} className="text-emerald-500" /> Bank Account Guarantee</div>}
+              {formData.needsAccounting && <div className="flex items-center gap-2 text-xs text-gray-700"><CheckCircle2 size={12} className="text-emerald-500" /> Accounting</div>}
+              {formData.needsSubstancePackage && <div className="flex items-center gap-2 text-xs text-gray-700"><CheckCircle2 size={12} className="text-emerald-500" /> Substance Package</div>}
+              {formData.needsVATRegistration && <div className="flex items-center gap-2 text-xs text-gray-700"><CheckCircle2 size={12} className="text-emerald-500" /> VAT Registration</div>}
+              {formData.needsExpressService && <div className="flex items-center gap-2 text-xs text-gray-700"><CheckCircle2 size={12} className="text-emerald-500" /> Express Service</div>}
+            </div>
+          </div>
+        )}
+
+        {/* Contact Info */}
+        <div className="grid grid-cols-2 gap-3">
+          <input
+            type="email"
+            value={formData.contactEmail}
+            onChange={(e) => updateFormData('contactEmail', e.target.value)}
+            placeholder="Your Email *"
+            className="px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+          />
+          <input
+            type="tel"
+            value={formData.contactPhone}
+            onChange={(e) => updateFormData('contactPhone', e.target.value)}
+            placeholder="Your Phone"
+            className="px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+          />
+        </div>
+
+        {/* Total */}
+        <div className="bg-gray-900 text-white rounded-xl p-4">
+          <div className="flex justify-between text-sm mb-1">
+            <span className="text-gray-400">Formation</span>
+            <span>€{costs.formation.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between text-sm mb-2">
+            <span className="text-gray-400">Annual</span>
+            <span>€{costs.annual.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between text-lg font-semibold pt-2 border-t border-gray-700">
+            <span>Total</span>
+            <span>€{(costs.formation + costs.annual).toLocaleString()}</span>
+          </div>
+        </div>
+
+        {/* Submit Button */}
+        <button
+          onClick={handleSubmit}
+          disabled={isSubmitting || !formData.contactEmail}
+          className="w-full py-3 bg-gray-900 text-white font-medium rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {isSubmitting ? (
+            <><Loader2 size={16} className="animate-spin" /> Submitting...</>
+          ) : (
+            <><Check size={16} /> Submit Application</>
+          )}
+        </button>
+
+        <p className="text-[10px] text-gray-400 text-center">
+          By submitting, you confirm all information is accurate. We'll contact you within 24 hours.
+        </p>
+      </div>
+    );
+  };
+
+  return (
+    <div className="h-full overflow-y-auto" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      {/* Header */}
+      <div className="px-6 py-5 border-b border-gray-100">
+        <div className="flex items-center gap-2">
+          <h1 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">SPV Formation</h1>
+          <button
+            onClick={() => setShowInfoModal(true)}
+            className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+            title="What is SPV Formation?"
+          >
+            <Info size={16} className="text-gray-400" />
+          </button>
+        </div>
+        {formData.jurisdictionDetails && (
+          <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+            <span>{formData.jurisdiction}</span>
+            <span>€{formData.jurisdictionDetails.formation.toLocaleString()} formation</span>
+          </div>
+        )}
+      </div>
+
+      {/* Tabs */}
+      <div className="px-6 py-3 border-b border-gray-100">
+        <div className="flex items-center gap-1">
+          {tabs.map((tab, idx) => {
+            const isActive = activeTab === tab.id;
+            const isPast = tabs.findIndex(t => t.id === activeTab) > idx;
             return (
               <button
-                key={tier.id}
-                onClick={() => handleTierSelect(tier.id)}
-                className="relative p-8 rounded-2xl border-2 border-gray-200 bg-white/60 hover:bg-white/80 hover:border-gray-300 hover:shadow-xl transition-all duration-300 text-left group backdrop-blur-sm"
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  isActive
+                    ? 'bg-gray-900 text-white'
+                    : isPast
+                      ? 'bg-gray-100 text-gray-700'
+                      : 'text-gray-400 hover:text-gray-600'
+                }`}
               >
-                {tier.popular && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span className="px-4 py-1.5 bg-gray-900 text-white rounded-full text-xs font-bold shadow-lg">
-                      ⭐ MOST POPULAR
-                    </span>
-                  </div>
-                )}
-
-                <div className="flex items-start justify-between mb-6">
-                  <div className="w-16 h-16 bg-gray-900 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <IconComponent size={32} className="text-white" />
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-bold text-gray-900">{tier.priceRange}</div>
-                    <div className="text-xs text-gray-600">Formation</div>
-                  </div>
-                </div>
-
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">{tier.label}</h3>
-                <p className="text-sm text-gray-600 mb-6">{tier.description}</p>
-
-                <div className="flex flex-wrap gap-2">
-                  {tier.features.map((feature) => (
-                    <span key={feature} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
-                      {feature}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-900">Learn more</span>
-                    <ArrowRight size={20} className="text-gray-900 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </div>
+                {tab.label}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Modal Popup */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-lg flex items-center justify-center z-50 p-8">
-          <div className="bg-white/95 backdrop-blur-xl rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl">
-            {/* Progress Bar */}
-            <div className="px-6 py-3 border-b border-gray-300/50">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-sm font-semibold text-gray-900">
-                  Step {modalStep} of {totalModalSteps}
-                </h2>
-                <button
-                  onClick={closeModal}
-                  className="p-1.5 hover:bg-gray-100 rounded-lg transition-all"
-                >
-                  <X size={18} className="text-gray-900" />
-                </button>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-1.5">
-                <div
-                  className="bg-gray-900 h-1.5 rounded-full transition-all duration-300"
-                  style={{ width: `${(modalStep / totalModalSteps) * 100}%` }}
-                />
-              </div>
-            </div>
+      {/* Tab Content */}
+      <div className="px-6 py-5">
+        {activeTab === 'tier' && renderTierTab()}
+        {activeTab === 'company' && renderCompanyTab()}
+        {activeTab === 'people' && renderPeopleTab()}
+        {activeTab === 'services' && renderServicesTab()}
+        {activeTab === 'review' && renderReviewTab()}
+      </div>
 
-            {/* Modal Content */}
-            <div className="flex-1 overflow-y-auto px-6 py-4">
-              {renderModalContent()}
-            </div>
-
-            {/* Navigation Buttons */}
-            <div className="px-6 py-3 border-t border-gray-300/50 flex justify-between">
-              <button
-                onClick={prevModalStep}
-                disabled={modalStep === 1}
-                className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ArrowLeft size={16} />
-                Previous
-              </button>
-
-              {modalStep === totalModalSteps ? (
-                <button
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="flex items-center gap-2 px-6 py-2 bg-gray-900 hover:bg-black text-white rounded-lg text-sm font-semibold transition-all disabled:opacity-50"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      Submit Application
-                      <Check size={16} />
-                    </>
-                  )}
-                </button>
-              ) : (
-                <button
-                  onClick={nextModalStep}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-lg text-sm font-semibold transition-all"
-                >
-                  Next
-                  <ArrowRight size={16} />
-                </button>
-              )}
-            </div>
-          </div>
+      {/* Next Button (not on review tab) */}
+      {activeTab !== 'review' && !submitSuccess && (
+        <div className="px-6 py-4 border-t border-gray-100">
+          <button
+            onClick={goToNextTab}
+            disabled={!canProceed()}
+            className="w-full py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Continue
+          </button>
         </div>
       )}
 
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full">
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                <Check size={32} className="text-green-600" />
-              </div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-2">Application Submitted!</h3>
-              <p className="text-sm text-gray-700 mb-6 leading-relaxed">
-                Thank you for your SPV formation application. Our team will review your submission and contact you within 24 hours.
-              </p>
-              <button
-                onClick={() => {
-                  setShowSuccessModal(false);
-                  onBack();
-                }}
-                className="w-full px-6 py-3 bg-gray-900 hover:bg-black text-white rounded-xl font-semibold transition-all"
-              >
-                Back to Dashboard
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Info Modal */}
+      {showInfoModal && <InfoModal />}
     </div>
   );
 };
