@@ -1111,6 +1111,8 @@ const TokenizedAssetsGlassmorphic = () => {
   const [expandedMenus, setExpandedMenus] = useState({});
   const [expandedAIRequestId, setExpandedAIRequestId] = useState(null);
   const [expandedRequestId, setExpandedRequestId] = useState(null);
+  const [requestsPage, setRequestsPage] = useState(1);
+  const REQUESTS_PER_PAGE = 9;
   const [showMobileCategoryMenu, setShowMobileCategoryMenu] = useState(false);
   const [bookingStep, setBookingStep] = useState(0);
   const [bookingVehicleType, setBookingVehicleType] = useState('private-jet');
@@ -4404,9 +4406,22 @@ const TokenizedAssetsGlassmorphic = () => {
                     );
                   }
 
+                  const totalPages = Math.ceil(allRequests.length / REQUESTS_PER_PAGE);
+                  const paginatedRequests = allRequests.slice(
+                    (requestsPage - 1) * REQUESTS_PER_PAGE,
+                    requestsPage * REQUESTS_PER_PAGE
+                  );
+
                   return (
                     <div className="space-y-2">
-                      {allRequests.map((request) => {
+                      {/* Pagination Info */}
+                      {allRequests.length > REQUESTS_PER_PAGE && (
+                        <div className="text-xs text-gray-400 pb-2">
+                          Showing {Math.min((requestsPage - 1) * REQUESTS_PER_PAGE + 1, allRequests.length)}-{Math.min(requestsPage * REQUESTS_PER_PAGE, allRequests.length)} of {allRequests.length}
+                        </div>
+                      )}
+
+                      {paginatedRequests.map((request) => {
                         const isExpanded = expandedRequestId === request.id;
                         const requestTitle = request.type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Request';
                         const getTypeIcon = (type) => {
@@ -4550,6 +4565,43 @@ const TokenizedAssetsGlassmorphic = () => {
                           </div>
                         );
                       })}
+
+                      {/* Pagination Controls */}
+                      {allRequests.length > REQUESTS_PER_PAGE && (
+                        <div className="flex items-center justify-center gap-2 pt-4">
+                          <button
+                            onClick={() => setRequestsPage(p => Math.max(1, p - 1))}
+                            disabled={requestsPage === 1}
+                            className="px-2.5 py-1 text-xs font-medium rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          >
+                            Prev
+                          </button>
+                          <div className="flex gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1)
+                              .slice(0, 5)
+                              .map(page => (
+                                <button
+                                  key={page}
+                                  onClick={() => setRequestsPage(page)}
+                                  className={`w-6 h-6 text-xs font-medium rounded transition-colors ${
+                                    requestsPage === page
+                                      ? 'bg-gray-900 text-white'
+                                      : 'hover:bg-gray-100 text-gray-500'
+                                  }`}
+                                >
+                                  {page}
+                                </button>
+                              ))}
+                          </div>
+                          <button
+                            onClick={() => setRequestsPage(p => Math.min(totalPages, p + 1))}
+                            disabled={requestsPage >= totalPages}
+                            className="px-2.5 py-1 text-xs font-medium rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
