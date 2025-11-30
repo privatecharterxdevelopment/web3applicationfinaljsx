@@ -38,17 +38,18 @@ export default function LandingHeader({ onGetStarted, showInfoButton = true }: L
   };
 
   return (
-    <header className="px-4 sm:px-8 py-2 sm:py-3 flex items-center justify-between max-w-6xl mx-auto">
-      {/* Logo */}
-      <div className="flex items-center">
-        <button onClick={() => navigate('/')}>
-          <img
-            src="https://i.ibb.co/DPF5g3Sk/iu42DU1.png"
-            alt="PrivateCharterX"
-            className="h-16 w-auto hover:opacity-80 transition-opacity"
-          />
-        </button>
-      </div>
+    <div className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-gray-100/50">
+      <header className="px-4 sm:px-8 py-2 sm:py-3 flex items-center justify-between max-w-6xl mx-auto">
+        {/* Logo */}
+        <div className="flex items-center">
+          <button onClick={() => navigate('/')}>
+            <img
+              src="https://i.ibb.co/DPF5g3Sk/iu42DU1.png"
+              alt="PrivateCharterX"
+              className="h-16 w-auto hover:opacity-80 transition-opacity"
+            />
+          </button>
+        </div>
 
       {/* Navigation */}
       <nav className="hidden lg:flex items-center justify-center space-x-6 xl:space-x-10 flex-1">
@@ -152,6 +153,7 @@ export default function LandingHeader({ onGetStarted, showInfoButton = true }: L
           </>
         )}
       </div>
-    </header>
+      </header>
+    </div>
   );
 }
