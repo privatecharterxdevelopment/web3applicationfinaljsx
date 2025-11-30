@@ -4396,7 +4396,7 @@ const TokenizedAssetsGlassmorphic = () => {
               <div className="px-6 py-5 border-b border-gray-100">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h1 className="text-xl font-light text-gray-900">AI Requests</h1>
+                    <h1 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">AI Requests</h1>
                     <p className="text-xs text-gray-400 mt-0.5">Requests generated via AI Concierge (Sphera)</p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -10186,43 +10186,37 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* CHAT HISTORY VIEW */}
           {!isTransitioning && activeCategory === 'chat-history' && (
             <div className="p-6 md:p-8">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-light text-gray-900 tracking-tight mb-1">Chat History</h1>
-                  <p className="text-sm text-gray-600">View and manage your AI conversations with Sphera</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  {/* View Mode Switcher */}
-                  <div className="flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl">
-                    <button
-                      onClick={() => setChatHistoryViewMode('grid')}
-                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                        chatHistoryViewMode === 'grid'
-                          ? 'bg-gray-800 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      Grid
-                    </button>
-                    <button
-                      onClick={() => setChatHistoryViewMode('list')}
-                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                        chatHistoryViewMode === 'list'
-                          ? 'bg-gray-800 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      List
-                    </button>
-                  </div>
+              {/* View Mode Tabs Only */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl">
                   <button
-                    onClick={() => setActiveCategory('ai-requests')}
-                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+                    onClick={() => setChatHistoryViewMode('grid')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      chatHistoryViewMode === 'grid'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
                   >
-                    View Requests
+                    Grid
+                  </button>
+                  <button
+                    onClick={() => setChatHistoryViewMode('list')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      chatHistoryViewMode === 'list'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    List
                   </button>
                 </div>
+                <button
+                  onClick={() => setActiveCategory('ai-requests')}
+                  className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all flex items-center gap-1.5"
+                >
+                  <Sparkles size={14} />
+                  AI Requests
+                </button>
               </div>
 
               {/* Chat List */}
