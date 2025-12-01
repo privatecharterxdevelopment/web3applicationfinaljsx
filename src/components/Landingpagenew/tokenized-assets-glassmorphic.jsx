@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useParams, useLocation } from 'react-router-dom';
 import {
   Search, Shield, Bell, Heart, Home, Layers, FolderOpen, Plus,
   Plane, Zap, Mountain, Car, MapPin, Sparkles, Rocket,
   Leaf, Award, Settings, User, ChevronRight, ChevronDown, ChevronUp, X, LogOut, MessageSquare, MessageCircle,
   Users, Calendar, Package, Compass, ArrowLeft, Wallet, History, Crown, Gift, LayoutDashboard,
-  Mail, Phone, Globe, FileText, Edit3, Check, Loader2, Building2, Coins, Share2, Menu, ExternalLink, SlidersHorizontal, Info, CreditCard
+  Mail, Phone, Globe, FileText, Edit3, Check, Loader2, Building2, Coins, Share2, Menu, ExternalLink, SlidersHorizontal, Info, CreditCard,
+  ShoppingCart, Send, AlertCircle
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -1083,6 +1084,8 @@ const HelpdeskInlineView = ({ setActiveCategory }) => {
 
 const TokenizedAssetsGlassmorphic = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { chatId: urlChatId } = useParams();
   const { isAuthenticated, user, profile, signOut, initializing } = useAuth();
   const { toasts, showToast, removeToast } = useToast();
   const notificationCount = useNotificationCount(user?.id);
@@ -1224,6 +1227,15 @@ const TokenizedAssetsGlassmorphic = () => {
   const [subscriptionTier, setSubscriptionTier] = useState('explorer');
   const [subscriptionData, setSubscriptionData] = useState(null);
   const [currentMessage, setCurrentMessage] = useState('');
+
+  // Cart state (shared with AIChat)
+  const [cartItems, setCartItems] = useState([]);
+
+  // Report/Support popup state
+  const [showReportPopup, setShowReportPopup] = useState(false);
+  const [reportMessage, setReportMessage] = useState('');
+  const [reportSubject, setReportSubject] = useState('');
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
   // Speech Recognition state
   const [isRecording, setIsRecording] = useState(false);
@@ -1848,6 +1860,37 @@ const TokenizedAssetsGlassmorphic = () => {
       setShowDashboard(true);
     }
   }, [isAuthenticated, user, showDashboard]);
+
+  // URL Sync: Initialize activeChat from URL parameter when component mounts
+  useEffect(() => {
+    if (urlChatId) {
+      // If URL has a chatId, set it as active and navigate to chat view
+      setActiveChat(urlChatId === 'new' ? 'new' : urlChatId);
+      setActiveCategory('chat');
+      console.log('🔗 Initializing chat from URL:', urlChatId);
+    }
+  }, [urlChatId]);
+
+  // URL Sync: Update URL when activeChat changes (only when in chat view)
+  useEffect(() => {
+    if (activeCategory === 'chat' && activeChat) {
+      const currentPath = location.pathname;
+      const isOnChatRoute = currentPath.startsWith('/dashboard/chat/');
+      const isOnDashboard = currentPath === '/dashboard';
+
+      // Only update URL if we're on dashboard or already on a chat route
+      if (isOnDashboard || isOnChatRoute) {
+        const newPath = `/dashboard/chat/${activeChat}`;
+        if (currentPath !== newPath) {
+          navigate(newPath, { replace: true });
+          console.log('🔗 Updating URL to:', newPath);
+        }
+      }
+    } else if (activeCategory !== 'chat' && location.pathname.startsWith('/dashboard/chat/')) {
+      // If leaving chat view, return to dashboard
+      navigate('/dashboard', { replace: true });
+    }
+  }, [activeChat, activeCategory, location.pathname, navigate]);
 
   // Close mobile category menu when clicking outside
   useEffect(() => {
@@ -3337,6 +3380,38 @@ const TokenizedAssetsGlassmorphic = () => {
     console.log('💳 Wallet connect requested');
   }, []);
 
+  // Handle report/support submission
+  const handleSubmitReport = async () => {
+    if (!reportMessage.trim() || !reportSubject.trim()) {
+      showToast('Please fill in both subject and message', 'error');
+      return;
+    }
+
+    setIsSubmittingReport(true);
+    try {
+      const { error } = await supabase.from('support_requests').insert({
+        user_id: user?.id || null,
+        user_email: user?.email || 'anonymous',
+        subject: reportSubject.trim(),
+        message: reportMessage.trim(),
+        status: 'pending',
+        created_at: new Date().toISOString()
+      });
+
+      if (error) throw error;
+
+      showToast('Support request submitted successfully!', 'success');
+      setShowReportPopup(false);
+      setReportSubject('');
+      setReportMessage('');
+    } catch (error) {
+      console.error('Error submitting report:', error);
+      showToast('Failed to submit request. Please try again.', 'error');
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  };
+
   // Handle Web Mode switching with transition
   const [targetMode, setTargetMode] = useState(null);
 
@@ -3609,18 +3684,18 @@ const TokenizedAssetsGlassmorphic = () => {
             : 'bg-white/80 backdrop-blur-3xl lg:border-gray-200/80'
         }`} style={{ backdropFilter: webMode === 'web3' ? 'blur(60px) saturate(120%)' : 'blur(40px) saturate(180%)' }}>
 
-          {/* Mobile Burger Button */}
+          {/* Mobile Sidebar Toggle Arrow - Bottom Left */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-xl bg-white/80 backdrop-blur-xl border border-gray-200/50 shadow-lg hover:bg-white transition-all"
+            className="lg:hidden fixed bottom-4 left-4 z-50 p-2 rounded-full bg-white/90 backdrop-blur-xl border border-gray-200/30 hover:bg-white transition-all"
           >
-            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            <ChevronRight size={18} className={`text-gray-600 transition-transform duration-300 ${isMobileMenuOpen ? 'rotate-180' : ''}`} />
           </button>
 
-          {/* Mobile Backdrop */}
+          {/* Mobile Backdrop - Transparent, no overlay */}
           {isMobileMenuOpen && (
             <div
-              className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-30"
+              className="lg:hidden fixed inset-0 z-30"
               onClick={() => setIsMobileMenuOpen(false)}
             />
           )}
@@ -3894,17 +3969,17 @@ const TokenizedAssetsGlassmorphic = () => {
           <div className={`sticky top-4 z-40 px-2 sm:px-4 lg:px-8 flex justify-between items-center pt-4 sm:pt-6 pr-2 sm:pr-4 lg:pr-6 ${
             activeCategory === 'chat' ? 'hidden' : ''
           }`}>
-            {/* MOBILE ONLY: Category Menu Toggle Button - ml-14 to avoid overlap with fixed burger button */}
-            <div className="md:hidden relative mobile-category-menu-container ml-14">
+            {/* MOBILE ONLY: Category Menu Toggle Button - compact + icon in header */}
+            <div className="md:hidden relative mobile-category-menu-container ml-2">
               <button
                 onClick={() => setShowMobileCategoryMenu(!showMobileCategoryMenu)}
-                className="flex items-center justify-center w-10 h-10 bg-white rounded-xl shadow-md border border-gray-200 hover:bg-gray-50 transition-all duration-200"
+                className="flex items-center justify-center w-7 h-7 bg-white/80 rounded-lg border border-gray-200/50 hover:bg-white transition-all duration-200"
                 title="Toggle menu"
               >
                 <Plus
-                  size={20}
-                  strokeWidth={2}
-                  className={`transition-transform duration-300 text-gray-800 ${showMobileCategoryMenu ? 'rotate-45' : ''}`}
+                  size={14}
+                  strokeWidth={2.5}
+                  className={`transition-transform duration-300 text-gray-700 ${showMobileCategoryMenu ? 'rotate-45' : ''}`}
                 />
               </button>
 
@@ -4080,17 +4155,6 @@ const TokenizedAssetsGlassmorphic = () => {
                   }}
                 />
               </div>
-
-              {/* Settings Icon - Hidden for now */}
-              {/* <button
-                onClick={() => {
-                  setActiveCategory('settings');
-                  setShowSettings(false);
-                }}
-                className="flex items-center justify-center transition-all duration-200"
-              >
-                <Settings size={16} className="text-gray-700" />
-              </button> */}
 
               {/* Info Icon - Links to Helpdesk */}
               <button
@@ -4887,6 +4951,54 @@ const TokenizedAssetsGlassmorphic = () => {
                                 {/* Footer */}
                                 <div className="flex items-center justify-between pt-2">
                                   <span className="text-[10px] text-gray-300 font-mono">{request.id?.slice(0, 8)}</span>
+                                  {/* Continue Chat button - if conversation_id exists */}
+                                  {request.data?.conversation_id && (
+                                    <button
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        const conversationId = request.data.conversation_id;
+
+                                        // Check if conversation exists in chatHistory
+                                        const existingChat = chatHistory.find(c => c.id === conversationId);
+
+                                        if (existingChat) {
+                                          // Continue existing chat directly
+                                          setActiveChat(conversationId);
+                                          setActiveCategory('chat');
+                                        } else {
+                                          // Load chat from database
+                                          try {
+                                            const result = await chatService.loadChat(conversationId, user?.id);
+                                            if (result.success && result.chat) {
+                                              // Add to chat history and switch
+                                              setChatHistory(prev => {
+                                                const exists = prev.find(c => c.id === conversationId);
+                                                if (exists) return prev;
+                                                return [...prev, {
+                                                  ...result.chat,
+                                                  date: new Date(result.chat.updated_at).toLocaleDateString()
+                                                }];
+                                              });
+                                              setActiveChat(conversationId);
+                                              setActiveCategory('chat');
+                                            } else {
+                                              // Chat not found, start new
+                                              setActiveChat('new');
+                                              setActiveCategory('chat');
+                                            }
+                                          } catch (err) {
+                                            console.error('Error loading chat:', err);
+                                            setActiveChat('new');
+                                            setActiveCategory('chat');
+                                          }
+                                        }
+                                      }}
+                                      className="px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-1.5"
+                                    >
+                                      <MessageSquare size={12} />
+                                      Continue Chat
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             )}
@@ -10422,6 +10534,8 @@ const TokenizedAssetsGlassmorphic = () => {
               onRequestWalletConnect={handleWalletConnect}
               initialQuery={aiChatQuery}
               onQueryProcessed={() => setAiChatQuery('')}
+              cartItems={cartItems}
+              setCartItems={setCartItems}
             />
           )}
 
@@ -11118,6 +11232,83 @@ const TokenizedAssetsGlassmorphic = () => {
 
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} removeToast={removeToast} />
+
+      {/* Report/Support Popup Modal */}
+      {showReportPopup && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <AlertCircle size={20} className="text-gray-700" />
+                <h3 className="text-lg font-semibold text-gray-900">Report Issue / Support</h3>
+              </div>
+              <button
+                onClick={() => setShowReportPopup(false)}
+                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                <input
+                  type="text"
+                  value={reportSubject}
+                  onChange={(e) => setReportSubject(e.target.value)}
+                  placeholder="Brief description of your issue"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                <textarea
+                  value={reportMessage}
+                  onChange={(e) => setReportMessage(e.target.value)}
+                  placeholder="Describe your issue or support request in detail..."
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none text-sm resize-none"
+                />
+              </div>
+              {user?.email && (
+                <p className="text-xs text-gray-500">
+                  We'll respond to: <span className="font-medium">{user.email}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 p-4 border-t border-gray-100">
+              <button
+                onClick={() => setShowReportPopup(false)}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitReport}
+                disabled={isSubmittingReport || !reportSubject.trim() || !reportMessage.trim()}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isSubmittingReport ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <Send size={16} />
+                    Submit Request
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Success Notification for Empty Leg Requests */}
       <SuccessNotification

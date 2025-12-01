@@ -218,7 +218,7 @@ function Homepage() {
       <LandingHeader onGetStarted={handleGetStarted} />
 
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto rounded-2xl overflow-visible relative min-h-[600px]">
+      <div className="max-w-7xl mx-auto rounded-2xl overflow-visible relative min-h-[calc(100vh-100px)] sm:min-h-[85vh]">
         {/* Background Globe - Full Color - Centered */}
         <div className="absolute inset-0 z-0 flex items-center justify-center">
           <div className="w-full h-full">

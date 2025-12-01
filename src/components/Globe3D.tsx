@@ -272,7 +272,7 @@ const Globe3D: React.FC = () => {
         1,
         2000
       );
-      camera.position.z = 520;
+      camera.position.z = 580;
 
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setSize(containerRef.current!.clientWidth, containerRef.current!.clientHeight);
@@ -453,7 +453,7 @@ const Globe3D: React.FC = () => {
 
       camera.position.x += (mouseX * 0.2 - camera.position.x) * 0.05;
       camera.position.y += (-mouseY * 0.2 - camera.position.y) * 0.05;
-      camera.position.z = 520 + Math.sin(time * 0.3) * 15;
+      camera.position.z = 580 + Math.sin(time * 0.3) * 15;
 
       camera.lookAt(scene.position);
       renderer.render(scene, camera);

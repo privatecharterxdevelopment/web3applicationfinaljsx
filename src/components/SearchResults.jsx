@@ -310,6 +310,22 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                             <p className="text-xs text-gray-500">Hourly Rate</p>
                             <p className="font-medium">€{item.hourly_rate_eur?.toLocaleString() || item.price?.toLocaleString() || '—'}/hr</p>
                           </div>
+                          {/* Estimated Total based on flight time */}
+                          {item.estimatedDuration && item.hourly_rate_eur && (
+                            <div className="col-span-2 md:col-span-4 mt-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                              <p className="font-semibold text-emerald-900 mb-1">Estimated Flight Cost</p>
+                              <div className="flex items-center gap-4 text-sm text-emerald-800">
+                                <span>⏱️ {item.estimatedDuration}</span>
+                                <span>×</span>
+                                <span>€{item.hourly_rate_eur?.toLocaleString()}/hr</span>
+                                <span>=</span>
+                                <span className="font-bold text-lg">
+                                  €{(Math.ceil(item.flightTimeHours || 1) * item.hourly_rate_eur).toLocaleString()}
+                                </span>
+                                <span className="text-emerald-600 text-xs">(est.)</span>
+                              </div>
+                            </div>
+                          )}
                           {item.operator && (
                             <div>
                               <p className="text-xs text-gray-500">Operator</p>
@@ -322,6 +338,36 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                               <p className="font-medium">{item.registration}</p>
                             </div>
                           )}
+                          {/* Safety & Security Info for Jets */}
+                          <div className="col-span-2 md:col-span-4 mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p className="font-semibold text-blue-900 mb-2">✈️ Safety & Security</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-blue-800">
+                              <div className="flex items-center gap-2">
+                                <span className="text-blue-500">✓</span>
+                                <span>EASA/FAA certified operators</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-blue-500">✓</span>
+                                <span>IS-BAO safety accredited</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-blue-500">✓</span>
+                                <span>Experienced flight crew</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-blue-500">✓</span>
+                                <span>Private FBO terminal access</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-blue-500">✓</span>
+                                <span>Discreet security screening</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-blue-500">✓</span>
+                                <span>Full insurance coverage</span>
+                              </div>
+                            </div>
+                          </div>
                         </>
                       )}
 

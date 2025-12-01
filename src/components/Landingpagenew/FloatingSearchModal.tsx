@@ -46,7 +46,7 @@ export default function FloatingSearchModal() {
   };
 
   return (
-    <div className="w-full max-w-[750px] animate-float">
+    <div className="w-full max-w-[90%] sm:max-w-[650px] mx-4 sm:mx-0 animate-float">
       <style>{`
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
@@ -76,24 +76,24 @@ export default function FloatingSearchModal() {
         }
       `}</style>
 
-      <div className="bg-white/8 backdrop-blur-md rounded-3xl p-8 shadow-[0_20px_60px_rgba(0,0,0,0.1),0_8px_16px_rgba(0,0,0,0.06)] border border-white/15 transition-all duration-300 hover:bg-white/12 hover:shadow-[0_30px_80px_rgba(0,0,0,0.12),0_12px_24px_rgba(0,0,0,0.08)] hover:-translate-y-0.5">
+      <div className="bg-white/8 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.1),0_8px_16px_rgba(0,0,0,0.06)] border border-white/15 transition-all duration-300 hover:bg-white/12 hover:shadow-[0_30px_80px_rgba(0,0,0,0.12),0_12px_24px_rgba(0,0,0,0.08)] hover:-translate-y-0.5">
 
         {/* Status Bubble */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100/60 backdrop-blur-sm rounded-full border border-gray-300/30 mb-5">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100/60 backdrop-blur-sm rounded-full border border-gray-300/30 mb-3">
           <div className="w-2 h-2 bg-green-500 rounded-full relative animate-pulse pulse-ring"></div>
-          <span className="text-xs text-gray-600 font-medium tracking-wide uppercase">web3 and ai powered multi charter</span>
+          <span className="text-[10px] text-gray-600 font-medium tracking-wide uppercase">web3 and ai powered multi charter</span>
         </div>
 
         {/* Animated Title */}
         <h1
-          className="text-[42px] font-light text-gray-900 mb-3 leading-tight tracking-tight transition-all duration-500 pb-3 border-b border-gray-300/20"
+          className="text-[24px] sm:text-[32px] font-light text-gray-900 mb-2 leading-tight tracking-tight transition-all duration-500 pb-2 border-b border-gray-300/20"
           style={{ opacity: titleOpacity, transform: `translateY(${titleOpacity === 0 ? '-20px' : '0'})` }}
         >
           {titles[currentTitleIndex]}
         </h1>
 
         {/* Services Row */}
-        <div className="flex gap-5 mt-4 flex-wrap">
+        <div className="flex gap-2 sm:gap-3 mt-3 flex-wrap">
           {[
             { id: 'rwa', label: 'RWA services' },
             { id: 'web3', label: 'web3.0' },
@@ -103,12 +103,12 @@ export default function FloatingSearchModal() {
             <div
               key={service.id}
               onClick={() => toggleSection(service.id)}
-              className="flex items-center gap-2.5 px-3 py-2 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-200 hover:border-gray-300/40 hover:bg-white/10"
+              className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-200 hover:border-gray-300/40 hover:bg-white/10"
             >
-              <div className={`w-6 h-6 flex items-center justify-center text-gray-900 text-2xl font-light transition-transform duration-300 ${currentOpenSection === service.id ? 'rotate-45' : ''}`}>
+              <div className={`w-5 h-5 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 ${currentOpenSection === service.id ? 'rotate-45' : ''}`}>
                 +
               </div>
-              <span className="text-sm text-gray-700 font-medium tracking-wide">{service.label}</span>
+              <span className="text-xs text-gray-700 font-medium tracking-wide">{service.label}</span>
             </div>
           ))}
         </div>

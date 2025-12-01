@@ -301,6 +301,9 @@ function AppContent() {
               {/* Dashboard Route - Glassmorphic Dashboard with Empty Legs & RWS */}
               <Route path="/dashboard" element={<TokenizedAssetsGlassmorphic />} />
 
+              {/* Dashboard with specific chat session - allows direct linking to chats */}
+              <Route path="/dashboard/chat/:chatId" element={<TokenizedAssetsGlassmorphic />} />
+
               {/* User Overview Dashboard (old) */}
               <Route path="/user-overview" element={<Dashboard />} />
 
@@ -312,6 +315,9 @@ function AppContent() {
 
               {/* AI Chat direct route */}
               <Route path="/chat" element={<AIChat />} />
+
+              {/* AI Chat with specific conversation ID */}
+              <Route path="/chat/:chatId" element={<AIChat />} />
 
               {/* Individual Project Pages */}
               <Route path="/project/:projectId" element={<ProjectPage />} />

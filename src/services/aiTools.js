@@ -398,7 +398,7 @@ export const aiToolDefinitions = [
   },
   {
     name: "addToCart",
-    description: "Add a service booking to the user's cart. Use this when user says 'add to cart', 'book it', 'I'll take it', or confirms they want to proceed with a specific aircraft, yacht, or service that was discussed. This creates a cart item with the booking details.",
+    description: "Add a service booking to the user's cart. Use this when user says 'add to cart', 'book it', 'I'll take it', or confirms they want to proceed with a specific aircraft, yacht, or service. IMPORTANT: Always include hourlyRate for jets/helicopters to calculate estimated total. After adding to cart, ask about additional services like ground transport.",
     input_schema: {
       type: "object",
       properties: {
@@ -413,11 +413,11 @@ export const aiToolDefinitions = [
         },
         from: {
           type: "string",
-          description: "Departure location/airport"
+          description: "Departure location/airport with IATA code (e.g., 'Dublin (DUB)')"
         },
         to: {
           type: "string",
-          description: "Destination location/airport"
+          description: "Destination location/airport with IATA code (e.g., 'Amsterdam (AMS)')"
         },
         date: {
           type: "string",
@@ -431,9 +431,13 @@ export const aiToolDefinitions = [
           type: "number",
           description: "Number of passengers"
         },
+        hourlyRate: {
+          type: "number",
+          description: "Hourly rate in EUR from the aircraft details - REQUIRED for jets/helicopters to calculate total"
+        },
         price: {
           type: "number",
-          description: "Estimated price in EUR"
+          description: "Fixed price in EUR (for empty legs, transfers)"
         },
         catering: {
           type: "string",
@@ -1292,6 +1296,28 @@ const FLIGHT_DURATIONS = {
   'geneva-london': 1.5,
   'geneva-nice': 0.7,
 
+  // Dublin routes
+  'dublin-london': 1.25,
+  'dublin-amsterdam': 1.5,
+  'dublin-paris': 1.5,
+  'dublin-zurich': 2.0,
+  'dublin-nice': 2.25,
+  'dublin-rome': 2.75,
+  'dublin-milan': 2.25,
+  'dublin-munich': 2.0,
+  'dublin-barcelona': 2.25,
+  'dublin-geneva': 1.75,
+  'dublin-frankfurt': 1.75,
+
+  // Amsterdam routes
+  'amsterdam-london': 0.75,
+  'amsterdam-paris': 0.9,
+  'amsterdam-nice': 1.75,
+  'amsterdam-milan': 1.5,
+  'amsterdam-barcelona': 2.0,
+  'amsterdam-madrid': 2.25,
+  'amsterdam-rome': 2.0,
+
   // Europe to Middle East
   'zurich-dubai': 6.0,
   'london-dubai': 7.0,
@@ -1834,6 +1860,7 @@ function addCustomExtra(params) {
 /**
  * Add a service booking to the cart
  * Creates a cart-ready item for jets, helicopters, yachts, etc.
+ * Includes flight duration calculation and estimated pricing
  */
 function addToCart(params) {
   const {
@@ -1845,6 +1872,7 @@ function addToCart(params) {
     time = '',
     passengers = 1,
     price = 0,
+    hourlyRate = 0,
     catering = 'complimentary',
     notes = ''
   } = params;
@@ -1867,6 +1895,53 @@ function addToCart(params) {
     transfer: 'transfers'
   };
 
+  // Calculate flight duration and estimated price for jets/helicopters
+  let flightDuration = null;
+  let estimatedPrice = price;
+  let flightHours = null;
+  let priceCalculation = null;
+
+  if ((serviceType === 'jet' || serviceType === 'helicopter') && from && to && hourlyRate) {
+    // Extract city names for flight duration lookup
+    const fromCity = from.toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').trim();
+    const toCity = to.toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').trim();
+
+    // Try both directions in FLIGHT_DURATIONS
+    const routeKey1 = `${fromCity}-${toCity}`;
+    const routeKey2 = `${toCity}-${fromCity}`;
+
+    flightHours = FLIGHT_DURATIONS[routeKey1] || FLIGHT_DURATIONS[routeKey2];
+
+    // If no exact match, try partial matches
+    if (!flightHours) {
+      for (const [route, hours] of Object.entries(FLIGHT_DURATIONS)) {
+        const [r1, r2] = route.split('-');
+        if ((fromCity.includes(r1) || r1.includes(fromCity)) &&
+            (toCity.includes(r2) || r2.includes(toCity))) {
+          flightHours = hours;
+          break;
+        }
+        if ((fromCity.includes(r2) || r2.includes(fromCity)) &&
+            (toCity.includes(r1) || r1.includes(toCity))) {
+          flightHours = hours;
+          break;
+        }
+      }
+    }
+
+    if (flightHours) {
+      // Format duration string
+      const hours = Math.floor(flightHours);
+      const minutes = Math.round((flightHours % 1) * 60);
+      flightDuration = hours > 0 ? `${hours}h ${minutes}min` : `${minutes}min`;
+
+      // Calculate estimated price (round up to nearest hour for billing)
+      const billedHours = Math.ceil(flightHours);
+      estimatedPrice = billedHours * hourlyRate;
+      priceCalculation = `${billedHours}h × €${hourlyRate.toLocaleString()}/hr`;
+    }
+  }
+
   // Create cart item
   const cartItem = {
     id: `booking-${Date.now()}`,
@@ -1878,13 +1953,32 @@ function addToCart(params) {
     date,
     time,
     passengers,
-    price: price || 0,
-    basePrice: price || 0,
-    isEstimate: !price,
-    requiresConfirmation: !price,
+    hourlyRate: hourlyRate || 0,
+    flightHours: flightHours || null,
+    flightDuration: flightDuration || null,
+    price: estimatedPrice || 0,
+    basePrice: estimatedPrice || 0,
+    priceCalculation: priceCalculation || null,
+    isEstimate: true,
+    requiresConfirmation: true,
     catering,
     notes,
     addedAt: new Date().toISOString()
+  };
+
+  // Build display info with all details
+  const displayInfo = {
+    name,
+    type: serviceType.charAt(0).toUpperCase() + serviceType.slice(1),
+    route: from && to ? `${from} → ${to}` : '',
+    date: date || 'To be confirmed',
+    time: time || null,
+    passengers,
+    flightDuration: flightDuration || null,
+    hourlyRateFormatted: hourlyRate ? `€${hourlyRate.toLocaleString()}/hr` : null,
+    estimatedPriceFormatted: estimatedPrice ? `€${estimatedPrice.toLocaleString()}` : 'Price on request',
+    priceCalculation: priceCalculation || null,
+    catering: catering === 'complimentary' ? 'Complimentary refreshments' : catering
   };
 
   return {
@@ -1892,19 +1986,27 @@ function addToCart(params) {
     action: 'ADD_TO_CART',
     message: `Added ${name} to your cart`,
     cartItem,
-    displayInfo: {
-      name,
-      type: serviceType.charAt(0).toUpperCase() + serviceType.slice(1),
-      route: from && to ? `${from} → ${to}` : '',
-      date: date || 'To be confirmed',
-      passengers,
-      priceFormatted: price ? `€${price.toLocaleString()}` : 'Price on request',
-      catering: catering === 'complimentary' ? 'Complimentary refreshments' : catering
-    },
+    displayInfo,
+    // Prompt for additional services after adding to cart
+    askAdditionalServices: true,
+    additionalServicesPrompt: `Your ${name} booking has been added to cart.
+
+📍 **Route:** ${from} → ${to}
+${flightDuration ? `⏱️ **Est. Flight Duration:** ${flightDuration}` : ''}
+${hourlyRate ? `💰 **Hourly Rate:** €${hourlyRate.toLocaleString()}/hr` : ''}
+${estimatedPrice ? `💵 **Est. Total:** €${estimatedPrice.toLocaleString()}${priceCalculation ? ` (${priceCalculation})` : ''}` : ''}
+
+Would you like to add any additional services?
+• **Ground Transport** - Airport transfer to your hotel or destination
+• **Premium Catering** - Gourmet meals and beverages on board
+• **Special Requests** - Champagne, flowers, celebration setup
+
+Just let me know what you need!`,
     notes: [
       'Item added to your cart',
-      'You can continue adding services or proceed to checkout',
-      !price ? 'Final pricing will be confirmed by our team' : null
+      flightDuration ? `Est. flight time: ${flightDuration}` : null,
+      estimatedPrice ? `Est. total: €${estimatedPrice.toLocaleString()}` : null,
+      'Final pricing confirmed upon booking'
     ].filter(Boolean)
   };
 }

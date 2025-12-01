@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Mic, Send, X, Volume2, VolumeX, Edit2, Shield, Wallet, ShoppingCart, MessageSquare, Plus, Crown, AlertCircle, Calendar, Trash2, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Plane, Clock, Upload, FileText, DollarSign, Users, MapPin, Anchor, Mountain, Car, Minus
 } from 'lucide-react';
@@ -192,11 +193,21 @@ const TypingText = ({ text, speed = 30, onComplete }) => {
 };
 
 // Main Component
-const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {} }) => {
+const AIChat = ({
+  user: userProp,
+  initialQuery = '',
+  onQueryProcessed = () => {},
+  cartItems: cartItemsProp,
+  setCartItems: setCartItemsProp
+}) => {
   // Use auth context (returns null if not in AuthProvider)
   const authContext = useAuth();
   const user = userProp || authContext?.user || { name: 'Guest', id: null };
   const isAdmin = authContext?.isAdmin || false;
+
+  // URL routing for direct chat links
+  const { chatId: urlChatId } = useParams();
+  const navigate = useNavigate();
 
   console.log('👤 User info:', { userId: user?.id, isAdmin, hasAuthContext: !!authContext });
 
@@ -232,7 +243,10 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
   const [weather, setWeather] = useState(null);
   const [searchResults, setSearchResults] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
-  const [cartItems, setCartItems] = useState([]);
+  // Use props if provided, otherwise local state
+  const [localCartItems, setLocalCartItems] = useState([]);
+  const cartItems = cartItemsProp !== undefined ? cartItemsProp : localCartItems;
+  const setCartItems = setCartItemsProp !== undefined ? setCartItemsProp : setLocalCartItems;
   const [userHasNFT, setUserHasNFT] = useState(false);
   const [usedNFTBenefitThisYear, setUsedNFTBenefitThisYear] = useState(false);
   const [connectedWallet, setConnectedWallet] = useState(null);
@@ -328,6 +342,44 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
       });
     }
   }, []);
+
+  // URL-based chat loading: Load specific chat when navigating to /chat/:chatId
+  useEffect(() => {
+    if (urlChatId && urlChatId !== 'new' && user?.id) {
+      console.log('🔗 Loading chat from URL:', urlChatId);
+      // Load the specific chat from the database
+      const loadChatFromUrl = async () => {
+        try {
+          const result = await chatService.loadChat(urlChatId, user.id);
+          if (result.success && result.chat) {
+            // Add to chat history if not already there
+            setChatHistory(prev => {
+              const exists = prev.find(c => c.id === urlChatId);
+              if (exists) return prev;
+              return [...prev, {
+                ...result.chat,
+                date: new Date(result.chat.updated_at).toLocaleDateString()
+              }];
+            });
+            // Set as active chat
+            setActiveChat(urlChatId);
+            // Load messages
+            if (result.chat.messages?.length > 0) {
+              setMessages(result.chat.messages);
+            }
+            console.log('✅ Chat loaded from URL successfully');
+          } else {
+            console.log('⚠️ Chat not found, starting new chat');
+            setActiveChat('new');
+          }
+        } catch (err) {
+          console.error('Error loading chat from URL:', err);
+          setActiveChat('new');
+        }
+      };
+      loadChatFromUrl();
+    }
+  }, [urlChatId, user?.id]);
 
   // Initialize Speech Recognition for Voice Mode
   useEffect(() => {
@@ -3596,11 +3648,20 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           Add to Cart
                         </button>
 
-                        {/* Send Custom Request Button - Green */}
+                        {/* Send Custom Request Button - Monochromatic (adds to cart then sends) */}
                         <button
                           onClick={async () => {
                             try {
-                              // Save custom request to database
+                              // First add to cart
+                              const cartItem = {
+                                ...msg.bookingData,
+                                cartId: Date.now(),
+                                addedAt: new Date().toISOString(),
+                                isCustomRequest: true
+                              };
+                              setCartItems(prev => [...prev, cartItem]);
+
+                              // Then save custom request to database
                               const requestData = {
                                 type: 'custom_request',
                                 source: 'ai_chat',
@@ -3616,14 +3677,14 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                               );
 
                               if (result.success) {
-                                setToast({ message: 'Custom request sent successfully', type: 'success' });
+                                setToast({ message: 'Request added to cart and sent to bookings@privatecharterx.com', type: 'success' });
                                 setChatHistory(prev => prev.map(c =>
                                   c.id === activeChat
                                     ? {
                                         ...c,
                                         messages: [...c.messages, {
                                           role: 'assistant',
-                                          content: `Your custom request has been sent to our team. You can track its status in your AI Requests. We'll get back to you within 2-4 hours.`
+                                          content: `Your request has been added to your cart and sent to our team at bookings@privatecharterx.com. You can track its status in your AI Requests. We'll get back to you within 2-4 hours.`
                                         }]
                                       }
                                     : c
@@ -3636,7 +3697,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                               setToast({ message: 'Failed to send request. Please try again.', type: 'error' });
                             }
                           }}
-                          className="w-full px-5 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2"
+                          className="w-full px-5 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 border border-gray-700"
                         >
                           <Send size={18} />
                           Send Custom Request
