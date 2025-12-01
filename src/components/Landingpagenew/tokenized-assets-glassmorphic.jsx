@@ -3700,16 +3700,27 @@ const TokenizedAssetsGlassmorphic = () => {
             />
           )}
 
-          {/* Glassmorphic Sidebar - EXPANDABLE ON CLICK, Mobile Overlay */}
+          {/* Glassmorphic Sidebar - EXPANDABLE ON CLICK, Mobile Fullscreen */}
           <aside className={`border-r flex flex-col py-4 transition-all duration-300 ease-in-out overflow-hidden z-40 relative ${
             webMode === 'web3'
               ? 'border-white/30'
               : 'bg-white/70 border-gray-200/70'
           } ${
             isMobileMenuOpen
-              ? 'fixed inset-y-0 left-0 w-60'
+              ? 'fixed inset-0 w-full h-full'
               : `hidden lg:flex lg:relative ${sidebarExpanded ? 'lg:w-60' : 'lg:w-16'}`
           }`} style={webMode === 'web3' ? { backgroundColor: '#efefef' } : { backdropFilter: 'blur(20px) saturate(180%)' }}>
+
+          {/* Mobile Close Button - Top Right */}
+          {isMobileMenuOpen && (
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="lg:hidden absolute top-4 right-4 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all z-50"
+            >
+              <X size={20} className="text-gray-600" />
+            </button>
+          )}
+
           {/* Logo */}
           <div className={`mb-6 transition-all duration-300 ${isMobileMenuOpen || sidebarExpanded ? 'px-4' : 'px-2'}`}>
             <div
