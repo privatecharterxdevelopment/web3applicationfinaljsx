@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
-  ArrowLeft, Mic, Send, X, Volume2, VolumeX, Edit2, Shield, Wallet, ShoppingCart, MessageSquare, Plus, Crown, AlertCircle, Calendar, Trash2, ChevronRight, Plane, Clock, Upload, FileText, DollarSign, Users, MapPin, Anchor, Mountain, Car
+  ArrowLeft, Mic, Send, X, Volume2, VolumeX, Edit2, Shield, Wallet, ShoppingCart, MessageSquare, Plus, Crown, AlertCircle, Calendar, Trash2, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Plane, Clock, Upload, FileText, DollarSign, Users, MapPin, Anchor, Mountain, Car, Minus
 } from 'lucide-react';
+import { calculateDistance, estimateDuration, estimateCost } from '../../utils/distanceCalculator';
 // Secure Claude API via Edge Function - API key stays server-side
 import { claudeEdgeService } from '../../services/claudeEdgeService';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -283,9 +284,11 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
   // Cart visibility
   const [showCartWidget, setShowCartWidget] = useState(false);
 
-  // Add Extras Modal
+  // Add Extras - inline in cart sidebar instead of popup modal
   const [showExtrasModal, setShowExtrasModal] = useState(false);
+  const [showInlineExtras, setShowInlineExtras] = useState(false); // Inline extras form in cart dropdown
   const [selectedExtraCategory, setSelectedExtraCategory] = useState(null);
+  const [expandedCartItems, setExpandedCartItems] = useState({}); // Track which cart items are expanded
   const [customExtraForm, setCustomExtraForm] = useState({
     name: '',
     category: '',
@@ -638,9 +641,17 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
     }
   }, [activeChat, currentChat, user, withEmpathy]);
 
-  // Handle initial query from search
+  // Ref to store initial query for processing after state updates
+  const pendingInitialQueryRef = useRef(null);
+
+  // Handle initial query from search - set up the chat
   useEffect(() => {
     if (initialQuery && initialQuery.trim()) {
+      console.log('📝 Initial query received:', initialQuery);
+
+      // Store the query in a ref so it persists across renders
+      pendingInitialQueryRef.current = initialQuery;
+
       // Create a new chat with the initial query
       const newChatId = Date.now().toString();
       const newChat = {
@@ -650,18 +661,33 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
         messages: []
       };
 
-      // Add to chat history
+      // Add to chat history and set as active
       setChatHistory(prev => [newChat, ...prev]);
       setActiveChat(newChatId);
 
-      // Send the message after a brief delay to ensure chat is set up
-      setTimeout(() => {
-        handleSendMessage(initialQuery);
-        // Clear the initial query so it doesn't send again
-        onQueryProcessed();
-      }, 100);
+      // Clear the initial query prop so it doesn't trigger again
+      onQueryProcessed();
     }
-  }, [initialQuery]); // Only run when initialQuery changes
+  }, [initialQuery, onQueryProcessed]);
+
+  // Process the pending initial query after chat is set up
+  useEffect(() => {
+    if (pendingInitialQueryRef.current && activeChat && activeChat !== 'new') {
+      const query = pendingInitialQueryRef.current;
+      const currentChatExists = chatHistory.find(c => c.id === activeChat);
+
+      // Only process if we have the chat set up and it's empty (no messages yet)
+      if (currentChatExists && currentChatExists.messages.length === 0) {
+        console.log('🚀 Processing initial query:', query);
+        pendingInitialQueryRef.current = null; // Clear so we don't process again
+
+        // Small delay to ensure React state is fully updated
+        setTimeout(() => {
+          handleSendMessage(query);
+        }, 50);
+      }
+    }
+  }, [activeChat, chatHistory]); // Run when activeChat or chatHistory changes
 
   const toggleRecording = useCallback(async () => {
     if (isRecording) {
@@ -708,25 +734,82 @@ const AIChat = ({ user: userProp, initialQuery = '', onQueryProcessed = () => {}
   }, []);
 
   const addToCart = useCallback((item) => {
-    const cartItem = {
+    let cartItem = {
       ...item,
       cartId: Date.now(),
       addedAt: new Date().toISOString()
     };
+
+    // For jets and helicopters: calculate estimated price based on flight distance/time
+    const isJet = item.type === 'jets' || item.type === 'jet';
+    const isHelicopter = item.type === 'helicopters' || item.type === 'helicopter';
+
+    if ((isJet || isHelicopter) && item.hourly_rate_eur) {
+      // Get origin/destination from item or current conversation context
+      const origin = item.from || item.from_city || item.origin || item.departure_airport;
+      const destination = item.to || item.to_city || item.destination || item.arrival_airport;
+
+      if (origin && destination) {
+        // Calculate distance in nautical miles
+        const distanceNm = calculateDistance(origin, destination);
+
+        if (distanceNm) {
+          // Get cruise speed (default 450 kts for jets, 150 kts for helicopters)
+          const cruiseSpeedKts = item.speed_kts || (isJet ? 450 : 150);
+
+          // Calculate flight time in hours
+          const flightTimeHours = distanceNm / cruiseSpeedKts;
+
+          // Round UP to nearest hour for billing (40 min = 1 hour, 3h 20m = 4 hours)
+          const billedHours = Math.ceil(flightTimeHours);
+
+          // Calculate estimated price
+          const estimatedPrice = billedHours * item.hourly_rate_eur;
+
+          // Format duration string
+          const hours = Math.floor(flightTimeHours);
+          const minutes = Math.round((flightTimeHours - hours) * 60);
+          const durationStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+
+          // Add calculated fields to cart item
+          cartItem = {
+            ...cartItem,
+            flightDistanceNm: distanceNm,
+            flightTimeHours: flightTimeHours,
+            estimatedDuration: durationStr,
+            billedHours: billedHours,
+            estimatedPrice: estimatedPrice,
+            price: estimatedPrice,
+            basePrice: estimatedPrice,
+            totalWithFee: estimatedPrice,
+            isEstimate: true,
+            priceCalculation: `${billedHours}h × €${item.hourly_rate_eur.toLocaleString()}/hr`,
+            route: `${origin} → ${destination}`
+          };
+        }
+      }
+    }
+
     setCartItems(prev => [...prev, cartItem]);
 
     const isFree = conversationalAI.isEligibleForNFTBenefit(item, userHasNFT, usedNFTBenefitThisYear);
 
     // Show minimalistic toast notification
     const itemName = item.name || item.title || 'Item';
+    const priceInfo = cartItem.estimatedPrice ? ` (~€${cartItem.estimatedPrice.toLocaleString()})` : '';
     setToast({
-      message: isFree ? `${itemName} added (FREE with NFT)` : `${itemName} added to cart`,
+      message: isFree ? `${itemName} added (FREE with NFT)` : `${itemName}${priceInfo} added to cart`,
       type: 'cart'
     });
 
-    // Add message to chat
+    // Add message to chat with price calculation info
     let msg = `Added ${itemName}`;
     if (isFree) msg += ` (FREE with NFT!)`;
+    if (cartItem.estimatedPrice && cartItem.priceCalculation) {
+      msg += `\n\n📍 Route: ${cartItem.route}`;
+      msg += `\n⏱️ Est. flight time: ${cartItem.estimatedDuration}`;
+      msg += `\n💰 Est. price: ${cartItem.priceCalculation} = ~€${cartItem.estimatedPrice.toLocaleString()}`;
+    }
     msg += `\n\nContinue browsing or say "send request" when ready.`;
 
     setChatHistory(prev => prev.map(c =>
@@ -1994,6 +2077,39 @@ As their luxury travel consultant, provide an enthusiastic response that:
               const confirmMessage = {
                 role: 'assistant',
                 content: `Ready to add this custom item:\n\n🍷 **${toolResult.cartItem.name}**\n📦 Category: ${toolResult.cartItem.category}\n💰 Est. Price: €${(toolResult.cartItem.price || 0).toLocaleString()}\n${toolResult.cartItem.quantity > 1 ? `📊 Quantity: ${toolResult.cartItem.quantity}\n` : ''}\nChoose how you'd like to proceed:`,
+                action: 'confirm_booking',
+                bookingData: toolResult.cartItem
+              };
+
+              setChatHistory(prev => prev.map(c =>
+                c.id === workingChatId
+                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), confirmMessage] }
+                  : c
+              ));
+              setIsProcessing(false);
+              return; // Exit early - don't continue to AI follow-up
+            } else if (toolUse.name === 'lookupLuxuryItem' && toolResult.cartItem) {
+              // Show luxury item with option to add to cart
+              const item = toolResult.item || {};
+              const categoryEmoji = {
+                wine: '🍷',
+                champagne: '🥂',
+                spirits: '🥃',
+                caviar: '🐟',
+                cigars: '🚬',
+                flowers: '💐',
+                cake: '🎂',
+                decorations: '🎊',
+                music: '🎵',
+                photography: '📸',
+                catering: '🍽️',
+                other: '✨'
+              };
+              const emoji = categoryEmoji[item.category] || '✨';
+
+              const confirmMessage = {
+                role: 'assistant',
+                content: `Found: **${item.name}**\n\n${emoji} Category: ${item.category?.charAt(0).toUpperCase() + item.category?.slice(1)}\n💰 Est. Price: ${item.unitPriceFormatted || `€${(item.unitPrice || 0).toLocaleString()}`}${item.quantity > 1 ? ` × ${item.quantity} = ${item.totalPriceFormatted}` : ''}\n${toolResult.availability?.status === 'requires_confirmation' ? '\n⏳ Availability requires confirmation by our team' : ''}\n\nWould you like to add this to your cart?`,
                 action: 'confirm_booking',
                 bookingData: toolResult.cartItem
               };
@@ -3712,32 +3828,168 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       {showCartSidebar && (
         <>
           <div className="fixed inset-0 bg-black/50 z-40 animate-fade-in" onClick={() => setShowCartSidebar(false)} />
-          <div className="fixed right-0 top-0 h-full w-80 bg-white border-l border-gray-200 shadow-xl z-50 animate-fade-in-right">
-            <div className="p-4 border-b border-gray-200">
+          <div className="fixed right-0 top-0 h-full w-96 bg-white border-l border-gray-200 shadow-xl z-50 animate-fade-in-right flex flex-col">
+            <div className="p-4 border-b border-gray-200 flex-shrink-0">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-900">Cart ({cartItems.length})</h3>
                 <button onClick={() => setShowCartSidebar(false)} className="p-2 hover:bg-gray-100 rounded-lg">
                   <X size={18} />
                 </button>
               </div>
-              {/* Add Extra Button */}
+              {/* Add Extra Button - toggles inline form in cart dropdown */}
               <button
-                onClick={() => setShowExtrasModal(true)}
-                className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+                onClick={() => setShowInlineExtras(!showInlineExtras)}
+                className={`mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  showInlineExtras
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                }`}
               >
-                <Plus size={16} />
-                Add Extra Service
+                {showInlineExtras ? <X size={16} /> : <Plus size={16} />}
+                {showInlineExtras ? 'Close Extras' : '+ Extra Services'}
               </button>
             </div>
 
-            {cartItems.length === 0 ? (
-              <div className="p-6 text-center text-gray-500">
+            {/* Inline Extras Form - shown inside cart dropdown */}
+            {showInlineExtras && (
+              <div className="border-b border-gray-200 bg-gray-50 p-3 flex-shrink-0 max-h-[40vh] overflow-y-auto">
+                {!selectedExtraCategory ? (
+                  <>
+                    <p className="text-xs text-gray-500 mb-2">Select a category</p>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[
+                        { id: 'wine', icon: '🍷', label: 'Wine' },
+                        { id: 'champagne', icon: '🍾', label: 'Champagne' },
+                        { id: 'cigars', icon: '🚬', label: 'Cigars' },
+                        { id: 'caviar', icon: '🥄', label: 'Caviar' },
+                        { id: 'flowers', icon: '💐', label: 'Flowers' },
+                        { id: 'cake', icon: '🎂', label: 'Cakes' },
+                        { id: 'decorations', icon: '🎈', label: 'Decor' },
+                        { id: 'music', icon: '🎵', label: 'Music' },
+                        { id: 'photography', icon: '📸', label: 'Photo' },
+                        { id: 'catering', icon: '🍽️', label: 'Catering' },
+                        { id: 'spirits', icon: '🥃', label: 'Spirits' },
+                        { id: 'other', icon: '✨', label: 'Other' }
+                      ].map(cat => (
+                        <button
+                          key={cat.id}
+                          onClick={() => {
+                            setSelectedExtraCategory(cat.id);
+                            setCustomExtraForm(prev => ({ ...prev, category: cat.id }));
+                          }}
+                          className="flex flex-col items-center gap-0.5 p-2 bg-white hover:bg-gray-100 rounded-lg transition-colors text-center border border-gray-200 hover:border-gray-300"
+                        >
+                          <span className="text-lg">{cat.icon}</span>
+                          <span className="text-[10px] font-medium text-gray-700">{cat.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => setSelectedExtraCategory(null)}
+                      className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
+                    >
+                      <ChevronLeft size={14} />
+                      Back
+                    </button>
+                    {/* Quick suggestions */}
+                    <div className="flex flex-wrap gap-1">
+                      {(selectedExtraCategory === 'wine' ? ['Dom Pérignon', 'Château Margaux', 'Opus One'] :
+                        selectedExtraCategory === 'champagne' ? ['Moët', 'Veuve Clicquot', 'Krug'] :
+                        selectedExtraCategory === 'cigars' ? ['Cohiba Behike', 'Montecristo', 'Davidoff'] :
+                        selectedExtraCategory === 'caviar' ? ['Beluga', 'Oscietra', 'Sevruga'] :
+                        selectedExtraCategory === 'flowers' ? ['Red Roses', 'Orchids', 'Mixed'] :
+                        selectedExtraCategory === 'catering' ? ['Vegan', 'Halal', 'Kosher'] :
+                        ['Custom Request']
+                      ).map(item => (
+                        <button
+                          key={item}
+                          onClick={() => setCustomExtraForm(prev => ({ ...prev, name: item }))}
+                          className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
+                            customExtraForm.name === item
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-white text-gray-600 hover:bg-gray-200 border border-gray-200'
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                    {/* Name input */}
+                    <input
+                      type="text"
+                      value={customExtraForm.name}
+                      onChange={(e) => setCustomExtraForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder={`Enter ${selectedExtraCategory} name...`}
+                      className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs focus:ring-1 focus:ring-gray-900 focus:border-transparent"
+                    />
+                    {/* Quantity & Add */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => setCustomExtraForm(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
+                          className="w-6 h-6 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded text-gray-700 text-xs"
+                        >
+                          <Minus size={12} />
+                        </button>
+                        <span className="text-xs font-medium w-5 text-center">{customExtraForm.quantity}</span>
+                        <button
+                          onClick={() => setCustomExtraForm(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
+                          className="w-6 h-6 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded text-gray-700 text-xs"
+                        >
+                          <Plus size={12} />
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (!customExtraForm.name.trim()) return;
+                          const defaultPrices = { wine: 150, champagne: 120, spirits: 200, caviar: 300, cigars: 500, flowers: 150, cake: 200, decorations: 300, music: 500, photography: 800, catering: 100, other: 100 };
+                          const unitPrice = defaultPrices[selectedExtraCategory] || 100;
+                          const totalPrice = unitPrice * customExtraForm.quantity;
+                          const newExtra = {
+                            id: `extra-${Date.now()}`,
+                            cartId: `extra-${Date.now()}`,
+                            type: 'custom_extra',
+                            name: customExtraForm.name,
+                            title: customExtraForm.name,
+                            category: selectedExtraCategory,
+                            quantity: customExtraForm.quantity,
+                            unitPrice,
+                            price: totalPrice,
+                            basePrice: totalPrice,
+                            totalWithFee: totalPrice,
+                            isEstimate: true,
+                            isCustomRequest: true,
+                            addedAt: new Date().toISOString()
+                          };
+                          setCartItems(prev => [...prev, newExtra]);
+                          setShowInlineExtras(false);
+                          setSelectedExtraCategory(null);
+                          setCustomExtraForm({ name: '', category: '', quantity: 1, notes: '' });
+                          setToast({ message: `Added ${customExtraForm.name} to cart`, type: 'cart' });
+                        }}
+                        disabled={!customExtraForm.name.trim()}
+                        className="flex-1 py-1.5 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 text-white text-xs font-medium rounded-lg transition-colors flex items-center justify-center gap-1"
+                      >
+                        <Plus size={12} />
+                        Add (~€{(({ wine: 150, champagne: 120, spirits: 200, caviar: 300, cigars: 500, flowers: 150, cake: 200, decorations: 300, music: 500, photography: 800, catering: 100, other: 100 }[selectedExtraCategory] || 100) * customExtraForm.quantity).toLocaleString()})
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {cartItems.length === 0 && !showInlineExtras ? (
+              <div className="p-6 text-center text-gray-500 flex-1 flex flex-col items-center justify-center">
                 <ShoppingCart size={48} className="mx-auto mb-4 opacity-30" />
                 <p>Your cart is empty</p>
               </div>
-            ) : (
+            ) : cartItems.length === 0 ? null : (
               <>
-                <div className="p-4 space-y-3 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+                <div className="flex-1 p-4 space-y-2 overflow-y-auto">
                   {cartItems.map((item, idx) => {
                     const isEmptyLeg = item.type === 'empty_legs' || item.type === 'emptyleg';
                     const isAdventure = item.type === 'adventure' || item.type === 'fixed_offer';
@@ -3840,339 +4092,333 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     }
 
                     // Regular cart items (jets, helicopters, yachts, etc.)
+                    const isExpanded = expandedCartItems[item.cartId || idx];
                     return (
-                      <div key={idx} className="bg-gray-50 rounded-xl p-4 border border-gray-200 animate-fade-in hover:border-gray-300 transition-all duration-300">
-                        {/* Header with title and remove button */}
-                        <div className="flex justify-between items-start mb-3">
-                          <div className="flex-1">
-                            {/* Type badge */}
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                      <div key={idx} className="bg-gray-50 rounded-xl border border-gray-200 animate-fade-in hover:border-gray-300 transition-all duration-300 overflow-hidden">
+                        {/* Collapsible Header - click to expand */}
+                        <div
+                          className="p-3 flex items-center gap-3 cursor-pointer"
+                          onClick={() => setExpandedCartItems(prev => ({ ...prev, [item.cartId || idx]: !prev[item.cartId || idx] }))}
+                        >
+                          {/* Type badge & name */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
                                 isJet ? 'bg-gray-800 text-white' :
                                 isHelicopter ? 'bg-gray-700 text-white' :
                                 isYacht ? 'bg-gray-600 text-white' :
                                 isLuxuryCar ? 'bg-gray-900 text-white' :
-                                isEmptyLeg ? 'bg-gray-500 text-white' :
+                                isEmptyLeg ? 'bg-emerald-600 text-white' :
                                 isTransfer ? 'bg-gray-400 text-white' :
                                 isAdventure ? 'bg-gray-800 text-white' :
                                 'bg-gray-300 text-gray-700'
                               }`}>
-                                {isJet ? 'JET' : isHelicopter ? 'HELI' : isYacht ? 'YACHT' : isLuxuryCar ? 'SUPERCAR' : isEmptyLeg ? 'EMPTY LEG' : isTransfer ? 'TRANSFER' : isAdventure ? 'EXPERIENCE' : 'SERVICE'}
+                                {isJet ? 'CHARTER' : isHelicopter ? 'HELI' : isYacht ? 'YACHT' : isLuxuryCar ? 'SUPERCAR' : isEmptyLeg ? 'EMPTY LEG' : isTransfer ? 'TRANSFER' : isAdventure ? 'EXPERIENCE' : 'SERVICE'}
                               </span>
+                              {isEmptyLeg && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-emerald-100 text-emerald-700">CRYPTO PAY</span>
+                              )}
+                              {(isJet || isHelicopter) && !isEmptyLeg && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-gray-200 text-gray-600">AI REQUEST</span>
+                              )}
                             </div>
-                            <p className="text-sm font-semibold text-gray-900">
+                            <p className="text-sm font-semibold text-gray-900 truncate">
                               {isEmptyLeg ? `${item.from_iata || item.from_city || item.from || ''} → ${item.to_iata || item.to_city || item.to || ''}` : (item.name || item.title || item.aircraft_type || item.model)}
                             </p>
-                            {isEmptyLeg && item.aircraft_type && (
-                              <p className="text-xs text-gray-500 mt-0.5">{item.aircraft_type}</p>
+                            {/* Flight route & duration for jets/helicopters */}
+                            {(isJet || isHelicopter) && item.route && (
+                              <p className="text-[10px] text-gray-500 mt-0.5">📍 {item.route}</p>
                             )}
-                            {isTransfer && (
-                              <p className="text-xs text-gray-500 mt-0.5">
-                                {item.from} → {item.to}
-                              </p>
-                            )}
-                            {isJet && item.category && (
-                              <p className="text-xs text-gray-500 mt-0.5">{item.category}</p>
-                            )}
-                            {isLuxuryCar && item.brand && (
-                              <p className="text-xs text-gray-500 mt-0.5">{item.brand} {item.model}</p>
+                            {(isJet || isHelicopter) && item.estimatedDuration && (
+                              <p className="text-[10px] text-gray-500">⏱️ {item.estimatedDuration} ({item.billedHours}h billed)</p>
                             )}
                           </div>
-                          <button
-                            onClick={() => removeFromCart(item.cartId || idx)}
-                            className="p-1.5 hover:bg-gray-200 text-gray-400 hover:text-gray-600 rounded-lg transition-all duration-300"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          {/* Price & expand icon */}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <div className="text-right">
+                              <p className="text-sm font-bold text-gray-900">
+                                {item.isEstimate ? '~' : ''}€{(item.price || item.basePrice || item.price_usd || 0).toLocaleString()}
+                              </p>
+                              {item.priceCalculation && (
+                                <p className="text-[9px] text-gray-400">{item.priceCalculation}</p>
+                              )}
+                            </div>
+                            <ChevronDown size={16} className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                          </div>
                         </div>
 
-                        {/* Jet Details */}
-                        {isJet && (
-                          <div className="space-y-2 text-xs text-gray-600 mb-3">
-                            <div className="grid grid-cols-2 gap-2">
-                              {item.max_passengers && (
-                                <div className="flex items-center gap-1.5">
-                                  <Users size={12} className="text-gray-400" />
-                                  <span>{item.max_passengers} passengers</span>
-                                </div>
-                              )}
-                              {item.range_km && (
-                                <div className="flex items-center gap-1.5">
-                                  <Plane size={12} className="text-gray-400" />
-                                  <span>{item.range_km.toLocaleString()} km range</span>
-                                </div>
-                              )}
-                              {item.speed_kts && (
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-gray-400">⚡</span>
-                                  <span>{item.speed_kts} kts</span>
-                                </div>
-                              )}
-                              {item.hourly_rate_eur && (
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-gray-400">💰</span>
-                                  <span>€{item.hourly_rate_eur.toLocaleString()}/hr</span>
-                                </div>
-                              )}
+                        {/* Expanded Details - scrollable */}
+                        {isExpanded && (
+                          <div className="border-t border-gray-200 bg-white max-h-48 overflow-y-auto">
+                            {/* Header actions */}
+                            <div className="px-3 py-2 flex items-center justify-between border-b border-gray-100">
+                              <span className="text-[10px] text-gray-500">Details & Options</span>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); removeFromCart(item.cartId || idx); }}
+                                className="text-[10px] text-red-500 hover:text-red-700 flex items-center gap-1"
+                              >
+                                <Trash2 size={10} />
+                                Remove
+                              </button>
                             </div>
-                            {/* Catering Options - Monochromatic */}
-                            <div className="mt-3 pt-3 border-t border-gray-200">
-                              <p className="text-xs font-medium text-gray-700 mb-2">Catering Options</p>
-                              <div className="space-y-1.5">
-                                {[
-                                  { id: 'standard', label: 'Standard (snacks & drinks)', price: 0 },
-                                  { id: 'premium', label: 'Premium dining', price: 350 },
-                                  { id: 'gourmet', label: 'Gourmet experience', price: 750 }
-                                ].map(option => (
-                                  <label key={option.id} className="flex items-center gap-2 cursor-pointer group">
-                                    <input
-                                      type="radio"
-                                      name={`catering-${item.cartId || idx}`}
-                                      checked={(item.catering || 'standard') === option.id}
-                                      onChange={() => {
-                                        setCartItems(prev => prev.map((ci, i) =>
-                                          (ci.cartId === item.cartId || i === idx)
-                                            ? { ...ci, catering: option.id, cateringPrice: option.price }
-                                            : ci
-                                        ));
-                                      }}
-                                      className="w-3 h-3 text-gray-900 border-gray-400 focus:ring-gray-500 focus:ring-1"
-                                    />
-                                    <span className="text-xs text-gray-600 group-hover:text-gray-900">{option.label}</span>
-                                    {option.price > 0 && (
-                                      <span className="text-xs text-gray-500 ml-auto">+€{option.price}</span>
-                                    )}
-                                  </label>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        )}
 
-                        {/* Helicopter Details */}
-                        {isHelicopter && (
-                          <div className="space-y-2 text-xs text-gray-600 mb-3">
-                            <div className="grid grid-cols-2 gap-2">
-                              {item.max_passengers && (
-                                <div className="flex items-center gap-1.5">
-                                  <Users size={12} className="text-gray-400" />
-                                  <span>{item.max_passengers} passengers</span>
+                            {/* Jet/Heli Details */}
+                            {(isJet || isHelicopter) && (
+                              <div className="p-3 space-y-2 text-xs text-gray-600">
+                                <div className="grid grid-cols-2 gap-2">
+                                  {item.max_passengers && (
+                                    <div className="flex items-center gap-1.5">
+                                      <Users size={11} className="text-gray-400" />
+                                      <span>{item.max_passengers} pax</span>
+                                    </div>
+                                  )}
+                                  {item.range_km && (
+                                    <div className="flex items-center gap-1.5">
+                                      <Plane size={11} className="text-gray-400" />
+                                      <span>{item.range_km.toLocaleString()} km</span>
+                                    </div>
+                                  )}
+                                  {item.speed_kts && (
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-gray-400">⚡</span>
+                                      <span>{item.speed_kts} kts</span>
+                                    </div>
+                                  )}
+                                  {item.hourly_rate_eur && (
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-gray-400">💰</span>
+                                      <span>€{item.hourly_rate_eur.toLocaleString()}/hr</span>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                              {item.range_km && (
-                                <div className="flex items-center gap-1.5">
-                                  <Plane size={12} className="text-gray-400" />
-                                  <span>{item.range_km} km range</span>
+                                {/* Catering Options - Monochromatic */}
+                                <div className="mt-3 pt-3 border-t border-gray-200">
+                                  <p className="text-xs font-medium text-gray-700 mb-2">Catering Options</p>
+                                  <div className="space-y-1.5">
+                                    {[
+                                      { id: 'standard', label: 'Standard (snacks & drinks)', price: 0 },
+                                      { id: 'premium', label: 'Premium dining', price: 350 },
+                                      { id: 'gourmet', label: 'Gourmet experience', price: 750 }
+                                    ].map(option => (
+                                      <label key={option.id} className="flex items-center gap-2 cursor-pointer group">
+                                        <input
+                                          type="radio"
+                                          name={`catering-${item.cartId || idx}`}
+                                          checked={(item.catering || 'standard') === option.id}
+                                          onChange={() => {
+                                            setCartItems(prev => prev.map((ci, i) =>
+                                              (ci.cartId === item.cartId || i === idx)
+                                                ? { ...ci, catering: option.id, cateringPrice: option.price }
+                                                : ci
+                                            ));
+                                          }}
+                                          className="w-3 h-3 text-gray-900 border-gray-400 focus:ring-gray-500 focus:ring-1"
+                                        />
+                                        <span className="text-xs text-gray-600 group-hover:text-gray-900">{option.label}</span>
+                                        {option.price > 0 && (
+                                          <span className="text-xs text-gray-500 ml-auto">+€{option.price}</span>
+                                        )}
+                                      </label>
+                                    ))}
+                                  </div>
                                 </div>
-                              )}
-                              {item.hourly_rate_eur && (
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-gray-400">💰</span>
-                                  <span>€{item.hourly_rate_eur.toLocaleString()}/hr</span>
-                                </div>
-                              )}
-                              {item.location && (
-                                <div className="flex items-center gap-1.5">
-                                  <MapPin size={12} className="text-gray-400" />
-                                  <span>{item.location}</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Yacht Details */}
-                        {isYacht && (
-                          <div className="space-y-2 text-xs text-gray-600 mb-3">
-                            <div className="grid grid-cols-2 gap-2">
-                              {item.length_ft && (
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-gray-400">📏</span>
-                                  <span>{item.length_ft} ft</span>
-                                </div>
-                              )}
-                              {item.max_passengers && (
-                                <div className="flex items-center gap-1.5">
-                                  <Users size={12} className="text-gray-400" />
-                                  <span>{item.max_passengers} guests</span>
-                                </div>
-                              )}
-                              {item.cabins && (
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-gray-400">🛏️</span>
-                                  <span>{item.cabins} cabins</span>
-                                </div>
-                              )}
-                              {item.crew && (
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-gray-400">👥</span>
-                                  <span>{item.crew} crew</span>
-                                </div>
-                              )}
-                              {item.daily_rate_eur && (
-                                <div className="flex items-center gap-1.5 col-span-2">
-                                  <span className="text-gray-400">💰</span>
-                                  <span>€{item.daily_rate_eur.toLocaleString()}/day</span>
-                                </div>
-                              )}
-                            </div>
-                            {item.location && (
-                              <div className="flex items-center gap-1.5 pt-1">
-                                <MapPin size={12} className="text-gray-400" />
-                                <span>{item.location}</span>
                               </div>
                             )}
-                          </div>
-                        )}
 
-                        {/* Luxury Car Details */}
-                        {isLuxuryCar && (
-                          <div className="space-y-2 text-xs text-gray-600 mb-3">
-                            <div className="grid grid-cols-2 gap-2">
-                              {item.year && (
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-gray-400">📅</span>
-                                  <span>{item.year}</span>
+                            {/* Yacht Details */}
+                            {isYacht && (
+                              <div className="p-3 space-y-2 text-xs text-gray-600">
+                                <div className="grid grid-cols-2 gap-2">
+                                  {item.length_ft && (
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-gray-400">📏</span>
+                                      <span>{item.length_ft} ft</span>
+                                    </div>
+                                  )}
+                                  {item.max_passengers && (
+                                    <div className="flex items-center gap-1.5">
+                                      <Users size={12} className="text-gray-400" />
+                                      <span>{item.max_passengers} guests</span>
+                                    </div>
+                                  )}
+                                  {item.cabins && (
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-gray-400">🛏️</span>
+                                      <span>{item.cabins} cabins</span>
+                                    </div>
+                                  )}
+                                  {item.crew && (
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-gray-400">👥</span>
+                                      <span>{item.crew} crew</span>
+                                    </div>
+                                  )}
+                                  {item.daily_rate_eur && (
+                                    <div className="flex items-center gap-1.5 col-span-2">
+                                      <span className="text-gray-400">💰</span>
+                                      <span>€{item.daily_rate_eur.toLocaleString()}/day</span>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                              {(item.seats || item.max_passengers) && (
-                                <div className="flex items-center gap-1.5">
-                                  <Users size={12} className="text-gray-400" />
-                                  <span>{item.seats || item.max_passengers} seats</span>
+                                {item.location && (
+                                  <div className="flex items-center gap-1.5 pt-1">
+                                    <MapPin size={12} className="text-gray-400" />
+                                    <span>{item.location}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Luxury Car Details */}
+                            {isLuxuryCar && (
+                              <div className="p-3 space-y-2 text-xs text-gray-600">
+                                <div className="grid grid-cols-2 gap-2">
+                                  {item.year && (
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-gray-400">📅</span>
+                                      <span>{item.year}</span>
+                                    </div>
+                                  )}
+                                  {(item.seats || item.max_passengers) && (
+                                    <div className="flex items-center gap-1.5">
+                                      <Users size={12} className="text-gray-400" />
+                                      <span>{item.seats || item.max_passengers} seats</span>
+                                    </div>
+                                  )}
+                                  {item.transmission && (
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-gray-400">⚙️</span>
+                                      <span>{item.transmission}</span>
+                                    </div>
+                                  )}
+                                  {item.daily_rate_eur && (
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-gray-400">💰</span>
+                                      <span>€{item.daily_rate_eur.toLocaleString()}/day</span>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                              {item.transmission && (
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-gray-400">⚙️</span>
-                                  <span>{item.transmission}</span>
+                                {/* Rental days selector */}
+                                <div className="mt-2 pt-2 border-t border-gray-200">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs text-gray-600">Rental days:</span>
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        onClick={() => {
+                                          const days = Math.max(1, (item.rentalDays || 1) - 1);
+                                          setCartItems(prev => prev.map((ci, i) =>
+                                            (ci.cartId === item.cartId || i === idx)
+                                              ? { ...ci, rentalDays: days, price: (ci.daily_rate_eur || ci.price) * days }
+                                              : ci
+                                          ));
+                                        }}
+                                        className="w-6 h-6 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded text-gray-700"
+                                      >
+                                        -
+                                      </button>
+                                      <span className="text-sm font-medium w-8 text-center">{item.rentalDays || 1}</span>
+                                      <button
+                                        onClick={() => {
+                                          const days = (item.rentalDays || 1) + 1;
+                                          setCartItems(prev => prev.map((ci, i) =>
+                                            (ci.cartId === item.cartId || i === idx)
+                                              ? { ...ci, rentalDays: days, price: (ci.daily_rate_eur || ci.price) * days }
+                                              : ci
+                                          ));
+                                        }}
+                                        className="w-6 h-6 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded text-gray-700"
+                                      >
+                                        +
+                                      </button>
+                                    </div>
+                                  </div>
                                 </div>
-                              )}
-                              {item.daily_rate_eur && (
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-gray-400">💰</span>
-                                  <span>€{item.daily_rate_eur.toLocaleString()}/day</span>
+                                <div className="text-[10px] text-gray-400 mt-1">
+                                  Insurance included • Min. age 18 • Valid license required
                                 </div>
-                              )}
-                            </div>
-                            {/* Rental days selector */}
-                            <div className="mt-2 pt-2 border-t border-gray-200">
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs text-gray-600">Rental days:</span>
+                              </div>
+                            )}
+
+                            {/* Empty Leg Details */}
+                            {isEmptyLeg && (
+                              <div className="p-3 space-y-2 text-xs text-gray-600">
                                 <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={() => {
-                                      const days = Math.max(1, (item.rentalDays || 1) - 1);
-                                      setCartItems(prev => prev.map((ci, i) =>
-                                        (ci.cartId === item.cartId || i === idx)
-                                          ? { ...ci, rentalDays: days, price: (ci.daily_rate_eur || ci.price) * days }
-                                          : ci
-                                      ));
-                                    }}
-                                    className="w-6 h-6 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded text-gray-700"
-                                  >
-                                    -
-                                  </button>
-                                  <span className="text-sm font-medium w-8 text-center">{item.rentalDays || 1}</span>
-                                  <button
-                                    onClick={() => {
-                                      const days = (item.rentalDays || 1) + 1;
-                                      setCartItems(prev => prev.map((ci, i) =>
-                                        (ci.cartId === item.cartId || i === idx)
-                                          ? { ...ci, rentalDays: days, price: (ci.daily_rate_eur || ci.price) * days }
-                                          : ci
-                                      ));
-                                    }}
-                                    className="w-6 h-6 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded text-gray-700"
-                                  >
-                                    +
-                                  </button>
+                                  <Plane size={12} className="text-gray-400" />
+                                  <span>{item.from_city || item.from} → {item.to_city || item.to}</span>
+                                </div>
+                                {item.departure_date && (
+                                  <div className="flex items-center gap-2">
+                                    <Clock size={12} className="text-gray-400" />
+                                    <span>{item.departure_date} {item.departure_time && `at ${item.departure_time}`}</span>
+                                  </div>
+                                )}
+                                {item.available_seats && (
+                                  <div className="flex items-center gap-2">
+                                    <Users size={12} className="text-gray-400" />
+                                    <span>Up to {item.available_seats} passengers</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Transfer Details */}
+                            {isTransfer && (
+                              <div className="p-3 space-y-2 text-xs text-gray-600">
+                                {item.passengers && (
+                                  <div className="flex items-center gap-2">
+                                    <Users size={12} className="text-gray-400" />
+                                    <span>{item.passengers} passengers</span>
+                                  </div>
+                                )}
+                                {item.vehiclesNeeded && item.vehiclesNeeded > 1 && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-gray-400">🚐</span>
+                                    <span>{item.vehiclesNeeded} vehicles</span>
+                                  </div>
+                                )}
+                                {item.durationMinutes && (
+                                  <div className="flex items-center gap-2">
+                                    <Clock size={12} className="text-gray-400" />
+                                    <span>~{item.durationMinutes} min drive</span>
+                                  </div>
+                                )}
+                                <div className="text-[10px] text-gray-400 mt-1">
+                                  Chauffeur • Meet & greet • Flight tracking
                                 </div>
                               </div>
-                            </div>
-                            <div className="text-[10px] text-gray-400 mt-1">
-                              Insurance included • Min. age 18 • Valid license required
-                            </div>
-                          </div>
-                        )}
+                            )}
 
-                        {/* Empty Leg Details */}
-                        {isEmptyLeg && (
-                          <div className="space-y-2 text-xs text-gray-600 mb-3">
-                            <div className="flex items-center gap-2">
-                              <Plane size={12} className="text-gray-400" />
-                              <span>{item.from_city || item.from} → {item.to_city || item.to}</span>
-                            </div>
-                            {item.departure_date && (
-                              <div className="flex items-center gap-2">
-                                <Clock size={12} className="text-gray-400" />
-                                <span>{item.departure_date} {item.departure_time && `at ${item.departure_time}`}</span>
-                              </div>
-                            )}
-                            {item.available_seats && (
-                              <div className="flex items-center gap-2">
-                                <Users size={12} className="text-gray-400" />
-                                <span>Up to {item.available_seats} passengers</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Transfer Details */}
-                        {isTransfer && (
-                          <div className="space-y-2 text-xs text-gray-600 mb-3">
-                            {item.passengers && (
-                              <div className="flex items-center gap-2">
-                                <Users size={12} className="text-gray-400" />
-                                <span>{item.passengers} passengers</span>
-                              </div>
-                            )}
-                            {item.vehiclesNeeded && item.vehiclesNeeded > 1 && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-gray-400">🚐</span>
-                                <span>{item.vehiclesNeeded} vehicles</span>
-                              </div>
-                            )}
-                            {item.durationMinutes && (
-                              <div className="flex items-center gap-2">
-                                <Clock size={12} className="text-gray-400" />
-                                <span>~{item.durationMinutes} min drive</span>
-                              </div>
-                            )}
-                            <div className="text-[10px] text-gray-400 mt-1">
-                              Chauffeur • Meet & greet • Flight tracking
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Adventure Details */}
-                        {isAdventure && (
-                          <div className="space-y-2 text-xs text-gray-600 mb-3">
-                            {item.description && (
-                              <p className="text-gray-600 line-clamp-2">{item.description}</p>
-                            )}
-                            {item.duration && (
-                              <div className="flex items-center gap-2">
-                                <Clock size={12} className="text-gray-400" />
-                                <span>{item.duration}</span>
-                              </div>
-                            )}
-                            {item.location && (
-                              <div className="flex items-center gap-2">
-                                <MapPin size={12} className="text-gray-400" />
-                                <span>{item.location}</span>
-                              </div>
-                            )}
-                            {item.max_participants && (
-                              <div className="flex items-center gap-2">
-                                <Users size={12} className="text-gray-400" />
-                                <span>Up to {item.max_participants} participants</span>
+                            {/* Adventure Details */}
+                            {isAdventure && (
+                              <div className="p-3 space-y-2 text-xs text-gray-600">
+                                {item.description && (
+                                  <p className="text-gray-600 line-clamp-2">{item.description}</p>
+                                )}
+                                {item.duration && (
+                                  <div className="flex items-center gap-2">
+                                    <Clock size={12} className="text-gray-400" />
+                                    <span>{item.duration}</span>
+                                  </div>
+                                )}
+                                {item.location && (
+                                  <div className="flex items-center gap-2">
+                                    <MapPin size={12} className="text-gray-400" />
+                                    <span>{item.location}</span>
+                                  </div>
+                                )}
+                                {item.max_participants && (
+                                  <div className="flex items-center gap-2">
+                                    <Users size={12} className="text-gray-400" />
+                                    <span>Up to {item.max_participants} participants</span>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
                         )}
 
                         {/* Price breakdown */}
-                        <div className="pt-2 border-t border-gray-200 space-y-1">
+                        <div className="p-3 pt-2 border-t border-gray-200 space-y-1">
                           {/* Estimated badge for transfers */}
                           {(isTransfer || item.isEstimate) && (
                             <div className="flex items-center gap-1 mb-1">

@@ -582,18 +582,43 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
             </div>
           )}
 
-          {/* No Results */}
+          {/* No Results - Show Ask Sphera AI button prominently */}
           {query.length > 0 && suggestions.length === 0 && actualOffers.length === 0 && !loadingOffers && (
-            <div className="px-4 py-8 text-center">
-              <p className="text-sm text-gray-600 mb-3">No results found for "{query}"</p>
-              <p className="text-xs text-gray-500 mb-4">Contact our travel specialists for assistance</p>
-              <a
-                href="mailto:bookings@privatecharterx.com"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
+            <div className="px-4 py-6 text-center">
+              <p className="text-sm text-gray-600 mb-2">No exact matches for "{query}"</p>
+              <p className="text-xs text-gray-500 mb-4">Try asking our AI assistant for personalized recommendations</p>
+
+              {/* Ask Sphera AI - Primary action */}
+              <button
+                onClick={() => {
+                  if (onSelect) {
+                    onSelect({
+                      label: query,
+                      action: 'ai-chat',
+                      query: query,
+                      category: 'AI Chat'
+                    }, true);
+                  }
+                  setIsOpen(false);
+                  setQuery('');
+                }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium mb-3"
               >
-                <Mail size={16} />
-                Get in touch with us now
-              </a>
+                <Sparkles size={16} />
+                Ask Sphera AI about "{query.length > 20 ? query.substring(0, 20) + '...' : query}"
+              </button>
+
+              {/* Contact as secondary option */}
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <p className="text-xs text-gray-400 mb-2">Or contact our travel specialists directly</p>
+                <a
+                  href="mailto:support@privatecharterx.com"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                >
+                  <Mail size={14} />
+                  Get in touch with us now
+                </a>
+              </div>
             </div>
           )}
 

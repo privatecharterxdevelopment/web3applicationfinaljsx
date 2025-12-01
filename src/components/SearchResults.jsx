@@ -49,544 +49,216 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
   let currentTabData = tabs.find(tab => tab.id === activeTab);
 
   return (
-    <div className="w-full max-w-4xl mx-auto mb-8">
-      {/* Tabs Navigation */}
-      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
-        {tabs.map(tab => {
-          // Empty Legs - SAME format as Jets with count badge
-          if (tab.id === 'emptylegs' && tab.items && tab.items.length > 0) {
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 ${
-                  activeTab === tab.id
-                    ? 'bg-black text-white'
-                    : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex flex-col items-start">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">Empty Legs</span>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      activeTab === tab.id
-                        ? 'bg-white/20 text-white'
-                        : 'bg-orange-100 text-orange-600'
-                    }`}>
-                      {tab.items.length}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs opacity-70">
-                    <span>Up to 70% off</span>
-                  </div>
-                </div>
-              </button>
-            );
-          }
-
-          // Special formatting for Jets - Show distance and route info
-          if (tab.id === 'jets' && tab.items && tab.items.length > 0) {
-            const firstJet = tab.items[0];
-            const distance = firstJet.flightDistance;
-            const duration = firstJet.estimatedDuration;
-            
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 ${
-                  activeTab === tab.id
-                    ? 'bg-black text-white'
-                    : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex flex-col items-start">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">{tab.title}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      activeTab === tab.id
-                        ? 'bg-white/20 text-white'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {tab.count}
-                    </span>
-                  </div>
-                  {distance && (
-                    <div className="flex items-center gap-2 text-xs opacity-70">
-                      <span>{distance} nm</span>
-                      {duration && (
-                        <>
-                          <span>•</span>
-                          <span>{duration}</span>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </button>
-            );
-          }
-
-          // Luxury Cars tab - monochromatic styling
-          if ((tab.id === 'luxury_cars' || tab.id === 'luxuryCars') && tab.items && tab.items.length > 0) {
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 ${
-                  activeTab === tab.id
-                    ? 'bg-gray-900 text-white'
-                    : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-400'
-                }`}
-              >
-                <div className="flex flex-col items-start">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">Supercars</span>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      activeTab === tab.id
-                        ? 'bg-white/20 text-white'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {tab.items.length}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs opacity-70">
-                    <span>Self-drive rentals</span>
-                  </div>
-                </div>
-              </button>
-            );
-          }
-
-          // Transfers/Taxi tab - special styling
-          if ((tab.id === 'transfers' || tab.id === 'ground_transport' || tab.id === 'taxi') && tab.items && tab.items.length > 0) {
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 ${
-                  activeTab === tab.id
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-white border border-gray-200 text-gray-700 hover:border-emerald-300'
-                }`}
-              >
-                <div className="flex flex-col items-start">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">Transfers</span>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      activeTab === tab.id
-                        ? 'bg-white/20 text-white'
-                        : 'bg-emerald-100 text-emerald-600'
-                    }`}>
-                      {tab.items.length}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs opacity-70">
-                    <span>Chauffeur service</span>
-                  </div>
-                </div>
-              </button>
-            );
-          }
-
-          // Default format for other tabs
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 ${
+    <div className="w-full max-w-4xl mx-auto mb-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      {/* Tabs Navigation - Minimal like MyBookings filter tabs */}
+      <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+              activeTab === tab.id
+                ? 'bg-gray-900 text-white'
+                : 'text-gray-500 hover:bg-gray-100'
+            }`}
+          >
+            {tab.id === 'emptylegs' ? 'Empty Legs' :
+             tab.id === 'jets' ? 'Private Jets' :
+             tab.id === 'helicopters' ? 'Helicopters' :
+             tab.id === 'yachts' ? 'Yachts' :
+             tab.id === 'adventures' ? 'Adventures' :
+             (tab.id === 'luxury_cars' || tab.id === 'luxuryCars') ? 'Supercars' :
+             (tab.id === 'transfers' || tab.id === 'ground_transport' || tab.id === 'taxi') ? 'Transfers' :
+             tab.title}
+            {tab.items?.length > 0 && (
+              <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] ${
                 activeTab === tab.id
-                  ? 'bg-black text-white'
-                  : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <span>{tab.icon}</span>
-              <span>{tab.title}</span>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                activeTab === tab.id
-                  ? 'bg-white/20 text-white'
-                  : 'bg-gray-100 text-gray-600'
+                  ? 'bg-white/20'
+                  : 'bg-gray-100 text-gray-500'
               }`}>
-                {tab.count}
+                {tab.items.length}
               </span>
-            </button>
-          );
-        })}
+            )}
+          </button>
+        ))}
       </div>
 
-      {/* Tab Content - List format instead of cards */}
+      {/* Tab Content - List format like MyBookings */}
       {currentTabData && (
-        <div className="space-y-4">
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            {currentTabData.items.slice(0, showAllItems ? currentTabData.items.length : 5).map((item, index) => (
+        <div className="space-y-2">
+          {currentTabData.items.slice(0, showAllItems ? currentTabData.items.length : 5).map((item, index) => (
+            <div
+              key={item.id}
+              className="bg-white border border-gray-100 rounded-xl overflow-hidden hover:border-gray-200 transition-all"
+            >
+              {/* Clickable header - compact like MyBookings */}
               <div
-                key={item.id}
-                className={`border-b border-gray-100 transition-colors ${
-                  index === currentTabData.items.length - 1 ? 'border-b-0' : ''
-                }`}
+                onClick={() => toggleCardExpanded(item.id)}
+                className="px-4 py-3 flex items-center gap-4 cursor-pointer"
               >
-                {/* Clickable header */}
-                <div
-                  onClick={() => toggleCardExpanded(item.id)}
-                  className="p-4 hover:bg-gray-50 cursor-pointer"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-4">
-                        {/* Service Image - check multiple image sources */}
-                        {(item.primaryImage || item.image_url || item.image_url_1) && (
-                          <img
-                            src={item.primaryImage || item.image_url || item.image_url_1}
-                            alt={item.name || item.title || item.aircraft_type || 'Service'}
-                            className="w-16 h-16 rounded-lg object-cover"
-                            onError={(e) => { e.target.style.display = 'none'; }}
-                          />
+                {/* Service Icon/Image - smaller */}
+                <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500 flex-shrink-0 overflow-hidden">
+                  {(item.primaryImage || item.image_url || item.image_url_1) ? (
+                    <img
+                      src={item.primaryImage || item.image_url || item.image_url_1}
+                      alt={item.name || item.title || 'Service'}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3l14 9-14 9V3z"/></svg>'; }}
+                    />
+                  ) : (
+                    <Plane size={14} />
+                  )}
+                </div>
+
+                {/* Service Details - refined typography */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {item.type === 'empty_legs'
+                        ? `${item.from_iata || item.from_city || '?'} → ${item.to_iata || item.to_city || '?'}`
+                        : (item.name || item.model || item.title || 'Unnamed Service')}
+                    </p>
+                    {/* Category Badge - subtle */}
+                    {item.type === 'jets' && (item.category || item.aircraft_type) && (
+                      <span className="px-2 py-0.5 text-[10px] font-medium rounded-full border bg-blue-50 text-blue-600 border-blue-200">
+                        {item.category || item.aircraft_type}
+                      </span>
+                    )}
+                    {/* Fuel stops badge - subtle */}
+                    {item.type === 'jets' && item.stops !== undefined && (
+                      item.stops === 0 ? (
+                        <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">
+                          Non-stop
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-600 border border-amber-200">
+                          {item.stops} stop{item.stops > 1 ? 's' : ''}
+                        </span>
+                      )
+                    )}
+                  </div>
+
+                  {/* Subtle sub-info line - MyBookings style */}
+                  <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
+                    {/* Jets */}
+                    {item.type === 'jets' && (
+                      <>
+                        <span>{item.max_passengers || item.pax_capacity || '?'} pax</span>
+                        {item.estimatedDuration && (
+                          <>
+                            <span>•</span>
+                            <span>{item.estimatedDuration}</span>
+                          </>
                         )}
-
-                        {/* Service Details */}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-semibold text-gray-900">
-                              {item.type === 'empty_legs'
-                                ? `${item.from_iata || item.from_city || '?'} → ${item.to_iata || item.to_city || '?'}`
-                                : (item.name || item.model || item.title || 'Unnamed Service')}
-                            </h3>
-                            {/* Category Badge - like jets page */}
-                            {item.type === 'jets' && (item.category || item.aircraft_type) && (
-                              <span className="px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">
-                                {item.category || item.aircraft_type}
-                              </span>
-                            )}
-                            {/* Fuel stops badge - prominent display */}
-                            {item.type === 'jets' && item.stops !== undefined && (
-                              item.stops === 0 ? (
-                                <span className="px-2 py-0.5 bg-green-500 text-white text-xs rounded-full font-medium">
-                                  ✓ Non-stop
-                                </span>
-                              ) : (
-                                <span className="px-2 py-0.5 bg-amber-500 text-white text-xs rounded-full font-medium">
-                                  {item.stops} stop{item.stops > 1 ? 's' : ''}
-                                </span>
-                              )
-                            )}
-                            {expandedCards[item.id] ? (
-                              <ChevronUp size={16} className="text-gray-400" />
-                            ) : (
-                              <ChevronDown size={16} className="text-gray-400" />
-                            )}
-                          </div>
-
-                          {/* Service-specific info - Jets (comprehensive display) */}
-                          {item.type === 'jets' && (
-                            <div className="mt-2">
-                              {/* Key specs row */}
-                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
-                                {/* Passengers */}
-                                <div className="flex items-center gap-1.5">
-                                  <Users size={14} className="text-gray-500" />
-                                  <span className="font-medium text-gray-900">
-                                    {item.max_passengers || item.pax_capacity || item.passenger_capacity || '?'}
-                                  </span>
-                                  <span className="text-gray-500">pax</span>
-                                </div>
-                                {/* Max Range */}
-                                {(item.range_km || item.range_nm || item.range) && (
-                                  <div className="flex items-center gap-1.5">
-                                    <Plane size={14} className="text-gray-500" />
-                                    <span className="font-medium text-gray-900">
-                                      {item.range_km ? `${item.range_km.toLocaleString()}` :
-                                       item.range ? `${item.range.toLocaleString()}` :
-                                       item.range_nm ? `${Math.round(item.range_nm * 1.852).toLocaleString()}` : '—'}
-                                    </span>
-                                    <span className="text-gray-500">km range</span>
-                                  </div>
-                                )}
-                                {/* Speed */}
-                                {(item.speed_kts || item.speed_kmh) && (
-                                  <div className="flex items-center gap-1.5">
-                                    <Gauge size={14} className="text-gray-500" />
-                                    <span className="font-medium text-gray-900">
-                                      {item.speed_kts || item.speed_kmh}
-                                    </span>
-                                    <span className="text-gray-500">{item.speed_kts ? 'kts' : 'km/h'}</span>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Flight details row (if route is known) */}
-                              {(item.flightDistance || item.estimatedDuration) && (
-                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 py-1.5 px-2 bg-gray-50 rounded-lg text-sm">
-                                  {item.flightDistance && (
-                                    <div className="flex items-center gap-1.5">
-                                      <MapPin size={14} className="text-blue-500" />
-                                      <span className="text-gray-600">Flight:</span>
-                                      <span className="font-medium text-gray-900">
-                                        {Math.round(item.flightDistance * 1.852).toLocaleString()} km
-                                      </span>
-                                    </div>
-                                  )}
-                                  {item.estimatedDuration && (
-                                    <div className="flex items-center gap-1.5">
-                                      <Clock size={14} className="text-blue-500" />
-                                      <span className="text-gray-600">Est. time:</span>
-                                      <span className="font-medium text-gray-900">{item.estimatedDuration}</span>
-                                    </div>
-                                  )}
-                                  {item.stops !== undefined && (
-                                    <div className="flex items-center gap-1.5">
-                                      <Fuel size={14} className={item.stops > 0 ? 'text-amber-500' : 'text-green-500'} />
-                                      <span className="text-gray-600">Stops:</span>
-                                      <span className={`font-medium ${item.stops > 0 ? 'text-amber-600' : 'text-green-600'}`}>
-                                        {item.stops === 0 ? 'Non-stop' : item.stops}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {item.type === 'empty_legs' && (
-                            <div className="mt-2">
-                              {/* Route with IATA codes - prominent display */}
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full font-medium">
-                                  Empty Leg
-                                </span>
-                                {item.aircraft_type && (
-                                  <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
-                                    {item.aircraft_type}
-                                  </span>
-                                )}
-                              </div>
-
-                              {/* Route info with IATA */}
-                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
-                                {/* From/To with IATA */}
-                                <div className="flex items-center gap-1.5">
-                                  <MapPin size={14} className="text-gray-500" />
-                                  <span className="font-medium text-gray-900">
-                                    {item.from_iata || item.from_city || item.from || '?'}
-                                  </span>
-                                  <span className="text-gray-400">→</span>
-                                  <span className="font-medium text-gray-900">
-                                    {item.to_iata || item.to_city || item.to || '?'}
-                                  </span>
-                                </div>
-                                {/* Passengers */}
-                                <div className="flex items-center gap-1.5">
-                                  <Users size={14} className="text-gray-500" />
-                                  <span className="font-medium text-gray-900">
-                                    {item.capacity || item.available_seats || item.max_passengers || '?'}
-                                  </span>
-                                  <span className="text-gray-500">pax</span>
-                                </div>
-                              </div>
-
-                              {/* Date/Time row */}
-                              {item.departure_date && (
-                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 py-1.5 px-2 bg-gray-50 rounded-lg text-sm">
-                                  <div className="flex items-center gap-1.5">
-                                    <Clock size={14} className="text-blue-500" />
-                                    <span className="text-gray-600">Date:</span>
-                                    <span className="font-medium text-gray-900">
-                                      {new Date(item.departure_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
-                                    </span>
-                                  </div>
-                                  {item.departure_time && (
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="text-gray-600">Time:</span>
-                                      <span className="font-medium text-gray-900">{item.departure_time}</span>
-                                    </div>
-                                  )}
-                                  {item.operator && (
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="text-gray-600">Operator:</span>
-                                      <span className="font-medium text-gray-900">{item.operator}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {item.type === 'helicopters' && (
-                            <div className="text-sm text-gray-600 mt-1">
-                              <span className="flex items-center gap-1">
-                                <Users size={14} />
-                                {item.max_passengers} pax
-                              </span>
-                            </div>
-                          )}
-
-                          {item.type === 'yachts' && (
-                            <div className="text-sm text-gray-600 mt-1">
-                              <span>{item.length_ft}ft • {item.max_passengers} guests</span>
-                            </div>
-                          )}
-
-                          {item.type === 'luxury_cars' && (
-                            <div className="mt-2">
-                              {/* Brand badge - monochromatic */}
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="px-2 py-0.5 bg-gray-900 text-white text-xs rounded-full font-medium">
-                                  {item.brand || 'Supercar'}
-                                </span>
-                                {item.category && (
-                                  <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded-full">
-                                    {item.category}
-                                  </span>
-                                )}
-                              </div>
-
-                              {/* Key specs row */}
-                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
-                                {/* Year */}
-                                {item.year && (
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-gray-500">Year:</span>
-                                    <span className="font-medium text-gray-900">{item.year}</span>
-                                  </div>
-                                )}
-                                {/* Seats */}
-                                <div className="flex items-center gap-1.5">
-                                  <Users size={14} className="text-gray-500" />
-                                  <span className="font-medium text-gray-900">
-                                    {item.seats || item.max_passengers || 2}
-                                  </span>
-                                  <span className="text-gray-500">seats</span>
-                                </div>
-                                {/* Transmission */}
-                                {item.transmission && (
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-gray-500">Trans:</span>
-                                    <span className="font-medium text-gray-900">{item.transmission}</span>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Important notice */}
-                              <div className="mt-2 py-1.5 px-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
-                                <span className="font-medium">Note:</span> Colors & interior may vary. Valid driver's license required.
-                              </div>
-                            </div>
-                          )}
-
-                          {(item.type === 'ground_transport' || item.type === 'transfer' || item.type === 'taxi') && (
-                            <div className="mt-2">
-                              {/* Vehicle type badge */}
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="px-2 py-0.5 bg-emerald-500 text-white text-xs rounded-full font-medium">
-                                  Chauffeur
-                                </span>
-                                {item.vehicle_class && (
-                                  <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded-full">
-                                    {item.vehicle_class}
-                                  </span>
-                                )}
-                              </div>
-
-                              {/* Key specs row */}
-                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
-                                {/* Vehicle */}
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-medium text-gray-900">
-                                    {item.brand || item.name} {item.model || ''}
-                                  </span>
-                                </div>
-                                {/* Passengers */}
-                                <div className="flex items-center gap-1.5">
-                                  <Users size={14} className="text-gray-500" />
-                                  <span className="font-medium text-gray-900">
-                                    {item.seats || item.max_passengers || 4}
-                                  </span>
-                                  <span className="text-gray-500">pax</span>
-                                </div>
-                                {/* Distance if available */}
-                                {item.distanceKm && (
-                                  <div className="flex items-center gap-1.5">
-                                    <MapPin size={14} className="text-gray-500" />
-                                    <span className="font-medium text-gray-900">{item.distanceKm} km</span>
-                                  </div>
-                                )}
-                                {/* Duration if available */}
-                                {item.durationMinutes && (
-                                  <div className="flex items-center gap-1.5">
-                                    <Clock size={14} className="text-gray-500" />
-                                    <span className="font-medium text-gray-900">~{item.durationMinutes} min</span>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Professional driver notice */}
-                              <div className="mt-2 py-1.5 px-2 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800">
-                                <span className="font-medium">Includes:</span> Professional chauffeur, meet & greet, flight tracking
-                              </div>
-                            </div>
-                          )}
-
-                          {item.type === 'adventures' && (
-                            <div className="text-sm text-gray-600 mt-1">
-                              <span className="flex items-center gap-2">
-                                {item.origin && item.destination ? `${item.origin} → ${item.destination}` : item.description?.substring(0, 60) + '...' || ''}
-                              </span>
-                              {item.duration && (
-                                <span className="flex items-center gap-1 mt-1">
-                                  <Clock size={14} />
-                                  {item.duration}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Price and Actions */}
-                    <div className="flex items-center gap-4">
-                      <div className="text-right min-w-[100px]">
-                        {/* Jets: show price prominently */}
-                        {item.type === 'jets' && (
-                          <div className="flex flex-col items-end">
-                            <span className="text-xs text-gray-500">from</span>
-                            <p className="text-lg font-bold text-gray-900">
-                              {item.price_range || (item.price || item.hourly_rate_eur ?
-                                `€${(item.price || item.hourly_rate_eur).toLocaleString()}/hr` :
-                                'Quote')}
-                            </p>
-                          </div>
+                        {item.range_km && (
+                          <>
+                            <span>•</span>
+                            <span>{item.range_km.toLocaleString()} km range</span>
+                          </>
                         )}
-                        {/* Empty legs - USD price */}
-                        {item.type === 'empty_legs' && (
-                          <div className="flex flex-col items-end">
-                            <span className="text-xs text-green-600 font-medium">Save up to 70%</span>
-                            <p className="text-lg font-bold text-gray-900">
-                              ${(item.price_usd || item.price || 0).toLocaleString()}
-                            </p>
-                          </div>
-                        )}
-                        {/* Other service types */}
-                        {item.type !== 'jets' && item.type !== 'empty_legs' && item.price && (
-                          <p className="text-lg font-semibold text-gray-900">
-                            €{item.price.toLocaleString()}
-                            {item.type === 'helicopters' ? '/hr' :
-                             item.type === 'yachts' ? '/day' : ''}
-                          </p>
-                        )}
-                      </div>
+                      </>
+                    )}
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onAddToCart && onAddToCart(item);
-                        }}
-                        className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors text-xs font-medium whitespace-nowrap border border-gray-200"
-                      >
-                        Add to Cart
-                      </button>
-                    </div>
+                    {/* Empty Legs */}
+                    {item.type === 'empty_legs' && (
+                      <>
+                        {item.aircraft_type && <span>{item.aircraft_type}</span>}
+                        <span>•</span>
+                        <span>{item.capacity || item.available_seats || '?'} pax</span>
+                        {item.departure_date && (
+                          <>
+                            <span>•</span>
+                            <span>{new Date(item.departure_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                          </>
+                        )}
+                      </>
+                    )}
+
+                    {/* Helicopters */}
+                    {item.type === 'helicopters' && (
+                      <span>{item.max_passengers} pax</span>
+                    )}
+
+                    {/* Yachts */}
+                    {item.type === 'yachts' && (
+                      <>
+                        <span>{item.length_ft}ft</span>
+                        <span>•</span>
+                        <span>{item.max_passengers} guests</span>
+                      </>
+                    )}
+
+                    {/* Luxury Cars */}
+                    {item.type === 'luxury_cars' && (
+                      <>
+                        {item.brand && <span>{item.brand}</span>}
+                        {item.year && (
+                          <>
+                            <span>•</span>
+                            <span>{item.year}</span>
+                          </>
+                        )}
+                        <span>•</span>
+                        <span>{item.seats || 2} seats</span>
+                      </>
+                    )}
+
+                    {/* Transfers */}
+                    {(item.type === 'ground_transport' || item.type === 'transfer' || item.type === 'taxi') && (
+                      <>
+                        <span>{item.vehicle_class || 'Business'}</span>
+                        <span>•</span>
+                        <span>{item.seats || item.max_passengers || 4} pax</span>
+                        {item.durationMinutes && (
+                          <>
+                            <span>•</span>
+                            <span>~{item.durationMinutes} min</span>
+                          </>
+                        )}
+                      </>
+                    )}
+
+                    {/* Adventures */}
+                    {item.type === 'adventures' && (
+                      <>
+                        {item.duration && <span>{item.duration}</span>}
+                        {item.origin && item.destination && (
+                          <>
+                            <span>•</span>
+                            <span>{item.origin} → {item.destination}</span>
+                          </>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
+
+                {/* Price - Compact, right-aligned like MyBookings */}
+                <div className="text-right flex-shrink-0">
+                  <p className="text-sm font-semibold text-gray-900">
+                    {item.type === 'jets' && (
+                      item.price_range || (item.price || item.hourly_rate_eur ?
+                        `€${(item.price || item.hourly_rate_eur).toLocaleString()}/hr` :
+                        'Quote')
+                    )}
+                    {item.type === 'empty_legs' && `$${(item.price_usd || item.price || 0).toLocaleString()}`}
+                    {item.type === 'helicopters' && item.price && `€${item.price.toLocaleString()}/hr`}
+                    {item.type === 'yachts' && item.price && `€${item.price.toLocaleString()}/day`}
+                    {item.type === 'luxury_cars' && (item.daily_rate_eur || item.price) && `€${(item.daily_rate_eur || item.price).toLocaleString()}/day`}
+                    {(item.type === 'ground_transport' || item.type === 'transfer' || item.type === 'taxi') && item.price && `€${item.price.toLocaleString()}`}
+                    {item.type === 'adventures' && (item.price_eur || item.price) && `€${(item.price_eur || item.price).toLocaleString()}`}
+                  </p>
+                  {item.type === 'empty_legs' && (
+                    <p className="text-[10px] text-emerald-600">Save up to 70%</p>
+                  )}
+                </div>
+
+                {/* Expand Icon */}
+                <ChevronDown
+                  size={16}
+                  className={`text-gray-400 transition-transform flex-shrink-0 ${expandedCards[item.id] ? 'rotate-180' : ''}`}
+                />
+              </div>
 
                 {/* Expanded Details Section */}
                 {expandedCards[item.id] && (
@@ -987,8 +659,7 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                 )}
               </div>
             ))}
-          </div>
-          
+
           {/* Show More/Less Buttons */}
           {currentTabData.items.length > 5 && (
             <div className="flex justify-center mt-4">

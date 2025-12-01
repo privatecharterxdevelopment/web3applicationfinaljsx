@@ -1232,17 +1232,53 @@ export default function RequestHistory({ onBack, onOpenChat }: RequestHistoryPro
                 <div className="text-sm text-gray-600 space-y-3">
                   {request.data && (
                     <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                      {/* Quick Summary - Always show key info at top */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pb-3 border-b border-gray-200">
+                        {/* Date */}
+                        <div>
+                          <div className="text-[10px] text-gray-400 uppercase tracking-wide">Date</div>
+                          <div className="text-sm text-gray-900 font-medium">
+                            {request.data.date || request.data.Date || request.data.departure_date || request.data.travel_date || request.data.dates || request.data.start_date || formatDate(request.created_at).split(',')[0]}
+                          </div>
+                        </div>
+                        {/* Time */}
+                        <div>
+                          <div className="text-[10px] text-gray-400 uppercase tracking-wide">Time</div>
+                          <div className="text-sm text-gray-900 font-medium">
+                            {request.data.time || request.data.Time || request.data.departure_time || request.data.pickup_time || '—'}
+                          </div>
+                        </div>
+                        {/* Passengers */}
+                        <div>
+                          <div className="text-[10px] text-gray-400 uppercase tracking-wide">Passengers</div>
+                          <div className="text-sm text-gray-900 font-medium">
+                            {request.data.passengers || request.data.Passengers || request.data.pax || request.data.guests || request.data.Pax || '—'}
+                          </div>
+                        </div>
+                        {/* Price */}
+                        <div>
+                          <div className="text-[10px] text-gray-400 uppercase tracking-wide">Total Price</div>
+                          <div className="text-sm text-emerald-600 font-semibold">
+                            €{(request.data.price || request.data.Price || request.data.total || request.data.Total || request.data.estimated_price || request.data.total_price || request.data.grand_total || request.data.summary?.grand_total || 0).toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Route Information */}
-                      {(request.data.from || request.data.origin || request.data.departure_city || request.data.to || request.data.destination || request.data.arrival_city) && (
+                      {(request.data.from || request.data.From || request.data.origin || request.data.Origin || request.data.departure_city || request.data.to || request.data.To || request.data.destination || request.data.Destination || request.data.arrival_city || request.data.route || request.data.Route) && (
                         <div className="flex items-start gap-3">
                           <MapPin size={16} className="text-blue-500 mt-0.5 flex-shrink-0" />
                           <div>
                             <div className="font-medium text-gray-900">Route</div>
-                            <div className="text-gray-700">
-                              {request.data.from || request.data.origin || request.data.departure_city || '—'}
-                              <span className="mx-2 text-gray-400">→</span>
-                              {request.data.to || request.data.destination || request.data.arrival_city || '—'}
-                            </div>
+                            {request.data.route || request.data.Route ? (
+                              <div className="text-gray-700">{request.data.route || request.data.Route}</div>
+                            ) : (
+                              <div className="text-gray-700">
+                                {request.data.from || request.data.From || request.data.origin || request.data.Origin || request.data.departure_city || request.data.pickup_location || '—'}
+                                <span className="mx-2 text-gray-400">→</span>
+                                {request.data.to || request.data.To || request.data.destination || request.data.Destination || request.data.arrival_city || request.data.dropoff_location || '—'}
+                              </div>
+                            )}
                             {(request.data.from_iata || request.data.to_iata) && (
                               <div className="text-xs text-gray-500">
                                 {request.data.from_iata && `${request.data.from_iata}`}
@@ -1257,19 +1293,21 @@ export default function RequestHistory({ onBack, onOpenChat }: RequestHistoryPro
                         </div>
                       )}
 
-                      {/* Date & Time */}
-                      {(request.data.date || request.data.departure_date || request.data.travel_date) && (
+                      {/* Date & Time - Detailed */}
+                      {(request.data.date || request.data.Date || request.data.departure_date || request.data.travel_date || request.data.dates || request.data.start_date) && (
                         <div className="flex items-start gap-3">
                           <Calendar size={16} className="text-green-500 mt-0.5 flex-shrink-0" />
                           <div>
                             <div className="font-medium text-gray-900">Date & Time</div>
                             <div className="text-gray-700">
-                              {request.data.date || request.data.departure_date || request.data.travel_date}
-                              {request.data.time && ` at ${request.data.time}`}
-                              {request.data.departure_time && ` at ${request.data.departure_time}`}
+                              {request.data.date || request.data.Date || request.data.departure_date || request.data.travel_date || request.data.dates || request.data.start_date}
+                              {(request.data.time || request.data.Time || request.data.departure_time || request.data.pickup_time) && ` at ${request.data.time || request.data.Time || request.data.departure_time || request.data.pickup_time}`}
                             </div>
-                            {request.data.return_date && (
-                              <div className="text-gray-600">Return: {request.data.return_date}</div>
+                            {(request.data.return_date || request.data.end_date) && (
+                              <div className="text-gray-600">Return: {request.data.return_date || request.data.end_date}</div>
+                            )}
+                            {request.data.duration && (
+                              <div className="text-xs text-gray-500">Duration: {request.data.duration}</div>
                             )}
                             {request.data.estimated_flight_time && (
                               <div className="text-xs text-gray-500">Est. Flight Time: {request.data.estimated_flight_time}</div>
@@ -1279,12 +1317,12 @@ export default function RequestHistory({ onBack, onOpenChat }: RequestHistoryPro
                       )}
 
                       {/* Passengers */}
-                      {(request.data.passengers || request.data.pax || request.data.guests) && (
+                      {(request.data.passengers || request.data.Passengers || request.data.pax || request.data.Pax || request.data.guests || request.data.Guests) && (
                         <div className="flex items-start gap-3">
                           <Users size={16} className="text-gray-500 mt-0.5 flex-shrink-0" />
                           <div>
                             <div className="font-medium text-gray-900">Passengers</div>
-                            <div className="text-gray-700">{request.data.passengers || request.data.pax || request.data.guests} passengers</div>
+                            <div className="text-gray-700">{request.data.passengers || request.data.Passengers || request.data.pax || request.data.Pax || request.data.guests || request.data.Guests} passengers</div>
                           </div>
                         </div>
                       )}
@@ -1376,6 +1414,48 @@ export default function RequestHistory({ onBack, onOpenChat }: RequestHistoryPro
                         </div>
                       )}
 
+                      {/* Adventure Package / Fixed Offer Details */}
+                      {(request.type === 'adventure_package' || request.type === 'fixed_offer') && (
+                        <div className="flex items-start gap-3">
+                          <Package size={16} className="text-amber-500 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900 mb-2">Package Details</div>
+                            <div className="space-y-1.5 text-gray-700">
+                              {(request.data.offer_title || request.data.adventure_title || request.data.title || request.data.package_name) && (
+                                <div className="flex items-start gap-2">
+                                  <span className="text-gray-500 text-xs min-w-[80px]">Package:</span>
+                                  <span className="font-medium">{request.data.offer_title || request.data.adventure_title || request.data.title || request.data.package_name}</span>
+                                </div>
+                              )}
+                              {(request.data.destination || request.data.location) && (
+                                <div className="flex items-start gap-2">
+                                  <span className="text-gray-500 text-xs min-w-[80px]">Location:</span>
+                                  <span>{request.data.destination || request.data.location}</span>
+                                </div>
+                              )}
+                              {(request.data.duration || request.data.nights) && (
+                                <div className="flex items-start gap-2">
+                                  <span className="text-gray-500 text-xs min-w-[80px]">Duration:</span>
+                                  <span>{request.data.duration || `${request.data.nights} nights`}</span>
+                                </div>
+                              )}
+                              {(request.data.includes || request.data.whats_included) && (
+                                <div className="flex items-start gap-2">
+                                  <span className="text-gray-500 text-xs min-w-[80px]">Includes:</span>
+                                  <span>{Array.isArray(request.data.includes) ? request.data.includes.join(', ') : (request.data.includes || request.data.whats_included)}</span>
+                                </div>
+                              )}
+                              {request.data.special_requests && request.data.special_requests !== 'None' && (
+                                <div className="flex items-start gap-2">
+                                  <span className="text-gray-500 text-xs min-w-[80px]">Special:</span>
+                                  <span>{request.data.special_requests}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Yacht Charter Details */}
                       {request.type === 'yacht_charter' && (
                         <div className="flex items-start gap-3">
@@ -1437,16 +1517,19 @@ export default function RequestHistory({ onBack, onOpenChat }: RequestHistoryPro
                       )}
 
                       {/* Price / Total */}
-                      {(request.data.price || request.data.total || request.data.estimated_price || request.data.total_price) && (
+                      {(request.data.price || request.data.Price || request.data.total || request.data.Total || request.data.estimated_price || request.data.total_price || request.data.grand_total || request.data.summary?.grand_total) && (
                         <div className="flex items-start gap-3">
                           <DollarSign size={16} className="text-emerald-500 mt-0.5 flex-shrink-0" />
                           <div>
-                            <div className="font-medium text-gray-900">Price</div>
-                            <div className="text-gray-700 font-semibold">
-                              €{(request.data.price || request.data.total || request.data.estimated_price || request.data.total_price || 0).toLocaleString()}
+                            <div className="font-medium text-gray-900">Total Price</div>
+                            <div className="text-gray-700 font-semibold text-lg">
+                              €{(request.data.price || request.data.Price || request.data.total || request.data.Total || request.data.estimated_price || request.data.total_price || request.data.grand_total || request.data.summary?.grand_total || 0).toLocaleString()}
                             </div>
                             {request.data.price_breakdown && (
                               <div className="text-xs text-gray-500">{request.data.price_breakdown}</div>
+                            )}
+                            {request.data.currency && request.data.currency !== 'EUR' && (
+                              <div className="text-xs text-gray-500">Currency: {request.data.currency}</div>
                             )}
                           </div>
                         </div>

@@ -5310,19 +5310,19 @@ const TokenizedAssetsGlassmorphic = () => {
                               setActiveCategory('helicopter');
                             }
                           } else if (item.action === 'chat' || item.action === 'ai-chat') {
-                            // Navigate to AI Chat with query
+                            // Navigate to AI Chat with query and trigger new chat
                             const queryText = item.query || item.label || '';
                             setAiChatQuery(queryText);
-                            setActiveCategory('ai-chat');
+                            setActiveCategory('chat'); // Must be 'chat' to render AIChat component
                           } else {
                             // Navigate to category
                             setActiveCategory(item.action);
                           }
                         }}
                         onOpenAIChat={(query) => {
-                          // Navigate to AI Chat with the query
+                          // Navigate to AI Chat with the query and trigger new chat
                           setAiChatQuery(query);
-                          setActiveCategory('ai-chat');
+                          setActiveCategory('chat'); // Must be 'chat' to render AIChat component
                         }}
                         placeholder="I need a..."
                       />
