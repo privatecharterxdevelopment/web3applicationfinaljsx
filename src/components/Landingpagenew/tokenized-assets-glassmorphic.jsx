@@ -3929,6 +3929,70 @@ const TokenizedAssetsGlassmorphic = () => {
                 </div>
               );
             })}
+
+            {/* MOBILE ONLY: RWS Services Section */}
+            {isMobileMenuOpen && user?.user_role !== 'partner' && (
+              <div className="mt-6 pt-4 border-t border-gray-200/50">
+                <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2 px-2">RWA Services</p>
+                {rwsCategoryMenu.map((item) => {
+                  const isActive = activeCategory === item.category;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveCategory(item.category);
+                        setShowJetDetail(false);
+                        setIsMobileMenuOpen(false);
+                        // Handle external links
+                        if (item.externalLink) {
+                          window.location.href = item.externalLink;
+                        }
+                      }}
+                      className={`w-full h-8 flex items-center gap-2 px-2 rounded-lg transition-all duration-300 text-xs ${
+                        isActive
+                          ? 'bg-black text-white'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <item.icon size={12} className="flex-shrink-0" />
+                      <span className="whitespace-nowrap">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* MOBILE ONLY: Web3.0 Services Section */}
+            {isMobileMenuOpen && user?.user_role !== 'partner' && (
+              <div className="mt-4 pt-4 border-t border-gray-200/50">
+                <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2 px-2">Web3.0 Services</p>
+                {web3CategoryMenu.map((item) => {
+                  const isActive = activeCategory === item.category;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        // Switch to web3 mode if not already
+                        if (webMode !== 'web3') {
+                          handleWebModeSwitch('web3');
+                        }
+                        setActiveCategory(item.category);
+                        setShowJetDetail(false);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full h-8 flex items-center gap-2 px-2 rounded-lg transition-all duration-300 text-xs ${
+                        isActive && webMode === 'web3'
+                          ? 'bg-black text-white'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <item.icon size={12} className="flex-shrink-0" />
+                      <span className="whitespace-nowrap">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </nav>
 
           {/* Sidebar Toggle Button - Above the border line */}
@@ -3992,23 +4056,8 @@ const TokenizedAssetsGlassmorphic = () => {
           <div className={`sticky top-4 z-40 px-2 sm:px-4 lg:px-8 flex justify-between items-center pt-4 sm:pt-6 pr-2 sm:pr-4 lg:pr-6 ${
             activeCategory === 'chat' ? 'hidden' : ''
           }`}>
-            {/* MOBILE ONLY: Category Menu + Sidebar Toggle in header row */}
+            {/* MOBILE ONLY: Sidebar Toggle in header row - Categories moved to sidebar */}
             <div className="md:hidden flex items-center gap-1.5 ml-2">
-              {/* Category Menu Toggle Button (Plus) */}
-              <div className="relative mobile-category-menu-container">
-                <button
-                  onClick={() => setShowMobileCategoryMenu(!showMobileCategoryMenu)}
-                  className="flex items-center justify-center w-8 h-8 bg-white/80 rounded-lg border border-gray-200/50 hover:bg-white transition-all duration-200"
-                  title="Toggle categories"
-                >
-                  <Plus
-                    size={16}
-                    strokeWidth={2.5}
-                    className={`transition-transform duration-300 text-gray-700 ${showMobileCategoryMenu ? 'rotate-45' : ''}`}
-                  />
-                </button>
-              </div>
-
               {/* Sidebar Toggle Button (Menu) */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -4017,60 +4066,6 @@ const TokenizedAssetsGlassmorphic = () => {
               >
                 <Menu size={16} strokeWidth={2.5} className="text-gray-700" />
               </button>
-            </div>
-
-            {/* MOBILE ONLY: Category Dropdown - now outside the flex container */}
-            <div className="md:hidden absolute top-full left-2 mt-2 z-50">
-              {showMobileCategoryMenu && (
-                <div className="w-64 bg-white rounded-xl shadow-2xl border border-gray-200 py-2">
-                  {/* RWS Categories */}
-                  {webMode === 'rws' && user?.user_role !== 'partner' && rwsCategoryMenu.map((item) => {
-                    const isActive = activeCategory === item.category;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => {
-                          setActiveCategory(item.category);
-                          setShowJetDetail(false);
-                          setShowMobileCategoryMenu(false);
-                        }}
-                        className={`w-full px-4 py-3 text-left text-sm font-medium transition-all duration-200 ${
-                          isActive
-                            ? 'bg-black text-white'
-                            : 'text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        {item.label}
-                      </button>
-                    );
-                  })}
-
-                  {/* Web3 Categories */}
-                  {webMode === 'web3' && user?.user_role !== 'partner' && web3CategoryMenu
-                    .filter(item => item.id !== 'assets')
-                    .map((item) => {
-                      const isActive = activeCategory === item.category;
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => {
-                            setActiveCategory(item.category);
-                            setShowJetDetail(false);
-                            setShowMobileCategoryMenu(false);
-                          }}
-                          className={`w-full px-4 py-3 text-left text-sm font-medium transition-all duration-200 ${
-                            isActive
-                              ? 'bg-black text-white'
-                              : 'text-gray-700 hover:bg-gray-50'
-                          }`}
-                        >
-                          {item.label}
-                        </button>
-                      );
-                    })}
-                </div>
-              )}
-
             </div>
 
             {/* LEFT: Category Menu Links (collapsible, NO ICONS) - HIDDEN ON MOBILE */}
