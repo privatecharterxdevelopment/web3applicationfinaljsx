@@ -426,12 +426,19 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Geocoding function
+  // Geocoding function - Enhanced for international street names
   const geocodeAddress = async (address) => {
     try {
-      const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&limit=5&types=address,poi,place&language=en`
-      );
+      // Use fuzzyMatch for better street name matching in all countries
+      // Include more types and use proximity if we have user location
+      let url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&fuzzyMatch=true&limit=8&types=address,poi,place,locality,neighborhood,postcode&language=en,de,fr,it,es,bg,nl,pt,pl,cs,ro,hu`;
+
+      // Add proximity bias if we have user location for better local results
+      if (userLocation) {
+        url += `&proximity=${userLocation[0]},${userLocation[1]}`;
+      }
+
+      const response = await fetch(url);
       const data = await response.json();
       return data.features;
     } catch (error) {
@@ -1431,30 +1438,28 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
 
               {/* Step 3: Car Selection with Images */}
               {bookingStep === 3 && (
-                <>
+                <div className="flex flex-col h-full min-h-0" style={{ maxHeight: isModalExpanded ? 'calc(100vh - 80px)' : '60vh' }}>
                   {/* Expand/Collapse Button - Centered at top of car list */}
-                  {serviceCategory === 'luxury-cars' && (
-                    <div className="flex justify-center py-3 border-b border-gray-100">
-                      <button
-                        onClick={() => setIsModalExpanded(!isModalExpanded)}
-                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all text-sm font-medium text-gray-700"
-                      >
-                        {isModalExpanded ? (
-                          <>
-                            <ChevronDown size={16} />
-                            Show Less
-                          </>
-                        ) : (
-                          <>
-                            <ChevronUp size={16} />
-                            Show More Cars
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex justify-center py-3 border-b border-gray-100 flex-shrink-0">
+                    <button
+                      onClick={() => setIsModalExpanded(!isModalExpanded)}
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all text-sm font-medium text-gray-700"
+                    >
+                      {isModalExpanded ? (
+                        <>
+                          <ChevronDown size={16} />
+                          Show Less
+                        </>
+                      ) : (
+                        <>
+                          <ChevronUp size={16} />
+                          Show More Cars
+                        </>
+                      )}
+                    </button>
+                  </div>
 
-                  <div className="flex-1 overflow-y-auto px-5 pt-4 pb-6" style={{ scrollbarWidth: 'thin', scrollbarColor: '#d1d5db transparent' }}>
+                  <div className="flex-1 overflow-y-auto px-5 pt-4 pb-6" style={{ scrollbarWidth: 'thin', scrollbarColor: '#d1d5db transparent', minHeight: 0 }}>
                     {/* Search & Filter - Only for Luxury Cars */}
                     {serviceCategory === 'luxury-cars' && (
                     <div className="mb-4 space-y-3">
@@ -1596,7 +1601,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                     })}
                   </div>
                 </div>
-              </>
+              </div>
               )}
             </div>
           )}

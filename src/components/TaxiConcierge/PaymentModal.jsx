@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Check, Briefcase, CreditCard, Coins, Lock } from 'lucide-react';
+import { X, Check, Briefcase, CreditCard, Coins, Lock, Car, MapPin, Clock, Users, Sparkles, ArrowRight } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
@@ -31,6 +31,7 @@ const PaymentModal = ({
   const estimatedPrice = parseFloat(priceRange?.max || '0.00');
   const currency = bookingData.currency || 'CHF';
   const VAT_PERCENT = 8.1;
+  const pvcxEarned = Math.round(distance * 1.5);
 
   const calculateFees = () => {
     if (!selectedPaymentMethod) return { fee: 0, total: estimatedPrice };
@@ -88,216 +89,213 @@ const PaymentModal = ({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 font-['DM_Sans']">
-      {/* Modal Container */}
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      {/* Modal Container - Matches MyBookingsView style */}
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">Select Payment Method</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Choose how you'll pay for your ride</p>
+        {/* Header - Clean minimal style */}
+        <div className="px-5 py-4 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                <Car size={18} className="text-gray-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-medium text-gray-900">{selectedCar?.name}</h2>
+                <p className="text-xs text-gray-500">Complete your booking</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X size={18} className="text-gray-500" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <X size={20} className="text-gray-600" />
-          </button>
         </div>
 
         {/* Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
 
-          {/* Trip Summary Card */}
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 mb-6 border border-gray-200">
-            <div className="flex items-start gap-3">
-              <img
-                src={selectedCar?.image}
-                alt={selectedCar?.name}
-                className="w-20 h-14 object-contain rounded-lg bg-white p-1"
-              />
+          {/* Route Card - Styled like MyBookingsView */}
+          <div className="bg-gray-50 rounded-xl p-4">
+            <div className="flex items-center gap-3">
               <div className="flex-1">
-                <h3 className="text-sm font-semibold text-gray-900">{selectedCar?.name}</h3>
-                <p className="text-xs text-gray-600 mt-1">
-                  {passengers} passenger{passengers > 1 ? 's' : ''} • {distance} km • {eta} min
-                </p>
-                <div className="mt-2 space-y-0.5">
-                  <p className="text-xs text-gray-700">
-                    <span className="font-medium">From:</span> {locationA}
-                  </p>
-                  <p className="text-xs text-gray-700">
-                    <span className="font-medium">To:</span> {locationB}
-                  </p>
-                  <p className="text-xs text-gray-700">
-                    <span className="font-medium">When:</span> {bookNow ? 'Now' : `${pickupDate} at ${pickupTime}`}
-                  </p>
-                </div>
+                <p className="text-xs text-gray-400">From</p>
+                <p className="text-sm font-medium text-gray-900 truncate">{locationA}</p>
+              </div>
+              <ArrowRight size={14} className="text-gray-400 flex-shrink-0" />
+              <div className="flex-1 text-right">
+                <p className="text-xs text-gray-400">To</p>
+                <p className="text-sm font-medium text-gray-900 truncate">{locationB}</p>
               </div>
             </div>
           </div>
 
-          {/* Baggage Selection */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
-              <Briefcase size={16} />
-              Number of Baggage
-            </label>
-            <div className="flex items-center gap-4">
+          {/* Details Grid - Like MyBookingsView */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-gray-50 rounded-lg p-3 text-center">
+              <Clock size={14} className="text-gray-400 mx-auto mb-1" />
+              <p className="text-[10px] text-gray-400">Duration</p>
+              <p className="text-xs font-medium text-gray-900">{eta} min</p>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-3 text-center">
+              <MapPin size={14} className="text-gray-400 mx-auto mb-1" />
+              <p className="text-[10px] text-gray-400">Distance</p>
+              <p className="text-xs font-medium text-gray-900">{distance} km</p>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-3 text-center">
+              <Users size={14} className="text-gray-400 mx-auto mb-1" />
+              <p className="text-[10px] text-gray-400">Passengers</p>
+              <p className="text-xs font-medium text-gray-900">{passengers}</p>
+            </div>
+          </div>
+
+          {/* Pickup Time */}
+          <div className="flex items-center justify-between py-2">
+            <span className="text-sm text-gray-500">Pickup</span>
+            <span className="text-sm font-medium text-gray-900">
+              {bookNow ? 'Now' : `${pickupDate} at ${pickupTime}`}
+            </span>
+          </div>
+
+          {/* Baggage Selection - Compact */}
+          <div className="flex items-center justify-between py-2 border-t border-gray-100">
+            <div className="flex items-center gap-2">
+              <Briefcase size={14} className="text-gray-400" />
+              <span className="text-sm text-gray-700">Baggage</span>
+            </div>
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => setBaggage(Math.max(0, baggage - 1))}
-                className="w-10 h-10 rounded-lg border-2 border-gray-300 hover:border-gray-900 transition-colors flex items-center justify-center font-semibold text-gray-900"
+                className="w-8 h-8 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors flex items-center justify-center text-gray-600"
               >
                 -
               </button>
-              <span className="text-xl font-semibold text-gray-900 w-12 text-center">{baggage}</span>
+              <span className="text-sm font-medium text-gray-900 w-6 text-center">{baggage}</span>
               <button
                 onClick={() => setBaggage(Math.min(10, baggage + 1))}
-                className="w-10 h-10 rounded-lg border-2 border-gray-300 hover:border-gray-900 transition-colors flex items-center justify-center font-semibold text-gray-900"
+                className="w-8 h-8 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors flex items-center justify-center text-gray-600"
               >
                 +
               </button>
             </div>
           </div>
 
-          {/* Payment Method Tabs */}
-          <div className="mb-6">
-            <h3 className="text-sm font-medium text-gray-900 mb-3">Payment Method</h3>
+          {/* Payment Method - Tab Style */}
+          <div className="pt-2">
+            <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-3">Payment Method</p>
 
-            {/* Tab Buttons */}
-            <div className="flex gap-2 mb-4 bg-gray-100 p-1 rounded-lg">
+            {/* Tab Buttons - Pill style */}
+            <div className="flex gap-2 mb-4">
               <button
                 onClick={() => {
                   setActiveTab('crypto');
                   setSelectedPaymentMethod(null);
                 }}
-                className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                className={`flex-1 py-2.5 px-4 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-2 ${
                   activeTab === 'crypto'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                <Coins size={16} />
-                Cryptocurrency
+                <Coins size={14} />
+                Crypto
               </button>
               <button
                 onClick={() => {
                   setActiveTab('card');
                   setSelectedPaymentMethod('card');
                 }}
-                className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                className={`flex-1 py-2.5 px-4 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-2 ${
                   activeTab === 'card'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                <CreditCard size={16} />
-                Credit Card
+                <CreditCard size={14} />
+                Card / Bank
               </button>
             </div>
 
-            {/* Crypto Tab Content */}
+            {/* Crypto Options - Grid */}
             {activeTab === 'crypto' && (
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs text-gray-600">Select your preferred cryptocurrency</p>
-                  <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full font-medium">
-                    +{VAT_PERCENT}% VAT
-                  </span>
-                </div>
-                <div className="grid grid-cols-4 gap-3">
-                  {cryptoOptions.map((crypto) => (
-                    <button
-                      key={crypto.id}
-                      onClick={() => setSelectedPaymentMethod(crypto.id)}
-                      className={`relative p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                        selectedPaymentMethod === crypto.id
-                          ? 'border-gray-900 bg-gray-50 shadow-md'
-                          : 'border-gray-200 bg-white hover:border-gray-300'
-                      }`}
-                    >
-                      <img
-                        src={crypto.image}
-                        alt={crypto.name}
-                        className="w-10 h-10 object-contain"
-                      />
-                      <span className="text-xs font-semibold text-gray-900">{crypto.symbol}</span>
-                      {selectedPaymentMethod === crypto.id && (
-                        <div className="absolute -top-2 -right-2 w-5 h-5 bg-gray-900 rounded-full flex items-center justify-center">
-                          <Check size={12} className="text-white" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
+              <div className="grid grid-cols-4 gap-2">
+                {cryptoOptions.map((crypto) => (
+                  <button
+                    key={crypto.id}
+                    onClick={() => setSelectedPaymentMethod(crypto.id)}
+                    className={`relative p-2.5 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5 ${
+                      selectedPaymentMethod === crypto.id
+                        ? 'border-gray-900 bg-gray-50'
+                        : 'border-gray-100 bg-white hover:border-gray-200'
+                    }`}
+                  >
+                    <img
+                      src={crypto.image}
+                      alt={crypto.name}
+                      className="w-8 h-8 object-contain"
+                    />
+                    <span className="text-[10px] font-medium text-gray-700">{crypto.symbol}</span>
+                    {selectedPaymentMethod === crypto.id && (
+                      <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-gray-900 rounded-full flex items-center justify-center">
+                        <Check size={10} className="text-white" />
+                      </div>
+                    )}
+                  </button>
+                ))}
               </div>
             )}
 
-            {/* Credit Card Tab Content */}
+            {/* Card/Bank Option */}
             {activeTab === 'card' && (
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <div className="flex items-center gap-2 mb-3">
-                  <CreditCard size={14} className="text-gray-600" />
-                  <p className="text-sm text-gray-700 font-medium">Bank Transfer / Card Payment</p>
-                </div>
+              <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
                 <p className="text-xs text-gray-600">
-                  We'll send you payment details via email after reviewing your request. You can pay by bank transfer or card.
+                  We'll send you payment details via email. You can pay by bank transfer or card.
                 </p>
-                <div className="mt-3 flex items-center justify-center gap-2 opacity-50">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" alt="Visa" className="h-6" />
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-6" />
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" alt="Amex" className="h-6" />
+                <div className="mt-2 flex items-center gap-2 opacity-60">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" alt="Visa" className="h-4" />
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-4" />
                 </div>
               </div>
             )}
           </div>
 
-          {/* Price Breakdown */}
-          <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden">
-            <div className="p-4 space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Estimated Ride Cost</span>
-                <span className="font-semibold text-gray-900">
-                  {estimatedPrice.toFixed(2)} {currency}
-                </span>
+          {/* Payment Summary - Dark bg like MyBookingsView */}
+          <div className="bg-gray-900 text-white rounded-xl p-4 mt-4">
+            <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-3">Payment Summary</p>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Estimated Ride Cost</span>
+                <span>{estimatedPrice.toFixed(2)} {currency}</span>
               </div>
-
               {selectedPaymentMethod && (
-                <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-600">VAT (Swiss Tax)</span>
-                    <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full font-medium">
-                      {feePercent}%
-                    </span>
-                  </div>
-                  <span className="font-medium text-gray-900">
-                    {fee.toFixed(2)} {currency}
-                  </span>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">VAT ({feePercent}%)</span>
+                  <span>{fee.toFixed(2)} {currency}</span>
                 </div>
               )}
-            </div>
-
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 text-white">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Estimated Total</span>
-                <div className="text-right">
-                  <div className="text-2xl font-bold">
-                    {(selectedPaymentMethod ? total : estimatedPrice).toFixed(2)} {currency}
-                  </div>
-                  <p className="text-xs opacity-75 mt-0.5">
-                    Final price in manual offer
-                  </p>
-                </div>
+              <div className="flex justify-between pt-2 border-t border-gray-700 font-medium">
+                <span>Estimated Total</span>
+                <span className="text-lg">{(selectedPaymentMethod ? total : estimatedPrice).toFixed(2)} {currency}</span>
+              </div>
+              {/* PVCX Rewards - Like MyBookingsView */}
+              <div className="flex justify-between pt-2 border-t border-gray-700 text-emerald-400">
+                <span className="flex items-center gap-1">
+                  <Sparkles size={12} />
+                  PVCX Reward
+                </span>
+                <span>+{pvcxEarned}</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Footer - Pay Button */}
-        <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
+        {/* Footer - Submit Button */}
+        <div className="px-5 py-4 border-t border-gray-100 bg-white">
           <button
             onClick={handlePayment}
             disabled={!selectedPaymentMethod || isProcessing}
-            className="w-full py-3 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-3 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isProcessing ? (
               <>
@@ -306,13 +304,13 @@ const PaymentModal = ({
               </>
             ) : (
               <>
-                <Lock size={16} />
-                Submit Request
+                <Lock size={14} />
+                Submit Booking Request
               </>
             )}
           </button>
-          <p className="text-xs text-gray-500 text-center mt-2">
-            We'll send you a manual price offer via {activeTab === 'crypto' ? 'cryptocurrency' : 'bank transfer'}. No payment will be processed now.
+          <p className="text-[10px] text-gray-400 text-center mt-2">
+            Final price will be confirmed in your offer
           </p>
         </div>
       </div>
