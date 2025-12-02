@@ -3778,6 +3778,10 @@ const TokenizedAssetsGlassmorphic = () => {
                   setActiveCategory('chat');
                   // Dispatch event to reset the AI chat conversation
                   window.dispatchEvent(new CustomEvent('ai-chat-new-conversation'));
+                  // Close mobile menu after selection
+                  if (isMobileMenuOpen) {
+                    setIsMobileMenuOpen(false);
+                  }
                 }}
                 className={`w-full h-8 rounded-md flex items-center border transition-all duration-300 mb-2 backdrop-blur-xl ${
                   isMobileMenuOpen || sidebarExpanded ? 'justify-start gap-2 px-3' : 'justify-center'
@@ -3800,6 +3804,10 @@ const TokenizedAssetsGlassmorphic = () => {
                     return;
                   }
                   setActiveCategory('chat-history');
+                  // Close mobile menu after selection
+                  if (isMobileMenuOpen) {
+                    setIsMobileMenuOpen(false);
+                  }
                 }}
                 className={`w-full h-7 flex items-center rounded-md transition-all duration-300 backdrop-blur-xl ${
                   isMobileMenuOpen || sidebarExpanded ? 'justify-start gap-2 px-2' : 'justify-center'
@@ -3850,6 +3858,10 @@ const TokenizedAssetsGlassmorphic = () => {
                         if (item.dashboardTab) {
                           setDashboardView(item.dashboardTab);
                         }
+                        // Close mobile menu after selection
+                        if (isMobileMenuOpen) {
+                          setIsMobileMenuOpen(false);
+                        }
                       }
                     }}
                     className={`h-8 flex items-center rounded-lg transition-all duration-300 ${
@@ -3890,6 +3902,10 @@ const TokenizedAssetsGlassmorphic = () => {
                             key={subItem.id}
                             onClick={() => {
                               setActiveCategory(subItem.category);
+                              // Close mobile menu after selection
+                              if (isMobileMenuOpen) {
+                                setIsMobileMenuOpen(false);
+                              }
                             }}
                             className={`w-full h-7 flex items-center gap-2 px-2 rounded-lg transition-all duration-300 text-xs ${
                               webMode === 'web3'
@@ -3943,6 +3959,10 @@ const TokenizedAssetsGlassmorphic = () => {
                     handleWebModeSwitch('web3');
                   } else {
                     setActiveCategory('pvcx-token');
+                  }
+                  // Close mobile menu after selection
+                  if (isMobileMenuOpen) {
+                    setIsMobileMenuOpen(false);
                   }
                 }}
                 className={`h-10 flex items-center hover:bg-white/5 transition-all duration-300 ${
