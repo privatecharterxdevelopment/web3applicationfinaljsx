@@ -494,22 +494,22 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
           {actualOffers.length > 0 && (
             <div className="border-b border-gray-100/50">
               <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                <Sparkles size={10} />
+                <Sparkles size={10} className="hidden sm:block" />
                 Available Offers
               </div>
               {actualOffers.map((offerGroup, groupIndex) => (
                 <div key={groupIndex} className="mb-2">
                   <div className="px-4 py-1 text-xs font-medium text-gray-600 flex items-center gap-2">
-                    <span>{offerGroup.icon}</span>
+                    <span className="hidden sm:inline">{offerGroup.icon}</span>
                     <span>{offerGroup.category}</span>
                   </div>
                   {offerGroup.items.map((offer, offerIndex) => (
                     <button
                       key={offerIndex}
                       onClick={() => handleSelect(offer)}
-                      className="w-full px-6 py-2 hover:bg-gray-50 transition-colors text-left flex items-center gap-2"
+                      className="w-full px-4 sm:px-6 py-2 hover:bg-gray-50 transition-colors text-left flex items-center gap-2"
                     >
-                      <Plane size={14} className="text-gray-400" />
+                      <Plane size={14} className="text-gray-400 hidden sm:block" />
                       <span className="text-sm text-gray-800">{offer.label}</span>
                     </button>
                   ))}
@@ -562,14 +562,15 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
                       >
                         <button
                           onClick={() => handleSelect(item, true)}
-                          className="flex-1 text-left"
+                          className="flex-1 text-left flex items-center gap-2"
                         >
+                          {item.icon && <span className="hidden sm:inline text-gray-400">{item.icon}</span>}
                           <span className="text-sm text-gray-800">{item.label}</span>
                         </button>
                         {item.action && item.action !== 'chat' && item.action !== 'chat-support' && (
                           <button
                             onClick={(e) => handleSeePage(item, e)}
-                            className="ml-2 px-3 py-0.5 bg-gray-100 hover:bg-gray-200 rounded-full text-xs text-gray-600 transition-colors"
+                            className="ml-2 px-3 py-0.5 bg-gray-100 hover:bg-gray-200 rounded-full text-xs text-gray-600 transition-colors hidden sm:block"
                           >
                             See Page
                           </button>
@@ -584,15 +585,15 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
 
           {/* No Results - Show Ask Sphera AI button prominently */}
           {query.length > 0 && suggestions.length === 0 && actualOffers.length === 0 && !loadingOffers && (
-            <div className="px-4 py-6 text-center">
+            <div className="px-4 py-4 sm:py-6 text-center">
               <p className="text-sm text-gray-600 mb-2">No exact matches for "{query}"</p>
-              <p className="text-xs text-gray-500 mb-4">Try asking our AI assistant for personalized recommendations</p>
+              <p className="text-xs text-gray-500 mb-4 hidden sm:block">Try asking our AI assistant for personalized recommendations</p>
 
               {/* Ask Sphera AI - Primary action */}
               <button
                 onClick={() => {
-                  if (onSelect) {
-                    onSelect({
+                  if (onSearch) {
+                    onSearch({
                       label: query,
                       action: 'ai-chat',
                       query: query,
@@ -602,14 +603,15 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
                   setIsOpen(false);
                   setQuery('');
                 }}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium mb-3"
+                className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium mb-3"
               >
-                <Sparkles size={16} />
-                Ask Sphera AI about "{query.length > 20 ? query.substring(0, 20) + '...' : query}"
+                <Sparkles size={16} className="hidden sm:block" />
+                <span className="sm:hidden">Ask AI</span>
+                <span className="hidden sm:inline">Ask Sphera AI about "{query.length > 20 ? query.substring(0, 20) + '...' : query}"</span>
               </button>
 
               {/* Contact as secondary option */}
-              <div className="mt-3 pt-3 border-t border-gray-100">
+              <div className="mt-3 pt-3 border-t border-gray-100 hidden sm:block">
                 <p className="text-xs text-gray-400 mb-2">Or contact our travel specialists directly</p>
                 <a
                   href="mailto:support@privatecharterx.com"
@@ -640,12 +642,12 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
                           : 'hover:bg-gray-50'
                       }`}
                     >
-                      <span>{item.icon}</span>
+                      <span className="hidden sm:inline">{item.icon}</span>
                       <span className={`text-sm ${item.highlight ? 'font-medium text-amber-700' : 'text-gray-800'}`}>
                         {item.label}
                       </span>
                       {item.highlight && (
-                        <span className="ml-auto text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full">
+                        <span className="ml-auto text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full hidden sm:inline">
                           Beat any quote
                         </span>
                       )}
