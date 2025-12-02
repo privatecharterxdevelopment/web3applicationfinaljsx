@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PrivateCharterX</string>
+    <string name="title_activity_main">PrivateCharterX</string>
+    <string name="package_name">com.privatecharterx.app</string>
+    <string name="custom_url_scheme">com.privatecharterx.app</string>
+</resources>
