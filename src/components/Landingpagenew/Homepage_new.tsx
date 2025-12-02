@@ -218,16 +218,16 @@ function Homepage() {
       <LandingHeader onGetStarted={handleGetStarted} />
 
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto rounded-2xl overflow-visible relative min-h-[calc(100vh-100px)] sm:min-h-[85vh]">
-        {/* Background Globe - Full Color - Centered */}
-        <div className="absolute inset-0 z-0 flex items-center justify-center">
-          <div className="w-full h-full">
+      <div className="max-w-7xl mx-auto rounded-2xl overflow-hidden relative min-h-[50vh] sm:min-h-[85vh]">
+        {/* Background Globe - Full Color - Centered - Smaller on mobile */}
+        <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden">
+          <div className="w-[220px] h-[220px] sm:w-full sm:h-full scale-100 sm:scale-100">
             <Globe3D />
           </div>
         </div>
 
         {/* Content overlay - Centered Floating Search Modal */}
-        <section className="absolute inset-0 z-20 flex items-center justify-center px-8">
+        <section className="absolute inset-0 z-20 flex items-center justify-center px-4 sm:px-8">
           <FloatingSearchModal />
         </section>
       </div>

@@ -395,16 +395,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('🔓 Signing out user');
 
-      const { error } = await supabase.auth.signOut();
+      // Clear user state immediately for responsive UI
+      setUser(null);
+
+      // Sign out with 'local' scope to ensure clean logout on mobile
+      // This clears the session from localStorage without affecting server-side sessions
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
 
       if (error) {
         console.error('❌ Sign out error:', error);
-        throw error;
+        // Even if there's an error, we've already cleared local state
+        // Try to clear any remaining auth tokens from localStorage
+        try {
+          const keys = Object.keys(localStorage);
+          keys.forEach(key => {
+            if (key.startsWith('sb-') && key.includes('-auth-token')) {
+              localStorage.removeItem(key);
+            }
+          });
+        } catch (e) {
+          console.error('Error clearing localStorage:', e);
+        }
       }
 
       console.log('✅ Sign out successful');
     } catch (error) {
       console.error('❌ Sign out failed:', error);
+      // Ensure user is cleared even on error
+      setUser(null);
       throw error;
     }
   };

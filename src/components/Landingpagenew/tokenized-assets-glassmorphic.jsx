@@ -3684,14 +3684,6 @@ const TokenizedAssetsGlassmorphic = () => {
             : 'bg-white/80 backdrop-blur-3xl lg:border-gray-200/80'
         }`} style={{ backdropFilter: webMode === 'web3' ? 'blur(60px) saturate(120%)' : 'blur(40px) saturate(180%)' }}>
 
-          {/* Mobile Sidebar Toggle Arrow - Bottom Left */}
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden fixed bottom-4 left-4 z-50 p-2 rounded-full bg-white/90 backdrop-blur-xl border border-gray-200/30 hover:bg-white transition-all"
-          >
-            <ChevronRight size={18} className={`text-gray-600 transition-transform duration-300 ${isMobileMenuOpen ? 'rotate-180' : ''}`} />
-          </button>
-
           {/* Mobile Backdrop - Transparent, no overlay */}
           {isMobileMenuOpen && (
             <div
@@ -3980,23 +3972,37 @@ const TokenizedAssetsGlassmorphic = () => {
           <div className={`sticky top-4 z-40 px-2 sm:px-4 lg:px-8 flex justify-between items-center pt-4 sm:pt-6 pr-2 sm:pr-4 lg:pr-6 ${
             activeCategory === 'chat' ? 'hidden' : ''
           }`}>
-            {/* MOBILE ONLY: Category Menu Toggle Button - compact + icon in header */}
-            <div className="md:hidden relative mobile-category-menu-container ml-2">
-              <button
-                onClick={() => setShowMobileCategoryMenu(!showMobileCategoryMenu)}
-                className="flex items-center justify-center w-7 h-7 bg-white/80 rounded-lg border border-gray-200/50 hover:bg-white transition-all duration-200"
-                title="Toggle menu"
-              >
-                <Plus
-                  size={14}
-                  strokeWidth={2.5}
-                  className={`transition-transform duration-300 text-gray-700 ${showMobileCategoryMenu ? 'rotate-45' : ''}`}
-                />
-              </button>
+            {/* MOBILE ONLY: Category Menu + Sidebar Toggle in header row */}
+            <div className="md:hidden flex items-center gap-1.5 ml-2">
+              {/* Category Menu Toggle Button (Plus) */}
+              <div className="relative mobile-category-menu-container">
+                <button
+                  onClick={() => setShowMobileCategoryMenu(!showMobileCategoryMenu)}
+                  className="flex items-center justify-center w-8 h-8 bg-white/80 rounded-lg border border-gray-200/50 hover:bg-white transition-all duration-200"
+                  title="Toggle categories"
+                >
+                  <Plus
+                    size={16}
+                    strokeWidth={2.5}
+                    className={`transition-transform duration-300 text-gray-700 ${showMobileCategoryMenu ? 'rotate-45' : ''}`}
+                  />
+                </button>
+              </div>
 
-              {/* Mobile Category Dropdown */}
+              {/* Sidebar Toggle Button (Menu) */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="flex items-center justify-center w-8 h-8 bg-white/80 rounded-lg border border-gray-200/50 hover:bg-white transition-all duration-200"
+                title="Open menu"
+              >
+                <Menu size={16} strokeWidth={2.5} className="text-gray-700" />
+              </button>
+            </div>
+
+            {/* MOBILE ONLY: Category Dropdown - now outside the flex container */}
+            <div className="md:hidden absolute top-full left-2 mt-2 z-50">
               {showMobileCategoryMenu && (
-                <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-50">
+                <div className="w-64 bg-white rounded-xl shadow-2xl border border-gray-200 py-2">
                   {/* RWS Categories */}
                   {webMode === 'rws' && user?.user_role !== 'partner' && rwsCategoryMenu.map((item) => {
                     const isActive = activeCategory === item.category;
@@ -4044,6 +4050,7 @@ const TokenizedAssetsGlassmorphic = () => {
                     })}
                 </div>
               )}
+
             </div>
 
             {/* LEFT: Category Menu Links (collapsible, NO ICONS) - HIDDEN ON MOBILE */}
@@ -5524,7 +5531,7 @@ const TokenizedAssetsGlassmorphic = () => {
                           )}
                         </button>
 
-                        {/* Charter Aviation Card (Helicopter/Jet) */}
+                        {/* Charter Aviation Card (Helicopter/Jet) - Mobile: only title */}
                         <button
                           onClick={() => setActiveCategory('private-jet')}
                           className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50 relative overflow-hidden"
@@ -5532,10 +5539,15 @@ const TokenizedAssetsGlassmorphic = () => {
                         >
                           <div className="flex items-center justify-between gap-3">
                             <div className="flex-1">
-                              <div className="mb-2">
+                              <div className="mb-2 md:mb-2">
                                 <span className="text-[10px] font-bold font-['DM_Sans'] text-gray-500 uppercase tracking-wider">Aviation</span>
                               </div>
-                              <div className="relative h-[32px] overflow-hidden">
+                              {/* Mobile: Simple title only */}
+                              <div className="md:hidden">
+                                <h4 className="text-xs font-medium font-['DM_Sans'] text-gray-800">Private Charter</h4>
+                              </div>
+                              {/* Desktop: Animated helicopter/jet titles */}
+                              <div className="hidden md:block relative h-[32px] overflow-hidden">
                                 <h4
                                   className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800 absolute inset-0 transition-all duration-700 ease-in-out"
                                   style={{
@@ -5555,11 +5567,12 @@ const TokenizedAssetsGlassmorphic = () => {
                                   Charter a Jet
                                 </h4>
                               </div>
-                              <p className="text-[10px] font-['DM_Sans'] text-gray-600">
+                              <p className="hidden md:block text-[10px] font-['DM_Sans'] text-gray-600">
                                 Book your private flight
                               </p>
                             </div>
-                            <div className="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden relative">
+                            {/* Hide image on mobile */}
+                            <div className="hidden md:block flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden relative">
                               {/* Helicopter Image */}
                               <img
                                 src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/gb/%20%20(3).png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJnYi8gICgzKS5wbmciLCJpYXQiOjE3NjA5NjIwMDcsImV4cCI6MTc5MjQ5ODAwN30.7yFk178KYOXi874bcWv4v8JBczbebcQFgpfDV0MH_MI"

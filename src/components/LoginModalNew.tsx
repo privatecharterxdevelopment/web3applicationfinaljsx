@@ -151,6 +151,15 @@ function LoginForm({
           {/* Form Section */}
           <div className="w-full lg:w-2/5 bg-white p-6 lg:p-8 flex flex-col relative overflow-y-auto">
 
+            {/* Close Button - Mobile */}
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 lg:hidden w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors z-10"
+              aria-label="Close"
+            >
+              <X size={20} className="text-gray-600" />
+            </button>
+
             {/* Logo */}
             <div className="mb-8">
               <img
