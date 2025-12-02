@@ -219,19 +219,19 @@ function Homepage() {
 
       {/* Hero Section */}
       {/* Mobile Layout - Stacked (Globe above, Search below) - Full screen height */}
-      <div className="md:hidden max-w-7xl mx-auto rounded-2xl overflow-hidden min-h-[calc(100vh-100px)] flex flex-col justify-center">
-        {/* Globe Section - Mobile - Centered */}
-        <div className="relative h-[280px] flex items-center justify-center overflow-hidden">
-          <div className="w-[300px] h-[300px]">
+      <div className="md:hidden max-w-7xl mx-auto rounded-2xl overflow-hidden min-h-[calc(100vh-100px)] flex flex-col justify-start pt-4">
+        {/* Globe Section - Mobile - Centered, pushed down */}
+        <div className="relative h-[220px] flex items-center justify-center overflow-hidden mt-2">
+          <div className="w-[260px] h-[260px]">
             <Globe3D />
           </div>
         </div>
 
         {/* Spacing between globe and floating element */}
-        <div className="h-10"></div>
+        <div className="h-4"></div>
 
         {/* Floating Search Modal - Below Globe on Mobile */}
-        <div className="px-4 pb-6">
+        <div className="px-2 pb-4">
           <FloatingSearchModal />
         </div>
       </div>

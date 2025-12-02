@@ -200,27 +200,27 @@ export default function FloatingSearchModal() {
         .animate-pulse { animation: pulse 2s ease-in-out infinite; }
       `}</style>
 
-      <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 sm:p-6 sm:shadow-[0_20px_60px_rgba(0,0,0,0.1),0_8px_16px_rgba(0,0,0,0.06)] border border-white/15 transition-all duration-150 hover:bg-white/12 sm:hover:shadow-[0_30px_80px_rgba(0,0,0,0.12),0_12px_24px_rgba(0,0,0,0.08)]">
+      <div className="bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-2.5 sm:p-6 sm:shadow-[0_20px_60px_rgba(0,0,0,0.1),0_8px_16px_rgba(0,0,0,0.06)] border border-white/15 transition-all duration-150 hover:bg-white/12 sm:hover:shadow-[0_30px_80px_rgba(0,0,0,0.12),0_12px_24px_rgba(0,0,0,0.08)]">
 
         {/* Status Bubble */}
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100/60 backdrop-blur-sm rounded-full border border-gray-300/30 mb-3">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          <span className="text-[11px] sm:text-[10px] text-gray-600 font-medium tracking-wide uppercase">web3 and ai powered multi charter</span>
+        <div className="inline-flex items-center gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 bg-gray-100/60 backdrop-blur-sm rounded-full border border-gray-300/30 mb-2 sm:mb-3">
+          <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
+          <span className="text-[9px] sm:text-[10px] text-gray-600 font-medium tracking-wide uppercase">web3 and ai powered multi charter</span>
         </div>
 
         {/* Animated Title */}
         <h1
-          className="text-[26px] sm:text-[32px] font-light text-gray-900 mb-2 leading-tight tracking-tight transition-all duration-300 pb-2 border-b border-gray-300/20"
+          className="text-[20px] sm:text-[32px] font-light text-gray-900 mb-1.5 sm:mb-2 leading-tight tracking-tight transition-all duration-300 pb-1.5 sm:pb-2 border-b border-gray-300/20"
           style={{ opacity: titleOpacity, transform: `translateY(${titleOpacity === 0 ? '-10px' : '0'})` }}
         >
           {titles[currentTitleIndex]}
         </h1>
 
         {/* Sphera AI Search Bar - Minimal, Smooth Design */}
-        <div className="mt-4 sm:mt-3">
-          <div className="relative flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3.5 sm:py-3 bg-gray-50 rounded-xl border border-gray-200 transition-all duration-100 focus-within:bg-white focus-within:border-gray-300 focus-within:shadow-sm">
+        <div className="mt-2 sm:mt-3">
+          <div className="relative flex items-center gap-2 sm:gap-3 px-2.5 sm:px-4 py-2 sm:py-3 bg-gray-50 rounded-lg sm:rounded-xl border border-gray-200 transition-all duration-100 focus-within:bg-white focus-within:border-gray-300 focus-within:shadow-sm">
             {/* Command Icon */}
-            <span className="text-gray-400 text-sm font-light flex-shrink-0">⌘</span>
+            <span className="text-gray-400 text-xs sm:text-sm font-light flex-shrink-0">⌘</span>
 
             {/* Input with animated placeholder overlay */}
             <div className="flex-1 relative">
@@ -228,7 +228,7 @@ export default function FloatingSearchModal() {
                 type="text"
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
-                className="w-full bg-transparent border-none outline-none text-[16px] sm:text-[15px] text-gray-800 font-normal"
+                className="w-full bg-transparent border-none outline-none text-[14px] sm:text-[15px] text-gray-800 font-normal"
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
                     handleSphereAISearch(searchValue);
@@ -238,7 +238,7 @@ export default function FloatingSearchModal() {
               {/* Typing animation placeholder - only show when input is empty */}
               {!searchValue && (
                 <div className="absolute inset-0 flex items-center pointer-events-none">
-                  <span className="text-[16px] sm:text-[15px] text-gray-400 font-normal">
+                  <span className="text-[14px] sm:text-[15px] text-gray-400 font-normal">
                     {displayedPlaceholder}
                     {isTyping && <span className="animate-pulse ml-0.5">|</span>}
                   </span>
@@ -249,9 +249,9 @@ export default function FloatingSearchModal() {
             {/* Send Button - Minimal rounded square */}
             <button
               onClick={() => handleSphereAISearch(searchValue)}
-              className="w-9 h-9 sm:w-8 sm:h-8 rounded-lg bg-gray-900 text-white flex items-center justify-center transition-all duration-100 hover:bg-black active:scale-95"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-md sm:rounded-lg bg-gray-900 text-white flex items-center justify-center transition-all duration-100 hover:bg-black active:scale-95"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                 <path d="M5 12h14"/>
                 <path d="m12 5 7 7-7 7"/>
               </svg>
@@ -259,48 +259,48 @@ export default function FloatingSearchModal() {
           </div>
         </div>
 
-        {/* Services Row - RWA, web3.0, charter a jet in same row */}
-        <div className="flex gap-2.5 sm:gap-3 mt-4 sm:mt-3 flex-wrap items-center">
+        {/* Services Row - RWA, web3.0, charter a jet in same row - no wrap on mobile */}
+        <div className="flex gap-1.5 sm:gap-3 mt-2.5 sm:mt-3 items-center overflow-x-auto">
           {/* RWA Button */}
           <div
             onClick={() => toggleSection('rwa')}
-            className="flex items-center gap-2 px-3 py-2 sm:px-2.5 sm:py-1.5 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-100 hover:border-gray-300/40 hover:bg-white/10 active:scale-95"
+            className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-100 hover:border-gray-300/40 hover:bg-white/10 active:scale-95 flex-shrink-0"
           >
-            <div className={`w-5 h-5 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-150 ${currentOpenSection === 'rwa' ? 'rotate-45' : ''}`}>
+            <div className={`w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-gray-900 text-base sm:text-xl font-light transition-transform duration-150 ${currentOpenSection === 'rwa' ? 'rotate-45' : ''}`}>
               +
             </div>
-            <span className="text-[13px] sm:text-xs text-gray-700 font-medium tracking-wide">RWA</span>
+            <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide">RWA</span>
           </div>
 
           {/* Web3.0 Button */}
           <div
             onClick={() => toggleSection('web3')}
-            className="flex items-center gap-2 px-3 py-2 sm:px-2.5 sm:py-1.5 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-100 hover:border-gray-300/40 hover:bg-white/10 active:scale-95"
+            className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-100 hover:border-gray-300/40 hover:bg-white/10 active:scale-95 flex-shrink-0"
           >
-            <div className={`w-5 h-5 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-150 ${currentOpenSection === 'web3' ? 'rotate-45' : ''}`}>
+            <div className={`w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-gray-900 text-base sm:text-xl font-light transition-transform duration-150 ${currentOpenSection === 'web3' ? 'rotate-45' : ''}`}>
               +
             </div>
-            <span className="text-[13px] sm:text-xs text-gray-700 font-medium tracking-wide">web3.0</span>
+            <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide">web3.0</span>
           </div>
 
           {/* Charter a Jet Button - Same style as RWA/web3 */}
           <div
             onClick={() => setShowCharterFields(!showCharterFields)}
-            className="flex items-center gap-2 px-3 py-2 sm:px-2.5 sm:py-1.5 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-100 hover:border-gray-300/40 hover:bg-white/10 active:scale-95"
+            className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-100 hover:border-gray-300/40 hover:bg-white/10 active:scale-95 flex-shrink-0"
           >
-            <div className={`w-5 h-5 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-150 ${showCharterFields ? 'rotate-45' : ''}`}>
+            <div className={`w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-gray-900 text-base sm:text-xl font-light transition-transform duration-150 ${showCharterFields ? 'rotate-45' : ''}`}>
               +
             </div>
-            <span className="text-[13px] sm:text-xs text-gray-700 font-medium tracking-wide">charter a jet</span>
+            <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide whitespace-nowrap">charter a jet</span>
           </div>
         </div>
 
         {/* Charter Fields - Expandable, Single Row Inputs */}
-        <div className={`overflow-hidden transition-all duration-150 ${showCharterFields ? 'max-h-[120px] opacity-100 mt-3' : 'max-h-0 opacity-0'}`}>
-          <div className="flex gap-1.5 sm:gap-2 items-center">
+        <div className={`overflow-hidden transition-all duration-150 ${showCharterFields ? 'max-h-[100px] opacity-100 mt-2 sm:mt-3' : 'max-h-0 opacity-0'}`}>
+          <div className="flex gap-1 sm:gap-2 items-center">
             {/* Departure Input */}
-            <div className="flex-1 flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2.5 sm:py-2.5 bg-gray-50 rounded-xl border border-gray-200">
-              <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <div className="flex-1 flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2.5 bg-gray-50 rounded-lg sm:rounded-xl border border-gray-200">
+              <svg className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path d="M21 16v-2a4 4 0 0 0-4-4H5" />
                 <polyline points="9 6 5 10 9 14" />
               </svg>
@@ -309,13 +309,13 @@ export default function FloatingSearchModal() {
                 value={departureLocation}
                 onChange={(e) => setDepartureLocation(e.target.value)}
                 placeholder="From"
-                className="flex-1 bg-transparent border-none outline-none text-[14px] sm:text-[13px] text-gray-800 placeholder-gray-400"
+                className="flex-1 bg-transparent border-none outline-none text-[12px] sm:text-[13px] text-gray-800 placeholder-gray-400"
               />
             </div>
 
             {/* Destination Input */}
-            <div className="flex-1 flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2.5 sm:py-2.5 bg-gray-50 rounded-xl border border-gray-200">
-              <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <div className="flex-1 flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2.5 bg-gray-50 rounded-lg sm:rounded-xl border border-gray-200">
+              <svg className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path d="M5 8h14" />
                 <polyline points="17 4 21 8 17 12" />
               </svg>
@@ -324,7 +324,7 @@ export default function FloatingSearchModal() {
                 value={destinationLocation}
                 onChange={(e) => setDestinationLocation(e.target.value)}
                 placeholder="To"
-                className="flex-1 bg-transparent border-none outline-none text-[14px] sm:text-[13px] text-gray-800 placeholder-gray-400"
+                className="flex-1 bg-transparent border-none outline-none text-[12px] sm:text-[13px] text-gray-800 placeholder-gray-400"
               />
             </div>
 
@@ -332,7 +332,7 @@ export default function FloatingSearchModal() {
             <button
               onClick={handleCharterJetSubmit}
               disabled={!departureLocation || !destinationLocation}
-              className="px-3 sm:px-4 py-2.5 bg-gray-900 text-white rounded-xl text-sm sm:text-xs font-medium transition-all duration-100 hover:bg-black active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-2.5 sm:px-4 py-1.5 sm:py-2.5 bg-gray-900 text-white rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-medium transition-all duration-100 hover:bg-black active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Go
             </button>
@@ -340,12 +340,12 @@ export default function FloatingSearchModal() {
         </div>
 
         {/* RWA Categories */}
-        <div className={`flex flex-wrap gap-1.5 sm:gap-2 px-0 transition-all duration-150 ${currentOpenSection === 'rwa' ? 'max-h-[300px] opacity-100 mt-3 mb-2' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+        <div className={`flex flex-wrap gap-1 sm:gap-2 px-0 transition-all duration-150 ${currentOpenSection === 'rwa' ? 'max-h-[300px] opacity-100 mt-2 sm:mt-3 mb-1 sm:mb-2' : 'max-h-0 opacity-0 overflow-hidden'}`}>
           {['p/jets', 'emptylegs', 'helicopter', 'airportransfer', 'concierge', 'SPV Formation', 'adventure package', 'holiday planer', 'travel designer', 'application', 'Co2 certificate'].map(cat => (
             <div
               key={cat}
               onClick={() => handleRWAClick(cat)}
-              className="px-2.5 sm:px-3 py-1.5 bg-gray-100 rounded-full text-[12px] sm:text-xs text-gray-700 cursor-pointer transition-all duration-100 border border-gray-300 font-medium hover:bg-gray-200 active:scale-95 hover:border-gray-400"
+              className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-100 rounded-full text-[10px] sm:text-xs text-gray-700 cursor-pointer transition-all duration-100 border border-gray-300 font-medium hover:bg-gray-200 active:scale-95 hover:border-gray-400"
             >
               {cat}
             </div>
@@ -353,12 +353,12 @@ export default function FloatingSearchModal() {
         </div>
 
         {/* Web3 Categories */}
-        <div className={`flex flex-wrap gap-1.5 sm:gap-2 px-0 transition-all duration-150 ${currentOpenSection === 'web3' ? 'max-h-[300px] opacity-100 mt-3 mb-2' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+        <div className={`flex flex-wrap gap-1 sm:gap-2 px-0 transition-all duration-150 ${currentOpenSection === 'web3' ? 'max-h-[300px] opacity-100 mt-2 sm:mt-3 mb-1 sm:mb-2' : 'max-h-0 opacity-0 overflow-hidden'}`}>
           {['free emptyleg', 'NFTs', 'asset-/tokenization', '$PVCX', 'chain-escrow', 'SAF certificate'].map(cat => (
             <div
               key={cat}
               onClick={() => handleWeb3Click(cat)}
-              className="px-2.5 sm:px-3 py-1.5 bg-gray-100 rounded-full text-[12px] sm:text-xs text-gray-700 cursor-pointer transition-all duration-100 border border-gray-300 font-medium hover:bg-gray-200 active:scale-95 hover:border-gray-400"
+              className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-100 rounded-full text-[10px] sm:text-xs text-gray-700 cursor-pointer transition-all duration-100 border border-gray-300 font-medium hover:bg-gray-200 active:scale-95 hover:border-gray-400"
             >
               {cat}
             </div>
