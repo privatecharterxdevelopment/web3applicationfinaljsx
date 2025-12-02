@@ -1632,21 +1632,21 @@ const EmptyLegOffers: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
-      <main className="flex-1 pt-[88px]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          {/* HERO */}
-          <div className="text-center mb-16">
-            <h1 className="text-3xl md:text-4xl font-light text-gray-900 text-center mb-4 tracking-tighter">
+      <main className="flex-1 pt-[72px] md:pt-[88px]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-16">
+          {/* HERO - Mobile Optimized */}
+          <div className="text-center mb-8 md:mb-16">
+            <h1 className="text-2xl md:text-4xl font-light text-gray-900 text-center mb-2 md:mb-4 tracking-tighter">
               Empty Leg Flights
             </h1>
-            <p className="text-gray-500 text-center mb-12 max-w-2xl mx-auto font-light">
+            <p className="text-sm md:text-base text-gray-500 text-center mb-6 md:mb-12 max-w-2xl mx-auto font-light px-4">
               Discover exceptional empty leg opportunities with up to 75% savings on luxury private aviation.
             </p>
           </div>
 
-          {/* SEARCH */}
-          <div className="max-w-md mx-auto mb-8 relative">
-            <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          {/* SEARCH - Mobile Optimized */}
+          <div className="max-w-md mx-auto mb-6 md:mb-8 relative">
+            <Search size={18} className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               placeholder="Search destinations..."
@@ -1655,7 +1655,7 @@ const EmptyLegOffers: React.FC = () => {
                 setSearchTerm(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-gray-500 focus:border-transparent shadow-sm bg-white"
+              className="w-full pl-10 md:pl-12 pr-4 py-3 md:py-4 text-sm md:text-base border border-gray-200 rounded-xl md:rounded-2xl focus:ring-2 focus:ring-gray-500 focus:border-transparent shadow-sm bg-white"
             />
             {searchTerm && (
               <button
@@ -1663,21 +1663,21 @@ const EmptyLegOffers: React.FC = () => {
                   setSearchTerm('');
                   setCurrentPage(1);
                 }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
                 <X size={16} />
               </button>
             )}
           </div>
 
-          {/* FILTERS */}
-          <div className="mb-8">
-            <div className="flex justify-center mb-4 lg:hidden">
+          {/* FILTERS - Mobile Optimized */}
+          <div className="mb-6 md:mb-8">
+            <div className="flex justify-center mb-3 md:mb-4 lg:hidden">
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors shadow-sm text-sm"
+                className="flex items-center gap-2 px-3 md:px-4 py-2 md:py-2.5 bg-white border border-gray-200 text-gray-700 rounded-lg md:rounded-xl hover:bg-gray-50 transition-colors shadow-sm text-xs md:text-sm"
               >
-                <Filter size={16} />
+                <Filter size={14} />
                 Filters
                 {(filterCategory !== 'all' || searchTerm ||
                   priceRange[0] !== priceExtents[0] || priceRange[1] !== priceExtents[1]) && (
@@ -1686,11 +1686,11 @@ const EmptyLegOffers: React.FC = () => {
               </button>
             </div>
 
-            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
-              <h3 className="text-xl font-medium text-gray-900">
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3 md:gap-4 mb-4 md:mb-6">
+              <h3 className="text-base md:text-xl font-medium text-gray-900 text-center lg:text-left">
                 Available Empty Legs
                 {totalOffers > 0 && (
-                  <span className="text-sm font-normal text-gray-500 ml-3">
+                  <span className="text-xs md:text-sm font-normal text-gray-500 ml-2 md:ml-3">
                     ({totalOffers} {totalOffers === 1 ? 'offer' : 'offers'})
                   </span>
                 )}
@@ -1797,17 +1797,17 @@ const EmptyLegOffers: React.FC = () => {
           ) : emptyLegs.length > 0 ? (
             <div className="transition-opacity duration-300">
               {viewMode === 'grid' || window.innerWidth < 768 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                   {emptyLegs.map((emptyLeg) => (
                     <div
                       key={emptyLeg.id}
-                      className={`bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer group ${isNFTFreeEligible(emptyLeg)
+                      className={`bg-white rounded-2xl md:rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer group ${isNFTFreeEligible(emptyLeg)
                         ? 'border-2 border-green-400 hover:border-green-500 animate-pulse'
                         : 'border border-gray-100 hover:border-gray-200'
                         }`}
                       onClick={() => handleEmptyLegClick(emptyLeg)}
                     >
-                      <div className="relative h-48 overflow-hidden">
+                      <div className="relative h-36 md:h-48 overflow-hidden">
                         <img
                           src={emptyLeg.image_url || getDefaultImage()}
                           alt={`${emptyLeg.from_iata || emptyLeg.from} to ${emptyLeg.to_iata || emptyLeg.to}`}
@@ -1823,60 +1823,60 @@ const EmptyLegOffers: React.FC = () => {
 
                         {/* NFT Free Badge */}
                         {isNFTFreeEligible(emptyLeg) && (
-                          <div className="absolute top-4 right-4 bg-green-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
-                            <Star size={12} className="fill-current" />
+                          <div className="absolute top-3 md:top-4 right-3 md:right-4 bg-green-500 text-white text-[10px] md:text-xs font-semibold px-2 md:px-3 py-1 md:py-1.5 rounded-full flex items-center gap-1 md:gap-1.5 shadow-lg">
+                            <Star size={10} className="fill-current" />
                             FREE with NFT
                           </div>
                         )}
 
                         {/* Time Badge */}
-                        <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full">
+                        <div className="absolute bottom-3 md:bottom-4 left-3 md:left-4 bg-black/60 backdrop-blur-sm text-white text-[10px] md:text-xs px-2 md:px-3 py-1 md:py-1.5 rounded-full">
                           {formatDateTime(emptyLeg.departure_date, emptyLeg.departure_time)}
                         </div>
                       </div>
 
-                      <div className="p-6">
-                        <div className="mb-4">
-                          <h3 className="text-lg font-semibold mb-2 text-gray-900">
+                      <div className="p-4 md:p-6">
+                        <div className="mb-3 md:mb-4">
+                          <h3 className="text-base md:text-lg font-semibold mb-1.5 md:mb-2 text-gray-900">
                             {emptyLeg.from_city || emptyLeg.from} → {emptyLeg.to_city || emptyLeg.to}
                           </h3>
                           {/* Prominent IATA codes */}
-                          <div className="flex items-center justify-center gap-2 bg-blue-50 rounded-lg p-2 mb-3">
-                            <span className="text-sm font-bold text-blue-900">{emptyLeg.from_iata || emptyLeg.from}</span>
-                            <ArrowRight size={14} className="text-blue-600" />
-                            <span className="text-sm font-bold text-blue-900">{emptyLeg.to_iata || emptyLeg.to}</span>
+                          <div className="flex items-center justify-center gap-2 bg-blue-50 rounded-lg p-1.5 md:p-2 mb-2 md:mb-3">
+                            <span className="text-xs md:text-sm font-bold text-blue-900">{emptyLeg.from_iata || emptyLeg.from}</span>
+                            <ArrowRight size={12} className="text-blue-600" />
+                            <span className="text-xs md:text-sm font-bold text-blue-900">{emptyLeg.to_iata || emptyLeg.to}</span>
                           </div>
                         </div>
 
-                        {/* Light grey bubbles for details */}
-                        <div className="grid grid-cols-2 gap-2 mb-6">
-                          <div className="bg-gray-100 rounded-xl p-3 text-center">
-                            <Plane size={16} className="mx-auto mb-1 text-gray-500" />
-                            <div className="text-xs text-gray-700 font-medium">{emptyLeg.aircraft_type}</div>
+                        {/* Light grey bubbles for details - 2x2 Grid */}
+                        <div className="grid grid-cols-2 gap-1.5 md:gap-2 mb-4 md:mb-6">
+                          <div className="bg-gray-100 rounded-lg md:rounded-xl p-2 md:p-3 text-center">
+                            <Plane size={14} className="mx-auto mb-0.5 md:mb-1 text-gray-500" />
+                            <div className="text-[10px] md:text-xs text-gray-700 font-medium truncate">{emptyLeg.aircraft_type}</div>
                           </div>
-                          <div className="bg-gray-100 rounded-xl p-3 text-center">
-                            <Users size={16} className="mx-auto mb-1 text-gray-500" />
-                            <div className="text-xs text-gray-700 font-medium">Up to {emptyLeg.capacity}</div>
+                          <div className="bg-gray-100 rounded-lg md:rounded-xl p-2 md:p-3 text-center">
+                            <Users size={14} className="mx-auto mb-0.5 md:mb-1 text-gray-500" />
+                            <div className="text-[10px] md:text-xs text-gray-700 font-medium">Up to {emptyLeg.capacity}</div>
                           </div>
-                          <div className="bg-gray-100 rounded-xl p-3 text-center">
-                            <Leaf size={16} className="mx-auto mb-1 text-gray-500" />
-                            <div className="text-xs text-gray-700 font-medium">Carbon Neutral</div>
+                          <div className="bg-gray-100 rounded-lg md:rounded-xl p-2 md:p-3 text-center">
+                            <Leaf size={14} className="mx-auto mb-0.5 md:mb-1 text-gray-500" />
+                            <div className="text-[10px] md:text-xs text-gray-700 font-medium">Carbon Neutral</div>
                           </div>
-                          <div className="bg-gray-100 rounded-xl p-3 text-center">
-                            <Percent size={16} className="mx-auto mb-1 text-gray-500" />
-                            <div className="text-xs text-gray-700 font-medium">Save 75%</div>
+                          <div className="bg-gray-100 rounded-lg md:rounded-xl p-2 md:p-3 text-center">
+                            <Percent size={14} className="mx-auto mb-0.5 md:mb-1 text-gray-500" />
+                            <div className="text-[10px] md:text-xs text-gray-700 font-medium">Save 75%</div>
                           </div>
                         </div>
 
                         {/* Pricing */}
-                        <div className="space-y-2 mb-6">
+                        <div className="space-y-1 md:space-y-2 mb-4 md:mb-6">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-500 line-through">
+                            <span className="text-xs md:text-sm text-gray-500 line-through">
                               Regular: USD {(emptyLeg.price_usd * 3).toLocaleString()}
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className={`text-lg font-bold ${isNFTFreeEligible(emptyLeg) ? 'text-green-600' : 'text-gray-900'}`}>
+                            <span className={`text-base md:text-lg font-bold ${isNFTFreeEligible(emptyLeg) ? 'text-green-600' : 'text-gray-900'}`}>
                               {isNFTFreeEligible(emptyLeg) ? 'FREE for NFT holders' : `USD ${emptyLeg.price_usd?.toLocaleString()}`}
                             </span>
                           </div>
@@ -1884,14 +1884,14 @@ const EmptyLegOffers: React.FC = () => {
 
                         {/* Black "See Details" Button */}
                         <button
-                          className="w-full bg-black text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                          className="w-full bg-black text-white py-2.5 md:py-3 rounded-lg md:rounded-xl font-medium text-sm md:text-base hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleEmptyLegClick(emptyLeg);
                           }}
                         >
                           See Details
-                          <ArrowRight size={16} />
+                          <ArrowRight size={14} />
                         </button>
                       </div>
                     </div>

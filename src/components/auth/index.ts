@@ -12,3 +12,7 @@ export { default as FaceCaptureCamera } from './FaceCaptureCamera';
 export { default as FaceRegisterModal } from './FaceRegisterModal';
 export { default as FaceLoginModal } from './FaceLoginModal';
 export { default as VideoHero } from './VideoHero';
+
+// App-specific auth modals (Capacitor native apps only)
+export { default as AppLoginModal } from './AppLoginModal';
+export { default as AppRegisterModal } from './AppRegisterModal';

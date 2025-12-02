@@ -9,11 +9,29 @@ export default function FloatingSearchModal() {
   const [currentTitleIndex, setCurrentTitleIndex] = useState(0);
   const [titleOpacity, setTitleOpacity] = useState(1);
   const [currentOpenSection, setCurrentOpenSection] = useState<string | null>(null);
+  const [searchValue, setSearchValue] = useState('');
+  const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
+  const [displayedPlaceholder, setDisplayedPlaceholder] = useState('');
+  const [isTyping, setIsTyping] = useState(true);
+
+  // Charter a jet state
+  const [showCharterFields, setShowCharterFields] = useState(false);
+  const [departureLocation, setDepartureLocation] = useState('');
+  const [destinationLocation, setDestinationLocation] = useState('');
 
   const titles = [
     'Tokenizing global mobility',
     'Charter the smart way',
     'Blockchain powered travel'
+  ];
+
+  const placeholders = [
+    'where we go today?',
+    'business or leisure?',
+    'back for dinner at 6.33',
+    'plan your travel with sphera AI',
+    'book a p/jet today',
+    'airfield transfer ready'
   ];
 
   useEffect(() => {
@@ -28,154 +46,320 @@ export default function FloatingSearchModal() {
     return () => clearInterval(interval);
   }, []);
 
+  // Typing animation for placeholder
+  useEffect(() => {
+    const currentText = placeholders[currentPlaceholderIndex];
+    let charIndex = 0;
+    setDisplayedPlaceholder('');
+    setIsTyping(true);
+
+    // Type out the text
+    const typingInterval = setInterval(() => {
+      if (charIndex < currentText.length) {
+        setDisplayedPlaceholder(currentText.substring(0, charIndex + 1));
+        charIndex++;
+      } else {
+        clearInterval(typingInterval);
+        setIsTyping(false);
+
+        // Wait then move to next placeholder
+        setTimeout(() => {
+          setCurrentPlaceholderIndex((prev) => (prev + 1) % placeholders.length);
+        }, 2000);
+      }
+    }, 50);
+
+    return () => clearInterval(typingInterval);
+  }, [currentPlaceholderIndex]);
+
+  // Handle charter jet submission
+  const handleCharterJetSubmit = () => {
+    if (departureLocation && destinationLocation) {
+      // Navigate to dashboard charter tab with pre-filled data, skip to step 2
+      const params = new URLSearchParams({
+        tab: 'charter',
+        departure: departureLocation,
+        destination: destinationLocation,
+        step: '2'
+      });
+      if (!isAuthenticated) {
+        params.append('login', 'true');
+      }
+      navigate(`/glasdashboard?${params.toString()}`);
+    }
+  };
+
   const toggleSection = (section: string) => {
     setCurrentOpenSection(currentOpenSection === section ? null : section);
   };
 
+  // Handle Sphera AI search - requires login, creates new AI chat
   const handleSphereAISearch = (query: string) => {
     if (query.trim()) {
-      // Always navigate to glasdashboard with query
-      // If not authenticated, also include login=true to trigger login modal
+      // Navigate to AI chat with query - requires authentication
       if (isAuthenticated) {
-        navigate(`/glasdashboard?query=${encodeURIComponent(query)}`);
+        // Navigate to glasdashboard AI chat with new conversation
+        navigate(`/glasdashboard?tab=ai-chat&query=${encodeURIComponent(query)}&newChat=true`);
       } else {
-        // Navigate with login flag - the dashboard will show login modal and then process query
-        navigate(`/glasdashboard?query=${encodeURIComponent(query)}&login=true`);
+        // Navigate with login flag - will show login modal first
+        navigate(`/glasdashboard?tab=ai-chat&query=${encodeURIComponent(query)}&newChat=true&login=true`);
+      }
+    } else {
+      // If no query, just open AI chat
+      if (isAuthenticated) {
+        navigate(`/glasdashboard?tab=ai-chat&newChat=true`);
+      } else {
+        navigate(`/glasdashboard?tab=ai-chat&newChat=true&login=true`);
       }
     }
   };
 
+  // Navigate with authentication check helper
+  const navigateWithAuth = (path: string) => {
+    if (isAuthenticated) {
+      navigate(path);
+    } else {
+      navigate(`${path}${path.includes('?') ? '&' : '?'}login=true`);
+    }
+  };
+
+  // Handle RWA category clicks
+  const handleRWAClick = (category: string) => {
+    switch (category) {
+      case 'p/jets':
+        navigate('/tokenized-assets?category=jets');
+        break;
+      case 'emptylegs':
+        navigate('/tokenized-assets?category=empty-legs');
+        break;
+      case 'helicopter':
+        navigate('/tokenized-assets?category=helicopter');
+        break;
+      case 'airportransfer':
+        navigateWithAuth('/glasdashboard?tab=concierge&service=airport-transfer');
+        break;
+      case 'concierge':
+        navigateWithAuth('/glasdashboard?tab=concierge');
+        break;
+      case 'SPV Formation':
+        navigateWithAuth('/glasdashboard?tab=spv');
+        break;
+      case 'adventure package':
+        navigate('/tokenized-assets?category=adventures');
+        break;
+      case 'holiday planer':
+        navigateWithAuth('/glasdashboard?tab=ai-chat&query=help me plan my holiday');
+        break;
+      case 'travel designer':
+        navigateWithAuth('/glasdashboard?tab=ai-chat&query=design my travel itinerary');
+        break;
+      case 'application':
+        navigateWithAuth('/glasdashboard?tab=profile');
+        break;
+      case 'Co2 certificate':
+        navigate('/tokenized-assets?category=co2');
+        break;
+      default:
+        navigate('/tokenized-assets');
+    }
+  };
+
+  // Handle Web3 category clicks
+  const handleWeb3Click = (category: string) => {
+    switch (category) {
+      case 'free emptyleg':
+        navigate('/tokenized-assets?category=empty-legs&filter=free');
+        break;
+      case 'NFTs':
+        navigate('/tokenized-assets?category=nfts');
+        break;
+      case 'asset-/tokenization':
+        navigateWithAuth('/glasdashboard?tab=tokenize');
+        break;
+      case '$PVCX':
+        navigateWithAuth('/glasdashboard?tab=pvcx');
+        break;
+      case 'chain-escrow':
+        navigateWithAuth('/glasdashboard?tab=escrow');
+        break;
+      case 'SAF certificate':
+        navigate('/tokenized-assets?category=saf');
+        break;
+      default:
+        navigate('/tokenized-assets');
+    }
+  };
+
   return (
-    <div className="w-full max-w-[90%] sm:max-w-[650px] mx-4 sm:mx-0 animate-float">
+    <div className="w-[calc(100%-16px)] sm:w-full sm:max-w-[650px] mx-2 sm:mx-0">
       <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
-        }
-        .animate-float {
-          animation: float 3s ease-in-out infinite;
-        }
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.6; }
         }
-        @keyframes pulse-ring {
-          0% { transform: scale(1); opacity: 1; }
-          50% { transform: scale(1.5); opacity: 0.5; }
-          100% { transform: scale(2); opacity: 0; }
-        }
         .animate-pulse { animation: pulse 2s ease-in-out infinite; }
-        .pulse-ring::before {
-          content: '';
-          position: absolute;
-          width: 100%;
-          height: 100%;
-          background: #10b981;
-          border-radius: 50%;
-          animation: pulse-ring 2s ease-in-out infinite;
-        }
       `}</style>
 
-      <div className="bg-white/8 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.1),0_8px_16px_rgba(0,0,0,0.06)] border border-white/15 transition-all duration-300 hover:bg-white/12 hover:shadow-[0_30px_80px_rgba(0,0,0,0.12),0_12px_24px_rgba(0,0,0,0.08)] hover:-translate-y-0.5">
+      <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 sm:p-6 sm:shadow-[0_20px_60px_rgba(0,0,0,0.1),0_8px_16px_rgba(0,0,0,0.06)] border border-white/15 transition-all duration-150 hover:bg-white/12 sm:hover:shadow-[0_30px_80px_rgba(0,0,0,0.12),0_12px_24px_rgba(0,0,0,0.08)]">
 
         {/* Status Bubble */}
         <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100/60 backdrop-blur-sm rounded-full border border-gray-300/30 mb-3">
-          <div className="w-2 h-2 bg-green-500 rounded-full relative animate-pulse pulse-ring"></div>
-          <span className="text-[10px] text-gray-600 font-medium tracking-wide uppercase">web3 and ai powered multi charter</span>
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          <span className="text-[11px] sm:text-[10px] text-gray-600 font-medium tracking-wide uppercase">web3 and ai powered multi charter</span>
         </div>
 
         {/* Animated Title */}
         <h1
-          className="text-[24px] sm:text-[32px] font-light text-gray-900 mb-2 leading-tight tracking-tight transition-all duration-500 pb-2 border-b border-gray-300/20"
-          style={{ opacity: titleOpacity, transform: `translateY(${titleOpacity === 0 ? '-20px' : '0'})` }}
+          className="text-[26px] sm:text-[32px] font-light text-gray-900 mb-2 leading-tight tracking-tight transition-all duration-300 pb-2 border-b border-gray-300/20"
+          style={{ opacity: titleOpacity, transform: `translateY(${titleOpacity === 0 ? '-10px' : '0'})` }}
         >
           {titles[currentTitleIndex]}
         </h1>
 
-        {/* Services Row */}
-        <div className="flex gap-2 sm:gap-3 mt-3 flex-wrap">
-          {[
-            { id: 'rwa', label: 'RWA services' },
-            { id: 'web3', label: 'web3.0' },
-            { id: 'sphera', label: 'sphera ai' },
-            { id: 'luxury', label: 'luxury travel planner' }
-          ].map(service => (
-            <div
-              key={service.id}
-              onClick={() => toggleSection(service.id)}
-              className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-200 hover:border-gray-300/40 hover:bg-white/10"
-            >
-              <div className={`w-5 h-5 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 ${currentOpenSection === service.id ? 'rotate-45' : ''}`}>
-                +
-              </div>
-              <span className="text-xs text-gray-700 font-medium tracking-wide">{service.label}</span>
+        {/* Sphera AI Search Bar - Minimal, Smooth Design */}
+        <div className="mt-4 sm:mt-3">
+          <div className="relative flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3.5 sm:py-3 bg-gray-50 rounded-xl border border-gray-200 transition-all duration-100 focus-within:bg-white focus-within:border-gray-300 focus-within:shadow-sm">
+            {/* Command Icon */}
+            <span className="text-gray-400 text-sm font-light flex-shrink-0">⌘</span>
+
+            {/* Input with animated placeholder overlay */}
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                className="w-full bg-transparent border-none outline-none text-[16px] sm:text-[15px] text-gray-800 font-normal"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSphereAISearch(searchValue);
+                  }
+                }}
+              />
+              {/* Typing animation placeholder - only show when input is empty */}
+              {!searchValue && (
+                <div className="absolute inset-0 flex items-center pointer-events-none">
+                  <span className="text-[16px] sm:text-[15px] text-gray-400 font-normal">
+                    {displayedPlaceholder}
+                    {isTyping && <span className="animate-pulse ml-0.5">|</span>}
+                  </span>
+                </div>
+              )}
             </div>
-          ))}
+
+            {/* Send Button - Minimal rounded square */}
+            <button
+              onClick={() => handleSphereAISearch(searchValue)}
+              className="w-9 h-9 sm:w-8 sm:h-8 rounded-lg bg-gray-900 text-white flex items-center justify-center transition-all duration-100 hover:bg-black active:scale-95"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <path d="M5 12h14"/>
+                <path d="m12 5 7 7-7 7"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Services Row - RWA, web3.0, charter a jet in same row */}
+        <div className="flex gap-2.5 sm:gap-3 mt-4 sm:mt-3 flex-wrap items-center">
+          {/* RWA Button */}
+          <div
+            onClick={() => toggleSection('rwa')}
+            className="flex items-center gap-2 px-3 py-2 sm:px-2.5 sm:py-1.5 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-100 hover:border-gray-300/40 hover:bg-white/10 active:scale-95"
+          >
+            <div className={`w-5 h-5 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-150 ${currentOpenSection === 'rwa' ? 'rotate-45' : ''}`}>
+              +
+            </div>
+            <span className="text-[13px] sm:text-xs text-gray-700 font-medium tracking-wide">RWA</span>
+          </div>
+
+          {/* Web3.0 Button */}
+          <div
+            onClick={() => toggleSection('web3')}
+            className="flex items-center gap-2 px-3 py-2 sm:px-2.5 sm:py-1.5 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-100 hover:border-gray-300/40 hover:bg-white/10 active:scale-95"
+          >
+            <div className={`w-5 h-5 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-150 ${currentOpenSection === 'web3' ? 'rotate-45' : ''}`}>
+              +
+            </div>
+            <span className="text-[13px] sm:text-xs text-gray-700 font-medium tracking-wide">web3.0</span>
+          </div>
+
+          {/* Charter a Jet Button - Same style as RWA/web3 */}
+          <div
+            onClick={() => setShowCharterFields(!showCharterFields)}
+            className="flex items-center gap-2 px-3 py-2 sm:px-2.5 sm:py-1.5 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-100 hover:border-gray-300/40 hover:bg-white/10 active:scale-95"
+          >
+            <div className={`w-5 h-5 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-150 ${showCharterFields ? 'rotate-45' : ''}`}>
+              +
+            </div>
+            <span className="text-[13px] sm:text-xs text-gray-700 font-medium tracking-wide">charter a jet</span>
+          </div>
+        </div>
+
+        {/* Charter Fields - Expandable, Single Row Inputs */}
+        <div className={`overflow-hidden transition-all duration-150 ${showCharterFields ? 'max-h-[120px] opacity-100 mt-3' : 'max-h-0 opacity-0'}`}>
+          <div className="flex gap-1.5 sm:gap-2 items-center">
+            {/* Departure Input */}
+            <div className="flex-1 flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2.5 sm:py-2.5 bg-gray-50 rounded-xl border border-gray-200">
+              <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M21 16v-2a4 4 0 0 0-4-4H5" />
+                <polyline points="9 6 5 10 9 14" />
+              </svg>
+              <input
+                type="text"
+                value={departureLocation}
+                onChange={(e) => setDepartureLocation(e.target.value)}
+                placeholder="From"
+                className="flex-1 bg-transparent border-none outline-none text-[14px] sm:text-[13px] text-gray-800 placeholder-gray-400"
+              />
+            </div>
+
+            {/* Destination Input */}
+            <div className="flex-1 flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2.5 sm:py-2.5 bg-gray-50 rounded-xl border border-gray-200">
+              <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M5 8h14" />
+                <polyline points="17 4 21 8 17 12" />
+              </svg>
+              <input
+                type="text"
+                value={destinationLocation}
+                onChange={(e) => setDestinationLocation(e.target.value)}
+                placeholder="To"
+                className="flex-1 bg-transparent border-none outline-none text-[14px] sm:text-[13px] text-gray-800 placeholder-gray-400"
+              />
+            </div>
+
+            {/* Go Button */}
+            <button
+              onClick={handleCharterJetSubmit}
+              disabled={!departureLocation || !destinationLocation}
+              className="px-3 sm:px-4 py-2.5 bg-gray-900 text-white rounded-xl text-sm sm:text-xs font-medium transition-all duration-100 hover:bg-black active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Go
+            </button>
+          </div>
         </div>
 
         {/* RWA Categories */}
-        <div className={`flex flex-wrap gap-2 px-1 transition-all duration-400 ${currentOpenSection === 'rwa' ? 'max-h-[300px] opacity-100 mt-3 mb-2' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-          {['emptylegs', 'p/jets', 'g/transport', 'charter'].map(cat => (
-            <div key={cat} className="px-4 py-2 bg-gray-100 rounded-full text-sm text-gray-700 cursor-pointer transition-all duration-200 border border-gray-300 font-medium hover:bg-gray-200 hover:-translate-y-0.5 hover:shadow-lg hover:border-gray-400">
+        <div className={`flex flex-wrap gap-1.5 sm:gap-2 px-0 transition-all duration-150 ${currentOpenSection === 'rwa' ? 'max-h-[300px] opacity-100 mt-3 mb-2' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+          {['p/jets', 'emptylegs', 'helicopter', 'airportransfer', 'concierge', 'SPV Formation', 'adventure package', 'holiday planer', 'travel designer', 'application', 'Co2 certificate'].map(cat => (
+            <div
+              key={cat}
+              onClick={() => handleRWAClick(cat)}
+              className="px-2.5 sm:px-3 py-1.5 bg-gray-100 rounded-full text-[12px] sm:text-xs text-gray-700 cursor-pointer transition-all duration-100 border border-gray-300 font-medium hover:bg-gray-200 active:scale-95 hover:border-gray-400"
+            >
               {cat}
             </div>
           ))}
         </div>
 
         {/* Web3 Categories */}
-        <div className={`flex flex-wrap gap-2 px-1 transition-all duration-400 ${currentOpenSection === 'web3' ? 'max-h-[300px] opacity-100 mt-3 mb-2' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-          {['tokenize asset', 'NFTs', 'DAO', 'buy/sell', 'pvcx'].map(cat => (
-            <div key={cat} className="px-4 py-2 bg-gray-100 rounded-full text-sm text-gray-700 cursor-pointer transition-all duration-200 border border-gray-300 font-medium hover:bg-gray-200 hover:-translate-y-0.5 hover:shadow-lg hover:border-gray-400">
-              {cat}
-            </div>
-          ))}
-        </div>
-
-        {/* Sphera Categories */}
-        <div className={`flex flex-wrap gap-2 px-1 transition-all duration-400 ${currentOpenSection === 'sphera' ? 'max-h-[300px] opacity-100 mt-3 mb-2' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-          {['plan a trip', 'form spv'].map(cat => (
-            <div key={cat} className="px-4 py-2 bg-gray-100 rounded-full text-sm text-gray-700 cursor-pointer transition-all duration-200 border border-gray-300 font-medium hover:bg-gray-200 hover:-translate-y-0.5 hover:shadow-lg hover:border-gray-400">
-              {cat}
-            </div>
-          ))}
-        </div>
-
-        {/* Sphera AI Search Bar */}
-        <div className={`transition-all duration-400 ${currentOpenSection === 'sphera' ? 'max-h-[100px] opacity-100 mt-3' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-          <div className="flex items-center gap-3 px-4 py-3 bg-gray-100/60 backdrop-blur-sm rounded-2xl border border-gray-300/50 transition-all duration-200 focus-within:bg-gray-100/80 focus-within:border-gray-400 focus-within:shadow-[0_0_0_3px_rgba(0,0,0,0.05)]">
-            <svg className="text-gray-600 w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="m21 21-4.35-4.35"></path>
-            </svg>
-            <input
-              type="text"
-              placeholder="Ask Sphera AI about PrivateCharterX..."
-              className="flex-1 bg-transparent border-none outline-none text-[15px] text-gray-900 placeholder-gray-500"
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  handleSphereAISearch((e.target as HTMLInputElement).value);
-                }
-              }}
-            />
-            <button
-              onClick={(e) => {
-                const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                handleSphereAISearch(input.value);
-              }}
-              className="w-8 h-8 rounded-xl bg-gray-900/80 text-white flex items-center justify-center transition-all duration-200 hover:bg-gray-900 hover:scale-105 active:scale-95 shadow-md"
+        <div className={`flex flex-wrap gap-1.5 sm:gap-2 px-0 transition-all duration-150 ${currentOpenSection === 'web3' ? 'max-h-[300px] opacity-100 mt-3 mb-2' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+          {['free emptyleg', 'NFTs', 'asset-/tokenization', '$PVCX', 'chain-escrow', 'SAF certificate'].map(cat => (
+            <div
+              key={cat}
+              onClick={() => handleWeb3Click(cat)}
+              className="px-2.5 sm:px-3 py-1.5 bg-gray-100 rounded-full text-[12px] sm:text-xs text-gray-700 cursor-pointer transition-all duration-100 border border-gray-300 font-medium hover:bg-gray-200 active:scale-95 hover:border-gray-400"
             >
-              <svg className="w-4 h-4" fill="currentColor" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {/* Luxury Travel Categories */}
-        <div className={`flex flex-wrap gap-2 px-1 transition-all duration-400 ${currentOpenSection === 'luxury' ? 'max-h-[300px] opacity-100 mt-3 mb-2' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-          {['concierge service', 'VIP experience', 'bespoke itinerary'].map(cat => (
-            <div key={cat} className="px-4 py-2 bg-gray-100 rounded-full text-sm text-gray-700 cursor-pointer transition-all duration-200 border border-gray-300 font-medium hover:bg-gray-200 hover:-translate-y-0.5 hover:shadow-lg hover:border-gray-400">
               {cat}
             </div>
           ))}

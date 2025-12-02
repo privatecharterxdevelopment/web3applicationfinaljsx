@@ -75,6 +75,8 @@ import PartnerRegistrationModal from '../PartnerRegistrationModal';
 import MyDAOs from './MyDAOs';
 import EscrowPage from './EscrowPage';
 import { airportsJsonService } from '../../services/airportsJsonService';
+import { isNativeApp } from '../../utils/platform';
+import { AppLoginModal, AppRegisterModal } from '../auth';
 
 // Settings Page Component
 const SettingsPage = ({ user, kycStatus, setKycStatus, setActiveCategory }) => {
@@ -1802,6 +1804,26 @@ const TokenizedAssetsGlassmorphic = () => {
       setShowDashboard(false);
     }
   }, [isAuthenticated, initializing]);
+
+  // Redirect to homepage if user closes all auth modals without logging in
+  // This prevents the app from hanging on a blank loading screen
+  // Note: In native app mode, we keep showing the login modal instead of redirecting
+  useEffect(() => {
+    const noModalsOpen = !showLoginModal && !showRegisterModal && !showForgotPasswordModal && !showPartnerRegisterModal;
+
+    if (!isAuthenticated && !initializing && noModalsOpen) {
+      // In native app, re-show the login modal instead of redirecting
+      if (isNativeApp()) {
+        setShowLoginModal(true);
+      } else {
+        // On web, redirect to homepage after a delay
+        const redirectTimer = setTimeout(() => {
+          navigate('/');
+        }, 500);
+        return () => clearTimeout(redirectTimer);
+      }
+    }
+  }, [isAuthenticated, initializing, showLoginModal, showRegisterModal, showForgotPasswordModal, showPartnerRegisterModal, navigate]);
 
   // Handle successful login/register - Show toast and animate dashboard
   useEffect(() => {
@@ -3594,46 +3616,84 @@ const TokenizedAssetsGlassmorphic = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          {/* Only show spinner if not showing any auth modal */}
+          {/* Only show logo animation if not showing any auth modal */}
           {!showLoginModal && !showRegisterModal && !showForgotPasswordModal && !showPartnerRegisterModal && (
-            <>
-              <Loader2 size={40} className="animate-spin text-black mx-auto mb-4" />
+            <div className="flex flex-col items-center gap-4">
+              {/* PrivateCharterX Logo Animation - Same as transition */}
+              <div className="relative w-24 h-24">
+                <video
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full"
+                >
+                  <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
+                </video>
+              </div>
               <p className="text-sm text-gray-600">Loading...</p>
-            </>
+            </div>
           )}
         </div>
-        {/* Login modal will be rendered by the modals at the bottom */}
+        {/* Login modal - Use app-specific modal for native apps */}
         {showLoginModal && (
-          <LoginModal
-            onClose={() => setShowLoginModal(false)}
-            onSwitchToRegister={() => {
-              setShowLoginModal(false);
-              setShowRegisterModal(true);
-            }}
-            onSwitchToPartnerRegister={() => {
-              setShowLoginModal(false);
-              setShowPartnerRegisterModal(true);
-            }}
-            onSuccess={() => setShowLoginModal(false)}
-            onSwitchToForgotPassword={() => {
-              setShowLoginModal(false);
-              setShowForgotPasswordModal(true);
-            }}
-          />
+          isNativeApp() ? (
+            <AppLoginModal
+              onClose={() => setShowLoginModal(false)}
+              onSwitchToRegister={() => {
+                setShowLoginModal(false);
+                setShowRegisterModal(true);
+              }}
+              onSuccess={() => setShowLoginModal(false)}
+              onForgotPassword={() => {
+                setShowLoginModal(false);
+                setShowForgotPasswordModal(true);
+              }}
+            />
+          ) : (
+            <LoginModal
+              onClose={() => setShowLoginModal(false)}
+              onSwitchToRegister={() => {
+                setShowLoginModal(false);
+                setShowRegisterModal(true);
+              }}
+              onSwitchToPartnerRegister={() => {
+                setShowLoginModal(false);
+                setShowPartnerRegisterModal(true);
+              }}
+              onSuccess={() => setShowLoginModal(false)}
+              onSwitchToForgotPassword={() => {
+                setShowLoginModal(false);
+                setShowForgotPasswordModal(true);
+              }}
+            />
+          )
         )}
+        {/* Register modal - Use app-specific modal for native apps */}
         {showRegisterModal && (
-          <RegisterModal
-            onClose={() => setShowRegisterModal(false)}
-            onSwitchToLogin={() => {
-              setShowRegisterModal(false);
-              setShowLoginModal(true);
-            }}
-            onSwitchToPartnerRegister={() => {
-              setShowRegisterModal(false);
-              setShowPartnerRegisterModal(true);
-            }}
-            onSuccess={() => setShowRegisterModal(false)}
-          />
+          isNativeApp() ? (
+            <AppRegisterModal
+              onClose={() => setShowRegisterModal(false)}
+              onSwitchToLogin={() => {
+                setShowRegisterModal(false);
+                setShowLoginModal(true);
+              }}
+              onSuccess={() => setShowRegisterModal(false)}
+            />
+          ) : (
+            <RegisterModal
+              onClose={() => setShowRegisterModal(false)}
+              onSwitchToLogin={() => {
+                setShowRegisterModal(false);
+                setShowLoginModal(true);
+              }}
+              onSwitchToPartnerRegister={() => {
+                setShowRegisterModal(false);
+                setShowPartnerRegisterModal(true);
+              }}
+              onSuccess={() => setShowRegisterModal(false)}
+            />
+          )
         )}
         {showForgotPasswordModal && (
           <ForgotPasswordModal
@@ -5511,7 +5571,8 @@ const TokenizedAssetsGlassmorphic = () => {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  {/* Row 1: Empty Legs + Aviation (2 cards) */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {/* RWS Mode - Show recent chats/empty legs */}
                     {webMode === 'rws' && (
                       <>
@@ -5612,10 +5673,10 @@ const TokenizedAssetsGlassmorphic = () => {
                           </div>
                         </button>
 
-                        {/* My Requests Card */}
+                        {/* My Requests Card - Hidden on mobile, shown on desktop in row 1 */}
                         <button
                           onClick={() => setActiveCategory('requests')}
-                          className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
+                          className="hidden md:block border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
                           style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                         >
                           <div className="mb-2 flex items-center justify-between">
@@ -5662,11 +5723,11 @@ const TokenizedAssetsGlassmorphic = () => {
                     {webMode === 'web3' && (
                       <>
                         {loadingTokenizations ? (
-                          <div className="col-span-3 flex items-center justify-center py-8">
+                          <div className="col-span-2 md:col-span-3 flex items-center justify-center py-8">
                             <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
                           </div>
                         ) : userTokenizations.length > 0 ? (
-                          userTokenizations.slice(0, 3).map((token) => {
+                          userTokenizations.slice(0, 2).map((token) => {
                             const statusColors = {
                               'draft': 'bg-gray-200 text-gray-700',
                               'submitted': 'bg-yellow-100 text-yellow-700',
@@ -5709,7 +5770,7 @@ const TokenizedAssetsGlassmorphic = () => {
                             );
                           })
                         ) : (
-                          <div className="col-span-3 border rounded-xl p-4 text-center bg-white/35 border-gray-300/50" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                          <div className="col-span-2 md:col-span-3 border rounded-xl p-4 text-center bg-white/35 border-gray-300/50" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
                             <Sparkles size={20} className="text-gray-500 mx-auto mb-2" />
                             <p className="text-xs text-gray-700 font-medium mb-1">No Tokenization Requests</p>
                             <p className="text-[10px] text-gray-500 mb-2">Connect your real-world assets to blockchain</p>
@@ -5725,14 +5786,14 @@ const TokenizedAssetsGlassmorphic = () => {
                     )}
                   </div>
 
-                  {/* Escrow & News Cards - unterhalb der recent chats */}
-                  <div className="mt-8 grid grid-cols-2 gap-4">
-                    {/* Card #7 - Bookings Card */}
+                  {/* Row 2: My Bookings + My Requests (mobile) / My Bookings + Blog (desktop) */}
+                  <div className="mt-4 md:mt-8 grid grid-cols-2 gap-3 md:gap-4">
+                    {/* Card - Bookings Card */}
                     <button
                       onClick={() => {
                         setActiveCategory('bookings');
                       }}
-                      className="border rounded-xl p-4 bg-white/35 hover:bg-white/40 border-gray-300/50 transition-all text-left"
+                      className="border rounded-xl p-3 md:p-4 bg-white/35 hover:bg-white/40 border-gray-300/50 transition-all text-left"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
                       <h4 className={`text-xs font-semibold mb-1 font-['DM_Sans'] ${webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'}`}>
@@ -5746,12 +5807,90 @@ const TokenizedAssetsGlassmorphic = () => {
                       </p>
                     </button>
 
-                    {/* Card #8 - News Card */}
+                    {/* My Requests Card - Shown on mobile only in row 2 */}
+                    <button
+                      onClick={() => setActiveCategory('requests')}
+                      className="md:hidden border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
+                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-[10px] font-bold font-['DM_Sans'] text-gray-500 uppercase tracking-wider">
+                          My Requests
+                        </span>
+                        {!loadingRequests && userRequests.length > 0 && (
+                          <span className={`text-[9px] px-2 py-0.5 rounded-full font-medium font-['DM_Sans'] ${
+                            userRequests[0].status === 'confirmed'
+                              ? 'bg-green-100 text-green-700'
+                              : userRequests[0].status === 'pending'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {userRequests[0].status}
+                          </span>
+                        )}
+                      </div>
+                      {loadingRequests ? (
+                        <>
+                          <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800">Loading...</h4>
+                          <p className="text-[10px] font-['DM_Sans'] text-gray-600">Checking requests</p>
+                        </>
+                      ) : userRequests.length > 0 ? (
+                        <>
+                          <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800 line-clamp-1">
+                            {userRequests.length} Active Request{userRequests.length > 1 ? 's' : ''}
+                          </h4>
+                          <p className="text-[10px] font-['DM_Sans'] text-gray-600">
+                            Latest: {new Date(userRequests[0].created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800">No Active Requests</h4>
+                          <p className="text-[10px] font-['DM_Sans'] text-gray-600">Start booking services</p>
+                        </>
+                      )}
+                    </button>
+
+                    {/* News Card - Hidden on mobile, shown on desktop */}
                     <a
                       href={latestBlogPost?.link || 'https://www.privatecharterx.blog'}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block border rounded-xl p-4 transition-all cursor-pointer bg-white/35 hover:bg-white/40 border-gray-300/50"
+                      className="hidden md:block border rounded-xl p-4 transition-all cursor-pointer bg-white/35 hover:bg-white/40 border-gray-300/50"
+                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                    >
+                      <div className="flex items-start gap-2 mb-2">
+                        <img
+                          src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/gb/PrivatecharterX_logo_vectorized.glb.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJnYi9Qcml2YXRlY2hhcnRlclhfbG9nb192ZWN0b3JpemVkLmdsYi5wbmciLCJpYXQiOjE3NTk1Mzc3MjcsImV4cCI6MzYwNDUzNTQ0MTI3fQ.jYHe7MUj65rwO8cVL3Ocwgwd3ZJRMr5w1wR9xcaDtVk"
+                          alt="PrivateCharterX"
+                          className="w-6 h-6 object-contain flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h4 className={`text-xs font-semibold mb-1 line-clamp-2 font-['DM_Sans'] ${
+                            webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'
+                          }`}>
+                            {blogLoading ? 'Loading...' : (latestBlogPost?.title || 'Latest from PrivateCharterX Blog')}
+                          </h4>
+                          <p className={`text-[10px] line-clamp-2 font-['DM_Sans'] ${
+                            webMode === 'web3' ? 'text-gray-600' : 'text-gray-600'
+                          }`}>
+                            {latestBlogPost ? 'Click to read more →' : 'Discover new sustainable aviation fuels and CO2 offset programs...'}
+                          </p>
+                        </div>
+                      </div>
+                      <p className={`text-[10px] font-['DM_Sans'] ${webMode === 'web3' ? 'text-gray-500' : 'text-gray-500'}`}>
+                        {latestBlogPost ? new Date(latestBlogPost.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '2 hours ago'}
+                      </p>
+                    </a>
+                  </div>
+
+                  {/* Row 3: Blog post (mobile only - full width) */}
+                  <div className="mt-4 md:hidden">
+                    <a
+                      href={latestBlogPost?.link || 'https://www.privatecharterx.blog'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block border rounded-xl p-3 transition-all cursor-pointer bg-white/35 hover:bg-white/40 border-gray-300/50"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
                       <div className="flex items-start gap-2 mb-2">
@@ -5781,7 +5920,7 @@ const TokenizedAssetsGlassmorphic = () => {
 
                   {/* Third Row - Additional Cards (Web3 Mode Only) */}
                   {webMode === 'web3' && (
-                    <div className="mt-8 grid grid-cols-3 gap-3">
+                    <div className="mt-4 md:mt-8 grid grid-cols-2 md:grid-cols-3 gap-3">
                       {/* Card #9 - NFT Marketplace */}
                       <button
                         onClick={() => setActiveCategory('nft-marketplace')}
@@ -6540,60 +6679,60 @@ const TokenizedAssetsGlassmorphic = () => {
             <div className="w-full flex-1 flex flex-col">
 
               {!showJetDetail && (
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">Private Jets</h2>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6 gap-3">
+                <h2 className="text-xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter">Private Jets</h2>
 
-                  <div className="flex items-center gap-3">
-                    {/* Filter Toggle Button */}
+                <div className="flex items-center gap-2 md:gap-3">
+                  {/* Filter Toggle Button */}
+                  <button
+                    onClick={() => setJetsFiltersVisible(!jetsFiltersVisible)}
+                    className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-[10px] md:text-xs font-medium transition-all backdrop-blur-xl border ${
+                      jetsFiltersVisible
+                        ? 'bg-gray-800 text-white border-gray-800'
+                        : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
+                    }`}
+                    style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                  >
+                    <SlidersHorizontal size={12} />
+                    <span>Filters</span>
+                  </button>
+
+                  {/* View Mode Switcher - Hidden on mobile, force grid on mobile */}
+                  <div className="hidden md:flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
                     <button
-                      onClick={() => setJetsFiltersVisible(!jetsFiltersVisible)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
-                        jetsFiltersVisible
-                          ? 'bg-gray-800 text-white border-gray-800'
-                          : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
+                      onClick={() => setJetsViewMode('grid')}
+                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                        jetsViewMode === 'grid'
+                          ? 'bg-gray-800 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
                       }`}
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
-                      <SlidersHorizontal size={14} />
-                      <span>Filters</span>
+                      Grid
                     </button>
-
-                    {/* View Mode Switcher */}
-                    <div className="flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                      <button
-                        onClick={() => setJetsViewMode('grid')}
-                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                          jetsViewMode === 'grid'
-                            ? 'bg-gray-800 text-white shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        Grid
-                      </button>
-                      <button
-                        onClick={() => setJetsViewMode('tabs')}
-                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                          jetsViewMode === 'tabs'
-                            ? 'bg-gray-800 text-white shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        Tabs
-                      </button>
-                    </div>
-
-                    {/* Charter a Jet Button */}
                     <button
-                      onClick={() => {
-                        setBookingVehicleType('private-jet');
-                        setActiveCategory('private-jet');
-                      }}
-                      className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                      onClick={() => setJetsViewMode('tabs')}
+                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                        jetsViewMode === 'tabs'
+                          ? 'bg-gray-800 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
                     >
-                      Charter a Jet
+                      Tabs
                     </button>
                   </div>
+
+                  {/* Charter a Jet Button */}
+                  <button
+                    onClick={() => {
+                      setBookingVehicleType('private-jet');
+                      setActiveCategory('private-jet');
+                    }}
+                    className="px-3 md:px-4 py-1.5 md:py-2 bg-black text-white rounded-lg text-[10px] md:text-sm font-medium hover:bg-gray-800 transition-colors"
+                  >
+                    Charter a Jet
+                  </button>
                 </div>
+              </div>
               )}
 
               {/* Back button when showing jet detail */}
@@ -6607,16 +6746,16 @@ const TokenizedAssetsGlassmorphic = () => {
                 </button>
               )}
 
-              {/* Filters - Glassmorphic - Only show when not viewing detail */}
+              {/* Filters - Glassmorphic - Mobile Optimized */}
               {!showJetDetail && jetsFiltersVisible && (
-                <div className="bg-gray-100/60 rounded-lg border border-gray-300/50 p-5 mb-6 backdrop-blur-xl transition-all duration-300" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                <div className="grid grid-cols-5 gap-4">
+                <div className="bg-gray-100/60 rounded-lg border border-gray-300/50 p-3 md:p-5 mb-4 md:mb-6 backdrop-blur-xl transition-all duration-300" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-800 mb-2">Aircraft Category</label>
+                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Category</label>
                     <select
                       value={jetsFilter}
                       onChange={(e) => setJetsFilter(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-white/35 border border-gray-300/50 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
+                      className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
                       <option value="all">All Categories</option>
@@ -6627,49 +6766,49 @@ const TokenizedAssetsGlassmorphic = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-800 mb-2">Manufacturer</label>
+                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Manufacturer</label>
                     <input
                       type="text"
-                      placeholder="e.g. Gulfstream, Bombardier"
+                      placeholder="e.g. Gulfstream"
                       value={jetsSearch}
                       onChange={(e) => setJetsSearch(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-white/35 border border-gray-300/50 rounded-xl text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
+                      className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-800 mb-2">Model</label>
+                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Model</label>
                     <input
                       type="text"
-                      placeholder="e.g. G650, Global 7500"
+                      placeholder="e.g. G650"
                       value={jetsSearch}
                       onChange={(e) => setJetsSearch(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-white/35 border border-gray-300/50 rounded-xl text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
+                      className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-800 mb-2">Max Price</label>
+                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Max Price</label>
                     <input
                       type="text"
-                      placeholder="e.g. €50,000/hr"
+                      placeholder="€50,000"
                       value={jetsMaxPrice}
                       onChange={(e) => setJetsMaxPrice(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-white/35 border border-gray-300/50 rounded-xl text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
+                      className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     />
                   </div>
-                  <div className="flex items-end">
+                  <div className="col-span-2 md:col-span-1 flex items-end">
                     <button
                       onClick={() => {
                         setJetsSearch('');
                         setJetsMaxPrice('');
                         setJetsFilter('all');
                       }}
-                      className="w-full px-4 py-2.5 bg-white/35 hover:bg-white/40 border border-gray-300/50 text-gray-700 rounded-xl text-sm transition-all"
+                      className="w-full px-3 md:px-4 py-2 md:py-2.5 bg-white/35 hover:bg-white/40 border border-gray-300/50 text-gray-700 rounded-lg md:rounded-xl text-xs md:text-sm transition-all"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
-                      Clear Filters
+                      Clear
                     </button>
                   </div>
                 </div>
@@ -6694,86 +6833,131 @@ const TokenizedAssetsGlassmorphic = () => {
                 </div>
               )}
 
-              {/* Jets Grid View - Glassmorphic Cards */}
-              {!showJetDetail && !isLoadingJets && jetsViewMode === 'grid' && (
+              {/* Jets Grid View - Mobile Optimized with Vertical Cards */}
+              {!showJetDetail && !isLoadingJets && (jetsViewMode === 'grid' || window.innerWidth < 768) && (
                 <>
-                <div className="grid grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5">
                   {jetsData
                     .slice((currentJetsPage - 1) * jetsPerPage, currentJetsPage * jetsPerPage)
                     .map((jet) => (
                     <div
                       key={jet.id}
                       onClick={() => handleJetClick(jet)}
-                      className="bg-white/35 hover:bg-white/40 rounded-xl flex h-64 hover:shadow-lg transition-all cursor-pointer border border-gray-300/50"
+                      className="bg-white/35 hover:bg-white/40 rounded-xl overflow-hidden hover:shadow-lg cursor-pointer border border-gray-300/50"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
-                      <div className="w-2/5 bg-white/10 relative flex-shrink-0 rounded-l-xl overflow-hidden">
-                        {jet.image && (
-                          <img
-                            src={jet.image}
-                            alt={jet.name}
-                            className="w-full h-64 object-cover"
-                          />
-                        )}
-                        <div className="absolute top-3 left-3 flex flex-col space-y-1.5">
-                          <div className="flex space-x-1.5">
-                            <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium flex items-center space-x-1 backdrop-blur-sm">
-                              <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
-                              <span className="text-gray-800">{jet.location}</span>
-                            </div>
-                            <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium text-gray-800 backdrop-blur-sm">⌂ {jet.category}</div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex-1 p-5 flex flex-col">
-                        <div className="flex items-center justify-between mb-3">
-                          {jet.rawData?.is_partner_offer ? (
-                            <div className="flex items-center gap-2">
-                              <img
-                                src={jet.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
-                                alt={jet.rawData.partner_name || 'Partner'}
-                                className="h-6 w-auto object-contain rounded"
-                                onError={(e) => {
-                                  e.target.src = 'https://via.placeholder.com/80x24/000/fff?text=Partner';
-                                }}
-                              />
-                            </div>
-                          ) : (
+                      {/* Mobile: Vertical stacked layout */}
+                      <div className="md:hidden">
+                        {/* Image on top */}
+                        <div className="relative h-36 bg-white/10">
+                          {jet.image && (
                             <img
-                              src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_logo_vectorized.glb.png"
-                              alt="PrivateCharterX"
-                              className="h-6 w-auto object-contain"
+                              src={jet.image}
+                              alt={jet.name}
+                              className="w-full h-full object-cover"
                             />
                           )}
+                          <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+                            <div className="bg-white/90 px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 backdrop-blur-sm">
+                              <span className="w-1 h-1 bg-red-500 rounded-full"></span>
+                              <span className="text-gray-800">{jet.location}</span>
+                            </div>
+                            <div className="bg-white/90 px-1.5 py-0.5 rounded text-[10px] font-medium text-gray-800 backdrop-blur-sm">✈️ {jet.category?.substring(0, 15)}</div>
+                          </div>
                         </div>
-                        <h3 className="text-base font-semibold text-gray-800 mb-4 line-clamp-2 overflow-hidden">{jet.name}</h3>
-                        <div className="flex space-x-6 border-b border-gray-600/30 mb-5">
-                          <button className="pb-3 text-xs relative text-gray-800">
-                            Properties
-                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-800"></div>
+                        {/* Content below */}
+                        <div className="p-3">
+                          <h3 className="text-sm font-semibold text-gray-800 mb-2 line-clamp-1">{jet.name}</h3>
+                          <div className="grid grid-cols-3 gap-2 mb-3">
+                            <div className="text-center bg-gray-100/50 rounded-lg py-1.5">
+                              <span className="text-[10px] text-gray-500 block">Price</span>
+                              <span className="text-xs font-semibold text-gray-800">{jet.totalPrice}</span>
+                            </div>
+                            <div className="text-center bg-gray-100/50 rounded-lg py-1.5">
+                              <span className="text-[10px] text-gray-500 block">Capacity</span>
+                              <span className="text-xs font-semibold text-gray-800">{jet.capacity}</span>
+                            </div>
+                            <div className="text-center bg-gray-100/50 rounded-lg py-1.5">
+                              <span className="text-[10px] text-gray-500 block">Range</span>
+                              <span className="text-xs font-semibold text-gray-800">{jet.range}</span>
+                            </div>
+                          </div>
+                          <button className="w-full py-2 bg-gray-800 text-white rounded-lg text-xs font-medium">
+                            View Details
                           </button>
-                          <button className="pb-3 text-xs text-gray-600">Description</button>
                         </div>
+                      </div>
 
-                        {/* Jet specific fields */}
-                        <div className="flex justify-between mt-auto mb-5">
-                          <div className="flex flex-col space-y-1">
-                            <span className="text-xs text-gray-600">Price Range</span>
-                            <span className="text-sm font-semibold text-gray-800">{jet.totalPrice}</span>
-                          </div>
-                          <div className="flex flex-col space-y-1">
-                            <span className="text-xs text-gray-600">Capacity</span>
-                            <span className="text-sm font-semibold text-gray-800">{jet.capacity}</span>
-                          </div>
-                          <div className="flex flex-col space-y-1">
-                            <span className="text-xs text-gray-600">Range</span>
-                            <span className="text-sm font-semibold text-gray-800">{jet.range}</span>
+                      {/* Desktop: Horizontal layout */}
+                      <div className="hidden md:flex h-64">
+                        <div className="w-2/5 bg-white/10 relative flex-shrink-0 rounded-l-xl overflow-hidden">
+                          {jet.image && (
+                            <img
+                              src={jet.image}
+                              alt={jet.name}
+                              className="w-full h-64 object-cover"
+                            />
+                          )}
+                          <div className="absolute top-3 left-3 flex flex-col space-y-1.5">
+                            <div className="flex space-x-1.5">
+                              <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium flex items-center space-x-1 backdrop-blur-sm">
+                                <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                                <span className="text-gray-800">{jet.location}</span>
+                              </div>
+                              <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium text-gray-800 backdrop-blur-sm">⌂ {jet.category}</div>
+                            </div>
                           </div>
                         </div>
+                        <div className="flex-1 p-5 flex flex-col">
+                          <div className="flex items-center justify-between mb-3">
+                            {jet.rawData?.is_partner_offer ? (
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={jet.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
+                                  alt={jet.rawData.partner_name || 'Partner'}
+                                  className="h-6 w-auto object-contain rounded"
+                                  onError={(e) => {
+                                    e.target.src = 'https://via.placeholder.com/80x24/000/fff?text=Partner';
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              <img
+                                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_logo_vectorized.glb.png"
+                                alt="PrivateCharterX"
+                                className="h-6 w-auto object-contain"
+                              />
+                            )}
+                          </div>
+                          <h3 className="text-base font-semibold text-gray-800 mb-4 line-clamp-2 overflow-hidden">{jet.name}</h3>
+                          <div className="flex space-x-6 border-b border-gray-600/30 mb-5">
+                            <button className="pb-3 text-xs relative text-gray-800">
+                              Properties
+                              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-800"></div>
+                            </button>
+                            <button className="pb-3 text-xs text-gray-600">Description</button>
+                          </div>
 
-                        <div className="flex space-x-4 pt-4 border-t border-gray-600/30 text-xs">
-                          <a href="#" className="text-gray-600 hover:text-gray-800">See details ↗</a>
-                          <a href="#" className="text-gray-600 hover:text-gray-800">Aircraft specs ⚖</a>
+                          {/* Jet specific fields */}
+                          <div className="flex justify-between mt-auto mb-5">
+                            <div className="flex flex-col space-y-1">
+                              <span className="text-xs text-gray-600">Price Range</span>
+                              <span className="text-sm font-semibold text-gray-800">{jet.totalPrice}</span>
+                            </div>
+                            <div className="flex flex-col space-y-1">
+                              <span className="text-xs text-gray-600">Capacity</span>
+                              <span className="text-sm font-semibold text-gray-800">{jet.capacity}</span>
+                            </div>
+                            <div className="flex flex-col space-y-1">
+                              <span className="text-xs text-gray-600">Range</span>
+                              <span className="text-sm font-semibold text-gray-800">{jet.range}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex space-x-4 pt-4 border-t border-gray-600/30 text-xs">
+                            <a href="#" className="text-gray-600 hover:text-gray-800">See details ↗</a>
+                            <a href="#" className="text-gray-600 hover:text-gray-800">Aircraft specs ⚖</a>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -7264,60 +7448,60 @@ const TokenizedAssetsGlassmorphic = () => {
             <div className="w-full flex-1 flex flex-col">
 
               {!showHelicopterDetail && (
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">Helicopter Charters</h2>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6 gap-3">
+                <h2 className="text-xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter">Helicopter Charters</h2>
 
-                  <div className="flex items-center gap-3">
-                    {/* Filter Toggle Button */}
+                <div className="flex items-center gap-2 md:gap-3">
+                  {/* Filter Toggle Button */}
+                  <button
+                    onClick={() => setHelicoptersFiltersVisible(!helicoptersFiltersVisible)}
+                    className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-[10px] md:text-xs font-medium transition-all backdrop-blur-xl border ${
+                      helicoptersFiltersVisible
+                        ? 'bg-gray-800 text-white border-gray-800'
+                        : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
+                    }`}
+                    style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                  >
+                    <SlidersHorizontal size={12} />
+                    <span>Filters</span>
+                  </button>
+
+                  {/* View Mode Switcher - Hidden on mobile, force grid on mobile */}
+                  <div className="hidden md:flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
                     <button
-                      onClick={() => setHelicoptersFiltersVisible(!helicoptersFiltersVisible)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
-                        helicoptersFiltersVisible
-                          ? 'bg-gray-800 text-white border-gray-800'
-                          : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
+                      onClick={() => setHelicoptersViewMode('grid')}
+                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                        helicoptersViewMode === 'grid'
+                          ? 'bg-gray-800 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
                       }`}
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
-                      <SlidersHorizontal size={14} />
-                      <span>Filters</span>
+                      Grid
                     </button>
-
-                    {/* View Mode Switcher */}
-                    <div className="flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                      <button
-                        onClick={() => setHelicoptersViewMode('grid')}
-                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                          helicoptersViewMode === 'grid'
-                            ? 'bg-gray-800 text-white shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        Grid
-                      </button>
-                      <button
-                        onClick={() => setHelicoptersViewMode('tabs')}
-                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                          helicoptersViewMode === 'tabs'
-                            ? 'bg-gray-800 text-white shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        Tabs
-                      </button>
-                    </div>
-
-                    {/* Charter a Heli Button */}
                     <button
-                      onClick={() => {
-                        setBookingVehicleType('helicopter');
-                        setActiveCategory('private-jet');
-                      }}
-                      className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                      onClick={() => setHelicoptersViewMode('tabs')}
+                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                        helicoptersViewMode === 'tabs'
+                          ? 'bg-gray-800 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
                     >
-                      Charter a Heli
+                      Tabs
                     </button>
                   </div>
+
+                  {/* Charter a Heli Button */}
+                  <button
+                    onClick={() => {
+                      setBookingVehicleType('helicopter');
+                      setActiveCategory('private-jet');
+                    }}
+                    className="px-3 md:px-4 py-1.5 md:py-2 bg-black text-white rounded-lg text-[10px] md:text-sm font-medium hover:bg-gray-800 transition-colors"
+                  >
+                    Charter a Heli
+                  </button>
                 </div>
+              </div>
               )}
 
               {/* Back button when showing helicopter detail */}
@@ -7335,16 +7519,16 @@ const TokenizedAssetsGlassmorphic = () => {
                 </button>
               )}
 
-              {/* Filters - Glassmorphic */}
+              {/* Filters - Glassmorphic - Mobile Optimized */}
               {!showHelicopterDetail && helicoptersFiltersVisible && (
-              <div className="bg-gray-100/60 rounded-lg border border-gray-300/50 p-5 mb-6 backdrop-blur-xl transition-all duration-300" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                <div className="grid grid-cols-5 gap-4">
+                <div className="bg-gray-100/60 rounded-lg border border-gray-300/50 p-3 md:p-5 mb-4 md:mb-6 backdrop-blur-xl transition-all duration-300" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-800 mb-2">Category</label>
+                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Category</label>
                     <select
                       value={helicoptersFilter}
                       onChange={(e) => setHelicoptersFilter(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-white/35 border border-gray-300/50 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
+                      className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
                       <option value="all">All Categories</option>
@@ -7355,39 +7539,39 @@ const TokenizedAssetsGlassmorphic = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-800 mb-2">Model/Manufacturer</label>
+                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Model</label>
                     <input
                       type="text"
-                      placeholder="e.g. Airbus H135, AW109"
+                      placeholder="e.g. H135"
                       value={helicoptersSearch}
                       onChange={(e) => setHelicoptersSearch(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-white/35 border border-gray-300/50 rounded-xl text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
+                      className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-800 mb-2">Location</label>
+                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Location</label>
                     <input
                       type="text"
-                      placeholder="e.g. Monaco, Switzerland"
+                      placeholder="e.g. Monaco"
                       value={helicoptersLocation}
                       onChange={(e) => setHelicoptersLocation(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-white/35 border border-gray-300/50 rounded-xl text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
+                      className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-800 mb-2">Max Price/Hour (€)</label>
+                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Max Price (€)</label>
                     <input
                       type="number"
-                      placeholder="e.g. 8000"
+                      placeholder="€8000"
                       value={helicoptersMaxPrice}
                       onChange={(e) => setHelicoptersMaxPrice(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-white/35 border border-gray-300/50 rounded-xl text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
+                      className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     />
                   </div>
-                  <div className="flex items-end">
+                  <div className="col-span-2 md:col-span-1 flex items-end">
                     <button
                       onClick={() => {
                         setHelicoptersSearch('');
@@ -7395,14 +7579,14 @@ const TokenizedAssetsGlassmorphic = () => {
                         setHelicoptersMaxPrice('');
                         setHelicoptersFilter('all');
                       }}
-                      className="w-full px-4 py-2.5 bg-white/35 hover:bg-white/40 border border-gray-300/50 text-gray-700 rounded-xl text-sm transition-all"
+                      className="w-full px-3 md:px-4 py-2 md:py-2.5 bg-white/35 hover:bg-white/40 border border-gray-300/50 text-gray-700 rounded-lg md:rounded-xl text-xs md:text-sm transition-all"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
-                      Clear Filters
+                      Clear
                     </button>
                   </div>
                 </div>
-              </div>
+                </div>
               )}
 
               {/* Loading State */}
@@ -7423,10 +7607,10 @@ const TokenizedAssetsGlassmorphic = () => {
                 </div>
               )}
 
-              {/* Helicopters Grid View */}
-              {!isLoadingHelicopters && !showHelicopterDetail && helicoptersViewMode === 'grid' && (
+              {/* Helicopters Grid View - Mobile Optimized with Vertical Cards */}
+              {!isLoadingHelicopters && !showHelicopterDetail && (helicoptersViewMode === 'grid' || window.innerWidth < 768) && (
                 <>
-                <div className="grid grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5">
                   {helicoptersData
                     .slice((currentHelicoptersPage - 1) * helicoptersPerPage, currentHelicoptersPage * helicoptersPerPage)
                     .map((heli) => (
@@ -7437,93 +7621,156 @@ const TokenizedAssetsGlassmorphic = () => {
                         setShowHelicopterDetail(true);
                         setCurrentHelicopterImageIndex(0);
                       }}
-                      className="bg-white/35 hover:bg-white/40 rounded-xl flex h-64 hover:shadow-lg transition-all cursor-pointer border border-gray-300/50"
+                      className="bg-white/35 hover:bg-white/40 rounded-xl overflow-hidden hover:shadow-lg cursor-pointer border border-gray-300/50"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
-                      <div className="w-2/5 bg-white/10 relative flex-shrink-0 rounded-l-xl overflow-hidden">
-                        {heli.image && (
-                          <img
-                            src={heli.image}
-                            alt={heli.name}
-                            className="w-full h-64 object-cover"
-                          />
-                        )}
-                        <div className="absolute top-3 left-3 flex flex-col space-y-1.5">
-                          <div className="flex space-x-1.5">
-                            <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium flex items-center space-x-1 backdrop-blur-sm">
-                              <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                              <span className="text-gray-800">{heli.location}</span>
-                            </div>
-                            <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium text-gray-800 backdrop-blur-sm">🚁 {heli.category.substring(0, 20)}</div>
-                          </div>
-                        </div>
-                        <FavouriteButton
-                          item={{
-                            id: heli.id,
-                            type: 'helicopter',
-                            name: heli.name,
-                            location: heli.location,
-                            image: heli.image,
-                            category: heli.category,
-                            price: heli.totalPrice,
-                            metadata: {
-                              capacity: heli.capacity,
-                              range: heli.range,
-                              manufacturer: heli.rawData?.manufacturer
-                            }
-                          }}
-                          variant="floating"
-                          size={18}
-                        />
-                      </div>
-                      <div className="flex-1 p-5 flex flex-col">
-                        <div className="flex items-center justify-between mb-3">
-                          {heli.rawData?.is_partner_offer ? (
-                            <div className="flex items-center gap-2">
-                              <img
-                                src={heli.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
-                                alt={heli.rawData.partner_name || 'Partner'}
-                                className="h-6 w-auto object-contain rounded"
-                                onError={(e) => {
-                                  e.target.src = 'https://via.placeholder.com/80x24/000/fff?text=Partner';
-                                }}
-                              />
-                            </div>
-                          ) : (
+                      {/* Mobile: Vertical stacked layout */}
+                      <div className="md:hidden">
+                        {/* Image on top */}
+                        <div className="relative h-36 bg-white/10">
+                          {heli.image && (
                             <img
-                              src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_logo_vectorized.glb.png"
-                              alt="PrivateCharterX"
-                              className="h-6 w-auto object-contain"
+                              src={heli.image}
+                              alt={heli.name}
+                              className="w-full h-full object-cover"
                             />
                           )}
+                          <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+                            <div className="bg-white/90 px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 backdrop-blur-sm">
+                              <span className="w-1 h-1 bg-green-500 rounded-full"></span>
+                              <span className="text-gray-800">{heli.location}</span>
+                            </div>
+                            <div className="bg-white/90 px-1.5 py-0.5 rounded text-[10px] font-medium text-gray-800 backdrop-blur-sm">🚁 {heli.category?.substring(0, 15)}</div>
+                          </div>
+                          <FavouriteButton
+                            item={{
+                              id: heli.id,
+                              type: 'helicopter',
+                              name: heli.name,
+                              location: heli.location,
+                              image: heli.image,
+                              category: heli.category,
+                              price: heli.totalPrice,
+                              metadata: {
+                                capacity: heli.capacity,
+                                range: heli.range,
+                                manufacturer: heli.rawData?.manufacturer
+                              }
+                            }}
+                            variant="floating"
+                            size={16}
+                          />
                         </div>
-                        <h3 className="text-base font-semibold text-gray-800 mb-4 line-clamp-2 overflow-hidden">{heli.name}</h3>
-                        <div className="flex space-x-6 border-b border-gray-600/30 mb-5">
-                          <button className="pb-3 text-xs relative text-gray-800">
-                            Properties
-                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-800"></div>
+                        {/* Content below */}
+                        <div className="p-3">
+                          <h3 className="text-sm font-semibold text-gray-800 mb-2 line-clamp-1">{heli.name}</h3>
+                          <div className="grid grid-cols-3 gap-2 mb-3">
+                            <div className="text-center bg-gray-100/50 rounded-lg py-1.5">
+                              <span className="text-[10px] text-gray-500 block">Price/Hr</span>
+                              <span className="text-xs font-semibold text-gray-800">{heli.totalPrice}</span>
+                            </div>
+                            <div className="text-center bg-gray-100/50 rounded-lg py-1.5">
+                              <span className="text-[10px] text-gray-500 block">Capacity</span>
+                              <span className="text-xs font-semibold text-gray-800">{heli.capacity}</span>
+                            </div>
+                            <div className="text-center bg-gray-100/50 rounded-lg py-1.5">
+                              <span className="text-[10px] text-gray-500 block">Range</span>
+                              <span className="text-xs font-semibold text-gray-800">{heli.range}</span>
+                            </div>
+                          </div>
+                          <button className="w-full py-2 bg-gray-800 text-white rounded-lg text-xs font-medium">
+                            View Details
                           </button>
-                          <button className="pb-3 text-xs text-gray-600">Description</button>
                         </div>
+                      </div>
 
-                        <div className="flex justify-between mt-auto mb-5">
-                          <div className="flex flex-col space-y-1">
-                            <span className="text-xs text-gray-600">Price/Hour</span>
-                            <span className="text-sm font-semibold text-gray-800">{heli.totalPrice}</span>
+                      {/* Desktop: Horizontal layout */}
+                      <div className="hidden md:flex h-64">
+                        <div className="w-2/5 bg-white/10 relative flex-shrink-0 rounded-l-xl overflow-hidden">
+                          {heli.image && (
+                            <img
+                              src={heli.image}
+                              alt={heli.name}
+                              className="w-full h-64 object-cover"
+                            />
+                          )}
+                          <div className="absolute top-3 left-3 flex flex-col space-y-1.5">
+                            <div className="flex space-x-1.5">
+                              <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium flex items-center space-x-1 backdrop-blur-sm">
+                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                                <span className="text-gray-800">{heli.location}</span>
+                              </div>
+                              <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium text-gray-800 backdrop-blur-sm">🚁 {heli.category?.substring(0, 20)}</div>
+                            </div>
                           </div>
-                          <div className="flex flex-col space-y-1">
-                            <span className="text-xs text-gray-600">Capacity</span>
-                            <span className="text-sm font-semibold text-gray-800">{heli.capacity}</span>
-                          </div>
-                          <div className="flex flex-col space-y-1">
-                            <span className="text-xs text-gray-600">Range</span>
-                            <span className="text-sm font-semibold text-gray-800">{heli.range}</span>
-                          </div>
+                          <FavouriteButton
+                            item={{
+                              id: heli.id,
+                              type: 'helicopter',
+                              name: heli.name,
+                              location: heli.location,
+                              image: heli.image,
+                              category: heli.category,
+                              price: heli.totalPrice,
+                              metadata: {
+                                capacity: heli.capacity,
+                                range: heli.range,
+                                manufacturer: heli.rawData?.manufacturer
+                              }
+                            }}
+                            variant="floating"
+                            size={18}
+                          />
                         </div>
+                        <div className="flex-1 p-5 flex flex-col">
+                          <div className="flex items-center justify-between mb-3">
+                            {heli.rawData?.is_partner_offer ? (
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={heli.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
+                                  alt={heli.rawData.partner_name || 'Partner'}
+                                  className="h-6 w-auto object-contain rounded"
+                                  onError={(e) => {
+                                    e.target.src = 'https://via.placeholder.com/80x24/000/fff?text=Partner';
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              <img
+                                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_logo_vectorized.glb.png"
+                                alt="PrivateCharterX"
+                                className="h-6 w-auto object-contain"
+                              />
+                            )}
+                          </div>
+                          <h3 className="text-base font-semibold text-gray-800 mb-4 line-clamp-2 overflow-hidden">{heli.name}</h3>
+                          <div className="flex space-x-6 border-b border-gray-600/30 mb-5">
+                            <button className="pb-3 text-xs relative text-gray-800">
+                              Properties
+                              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-800"></div>
+                            </button>
+                            <button className="pb-3 text-xs text-gray-600">Description</button>
+                          </div>
 
-                        <div className="flex space-x-4 pt-4 border-t border-gray-600/30 text-xs">
-                          <a href="#" className="text-gray-600 hover:text-gray-800">See details ↗</a>
-                          <a href="#" className="text-gray-600 hover:text-gray-800">Specifications ⚖</a>
+                          <div className="flex justify-between mt-auto mb-5">
+                            <div className="flex flex-col space-y-1">
+                              <span className="text-xs text-gray-600">Price/Hour</span>
+                              <span className="text-sm font-semibold text-gray-800">{heli.totalPrice}</span>
+                            </div>
+                            <div className="flex flex-col space-y-1">
+                              <span className="text-xs text-gray-600">Capacity</span>
+                              <span className="text-sm font-semibold text-gray-800">{heli.capacity}</span>
+                            </div>
+                            <div className="flex flex-col space-y-1">
+                              <span className="text-xs text-gray-600">Range</span>
+                              <span className="text-sm font-semibold text-gray-800">{heli.range}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex space-x-4 pt-4 border-t border-gray-600/30 text-xs">
+                            <a href="#" className="text-gray-600 hover:text-gray-800">See details ↗</a>
+                            <a href="#" className="text-gray-600 hover:text-gray-800">Specifications ⚖</a>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -7980,26 +8227,26 @@ const TokenizedAssetsGlassmorphic = () => {
             <div className="w-full flex-1 flex flex-col">
 
               {!showEmptyLegDetail && (
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">Empty Legs</h2>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6 gap-3">
+                <h2 className="text-xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter">Empty Legs</h2>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 md:gap-3">
                   {/* Filter Toggle Button */}
                   <button
                     onClick={() => setEmptyLegsFiltersVisible(!emptyLegsFiltersVisible)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
+                    className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-[10px] md:text-xs font-medium transition-all backdrop-blur-xl border ${
                       emptyLegsFiltersVisible
                         ? 'bg-gray-800 text-white border-gray-800'
                         : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
                     }`}
                     style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                   >
-                    <SlidersHorizontal size={14} />
+                    <SlidersHorizontal size={12} />
                     <span>Filters</span>
                   </button>
 
-                  {/* View Mode Switcher */}
-                  <div className="flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                  {/* View Mode Switcher - Hidden on mobile, force grid on mobile */}
+                  <div className="hidden md:flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
                     <button
                       onClick={() => setEmptyLegsViewMode('grid')}
                       className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
@@ -8040,16 +8287,16 @@ const TokenizedAssetsGlassmorphic = () => {
                 </button>
               )}
 
-              {/* Filters - Glassmorphic */}
+              {/* Filters - Glassmorphic - Mobile Optimized */}
               {!showEmptyLegDetail && emptyLegsFiltersVisible && (
-                <div className="bg-gray-100/60 rounded-lg border border-gray-300/50 p-5 mb-6 backdrop-blur-xl transition-all duration-300" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                <div className="grid grid-cols-5 gap-4">
+                <div className="bg-gray-100/60 rounded-lg border border-gray-300/50 p-3 md:p-5 mb-4 md:mb-6 backdrop-blur-xl transition-all duration-300" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-800 mb-2">Region</label>
+                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Region</label>
                     <select
                       value={emptyLegsFilter}
                       onChange={(e) => setEmptyLegsFilter(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-white/35 border border-gray-300/50 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
+                      className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
                       <option value="all">All Regions</option>
@@ -8060,38 +8307,38 @@ const TokenizedAssetsGlassmorphic = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-800 mb-2">Location/IATA</label>
+                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Location</label>
                     <input
                       type="text"
-                      placeholder="e.g. London, LHR"
+                      placeholder="e.g. LHR"
                       value={emptyLegsLocation}
                       onChange={(e) => setEmptyLegsLocation(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-white/35 border border-gray-300/50 rounded-xl text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
+                      className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-800 mb-2">Departure Date</label>
+                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Date</label>
                     <input
                       type="date"
                       value={emptyLegsDate}
                       onChange={(e) => setEmptyLegsDate(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-white/35 border border-gray-300/50 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
+                      className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-800 mb-2">Max Price (€)</label>
+                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Max Price</label>
                     <input
                       type="number"
-                      placeholder="e.g. 5000"
+                      placeholder="€5000"
                       value={emptyLegsMaxPrice}
                       onChange={(e) => setEmptyLegsMaxPrice(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-white/35 border border-gray-300/50 rounded-xl text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
+                      className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     />
                   </div>
-                  <div className="flex items-end">
+                  <div className="col-span-2 md:col-span-1 flex items-end">
                     <button
                       onClick={() => {
                         setEmptyLegsLocation('');
@@ -8099,10 +8346,10 @@ const TokenizedAssetsGlassmorphic = () => {
                         setEmptyLegsMaxPrice('');
                         setEmptyLegsFilter('all');
                       }}
-                      className="w-full px-4 py-2.5 bg-white/35 hover:bg-white/40 border border-gray-300/50 text-gray-700 rounded-xl text-sm transition-all"
+                      className="w-full px-3 md:px-4 py-2 md:py-2.5 bg-white/35 hover:bg-white/40 border border-gray-300/50 text-gray-700 rounded-lg md:rounded-xl text-xs md:text-sm transition-all"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
-                      Clear Filters
+                      Clear
                     </button>
                   </div>
                 </div>
@@ -8127,10 +8374,10 @@ const TokenizedAssetsGlassmorphic = () => {
                 </div>
               )}
 
-              {/* Grid View */}
-              {!isLoadingEmptyLegs && !showEmptyLegDetail && emptyLegsViewMode === 'grid' && (
+              {/* Grid View - Mobile Optimized with Vertical Cards */}
+              {!isLoadingEmptyLegs && !showEmptyLegDetail && (emptyLegsViewMode === 'grid' || window.innerWidth < 768) && (
                 <>
-                <div className="grid grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5">
                   {emptyLegsData
                     .slice((currentEmptyLegsPage - 1) * emptyLegsPerPage, currentEmptyLegsPage * emptyLegsPerPage)
                     .map((leg) => (
@@ -8144,108 +8391,176 @@ const TokenizedAssetsGlassmorphic = () => {
                         setEmptyLegLuggage(0);
                         setEmptyLegHasPet(false);
                       }}
-                      className={`bg-white/35 hover:bg-white/40 rounded-xl flex h-64 hover:shadow-lg cursor-pointer ${
+                      className={`bg-white/35 hover:bg-white/40 rounded-xl overflow-hidden hover:shadow-lg cursor-pointer ${
                         leg.rawData?.price && leg.rawData.price <= 1500
                           ? 'pulse-green-glow'
                           : 'border border-gray-300/50'
                       }`}
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
-                      <div className="w-2/5 bg-white/10 relative flex-shrink-0 rounded-l-xl overflow-hidden">
-                        {leg.image && (
-                          <img
-                            src={leg.image}
-                            alt={leg.name}
-                            className="w-full h-64 object-cover"
-                          />
-                        )}
-                        <div className="absolute top-3 left-3 flex flex-col space-y-1.5">
-                          <div className="flex space-x-1.5">
-                            <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium flex items-center space-x-1 backdrop-blur-sm">
-                              <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                      {/* Mobile: Vertical stacked layout */}
+                      <div className="md:hidden">
+                        {/* Image on top */}
+                        <div className="relative h-36 bg-white/10">
+                          {leg.image && (
+                            <img
+                              src={leg.image}
+                              alt={leg.name}
+                              className="w-full h-full object-cover"
+                            />
+                          )}
+                          <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+                            <div className="bg-white/90 px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 backdrop-blur-sm">
+                              <span className="w-1 h-1 bg-green-500 rounded-full"></span>
                               <span className="text-gray-800">{leg.location}</span>
                             </div>
                             {leg.rawData?.price && leg.rawData.price <= 1500 && (
-                              <div className="bg-green-500 text-white px-2 py-1 rounded text-xs font-bold backdrop-blur-sm animate-pulse">
-                                {leg.rawData.price <= 1500 ? 'FREE with NFT' : 'HOT DEAL'}
+                              <div className="bg-green-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold backdrop-blur-sm animate-pulse">
+                                FREE with NFT
                               </div>
                             )}
                           </div>
+                          <FavouriteButton
+                            item={{
+                              id: leg.id,
+                              type: 'emptyleg',
+                              name: leg.name,
+                              location: leg.location,
+                              image: leg.image,
+                              category: leg.category,
+                              price: leg.totalPrice,
+                              metadata: {
+                                capacity: leg.capacity,
+                                range: leg.range,
+                                isFreeWithNFT: leg.isFreeWithNFT,
+                                manufacturer: leg.rawData?.manufacturer
+                              }
+                            }}
+                            variant="floating"
+                            size={16}
+                          />
                         </div>
-                        <FavouriteButton
-                          item={{
-                            id: leg.id,
-                            type: 'emptyleg',
-                            name: leg.name,
-                            location: leg.location,
-                            image: leg.image,
-                            category: leg.category,
-                            price: leg.totalPrice,
-                            metadata: {
-                              capacity: leg.capacity,
-                              range: leg.range,
-                              isFreeWithNFT: leg.isFreeWithNFT,
-                              manufacturer: leg.rawData?.manufacturer
-                            }
-                          }}
-                          variant="floating"
-                          size={18}
-                        />
-                      </div>
-                      <div className="flex-1 p-5 flex flex-col">
-                        <div className="flex items-center justify-between mb-3">
-                          {leg.rawData?.is_partner_offer ? (
-                            <div className="flex items-center gap-2">
-                              <img
-                                src={leg.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
-                                alt={leg.rawData.partner_name || 'Partner'}
-                                className="h-6 w-auto object-contain rounded"
-                                onError={(e) => {
-                                  e.target.src = 'https://via.placeholder.com/80x24/000/fff?text=Partner';
-                                }}
-                              />
+                        {/* Content below */}
+                        <div className="p-3">
+                          <h3 className="text-sm font-semibold text-gray-800 mb-2 line-clamp-1">{leg.name}</h3>
+                          <div className="grid grid-cols-3 gap-2 mb-3">
+                            <div className="text-center bg-gray-100/50 rounded-lg py-1.5">
+                              <span className="text-[10px] text-gray-500 block">Price</span>
+                              <span className="text-xs font-semibold text-gray-800">{leg.totalPrice}</span>
                             </div>
-                          ) : (
-                            <img
-                              src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_logo_vectorized.glb.png"
-                              alt="PrivateCharterX"
-                              className="h-6 w-auto object-contain"
-                            />
-                          )}
-                        </div>
-                        <h3 className="text-base font-semibold text-gray-800 mb-4 line-clamp-2 overflow-hidden">{leg.name}</h3>
-                        <div className="flex space-x-6 border-b border-gray-600/30 mb-5">
-                          <button className="pb-3 text-xs relative text-gray-800">
-                            Details
-                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-800"></div>
+                            <div className="text-center bg-gray-100/50 rounded-lg py-1.5">
+                              <span className="text-[10px] text-gray-500 block">Capacity</span>
+                              <span className="text-xs font-semibold text-gray-800">{leg.capacity}</span>
+                            </div>
+                            <div className="text-center bg-gray-100/50 rounded-lg py-1.5">
+                              <span className="text-[10px] text-gray-500 block">Date</span>
+                              <span className="text-xs font-semibold text-gray-800">{leg.departureDate}</span>
+                            </div>
+                          </div>
+                          <button className="w-full py-2 bg-gray-800 text-white rounded-lg text-xs font-medium">
+                            View Details
                           </button>
                         </div>
+                      </div>
 
-                        <div className="flex justify-between mt-auto mb-3">
-                          <div className="flex flex-col space-y-1">
-                            <span className="text-xs text-gray-600">Price</span>
-                            <span className="text-sm font-semibold text-gray-800">{leg.totalPrice}</span>
-                            {leg.rawData?.distance_km && (
-                              <div className="flex items-center gap-1 mt-1">
-                                <Coins size={12} className="text-blue-600" />
-                                <span className="text-xs font-medium text-blue-600">
-                                  {(leg.rawData.distance_km * 1.5).toFixed(0)} $PVCX
-                                </span>
+                      {/* Desktop: Horizontal layout */}
+                      <div className="hidden md:flex h-64">
+                        <div className="w-2/5 bg-white/10 relative flex-shrink-0 rounded-l-xl overflow-hidden">
+                          {leg.image && (
+                            <img
+                              src={leg.image}
+                              alt={leg.name}
+                              className="w-full h-64 object-cover"
+                            />
+                          )}
+                          <div className="absolute top-3 left-3 flex flex-col space-y-1.5">
+                            <div className="flex space-x-1.5">
+                              <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium flex items-center space-x-1 backdrop-blur-sm">
+                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                                <span className="text-gray-800">{leg.location}</span>
                               </div>
+                              {leg.rawData?.price && leg.rawData.price <= 1500 && (
+                                <div className="bg-green-500 text-white px-2 py-1 rounded text-xs font-bold backdrop-blur-sm animate-pulse">
+                                  {leg.rawData.price <= 1500 ? 'FREE with NFT' : 'HOT DEAL'}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <FavouriteButton
+                            item={{
+                              id: leg.id,
+                              type: 'emptyleg',
+                              name: leg.name,
+                              location: leg.location,
+                              image: leg.image,
+                              category: leg.category,
+                              price: leg.totalPrice,
+                              metadata: {
+                                capacity: leg.capacity,
+                                range: leg.range,
+                                isFreeWithNFT: leg.isFreeWithNFT,
+                                manufacturer: leg.rawData?.manufacturer
+                              }
+                            }}
+                            variant="floating"
+                            size={18}
+                          />
+                        </div>
+                        <div className="flex-1 p-5 flex flex-col">
+                          <div className="flex items-center justify-between mb-3">
+                            {leg.rawData?.is_partner_offer ? (
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={leg.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
+                                  alt={leg.rawData.partner_name || 'Partner'}
+                                  className="h-6 w-auto object-contain rounded"
+                                  onError={(e) => {
+                                    e.target.src = 'https://via.placeholder.com/80x24/000/fff?text=Partner';
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              <img
+                                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_logo_vectorized.glb.png"
+                                alt="PrivateCharterX"
+                                className="h-6 w-auto object-contain"
+                              />
                             )}
                           </div>
-                          <div className="flex flex-col space-y-1">
-                            <span className="text-xs text-gray-600">Capacity</span>
-                            <span className="text-sm font-semibold text-gray-800">{leg.capacity}</span>
+                          <h3 className="text-base font-semibold text-gray-800 mb-4 line-clamp-2 overflow-hidden">{leg.name}</h3>
+                          <div className="flex space-x-6 border-b border-gray-600/30 mb-5">
+                            <button className="pb-3 text-xs relative text-gray-800">
+                              Details
+                              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-800"></div>
+                            </button>
                           </div>
-                          <div className="flex flex-col space-y-1">
-                            <span className="text-xs text-gray-600">Departure</span>
-                            <span className="text-sm font-semibold text-gray-800">{leg.departureDate}</span>
-                          </div>
-                        </div>
 
-                        <div className="flex space-x-4 pt-4 border-t border-gray-600/30 text-xs">
-                          <a href="#" className="text-gray-600 hover:text-gray-800">Book now ↗</a>
+                          <div className="flex justify-between mt-auto mb-3">
+                            <div className="flex flex-col space-y-1">
+                              <span className="text-xs text-gray-600">Price</span>
+                              <span className="text-sm font-semibold text-gray-800">{leg.totalPrice}</span>
+                              {leg.rawData?.distance_km && (
+                                <div className="flex items-center gap-1 mt-1">
+                                  <Coins size={12} className="text-blue-600" />
+                                  <span className="text-xs font-medium text-blue-600">
+                                    {(leg.rawData.distance_km * 1.5).toFixed(0)} $PVCX
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex flex-col space-y-1">
+                              <span className="text-xs text-gray-600">Capacity</span>
+                              <span className="text-sm font-semibold text-gray-800">{leg.capacity}</span>
+                            </div>
+                            <div className="flex flex-col space-y-1">
+                              <span className="text-xs text-gray-600">Departure</span>
+                              <span className="text-sm font-semibold text-gray-800">{leg.departureDate}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex space-x-4 pt-4 border-t border-gray-600/30 text-xs">
+                            <a href="#" className="text-gray-600 hover:text-gray-800">Book now ↗</a>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -8338,7 +8653,42 @@ const TokenizedAssetsGlassmorphic = () => {
                       }`}
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
-                      <div className="flex items-center p-4 gap-4">
+                      {/* Mobile: Compact card layout */}
+                      <div className="md:hidden p-3">
+                        <div className="flex gap-3 mb-3">
+                          {/* Small Image */}
+                          <div className="w-16 h-16 bg-gray-100/50 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            {leg.image ? (
+                              <img src={leg.image} alt={leg.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <MapPin size={20} className="text-gray-400" />
+                            )}
+                          </div>
+                          {/* Route Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1 flex-wrap">
+                              <h3 className="text-sm font-semibold text-gray-800 truncate">{leg.name}</h3>
+                              {leg.rawData?.price && leg.rawData.price <= 1500 && (
+                                <span className="bg-green-500 text-white px-1.5 py-0.5 rounded text-[9px] font-bold animate-pulse">FREE</span>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-gray-600 mb-1">{leg.category}</p>
+                            <div className="text-xs font-medium text-gray-800">{leg.totalPrice}</div>
+                          </div>
+                        </div>
+                        {/* Info Row */}
+                        <div className="flex items-center justify-between text-[10px] text-gray-600 mb-3">
+                          <span>📅 {leg.departureDate}</span>
+                          <span>👥 {leg.capacity}</span>
+                        </div>
+                        {/* Action Button */}
+                        <button className="w-full py-2 bg-gray-800 text-white rounded-lg text-xs font-medium hover:bg-gray-700 transition-all">
+                          View Details
+                        </button>
+                      </div>
+
+                      {/* Desktop: Original horizontal layout */}
+                      <div className="hidden md:flex items-center p-4 gap-4">
                         {/* Icon/Image */}
                         <div className="w-16 h-16 bg-gray-100/50 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
                           {leg.image ? (
@@ -8459,58 +8809,58 @@ const TokenizedAssetsGlassmorphic = () => {
                 return (
                   <div className="w-full max-w-7xl">
                     {/* Header Section with Image and Main Info */}
-                    <div className="bg-white/35 rounded-lg border border-gray-300/50 mb-6 overflow-hidden" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                      <div className="grid grid-cols-2 gap-0">
+                    <div className="bg-white/35 rounded-lg border border-gray-300/50 mb-4 md:mb-6 overflow-hidden" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                      <div className="flex flex-col md:grid md:grid-cols-2 md:gap-0">
                         {/* Left: Aircraft Image */}
-                        <div className="relative h-96">
+                        <div className="relative h-48 md:h-96">
                           <img
                             src={selectedEmptyLeg.image}
                             alt={selectedEmptyLeg.name}
                             className="w-full h-full object-cover"
                           />
                           {/* Badges on Image */}
-                          <div className="absolute top-4 left-4 flex gap-2">
-                            <span className="bg-white px-3 py-1 rounded-full text-xs font-medium text-gray-800">● Available</span>
-                            <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-medium">✈ Empty Leg</span>
+                          <div className="absolute top-3 left-3 md:top-4 md:left-4 flex gap-1.5 md:gap-2">
+                            <span className="bg-white px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-medium text-gray-800">● Available</span>
+                            <span className="bg-blue-500 text-white px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-medium">✈ Empty Leg</span>
                           </div>
                         </div>
 
                         {/* Right: Flight Info */}
-                        <div className="flex-1 p-5 flex flex-col">
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="bg-black text-white px-2 py-1 rounded text-xs font-semibold uppercase">PCX EMPTY LEG</span>
+                        <div className="flex-1 p-4 md:p-5 flex flex-col">
+                          <div className="flex items-center justify-between mb-2 md:mb-3">
+                            <span className="bg-black text-white px-2 py-0.5 md:py-1 rounded text-[10px] md:text-xs font-semibold uppercase">PCX EMPTY LEG</span>
                           </div>
 
-                          <h1 className="text-2xl font-semibold mb-4 text-gray-900">{selectedEmptyLeg.name}</h1>
-                          <p className="text-sm text-gray-600 mb-4">{rawData.from_city || 'Departure'} to {rawData.to_city || 'Arrival'}</p>
+                          <h1 className="text-lg md:text-2xl font-semibold mb-2 md:mb-4 text-gray-900">{selectedEmptyLeg.name}</h1>
+                          <p className="text-xs md:text-sm text-gray-600 mb-3 md:mb-4">{rawData.from_city || 'Departure'} to {rawData.to_city || 'Arrival'}</p>
 
-                          {/* Tabs */}
-                          <div className="flex space-x-6 border-b border-gray-300/50 mb-4">
-                            <button className="pb-3 text-sm font-medium text-gray-800 border-b-2 border-gray-800">Flight Details</button>
-                            <button className="pb-3 text-sm font-medium text-gray-600 hover:text-gray-800">Aircraft</button>
-                            <button className="pb-3 text-sm font-medium text-gray-600 hover:text-gray-800">Operator</button>
-                            <button className="pb-3 text-sm font-medium text-gray-600 hover:text-gray-800">Map</button>
+                          {/* Tabs - Scrollable on mobile */}
+                          <div className="flex space-x-4 md:space-x-6 border-b border-gray-300/50 mb-3 md:mb-4 overflow-x-auto pb-0 -mx-1 px-1">
+                            <button className="pb-2 md:pb-3 text-xs md:text-sm font-medium text-gray-800 border-b-2 border-gray-800 whitespace-nowrap">Flight Details</button>
+                            <button className="pb-2 md:pb-3 text-xs md:text-sm font-medium text-gray-600 hover:text-gray-800 whitespace-nowrap">Aircraft</button>
+                            <button className="pb-2 md:pb-3 text-xs md:text-sm font-medium text-gray-600 hover:text-gray-800 whitespace-nowrap">Operator</button>
+                            <button className="pb-2 md:pb-3 text-xs md:text-sm font-medium text-gray-600 hover:text-gray-800 whitespace-nowrap">Map</button>
                           </div>
 
                           {/* Key Info Grid */}
-                          <div className="grid grid-cols-3 gap-4 mb-4">
+                          <div className="grid grid-cols-3 gap-2 md:gap-4 mb-3 md:mb-4">
                             <div>
-                              <p className="text-xs text-gray-600 mb-1">Departure</p>
-                              <p className="text-base font-semibold text-gray-800">{selectedEmptyLeg.departureDate}</p>
-                              <p className="text-xs text-gray-500">TBD</p>
+                              <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">Departure</p>
+                              <p className="text-xs md:text-base font-semibold text-gray-800">{selectedEmptyLeg.departureDate}</p>
+                              <p className="text-[10px] md:text-xs text-gray-500">TBD</p>
                             </div>
                             <div>
-                              <p className="text-xs text-gray-600 mb-1">Capacity</p>
-                              <p className="text-base font-semibold text-gray-800">{rawData.capacity || rawData.pax || 'N/A'} passengers</p>
+                              <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">Capacity</p>
+                              <p className="text-xs md:text-base font-semibold text-gray-800">{rawData.capacity || rawData.pax || 'N/A'} pax</p>
                             </div>
                             <div>
-                              <p className="text-xs text-gray-600 mb-1">Price</p>
-                              <p className="text-base font-semibold text-gray-800">{selectedEmptyLeg.totalPrice}</p>
+                              <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">Price</p>
+                              <p className="text-xs md:text-base font-semibold text-gray-800">{selectedEmptyLeg.totalPrice}</p>
                             </div>
                           </div>
 
                           {/* Links */}
-                          <div className="flex space-x-4 text-xs mt-auto">
+                          <div className="flex space-x-3 md:space-x-4 text-[10px] md:text-xs mt-auto">
                             <a href="#" className="text-gray-600 hover:text-gray-800">Flight tracking ↗</a>
                             <a href="#" className="text-gray-600 hover:text-gray-800">Terms & Conditions ⚖</a>
                           </div>
@@ -8519,56 +8869,56 @@ const TokenizedAssetsGlassmorphic = () => {
                     </div>
 
                     {/* Bottom Section: Flight Details + Booking */}
-                    <div className="grid grid-cols-3 gap-6">
+                    <div className="flex flex-col md:grid md:grid-cols-3 gap-4 md:gap-6">
                       {/* Left: Flight Details */}
-                      <div className="col-span-2 bg-white/35 rounded-lg border border-gray-300/50 p-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                        <h2 className="text-lg font-semibold text-gray-900 mb-6">Flight Details</h2>
+                      <div className="md:col-span-2 bg-white/35 rounded-lg border border-gray-300/50 p-4 md:p-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                        <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4 md:mb-6">Flight Details</h2>
 
-                        <div className="grid grid-cols-2 gap-6 mb-6">
+                        <div className="grid grid-cols-2 gap-3 md:gap-6 mb-4 md:mb-6">
                           <div>
-                            <p className="text-xs text-gray-600 mb-1">From</p>
-                            <p className="text-sm font-semibold text-gray-800">{rawData.from_city || 'Teterboro'} ({rawData.from_iata || 'TEB'})</p>
+                            <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">From</p>
+                            <p className="text-xs md:text-sm font-semibold text-gray-800">{rawData.from_city || 'Teterboro'} ({rawData.from_iata || 'TEB'})</p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-600 mb-1">To</p>
-                            <p className="text-sm font-semibold text-gray-800">{rawData.to_city || 'Porto Alegre'} ({rawData.to_iata || 'POA'})</p>
+                            <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">To</p>
+                            <p className="text-xs md:text-sm font-semibold text-gray-800">{rawData.to_city || 'Porto Alegre'} ({rawData.to_iata || 'POA'})</p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-600 mb-1">Departure Date</p>
-                            <p className="text-sm font-semibold text-gray-800">{selectedEmptyLeg.departureDate}</p>
+                            <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">Departure Date</p>
+                            <p className="text-xs md:text-sm font-semibold text-gray-800">{selectedEmptyLeg.departureDate}</p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-600 mb-1">Departure Time</p>
-                            <p className="text-sm font-semibold text-gray-800">Flexible</p>
+                            <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">Departure Time</p>
+                            <p className="text-xs md:text-sm font-semibold text-gray-800">Flexible</p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-600 mb-1">Flight Duration</p>
-                            <p className="text-sm font-semibold text-gray-800">TBD</p>
+                            <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">Flight Duration</p>
+                            <p className="text-xs md:text-sm font-semibold text-gray-800">TBD</p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-600 mb-1">Distance</p>
-                            <p className="text-sm font-semibold text-gray-800">N/A</p>
+                            <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">Distance</p>
+                            <p className="text-xs md:text-sm font-semibold text-gray-800">N/A</p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-600 mb-1">Passengers</p>
-                            <p className="text-sm font-semibold text-gray-800">{rawData.capacity || rawData.pax || '14'}</p>
+                            <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">Passengers</p>
+                            <p className="text-xs md:text-sm font-semibold text-gray-800">{rawData.capacity || rawData.pax || '14'}</p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-600 mb-1">Luggage Capacity</p>
-                            <p className="text-sm font-semibold text-gray-800">Standard</p>
+                            <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">Luggage Capacity</p>
+                            <p className="text-xs md:text-sm font-semibold text-gray-800">Standard</p>
                           </div>
                         </div>
 
                         {/* GREEN CO2 Certificate Box */}
-                        <div className="bg-green-50 border-2 border-green-500 rounded-lg p-6 mb-6">
-                          <div className="flex items-start gap-3 mb-3">
-                            <span className="text-2xl">🌿</span>
+                        <div className="bg-green-50 border-2 border-green-500 rounded-lg p-3 md:p-6 mb-4 md:mb-6">
+                          <div className="flex items-start gap-2 md:gap-3 mb-2 md:mb-3">
+                            <span className="text-lg md:text-2xl">🌿</span>
                             <div>
-                              <h3 className="text-base font-bold text-green-900 mb-2">CO₂ Certificate INCLUDED</h3>
-                              <p className="text-sm text-green-800 mb-3">All empty leg flights include a complimentary CO₂ offset certificate – no additional cost!</p>
-                              <div className="flex items-start gap-2">
+                              <h3 className="text-sm md:text-base font-bold text-green-900 mb-1 md:mb-2">CO₂ Certificate INCLUDED</h3>
+                              <p className="text-xs md:text-sm text-green-800 mb-2 md:mb-3">All empty leg flights include a complimentary CO₂ offset certificate – no additional cost!</p>
+                              <div className="flex items-start gap-1.5 md:gap-2">
                                 <span className="text-green-600">✓</span>
-                                <p className="text-sm text-green-900">
+                                <p className="text-xs md:text-sm text-green-900">
                                   <span className="font-semibold">Classic or Blockchain Certificate:</span> Choose between traditional carbon offset certificate or blockchain-verified NFT certificate at checkout.
                                 </p>
                               </div>
@@ -8578,61 +8928,61 @@ const TokenizedAssetsGlassmorphic = () => {
                       </div>
 
                       {/* Right: Book This Flight Sidebar */}
-                      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-                        <h2 className="text-base font-semibold text-gray-900 mb-5">Book This Flight</h2>
+                      <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-5 shadow-sm">
+                        <h2 className="text-sm md:text-base font-semibold text-gray-900 mb-4 md:mb-5">Book This Flight</h2>
 
-                        <div className="space-y-3 mb-5">
+                        <div className="grid grid-cols-3 md:block md:space-y-3 gap-2 mb-4 md:mb-5">
                           <div>
-                            <p className="text-xs text-gray-500 mb-1">Base Price</p>
-                            <p className="text-lg font-semibold text-gray-900">{selectedEmptyLeg.totalPrice}</p>
+                            <p className="text-[10px] md:text-xs text-gray-500 mb-0.5 md:mb-1">Base Price</p>
+                            <p className="text-sm md:text-lg font-semibold text-gray-900">{selectedEmptyLeg.totalPrice}</p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500 mb-1">Departure</p>
-                            <p className="text-sm font-medium text-gray-900">{selectedEmptyLeg.departureDate}</p>
+                            <p className="text-[10px] md:text-xs text-gray-500 mb-0.5 md:mb-1">Departure</p>
+                            <p className="text-xs md:text-sm font-medium text-gray-900">{selectedEmptyLeg.departureDate}</p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500 mb-1">Max Capacity</p>
-                            <p className="text-sm font-medium text-gray-900">{rawData.capacity || rawData.pax || '14'} pax</p>
+                            <p className="text-[10px] md:text-xs text-gray-500 mb-0.5 md:mb-1">Max Capacity</p>
+                            <p className="text-xs md:text-sm font-medium text-gray-900">{rawData.capacity || rawData.pax || '14'} pax</p>
                           </div>
                         </div>
 
-                        <div className="border-t border-gray-100 pt-5 mb-5">
-                          <h3 className="text-xs font-semibold text-gray-900 mb-3">Booking Details</h3>
+                        <div className="border-t border-gray-100 pt-4 md:pt-5 mb-4 md:mb-5">
+                          <h3 className="text-[10px] md:text-xs font-semibold text-gray-900 mb-2 md:mb-3">Booking Details</h3>
 
-                          <div className="grid grid-cols-3 gap-2.5 mb-4">
+                          <div className="grid grid-cols-3 gap-1.5 md:gap-2.5 mb-3 md:mb-4">
                             <div>
-                              <p className="text-xs text-gray-500 mb-1.5">Passengers</p>
-                              <div className="flex items-center justify-between border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white">
+                              <p className="text-[10px] md:text-xs text-gray-500 mb-1 md:mb-1.5">Passengers</p>
+                              <div className="flex items-center justify-between border border-gray-200 rounded-lg px-1.5 md:px-2.5 py-1 md:py-1.5 bg-white">
                                 <button
                                   onClick={() => setEmptyLegPassengers(Math.max(1, emptyLegPassengers - 1))}
-                                  className="text-gray-500 hover:text-gray-900 text-sm"
+                                  className="text-gray-500 hover:text-gray-900 text-xs md:text-sm"
                                 >−</button>
-                                <span className="text-sm font-medium text-gray-900">{emptyLegPassengers}</span>
+                                <span className="text-xs md:text-sm font-medium text-gray-900">{emptyLegPassengers}</span>
                                 <button
                                   onClick={() => setEmptyLegPassengers(Math.min(rawData.capacity || rawData.pax || 14, emptyLegPassengers + 1))}
-                                  className="text-gray-500 hover:text-gray-900 text-sm"
+                                  className="text-gray-500 hover:text-gray-900 text-xs md:text-sm"
                                 >+</button>
                               </div>
                             </div>
                             <div>
-                              <p className="text-xs text-gray-500 mb-1.5">Luggage</p>
-                              <div className="flex items-center justify-between border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white">
+                              <p className="text-[10px] md:text-xs text-gray-500 mb-1 md:mb-1.5">Luggage</p>
+                              <div className="flex items-center justify-between border border-gray-200 rounded-lg px-1.5 md:px-2.5 py-1 md:py-1.5 bg-white">
                                 <button
                                   onClick={() => setEmptyLegLuggage(Math.max(0, emptyLegLuggage - 1))}
-                                  className="text-gray-500 hover:text-gray-900 text-sm"
+                                  className="text-gray-500 hover:text-gray-900 text-xs md:text-sm"
                                 >−</button>
-                                <span className="text-sm font-medium text-gray-900">{emptyLegLuggage}</span>
+                                <span className="text-xs md:text-sm font-medium text-gray-900">{emptyLegLuggage}</span>
                                 <button
                                   onClick={() => setEmptyLegLuggage(Math.min((rawData.capacity || rawData.pax || 14) * 2, emptyLegLuggage + 1))}
-                                  className="text-gray-500 hover:text-gray-900 text-sm"
+                                  className="text-gray-500 hover:text-gray-900 text-xs md:text-sm"
                                 >+</button>
                               </div>
                             </div>
                             <div>
-                              <p className="text-xs text-gray-500 mb-1.5">Pet</p>
+                              <p className="text-[10px] md:text-xs text-gray-500 mb-1 md:mb-1.5">Pet</p>
                               <button
                                 onClick={() => setEmptyLegHasPet(!emptyLegHasPet)}
-                                className={`w-full flex items-center justify-center border rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors ${
+                                className={`w-full flex items-center justify-center border rounded-lg px-1.5 md:px-2.5 py-1 md:py-1.5 text-xs md:text-sm font-medium transition-colors ${
                                   emptyLegHasPet
                                     ? 'bg-black text-white border-black'
                                     : 'border-gray-200 text-gray-600 hover:bg-gray-50'
@@ -8643,45 +8993,45 @@ const TokenizedAssetsGlassmorphic = () => {
                             </div>
                           </div>
 
-                          <div className="space-y-2.5 mb-4 border-t border-gray-100 pt-4">
+                          <div className="space-y-2 md:space-y-2.5 mb-3 md:mb-4 border-t border-gray-100 pt-3 md:pt-4">
                             {rawData.price ? (
                               <>
-                                <div className="flex justify-between text-sm">
+                                <div className="flex justify-between text-xs md:text-sm">
                                   <span className="text-gray-600">Base Price</span>
                                   <span className="text-gray-900">${(rawData.price / 1.081).toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between text-sm">
+                                <div className="flex justify-between text-xs md:text-sm">
                                   <span className="text-gray-600">VAT (8.1%)</span>
                                   <span className="text-gray-900">${(rawData.price - (rawData.price / 1.081)).toFixed(2)}</span>
                                 </div>
 
                                 {/* PVCX Earnings Box */}
                                 {(rawData.distance_km || rawData.distance) && (
-                                  <div className="border border-gray-300 rounded-lg p-3 bg-blue-50/30 mt-3 mb-3">
+                                  <div className="border border-gray-300 rounded-lg p-2 md:p-3 bg-blue-50/30 mt-2 md:mt-3 mb-2 md:mb-3">
                                     <div className="flex justify-between items-center">
-                                      <div className="flex items-center gap-2">
-                                        <Coins size={16} className="text-blue-600" />
-                                        <span className="text-sm text-gray-700">Earnings $PVCX</span>
+                                      <div className="flex items-center gap-1.5 md:gap-2">
+                                        <Coins size={14} className="text-blue-600 md:w-4 md:h-4" />
+                                        <span className="text-xs md:text-sm text-gray-700">Earnings $PVCX</span>
                                       </div>
-                                      <span className="text-sm font-medium text-blue-900">
+                                      <span className="text-xs md:text-sm font-medium text-blue-900">
                                         {((rawData.distance_km || rawData.distance) * 1.5).toFixed(0)} $PVCX
                                       </span>
                                     </div>
                                   </div>
                                 )}
 
-                                <div className="flex justify-between text-base pt-2 border-t border-gray-200">
+                                <div className="flex justify-between text-sm md:text-base pt-2 border-t border-gray-200">
                                   <span className="font-semibold text-gray-900">Final Price</span>
                                   <span className="font-semibold text-gray-900">${rawData.price.toFixed(2)}</span>
                                 </div>
                               </>
                             ) : (
                               <>
-                                <div className="flex justify-between text-sm">
+                                <div className="flex justify-between text-xs md:text-sm">
                                   <span className="text-gray-600">Price</span>
                                   <span className="text-gray-900">{selectedEmptyLeg.totalPrice}</span>
                                 </div>
-                                <div className="flex justify-between text-base pt-2 border-t border-gray-200">
+                                <div className="flex justify-between text-sm md:text-base pt-2 border-t border-gray-200">
                                   <span className="font-semibold text-gray-900">Final Price</span>
                                   <span className="font-semibold text-gray-900">{selectedEmptyLeg.totalPrice}</span>
                                 </div>
@@ -8692,7 +9042,7 @@ const TokenizedAssetsGlassmorphic = () => {
 
                         <button
                           onClick={requestEmptyLegFlight}
-                          className="w-full bg-black text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors mb-3"
+                          className="w-full bg-black text-white py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-semibold hover:bg-gray-800 transition-colors mb-2 md:mb-3"
                         >
                           Request Flight
                         </button>
@@ -8714,13 +9064,13 @@ const TokenizedAssetsGlassmorphic = () => {
                           rawData={selectedEmptyLeg?.rawData}
                           user={user}
                           variant="gradient"
-                          className="mb-3"
+                          className="mb-2 md:mb-3"
                         />
 
                         <button
                           onClick={checkNFTMembership}
                           disabled={isCheckingNFT}
-                          className="block w-full text-center text-xs text-gray-600 hover:text-gray-900 transition-colors"
+                          className="block w-full text-center text-[10px] md:text-xs text-gray-600 hover:text-gray-900 transition-colors"
                         >
                           {isCheckingNFT ? 'Checking...' : 'Check NFT Membership for Discounts'}
                         </button>
@@ -8732,72 +9082,72 @@ const TokenizedAssetsGlassmorphic = () => {
                     </div>
 
                     {/* Contact Section - Need Assistance */}
-                    <div className="bg-white/35 rounded-lg border border-gray-300/50 p-8 mt-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                      <div className="text-center mb-6">
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">Need Assistance?</h3>
-                        <p className="text-sm text-gray-600">Our team is here to help you find the perfect flight</p>
+                    <div className="bg-white/35 rounded-lg border border-gray-300/50 p-4 md:p-8 mt-4 md:mt-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                      <div className="text-center mb-4 md:mb-6">
+                        <h3 className="text-base md:text-xl font-semibold text-gray-900 mb-1 md:mb-2">Need Assistance?</h3>
+                        <p className="text-xs md:text-sm text-gray-600">Our team is here to help you find the perfect flight</p>
                       </div>
 
                       {/* Team Bubbles */}
-                      <div className="flex justify-center gap-4 mb-6">
+                      <div className="flex justify-center gap-3 md:gap-4 mb-4 md:mb-6">
                         <div className="flex flex-col items-center">
-                          <div className="w-16 h-16 rounded-full bg-gray-200 border-2 border-white shadow-md flex items-center justify-center text-2xl">
+                          <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gray-200 border-2 border-white shadow-md flex items-center justify-center text-xl md:text-2xl">
                             👨‍✈️
                           </div>
-                          <span className="text-xs text-gray-600 mt-2">Expert</span>
+                          <span className="text-[10px] md:text-xs text-gray-600 mt-1 md:mt-2">Expert</span>
                         </div>
                         <div className="flex flex-col items-center">
-                          <div className="w-16 h-16 rounded-full bg-gray-200 border-2 border-white shadow-md flex items-center justify-center text-2xl">
+                          <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gray-200 border-2 border-white shadow-md flex items-center justify-center text-xl md:text-2xl">
                             👩‍✈️
                           </div>
-                          <span className="text-xs text-gray-600 mt-2">Advisor</span>
+                          <span className="text-[10px] md:text-xs text-gray-600 mt-1 md:mt-2">Advisor</span>
                         </div>
                         <div className="flex flex-col items-center">
-                          <div className="w-16 h-16 rounded-full bg-gray-200 border-2 border-white shadow-md flex items-center justify-center text-2xl">
+                          <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gray-200 border-2 border-white shadow-md flex items-center justify-center text-xl md:text-2xl">
                             🧑‍✈️
                           </div>
-                          <span className="text-xs text-gray-600 mt-2">Support</span>
+                          <span className="text-[10px] md:text-xs text-gray-600 mt-1 md:mt-2">Support</span>
                         </div>
                       </div>
 
                       {/* Contact Info */}
-                      <div className="flex items-center justify-center gap-2 mb-6">
-                        <Mail size={18} className="text-gray-600" />
-                        <a href="mailto:bookings@privatecharterx.com" className="text-gray-900 hover:text-black font-medium">
+                      <div className="flex items-center justify-center gap-1.5 md:gap-2 mb-4 md:mb-6">
+                        <Mail size={14} className="text-gray-600 md:w-[18px] md:h-[18px]" />
+                        <a href="mailto:bookings@privatecharterx.com" className="text-xs md:text-base text-gray-900 hover:text-black font-medium">
                           bookings@privatecharterx.com
                         </a>
                       </div>
 
                       {/* Social Share */}
-                      <div className="border-t border-gray-300 pt-6">
-                        <p className="text-sm text-gray-600 text-center mb-3">Share this flight</p>
-                        <div className="flex justify-center gap-3">
+                      <div className="border-t border-gray-300 pt-4 md:pt-6">
+                        <p className="text-xs md:text-sm text-gray-600 text-center mb-2 md:mb-3">Share this flight</p>
+                        <div className="flex justify-center gap-2 md:gap-3">
                           <button
                             onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out this flight on PrivateCharterX!')}&url=${encodeURIComponent(window.location.href)}`, '_blank')}
-                            className="w-10 h-10 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+                            className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
                           >
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"></path></svg>
+                            <svg className="w-3 h-3 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"></path></svg>
                           </button>
                           <button
                             onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank')}
-                            className="w-10 h-10 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+                            className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
                           >
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"></path></svg>
+                            <svg className="w-3 h-3 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"></path></svg>
                           </button>
                           <button
                             onClick={() => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`, '_blank')}
-                            className="w-10 h-10 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+                            className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
                           >
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"></path><circle cx="4" cy="4" r="2"></circle></svg>
+                            <svg className="w-3 h-3 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"></path><circle cx="4" cy="4" r="2"></circle></svg>
                           </button>
                           <button
                             onClick={() => {
                               navigator.clipboard.writeText(window.location.href);
                               alert('Link copied to clipboard!');
                             }}
-                            className="w-10 h-10 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
+                            className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                            <svg className="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                           </button>
                         </div>
                       </div>
@@ -8832,50 +9182,50 @@ const TokenizedAssetsGlassmorphic = () => {
                 }
               `}</style>
 
-              {/* Adventures Header with View Switcher */}
+              {/* Adventures Header with View Switcher - Mobile Optimized */}
               {!showAdventureDetail && (
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">Adventures</h2>
-                  <div className="flex items-center gap-3">
-                    {/* Filter Toggle Button */}
-                    <button
-                      onClick={() => setAdventuresFiltersVisible(!adventuresFiltersVisible)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
-                        adventuresFiltersVisible
-                          ? 'bg-gray-800 text-white border-gray-800'
-                          : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
-                      }`}
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    >
-                      <SlidersHorizontal size={14} />
-                      <span>Filters</span>
-                    </button>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6 gap-3">
+                <h2 className="text-xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter">Adventures</h2>
+                <div className="flex items-center gap-2 md:gap-3">
+                  {/* Filter Toggle Button */}
+                  <button
+                    onClick={() => setAdventuresFiltersVisible(!adventuresFiltersVisible)}
+                    className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-[10px] md:text-xs font-medium transition-all backdrop-blur-xl border ${
+                      adventuresFiltersVisible
+                        ? 'bg-gray-800 text-white border-gray-800'
+                        : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
+                    }`}
+                    style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                  >
+                    <SlidersHorizontal size={12} />
+                    <span>Filters</span>
+                  </button>
 
-                    {/* View Mode Switcher */}
-                    <div className="flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                      <button
-                        onClick={() => setAdventuresViewMode('grid')}
-                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                          adventuresViewMode === 'grid'
-                            ? 'bg-gray-800 text-white shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        Grid
-                      </button>
-                      <button
-                        onClick={() => setAdventuresViewMode('tabs')}
-                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                          adventuresViewMode === 'tabs'
-                            ? 'bg-gray-800 text-white shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        Tabs
-                      </button>
-                    </div>
+                  {/* View Mode Switcher - Hidden on mobile, force grid on mobile */}
+                  <div className="hidden md:flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                    <button
+                      onClick={() => setAdventuresViewMode('grid')}
+                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                        adventuresViewMode === 'grid'
+                          ? 'bg-gray-800 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Grid
+                    </button>
+                    <button
+                      onClick={() => setAdventuresViewMode('tabs')}
+                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                        adventuresViewMode === 'tabs'
+                          ? 'bg-gray-800 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Tabs
+                    </button>
                   </div>
                 </div>
+              </div>
               )}
 
               {/* Back button when showing adventure detail */}
@@ -8894,16 +9244,16 @@ const TokenizedAssetsGlassmorphic = () => {
                 </button>
               )}
 
-              {/* Adventures Filters */}
+              {/* Adventures Filters - Mobile Optimized */}
               {!showAdventureDetail && adventuresFiltersVisible && (
-                <div className="bg-gray-100/60 rounded-lg border border-gray-300/50 p-5 mb-6 backdrop-blur-xl transition-all duration-300" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                  <div className="grid grid-cols-5 gap-4">
+                <div className="bg-gray-100/60 rounded-lg border border-gray-300/50 p-3 md:p-5 mb-4 md:mb-6 backdrop-blur-xl transition-all duration-300" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-800 mb-2">Region</label>
+                      <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Region</label>
                       <select
                         value={adventuresFilter}
                         onChange={(e) => setAdventuresFilter(e.target.value)}
-                        className="w-full px-3 py-2.5 border border-gray-300/50 rounded-lg bg-white/60 text-sm text-gray-600 focus:ring-2 focus:ring-gray-300 focus:border-transparent transition-all"
+                        className="w-full px-2 md:px-3 py-2 md:py-2.5 border border-gray-300/50 rounded-lg bg-white/60 text-xs md:text-sm text-gray-600 focus:ring-2 focus:ring-gray-300 focus:border-transparent transition-all"
                         style={{ backdropFilter: 'blur(10px) saturate(150%)' }}
                       >
                         <option value="all">All Regions</option>
@@ -8914,39 +9264,39 @@ const TokenizedAssetsGlassmorphic = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-800 mb-2">Package Type</label>
+                      <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Type</label>
                       <input
                         type="text"
-                        placeholder="e.g. Safari, Yacht"
+                        placeholder="e.g. Safari"
                         value={adventuresPackageType}
                         onChange={(e) => setAdventuresPackageType(e.target.value)}
-                        className="w-full px-3 py-2.5 border border-gray-300/50 rounded-lg bg-white/60 text-sm text-gray-600 focus:ring-2 focus:ring-gray-300 focus:border-transparent transition-all"
+                        className="w-full px-2 md:px-3 py-2 md:py-2.5 border border-gray-300/50 rounded-lg bg-white/60 text-xs md:text-sm text-gray-600 focus:ring-2 focus:ring-gray-300 focus:border-transparent transition-all"
                         style={{ backdropFilter: 'blur(10px) saturate(150%)' }}
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-800 mb-2">Destination</label>
+                      <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Destination</label>
                       <input
                         type="text"
-                        placeholder="e.g. Dubai, Paris"
+                        placeholder="e.g. Dubai"
                         value={adventuresDestination}
                         onChange={(e) => setAdventuresDestination(e.target.value)}
-                        className="w-full px-3 py-2.5 border border-gray-300/50 rounded-lg bg-white/60 text-sm text-gray-600 focus:ring-2 focus:ring-gray-300 focus:border-transparent transition-all"
+                        className="w-full px-2 md:px-3 py-2 md:py-2.5 border border-gray-300/50 rounded-lg bg-white/60 text-xs md:text-sm text-gray-600 focus:ring-2 focus:ring-gray-300 focus:border-transparent transition-all"
                         style={{ backdropFilter: 'blur(10px) saturate(150%)' }}
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-800 mb-2">Max Price (€)</label>
+                      <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Max Price</label>
                       <input
                         type="number"
-                        placeholder="e.g. 50000"
+                        placeholder="€50000"
                         value={adventuresMaxPrice}
                         onChange={(e) => setAdventuresMaxPrice(e.target.value)}
-                        className="w-full px-3 py-2.5 border border-gray-300/50 rounded-lg bg-white/60 text-sm text-gray-600 focus:ring-2 focus:ring-gray-300 focus:border-transparent transition-all"
+                        className="w-full px-2 md:px-3 py-2 md:py-2.5 border border-gray-300/50 rounded-lg bg-white/60 text-xs md:text-sm text-gray-600 focus:ring-2 focus:ring-gray-300 focus:border-transparent transition-all"
                         style={{ backdropFilter: 'blur(10px) saturate(150%)' }}
                       />
                     </div>
-                    <div className="flex items-end">
+                    <div className="col-span-2 md:col-span-1 flex items-end">
                       <button
                         onClick={() => {
                           setAdventuresSearch('');
@@ -8955,10 +9305,10 @@ const TokenizedAssetsGlassmorphic = () => {
                           setAdventuresMaxPrice('');
                           setAdventuresFilter('all');
                         }}
-                        className="w-full px-4 py-2.5 bg-gray-100/60 text-gray-700 rounded-lg text-sm hover:bg-gray-200/60 transition-all"
+                        className="w-full px-3 md:px-4 py-2 md:py-2.5 bg-gray-100/60 text-gray-700 rounded-lg text-xs md:text-sm hover:bg-gray-200/60 transition-all"
                         style={{ backdropFilter: 'blur(10px) saturate(150%)' }}
                       >
-                        Clear Filters
+                        Clear
                       </button>
                     </div>
                   </div>
@@ -8983,10 +9333,10 @@ const TokenizedAssetsGlassmorphic = () => {
                 </div>
               )}
 
-              {/* Adventures Grid View */}
-              {!isLoadingAdventures && !showAdventureDetail && adventuresViewMode === 'grid' && (
+              {/* Adventures Grid View - Mobile Optimized with Vertical Cards */}
+              {!isLoadingAdventures && !showAdventureDetail && (adventuresViewMode === 'grid' || window.innerWidth < 768) && (
                 <>
-                <div className="grid grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5">
                   {adventuresData
                     .slice((currentAdventuresPage - 1) * adventuresPerPage, currentAdventuresPage * adventuresPerPage)
                     .map((adventure) => (
@@ -8997,96 +9347,158 @@ const TokenizedAssetsGlassmorphic = () => {
                         setShowAdventureDetail(true);
                         setCurrentAdventureImageIndex(0);
                       }}
-                      className={`bg-white/35 hover:bg-white/40 rounded-xl flex h-64 hover:shadow-lg cursor-pointer ${
+                      className={`bg-white/35 hover:bg-white/40 rounded-xl overflow-hidden hover:shadow-lg cursor-pointer ${
                         adventure.isFreeWithNFT
                           ? 'pulse-green-glow'
                           : 'border border-gray-300/50'
                       }`}
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
-                      <div className="w-2/5 bg-white/10 relative flex-shrink-0 rounded-l-xl overflow-hidden">
-                        {adventure.image && (
-                          <img
-                            src={adventure.image}
-                            alt={adventure.name}
-                            className="w-full h-64 object-cover"
-                          />
-                        )}
-                        <div className="absolute top-3 left-3 flex flex-col space-y-1.5">
-                          <div className="flex space-x-1.5">
-                            <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium flex items-center space-x-1">
-                              <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
-                              <span>{adventure.location}</span>
-                            </div>
-                            <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium">⌂ {adventure.category}</div>
-                          </div>
-                          {adventure.isFreeWithNFT && (
-                            <div className="bg-green-500 text-white px-3 py-1.5 rounded text-xs font-bold shadow-lg animate-pulse">
-                              FREE with NFT
-                            </div>
-                          )}
-                        </div>
-                        <FavouriteButton
-                          item={{
-                            id: adventure.id,
-                            type: 'adventure',
-                            name: adventure.name,
-                            location: adventure.location,
-                            image: adventure.image,
-                            category: adventure.category,
-                            price: adventure.totalPrice,
-                            metadata: {
-                              isFreeWithNFT: adventure.isFreeWithNFT,
-                              description: adventure.description
-                            }
-                          }}
-                          variant="floating"
-                          size={18}
-                        />
-                      </div>
-                      <div className="flex-1 p-5 flex flex-col">
-                        <div className="flex items-center justify-between mb-3">
-                          {adventure.rawData?.is_partner_offer ? (
-                            <div className="flex items-center gap-2">
-                              <img
-                                src={adventure.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
-                                alt={adventure.rawData.partner_name || 'Partner'}
-                                className="h-6 w-auto object-contain rounded"
-                                onError={(e) => {
-                                  e.target.src = 'https://via.placeholder.com/80x24/000/fff?text=Partner';
-                                }}
-                              />
-                            </div>
-                          ) : (
+                      {/* Mobile: Vertical stacked layout */}
+                      <div className="md:hidden">
+                        {/* Image on top */}
+                        <div className="relative h-36 bg-white/10">
+                          {adventure.image && (
                             <img
-                              src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_logo_vectorized.glb.png"
-                              alt="PrivateCharterX"
-                              className="h-6 w-auto object-contain"
+                              src={adventure.image}
+                              alt={adventure.name}
+                              className="w-full h-full object-cover"
                             />
                           )}
+                          <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+                            <div className="bg-white/90 px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 backdrop-blur-sm">
+                              <span className="w-1 h-1 bg-red-500 rounded-full"></span>
+                              <span className="text-gray-800">{adventure.location}</span>
+                            </div>
+                            {adventure.isFreeWithNFT && (
+                              <div className="bg-green-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold backdrop-blur-sm animate-pulse">
+                                FREE with NFT
+                              </div>
+                            )}
+                          </div>
+                          <FavouriteButton
+                            item={{
+                              id: adventure.id,
+                              type: 'adventure',
+                              name: adventure.name,
+                              location: adventure.location,
+                              image: adventure.image,
+                              category: adventure.category,
+                              price: adventure.totalPrice,
+                              metadata: {
+                                isFreeWithNFT: adventure.isFreeWithNFT,
+                                description: adventure.description
+                              }
+                            }}
+                            variant="floating"
+                            size={16}
+                          />
                         </div>
-                        <h3 className="text-base font-semibold text-gray-800 mb-4 line-clamp-2 overflow-hidden">{adventure.name}</h3>
-                        <div className="flex space-x-6 border-b border-gray-600/30 mb-5">
-                          <button className="pb-3 text-xs relative text-gray-800">
-                            Properties
-                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-800"></div>
+                        {/* Content below */}
+                        <div className="p-3">
+                          <h3 className="text-sm font-semibold text-gray-800 mb-2 line-clamp-1">{adventure.name}</h3>
+                          <div className="grid grid-cols-2 gap-2 mb-3">
+                            <div className="text-center bg-gray-100/50 rounded-lg py-1.5">
+                              <span className="text-[10px] text-gray-500 block">Price</span>
+                              <span className="text-xs font-semibold text-gray-800">{adventure.totalPrice}</span>
+                            </div>
+                            <div className="text-center bg-gray-100/50 rounded-lg py-1.5">
+                              <span className="text-[10px] text-gray-500 block">Duration</span>
+                              <span className="text-xs font-semibold text-gray-800">{adventure.yield}</span>
+                            </div>
+                          </div>
+                          <button className="w-full py-2 bg-gray-800 text-white rounded-lg text-xs font-medium">
+                            View Details
                           </button>
-                          <button className="pb-3 text-xs text-gray-600">Description</button>
                         </div>
+                      </div>
 
-                        <div className="flex justify-between mt-auto mb-5">
-                          <div className="flex flex-col space-y-1">
-                            <span className="text-xs text-gray-600">Price</span>
-                            <span className="text-sm font-semibold text-gray-800">{adventure.totalPrice}</span>
+                      {/* Desktop: Horizontal layout */}
+                      <div className="hidden md:flex h-64">
+                        <div className="w-2/5 bg-white/10 relative flex-shrink-0 rounded-l-xl overflow-hidden">
+                          {adventure.image && (
+                            <img
+                              src={adventure.image}
+                              alt={adventure.name}
+                              className="w-full h-64 object-cover"
+                            />
+                          )}
+                          <div className="absolute top-3 left-3 flex flex-col space-y-1.5">
+                            <div className="flex space-x-1.5">
+                              <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium flex items-center space-x-1">
+                                <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                                <span>{adventure.location}</span>
+                              </div>
+                              <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium">⌂ {adventure.category}</div>
+                            </div>
+                            {adventure.isFreeWithNFT && (
+                              <div className="bg-green-500 text-white px-3 py-1.5 rounded text-xs font-bold shadow-lg animate-pulse">
+                                FREE with NFT
+                              </div>
+                            )}
                           </div>
-                          <div className="flex flex-col space-y-1">
-                            <span className="text-xs text-gray-600">Duration</span>
-                            <span className="text-sm font-semibold text-gray-800">{adventure.yield}</span>
-                          </div>
+                          <FavouriteButton
+                            item={{
+                              id: adventure.id,
+                              type: 'adventure',
+                              name: adventure.name,
+                              location: adventure.location,
+                              image: adventure.image,
+                              category: adventure.category,
+                              price: adventure.totalPrice,
+                              metadata: {
+                                isFreeWithNFT: adventure.isFreeWithNFT,
+                                description: adventure.description
+                              }
+                            }}
+                            variant="floating"
+                            size={18}
+                          />
                         </div>
+                        <div className="flex-1 p-5 flex flex-col">
+                          <div className="flex items-center justify-between mb-3">
+                            {adventure.rawData?.is_partner_offer ? (
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={adventure.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
+                                  alt={adventure.rawData.partner_name || 'Partner'}
+                                  className="h-6 w-auto object-contain rounded"
+                                  onError={(e) => {
+                                    e.target.src = 'https://via.placeholder.com/80x24/000/fff?text=Partner';
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              <img
+                                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_logo_vectorized.glb.png"
+                                alt="PrivateCharterX"
+                                className="h-6 w-auto object-contain"
+                              />
+                            )}
+                          </div>
+                          <h3 className="text-base font-semibold text-gray-800 mb-4 line-clamp-2 overflow-hidden">{adventure.name}</h3>
+                          <div className="flex space-x-6 border-b border-gray-600/30 mb-5">
+                            <button className="pb-3 text-xs relative text-gray-800">
+                              Properties
+                              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-800"></div>
+                            </button>
+                            <button className="pb-3 text-xs text-gray-600">Description</button>
+                          </div>
 
-                        <div className="flex space-x-4 pt-4 border-t border-gray-600/30 text-xs">
-                          <a href="#" className="text-gray-600 hover:text-gray-800">See details ↗</a>
+                          <div className="flex justify-between mt-auto mb-5">
+                            <div className="flex flex-col space-y-1">
+                              <span className="text-xs text-gray-600">Price</span>
+                              <span className="text-sm font-semibold text-gray-800">{adventure.totalPrice}</span>
+                            </div>
+                            <div className="flex flex-col space-y-1">
+                              <span className="text-xs text-gray-600">Duration</span>
+                              <span className="text-sm font-semibold text-gray-800">{adventure.yield}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex space-x-4 pt-4 border-t border-gray-600/30 text-xs">
+                            <a href="#" className="text-gray-600 hover:text-gray-800">See details ↗</a>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -11211,38 +11623,64 @@ const TokenizedAssetsGlassmorphic = () => {
       </div>
       </div>
 
-      {/* Modals */}
+      {/* Modals - Use app-specific modals for native apps */}
       {showLoginModal && (
-        <LoginModal
-          onClose={() => setShowLoginModal(false)}
-          onSwitchToRegister={() => {
-            setShowLoginModal(false);
-            setShowRegisterModal(true);
-          }}
-          onSwitchToPartnerRegister={() => {
-            setShowLoginModal(false);
-            setShowPartnerRegisterModal(true);
-          }}
-          onSuccess={() => setShowLoginModal(false)}
-          onSwitchToForgotPassword={() => {
-            setShowLoginModal(false);
-            setShowForgotPasswordModal(true);
-          }}
-        />
+        isNativeApp() ? (
+          <AppLoginModal
+            onClose={() => setShowLoginModal(false)}
+            onSwitchToRegister={() => {
+              setShowLoginModal(false);
+              setShowRegisterModal(true);
+            }}
+            onSuccess={() => setShowLoginModal(false)}
+            onForgotPassword={() => {
+              setShowLoginModal(false);
+              setShowForgotPasswordModal(true);
+            }}
+          />
+        ) : (
+          <LoginModal
+            onClose={() => setShowLoginModal(false)}
+            onSwitchToRegister={() => {
+              setShowLoginModal(false);
+              setShowRegisterModal(true);
+            }}
+            onSwitchToPartnerRegister={() => {
+              setShowLoginModal(false);
+              setShowPartnerRegisterModal(true);
+            }}
+            onSuccess={() => setShowLoginModal(false)}
+            onSwitchToForgotPassword={() => {
+              setShowLoginModal(false);
+              setShowForgotPasswordModal(true);
+            }}
+          />
+        )
       )}
       {showRegisterModal && (
-        <RegisterModal
-          onClose={() => setShowRegisterModal(false)}
-          onSwitchToLogin={() => {
-            setShowRegisterModal(false);
-            setShowLoginModal(true);
-          }}
-          onSwitchToPartnerRegister={() => {
-            setShowRegisterModal(false);
-            setShowPartnerRegisterModal(true);
-          }}
-          onSuccess={() => setShowRegisterModal(false)}
-        />
+        isNativeApp() ? (
+          <AppRegisterModal
+            onClose={() => setShowRegisterModal(false)}
+            onSwitchToLogin={() => {
+              setShowRegisterModal(false);
+              setShowLoginModal(true);
+            }}
+            onSuccess={() => setShowRegisterModal(false)}
+          />
+        ) : (
+          <RegisterModal
+            onClose={() => setShowRegisterModal(false)}
+            onSwitchToLogin={() => {
+              setShowRegisterModal(false);
+              setShowLoginModal(true);
+            }}
+            onSwitchToPartnerRegister={() => {
+              setShowRegisterModal(false);
+              setShowPartnerRegisterModal(true);
+            }}
+            onSuccess={() => setShowRegisterModal(false)}
+          />
+        )
       )}
 
       {showForgotPasswordModal && (

@@ -283,21 +283,22 @@ const EmptyLegDetail = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 font-['DM_Sans']">
-      {/* Header */}
+      {/* Header - Mobile Optimized */}
       <header className="bg-gray-50 border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-5 py-6">
+        <div className="max-w-7xl mx-auto px-4 md:px-5 py-3 md:py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button onClick={() => navigate('/')}>
                 <img
                   src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_Logo_written-removebg-preview.png"
                   alt="PrivateCharterX"
-                  className="h-8 w-auto"
+                  className="h-6 md:h-8 w-auto"
                 />
               </button>
             </div>
 
-            <div className="flex items-center space-x-3">
+            {/* Desktop Header Items */}
+            <div className="hidden md:flex items-center space-x-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                 <input
@@ -327,12 +328,20 @@ const EmptyLegDetail = () => {
                 <User size={16} />
               </button>
             </div>
+
+            {/* Mobile Header - Back Button */}
+            <button
+              onClick={() => navigate('/tokenized-assets')}
+              className="md:hidden flex items-center text-sm text-gray-600 bg-white px-3 py-2 rounded-lg border border-gray-200"
+            >
+              ← Back
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200">
+      {/* Navigation - Hidden on mobile */}
+      <nav className="hidden md:block bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-5">
           <div className="flex space-x-8">
             <button
@@ -347,22 +356,126 @@ const EmptyLegDetail = () => {
       </nav>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-5 py-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-5 py-4 md:py-6">
         {/* Loading State */}
         {isLoading && (
-          <div className="bg-white rounded-lg border border-gray-300 mb-6 h-[600px] flex items-center justify-center">
+          <div className="bg-white rounded-lg border border-gray-300 mb-6 h-[300px] md:h-[600px] flex items-center justify-center">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-black mx-auto"></div>
+              <div className="animate-spin rounded-full h-12 md:h-16 w-12 md:w-16 border-b-2 border-black mx-auto"></div>
               <p className="mt-4 text-sm text-gray-600">Loading flight details...</p>
             </div>
           </div>
         )}
 
-        {/* Flight Header Card */}
+        {/* Flight Header Card - Mobile Optimized */}
         {!isLoading && emptyLeg && (
         <>
-        <div className="bg-white rounded-lg border border-gray-300 mb-6">
-          <div className="flex h-80">
+        <div className="bg-white rounded-xl md:rounded-lg border border-gray-300 mb-4 md:mb-6 overflow-hidden">
+          {/* Mobile Layout - Stacked */}
+          <div className="md:hidden">
+            {/* Image Section - Full Width on Mobile */}
+            <div className="relative h-48 bg-gray-100">
+              {emptyLeg.image_url ? (
+                <img
+                  src={emptyLeg.image_url}
+                  alt={`${emptyLeg.aircraft_type} - ${emptyLeg.from_iata} to ${emptyLeg.to_iata}`}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                  <div className="text-center px-4">
+                    <div className="flex items-center justify-center space-x-3 mb-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-black">{emptyLeg.from_iata || emptyLeg.from?.substring(0, 3).toUpperCase()}</div>
+                        <div className="text-[10px] text-gray-600 mt-1">{emptyLeg.from_city || emptyLeg.from}</div>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-8 h-0.5 bg-gray-400"></div>
+                        <Plane className="text-gray-600 mx-1" size={18} />
+                        <div className="w-8 h-0.5 bg-gray-400"></div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-black">{emptyLeg.to_iata || emptyLeg.to?.substring(0, 3).toUpperCase()}</div>
+                        <div className="text-[10px] text-gray-600 mt-1">{emptyLeg.to_city || emptyLeg.to}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="absolute top-3 left-3 flex space-x-1.5">
+                <div className="bg-white px-2 py-1 rounded text-[10px] font-medium flex items-center space-x-1">
+                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                  <span>Available</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile Content */}
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="bg-black text-white px-2 py-0.5 rounded text-[10px] font-semibold uppercase">PCX</span>
+                <span className="text-xs text-gray-500">✈︎ Empty Leg</span>
+              </div>
+
+              <h1 className="text-xl font-semibold mb-1">
+                {emptyLeg.from_iata || emptyLeg.from?.substring(0, 3).toUpperCase()} → {emptyLeg.to_iata || emptyLeg.to?.substring(0, 3).toUpperCase()}
+              </h1>
+              <p className="text-xs text-gray-600 mb-3">
+                {emptyLeg.from_city || emptyLeg.from} to {emptyLeg.to_city || emptyLeg.to}
+              </p>
+
+              {/* Mobile Key Metrics - Grid */}
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="bg-gray-50 rounded-lg p-2 text-center">
+                  <span className="text-[10px] text-gray-500 block">Date</span>
+                  <span className="text-xs font-semibold text-black">{departureDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-2 text-center">
+                  <span className="text-[10px] text-gray-500 block">Capacity</span>
+                  <span className="text-xs font-semibold text-black">{emptyLeg.capacity || emptyLeg.pax || 'N/A'} pax</span>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-2 text-center">
+                  <span className="text-[10px] text-gray-500 block">Price</span>
+                  <span className="text-xs font-semibold text-black">€{emptyLeg.price?.toLocaleString() || 'N/A'}</span>
+                </div>
+              </div>
+
+              {/* Mobile Tab Navigation - Scrollable */}
+              <div className="flex space-x-4 overflow-x-auto pb-2 border-b border-gray-200 mb-3 -mx-4 px-4">
+                <button
+                  onClick={() => setActiveTab('details')}
+                  className={`pb-2 text-xs whitespace-nowrap relative ${activeTab === 'details' ? 'text-black font-medium' : 'text-gray-500'}`}
+                >
+                  Details
+                  {activeTab === 'details' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"></div>}
+                </button>
+                <button
+                  onClick={() => setActiveTab('aircraft')}
+                  className={`pb-2 text-xs whitespace-nowrap relative ${activeTab === 'aircraft' ? 'text-black font-medium' : 'text-gray-500'}`}
+                >
+                  Aircraft
+                  {activeTab === 'aircraft' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"></div>}
+                </button>
+                <button
+                  onClick={() => setActiveTab('operator')}
+                  className={`pb-2 text-xs whitespace-nowrap relative ${activeTab === 'operator' ? 'text-black font-medium' : 'text-gray-500'}`}
+                >
+                  Operator
+                  {activeTab === 'operator' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"></div>}
+                </button>
+                <button
+                  onClick={() => setActiveTab('map')}
+                  className={`pb-2 text-xs whitespace-nowrap relative ${activeTab === 'map' ? 'text-black font-medium' : 'text-gray-500'}`}
+                >
+                  Map
+                  {activeTab === 'map' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"></div>}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop Layout - Side by Side */}
+          <div className="hidden md:flex h-80">
             {/* Left side - Aircraft Image */}
             <div className="w-2/5 relative bg-gray-100">
               {emptyLeg.image_url ? (
@@ -480,11 +593,11 @@ const EmptyLegDetail = () => {
           </div>
         </div>
 
-        {/* Content and Booking Section */}
-        <div className="grid grid-cols-3 gap-6">
+        {/* Content and Booking Section - Mobile Optimized */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           {/* Left Column - Content */}
-          <div className="col-span-2">
-            <div className="bg-white rounded-lg border border-gray-300 p-6">
+          <div className="md:col-span-2 order-2 md:order-1">
+            <div className="bg-white rounded-xl md:rounded-lg border border-gray-300 p-4 md:p-6">
               {activeTab === 'details' && (
                 <div>
                   <h3 className="text-base font-semibold mb-4">Flight Details</h3>
@@ -678,9 +791,9 @@ const EmptyLegDetail = () => {
             </div>
           </div>
 
-          {/* Right Column - Booking Widget */}
-          <div className="col-span-1">
-            <div className="bg-white rounded-lg border border-gray-300 p-5 sticky top-6">
+          {/* Right Column - Booking Widget - Show first on mobile */}
+          <div className="col-span-1 order-1 md:order-2">
+            <div className="bg-white rounded-xl md:rounded-lg border border-gray-300 p-4 md:p-5 md:sticky md:top-6">
               <h3 className="text-base font-semibold mb-4">Book This Flight</h3>
 
               {/* Flight Summary */}

@@ -218,16 +218,35 @@ function Homepage() {
       <LandingHeader onGetStarted={handleGetStarted} />
 
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto rounded-2xl overflow-hidden relative min-h-[50vh] sm:min-h-[85vh]">
-        {/* Background Globe - Full Color - Centered - Smaller on mobile */}
+      {/* Mobile Layout - Stacked (Globe above, Search below) - Full screen height */}
+      <div className="md:hidden max-w-7xl mx-auto rounded-2xl overflow-hidden min-h-[calc(100vh-100px)] flex flex-col justify-center">
+        {/* Globe Section - Mobile - Centered */}
+        <div className="relative h-[280px] flex items-center justify-center overflow-hidden">
+          <div className="w-[300px] h-[300px]">
+            <Globe3D />
+          </div>
+        </div>
+
+        {/* Spacing between globe and floating element */}
+        <div className="h-10"></div>
+
+        {/* Floating Search Modal - Below Globe on Mobile */}
+        <div className="px-4 pb-6">
+          <FloatingSearchModal />
+        </div>
+      </div>
+
+      {/* Desktop Layout - Overlapping (Original) */}
+      <div className="hidden md:block max-w-7xl mx-auto rounded-2xl overflow-hidden relative min-h-[85vh]">
+        {/* Background Globe - Full Color - Centered */}
         <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden">
-          <div className="w-[220px] h-[220px] sm:w-full sm:h-full scale-100 sm:scale-100">
+          <div className="w-full h-full">
             <Globe3D />
           </div>
         </div>
 
         {/* Content overlay - Centered Floating Search Modal */}
-        <section className="absolute inset-0 z-20 flex items-center justify-center px-4 sm:px-8">
+        <section className="absolute inset-0 z-20 flex items-center justify-center px-8">
           <FloatingSearchModal />
         </section>
       </div>
