@@ -3662,7 +3662,7 @@ const TokenizedAssetsGlassmorphic = () => {
   }
 
   return (
-    <div className="min-h-screen font-['DM_Sans'] relative">
+    <div className="h-[100dvh] font-['DM_Sans'] relative overflow-hidden">
       {/* Background - Animated Video for both RWS and Web3 */}
       <video
         autoPlay
@@ -3676,7 +3676,7 @@ const TokenizedAssetsGlassmorphic = () => {
 
 
       {/* Main Container - Centered Floating Glassmorphic Dashboard */}
-      <div className="relative z-10 flex h-screen items-center justify-center p-0 lg:p-8">
+      <div className="relative z-10 flex h-full items-center justify-center p-0 lg:p-8">
         {/* COMPLETE FLOATING GLASSMORPHIC CONTAINER - Sidebar + Content als ein Stück */}
         <div className={`relative flex w-full max-w-7xl h-full lg:h-[90vh] rounded-none lg:rounded-3xl shadow-2xl border-0 lg:border overflow-hidden lg:transition-all lg:duration-700 lg:ease-out opacity-100 scale-100 ${
           webMode === 'web3'

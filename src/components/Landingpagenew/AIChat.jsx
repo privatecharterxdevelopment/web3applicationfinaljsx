@@ -3031,15 +3031,15 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
     return (
       <div className="h-full bg-transparent flex flex-col overflow-hidden">
-        {/* Simple Header */}
-        <div className="flex-shrink-0 px-8 py-8 text-center">
-          <h2 className="text-2xl font-light text-gray-900 mb-2">Choose a Service</h2>
-          <p className="text-sm text-gray-500">Select a service to start your conversation</p>
+        {/* Simple Header - Smaller on mobile */}
+        <div className="flex-shrink-0 px-4 sm:px-8 py-4 sm:py-8 text-center">
+          <h2 className="text-xl sm:text-2xl font-light text-gray-900 mb-1 sm:mb-2">Choose a Service</h2>
+          <p className="text-xs sm:text-sm text-gray-500">Select a service to start your conversation</p>
         </div>
 
-        {/* Monochromatic Service Bubbles */}
-        <div className="flex-1 overflow-y-auto px-8 pb-6">
-          <div className="flex flex-wrap justify-center gap-3 max-w-5xl mx-auto">
+        {/* Monochromatic Service Bubbles - More compact on mobile */}
+        <div className="flex-1 overflow-y-auto px-4 sm:px-8 pb-4 sm:pb-6">
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 max-w-5xl mx-auto">
             {services.map((service, index) => (
               <button
                 key={service.id}
@@ -3069,10 +3069,10 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   animation: `bubbleIn 0.5s ease-out ${index * 0.04}s both`
                 }}
               >
-                {/* Light Grey Bubble */}
-                <div className="px-6 py-3 bg-gray-100 hover:bg-gray-200 border border-gray-200 hover:border-gray-300 rounded-full transition-all duration-200 hover:shadow-md">
+                {/* Light Grey Bubble - Smaller on mobile */}
+                <div className="px-4 sm:px-6 py-2 sm:py-3 bg-gray-100 hover:bg-gray-200 border border-gray-200 hover:border-gray-300 rounded-full transition-all duration-200 hover:shadow-md">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
+                    <span className="text-xs sm:text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
                       {service.title}
                     </span>
                   </div>
@@ -3082,8 +3082,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
           </div>
         </div>
 
-        {/* FIXED INPUT - Floating bottom */}
-        <div className="flex-shrink-0 px-6 pb-6">
+        {/* FIXED INPUT - Floating bottom - Less padding on mobile */}
+        <div className="flex-shrink-0 px-4 sm:px-6 pb-4 sm:pb-6">
           <div className="max-w-3xl mx-auto">
             {/* Chat Limit Reached (Free users - no more chats) */}
             {chatLimitReached ? (
@@ -3330,8 +3330,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
     <div className="ai-chat-page h-full flex bg-transparent overflow-hidden">
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-      {/* 1. HEADER - STICKY TOP */}
-      <div className="flex-shrink-0 px-6 py-4 bg-white/10 border-b border-white/20" style={{ backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)' }}>
+      {/* 1. HEADER - STICKY TOP - More compact on mobile */}
+      <div className="flex-shrink-0 px-3 sm:px-6 py-2 sm:py-4 bg-white/10 border-b border-white/20" style={{ backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -3537,8 +3537,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         </div>
       </div>
 
-      {/* 2. MESSAGES - FLOW FROM BOTTOM */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-4 flex flex-col-reverse">
+      {/* 2. MESSAGES - FLOW FROM BOTTOM - Less padding on mobile */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-6 py-3 sm:py-4 flex flex-col-reverse">
         <div className="max-w-3xl mx-auto space-y-4 flex flex-col w-full">
             {currentChat?.messages.map((msg, idx) => {
               const timestamp = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -3764,8 +3764,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         </div>
       </div>
 
-      {/* 3. INPUT - STICKY AT BOTTOM */}
-      <div className="flex-shrink-0 px-6 pb-6 pt-4">
+      {/* 3. INPUT - STICKY AT BOTTOM - Less padding on mobile */}
+      <div className="flex-shrink-0 px-4 sm:px-6 pb-4 sm:pb-6 pt-3 sm:pt-4">
         <div className="max-w-3xl mx-auto">
           {/* Message Limit Reached (20 messages per chat) */}
           {messageLimitReached ? (
