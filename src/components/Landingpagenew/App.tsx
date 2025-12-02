@@ -152,7 +152,7 @@ const wagmiAdapter = new WagmiAdapter({
   networks: [base, mainnet]
 });
 
-// FIXED: Cleaner AppKit configuration  
+// FIXED: Cleaner AppKit configuration with mobile support
 createAppKit({
   adapters: [wagmiAdapter],
   projectId,
@@ -168,6 +168,20 @@ createAppKit({
     analytics: false,
     email: false,
     socials: []
+  },
+  // Enable mobile wallet deep linking
+  enableWalletConnect: true,
+  // Allow all wallets including mobile wallets
+  featuredWalletIds: [
+    'c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96', // MetaMask
+    '4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0', // Trust Wallet
+    '19177a98252e07ddfc9af2083ba8e07ef627cb6103467ffebb3f8f4205fd7927', // Ledger
+    'fd20dc426fb37566d803205b19bbc1d4096b248ac04548e3cfb6b3a38bd033aa', // Coinbase Wallet
+  ],
+  // Better mobile UX
+  themeMode: 'light',
+  themeVariables: {
+    '--w3m-z-index': '99999'
   }
 });
 
