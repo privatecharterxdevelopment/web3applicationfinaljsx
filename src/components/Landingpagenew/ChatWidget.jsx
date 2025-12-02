@@ -148,12 +148,18 @@ export default function ChatWidget() {
     }
   };
 
-  // Check if we're on taxi/concierge page or AI chat page and hide widget
+  // Check if we should hide the widget
+  // Hide on: taxi/concierge page, AI chat page, mobile devices, and non-profile pages
   useEffect(() => {
     const checkHidePage = () => {
       const taxiPage = document.querySelector('.taxi-concierge-page');
       const aiChatPage = document.querySelector('.ai-chat-page');
-      setShouldHide(!!(taxiPage || aiChatPage));
+      const profilePage = document.querySelector('.profile-page, .dashboard-page, [data-page="profile"], [data-page="dashboard"]');
+      const isMobile = window.innerWidth < 768;
+      const isOnDashboard = window.location.pathname.includes('/dashboard') || window.location.pathname.includes('/profile');
+
+      // Hide if: on taxi/AI chat page, on mobile, or NOT on profile/dashboard
+      setShouldHide(!!(taxiPage || aiChatPage || isMobile || !isOnDashboard));
     };
 
     checkHidePage();
@@ -162,7 +168,13 @@ export default function ChatWidget() {
     const observer = new MutationObserver(checkHidePage);
     observer.observe(document.body, { childList: true, subtree: true });
 
-    return () => observer.disconnect();
+    // Also listen for resize events to handle mobile/desktop switching
+    window.addEventListener('resize', checkHidePage);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', checkHidePage);
+    };
   }, []);
 
   const scrollToBottom = () => {
@@ -279,7 +291,7 @@ export default function ChatWidget() {
   }
 
   return (
-    <div className="absolute bottom-[50px] right-[120px] z-[9999] flex flex-col items-end">
+    <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end">
       {/* Chat Window - Smaller Square */}
       {isOpen && (
         <div className="mb-2 w-[280px] h-[320px] transition-all duration-300 ease-out">
