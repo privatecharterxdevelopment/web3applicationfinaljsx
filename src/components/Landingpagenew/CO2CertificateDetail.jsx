@@ -203,7 +203,7 @@ export default function CO2CertificateDetail() {
       // Set quantity to min purchase amount
       setQuantity(realProjects[id].minPurchase);
     } else {
-      navigate('/tokenized-assets');
+      navigate('/dashboard?tab=co2');
     }
   }, [id, navigate]);
 
@@ -322,7 +322,7 @@ export default function CO2CertificateDetail() {
         <div className="max-w-7xl mx-auto px-5">
           <div className="flex space-x-8">
             <button
-              onClick={() => navigate('/tokenized-assets')}
+              onClick={() => navigate('/dashboard?tab=co2')}
               className="py-4 text-sm text-gray-600 border-b-2 border-transparent hover:text-black"
             >
               ← Back to CO2/SAF

@@ -162,7 +162,7 @@ const AdventureDetail = () => {
     } catch (error) {
       console.error('💥 Error fetching adventure:', error);
       alert(`Error loading adventure: ${error.message}. Redirecting to marketplace...`);
-      setTimeout(() => navigate('/tokenized-assets'), 2000);
+      setTimeout(() => navigate('/dashboard?tab=adventures'), 2000);
     } finally {
       setIsLoading(false);
     }
@@ -325,7 +325,7 @@ const AdventureDetail = () => {
       <nav className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-5">
           <div className="flex items-center space-x-6 overflow-x-auto scrollbar-hide">
-            <button onClick={() => navigate('/tokenized-assets')} className="py-4 text-sm text-gray-600 hover:text-black whitespace-nowrap">
+            <button onClick={() => navigate('/dashboard?tab=adventures')} className="py-4 text-sm text-gray-600 hover:text-black whitespace-nowrap">
               ← Back to Marketplace
             </button>
             <button className="py-4 text-sm text-black border-b-2 border-black">◇ Adventure Details</button>
@@ -914,13 +914,13 @@ const AdventureDetail = () => {
             <div>
               <h4 className="text-sm font-medium text-gray-900 mb-4">Web3 & Digital</h4>
               <div className="space-y-3">
-                <button onClick={() => navigate('/tokenized')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors">Web3</button>
-                <button onClick={() => navigate('/tokenized')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors">PVCX Token</button>
-                <button onClick={() => navigate('/tokenized')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors">NFT Aviation</button>
-                <button onClick={() => navigate('/tokenized')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors">Asset Licensing</button>
-                <button onClick={() => navigate('/tokenized')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors">JetCard Packages</button>
-                <button onClick={() => navigate('/tokenized')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors">CO2 Certificates</button>
-                <button onClick={() => navigate('/tokenized-assets')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors">Tokenized Assets</button>
+                <button onClick={() => navigate('/dashboard')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors">Web3</button>
+                <button onClick={() => navigate('/dashboard?tab=pvcx')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors">PVCX Token</button>
+                <button onClick={() => navigate('/dashboard?tab=nfts')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors">NFT Aviation</button>
+                <button onClick={() => navigate('/dashboard?tab=tokenize')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors">Asset Licensing</button>
+                <button onClick={() => navigate('/dashboard?tab=subscription-plans')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors">JetCard Packages</button>
+                <button onClick={() => navigate('/dashboard?tab=co2')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors">CO2 Certificates</button>
+                <button onClick={() => navigate('/dashboard')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors">Tokenized Assets</button>
               </div>
             </div>
 

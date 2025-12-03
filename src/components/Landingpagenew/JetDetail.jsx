@@ -43,7 +43,7 @@ const JetDetail = () => {
       setJet(data);
     } catch (error) {
       console.error('Error fetching jet:', error);
-      navigate('/tokenized-assets');
+      navigate('/dashboard?tab=jets');
     } finally {
       setIsLoading(false);
     }
@@ -194,7 +194,7 @@ const JetDetail = () => {
         <div className="max-w-7xl mx-auto px-5">
           <div className="flex space-x-8">
             <button
-              onClick={() => navigate('/tokenized-assets')}
+              onClick={() => navigate('/dashboard?tab=jets')}
               className="py-4 text-sm text-gray-600 border-b-2 border-transparent hover:text-black"
             >
               ← Back to Jets

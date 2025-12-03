@@ -100,7 +100,6 @@ import Tokenized from './Tokenized';
 import Helpdesk from './Helpdesk';
 
 // Import your complete dashboard
-import TokenizedAssets from './tokenized-assets.jsx';
 import TokenizedAssetsGlassmorphic from './tokenized-assets-glassmorphic.jsx';
 import ProjectPage from './ProjectPage.jsx';
 
@@ -321,8 +320,8 @@ function AppContent() {
               {/* User Overview Dashboard (old) */}
               <Route path="/user-overview" element={<Dashboard />} />
 
-              {/* Tokenized Assets Route */}
-              <Route path="/tokenized-assets" element={<TokenizedAssets />} />
+              {/* Tokenized Assets Route - Redirect to new dashboard */}
+              <Route path="/tokenized-assets" element={<Navigate to="/dashboard" replace />} />
 
               {/* Legacy redirect - /glas now redirects to /dashboard */}
               <Route path="/glas" element={<Navigate to="/dashboard" replace />} />

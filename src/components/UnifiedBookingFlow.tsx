@@ -409,12 +409,19 @@ const CalendarComponent = ({ selectedDate, onDateSelect }: CalendarProps) => {
   );
 };
 
+interface InitialFlightData {
+  departure: { code: string; name: string };
+  destination: { code: string; name: string };
+}
+
 interface UnifiedBookingFlowProps {
   onStepChange?: (step: number) => void;
   initialVehicleType?: 'private-jet' | 'helicopter';
+  initialFlightData?: InitialFlightData | null;
+  onFlightDataUsed?: () => void;
 }
 
-export default function UnifiedBookingFlow({ onStepChange, initialVehicleType }: UnifiedBookingFlowProps = {}) {
+export default function UnifiedBookingFlow({ onStepChange, initialVehicleType, initialFlightData, onFlightDataUsed }: UnifiedBookingFlowProps = {}) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showRouteSlider, setShowRouteSlider] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -497,6 +504,44 @@ export default function UnifiedBookingFlow({ onStepChange, initialVehicleType }:
     { id: 'carbon', label: 'Carbon' },
     { id: 'summary', label: 'Review' },
   ];
+
+  // Pre-populate origin/destination from initialFlightData (from hero charter form)
+  useEffect(() => {
+    if (initialFlightData) {
+      const loadFlightData = async () => {
+        try {
+          // Search for the departure airport
+          const originResults = await airportsService.searchAirports(initialFlightData.departure.code);
+          const originAirport = originResults.find(a => a.code === initialFlightData.departure.code);
+          if (originAirport) {
+            setOrigin(originAirport);
+            setOriginInput(initialFlightData.departure.name);
+          }
+
+          // Search for the destination airport
+          const destResults = await airportsService.searchAirports(initialFlightData.destination.code);
+          const destAirport = destResults.find(a => a.code === initialFlightData.destination.code);
+          if (destAirport) {
+            setDestination(destAirport);
+            setDestInput(initialFlightData.destination.name);
+          }
+
+          // Auto-advance to step 2 (aircraft selection) since origin/destination are already filled
+          if (originAirport && destAirport) {
+            setCurrentStep(1); // Step 1 = aircraft selection (0-indexed)
+          }
+
+          // Notify parent that we've consumed the data
+          if (onFlightDataUsed) {
+            onFlightDataUsed();
+          }
+        } catch (error) {
+          console.error('Error loading initial flight data:', error);
+        }
+      };
+      loadFlightData();
+    }
+  }, [initialFlightData, onFlightDataUsed]);
 
   useEffect(() => {
     if (isConnected && address) {

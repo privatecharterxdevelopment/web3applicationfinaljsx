@@ -46,7 +46,7 @@ const HelicopterDetail = () => {
       setHelicopter(data);
     } catch (error) {
       console.error('Error fetching helicopter:', error);
-      navigate('/tokenized-assets');
+      navigate('/dashboard?tab=helicopter');
     } finally {
       setIsLoading(false);
     }
@@ -205,7 +205,7 @@ const HelicopterDetail = () => {
         <div className="max-w-7xl mx-auto px-5">
           <div className="flex space-x-8">
             <button
-              onClick={() => navigate('/tokenized-assets')}
+              onClick={() => navigate('/dashboard?tab=helicopter')}
               className="py-4 text-sm text-gray-600 border-b-2 border-transparent hover:text-black"
             >
               ← Back to Helicopters

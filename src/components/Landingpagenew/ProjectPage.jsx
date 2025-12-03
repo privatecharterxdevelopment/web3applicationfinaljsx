@@ -348,7 +348,7 @@ const ProjectPage = () => {
     if (assetData) {
       setAsset(assetData);
     } else {
-      navigate('/tokenized-assets');
+      navigate('/dashboard?tab=rwa');
     }
   }, [projectId, navigate]);
 
@@ -461,7 +461,7 @@ const ProjectPage = () => {
         <div className="max-w-7xl mx-auto px-5">
           <div className="flex space-x-8">
             <button
-              onClick={() => navigate('/tokenized-assets')}
+              onClick={() => navigate('/dashboard?tab=rwa')}
               className="py-4 text-sm text-gray-600 border-b-2 border-transparent hover:text-black"
             >
               ← Back to Assets
@@ -824,43 +824,43 @@ const ProjectPage = () => {
               <h4 className="text-sm font-medium text-gray-900 mb-4">Web3 & Digital</h4>
               <div className="space-y-3">
                 <button
-                  onClick={() => navigate('/tokenized')}
+                  onClick={() => navigate('/dashboard')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Web3
                 </button>
                 <button
-                  onClick={() => navigate('/tokenized')}
+                  onClick={() => navigate('/dashboard?tab=pvcx')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   PVCX Token
                 </button>
                 <button
-                  onClick={() => navigate('/tokenized')}
+                  onClick={() => navigate('/dashboard?tab=nfts')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   NFT Aviation
                 </button>
                 <button
-                  onClick={() => navigate('/tokenized')}
+                  onClick={() => navigate('/dashboard?tab=tokenize')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Asset Licensing
                 </button>
                 <button
-                  onClick={() => navigate('/tokenized')}
+                  onClick={() => navigate('/dashboard?tab=subscription-plans')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   JetCard Packages
                 </button>
                 <button
-                  onClick={() => navigate('/tokenized')}
+                  onClick={() => navigate('/dashboard?tab=co2')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   CO2 Certificates
                 </button>
                 <button
-                  onClick={() => navigate('/tokenized-assets')}
+                  onClick={() => navigate('/dashboard')}
                   className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Tokenized Assets

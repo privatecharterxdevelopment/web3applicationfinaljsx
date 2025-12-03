@@ -115,9 +115,8 @@ function UserMenu({ onLogout }: UserMenuProps) {
 
   const openDashboard = (tab: string = 'overview') => {
     setIsOpen(false);
-    // Store the tab to open, then navigate to tokenized-assets
-    sessionStorage.setItem('dashboardTab', tab);
-    navigate('/tokenized-assets');
+    // Navigate to dashboard with tab parameter
+    navigate(`/dashboard?tab=${tab}`);
   };
 
   const openChangePassword = () => {

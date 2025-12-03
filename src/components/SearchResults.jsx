@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Check, X, Plane, Clock, MapPin, Users, Gauge, Fuel } from 'lucide-react';
+import { ChevronDown, ChevronUp, Check, X, Plane, Clock, MapPin, Users, Gauge, Fuel, ShoppingCart, CreditCard, Wallet } from 'lucide-react';
 import BookableServiceCard from './BookableServiceCard';
 
 /**
  * SearchResults component displays search results in expandable tabs/cards
  */
-const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAddToCart, onRequestChanges }) => {
+const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAddToCart, onRequestChanges, onPayCrypto }) => {
   // Debug: Log tabs data on mount
   React.useEffect(() => {
     console.log('📋 SearchResults tabs:', tabs);
@@ -268,39 +268,39 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                         <>
                           <div>
                             <p className="text-xs text-gray-500">Passengers</p>
-                            <p className="font-medium">{item.max_passengers || item.pax_capacity || '—'}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.max_passengers || item.pax_capacity || '—'}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Range</p>
-                            <p className="font-medium">
+                            <p className="text-sm font-semibold text-gray-900">
                               {item.range_nm ? `${item.range_nm.toLocaleString()} nm` :
                                item.range_km ? `${item.range_km.toLocaleString()} km` : '—'}
                             </p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Cruise Speed</p>
-                            <p className="font-medium">
+                            <p className="text-sm font-semibold text-gray-900">
                               {item.speed_kts ? `${item.speed_kts} kts` :
                                item.speed_kmh ? `${item.speed_kmh} km/h` : '—'}
                             </p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Category</p>
-                            <p className="font-medium">{item.category || item.aircraft_type || '—'}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.category || item.aircraft_type || '—'}</p>
                           </div>
                           {item.flightDistance && (
                             <>
                               <div>
                                 <p className="text-xs text-gray-500">Flight Distance</p>
-                                <p className="font-medium">{item.flightDistance.toLocaleString()} nm</p>
+                                <p className="text-sm font-semibold text-gray-900">{item.flightDistance.toLocaleString()} nm</p>
                               </div>
                               <div>
                                 <p className="text-xs text-gray-500">Est. Flight Time</p>
-                                <p className="font-medium">{item.estimatedDuration || '—'}</p>
+                                <p className="text-sm font-semibold text-gray-900">{item.estimatedDuration || '—'}</p>
                               </div>
                               <div>
                                 <p className="text-xs text-gray-500">Fuel Stops</p>
-                                <p className={`font-medium ${item.stops > 0 ? 'text-amber-600' : 'text-green-600'}`}>
+                                <p className={`text-sm font-semibold ${item.stops > 0 ? 'text-amber-600' : 'text-green-600'}`}>
                                   {item.stops === 0 ? 'Non-stop' : `${item.stops} stop${item.stops > 1 ? 's' : ''}`}
                                 </p>
                               </div>
@@ -308,7 +308,7 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                           )}
                           <div>
                             <p className="text-xs text-gray-500">Hourly Rate</p>
-                            <p className="font-medium">€{item.hourly_rate_eur?.toLocaleString() || item.price?.toLocaleString() || '—'}/hr</p>
+                            <p className="text-sm font-semibold text-gray-900">€{item.hourly_rate_eur?.toLocaleString() || item.price?.toLocaleString() || '—'}/hr</p>
                           </div>
                           {/* Estimated Total based on flight time */}
                           {item.estimatedDuration && item.hourly_rate_eur && (
@@ -329,13 +329,13 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                           {item.operator && (
                             <div>
                               <p className="text-xs text-gray-500">Operator</p>
-                              <p className="font-medium">{item.operator}</p>
+                              <p className="text-sm font-semibold text-gray-900">{item.operator}</p>
                             </div>
                           )}
                           {item.registration && (
                             <div>
                               <p className="text-xs text-gray-500">Registration</p>
-                              <p className="font-medium">{item.registration}</p>
+                              <p className="text-sm font-semibold text-gray-900">{item.registration}</p>
                             </div>
                           )}
                           {/* Safety & Security Info for Jets */}
@@ -368,6 +368,35 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                               </div>
                             </div>
                           </div>
+
+                          {/* Action Buttons for Private Jets */}
+                          <div className="col-span-2 md:col-span-4 mt-4 pt-4 border-t border-gray-200">
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              {/* Add to Cart */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAddToCart && onAddToCart(item);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-medium transition-colors text-sm border border-gray-200"
+                              >
+                                <ShoppingCart size={16} />
+                                Add to Cart
+                              </button>
+
+                              {/* Send Request */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onBookNow && onBookNow(item);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium transition-colors text-sm"
+                              >
+                                <CreditCard size={16} />
+                                Send Request
+                              </button>
+                            </div>
+                          </div>
                         </>
                       )}
 
@@ -375,7 +404,7 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                         <>
                           <div>
                             <p className="text-xs text-gray-500">From</p>
-                            <p className="font-medium">
+                            <p className="text-sm font-semibold text-gray-900">
                               {item.from_iata && <span className="font-bold">{item.from_iata}</span>}
                               {item.from_city && ` - ${item.from_city}`}
                               {item.from_country && `, ${item.from_country}`}
@@ -383,7 +412,7 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">To</p>
-                            <p className="font-medium">
+                            <p className="text-sm font-semibold text-gray-900">
                               {item.to_iata && <span className="font-bold">{item.to_iata}</span>}
                               {item.to_city && ` - ${item.to_city}`}
                               {item.to_country && `, ${item.to_country}`}
@@ -391,44 +420,85 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Aircraft</p>
-                            <p className="font-medium">{item.aircraft_type || item.aircraft_type_original || '—'}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.aircraft_type || item.aircraft_type_original || '—'}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Category</p>
-                            <p className="font-medium">{item.category || '—'}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.category || '—'}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Seats Available</p>
-                            <p className="font-medium">{item.capacity || item.available_seats || '—'}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.capacity || item.available_seats || '—'}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Departure Date</p>
-                            <p className="font-medium">
+                            <p className="text-sm font-semibold text-gray-900">
                               {item.departure_date ? new Date(item.departure_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '—'}
                             </p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Departure Time</p>
-                            <p className="font-medium">{item.departure_time || '—'}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.departure_time || '—'}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Price (USD)</p>
-                            <p className="font-medium text-green-600">
+                            <p className="text-sm font-semibold text-green-600">
                               ${(item.price_usd || item.price || 0).toLocaleString()}
                             </p>
                           </div>
                           {item.operator && (
                             <div>
                               <p className="text-xs text-gray-500">Operator</p>
-                              <p className="font-medium">{item.operator}</p>
+                              <p className="text-sm font-semibold text-gray-900">{item.operator}</p>
                             </div>
                           )}
                           {item.registration && (
                             <div>
                               <p className="text-xs text-gray-500">Registration</p>
-                              <p className="font-medium">{item.registration}</p>
+                              <p className="text-sm font-semibold text-gray-900">{item.registration}</p>
                             </div>
                           )}
+
+                          {/* Action Buttons for Empty Legs - Directly Bookable */}
+                          <div className="col-span-2 md:col-span-4 mt-4 pt-4 border-t border-gray-200">
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              {/* Add to Cart */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAddToCart && onAddToCart(item);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-medium transition-colors text-sm border border-gray-200"
+                              >
+                                <ShoppingCart size={16} />
+                                Add to Cart
+                              </button>
+
+                              {/* Pay with Crypto - Direct checkout */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onPayCrypto && onPayCrypto(item);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg font-medium transition-all text-sm"
+                              >
+                                <Wallet size={16} />
+                                Pay with Crypto
+                              </button>
+
+                              {/* Send Request */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onBookNow && onBookNow(item);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium transition-colors text-sm"
+                              >
+                                <CreditCard size={16} />
+                                Send Request
+                              </button>
+                            </div>
+                          </div>
                         </>
                       )}
 
@@ -436,15 +506,41 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                         <>
                           <div>
                             <p className="text-xs text-gray-500">Passengers</p>
-                            <p className="font-medium">{item.max_passengers || '—'}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.max_passengers || '—'}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Range</p>
-                            <p className="font-medium">{item.range_km ? `${item.range_km} km` : '—'}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.range_km ? `${item.range_km} km` : '—'}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Hourly Rate</p>
-                            <p className="font-medium">€{item.hourly_rate_eur?.toLocaleString() || '—'}/hr</p>
+                            <p className="text-sm font-semibold text-gray-900">€{item.hourly_rate_eur?.toLocaleString() || '—'}/hr</p>
+                          </div>
+
+                          {/* Action Buttons for Helicopters */}
+                          <div className="col-span-2 md:col-span-4 mt-4 pt-4 border-t border-gray-200">
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAddToCart && onAddToCart(item);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-medium transition-colors text-sm border border-gray-200"
+                              >
+                                <ShoppingCart size={16} />
+                                Add to Cart
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onBookNow && onBookNow(item);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium transition-colors text-sm"
+                              >
+                                <CreditCard size={16} />
+                                Send Request
+                              </button>
+                            </div>
                           </div>
                         </>
                       )}
@@ -453,19 +549,45 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                         <>
                           <div>
                             <p className="text-xs text-gray-500">Length</p>
-                            <p className="font-medium">{item.length_ft}ft</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.length_ft}ft</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Guests</p>
-                            <p className="font-medium">{item.max_passengers}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.max_passengers}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Cabins</p>
-                            <p className="font-medium">{item.cabins || '—'}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.cabins || '—'}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Daily Rate</p>
-                            <p className="font-medium">€{item.daily_rate_eur?.toLocaleString() || '—'}/day</p>
+                            <p className="text-sm font-semibold text-gray-900">€{item.daily_rate_eur?.toLocaleString() || '—'}/day</p>
+                          </div>
+
+                          {/* Action Buttons for Yachts */}
+                          <div className="col-span-2 md:col-span-4 mt-4 pt-4 border-t border-gray-200">
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAddToCart && onAddToCart(item);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-medium transition-colors text-sm border border-gray-200"
+                              >
+                                <ShoppingCart size={16} />
+                                Add to Cart
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onBookNow && onBookNow(item);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium transition-colors text-sm"
+                              >
+                                <CreditCard size={16} />
+                                Send Request
+                              </button>
+                            </div>
                           </div>
                         </>
                       )}
@@ -487,37 +609,37 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                           {/* Vehicle specs */}
                           <div>
                             <p className="text-xs text-gray-500">Make & Model</p>
-                            <p className="font-medium">{item.brand} {item.model}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.brand} {item.model}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Year</p>
-                            <p className="font-medium">{item.year || '—'}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.year || '—'}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Seats</p>
-                            <p className="font-medium">{item.seats || item.max_passengers || 2}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.seats || item.max_passengers || 2}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Transmission</p>
-                            <p className="font-medium">{item.transmission || 'Automatic'}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.transmission || 'Automatic'}</p>
                           </div>
 
                           {/* Pricing */}
                           <div>
                             <p className="text-xs text-gray-500">Daily Rate</p>
-                            <p className="font-medium text-lg">€{item.daily_rate_eur?.toLocaleString() || item.price?.toLocaleString() || '—'}/day</p>
+                            <p className="text-sm font-semibold text-gray-900">€{item.daily_rate_eur?.toLocaleString() || item.price?.toLocaleString() || '—'}/day</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Weekend Rate</p>
-                            <p className="font-medium">€{item.weekend_rate_eur?.toLocaleString() || Math.round((item.daily_rate_eur || item.price || 0) * 0.9).toLocaleString() || '—'}/day</p>
+                            <p className="text-sm font-semibold text-gray-900">€{item.weekend_rate_eur?.toLocaleString() || Math.round((item.daily_rate_eur || item.price || 0) * 0.9).toLocaleString() || '—'}/day</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Weekly Rate</p>
-                            <p className="font-medium">€{item.weekly_rate_eur?.toLocaleString() || Math.round((item.daily_rate_eur || item.price || 0) * 5.5).toLocaleString() || '—'}/week</p>
+                            <p className="text-sm font-semibold text-gray-900">€{item.weekly_rate_eur?.toLocaleString() || Math.round((item.daily_rate_eur || item.price || 0) * 5.5).toLocaleString() || '—'}/week</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Deposit</p>
-                            <p className="font-medium">€{item.deposit?.toLocaleString() || '5,000 - 15,000'}</p>
+                            <p className="text-sm font-semibold text-gray-900">€{item.deposit?.toLocaleString() || '5,000 - 15,000'}</p>
                           </div>
 
                           {/* Rental Requirements - Full width */}
@@ -570,6 +692,32 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                               <p>• Optional zero-excess coverage available</p>
                             </div>
                           </div>
+
+                          {/* Action Buttons for Luxury Cars */}
+                          <div className="col-span-2 md:col-span-4 mt-4 pt-4 border-t border-gray-200">
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAddToCart && onAddToCart(item);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-medium transition-colors text-sm border border-gray-200"
+                              >
+                                <ShoppingCart size={16} />
+                                Add to Cart
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onBookNow && onBookNow(item);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium transition-colors text-sm"
+                              >
+                                <CreditCard size={16} />
+                                Send Request
+                              </button>
+                            </div>
+                          </div>
                         </>
                       )}
 
@@ -589,19 +737,19 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
 
                           <div>
                             <p className="text-xs text-gray-500">Vehicle</p>
-                            <p className="font-medium">{item.brand || item.name} {item.model || ''}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.brand || item.name} {item.model || ''}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Passengers</p>
-                            <p className="font-medium">{item.seats || item.max_passengers || 4}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.seats || item.max_passengers || 4}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Luggage</p>
-                            <p className="font-medium">{item.luggage || '3-4 bags'}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.luggage || '3-4 bags'}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Vehicle Class</p>
-                            <p className="font-medium">{item.vehicle_class || 'Business'}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.vehicle_class || 'Business'}</p>
                           </div>
 
                           {/* Route info if available */}
@@ -609,11 +757,11 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                             <>
                               <div>
                                 <p className="text-xs text-gray-500">Distance</p>
-                                <p className="font-medium">{item.distanceKm} km</p>
+                                <p className="text-sm font-semibold text-gray-900">{item.distanceKm} km</p>
                               </div>
                               <div>
                                 <p className="text-xs text-gray-500">Est. Duration</p>
-                                <p className="font-medium">~{item.durationMinutes || Math.round(item.distanceKm * 1.2)} min</p>
+                                <p className="text-sm font-semibold text-gray-900">~{item.durationMinutes || Math.round(item.distanceKm * 1.2)} min</p>
                               </div>
                             </>
                           )}
@@ -621,12 +769,12 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                           {/* Pricing */}
                           <div>
                             <p className="text-xs text-gray-500">Transfer Price</p>
-                            <p className="font-medium text-lg">€{item.price?.toLocaleString() || item.totalWithFee?.toLocaleString() || '—'}</p>
+                            <p className="text-sm font-semibold text-gray-900">€{item.price?.toLocaleString() || item.totalWithFee?.toLocaleString() || '—'}</p>
                           </div>
                           {item.airportPickupFee > 0 && (
                             <div>
                               <p className="text-xs text-gray-500">Airport Fee</p>
-                              <p className="font-medium text-amber-600">+€{item.airportPickupFee}</p>
+                              <p className="text-sm font-semibold text-amber-600">+€{item.airportPickupFee}</p>
                             </div>
                           )}
 
@@ -669,6 +817,32 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                               </p>
                             </div>
                           )}
+
+                          {/* Action Buttons for Transfers */}
+                          <div className="col-span-2 md:col-span-4 mt-4 pt-4 border-t border-gray-200">
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAddToCart && onAddToCart(item);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-medium transition-colors text-sm border border-gray-200"
+                              >
+                                <ShoppingCart size={16} />
+                                Add to Cart
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onBookNow && onBookNow(item);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium transition-colors text-sm"
+                              >
+                                <CreditCard size={16} />
+                                Send Request
+                              </button>
+                            </div>
+                          </div>
                         </>
                       )}
 
@@ -676,28 +850,69 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                         <>
                           <div>
                             <p className="text-xs text-gray-500">Package</p>
-                            <p className="font-medium">{item.title || item.name || '—'}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.title || item.name || '—'}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Route</p>
-                            <p className="font-medium">{item.origin && item.destination ? `${item.origin} → ${item.destination}` : '—'}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.origin && item.destination ? `${item.origin} → ${item.destination}` : '—'}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Duration</p>
-                            <p className="font-medium">{item.duration || '—'}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.duration || '—'}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Price</p>
-                            <p className="font-medium text-green-600">
+                            <p className="text-sm font-semibold text-green-600">
                               {item.price_eur ? `€${item.price_eur.toLocaleString()}` : item.price ? `€${item.price.toLocaleString()}` : '—'}
                             </p>
                           </div>
                           {item.description && (
                             <div className="col-span-2 md:col-span-4">
                               <p className="text-xs text-gray-500">Description</p>
-                              <p className="font-medium text-sm">{item.description}</p>
+                              <p className="text-sm font-semibold text-gray-900">{item.description}</p>
                             </div>
                           )}
+
+                          {/* Action Buttons for Adventures - Directly Bookable with Crypto */}
+                          <div className="col-span-2 md:col-span-4 mt-4 pt-4 border-t border-gray-200">
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              {/* Add to Cart */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAddToCart && onAddToCart(item);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-medium transition-colors text-sm border border-gray-200"
+                              >
+                                <ShoppingCart size={16} />
+                                Add to Cart
+                              </button>
+
+                              {/* Pay with Crypto - Direct checkout for adventures */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onPayCrypto && onPayCrypto(item);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg font-medium transition-all text-sm"
+                              >
+                                <Wallet size={16} />
+                                Pay with Crypto
+                              </button>
+
+                              {/* Send Request */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onBookNow && onBookNow(item);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium transition-colors text-sm"
+                              >
+                                <CreditCard size={16} />
+                                Send Request
+                              </button>
+                            </div>
+                          </div>
                         </>
                       )}
                     </div>

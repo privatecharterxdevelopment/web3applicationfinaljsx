@@ -1121,6 +1121,8 @@ const TokenizedAssetsGlassmorphic = () => {
   const [showMobileCategoryMenu, setShowMobileCategoryMenu] = useState(false);
   const [bookingStep, setBookingStep] = useState(0);
   const [bookingVehicleType, setBookingVehicleType] = useState('private-jet');
+  // Initial flight data from URL params (for charter booking from hero)
+  const [initialFlightData, setInitialFlightData] = useState(null);
 
   // KYC Status state
   const [kycStatus, setKycStatus] = useState('not_started'); // 'not_started', 'pending', 'approved', 'rejected'
@@ -1576,6 +1578,7 @@ const TokenizedAssetsGlassmorphic = () => {
 
   // AI Chat query state (for search integration)
   const [aiChatQuery, setAiChatQuery] = useState('');
+  const [aiAssistantMessage, setAiAssistantMessage] = useState(''); // Prefilled assistant message
   const [adventuresViewMode, setAdventuresViewMode] = useState('tabs');
   const [adventuresFiltersVisible, setAdventuresFiltersVisible] = useState(false);
   const [selectedAdventure, setSelectedAdventure] = useState(null);
@@ -2413,18 +2416,39 @@ const TokenizedAssetsGlassmorphic = () => {
     const query = params.get('query') || '';
     const tab = params.get('tab') || '';
     const login = params.get('login') === 'true';
+    const assistantMessage = params.get('assistantMessage') || '';
+    // Departure/destination for private-jet booking
+    const departureCode = params.get('departure') || '';
+    const departureName = params.get('departureName') || '';
+    const destinationCode = params.get('destination') || '';
+    const destinationName = params.get('destinationName') || '';
 
     // If there's a tab or query in the URL
-    if (tab || query) {
-      const targetTab = tab || 'ai-chat'; // Default to ai-chat if there's a query
-      const tabNeedsAuth = ['ai-chat', 'concierge', 'spv', 'tokenize', 'pvcx', 'escrow', 'profile', 'charter'].includes(targetTab);
+    if (tab || query || assistantMessage) {
+      let targetTab = tab || 'ai-chat'; // Default to ai-chat if there's a query
+      const tabNeedsAuth = ['ai-chat', 'concierge', 'spv', 'tokenize', 'pvcx', 'escrow', 'profile', 'charter', 'private-jet'].includes(targetTab);
+
+      // Map 'ai-chat' URL param to 'chat' internal category
+      if (targetTab === 'ai-chat') {
+        targetTab = 'chat';
+      }
 
       if (isAuthenticated) {
         // User is authenticated - navigate directly
-        console.log('🔗 Processing URL params - tab:', targetTab, 'query:', query);
+        console.log('🔗 Processing URL params - tab:', targetTab, 'query:', query, 'assistantMessage:', assistantMessage);
 
         if (query) {
           setAiChatQuery(query);
+        }
+        if (assistantMessage) {
+          setAiAssistantMessage(assistantMessage);
+        }
+        // Store initial flight data for private-jet booking
+        if (targetTab === 'private-jet' && departureCode && destinationCode) {
+          setInitialFlightData({
+            departure: { code: departureCode, name: departureName },
+            destination: { code: destinationCode, name: destinationName }
+          });
         }
         setActiveCategory(targetTab);
         setShowDashboard(true);
@@ -2434,7 +2458,7 @@ const TokenizedAssetsGlassmorphic = () => {
       } else if (tabNeedsAuth && login) {
         // Tab needs auth and login=true was passed - store params and show login modal
         console.log('🔐 Showing login modal for protected tab:', targetTab);
-        pendingUrlParamsRef.current = { query, tab: targetTab };
+        pendingUrlParamsRef.current = { query, tab: targetTab, assistantMessage, departureCode, departureName, destinationCode, destinationName };
         setShowLoginModal(true);
 
         // Clean up URL
@@ -2453,13 +2477,25 @@ const TokenizedAssetsGlassmorphic = () => {
   // After successful login, process any pending URL params
   useEffect(() => {
     if (!initializing && isAuthenticated && pendingUrlParamsRef.current) {
-      const { query, tab } = pendingUrlParamsRef.current;
-      console.log('✅ Post-login: Processing pending params - tab:', tab, 'query:', query);
+      let { query, tab, assistantMessage, departureCode, departureName, destinationCode, destinationName } = pendingUrlParamsRef.current;
+      console.log('✅ Post-login: Processing pending params - tab:', tab, 'query:', query, 'assistantMessage:', assistantMessage);
 
       if (query) {
         setAiChatQuery(query);
       }
-      setActiveCategory(tab || 'ai-chat');
+      if (assistantMessage) {
+        setAiAssistantMessage(assistantMessage);
+      }
+      // Store initial flight data for private-jet booking
+      if (tab === 'private-jet' && departureCode && destinationCode) {
+        setInitialFlightData({
+          departure: { code: departureCode, name: departureName },
+          destination: { code: destinationCode, name: destinationName }
+        });
+      }
+      // Map 'ai-chat' URL param to 'chat' internal category
+      const targetTab = (tab === 'ai-chat' || !tab) ? 'chat' : tab;
+      setActiveCategory(targetTab);
       setShowDashboard(true);
       pendingUrlParamsRef.current = null; // Clear after processing
     }
@@ -6672,6 +6708,8 @@ const TokenizedAssetsGlassmorphic = () => {
                 <UnifiedBookingFlow
                   onStepChange={setBookingStep}
                   initialVehicleType={bookingVehicleType}
+                  initialFlightData={initialFlightData}
+                  onFlightDataUsed={() => setInitialFlightData(null)}
                 />
               </div>
             </div>
@@ -11007,6 +11045,8 @@ const TokenizedAssetsGlassmorphic = () => {
               onRequestWalletConnect={handleWalletConnect}
               initialQuery={aiChatQuery}
               onQueryProcessed={() => setAiChatQuery('')}
+              initialAssistantMessage={aiAssistantMessage}
+              onAssistantMessageProcessed={() => setAiAssistantMessage('')}
               cartItems={cartItems}
               setCartItems={setCartItems}
             />
