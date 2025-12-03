@@ -85,7 +85,7 @@ export default function FloatingSearchModal() {
       if (!isAuthenticated) {
         params.append('login', 'true');
       }
-      navigate(`/glasdashboard?${params.toString()}`);
+      navigate(`/dashboard?${params.toString()}`);
     }
   };
 
@@ -99,17 +99,17 @@ export default function FloatingSearchModal() {
       // Navigate to AI chat with query - requires authentication
       if (isAuthenticated) {
         // Navigate to glasdashboard AI chat with new conversation
-        navigate(`/glasdashboard?tab=ai-chat&query=${encodeURIComponent(query)}&newChat=true`);
+        navigate(`/dashboard?tab=ai-chat&query=${encodeURIComponent(query)}&newChat=true`);
       } else {
         // Navigate with login flag - will show login modal first
-        navigate(`/glasdashboard?tab=ai-chat&query=${encodeURIComponent(query)}&newChat=true&login=true`);
+        navigate(`/dashboard?tab=ai-chat&query=${encodeURIComponent(query)}&newChat=true&login=true`);
       }
     } else {
       // If no query, just open AI chat
       if (isAuthenticated) {
-        navigate(`/glasdashboard?tab=ai-chat&newChat=true`);
+        navigate(`/dashboard?tab=ai-chat&newChat=true`);
       } else {
-        navigate(`/glasdashboard?tab=ai-chat&newChat=true&login=true`);
+        navigate(`/dashboard?tab=ai-chat&newChat=true&login=true`);
       }
     }
   };
@@ -136,25 +136,25 @@ export default function FloatingSearchModal() {
         navigate('/tokenized-assets?category=helicopter');
         break;
       case 'airportransfer':
-        navigateWithAuth('/glasdashboard?tab=concierge&service=airport-transfer');
+        navigateWithAuth('/dashboard?tab=concierge&service=airport-transfer');
         break;
       case 'concierge':
-        navigateWithAuth('/glasdashboard?tab=concierge');
+        navigateWithAuth('/dashboard?tab=concierge');
         break;
       case 'SPV Formation':
-        navigateWithAuth('/glasdashboard?tab=spv');
+        navigateWithAuth('/dashboard?tab=spv');
         break;
       case 'adventure package':
         navigate('/tokenized-assets?category=adventures');
         break;
       case 'holiday planer':
-        navigateWithAuth('/glasdashboard?tab=ai-chat&query=help me plan my holiday');
+        navigateWithAuth('/dashboard?tab=ai-chat&query=help me plan my holiday');
         break;
       case 'travel designer':
-        navigateWithAuth('/glasdashboard?tab=ai-chat&query=design my travel itinerary');
+        navigateWithAuth('/dashboard?tab=ai-chat&query=design my travel itinerary');
         break;
       case 'application':
-        navigateWithAuth('/glasdashboard?tab=profile');
+        navigateWithAuth('/dashboard?tab=profile');
         break;
       case 'Co2 certificate':
         navigate('/tokenized-assets?category=co2');
@@ -174,13 +174,13 @@ export default function FloatingSearchModal() {
         navigate('/tokenized-assets?category=nfts');
         break;
       case 'asset-/tokenization':
-        navigateWithAuth('/glasdashboard?tab=tokenize');
+        navigateWithAuth('/dashboard?tab=tokenize');
         break;
       case '$PVCX':
-        navigateWithAuth('/glasdashboard?tab=pvcx');
+        navigateWithAuth('/dashboard?tab=pvcx');
         break;
       case 'chain-escrow':
-        navigateWithAuth('/glasdashboard?tab=escrow');
+        navigateWithAuth('/dashboard?tab=escrow');
         break;
       case 'SAF certificate':
         navigate('/tokenized-assets?category=saf');
