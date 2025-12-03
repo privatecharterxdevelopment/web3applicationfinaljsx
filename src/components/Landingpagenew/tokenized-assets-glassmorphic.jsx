@@ -2411,6 +2411,43 @@ const TokenizedAssetsGlassmorphic = () => {
     const params = new URLSearchParams(window.location.search);
     return params.get('login') === 'true';
   });
+  const [pendingTab, setPendingTab] = useState(() => {
+    // Capture tab from URL immediately on mount
+    const params = new URLSearchParams(window.location.search);
+    return params.get('tab') || '';
+  });
+
+  // Process URL tab parameter to set initial category (for deep linking)
+  useEffect(() => {
+    // Wait for auth to initialize
+    if (initializing) return;
+
+    // If there's a pending tab navigation (e.g., from homepage search)
+    if (pendingTab) {
+      const tabNeedsAuth = ['ai-chat', 'concierge', 'spv', 'tokenize', 'pvcx', 'escrow', 'profile', 'charter'].includes(pendingTab);
+
+      if (!tabNeedsAuth || isAuthenticated) {
+        // No auth needed or user is authenticated - navigate to the tab
+        console.log('Setting active category from URL tab:', pendingTab);
+        setActiveCategory(pendingTab);
+        setShowDashboard(true);
+        setPendingTab(''); // Clear pending tab
+
+        // Clean up URL if no query
+        if (!pendingAiQuery) {
+          const cleanUrl = window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+        }
+      } else if (needsLoginForQuery) {
+        // User needs to login - show login modal
+        setShowLoginModal(true);
+
+        // Clean up URL but keep tab/query in state
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+    }
+  }, [isAuthenticated, initializing, pendingTab, needsLoginForQuery]);
 
   // Process AI Chat query from homepage search (FloatingSearchModal)
   useEffect(() => {
@@ -2427,6 +2464,7 @@ const TokenizedAssetsGlassmorphic = () => {
         setShowDashboard(true);
         setPendingAiQuery(''); // Clear pending query
         setNeedsLoginForQuery(false);
+        setPendingTab(''); // Clear pending tab since we're going to ai-chat
 
         // Clean up URL
         const cleanUrl = window.location.pathname;
