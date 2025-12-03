@@ -220,15 +220,15 @@ function Homepage() {
       {/* Hero Section */}
       {/* Mobile Layout - Stacked (Globe above, Search below) - Full screen height */}
       <div className="md:hidden max-w-7xl mx-auto rounded-2xl overflow-hidden min-h-[calc(100vh-100px)] flex flex-col justify-start pt-4">
-        {/* Globe Section - Mobile - Centered, pushed down */}
-        <div className="relative h-[220px] flex items-center justify-center overflow-hidden mt-2">
-          <div className="w-[260px] h-[260px]">
+        {/* Globe Section - Mobile - Centered, pushed down more */}
+        <div className="relative h-[224px] flex items-center justify-center overflow-hidden mt-10">
+          <div className="w-[262px] h-[262px]">
             <Globe3D />
           </div>
         </div>
 
         {/* Spacing between globe and floating element */}
-        <div className="h-4"></div>
+        <div className="h-6"></div>
 
         {/* Floating Search Modal - Below Globe on Mobile */}
         <div className="px-2 pb-4">
