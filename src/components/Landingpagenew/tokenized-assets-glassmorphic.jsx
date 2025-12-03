@@ -2401,24 +2401,18 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   }, []);
 
-  // State to store pending URL parameters (captured on mount before any effects run)
-  const [urlParams] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    return {
-      query: params.get('query') || '',
-      tab: params.get('tab') || '',
-      login: params.get('login') === 'true',
-      newChat: params.get('newChat') === 'true'
-    };
-  });
-  const [urlParamsProcessed, setUrlParamsProcessed] = useState(false);
+  // Ref to store pending URL params when user needs to log in first
+  const pendingUrlParamsRef = useRef(null);
 
-  // Single effect to process all URL parameters after auth is ready
+  // Process URL parameters using React Router's location (updates on navigation)
   useEffect(() => {
-    // Wait for auth to initialize and only process once
-    if (initializing || urlParamsProcessed) return;
+    // Wait for auth to initialize
+    if (initializing) return;
 
-    const { query, tab, login } = urlParams;
+    const params = new URLSearchParams(location.search);
+    const query = params.get('query') || '';
+    const tab = params.get('tab') || '';
+    const login = params.get('login') === 'true';
 
     // If there's a tab or query in the URL
     if (tab || query) {
@@ -2427,7 +2421,7 @@ const TokenizedAssetsGlassmorphic = () => {
 
       if (isAuthenticated) {
         // User is authenticated - navigate directly
-        console.log('Processing URL params - tab:', targetTab, 'query:', query);
+        console.log('🔗 Processing URL params - tab:', targetTab, 'query:', query);
 
         if (query) {
           setAiChatQuery(query);
@@ -2435,45 +2429,41 @@ const TokenizedAssetsGlassmorphic = () => {
         setActiveCategory(targetTab);
         setShowDashboard(true);
 
-        // Clean up URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        setUrlParamsProcessed(true);
+        // Clean up URL using navigate to maintain React Router state
+        navigate(location.pathname, { replace: true });
       } else if (tabNeedsAuth && login) {
-        // Tab needs auth and login=true was passed - show login modal
-        console.log('Showing login modal for protected tab:', targetTab);
+        // Tab needs auth and login=true was passed - store params and show login modal
+        console.log('🔐 Showing login modal for protected tab:', targetTab);
+        pendingUrlParamsRef.current = { query, tab: targetTab };
         setShowLoginModal(true);
 
-        // Clean up URL but DON'T mark as processed yet - we'll process after login
-        window.history.replaceState({}, document.title, window.location.pathname);
-        // Don't set urlParamsProcessed - let it run again after login
+        // Clean up URL
+        navigate(location.pathname, { replace: true });
       } else if (!tabNeedsAuth) {
         // Tab doesn't need auth - navigate directly
-        console.log('Navigating to public tab:', targetTab);
+        console.log('📍 Navigating to public tab:', targetTab);
         setActiveCategory(targetTab);
         setShowDashboard(true);
 
-        window.history.replaceState({}, document.title, window.location.pathname);
-        setUrlParamsProcessed(true);
+        navigate(location.pathname, { replace: true });
       }
     }
-  }, [isAuthenticated, initializing, urlParams, urlParamsProcessed]);
+  }, [location.search, isAuthenticated, initializing, navigate]);
 
-  // After successful login, process the pending URL params
+  // After successful login, process any pending URL params
   useEffect(() => {
-    if (!initializing && isAuthenticated && !urlParamsProcessed) {
-      const { query, tab } = urlParams;
-      if (tab || query) {
-        console.log('Post-login: Processing URL params - tab:', tab, 'query:', query);
+    if (!initializing && isAuthenticated && pendingUrlParamsRef.current) {
+      const { query, tab } = pendingUrlParamsRef.current;
+      console.log('✅ Post-login: Processing pending params - tab:', tab, 'query:', query);
 
-        if (query) {
-          setAiChatQuery(query);
-        }
-        setActiveCategory(tab || 'ai-chat');
-        setShowDashboard(true);
-        setUrlParamsProcessed(true);
+      if (query) {
+        setAiChatQuery(query);
       }
+      setActiveCategory(tab || 'ai-chat');
+      setShowDashboard(true);
+      pendingUrlParamsRef.current = null; // Clear after processing
     }
-  }, [isAuthenticated, initializing, urlParams, urlParamsProcessed]);
+  }, [isAuthenticated, initializing]);
 
   // Check for secret admin route
   useEffect(() => {
