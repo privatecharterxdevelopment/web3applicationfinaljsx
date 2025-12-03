@@ -210,73 +210,75 @@ const PricingPackages = ({ onClose, onBack }) => {
         </div>
       </div>
 
-      {/* Plans Grid */}
-      <div className="px-6 py-6">
+      {/* Plans Grid - Glassmorphic Design */}
+      <div className="px-6 py-6 bg-gradient-to-br from-gray-100/50 via-gray-50/50 to-gray-100/50">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl">
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className={`bg-white border rounded-xl p-6 hover:shadow-lg transition-all duration-300 ${
-                plan.popular ? 'border-gray-900 ring-1 ring-gray-900/10' : 'border-gray-100 hover:border-gray-200'
+              className={`relative bg-white/80 backdrop-blur-md rounded-2xl p-6 transition-all duration-300 hover:bg-white/90 hover:shadow-xl hover:-translate-y-1 ${
+                plan.popular
+                  ? 'border-2 border-gray-900/20 ring-1 ring-gray-900/5 shadow-lg'
+                  : 'border border-gray-200/60 hover:border-gray-300/80'
               }`}
             >
+              {/* Popular Badge */}
               {plan.popular && (
-                <div className="mb-4">
-                  <span className="bg-gray-900 text-white px-3 py-1 rounded-full text-xs font-medium">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="inline-flex items-center gap-1 bg-gray-900 text-white px-3 py-1 rounded-full text-[10px] font-medium tracking-wide shadow-lg">
+                    <Sparkles size={10} />
                     MOST POPULAR
                   </span>
                 </div>
               )}
 
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                {plan.name}
-              </h3>
-              <p className="text-gray-500 text-sm mb-3">{plan.tagline}</p>
-
-              <div className="mb-3">
-                <span className="text-3xl font-light text-gray-900">${plan.price}</span>
-                <span className="text-gray-500 text-sm">/{plan.period}</span>
+              {/* Plan Header */}
+              <div className={`${plan.popular ? 'mt-2' : ''}`}>
+                <h3 className="text-lg font-semibold text-gray-900 tracking-tight">
+                  {plan.name}
+                </h3>
+                <p className="text-gray-500 text-xs mt-0.5">{plan.tagline}</p>
               </div>
 
-              {/* Chat Limit Highlight */}
-              <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs text-gray-600">AI Conversations</span>
-                  <span className="text-sm font-semibold text-gray-900">
-                    {plan.chatsPerMonth === 'Unlimited' ? 'Unlimited' : `${plan.chatsPerMonth}/mo`}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs text-gray-600">Messages per Chat</span>
-                  <span className="text-sm font-semibold text-gray-900">
-                    {plan.messagesPerChat === 'Unlimited' ? 'Unlimited' : plan.messagesPerChat}
-                  </span>
-                </div>
-                {plan.breakThePrice && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600">Break the Price</span>
-                    <span className="text-sm font-semibold text-amber-600">
-                      {plan.id === 'elite' ? 'Unlimited' : 'Costs 1 chat'}
-                    </span>
+              {/* Price */}
+              <div className="mt-4 mb-5">
+                <span className="text-4xl font-light text-gray-900 tracking-tight">${plan.price}</span>
+                <span className="text-gray-400 text-sm ml-1">/{plan.period}</span>
+              </div>
+
+              {/* Features List - Clean minimal style */}
+              <div className="space-y-3 mb-5">
+                {plan.features.map((feature, index) => (
+                  <div key={index} className="flex items-center gap-2.5">
+                    <div className="w-4 h-4 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                      <Check size={10} className="text-gray-600" />
+                    </div>
+                    <span className="text-sm text-gray-600">{feature}</span>
                   </div>
-                )}
-                {plan.id === 'elite' && (
-                  <p className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">+ 24/7 Live Broker Assistance</p>
-                )}
+                ))}
               </div>
 
-              <div className="flex flex-wrap gap-2 mb-4">
-                {plan.tags.map((tag, index) => (
-                  <span key={index} className="bg-gray-100 px-2 py-1 rounded-full text-xs text-gray-700 border border-gray-200">
+              {/* Tags - Minimal pill style */}
+              <div className="flex flex-wrap gap-1.5 mb-5">
+                {plan.tags.slice(0, 3).map((tag, index) => (
+                  <span
+                    key={index}
+                    className="px-2.5 py-1 rounded-full text-[10px] font-medium text-gray-600 bg-gray-100/80 border border-gray-200/50"
+                  >
                     {tag}
                   </span>
                 ))}
               </div>
 
+              {/* CTA Button */}
               <button
                 onClick={() => handlePlanClick(plan)}
                 disabled={processingPlan === plan.id}
-                className="w-full py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className={`w-full py-3 rounded-xl text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                  plan.popular
+                    ? 'bg-gray-900 text-white hover:bg-gray-800 shadow-md hover:shadow-lg'
+                    : 'bg-gray-100 text-gray-900 hover:bg-gray-200 border border-gray-200'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {processingPlan === plan.id ? (
                   <>
@@ -291,34 +293,36 @@ const PricingPackages = ({ onClose, onBack }) => {
           ))}
         </div>
 
-        {/* Business Solutions Card - Full Width */}
+        {/* Business Solutions Card - Glassmorphic Full Width */}
         <div
           onClick={() => setShowBusinessModal(true)}
-          className="mt-4 max-w-6xl bg-white border border-gray-100 rounded-xl p-6 hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+          className="mt-5 max-w-6xl bg-white/80 backdrop-blur-md border border-gray-200/60 rounded-2xl p-6 hover:bg-white/90 hover:shadow-xl hover:border-gray-300/80 transition-all duration-300 cursor-pointer group"
         >
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-lg font-semibold text-gray-900">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
+                  <Users size={14} className="text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 tracking-tight">
                   Business Solutions
                 </h3>
-                <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-gray-100 text-gray-600">
+                <span className="px-2 py-0.5 text-[9px] font-medium rounded-full bg-gray-100 text-gray-600 border border-gray-200/50">
                   ENTERPRISE
                 </span>
               </div>
-              <p className="text-gray-500 text-sm mb-3">Custom Enterprise Plans</p>
               <p className="text-gray-600 text-sm leading-relaxed mb-4 max-w-2xl">
-                Tailored solutions for your organization. Unlimited conversations, dedicated support team, custom integrations,
-                and white-label options.
+                Tailored solutions for your organization with unlimited access, dedicated support, and custom integrations.
               </p>
-              <div className="flex flex-wrap gap-2">
-                <span className="bg-gray-100 px-2 py-1 rounded-full text-xs text-gray-700 border border-gray-200">Unlimited Access</span>
-                <span className="bg-gray-100 px-2 py-1 rounded-full text-xs text-gray-700 border border-gray-200">Dedicated Team</span>
-                <span className="bg-gray-100 px-2 py-1 rounded-full text-xs text-gray-700 border border-gray-200">Custom Integration</span>
-                <span className="bg-gray-100 px-2 py-1 rounded-full text-xs text-gray-700 border border-gray-200">White Label</span>
+              <div className="flex flex-wrap gap-1.5">
+                {['Unlimited Access', 'Dedicated Team', 'Custom Integration', 'White Label'].map((tag, i) => (
+                  <span key={i} className="px-2.5 py-1 rounded-full text-[10px] font-medium text-gray-600 bg-gray-100/80 border border-gray-200/50">
+                    {tag}
+                  </span>
+                ))}
               </div>
             </div>
-            <button className="px-6 py-2.5 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium border border-gray-200 whitespace-nowrap">
+            <button className="px-6 py-3 bg-gray-100 text-gray-900 rounded-xl hover:bg-gray-200 transition-all text-sm font-medium border border-gray-200 whitespace-nowrap group-hover:bg-gray-900 group-hover:text-white group-hover:border-gray-900">
               Contact Us
             </button>
           </div>

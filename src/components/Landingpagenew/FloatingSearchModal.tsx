@@ -49,10 +49,10 @@ export default function FloatingSearchModal() {
   // Typing and deleting animation for titles
   useEffect(() => {
     const currentText = titles[currentTitleIndex];
-    const typingSpeed = 60; // ms per character when typing
-    const deletingSpeed = 35; // ms per character when deleting (faster)
-    const pauseAfterTyping = 2000; // pause after fully typed
-    const pauseAfterDeleting = 300; // brief pause before next title
+    const typingSpeed = 35; // ms per character when typing (faster)
+    const deletingSpeed = 20; // ms per character when deleting (much faster)
+    const pauseAfterTyping = 1200; // shorter pause after fully typed
+    const pauseAfterDeleting = 150; // brief pause before next title
 
     let timeout: NodeJS.Timeout;
 
