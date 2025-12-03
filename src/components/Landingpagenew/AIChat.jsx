@@ -693,19 +693,34 @@ const AIChat = ({
     }
   }, [activeChat, currentChat, user, withEmpathy]);
 
-  // Ref to store initial query for processing after state updates
-  const pendingInitialQueryRef = useRef(null);
+  // Ref to track which initial queries we've already processed (prevents double-processing)
+  const processedQueriesRef = useRef(new Set());
+  // Ref to store the query that's pending to be sent after chat setup
+  const pendingQueryRef = useRef(null);
+  // Ref to track the chat ID we created for the initial query
+  const initialQueryChatIdRef = useRef(null);
 
-  // Handle initial query from search - set up the chat
+  // Handle initial query from search - create new chat and send message
   useEffect(() => {
     if (initialQuery && initialQuery.trim()) {
+      // Skip if we've already processed this exact query
+      if (processedQueriesRef.current.has(initialQuery)) {
+        console.log('⏭️ Skipping already processed query:', initialQuery);
+        return;
+      }
+
       console.log('📝 Initial query received:', initialQuery);
 
-      // Store the query in a ref so it persists across renders
-      pendingInitialQueryRef.current = initialQuery;
+      // Mark this query as being processed
+      processedQueriesRef.current.add(initialQuery);
+
+      // Store the query to be sent
+      pendingQueryRef.current = initialQuery;
 
       // Create a new chat with the initial query
       const newChatId = Date.now().toString();
+      initialQueryChatIdRef.current = newChatId;
+
       const newChat = {
         id: newChatId,
         title: initialQuery.split(' ').slice(0, 5).join(' ') + '...',
@@ -713,33 +728,44 @@ const AIChat = ({
         messages: []
       };
 
+      console.log('🆕 Creating new chat:', newChatId);
+
       // Add to chat history and set as active
       setChatHistory(prev => [newChat, ...prev]);
       setActiveChat(newChatId);
 
-      // Clear the initial query prop so it doesn't trigger again
+      // Clear the initial query prop so parent doesn't keep passing it
       onQueryProcessed();
     }
   }, [initialQuery, onQueryProcessed]);
 
-  // Process the pending initial query after chat is set up
+  // Process the pending query after chat is set up and active
   useEffect(() => {
-    if (pendingInitialQueryRef.current && activeChat && activeChat !== 'new') {
-      const query = pendingInitialQueryRef.current;
-      const currentChatExists = chatHistory.find(c => c.id === activeChat);
+    // Only proceed if we have a pending query and the correct chat is active
+    if (pendingQueryRef.current &&
+        initialQueryChatIdRef.current &&
+        activeChat === initialQueryChatIdRef.current) {
 
-      // Only process if we have the chat set up and it's empty (no messages yet)
-      if (currentChatExists && currentChatExists.messages.length === 0) {
-        console.log('🚀 Processing initial query:', query);
-        pendingInitialQueryRef.current = null; // Clear so we don't process again
+      const query = pendingQueryRef.current;
+      const chatId = initialQueryChatIdRef.current;
 
-        // Small delay to ensure React state is fully updated
+      // Verify the chat exists in our history
+      const chatExists = chatHistory.find(c => c.id === chatId);
+
+      if (chatExists) {
+        console.log('🚀 Sending initial query to AI:', query);
+
+        // Clear refs before sending to prevent double-send
+        pendingQueryRef.current = null;
+        initialQueryChatIdRef.current = null;
+
+        // Send the message with a small delay to ensure UI is ready
         setTimeout(() => {
           handleSendMessage(query);
-        }, 50);
+        }, 100);
       }
     }
-  }, [activeChat, chatHistory]); // Run when activeChat or chatHistory changes
+  }, [activeChat, chatHistory]);
 
   const toggleRecording = useCallback(async () => {
     if (isRecording) {
