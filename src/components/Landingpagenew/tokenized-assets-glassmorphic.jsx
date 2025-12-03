@@ -2401,85 +2401,79 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   }, []);
 
-  // State to store pending AI query (when user needs to login first)
-  const [pendingAiQuery, setPendingAiQuery] = useState(() => {
-    // Capture query from URL immediately on mount
+  // State to store pending URL parameters (captured on mount before any effects run)
+  const [urlParams] = useState(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get('query') || '';
+    return {
+      query: params.get('query') || '',
+      tab: params.get('tab') || '',
+      login: params.get('login') === 'true',
+      newChat: params.get('newChat') === 'true'
+    };
   });
-  const [needsLoginForQuery, setNeedsLoginForQuery] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('login') === 'true';
-  });
-  const [pendingTab, setPendingTab] = useState(() => {
-    // Capture tab from URL immediately on mount
-    const params = new URLSearchParams(window.location.search);
-    return params.get('tab') || '';
-  });
+  const [urlParamsProcessed, setUrlParamsProcessed] = useState(false);
 
-  // Process URL tab parameter to set initial category (for deep linking)
+  // Single effect to process all URL parameters after auth is ready
   useEffect(() => {
-    // Wait for auth to initialize
-    if (initializing) return;
+    // Wait for auth to initialize and only process once
+    if (initializing || urlParamsProcessed) return;
 
-    // If there's a pending tab navigation (e.g., from homepage search)
-    if (pendingTab) {
-      const tabNeedsAuth = ['ai-chat', 'concierge', 'spv', 'tokenize', 'pvcx', 'escrow', 'profile', 'charter'].includes(pendingTab);
+    const { query, tab, login } = urlParams;
 
-      if (!tabNeedsAuth || isAuthenticated) {
-        // No auth needed or user is authenticated - navigate to the tab
-        console.log('Setting active category from URL tab:', pendingTab);
-        setActiveCategory(pendingTab);
-        setShowDashboard(true);
-        setPendingTab(''); // Clear pending tab
+    // If there's a tab or query in the URL
+    if (tab || query) {
+      const targetTab = tab || 'ai-chat'; // Default to ai-chat if there's a query
+      const tabNeedsAuth = ['ai-chat', 'concierge', 'spv', 'tokenize', 'pvcx', 'escrow', 'profile', 'charter'].includes(targetTab);
 
-        // Clean up URL if no query
-        if (!pendingAiQuery) {
-          const cleanUrl = window.location.pathname;
-          window.history.replaceState({}, document.title, cleanUrl);
-        }
-      } else if (needsLoginForQuery) {
-        // User needs to login - show login modal
-        setShowLoginModal(true);
-
-        // Clean up URL but keep tab/query in state
-        const cleanUrl = window.location.pathname;
-        window.history.replaceState({}, document.title, cleanUrl);
-      }
-    }
-  }, [isAuthenticated, initializing, pendingTab, needsLoginForQuery]);
-
-  // Process AI Chat query from homepage search (FloatingSearchModal)
-  useEffect(() => {
-    // Wait for auth to initialize
-    if (initializing) return;
-
-    // If there's a pending query
-    if (pendingAiQuery) {
       if (isAuthenticated) {
-        // User is logged in - go directly to AI Chat with query
-        console.log('Processing AI query:', pendingAiQuery);
-        setAiChatQuery(pendingAiQuery);
-        setActiveCategory('ai-chat');
+        // User is authenticated - navigate directly
+        console.log('Processing URL params - tab:', targetTab, 'query:', query);
+
+        if (query) {
+          setAiChatQuery(query);
+        }
+        setActiveCategory(targetTab);
         setShowDashboard(true);
-        setPendingAiQuery(''); // Clear pending query
-        setNeedsLoginForQuery(false);
-        setPendingTab(''); // Clear pending tab since we're going to ai-chat
 
         // Clean up URL
-        const cleanUrl = window.location.pathname;
-        window.history.replaceState({}, document.title, cleanUrl);
-      } else if (needsLoginForQuery) {
-        // User needs to login - show login modal (query already in state)
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setUrlParamsProcessed(true);
+      } else if (tabNeedsAuth && login) {
+        // Tab needs auth and login=true was passed - show login modal
+        console.log('Showing login modal for protected tab:', targetTab);
         setShowLoginModal(true);
 
-        // Clean up URL but keep query in state
-        const cleanUrl = window.location.pathname;
-        window.history.replaceState({}, document.title, cleanUrl);
-        setNeedsLoginForQuery(false); // Prevent re-triggering
+        // Clean up URL but DON'T mark as processed yet - we'll process after login
+        window.history.replaceState({}, document.title, window.location.pathname);
+        // Don't set urlParamsProcessed - let it run again after login
+      } else if (!tabNeedsAuth) {
+        // Tab doesn't need auth - navigate directly
+        console.log('Navigating to public tab:', targetTab);
+        setActiveCategory(targetTab);
+        setShowDashboard(true);
+
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setUrlParamsProcessed(true);
       }
     }
-  }, [isAuthenticated, initializing, pendingAiQuery, needsLoginForQuery]);
+  }, [isAuthenticated, initializing, urlParams, urlParamsProcessed]);
+
+  // After successful login, process the pending URL params
+  useEffect(() => {
+    if (!initializing && isAuthenticated && !urlParamsProcessed) {
+      const { query, tab } = urlParams;
+      if (tab || query) {
+        console.log('Post-login: Processing URL params - tab:', tab, 'query:', query);
+
+        if (query) {
+          setAiChatQuery(query);
+        }
+        setActiveCategory(tab || 'ai-chat');
+        setShowDashboard(true);
+        setUrlParamsProcessed(true);
+      }
+    }
+  }, [isAuthenticated, initializing, urlParams, urlParamsProcessed]);
 
   // Check for secret admin route
   useEffect(() => {
