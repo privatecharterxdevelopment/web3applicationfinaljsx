@@ -9,12 +9,10 @@ export default function FloatingSearchModal() {
   const auth = useAuth();
   const isAuthenticated = auth?.isAuthenticated || false;
   const [currentTitleIndex, setCurrentTitleIndex] = useState(0);
-  const [titleOpacity, setTitleOpacity] = useState(1);
+  const [displayedTitle, setDisplayedTitle] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
   const [currentOpenSection, setCurrentOpenSection] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState('');
-  const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
-  const [displayedPlaceholder, setDisplayedPlaceholder] = useState('');
-  const [isTyping, setIsTyping] = useState(true);
 
   // Charter a jet state
   const [showCharterFields, setShowCharterFields] = useState(false);
@@ -36,57 +34,57 @@ export default function FloatingSearchModal() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const titles = [
-    'Tokenizing global mobility',
-    'Charter the smart way',
-    'Blockchain powered travel'
-  ];
-
-  const placeholders = [
-    'where we go today?',
+    'Where we fly today?',
+    'emptylegs to London?',
     'business or leisure?',
-    'back for dinner at 6.33',
-    'plan your travel with sphera AI',
-    'book a p/jet today',
-    'airfield transfer ready'
+    'sphera ai books for you',
+    'crypto or classic?',
+    'your airportransfer is ready',
+    'Family trip planned for the weekend?',
+    'we try to beat the quote of others',
+    'private island trip?',
+    'lets make your travel plans happen'
   ];
 
+  // Typing and deleting animation for titles
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTitleOpacity(0);
-      setTimeout(() => {
-        setCurrentTitleIndex((prev) => (prev + 1) % titles.length);
-        setTitleOpacity(1);
-      }, 500);
-    }, 3000);
+    const currentText = titles[currentTitleIndex];
+    const typingSpeed = 60; // ms per character when typing
+    const deletingSpeed = 35; // ms per character when deleting (faster)
+    const pauseAfterTyping = 2000; // pause after fully typed
+    const pauseAfterDeleting = 300; // brief pause before next title
 
-    return () => clearInterval(interval);
-  }, []);
+    let timeout: NodeJS.Timeout;
 
-  // Typing animation for placeholder
-  useEffect(() => {
-    const currentText = placeholders[currentPlaceholderIndex];
-    let charIndex = 0;
-    setDisplayedPlaceholder('');
-    setIsTyping(true);
-
-    // Type out the text
-    const typingInterval = setInterval(() => {
-      if (charIndex < currentText.length) {
-        setDisplayedPlaceholder(currentText.substring(0, charIndex + 1));
-        charIndex++;
+    if (!isDeleting) {
+      // Typing phase
+      if (displayedTitle.length < currentText.length) {
+        timeout = setTimeout(() => {
+          setDisplayedTitle(currentText.substring(0, displayedTitle.length + 1));
+        }, typingSpeed);
       } else {
-        clearInterval(typingInterval);
-        setIsTyping(false);
-
-        // Wait then move to next placeholder
-        setTimeout(() => {
-          setCurrentPlaceholderIndex((prev) => (prev + 1) % placeholders.length);
-        }, 2000);
+        // Finished typing, wait then start deleting
+        timeout = setTimeout(() => {
+          setIsDeleting(true);
+        }, pauseAfterTyping);
       }
-    }, 50);
+    } else {
+      // Deleting phase
+      if (displayedTitle.length > 0) {
+        timeout = setTimeout(() => {
+          setDisplayedTitle(displayedTitle.substring(0, displayedTitle.length - 1));
+        }, deletingSpeed);
+      } else {
+        // Finished deleting, move to next title
+        timeout = setTimeout(() => {
+          setIsDeleting(false);
+          setCurrentTitleIndex((prev) => (prev + 1) % titles.length);
+        }, pauseAfterDeleting);
+      }
+    }
 
-    return () => clearInterval(typingInterval);
-  }, [currentPlaceholderIndex]);
+    return () => clearTimeout(timeout);
+  }, [displayedTitle, isDeleting, currentTitleIndex, titles]);
 
   // Airport search functions
   const searchDepartureAirports = async (query: string) => {
@@ -328,14 +326,12 @@ export default function FloatingSearchModal() {
                   }
                 }}
               />
-              {/* Animated title as placeholder - shows when input is empty */}
+              {/* Animated typing title as placeholder - shows when input is empty */}
               {!searchValue && (
                 <div className="absolute inset-0 flex items-center pointer-events-none">
-                  <span
-                    className="text-[16px] sm:text-[20px] text-gray-400 font-light tracking-tight transition-all duration-300"
-                    style={{ opacity: titleOpacity, transform: `translateY(${titleOpacity === 0 ? '-5px' : '0'})` }}
-                  >
-                    {titles[currentTitleIndex]}
+                  <span className="text-[16px] sm:text-[20px] text-gray-400 font-light tracking-tight">
+                    {displayedTitle}
+                    <span className="inline-block w-[2px] h-[1em] bg-gray-400 ml-[1px] animate-pulse align-middle" />
                   </span>
                 </div>
               )}
