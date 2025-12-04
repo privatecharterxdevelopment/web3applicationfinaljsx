@@ -255,17 +255,16 @@ function Homepage() {
         <section className="px-4 sm:px-8 py-12 sm:py-16 max-w-4xl mx-auto">
           <div className="space-y-6">
             <p className="text-center text-base sm:text-lg text-gray-800 leading-relaxed">
+              Real flights. Real assets. Real returns. All backed by <span className="bg-gray-200 px-2 py-1 rounded">licensed tokenization</span> under SEC regulations.
+            </p>
+            <p className="text-center text-base sm:text-lg text-gray-800 leading-relaxed">
               PrivateCharterX is the world's first <span className="bg-gray-200 px-2 py-1 rounded">Web3 and AI-powered</span> luxury travel platform.
-              Jets, helicopters, empty legs, luxury rentals, transfers, curated adventures—searchable by AI, bookable 24/7 with
-              <span className="bg-gray-200 px-2 py-1 rounded">70+ cryptocurrencies</span> via CoinGate. Human support standing by.
+              Jets, helicopters, empty legs, luxury rentals, transfers, curated adventures—searchable by AI, bookable 24/7 with <span className="bg-gray-200 px-2 py-1 rounded">70+ cryptocurrencies</span> via CoinGate. Human support standing by.
             </p>
             <p className="text-center text-base sm:text-lg text-gray-800 leading-relaxed">
               Our <span className="bg-gray-200 px-2 py-1 rounded">tokenization services</span> transforms aircraft, hangars, and airfields into
               income-generating digital assets while staying operational. NFT holders unlock <span className="bg-gray-200 px-2 py-1 rounded">free empty legs</span>,
               10% discounts, and priority access.
-            </p>
-            <p className="text-center text-base sm:text-lg text-gray-800 leading-relaxed">
-              Real flights. Real assets. Real returns. All backed by <span className="bg-gray-200 px-2 py-1 rounded">licensed tokenization</span> under SEC regulations.
             </p>
           </div>
         </section>

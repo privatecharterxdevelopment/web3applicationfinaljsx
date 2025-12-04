@@ -1228,7 +1228,7 @@ Format your response as:
 
 If any field is not visible or unclear, write "Not specified".
 
-Then ask the user to confirm if the extracted data is correct, and explain that if confirmed, our team will find them a better price within 12 hours.`;
+End your response with: "Please review the information above. If everything is correct, click **Send Request** below and we'll get back to you within 12 hours with a better price."`;
 
       let analysisText = '';
       let extractedData = null;
@@ -3724,6 +3724,40 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           : 'bg-gray-200 text-black border border-gray-300'
                       }`}
                     >
+                      {/* Show Break the Price badge if this is a quote upload */}
+                      {msg.attachment?.type === 'price_break_quote' && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-700 text-white text-[10px] font-medium rounded-full">
+                            <DollarSign size={10} />
+                            BREAK THE PRICE
+                          </span>
+                          <span className="text-[10px] text-gray-400">FREE</span>
+                        </div>
+                      )}
+                      {/* Show file attachment preview */}
+                      {msg.attachment && (
+                        <div className="mb-3 p-3 bg-white/10 rounded-lg border border-gray-500/30">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gray-600 rounded-lg flex items-center justify-center">
+                              <FileText size={20} className="text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{msg.attachment.fileName}</p>
+                              <p className="text-xs opacity-70">Uploaded for analysis</p>
+                            </div>
+                            {msg.attachment.fileUrl && (
+                              <a
+                                href={msg.attachment.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs underline opacity-70 hover:opacity-100"
+                              >
+                                View
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      )}
                       {msg.isLoading ? (
                         <TypingAnimation />
                       ) : shouldType ? (
@@ -3845,6 +3879,92 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           <Send size={18} />
                           Send Custom Request
                         </button>
+                      </div>
+                    )}
+
+                    {/* Break the Price - Confirm & Send Request */}
+                    {msg.action === 'price_break_confirm' && msg.extractedData && (
+                      <div className="mt-4 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+                        <div className="flex items-center gap-2 mb-3">
+                          <DollarSign size={18} className="text-gray-700" />
+                          <span className="font-medium text-gray-900">Would you like me to break the price?</span>
+                          <span className="text-[10px] px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">FREE</span>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-4">
+                          If the extracted information is correct, click below and our team will find you a better price within 12 hours.
+                        </p>
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onClick={async () => {
+                              try {
+                                // Update the price break request status to 'confirmed'
+                                if (msg.requestRef) {
+                                  await supabase
+                                    .from('price_break_requests')
+                                    .update({ status: 'confirmed' })
+                                    .eq('metadata->>reference', msg.requestRef);
+                                }
+
+                                // Create a custom request
+                                const requestData = {
+                                  type: 'break_the_price',
+                                  source: 'ai_chat',
+                                  reference: msg.requestRef,
+                                  extractedData: msg.extractedData,
+                                  conversation_id: activeChat,
+                                  submitted_at: new Date().toISOString()
+                                };
+
+                                const result = await createRequest(
+                                  'break_the_price',
+                                  requestData,
+                                  user?.id
+                                );
+
+                                if (result.success) {
+                                  setToast({ message: 'Request sent! We\'ll get back to you within 12 hours.', type: 'success' });
+                                  setChatHistory(prev => prev.map(c =>
+                                    c.id === activeChat
+                                      ? {
+                                          ...c,
+                                          messages: [...c.messages, {
+                                            role: 'assistant',
+                                            content: `Your Break the Price request has been confirmed and sent to our team.\n\n**Reference:** #${msg.requestRef}\n\nWe'll analyze your quote and get back to you with a better price within 12 hours. You can track this request in your AI Requests.`
+                                          }]
+                                        }
+                                      : c
+                                  ));
+                                }
+                              } catch (error) {
+                                console.error('Error confirming break the price:', error);
+                                setToast({ message: 'Failed to send request. Please try again.', type: 'error' });
+                              }
+                            }}
+                            className="w-full px-5 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2"
+                          >
+                            <Send size={18} />
+                            Send Request
+                          </button>
+                          <button
+                            onClick={() => {
+                              setChatHistory(prev => prev.map(c =>
+                                c.id === activeChat
+                                  ? {
+                                      ...c,
+                                      messages: [...c.messages, {
+                                        role: 'assistant',
+                                        content: `No problem! Please tell me what needs to be corrected in the extracted data, and I'll update it before sending the request.`
+                                      }]
+                                    }
+                                  : c
+                              ));
+                            }}
+                            className="w-full px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
+                          >
+                            <Edit2 size={16} />
+                            Something's not right - Let me correct it
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
