@@ -31,6 +31,7 @@ import {
   searchYachtsAndAdventures,
   searchLuxuryCars
 } from '../../services/aiTools';
+import { airportsJsonService as airportsService } from '../../services/airportsJsonService';
 
 // Components
 import SearchResults from '../SearchResults';
@@ -322,6 +323,13 @@ const AIChat = ({
     quantity: 1,
     notes: ''
   });
+
+  // Multi-stop flight management
+  const [showMultiStopForm, setShowMultiStopForm] = useState(false);
+  const [multiStopItemId, setMultiStopItemId] = useState(null); // Which cart item is being edited for multi-stop
+  const [stopSearchQuery, setStopSearchQuery] = useState('');
+  const [stopSearchResults, setStopSearchResults] = useState([]);
+  const [isSearchingStops, setIsSearchingStops] = useState(false);
 
   // Web3 Wallet
   const { address: walletAddress, isConnected: isWalletConnected } = useAccount();
@@ -1031,6 +1039,261 @@ const AIChat = ({
     setItemToAdjust(item);
     setShowAdjustModal(true);
   };
+
+  // ===== MULTI-STOP FLIGHT FUNCTIONS =====
+
+  // Search airports for stop locations
+  const searchStopAirports = useCallback(async (query) => {
+    if (!query || query.length < 2) {
+      setStopSearchResults([]);
+      return;
+    }
+    setIsSearchingStops(true);
+    try {
+      const results = await airportsService.searchAirports(query);
+      setStopSearchResults(results.slice(0, 8)); // Limit to 8 results
+    } catch (error) {
+      console.error('Error searching airports:', error);
+      setStopSearchResults([]);
+    } finally {
+      setIsSearchingStops(false);
+    }
+  }, []);
+
+  // Calculate distance between two points using Haversine formula
+  const calculateLegDistance = useCallback((from, to) => {
+    if (!from || !to) return 0;
+    const R = 6371; // Earth's radius in km
+    const dLat = (to.lat - from.lat) * Math.PI / 180;
+    const dLon = (to.lng - from.lng) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(from.lat * Math.PI / 180) * Math.cos(to.lat * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in km
+  }, []);
+
+  // Add a stop to a cart item (jet/helicopter)
+  const addStopToCartItem = useCallback((cartItemId, stopAirport, stopDuration = 60) => {
+    setCartItems(prev => prev.map(item => {
+      if ((item.cartId === cartItemId) && (item.type === 'jets' || item.type === 'jet' || item.type === 'helicopters' || item.type === 'helicopter')) {
+        const stops = item.stops || [];
+        const newStop = {
+          ...stopAirport,
+          stopDuration: stopDuration, // minutes at this stop
+          departureTime: null, // Will be calculated
+          arrivalTime: null
+        };
+        const updatedStops = [...stops, newStop];
+
+        // Recalculate total distance and price with stops
+        const { totalDistance, totalFlightTime, legs, totalPrice } = calculateMultiStopRoute(item, updatedStops);
+
+        return {
+          ...item,
+          stops: updatedStops,
+          legs: legs,
+          totalDistance: totalDistance,
+          flightDistanceNm: totalDistance * 0.539957, // Convert km to nm
+          flightTimeHours: totalFlightTime,
+          estimatedDuration: formatDuration(totalFlightTime),
+          billedHours: Math.ceil(totalFlightTime),
+          estimatedPrice: totalPrice,
+          price: totalPrice,
+          basePrice: totalPrice,
+          totalWithFee: totalPrice,
+          priceCalculation: `${Math.ceil(totalFlightTime)}h × €${item.hourly_rate_eur?.toLocaleString() || 0}/hr`,
+          route: formatMultiStopRoute(item.from || item.origin, updatedStops, item.to || item.destination),
+          isMultiStop: true
+        };
+      }
+      return item;
+    }));
+
+    // Close the multi-stop form
+    setShowMultiStopForm(false);
+    setMultiStopItemId(null);
+    setStopSearchQuery('');
+    setStopSearchResults([]);
+
+    setToast({ message: `Stop added: ${stopAirport.name}`, type: 'cart' });
+  }, []);
+
+  // Remove a stop from a cart item
+  const removeStopFromCartItem = useCallback((cartItemId, stopIndex) => {
+    setCartItems(prev => prev.map(item => {
+      if (item.cartId === cartItemId && item.stops) {
+        const updatedStops = item.stops.filter((_, idx) => idx !== stopIndex);
+
+        if (updatedStops.length === 0) {
+          // No more stops - revert to direct route
+          const directDistance = calculateLegDistance(
+            { lat: item.originLat || 0, lng: item.originLng || 0 },
+            { lat: item.destLat || 0, lng: item.destLng || 0 }
+          );
+          const speedKmh = (item.speed_kts || 450) * 1.852;
+          const flightTime = directDistance / speedKmh;
+          const billedHours = Math.ceil(flightTime);
+          const price = billedHours * (item.hourly_rate_eur || 0);
+
+          return {
+            ...item,
+            stops: [],
+            legs: null,
+            totalDistance: directDistance,
+            flightTimeHours: flightTime,
+            estimatedDuration: formatDuration(flightTime),
+            billedHours: billedHours,
+            estimatedPrice: price,
+            price: price,
+            basePrice: price,
+            totalWithFee: price,
+            priceCalculation: `${billedHours}h × €${item.hourly_rate_eur?.toLocaleString() || 0}/hr`,
+            route: `${item.from || item.origin} → ${item.to || item.destination}`,
+            isMultiStop: false
+          };
+        }
+
+        // Recalculate with remaining stops
+        const { totalDistance, totalFlightTime, legs, totalPrice } = calculateMultiStopRoute(item, updatedStops);
+
+        return {
+          ...item,
+          stops: updatedStops,
+          legs: legs,
+          totalDistance: totalDistance,
+          flightDistanceNm: totalDistance * 0.539957,
+          flightTimeHours: totalFlightTime,
+          estimatedDuration: formatDuration(totalFlightTime),
+          billedHours: Math.ceil(totalFlightTime),
+          estimatedPrice: totalPrice,
+          price: totalPrice,
+          basePrice: totalPrice,
+          totalWithFee: totalPrice,
+          priceCalculation: `${Math.ceil(totalFlightTime)}h × €${item.hourly_rate_eur?.toLocaleString() || 0}/hr`,
+          route: formatMultiStopRoute(item.from || item.origin, updatedStops, item.to || item.destination),
+          isMultiStop: updatedStops.length > 0
+        };
+      }
+      return item;
+    }));
+
+    setToast({ message: 'Stop removed', type: 'cart' });
+  }, [calculateLegDistance]);
+
+  // Update stop duration (time spent at destination)
+  const updateStopDuration = useCallback((cartItemId, stopIndex, durationMinutes) => {
+    setCartItems(prev => prev.map(item => {
+      if (item.cartId === cartItemId && item.stops) {
+        const updatedStops = item.stops.map((stop, idx) =>
+          idx === stopIndex ? { ...stop, stopDuration: durationMinutes } : stop
+        );
+
+        // Recalculate schedule with new stop duration
+        const { totalDistance, totalFlightTime, legs, totalPrice } = calculateMultiStopRoute(item, updatedStops);
+
+        return {
+          ...item,
+          stops: updatedStops,
+          legs: legs,
+          totalDistance: totalDistance,
+          flightTimeHours: totalFlightTime,
+          estimatedPrice: totalPrice,
+          price: totalPrice,
+          basePrice: totalPrice,
+          totalWithFee: totalPrice
+        };
+      }
+      return item;
+    }));
+  }, []);
+
+  // Calculate multi-stop route details
+  const calculateMultiStopRoute = useCallback((item, stops) => {
+    const legs = [];
+    let totalDistance = 0;
+    let totalFlightTime = 0;
+
+    // Speed in km/h (convert from knots)
+    const speedKmh = (item.speed_kts || 450) * 1.852;
+    const hourlyRate = item.hourly_rate_eur || 5000;
+
+    // Get origin coordinates
+    const origin = {
+      name: item.from || item.origin || item.from_city,
+      code: item.from_iata || item.originIata || '',
+      lat: item.originLat || 0,
+      lng: item.originLng || 0
+    };
+
+    // Get destination coordinates
+    const destination = {
+      name: item.to || item.destination || item.to_city,
+      code: item.to_iata || item.destinationIata || '',
+      lat: item.destLat || 0,
+      lng: item.destLng || 0
+    };
+
+    // Build waypoints: origin -> stops -> destination
+    const waypoints = [origin, ...stops, destination];
+
+    // Calculate each leg
+    let currentTime = item.departure_time ? new Date(`2000-01-01T${item.departure_time}`) : new Date();
+
+    for (let i = 0; i < waypoints.length - 1; i++) {
+      const from = waypoints[i];
+      const to = waypoints[i + 1];
+
+      const legDistance = calculateLegDistance(from, to);
+      const legFlightTime = legDistance / speedKmh; // hours
+
+      const departureTime = new Date(currentTime);
+      const arrivalTime = new Date(currentTime.getTime() + legFlightTime * 60 * 60 * 1000);
+
+      legs.push({
+        from: from.name || from.city,
+        fromCode: from.code || '',
+        to: to.name || to.city,
+        toCode: to.code || '',
+        distance: Math.round(legDistance),
+        flightTime: legFlightTime,
+        departureTime: departureTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        arrivalTime: arrivalTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        stopDuration: to.stopDuration || 0
+      });
+
+      totalDistance += legDistance;
+      totalFlightTime += legFlightTime;
+
+      // Add stop duration to current time for next leg departure
+      currentTime = new Date(arrivalTime.getTime() + (to.stopDuration || 0) * 60 * 1000);
+    }
+
+    // Calculate total price (billed hours × hourly rate)
+    const billedHours = Math.ceil(totalFlightTime);
+    const totalPrice = billedHours * hourlyRate;
+
+    return {
+      legs,
+      totalDistance: Math.round(totalDistance),
+      totalFlightTime,
+      totalPrice
+    };
+  }, [calculateLegDistance]);
+
+  // Format duration from hours to readable string
+  const formatDuration = (hours) => {
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  };
+
+  // Format multi-stop route string
+  const formatMultiStopRoute = (origin, stops, destination) => {
+    const stopNames = stops.map(s => s.code || s.name?.substring(0, 3).toUpperCase()).join(' → ');
+    return `${origin} → ${stopNames} → ${destination}`;
+  };
+  // ===== END MULTI-STOP FUNCTIONS =====
 
   // Break the Price - check if user has access
   const canUseBreakThePrice = useCallback(() => {
@@ -4379,6 +4642,138 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                     ))}
                                   </div>
                                 </div>
+
+                                {/* Multi-Stop Flight Section */}
+                                <div className="mt-3 pt-3 border-t border-gray-200">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <p className="text-xs font-medium text-gray-700">Multi-Stop Route</p>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowMultiStopForm(true);
+                                        setMultiStopItemId(item.cartId);
+                                      }}
+                                      className="text-[10px] px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors flex items-center gap-1"
+                                    >
+                                      <Plus size={10} />
+                                      Add Stop
+                                    </button>
+                                  </div>
+
+                                  {/* Current Route Display */}
+                                  <div className="space-y-1.5">
+                                    {/* Origin */}
+                                    <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                                      <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] text-gray-500">Departure</p>
+                                        <p className="text-xs font-medium text-gray-900 truncate">{item.from || item.origin || item.from_city}</p>
+                                      </div>
+                                    </div>
+
+                                    {/* Stops */}
+                                    {item.stops && item.stops.length > 0 && item.stops.map((stop, stopIdx) => (
+                                      <div key={stopIdx} className="space-y-1">
+                                        {/* Leg info */}
+                                        {item.legs && item.legs[stopIdx] && (
+                                          <div className="flex items-center justify-center gap-2 py-1">
+                                            <div className="flex-1 h-px bg-gray-200"></div>
+                                            <span className="text-[9px] text-gray-400 px-1">
+                                              {item.legs[stopIdx].distance} km • {formatDuration(item.legs[stopIdx].flightTime)}
+                                            </span>
+                                            <div className="flex-1 h-px bg-gray-200"></div>
+                                          </div>
+                                        )}
+                                        {/* Stop card */}
+                                        <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-100">
+                                          <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0"></div>
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-[10px] text-blue-600">Stop {stopIdx + 1}</p>
+                                            <p className="text-xs font-medium text-gray-900 truncate">{stop.name || stop.city}</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                              <span className="text-[9px] text-gray-500">Stay:</span>
+                                              <select
+                                                value={stop.stopDuration || 60}
+                                                onChange={(e) => {
+                                                  e.stopPropagation();
+                                                  updateStopDuration(item.cartId, stopIdx, parseInt(e.target.value));
+                                                }}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="text-[9px] bg-white border border-gray-200 rounded px-1 py-0.5"
+                                              >
+                                                <option value={30}>30 min</option>
+                                                <option value={60}>1 hour</option>
+                                                <option value={120}>2 hours</option>
+                                                <option value={180}>3 hours</option>
+                                                <option value={240}>4 hours</option>
+                                                <option value={480}>8 hours</option>
+                                                <option value={1440}>1 day</option>
+                                              </select>
+                                              {item.legs && item.legs[stopIdx] && (
+                                                <span className="text-[9px] text-gray-400 ml-1">
+                                                  Depart: {item.legs[stopIdx + 1]?.departureTime || '--:--'}
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              removeStopFromCartItem(item.cartId, stopIdx);
+                                            }}
+                                            className="p-1 hover:bg-red-100 text-gray-400 hover:text-red-500 rounded transition-colors"
+                                          >
+                                            <X size={12} />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ))}
+
+                                    {/* Final leg info */}
+                                    {item.legs && item.legs.length > 0 && (
+                                      <div className="flex items-center justify-center gap-2 py-1">
+                                        <div className="flex-1 h-px bg-gray-200"></div>
+                                        <span className="text-[9px] text-gray-400 px-1">
+                                          {item.legs[item.legs.length - 1].distance} km • {formatDuration(item.legs[item.legs.length - 1].flightTime)}
+                                        </span>
+                                        <div className="flex-1 h-px bg-gray-200"></div>
+                                      </div>
+                                    )}
+
+                                    {/* Destination */}
+                                    <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                                      <div className="w-3 h-3 bg-red-500 rounded-full flex-shrink-0"></div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] text-gray-500">Arrival</p>
+                                        <p className="text-xs font-medium text-gray-900 truncate">{item.to || item.destination || item.to_city}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Multi-stop summary */}
+                                  {item.isMultiStop && item.legs && (
+                                    <div className="mt-3 p-2 bg-gray-100 rounded-lg">
+                                      <div className="grid grid-cols-2 gap-2 text-[10px]">
+                                        <div>
+                                          <span className="text-gray-500">Total Distance:</span>
+                                          <span className="ml-1 font-medium text-gray-900">{item.totalDistance?.toLocaleString()} km</span>
+                                        </div>
+                                        <div>
+                                          <span className="text-gray-500">Flight Time:</span>
+                                          <span className="ml-1 font-medium text-gray-900">{item.estimatedDuration}</span>
+                                        </div>
+                                        <div>
+                                          <span className="text-gray-500">Stops:</span>
+                                          <span className="ml-1 font-medium text-gray-900">{item.stops?.length || 0}</span>
+                                        </div>
+                                        <div>
+                                          <span className="text-gray-500">Billed:</span>
+                                          <span className="ml-1 font-medium text-gray-900">{item.billedHours}h</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             )}
 
@@ -5025,6 +5420,113 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         </>
       )}
 
+      {/* Multi-Stop Airport Search Modal */}
+      {showMultiStopForm && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-[60] animate-fade-in" onClick={() => {
+            setShowMultiStopForm(false);
+            setMultiStopItemId(null);
+            setStopSearchQuery('');
+            setStopSearchResults([]);
+          }} />
+          <div className="fixed inset-0 flex items-center justify-center z-[61] p-4 animate-fade-in">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-4 animate-scale-in max-h-[80vh] overflow-hidden flex flex-col">
+              <div className="flex justify-between items-center mb-4 flex-shrink-0">
+                <h3 className="text-lg font-semibold">Add Stop</h3>
+                <button
+                  onClick={() => {
+                    setShowMultiStopForm(false);
+                    setMultiStopItemId(null);
+                    setStopSearchQuery('');
+                    setStopSearchResults([]);
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Search Input */}
+              <div className="relative mb-3 flex-shrink-0">
+                <input
+                  type="text"
+                  value={stopSearchQuery}
+                  onChange={(e) => {
+                    setStopSearchQuery(e.target.value);
+                    searchStopAirports(e.target.value);
+                  }}
+                  placeholder="Search city or airport..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  autoFocus
+                />
+                {isSearchingStops && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                  </div>
+                )}
+              </div>
+
+              {/* Search Results */}
+              <div className="flex-1 overflow-y-auto min-h-0">
+                {stopSearchResults.length > 0 ? (
+                  <div className="space-y-1">
+                    {stopSearchResults.map((airport, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          addStopToCartItem(multiStopItemId, {
+                            name: airport.city || airport.name,
+                            code: airport.iata || airport.code,
+                            city: airport.city,
+                            country: airport.country,
+                            lat: airport.lat || airport.latitude,
+                            lng: airport.lng || airport.lon || airport.longitude
+                          }, 60);
+                        }}
+                        className="w-full p-3 text-left hover:bg-gray-100 rounded-lg transition-colors flex items-start gap-3"
+                      >
+                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Plane size={16} className="text-gray-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900">{airport.city || airport.name}</span>
+                            {airport.iata && (
+                              <span className="text-[10px] px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded font-medium">{airport.iata}</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 truncate">{airport.name || airport.airport}</p>
+                          <p className="text-[10px] text-gray-400">{airport.country}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : stopSearchQuery.length >= 2 && !isSearchingStops ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <MapPin size={32} className="mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">No airports found</p>
+                    <p className="text-xs text-gray-400">Try a different search term</p>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Plane size={32} className="mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Search for a city or airport</p>
+                    <p className="text-xs text-gray-400">Type at least 2 characters</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Info footer */}
+              <div className="mt-3 pt-3 border-t border-gray-200 flex-shrink-0">
+                <p className="text-[10px] text-gray-500 text-center">
+                  Stops allow you to make intermediate landings. Each stop adds to the total flight time and cost.
+                </p>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Request Form Modal */}
       {showRequestForm && (
         <>
@@ -5103,8 +5605,14 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           range_km: item.range_km,
                           speed_kts: item.speed_kts,
                           hourly_rate_eur: item.hourly_rate_eur,
-                          estimated_flight_time: item.estimated_flight_time || item.flightTime,
-                          distance_km: item.distance_km || item.distanceKm,
+                          estimated_flight_time: item.estimated_flight_time || item.flightTime || item.estimatedDuration,
+                          distance_km: item.distance_km || item.distanceKm || item.totalDistance,
+                          billed_hours: item.billedHours,
+                          // Multi-stop route info
+                          is_multi_stop: item.isMultiStop || false,
+                          stops: item.stops || [],
+                          legs: item.legs || [],
+                          total_distance_km: item.totalDistance,
                           // For luxury cars
                           brand: item.brand,
                           model: item.model,
@@ -5154,7 +5662,9 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           vat_amount: vatAmount,
                           grand_total: grandTotal,
                           has_estimates: cartItems.some(item => item.isEstimate),
-                          has_custom_requests: customExtras.length > 0
+                          has_custom_requests: customExtras.length > 0,
+                          has_multi_stop_flights: cartItems.some(item => item.isMultiStop),
+                          multi_stop_count: cartItems.filter(item => item.isMultiStop).length
                         },
                         payment_method: selectedPaymentMethod || 'bank_transfer',
                         created_via: 'sphera_ai_assistant',
