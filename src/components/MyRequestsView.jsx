@@ -61,6 +61,7 @@ const MyRequestsView = ({ user }) => {
   const getTypeLabel = (type) => {
     const labels = {
       taxi_concierge: 'Taxi/Concierge',
+      ground_transport: 'Ground Transport',
       private_jet_charter: 'Private Jet Charter',
       helicopter_charter: 'Helicopter Charter',
       empty_leg: 'Empty Leg',
@@ -978,6 +979,7 @@ const MyRequestsView = ({ user }) => {
             // Route to specific render function based on request type
             switch (request.type) {
               case 'taxi_concierge':
+              case 'ground_transport':
                 return <div key={request.id}>{renderTaxiRequest(request)}</div>;
               case 'empty_leg':
                 return <div key={request.id}>{renderEmptyLegRequest(request)}</div>;

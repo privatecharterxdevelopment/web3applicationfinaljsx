@@ -3,7 +3,7 @@ import { useNavigate, Link, useParams, useLocation } from 'react-router-dom';
 import {
   Search, Shield, Bell, Heart, Home, Layers, FolderOpen, Plus,
   Plane, Zap, Mountain, Car, MapPin, Sparkles, Rocket,
-  Leaf, Award, Settings, User, ChevronRight, ChevronDown, ChevronUp, X, LogOut, MessageSquare, MessageCircle,
+  Leaf, Award, Settings, User, ChevronRight, ChevronDown, ChevronUp, ChevronLeft, X, LogOut, MessageSquare, MessageCircle,
   Users, Calendar, Package, Compass, ArrowLeft, Wallet, History, Crown, Gift, LayoutDashboard,
   Mail, Phone, Globe, FileText, Edit3, Check, Loader2, Building2, Coins, Share2, Menu, ExternalLink, SlidersHorizontal, Info, CreditCard,
   ShoppingCart, Send, AlertCircle
@@ -1176,9 +1176,6 @@ const TokenizedAssetsGlassmorphic = () => {
   const [userRequests, setUserRequests] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
 
-  // Escrow state
-  const [userEscrows, setUserEscrows] = useState([]);
-  const [loadingEscrows, setLoadingEscrows] = useState(false);
 
   // Bookings state (empty legs, adventures, CO2 certificates)
   const [userBookings, setUserBookings] = useState([]);
@@ -1611,6 +1608,7 @@ const TokenizedAssetsGlassmorphic = () => {
   const [co2ViewMode, setCo2ViewMode] = useState('tabs');
   const [co2FiltersVisible, setCo2FiltersVisible] = useState(false);
   const [chatHistoryViewMode, setChatHistoryViewMode] = useState('grid');
+  const [selectedChatForView, setSelectedChatForView] = useState(null);
 
   // Blog post state
   const [latestBlogPost, setLatestBlogPost] = useState(null);
@@ -2575,29 +2573,6 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   };
 
-  // Fetch user escrows from Supabase
-  const fetchUserEscrows = async () => {
-    if (!user?.id || !address) return;
-
-    setLoadingEscrows(true);
-    try {
-      const { data, error } = await supabase
-        .from('safe_accounts')
-        .select('*')
-        .or(`creator_address.eq.${address},owners.cs.{${address}}`)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setUserEscrows(data || []);
-    } catch (error) {
-      console.error('Error fetching escrows:', error);
-      setUserEscrows([]);
-    } finally {
-      setLoadingEscrows(false);
-    }
-  };
-
   // Fetch user bookings from user_bookings table (empty legs, adventures, CO2 certificates)
   const fetchUserBookings = async () => {
     if (!user?.id) return;
@@ -2744,11 +2719,14 @@ const TokenizedAssetsGlassmorphic = () => {
         .from('pvcx_balance')
         .select('balance')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (data) {
+      if (error) {
+        console.error('Error fetching PVCX balance:', error);
+        setPvcxBalance(0);
+      } else if (data) {
         setPvcxBalance(parseFloat(data.balance) || 0);
-      } else if (!error || error.code === 'PGRST116') {
+      } else {
         // No balance record yet
         setPvcxBalance(0);
       }
@@ -2940,12 +2918,6 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   };
 
-  // Load user escrows for overview page
-  useEffect(() => {
-    if (activeCategory === 'overview' && user?.id && address) {
-      fetchUserEscrows();
-    }
-  }, [activeCategory, user?.id, address]);
 
   // Load user bookings for overview page
   useEffect(() => {
@@ -11107,16 +11079,161 @@ const TokenizedAssetsGlassmorphic = () => {
                     Start New Chat
                   </button>
                 </div>
+              ) : selectedChatForView ? (
+                /* Conversation Detail View */
+                <div className="bg-white/30 backdrop-blur-xl border border-gray-300/50 rounded-2xl overflow-hidden">
+                  {/* Header */}
+                  <div className="p-4 border-b border-gray-200/50 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setSelectedChatForView(null)}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-all"
+                      >
+                        <ArrowLeft size={20} className="text-gray-600" />
+                      </button>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{selectedChatForView.title}</h3>
+                        <p className="text-xs text-gray-500">{selectedChatForView.date} • {selectedChatForView.messages?.length || 0} messages</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setActiveChat(selectedChatForView.id);
+                        setActiveCategory('chat');
+                        setSelectedChatForView(null);
+                      }}
+                      className="px-4 py-2 bg-black text-white text-sm rounded-lg hover:bg-gray-800 transition-all flex items-center gap-2"
+                    >
+                      <MessageSquare size={14} />
+                      Continue Chat
+                    </button>
+                  </div>
+
+                  {/* Messages */}
+                  <div className="p-4 max-h-[60vh] overflow-y-auto space-y-4">
+                    {selectedChatForView.messages?.length > 0 ? (
+                      selectedChatForView.messages.map((msg, idx) => {
+                        // Handle search results messages (role === 'results' or has tabs)
+                        if (msg.role === 'results' || msg.tabs) {
+                          const tabs = msg.tabs;
+                          if (tabs && Array.isArray(tabs)) {
+                            const totalItems = tabs.reduce((sum, tab) => sum + (tab.items?.length || 0), 0);
+                            return (
+                              <div key={idx} className="flex justify-start">
+                                <div className="max-w-[90%]">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-xs font-medium text-gray-500">Sphera AI</span>
+                                  </div>
+                                  <div className="px-4 py-3 rounded-2xl text-sm bg-blue-50 text-gray-800 border border-blue-200">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Search size={14} className="text-blue-600" />
+                                      <span className="font-medium text-blue-800">Search Results</span>
+                                    </div>
+                                    <p className="text-gray-700 mb-2">Found {totalItems} options:</p>
+                                    <div className="space-y-1">
+                                      {tabs.map((tab, tabIdx) => (
+                                        <div key={tabIdx} className="text-xs text-gray-600">
+                                          • {tab.title}: {tab.items?.length || 0} {tab.items?.length === 1 ? 'result' : 'results'}
+                                          {tab.items?.slice(0, 2).map((item, itemIdx) => (
+                                            <div key={itemIdx} className="ml-3 text-gray-500">
+                                              - {item.from_city || item.departure_city || item.name} → {item.to_city || item.arrival_city || item.destination}
+                                              {item.price_usd && ` ($${item.price_usd.toLocaleString()})`}
+                                            </div>
+                                          ))}
+                                          {tab.items?.length > 2 && (
+                                            <div className="ml-3 text-gray-400">...and {tab.items.length - 2} more</div>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                        }
+
+                        // Handle raw JSON content that starts with {"tabs"
+                        if (typeof msg.content === 'string' && msg.content.startsWith('{"tabs"')) {
+                          try {
+                            const parsed = JSON.parse(msg.content);
+                            if (parsed.tabs) {
+                              const totalItems = parsed.tabs.reduce((sum, tab) => sum + (tab.items?.length || 0), 0);
+                              return (
+                                <div key={idx} className="flex justify-start">
+                                  <div className="max-w-[90%]">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-xs font-medium text-gray-500">Sphera AI</span>
+                                    </div>
+                                    <div className="px-4 py-3 rounded-2xl text-sm bg-blue-50 text-gray-800 border border-blue-200">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <Search size={14} className="text-blue-600" />
+                                        <span className="font-medium text-blue-800">Search Results</span>
+                                      </div>
+                                      <p className="text-gray-700 mb-2">Found {totalItems} options:</p>
+                                      <div className="space-y-1">
+                                        {parsed.tabs.map((tab, tabIdx) => (
+                                          <div key={tabIdx} className="text-xs text-gray-600">
+                                            • {tab.title}: {tab.items?.length || 0} {tab.items?.length === 1 ? 'result' : 'results'}
+                                            {tab.items?.slice(0, 2).map((item, itemIdx) => (
+                                              <div key={itemIdx} className="ml-3 text-gray-500">
+                                                - {item.from_city || item.departure_city || item.name} → {item.to_city || item.arrival_city || item.destination}
+                                                {item.price_usd && ` ($${item.price_usd.toLocaleString()})`}
+                                              </div>
+                                            ))}
+                                            {tab.items?.length > 2 && (
+                                              <div className="ml-3 text-gray-400">...and {tab.items.length - 2} more</div>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            }
+                          } catch (e) {
+                            // Not valid JSON, will render as text below
+                          }
+                        }
+
+                        // Regular text messages
+                        return (
+                          <div
+                            key={idx}
+                            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                          >
+                            <div className={`max-w-[80%] ${msg.role === 'user' ? 'order-1' : ''}`}>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`text-xs font-medium ${msg.role === 'user' ? 'text-gray-700' : 'text-gray-500'}`}>
+                                  {msg.role === 'user' ? 'You' : 'Sphera AI'}
+                                </span>
+                              </div>
+                              <div
+                                className={`px-4 py-3 rounded-2xl text-sm ${
+                                  msg.role === 'user'
+                                    ? 'bg-black text-white'
+                                    : 'bg-gray-100 text-gray-800 border border-gray-200'
+                                }`}
+                              >
+                                <p className="whitespace-pre-line">{msg.content}</p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <p className="text-center text-gray-500 py-8">No messages in this conversation</p>
+                    )}
+                  </div>
+                </div>
               ) : chatHistoryViewMode === 'grid' ? (
                 /* Grid View */
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {chatHistory.map((chat) => (
                     <div
                       key={chat.id}
-                      onClick={() => {
-                        setActiveChat(chat.id);
-                        setActiveCategory('chat');
-                      }}
+                      onClick={() => setSelectedChatForView(chat)}
                       className="bg-white/30 backdrop-blur-xl border border-gray-300/50 rounded-2xl p-6 cursor-pointer hover:shadow-lg hover:border-gray-400/50 transition-all group"
                     >
                       {/* Chat Info */}
@@ -11128,13 +11245,13 @@ const TokenizedAssetsGlassmorphic = () => {
                       {/* Message Count */}
                       <div className="flex items-center gap-2 text-xs text-gray-700">
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        {chat.messages.length} {chat.messages.length === 1 ? 'message' : 'messages'}
+                        {chat.messages?.length || 0} {(chat.messages?.length || 0) === 1 ? 'message' : 'messages'}
                       </div>
 
                       {/* Preview last message */}
-                      {chat.messages.length > 0 && (
+                      {chat.messages?.length > 0 && (
                         <p className="text-xs text-gray-600 mt-3 line-clamp-2">
-                          {chat.messages[chat.messages.length - 1].content}
+                          {chat.messages[chat.messages.length - 1]?.content}
                         </p>
                       )}
                     </div>
@@ -11146,10 +11263,7 @@ const TokenizedAssetsGlassmorphic = () => {
                   {chatHistory.map((chat) => (
                     <div
                       key={chat.id}
-                      onClick={() => {
-                        setActiveChat(chat.id);
-                        setActiveCategory('chat');
-                      }}
+                      onClick={() => setSelectedChatForView(chat)}
                       className="bg-white/30 backdrop-blur-xl border border-gray-300/50 rounded-xl p-4 cursor-pointer hover:shadow-lg hover:border-gray-400/50 transition-all flex items-center justify-between"
                     >
                       <div className="flex-1 min-w-0">
@@ -11159,16 +11273,16 @@ const TokenizedAssetsGlassmorphic = () => {
                           </h3>
                           <span className="text-xs text-gray-500 whitespace-nowrap">{chat.date}</span>
                         </div>
-                        {chat.messages.length > 0 && (
+                        {chat.messages?.length > 0 && (
                           <p className="text-xs text-gray-600 truncate">
-                            {chat.messages[chat.messages.length - 1].content}
+                            {chat.messages[chat.messages.length - 1]?.content}
                           </p>
                         )}
                       </div>
                       <div className="flex items-center gap-2 ml-4">
                         <div className="flex items-center gap-1.5 text-xs text-gray-500">
                           <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                          {chat.messages.length}
+                          {chat.messages?.length || 0}
                         </div>
                         <ChevronRight size={16} className="text-gray-400" />
                       </div>

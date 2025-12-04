@@ -200,7 +200,11 @@ const AIChat = ({
   initialAssistantMessage = '',
   onAssistantMessageProcessed = () => {},
   cartItems: cartItemsProp,
-  setCartItems: setCartItemsProp
+  setCartItems: setCartItemsProp,
+  activeChat: activeChatProp,
+  setActiveChat: setActiveChatProp,
+  chatHistory: chatHistoryProp,
+  setChatHistory: setChatHistoryProp
 }) => {
   // Use auth context (returns null if not in AuthProvider)
   const authContext = useAuth();
@@ -230,8 +234,15 @@ const AIChat = ({
   const [conversationalAI] = useState(() => new SpheraWeb3Concierge());
   const [conversationState] = useState(() => new ConversationStateManager());
 
-  const [chatHistory, setChatHistory] = useState([]);
-  const [activeChat, setActiveChat] = useState('new');
+  // Use props if provided, otherwise use internal state
+  const [internalChatHistory, setInternalChatHistory] = useState([]);
+  const [internalActiveChat, setInternalActiveChat] = useState('new');
+
+  // Determine which state to use (props take precedence)
+  const chatHistory = chatHistoryProp !== undefined ? chatHistoryProp : internalChatHistory;
+  const setChatHistory = setChatHistoryProp || setInternalChatHistory;
+  const activeChat = activeChatProp !== undefined ? activeChatProp : internalActiveChat;
+  const setActiveChat = setActiveChatProp || setInternalActiveChat;
   const [chatsLoaded, setChatsLoaded] = useState(true); // Start as true so new chats work immediately
   const [currentMessage, setCurrentMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
@@ -1413,6 +1424,7 @@ Your quote has been received and will be reviewed within 12 hours.`;
         if (only === 'jets' || only === 'aircraft') return 'private_jet_charter';
         if (only === 'helicopters') return 'helicopter_charter';
         if (only === 'luxury_cars' || only === 'cars') return 'luxury_car_rental';
+        if (only === 'taxi_cars' || only === 'taxi' || only === 'transfer' || only === 'ground_transport') return 'ground_transport';
         return 'booking';
       };
 
