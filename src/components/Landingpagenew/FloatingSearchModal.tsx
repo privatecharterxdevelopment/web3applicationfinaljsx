@@ -415,6 +415,12 @@ export default function FloatingSearchModal() {
             </div>
             <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide whitespace-nowrap">beat the price</span>
           </div>
+
+          {/* Spacer to push sphera to the right */}
+          <div className="flex-1" />
+
+          {/* Sphera AI version */}
+          <span className="text-[10px] text-gray-400 flex-shrink-0">sphera 1.0</span>
         </div>
 
         {/* Charter Fields - Expandable, Mobile: 2 rows, Desktop: 1 row */}

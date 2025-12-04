@@ -3351,6 +3351,9 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   className="flex-1 bg-transparent border-none outline-none text-sm text-gray-900 placeholder-gray-500 disabled:text-gray-400"
                 />
 
+                {/* Sphera AI version */}
+                <span className="text-[10px] text-gray-400">sphera 1.0</span>
+
                 {/* Message counter */}
                 {messageCount > 0 && (
                   <span className={`text-xs px-2 py-1 rounded-full ${
