@@ -85,11 +85,17 @@ serve(async (req) => {
         }
       });
     }
-    // Optional: Delete all other reset tokens for this user for security
+    // Mark the used token and delete all tokens for this user for security
     try {
+      // First mark the token as used (for audit trail)
+      await supabaseAdmin.from('password_reset_tokens')
+        .update({ used: true, used_at: new Date().toISOString() })
+        .eq('token', resetToken);
+
+      // Then delete all tokens for this user
       await supabaseAdmin.from('password_reset_tokens').delete().eq('user_id', userId);
     } catch (cleanupError) {
-      console.warn('Failed to cleanup other reset tokens:', cleanupError);
+      console.warn('Failed to cleanup reset tokens:', cleanupError);
       // Don't fail the request if cleanup fails
     }
     // Log the password reset for security audit

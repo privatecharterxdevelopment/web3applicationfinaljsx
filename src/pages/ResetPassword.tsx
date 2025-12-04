@@ -54,12 +54,9 @@ export default function ResetPassword() {
           return;
         }
 
-        // Check if token has expired
-        const expiresAt = new Date(data.expires_at);
-        const now = new Date();
-
-        if (now > expiresAt) {
-          console.error('Reset token has expired');
+        // Check if token is valid (RPC checks both expiration AND used status)
+        if (!data.is_valid) {
+          console.error('Reset token is invalid or has been used');
           setIsValidToken(false);
           return;
         }
