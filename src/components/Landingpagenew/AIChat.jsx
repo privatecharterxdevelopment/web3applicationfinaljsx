@@ -3577,11 +3577,24 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             {/* Report Issue Button */}
             <button
               onClick={() => setShowReportIssueModal(true)}
-              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-600 transition-colors flex items-center gap-1.5"
+              className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors"
               title="Report an issue"
             >
-              <AlertCircle size={14} />
-              <span className="hidden md:inline">Report</span>
+              <AlertCircle size={16} />
+            </button>
+
+            {/* Cart Button - Header */}
+            <button
+              onClick={() => setShowCartSidebar(true)}
+              className="relative p-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors"
+              title="View cart"
+            >
+              <ShoppingCart size={16} />
+              {cartItems.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-medium">
+                  {cartItems.length}
+                </span>
+              )}
             </button>
 
             {/* Chat Sessions Dropdown - Hidden, can be accessed via menu if needed */}
@@ -4169,7 +4182,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       {showCartSidebar && (
         <>
           <div className="fixed inset-0 bg-black/50 z-40 animate-fade-in" onClick={() => setShowCartSidebar(false)} />
-          <div className="fixed right-0 top-0 h-full w-96 bg-white border-l border-gray-200 shadow-xl z-50 animate-fade-in-right flex flex-col max-h-screen overflow-hidden">
+          <div className="fixed right-0 top-0 h-full w-full sm:w-96 bg-white border-l border-gray-200 shadow-xl z-50 animate-fade-in-right flex flex-col max-h-screen overflow-hidden">
             <div className="p-4 border-b border-gray-200 flex-shrink-0">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-900">Cart ({cartItems.length})</h3>
@@ -5862,9 +5875,9 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       />
       </div>
 
-      {/* CART WIDGET - Right Side */}
+      {/* CART WIDGET - Right Side (hidden on mobile, use cart sidebar instead) */}
       {showCartWidget && cartItems.length > 0 && (
-        <div className="w-96 bg-white border-l border-gray-200 flex flex-col overflow-hidden">
+        <div className="hidden md:flex w-80 lg:w-96 bg-white border-l border-gray-200 flex-col overflow-hidden">
           {/* Cart Header */}
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between mb-2">

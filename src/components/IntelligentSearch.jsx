@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ChevronRight, Clock, TrendingUp, Sparkles, Plane, Zap, Mail } from 'lucide-react';
+import { Search, ChevronRight, Sparkles, Mail } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 /**
@@ -76,42 +76,40 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
   // All available services - RWS & Web3.0
   const allServices = {
     rwsServices: [
-      { label: 'Break the Price', icon: '💰', category: 'RWS Services', action: 'break-the-price', highlight: true },
-      { label: 'Private Jets', icon: '✈️', category: 'RWS Services', action: 'jets' },
-      { label: 'Helicopters', icon: '🚁', category: 'RWS Services', action: 'helicopter' },
-      { label: 'Empty Legs', icon: '🛫', category: 'RWS Services', action: 'empty-legs' },
-      { label: 'Luxury Cars', icon: '🚗', category: 'RWS Services', action: 'luxury-cars' },
-      { label: 'Adventures', icon: '🏔️', category: 'RWS Services', action: 'adventures' },
-      { label: 'CO2 / SAF Certificates', icon: '🌱', category: 'RWS Services', action: 'co2-saf' },
-      // { label: 'AI Travel Agent', icon: '🤖', category: 'RWS Services', action: 'chat' },
-      // { label: 'Calendar & Bookings', icon: '📅', category: 'RWS Services', action: 'calendar' },
-      // { label: 'Concierge Service', icon: '🎩', category: 'RWS Services', action: 'chat' },
-      { label: 'Chat Support', icon: '💬', category: 'RWS Services', action: 'chat-support' },
+      { label: 'Break the Price', category: 'Services', action: 'ai-chat', query: 'I want to beat a price quote', highlight: true },
+      { label: 'Private Jets', category: 'Services', action: 'ai-chat', query: 'I need a private jet' },
+      { label: 'Helicopters', category: 'Services', action: 'ai-chat', query: 'I need a helicopter transfer' },
+      { label: 'Empty Legs', category: 'Services', action: 'ai-chat', query: 'Show me available empty legs' },
+      { label: 'Luxury Cars', category: 'Services', action: 'ai-chat', query: 'I need a luxury car' },
+      { label: 'Ground Transport', category: 'Services', action: 'ai-chat', query: 'I need ground transportation' },
+      { label: 'Adventures', category: 'Services', action: 'ai-chat', query: 'Show me adventure packages' },
+      { label: 'Yachts', category: 'Services', action: 'ai-chat', query: 'I need a yacht charter' },
+      { label: 'Concierge Service', category: 'Services', action: 'ai-chat', query: 'I need concierge assistance' },
+      { label: 'CO2 / SAF Certificates', category: 'Services', action: 'ai-chat', query: 'I want to offset my CO2 emissions' },
     ],
     web3Services: [
-      { label: 'Tokenize Assets', icon: '💎', category: 'Web3.0 Services', action: 'tokenize' },
-      { label: 'View Tokenized Assets', icon: '✨', category: 'Web3.0 Services', action: 'tokenized-assets' },
-      { label: 'Token Swap', icon: '🔄', category: 'Web3.0 Services', action: 'swap' },
-      { label: 'NFT Memberships', icon: '🎫', category: 'Web3.0 Services', action: 'wallet-nfts' },
-      { label: 'Launchpad', icon: '🚀', category: 'Web3.0 Services', action: 'launchpad' },
-      { label: 'Connect Wallet', icon: '👛', category: 'Web3.0 Services', action: 'wallet-nfts' },
-      { label: 'View Transactions', icon: '📊', category: 'Web3.0 Services', action: 'transactions' },
+      { label: 'Tokenize Assets', category: 'Web3.0 Services', action: 'ai-chat', query: 'I want to tokenize my asset' },
+      { label: 'View Tokenized Assets', category: 'Web3.0 Services', action: 'ai-chat', query: 'Show me tokenized assets' },
+      { label: 'Token Swap', category: 'Web3.0 Services', action: 'ai-chat', query: 'I want to swap tokens' },
+      { label: 'NFT Memberships', category: 'Web3.0 Services', action: 'ai-chat', query: 'Tell me about NFT memberships' },
+      { label: 'Launchpad', category: 'Web3.0 Services', action: 'ai-chat', query: 'Show me the launchpad projects' },
+      { label: 'Connect Wallet', category: 'Web3.0 Services', action: 'wallet-nfts' },
     ],
     destinations: [
-      { label: 'Zurich', icon: '📍', category: 'Popular Destinations', action: 'search:zurich' },
-      { label: 'Geneva', icon: '📍', category: 'Popular Destinations', action: 'search:geneva' },
-      { label: 'London', icon: '📍', category: 'Popular Destinations', action: 'search:london' },
-      { label: 'Paris', icon: '📍', category: 'Popular Destinations', action: 'search:paris' },
-      { label: 'Dubai', icon: '📍', category: 'Popular Destinations', action: 'search:dubai' },
-      { label: 'New York', icon: '📍', category: 'Popular Destinations', action: 'search:new york' },
-      { label: 'Monaco', icon: '📍', category: 'Popular Destinations', action: 'search:monaco' },
-      { label: 'Milan', icon: '📍', category: 'Popular Destinations', action: 'search:milan' },
+      { label: 'Zurich', category: 'Popular Destinations', action: 'ai-chat', query: 'I need a flight to Zurich' },
+      { label: 'Geneva', category: 'Popular Destinations', action: 'ai-chat', query: 'I need a flight to Geneva' },
+      { label: 'London', category: 'Popular Destinations', action: 'ai-chat', query: 'I need a flight to London' },
+      { label: 'Paris', category: 'Popular Destinations', action: 'ai-chat', query: 'I need a flight to Paris' },
+      { label: 'Dubai', category: 'Popular Destinations', action: 'ai-chat', query: 'I need a flight to Dubai' },
+      { label: 'New York', category: 'Popular Destinations', action: 'ai-chat', query: 'I need a flight to New York' },
+      { label: 'Monaco', category: 'Popular Destinations', action: 'ai-chat', query: 'I need a flight to Monaco' },
+      { label: 'Milan', category: 'Popular Destinations', action: 'ai-chat', query: 'I need a flight to Milan' },
     ],
     aircraft: [
-      { label: 'Gulfstream G650', icon: '✈️', category: 'Popular Aircraft', action: 'search:gulfstream g650' },
-      { label: 'Bombardier Global 7500', icon: '✈️', category: 'Popular Aircraft', action: 'search:bombardier global' },
-      { label: 'Citation X', icon: '✈️', category: 'Popular Aircraft', action: 'search:citation x' },
-      { label: 'Phenom 300', icon: '✈️', category: 'Popular Aircraft', action: 'search:phenom 300' },
+      { label: 'Gulfstream G650', category: 'Popular Aircraft', action: 'ai-chat', query: 'I need a Gulfstream G650' },
+      { label: 'Bombardier Global 7500', category: 'Popular Aircraft', action: 'ai-chat', query: 'I need a Bombardier Global 7500' },
+      { label: 'Citation X', category: 'Popular Aircraft', action: 'ai-chat', query: 'I need a Citation X' },
+      { label: 'Phenom 300', category: 'Popular Aircraft', action: 'ai-chat', query: 'I need a Phenom 300' },
     ],
   };
 
@@ -383,9 +381,27 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
 
   // Handle selection
   const handleSelect = (item, openIndexPage = false) => {
-    setQuery(item.query || item.label);
     setIsOpen(false);
     saveToRecent(item);
+
+    // If action is ai-chat, always trigger AI chat
+    if (item.action === 'ai-chat') {
+      const queryText = item.query || item.label;
+      if (onOpenAIChat) {
+        onOpenAIChat(queryText);
+      } else if (onSearch) {
+        onSearch({
+          label: queryText,
+          action: 'ai-chat',
+          query: queryText,
+          category: 'AI Chat'
+        }, true);
+      }
+      setQuery('');
+      return;
+    }
+
+    setQuery(item.query || item.label);
     if (onSearch) {
       onSearch(item, openIndexPage);
     }
@@ -493,24 +509,37 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
           {/* Actual Offers from Database */}
           {actualOffers.length > 0 && (
             <div className="border-b border-gray-100/50">
-              <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                <Sparkles size={10} className="hidden sm:block" />
+              <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
                 Available Offers
               </div>
               {actualOffers.map((offerGroup, groupIndex) => (
                 <div key={groupIndex} className="mb-2">
-                  <div className="px-4 py-1 text-xs font-medium text-gray-600 flex items-center gap-2">
-                    <span className="hidden sm:inline">{offerGroup.icon}</span>
-                    <span>{offerGroup.category}</span>
+                  <div className="px-4 py-1 text-xs font-medium text-gray-600">
+                    {offerGroup.category}
                   </div>
                   {offerGroup.items.map((offer, offerIndex) => (
                     <button
                       key={offerIndex}
-                      onClick={() => handleSelect(offer)}
-                      className="w-full px-4 sm:px-6 py-2 hover:bg-gray-50 transition-colors text-left flex items-center gap-2"
+                      onClick={() => {
+                        // Trigger AI chat with the offer details
+                        const queryText = `I'm interested in: ${offer.label}`;
+                        if (onOpenAIChat) {
+                          onOpenAIChat(queryText);
+                        } else if (onSearch) {
+                          onSearch({
+                            label: queryText,
+                            action: 'ai-chat',
+                            query: queryText,
+                            category: 'AI Chat'
+                          }, true);
+                        }
+                        setIsOpen(false);
+                        setQuery('');
+                      }}
+                      className="w-full px-4 py-2 hover:bg-gray-50 transition-colors text-left flex items-center justify-between"
                     >
-                      <Plane size={14} className="text-gray-400 hidden sm:block" />
                       <span className="text-sm text-gray-800">{offer.label}</span>
+                      <ChevronRight size={14} className="text-gray-400" />
                     </button>
                   ))}
                 </div>
@@ -554,28 +583,16 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
                     const globalIndex = suggestions.indexOf(item);
                     const isSelected = globalIndex === selectedIndex;
                     return (
-                      <div
+                      <button
                         key={index}
-                        className={`flex items-center justify-between px-4 py-1.5 transition-colors ${
+                        onClick={() => handleSelect(item)}
+                        className={`w-full flex items-center justify-between px-4 py-2 transition-colors text-left ${
                           isSelected ? 'bg-gray-100' : 'hover:bg-gray-50'
                         }`}
                       >
-                        <button
-                          onClick={() => handleSelect(item, true)}
-                          className="flex-1 text-left flex items-center gap-2"
-                        >
-                          {item.icon && <span className="hidden sm:inline text-gray-400">{item.icon}</span>}
-                          <span className="text-sm text-gray-800">{item.label}</span>
-                        </button>
-                        {item.action && item.action !== 'chat' && item.action !== 'chat-support' && (
-                          <button
-                            onClick={(e) => handleSeePage(item, e)}
-                            className="ml-2 px-3 py-0.5 bg-gray-100 hover:bg-gray-200 rounded-full text-xs text-gray-600 transition-colors hidden sm:block"
-                          >
-                            See Page
-                          </button>
-                        )}
-                      </div>
+                        <span className="text-sm text-gray-800">{item.label}</span>
+                        <ChevronRight size={14} className="text-gray-400" />
+                      </button>
                     );
                   })}
                 </div>
@@ -626,47 +643,65 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
 
           {/* Show all services when empty */}
           {query.length === 0 && recentSearches.length === 0 && (
-            <div className="max-h-80 overflow-y-auto">
+            <div className="max-h-96 overflow-y-auto">
               {webMode === 'rws' && (
-                <div className="border-b border-gray-100/50">
-                  <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                    Services
-                  </div>
-                  {allServices.rwsServices.slice(0, 8).map((item, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleSelect(item)}
-                      className={`w-full px-4 py-1.5 transition-colors text-left flex items-center gap-2 ${
-                        item.highlight
-                          ? 'bg-amber-50 hover:bg-amber-100 border-l-2 border-amber-500'
-                          : 'hover:bg-gray-50'
-                      }`}
-                    >
-                      <span className="hidden sm:inline">{item.icon}</span>
-                      <span className={`text-sm ${item.highlight ? 'font-medium text-amber-700' : 'text-gray-800'}`}>
-                        {item.label}
-                      </span>
-                      {item.highlight && (
-                        <span className="ml-auto text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full hidden sm:inline">
-                          Beat any quote
+                <>
+                  <div className="border-b border-gray-100/50">
+                    <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                      Services
+                    </div>
+                    {allServices.rwsServices.map((item, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleSelect(item)}
+                        className={`w-full px-4 py-2 transition-colors text-left flex items-center justify-between ${
+                          item.highlight
+                            ? 'bg-amber-50 hover:bg-amber-100 border-l-2 border-amber-500'
+                            : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className={`text-sm ${item.highlight ? 'font-medium text-amber-700' : 'text-gray-800'}`}>
+                          {item.label}
                         </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
+                        {item.highlight && (
+                          <span className="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full">
+                            Beat any quote
+                          </span>
+                        )}
+                        <ChevronRight size={14} className="text-gray-400 ml-auto" />
+                      </button>
+                    ))}
+                  </div>
+                  <div className="border-b border-gray-100/50">
+                    <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                      Popular Destinations
+                    </div>
+                    {allServices.destinations.slice(0, 4).map((item, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleSelect(item)}
+                        className="w-full px-4 py-2 hover:bg-gray-50 transition-colors text-left flex items-center justify-between"
+                      >
+                        <span className="text-sm text-gray-800">{item.label}</span>
+                        <ChevronRight size={14} className="text-gray-400" />
+                      </button>
+                    ))}
+                  </div>
+                </>
               )}
               {webMode === 'web3' && (
                 <div className="border-b border-gray-100/50">
                   <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                    Web3.0
+                    Web3.0 Services
                   </div>
                   {allServices.web3Services.map((item, index) => (
                     <button
                       key={index}
                       onClick={() => handleSelect(item)}
-                      className="w-full px-4 py-1.5 hover:bg-gray-50 transition-colors text-left"
+                      className="w-full px-4 py-2 hover:bg-gray-50 transition-colors text-left flex items-center justify-between"
                     >
                       <span className="text-sm text-gray-800">{item.label}</span>
+                      <ChevronRight size={14} className="text-gray-400" />
                     </button>
                   ))}
                 </div>

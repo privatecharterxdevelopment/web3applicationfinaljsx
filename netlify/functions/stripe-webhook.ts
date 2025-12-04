@@ -151,8 +151,63 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     }
 
     console.log(`Subscription ${subscription.id} synced to database for user ${metadata.user_id}`);
+
+    // Send receipt email for new subscriptions
+    if (subscription.status === 'active') {
+      await sendNewSubscriptionReceiptEmail(subscription);
+    }
   } catch (error) {
     console.error('Error handling subscription update:', error);
+  }
+}
+
+async function sendNewSubscriptionReceiptEmail(subscription: Stripe.Subscription) {
+  try {
+    const metadata = subscription.metadata;
+    if (!metadata?.user_id) {
+      console.log('No user_id in subscription metadata, skipping receipt email');
+      return;
+    }
+
+    const tier = metadata.tier || 'starter';
+    const amount = (subscription.items.data[0]?.price?.unit_amount || 0) / 100;
+    const currency = subscription.items.data[0]?.price?.currency?.toUpperCase() || 'USD';
+
+    const supabaseUrl = process.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Missing Supabase URL or anon key for receipt email');
+      return;
+    }
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/subscription-receipt-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseAnonKey}`,
+      },
+      body: JSON.stringify({
+        userId: metadata.user_id,
+        tier: tier,
+        amount: amount,
+        currency: currency,
+        billingCycle: metadata.billing_cycle || 'monthly',
+        stripeSubscriptionId: subscription.id,
+        periodStart: new Date(subscription.current_period_start * 1000).toISOString(),
+        periodEnd: new Date(subscription.current_period_end * 1000).toISOString(),
+      }),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log('New subscription receipt email sent:', result);
+    } else {
+      const errorText = await response.text();
+      console.error('Failed to send new subscription receipt email:', errorText);
+    }
+  } catch (error) {
+    console.error('Error sending new subscription receipt email:', error);
   }
 }
 
@@ -214,7 +269,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   console.log(`Payment succeeded for invoice: ${invoice.id}`);
-  
+
   // Update subscription status to active if it was past_due
   if (invoice.subscription) {
     const { error } = await supabase
@@ -229,6 +284,70 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
     if (!error) {
       console.log(`Subscription ${invoice.subscription} reactivated after payment`);
     }
+
+    // Send receipt email for subscription payments
+    await sendSubscriptionReceiptEmail(invoice);
+  }
+}
+
+async function sendSubscriptionReceiptEmail(invoice: Stripe.Invoice) {
+  try {
+    // Only send for subscription invoices
+    if (!invoice.subscription || invoice.billing_reason === 'manual') {
+      return;
+    }
+
+    // Retrieve the subscription to get metadata
+    const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
+    const metadata = subscription.metadata;
+
+    if (!metadata?.user_id) {
+      console.log('No user_id in subscription metadata, skipping receipt email');
+      return;
+    }
+
+    const tier = metadata.tier || 'starter';
+    const amount = (invoice.amount_paid || 0) / 100;
+    const currency = invoice.currency?.toUpperCase() || 'USD';
+
+    // Call Supabase Edge Function to send receipt email
+    const supabaseUrl = process.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Missing Supabase URL or anon key for receipt email');
+      return;
+    }
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/subscription-receipt-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseAnonKey}`,
+      },
+      body: JSON.stringify({
+        userId: metadata.user_id,
+        tier: tier,
+        amount: amount,
+        currency: currency,
+        billingCycle: metadata.billing_cycle || 'monthly',
+        stripeSubscriptionId: subscription.id,
+        stripeInvoiceId: invoice.id,
+        periodStart: new Date(subscription.current_period_start * 1000).toISOString(),
+        periodEnd: new Date(subscription.current_period_end * 1000).toISOString(),
+      }),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log('Subscription receipt email sent:', result);
+    } else {
+      const errorText = await response.text();
+      console.error('Failed to send subscription receipt email:', errorText);
+    }
+  } catch (error) {
+    console.error('Error sending subscription receipt email:', error);
+    // Don't throw - receipt email failure shouldn't break the webhook
   }
 }
 

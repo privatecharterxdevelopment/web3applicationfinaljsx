@@ -224,3 +224,17 @@ html {
   opacity: 1;
   transform: translateX(0);
 }
+
+/* Gentle bounce animation for floating buttons */
+@keyframes bounceGentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-bounce-gentle {
+  animation: bounceGentle 2s ease-in-out infinite;
+}

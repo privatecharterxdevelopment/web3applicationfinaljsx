@@ -348,6 +348,150 @@ serve(async (req) => {
     const fromEmail = Deno.env.get('FROM_EMAIL') || 'noreply@www.privatecharterx.com';
     const siteUrl = Deno.env.get('SITE_URL') || 'https://privatecharterx.com';
 
+    const welcomeEmailHTML = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Welcome to PrivateCharterX</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f9fafb; }
+        .container { max-width: 600px; margin: 0 auto; background-color: white; }
+        .header { background: linear-gradient(135deg, #000000 0%, #1a1a2e 100%); color: white; padding: 40px 32px; text-align: center; }
+        .header h1 { margin: 0; font-size: 28px; letter-spacing: 1px; }
+        .header p { margin: 12px 0 0; opacity: 0.9; font-size: 16px; }
+        .content { padding: 32px; }
+        .welcome-badge { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; display: inline-block; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: 600; margin-bottom: 20px; }
+        .intro-text { font-size: 16px; color: #4b5563; line-height: 1.6; margin-bottom: 24px; }
+        .features-section { background: #f8fafc; border-radius: 16px; padding: 24px; margin: 24px 0; }
+        .features-title { font-size: 18px; font-weight: 700; color: #1e293b; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
+        .feature-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .feature-item { background: white; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .feature-icon { font-size: 24px; margin-bottom: 8px; }
+        .feature-name { font-size: 14px; font-weight: 600; color: #1e293b; margin: 0 0 4px; }
+        .feature-desc { font-size: 12px; color: #64748b; margin: 0; }
+        .tier-info { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid #0ea5e9; border-radius: 16px; padding: 20px; margin: 24px 0; text-align: center; }
+        .tier-badge { background: #0ea5e9; color: white; display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+        .tier-name { font-size: 20px; font-weight: 700; color: #0c4a6e; margin: 8px 0; }
+        .tier-feature { font-size: 14px; color: #0369a1; }
+        .upgrade-hint { font-size: 12px; color: #64748b; margin-top: 12px; }
+        .upgrade-hint a { color: #0ea5e9; text-decoration: none; font-weight: 600; }
+        .pvcx-reward { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 16px; padding: 20px; margin: 24px 0; text-align: center; }
+        .pvcx-title { font-size: 14px; font-weight: 600; color: #92400e; margin: 0 0 4px; }
+        .pvcx-amount { font-size: 28px; font-weight: 700; color: #d97706; margin: 0; }
+        .pvcx-desc { font-size: 12px; color: #b45309; margin: 8px 0 0; }
+        .support-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; margin: 24px 0; text-align: center; }
+        .support-title { font-size: 16px; font-weight: 600; color: #166534; margin: 0 0 8px; }
+        .support-text { font-size: 14px; color: #15803d; margin: 0; }
+        .support-text a { color: #166534; text-decoration: none; font-weight: 600; }
+        .button { display: inline-block; background: #000; color: white; padding: 16px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px; margin: 8px 4px; }
+        .button.secondary { background: white; color: #000; border: 2px solid #e2e8f0; }
+        .footer { background-color: #f8fafc; padding: 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
+        .social-links { margin: 16px 0; }
+        .social-links a { display: inline-block; margin: 0 8px; color: #64748b; text-decoration: none; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Welcome to PrivateCharterX</h1>
+          <p>Your gateway to luxury private aviation</p>
+        </div>
+
+        <div class="content">
+          <div style="text-align: center;">
+            <span class="welcome-badge">Account Created Successfully</span>
+          </div>
+
+          <h2 style="text-align: center; font-size: 24px; color: #1e293b; margin: 16px 0;">Hello ${firstName}!</h2>
+
+          <p class="intro-text">
+            Welcome to the world of exclusive private aviation. Your PrivateCharterX account is now active and ready to use.
+            Experience seamless booking, competitive pricing, and white-glove service for all your travel needs.
+          </p>
+
+          <div class="features-section">
+            <div class="features-title">What You Can Do</div>
+            <div class="feature-grid">
+              <div class="feature-item">
+                <div class="feature-icon">&#9992;</div>
+                <p class="feature-name">Private Jets</p>
+                <p class="feature-desc">Charter flights worldwide</p>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon">&#128296;</div>
+                <p class="feature-name">Empty Legs</p>
+                <p class="feature-desc">Save up to 75% on flights</p>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon">&#128661;</div>
+                <p class="feature-name">Helicopters</p>
+                <p class="feature-desc">City transfers & tours</p>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon">&#128663;</div>
+                <p class="feature-name">Ground Transport</p>
+                <p class="feature-desc">Luxury car service</p>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon">&#128674;</div>
+                <p class="feature-name">Yachts</p>
+                <p class="feature-desc">Charter & experiences</p>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon">&#127956;</div>
+                <p class="feature-name">Adventures</p>
+                <p class="feature-desc">Curated luxury trips</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="tier-info">
+            <span class="tier-badge">YOUR PLAN</span>
+            <h3 class="tier-name">Explorer (Free)</h3>
+            <p class="tier-feature">1 AI Chat per month included</p>
+            <p class="upgrade-hint">
+              Want more? <a href="${siteUrl}/subscriptions/plans">Upgrade to unlock unlimited features</a>
+            </p>
+          </div>
+
+          <div class="pvcx-reward">
+            <p class="pvcx-title">Welcome Bonus!</p>
+            <p class="pvcx-amount">+10 $PVCX</p>
+            <p class="pvcx-desc">Reward tokens credited to your account</p>
+          </div>
+
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${siteUrl}/login" class="button">Start Exploring</a>
+            <a href="${siteUrl}/subscriptions/plans" class="button secondary">View Plans</a>
+          </div>
+
+          <div class="support-box">
+            <p class="support-title">Need Assistance?</p>
+            <p class="support-text">
+              Our concierge team is available 24/7<br/>
+              <a href="mailto:support@privatecharterx.com">support@privatecharterx.com</a> | <a href="tel:+41445118888">+41 44 511 88 88</a>
+            </p>
+          </div>
+        </div>
+
+        <div class="footer">
+          <p style="margin: 0 0 8px;"><strong>PrivateCharterX</strong></p>
+          <p style="margin: 0;">Private Aviation & Luxury Services Excellence</p>
+          <div class="social-links">
+            <a href="#">LinkedIn</a> | <a href="#">Instagram</a> | <a href="#">Twitter</a>
+          </div>
+          <p style="margin: 16px 0 0;">&copy; ${new Date().getFullYear()} PrivateCharterX. All rights reserved.</p>
+          <p style="margin: 8px 0 0; font-size: 11px; color: #9ca3af;">
+            Zurich, Switzerland | <a href="${siteUrl}/privacy" style="color: #9ca3af;">Privacy Policy</a> | <a href="${siteUrl}/terms" style="color: #9ca3af;">Terms of Service</a>
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+    `;
+
     const emailParams = {
       FromEmailAddress: `PrivateCharterX <${fromEmail}>`,
       Destination: {
@@ -356,39 +500,12 @@ serve(async (req) => {
       Content: {
         Simple: {
           Subject: {
-            Data: 'Welcome to PrivateCharterX!',
+            Data: 'Welcome to PrivateCharterX - Your Account is Ready!',
             Charset: 'UTF-8'
           },
           Body: {
             Html: {
-              Data: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                  <div style="background-color: #000; padding: 20px; text-align: center;">
-                    <h1 style="color: #fff; margin: 0;">PrivateCharterX</h1>
-                  </div>
-                  <div style="padding: 20px; border: 1px solid #eee; border-top: none;">
-                    <h2>Welcome ${firstName}!</h2>
-                    <p>Thank you for joining PrivateCharterX. Your account is now active and ready to use.</p>
-                    <p>You can now:</p>
-                    <ul>
-                      <li>Book private charter flights</li>
-                      <li>Search for available routes</li>
-                      <li>Manage your bookings</li>
-                      <li>Access exclusive member benefits</li>
-                    </ul>
-                    <div style="text-align: center; margin: 30px 0;">
-                      <a href="${siteUrl}/login"
-                        style="background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
-                        Sign In Now
-                      </a>
-                    </div>
-                    <p>If you have any questions, our support team is here to help.</p>
-                  </div>
-                  <div style="background-color: #f5f5f5; padding: 15px; text-align: center; font-size: 12px; color: #666;">
-                    <p>&copy; ${new Date().getFullYear()} PrivateCharterX. All rights reserved.</p>
-                  </div>
-                </div>
-              `,
+              Data: welcomeEmailHTML,
               Charset: 'UTF-8'
             }
           }
