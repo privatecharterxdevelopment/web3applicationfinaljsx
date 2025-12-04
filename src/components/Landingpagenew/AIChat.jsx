@@ -3079,163 +3079,46 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
     }
   };
 
-  // NEW CHAT VIEW - Monochromatic service bubbles
+  // NEW CHAT VIEW - Clean welcome with input ready
   if (activeChat === 'new') {
-    console.log('🎨 Rendering: NEW CHAT VIEW (monochromatic service bubbles)');
+    console.log('🎨 Rendering: NEW CHAT VIEW (clean welcome)');
 
-    const services = [
-      // RWS Services
-      {
-        id: 'private-jets',
-        title: 'Private Jets',
-        description: 'Charter private jets worldwide',
-        prompt: 'I need help booking a private jet'
-      },
-      {
-        id: 'helicopters',
-        title: 'Helicopters',
-        description: 'Helicopter charter services',
-        prompt: 'I want to charter a helicopter'
-      },
-      {
-        id: 'yachts',
-        title: 'Luxury Yachts',
-        description: 'Charter exclusive yachts',
-        prompt: 'I want to charter a yacht'
-      },
-      {
-        id: 'luxury-cars',
-        title: 'Luxury Cars',
-        description: 'Premium chauffeur services',
-        prompt: 'I need a luxury car service'
-      },
-      {
-        id: 'ground-transport',
-        title: 'Ground Transport',
-        description: 'VIP ground transportation',
-        prompt: 'I need ground transportation'
-      },
-      {
-        id: 'events',
-        title: 'Events & Sports',
-        description: 'VIP event experiences',
-        prompt: 'I want to attend exclusive events'
-      },
-      {
-        id: 'adventures',
-        title: 'Adventures',
-        description: 'Luxury experiences worldwide',
-        prompt: 'Show me luxury adventure packages'
-      },
-      // Web3 Services
-      {
-        id: 'daos',
-        title: 'DAOs',
-        description: 'Create & manage DAOs',
-        prompt: 'Tell me about DAO creation and management'
-      },
-      {
-        id: 'escrow',
-        title: 'Escrow',
-        description: 'Multi-signature wallets',
-        prompt: 'I want to create a Safe escrow account'
-      },
-      {
-        id: 'marketplace',
-        title: 'Marketplace',
-        description: 'Trade tokenized assets',
-        prompt: 'Show me the asset marketplace'
-      },
-      {
-        id: 'p2p-trading',
-        title: 'P2P Trading',
-        description: 'Peer-to-peer trading',
-        prompt: 'I want to trade peer-to-peer'
-      },
-      {
-        id: 'swap',
-        title: 'Token Swap',
-        description: 'Exchange cryptocurrencies',
-        prompt: 'Help me swap tokens'
-      },
-      {
-        id: 'nft-marketplace',
-        title: 'NFT Marketplace',
-        description: 'Buy & sell NFTs',
-        prompt: 'Show me the NFT marketplace'
-      },
-      {
-        id: 'launchpad',
-        title: 'Launchpad',
-        description: 'Token launches & waitlists',
-        prompt: 'Tell me about upcoming token launches'
-      },
-      {
-        id: 'tokenization',
-        title: 'Asset Tokenization',
-        description: 'Tokenize real-world assets',
-        prompt: 'How does asset tokenization work?'
-      },
-      {
-        id: 'general',
-        title: 'General Help',
-        description: 'Ask me anything',
-        prompt: 'I have a general question'
-      }
-    ];
+    // Handle sending message from new chat view
+    const handleNewChatMessage = (message) => {
+      if (!message.trim()) return;
+
+      // Create chat immediately and switch to it
+      const chatId = `chat-${Date.now()}`;
+      const userMessage = { role: 'user', content: message };
+      const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
+
+      const newChat = {
+        id: chatId,
+        title: message.slice(0, 50) + (message.length > 50 ? '...' : ''),
+        date: 'Just now',
+        messages: [userMessage, loadingMsg]
+      };
+
+      setChatHistory(prev => [newChat, ...prev]);
+      setActiveChat(chatId);
+      setCurrentMessage('');
+
+      // Send the message to AI after switching
+      setTimeout(() => {
+        handleSendMessage(message);
+      }, 100);
+    };
 
     return (
       <div className="h-full bg-transparent flex flex-col overflow-hidden">
-        {/* Simple Header - Smaller on mobile */}
-        <div className="flex-shrink-0 px-4 sm:px-8 py-4 sm:py-8 text-center">
-          <h2 className="text-xl sm:text-2xl font-light text-gray-900 mb-1 sm:mb-2">Choose a Service</h2>
-          <p className="text-xs sm:text-sm text-gray-500">Select a service to start your conversation</p>
+        {/* Welcome Header */}
+        <div className="flex-shrink-0 px-4 sm:px-8 py-6 sm:py-10 text-center">
+          <h2 className="text-2xl sm:text-3xl font-light text-gray-900 mb-2">How can I help you today?</h2>
+          <p className="text-sm text-gray-500">Ask me anything about private jets, yachts, luxury cars, and more</p>
         </div>
 
-        {/* Monochromatic Service Bubbles - More compact on mobile */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-8 pb-4 sm:pb-6">
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 max-w-5xl mx-auto">
-            {services.map((service, index) => (
-              <button
-                key={service.id}
-                onClick={async () => {
-                  // Create chat immediately and switch to it
-                  const chatId = `chat-${Date.now()}`;
-                  const userMessage = { role: 'user', content: service.prompt };
-                  const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
-
-                  const newChat = {
-                    id: chatId,
-                    title: service.title,
-                    date: 'Just now',
-                    messages: [userMessage, loadingMsg]
-                  };
-
-                  setChatHistory(prev => [newChat, ...prev]);
-                  setActiveChat(chatId);
-
-                  // Send the message to AI after switching
-                  setTimeout(() => {
-                    handleSendMessage(service.prompt);
-                  }, 100);
-                }}
-                className="group relative"
-                style={{
-                  animation: `bubbleIn 0.5s ease-out ${index * 0.04}s both`
-                }}
-              >
-                {/* Light Grey Bubble - Smaller on mobile */}
-                <div className="px-4 sm:px-6 py-2 sm:py-3 bg-gray-100 hover:bg-gray-200 border border-gray-200 hover:border-gray-300 rounded-full transition-all duration-200 hover:shadow-md">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs sm:text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
-                      {service.title}
-                    </span>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Spacer */}
+        <div className="flex-1"></div>
 
         {/* FIXED INPUT - Floating bottom - Less padding on mobile */}
         <div className="flex-shrink-0 px-4 sm:px-6 pb-4 sm:pb-6">
@@ -3343,30 +3226,19 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   onChange={(e) => setCurrentMessage(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && currentMessage.trim()) {
-                      handleSendMessage(currentMessage);
+                      handleNewChatMessage(currentMessage);
                     }
                   }}
-                  placeholder={isVoiceMode ? "🎤 Listening... speak naturally" : "Or type your request here... e.g. 'Private jet from London to Monaco'"}
-                  disabled={isVoiceMode}
-                  className="flex-1 bg-transparent border-none outline-none text-sm text-gray-900 placeholder-gray-500 disabled:text-gray-400"
+                  placeholder="Type your request... e.g. 'Private jet from London to Monaco'"
+                  className="flex-1 bg-transparent border-none outline-none text-sm text-gray-900 placeholder-gray-500"
+                  autoFocus
                 />
 
                 {/* Sphera AI version */}
                 <span className="text-[10px] text-gray-400">sphera 1.0</span>
 
-                {/* Message counter */}
-                {messageCount > 0 && (
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    messageCount >= MAX_MESSAGES_PER_CHAT - 3
-                      ? 'bg-gray-200 text-gray-700'
-                      : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    {messageCount}/{MAX_MESSAGES_PER_CHAT}
-                  </span>
-                )}
-
                 <button
-                  onClick={() => handleSendMessage(currentMessage)}
+                  onClick={() => handleNewChatMessage(currentMessage)}
                   disabled={!currentMessage.trim()}
                   className={`flex-shrink-0 p-2 rounded-lg transition-colors ${
                     currentMessage.trim()
@@ -3380,91 +3252,6 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             )}
           </div>
         </div>
-
-        {/* Animation keyframes */}
-        <style>{`
-          @keyframes bubbleIn {
-            from {
-              opacity: 0;
-              transform: scale(0.3) translateY(20px);
-            }
-            to {
-              opacity: 1;
-              transform: scale(1) translateY(0);
-            }
-          }
-
-          @keyframes spin-slow {
-            from {
-              transform: rotate(0deg);
-            }
-            to {
-              transform: rotate(360deg);
-            }
-          }
-
-          @keyframes spin-reverse {
-            from {
-              transform: rotate(360deg);
-            }
-            to {
-              transform: rotate(0deg);
-            }
-          }
-
-          @keyframes pulse-gentle {
-            0%, 100% {
-              transform: scale(1);
-              opacity: 1;
-            }
-            50% {
-              transform: scale(1.05);
-              opacity: 0.9;
-            }
-          }
-
-          @keyframes ping-slow {
-            0% {
-              transform: scale(1);
-              opacity: 0.8;
-            }
-            75%, 100% {
-              transform: scale(1.5);
-              opacity: 0;
-            }
-          }
-
-          @keyframes ping-slower {
-            0% {
-              transform: scale(1);
-              opacity: 0.6;
-            }
-            75%, 100% {
-              transform: scale(1.8);
-              opacity: 0;
-            }
-          }
-
-          .animate-spin-slow {
-            animation: spin-slow 8s linear infinite;
-          }
-
-          .animate-spin-reverse {
-            animation: spin-reverse 6s linear infinite;
-          }
-
-          .animate-pulse-gentle {
-            animation: pulse-gentle 2s ease-in-out infinite;
-          }
-
-          .animate-ping-slow {
-            animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-          }
-
-          .animate-ping-slower {
-            animation: ping-slower 3s cubic-bezier(0, 0, 0.2, 1) infinite;
-          }
-        `}</style>
       </div>
     );
   }
