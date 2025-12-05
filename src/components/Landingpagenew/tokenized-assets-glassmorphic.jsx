@@ -1884,59 +1884,35 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   }, [isAuthenticated, user, showDashboard]);
 
-  // Ref to track if URL change was caused by us (internal navigation)
-  const isInternalNavigationRef = useRef(false);
+  // URL Sync: Initialize chat from URL on first mount ONLY
+  // This runs once when component mounts if there's a chat ID in URL
+  const urlSyncInitializedRef = useRef(false);
 
-  // URL Sync: Initialize activeChat from URL parameter ONLY on direct URL access
-  // Skip if the URL change was caused by our own navigation
   useEffect(() => {
-    // Skip if this URL change was from internal navigation
-    if (isInternalNavigationRef.current) {
-      isInternalNavigationRef.current = false;
-      return;
-    }
+    // Only run once on mount
+    if (urlSyncInitializedRef.current) return;
 
     const currentPath = location.pathname;
     const isOnChatRoute = currentPath.startsWith('/dashboard/chat/');
 
-    // Only set chat category if URL explicitly has chat ID AND we're on the chat route
     if (urlChatId && isOnChatRoute) {
+      urlSyncInitializedRef.current = true;
       const targetChatId = urlChatId === 'new' ? 'new' : urlChatId;
-      // Only update if different to prevent re-render loops
-      if (activeChat !== targetChatId) {
-        setActiveChat(targetChatId);
-        console.log('🔗 Initializing chat from URL (external):', urlChatId);
-      }
-      if (activeCategory !== 'chat') {
-        setActiveCategory('chat');
-      }
+      setActiveChat(targetChatId);
+      setActiveCategory('chat');
+      console.log('🔗 Initial chat from URL:', urlChatId);
     }
-  }, [urlChatId]); // Only depend on urlChatId, not location.pathname
+  }, []); // Empty deps - only on mount
 
-  // URL Sync: Update URL when activeChat changes (only when in chat view)
+  // When leaving chat view, redirect to dashboard (but don't sync activeChat to URL)
   useEffect(() => {
     const currentPath = location.pathname;
     const isOnChatRoute = currentPath.startsWith('/dashboard/chat/');
-    const isOnDashboard = currentPath === '/dashboard';
 
-    // Skip URL update for 'new' state to prevent blinking - only update for real chat IDs
-    if (activeCategory === 'chat' && activeChat && activeChat !== 'new') {
-      // Only update URL if we're on dashboard or already on a chat route
-      if (isOnDashboard || isOnChatRoute) {
-        const newPath = `/dashboard/chat/${activeChat}`;
-        if (currentPath !== newPath) {
-          // Mark that we're doing internal navigation to prevent the other effect from reacting
-          isInternalNavigationRef.current = true;
-          navigate(newPath, { replace: true });
-          console.log('🔗 Updating URL to:', newPath);
-        }
-      }
-    } else if (activeCategory !== 'chat' && isOnChatRoute) {
-      // If leaving chat view (activeCategory changed), clear the chat URL
-      isInternalNavigationRef.current = true;
+    if (activeCategory !== 'chat' && isOnChatRoute) {
       navigate('/dashboard', { replace: true });
     }
-  }, [activeChat, activeCategory, navigate]); // Remove location.pathname to prevent loop
+  }, [activeCategory, navigate]);
 
   // Close mobile category menu when clicking outside
   useEffect(() => {

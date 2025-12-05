@@ -369,64 +369,65 @@ const AIChat = ({
     }
   }, []);
 
-  // URL-based chat loading: Load specific chat when navigating to /chat/:chatId
+  // URL-based chat loading: Load specific chat when navigating directly to /chat/:chatId
+  // Only runs once on mount to load chat from DB if needed
+  const urlChatLoadedRef = useRef(false);
+
   useEffect(() => {
-    if (urlChatId && urlChatId !== 'new' && user?.id) {
-      // Skip if this is a locally-created chat (not saved to DB yet)
-      if (localChatIdsRef.current.has(urlChatId)) {
-        console.log('🏠 Skipping DB fetch for locally-created chat:', urlChatId);
-        // Only set if different to prevent re-render loops
-        if (activeChat !== urlChatId) {
-          setActiveChat(urlChatId);
-        }
-        return;
-      }
+    // Only load once
+    if (urlChatLoadedRef.current) return;
+    if (!urlChatId || urlChatId === 'new' || !user?.id) return;
 
-      // Check if chat already exists in local history
-      const existsLocally = chatHistory.find(c => c.id === urlChatId);
-      if (existsLocally) {
-        console.log('📂 Chat found in local history:', urlChatId);
-        // Only set if different to prevent re-render loops
-        if (activeChat !== urlChatId) {
-          setActiveChat(urlChatId);
-        }
-        return;
-      }
+    // Skip if this is a locally-created chat (not saved to DB yet)
+    if (localChatIdsRef.current.has(urlChatId)) {
+      console.log('🏠 Skipping DB fetch for locally-created chat:', urlChatId);
+      urlChatLoadedRef.current = true;
+      return;
+    }
 
-      console.log('🔗 Loading chat from URL:', urlChatId);
-      // Load the specific chat from the database
-      const loadChatFromUrl = async () => {
-        try {
-          const result = await chatService.loadChat(urlChatId, user.id);
-          if (result.success && result.chat) {
-            // Add to chat history if not already there
-            setChatHistory(prev => {
-              const exists = prev.find(c => c.id === urlChatId);
-              if (exists) return prev;
-              return [...prev, {
-                ...result.chat,
-                date: new Date(result.chat.updated_at).toLocaleDateString()
-              }];
-            });
-            // Set as active chat
-            setActiveChat(urlChatId);
-            // Load messages
-            if (result.chat.messages?.length > 0) {
-              setMessages(result.chat.messages);
-            }
-            console.log('✅ Chat loaded from URL successfully');
-          } else {
-            console.log('⚠️ Chat not found, starting new chat');
-            setActiveChat('new');
+    // Check if chat already exists in local history
+    const existsLocally = chatHistory.find(c => c.id === urlChatId);
+    if (existsLocally) {
+      console.log('📂 Chat found in local history:', urlChatId);
+      urlChatLoadedRef.current = true;
+      return;
+    }
+
+    urlChatLoadedRef.current = true;
+    console.log('🔗 Loading chat from URL:', urlChatId);
+
+    // Load the specific chat from the database
+    const loadChatFromUrl = async () => {
+      try {
+        const result = await chatService.loadChat(urlChatId, user.id);
+        if (result.success && result.chat) {
+          // Add to chat history if not already there
+          setChatHistory(prev => {
+            const exists = prev.find(c => c.id === urlChatId);
+            if (exists) return prev;
+            return [...prev, {
+              ...result.chat,
+              date: new Date(result.chat.updated_at).toLocaleDateString()
+            }];
+          });
+          // Set as active chat
+          setActiveChat(urlChatId);
+          // Load messages
+          if (result.chat.messages?.length > 0) {
+            setMessages(result.chat.messages);
           }
-        } catch (err) {
-          console.error('Error loading chat from URL:', err);
+          console.log('✅ Chat loaded from URL successfully');
+        } else {
+          console.log('⚠️ Chat not found, starting new chat');
           setActiveChat('new');
         }
-      };
-      loadChatFromUrl();
-    }
-  }, [urlChatId, user?.id]); // Don't include activeChat or chatHistory to avoid re-render loops
+      } catch (err) {
+        console.error('Error loading chat from URL:', err);
+        setActiveChat('new');
+      }
+    };
+    loadChatFromUrl();
+  }, [urlChatId, user?.id, chatHistory]); // chatHistory needed to check if chat exists locally
 
   // Initialize Speech Recognition for Voice Mode
   useEffect(() => {
