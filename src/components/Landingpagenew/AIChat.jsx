@@ -420,7 +420,7 @@ const AIChat = ({
       };
       loadChatFromUrl();
     }
-  }, [urlChatId, user?.id, chatHistory]);
+  }, [urlChatId, user?.id]); // Don't include chatHistory to avoid re-render loops
 
   // Initialize Speech Recognition for Voice Mode
   useEffect(() => {

@@ -69,7 +69,7 @@ const PricingPackages = ({ onClose, onBack }) => {
     return () => {
       supabase.removeChannel(subscription);
     };
-  }, [user?.id, user?.subscription_tier]);
+  }, [user?.id]); // Only depend on user.id to avoid re-render loops
   const [businessForm, setBusinessForm] = useState({
     name: '',
     email: '',
