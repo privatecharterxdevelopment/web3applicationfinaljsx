@@ -16,6 +16,12 @@ const LoadingMessage = ({ stage = 'searching' }) => {
       'Checking availability',
       'Finding best options'
     ],
+    thinking: [
+      'Thinking',
+      'Processing your message',
+      'Preparing response',
+      'Almost ready'
+    ],
     generating: [
       'Processing results',
       'Generating response',
@@ -27,6 +33,11 @@ const LoadingMessage = ({ stage = 'searching' }) => {
       'Checking availability',
       'Calculating pricing',
       'Creating reservation'
+    ],
+    saving: [
+      'Saving chat',
+      'Updating database',
+      'Syncing changes'
     ]
   };
 

@@ -4104,7 +4104,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               </div>
             )}
 
-            {isSearching && (
+            {/* Show loading indicator when searching OR processing AI response */}
+            {(isSearching || isProcessing) && (
               <div className="flex justify-start w-full">
                 <div className="flex flex-col gap-1 ml-12" style={{ maxWidth: '75%' }}>
                   <div className="flex items-center gap-2 px-2">
@@ -4113,7 +4114,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     <span className="text-xs text-gray-400">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                   <div className="px-4 py-3 bg-gray-200 text-black border border-gray-300 rounded-2xl">
-                    <LoadingMessage stage={loadingStage} />
+                    <LoadingMessage stage={isSearching ? loadingStage : 'thinking'} />
                   </div>
                 </div>
               </div>
