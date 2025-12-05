@@ -375,7 +375,10 @@ const AIChat = ({
       // Skip if this is a locally-created chat (not saved to DB yet)
       if (localChatIdsRef.current.has(urlChatId)) {
         console.log('🏠 Skipping DB fetch for locally-created chat:', urlChatId);
-        setActiveChat(urlChatId);
+        // Only set if different to prevent re-render loops
+        if (activeChat !== urlChatId) {
+          setActiveChat(urlChatId);
+        }
         return;
       }
 
@@ -383,7 +386,10 @@ const AIChat = ({
       const existsLocally = chatHistory.find(c => c.id === urlChatId);
       if (existsLocally) {
         console.log('📂 Chat found in local history:', urlChatId);
-        setActiveChat(urlChatId);
+        // Only set if different to prevent re-render loops
+        if (activeChat !== urlChatId) {
+          setActiveChat(urlChatId);
+        }
         return;
       }
 
@@ -420,7 +426,7 @@ const AIChat = ({
       };
       loadChatFromUrl();
     }
-  }, [urlChatId, user?.id]); // Don't include chatHistory to avoid re-render loops
+  }, [urlChatId, user?.id, activeChat]); // Don't include chatHistory to avoid re-render loops
 
   // Initialize Speech Recognition for Voice Mode
   useEffect(() => {
@@ -863,6 +869,9 @@ const AIChat = ({
 
       console.log('🆕 Creating new chat:', newChatId);
 
+      // Mark as local chat to prevent URL-based DB fetch
+      localChatIdsRef.current.add(newChatId);
+
       // Add to chat history and set as active
       setChatHistory(prev => [newChat, ...prev]);
       setActiveChat(newChatId);
@@ -928,6 +937,9 @@ const AIChat = ({
           timestamp: new Date().toISOString()
         }]
       };
+
+      // Mark as local chat to prevent URL-based DB fetch
+      localChatIdsRef.current.add(newChatId);
 
       setChatHistory(prev => [newChat, ...prev]);
       setActiveChat(newChatId);

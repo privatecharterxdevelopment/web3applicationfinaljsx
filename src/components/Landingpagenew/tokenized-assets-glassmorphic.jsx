@@ -1887,12 +1887,17 @@ const TokenizedAssetsGlassmorphic = () => {
   // URL Sync: Initialize activeChat from URL parameter when component mounts
   useEffect(() => {
     if (urlChatId) {
-      // If URL has a chatId, set it as active and navigate to chat view
-      setActiveChat(urlChatId === 'new' ? 'new' : urlChatId);
-      setActiveCategory('chat');
-      console.log('🔗 Initializing chat from URL:', urlChatId);
+      const targetChatId = urlChatId === 'new' ? 'new' : urlChatId;
+      // Only update if different to prevent re-render loops
+      if (activeChat !== targetChatId) {
+        setActiveChat(targetChatId);
+        console.log('🔗 Initializing chat from URL:', urlChatId);
+      }
+      if (activeCategory !== 'chat') {
+        setActiveCategory('chat');
+      }
     }
-  }, [urlChatId]);
+  }, [urlChatId, activeChat, activeCategory]);
 
   // URL Sync: Update URL when activeChat changes (only when in chat view)
   useEffect(() => {
@@ -5557,6 +5562,7 @@ const TokenizedAssetsGlassmorphic = () => {
                             // Navigate to AI Chat with query and trigger new chat
                             const queryText = item.query || item.label || '';
                             setAiChatQuery(queryText);
+                            setActiveChat('new'); // Reset to new chat to trigger new session
                             setActiveCategory('chat'); // Must be 'chat' to render AIChat component
                           } else {
                             // Navigate to category
@@ -5566,6 +5572,7 @@ const TokenizedAssetsGlassmorphic = () => {
                         onOpenAIChat={(query) => {
                           // Navigate to AI Chat with the query and trigger new chat
                           setAiChatQuery(query);
+                          setActiveChat('new'); // Reset to new chat to trigger new session
                           setActiveCategory('chat'); // Must be 'chat' to render AIChat component
                         }}
                         placeholder="I need a..."
