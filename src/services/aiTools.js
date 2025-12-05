@@ -548,6 +548,7 @@ function checkSanctionedLocation(location) {
 
 /**
  * Search for empty leg flights
+ * If no results found, returns alternatives and suggestions
  */
 export async function searchEmptyLegs(params) {
   console.log('🔍 searchEmptyLegs called with:', params);
@@ -566,7 +567,11 @@ export async function searchEmptyLegs(params) {
       results: [],
       total: 0,
       params,
-      restriction: restriction
+      restriction: restriction,
+      alternatives: {
+        canCharterJet: true,
+        message: `While empty legs are not available for this region, we can arrange a private jet charter. Would you like me to search for available aircraft?`
+      }
     };
   }
 
@@ -583,10 +588,105 @@ export async function searchEmptyLegs(params) {
 
   console.log('🔍 searchEmptyLegs results:', results.emptyLegs?.length || 0, 'empty legs found');
 
+  const emptyLegs = results.emptyLegs || [];
+
+  // If no results found, fetch alternatives
+  if (emptyLegs.length === 0) {
+    console.log('🔍 No empty legs found, fetching alternatives...');
+
+    // Fetch ALL empty legs to find nearby alternatives
+    const allResults = await UnifiedSearchService.searchAll({
+      serviceTypes: { emptyLegs: true }
+    });
+
+    const allEmptyLegs = allResults.emptyLegs || [];
+
+    // Find nearby/related routes
+    const searchTerms = [params.from, params.to, params.location, params.country]
+      .filter(Boolean)
+      .map(s => s.toLowerCase());
+
+    // Get region-based alternatives (same country or nearby)
+    const regionMap = {
+      // Asia
+      'tokyo': ['japan', 'osaka', 'nagoya', 'fukuoka', 'sapporo', 'nrt', 'hnd', 'kix', 'ngo'],
+      'kyoto': ['japan', 'osaka', 'kix', 'itm'],
+      'osaka': ['japan', 'tokyo', 'kyoto', 'kix', 'itm', 'nrt'],
+      'japan': ['tokyo', 'osaka', 'kyoto', 'nagoya', 'fukuoka', 'nrt', 'hnd', 'kix'],
+      'singapore': ['asia', 'sin', 'kuala lumpur', 'bangkok', 'hong kong'],
+      'hong kong': ['asia', 'hkg', 'singapore', 'taipei', 'shanghai'],
+      'dubai': ['uae', 'abu dhabi', 'dxb', 'auh', 'middle east', 'doha', 'riyadh'],
+      'abu dhabi': ['uae', 'dubai', 'auh', 'dxb', 'middle east'],
+      // Europe
+      'london': ['uk', 'europe', 'lhr', 'lgw', 'ltn', 'stn', 'paris', 'amsterdam'],
+      'paris': ['france', 'europe', 'cdg', 'ory', 'london', 'geneva', 'nice'],
+      'zurich': ['switzerland', 'europe', 'zrh', 'geneva', 'milan', 'munich'],
+      'geneva': ['switzerland', 'europe', 'gva', 'zurich', 'lyon', 'milan'],
+      'nice': ['france', 'europe', 'nce', 'monaco', 'cannes', 'milan'],
+      'milan': ['italy', 'europe', 'mxp', 'lin', 'rome', 'nice', 'zurich'],
+      // US
+      'new york': ['usa', 'us', 'jfk', 'ewr', 'lga', 'teterboro', 'northeast'],
+      'los angeles': ['usa', 'us', 'lax', 'vny', 'sna', 'california', 'west coast'],
+      'miami': ['usa', 'us', 'mia', 'opa', 'fll', 'florida', 'southeast'],
+    };
+
+    // Find related search terms for the region
+    let relatedTerms = [];
+    for (const term of searchTerms) {
+      for (const [key, related] of Object.entries(regionMap)) {
+        if (term.includes(key) || key.includes(term)) {
+          relatedTerms.push(...related);
+        }
+      }
+    }
+    relatedTerms = [...new Set(relatedTerms)]; // Remove duplicates
+
+    // Find alternatives from the same region
+    const alternatives = allEmptyLegs.filter(leg => {
+      const legText = [
+        leg.from_city, leg.to_city, leg.from, leg.to,
+        leg.from_iata, leg.to_iata, leg.from_country, leg.to_country
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      return relatedTerms.some(term => legText.includes(term));
+    }).slice(0, 5); // Limit to 5 alternatives
+
+    // Build helpful response
+    const fromCity = params.from || params.location || 'your departure';
+    const toCity = params.to || 'your destination';
+
+    return {
+      success: true,
+      results: [],
+      total: 0,
+      params,
+      noResults: true,
+      alternatives: {
+        nearbyRoutes: alternatives,
+        nearbyRoutesCount: alternatives.length,
+        canCharterJet: true,
+        suggestions: [
+          alternatives.length > 0
+            ? `I found ${alternatives.length} empty leg${alternatives.length > 1 ? 's' : ''} in nearby regions that might work for you.`
+            : null,
+          `I can search for private jet charters from ${fromCity} to ${toCity} - these offer guaranteed availability and flexible scheduling.`,
+          `Would you like me to check helicopter options for shorter distances?`,
+          `I can also set up an alert to notify you when empty legs become available on this route.`
+        ].filter(Boolean),
+        message: alternatives.length > 0
+          ? `No empty legs found for ${fromCity} → ${toCity}, but I found ${alternatives.length} alternative route${alternatives.length > 1 ? 's' : ''} nearby. For your exact route, I can arrange a private jet charter.`
+          : `No empty legs currently available for ${fromCity} → ${toCity}. Empty legs are repositioning flights with limited availability. For this route, I recommend chartering a private jet for guaranteed availability.`
+      },
+      // Include all available empty legs for reference (limited)
+      allAvailable: allEmptyLegs.slice(0, 10),
+      allAvailableCount: allEmptyLegs.length
+    };
+  }
+
   return {
     success: true,
-    results: results.emptyLegs || [],
-    total: results.emptyLegs?.length || 0,
+    results: emptyLegs,
+    total: emptyLegs.length,
     params
   };
 }

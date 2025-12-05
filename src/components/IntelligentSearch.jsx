@@ -469,9 +469,6 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
               <span className="animate-pulse">|</span>
             </span>
           )}
-          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 text-xs text-gray-400 pointer-events-none">
-            ⌘/
-          </kbd>
         </div>
 
         {/* AI Chat Button - Opens AI assistant with query */}

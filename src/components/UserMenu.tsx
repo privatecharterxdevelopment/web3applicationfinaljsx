@@ -77,8 +77,8 @@ function UserMenu({ onLogout }: UserMenuProps) {
       message: 'Welcome back! You have been successfully logged in.'
     });
     
-    setTimeout(() => setSuccessMessage(null), 3000);
-    
+    setTimeout(() => setSuccessMessage(null), 2000);
+
     setShowLoginModal(false);
   };
 
@@ -87,8 +87,8 @@ function UserMenu({ onLogout }: UserMenuProps) {
       type: 'register',
       message: 'Account created successfully! Welcome to PrivateCharterX.'
     });
-    
-    setTimeout(() => setSuccessMessage(null), 3000);
+
+    setTimeout(() => setSuccessMessage(null), 2000);
     
     setShowRegisterModal(false);
   };
@@ -135,8 +135,8 @@ function UserMenu({ onLogout }: UserMenuProps) {
         type: 'logout',
         message: 'You have been successfully logged out.'
       });
-      
-      setTimeout(() => setSuccessMessage(null), 3000);
+
+      setTimeout(() => setSuccessMessage(null), 2000);
       
       if (onLogout) {
         onLogout();
@@ -568,28 +568,28 @@ function UserMenu({ onLogout }: UserMenuProps) {
         </Portal>
       )}
 
-      {/* Success Message */}
+      {/* Success Message - Glassmorphic Style */}
       {successMessage && (
         <Portal>
           <div className="fixed top-4 right-4 z-[10000] animate-in slide-in-from-right duration-300">
-            <div className="bg-white border border-green-200 rounded-xl shadow-lg p-4 max-w-sm">
+            <div className="bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl shadow-2xl p-4 max-w-sm">
               <div className="flex items-start gap-3">
-                <div className="flex-shrink-0">
-                  <CheckCircle size={20} className="text-green-500" />
+                <div className="flex-shrink-0 w-8 h-8 bg-emerald-500/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                  <CheckCircle size={18} className="text-emerald-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900 capitalize">
+                  <p className="text-sm font-semibold text-gray-900 capitalize">
                     {successMessage.type} Successful
                   </p>
-                  <p className="text-xs text-gray-600 mt-1">
+                  <p className="text-xs text-gray-600 mt-0.5">
                     {successMessage.message}
                   </p>
                 </div>
                 <button
                   onClick={() => setSuccessMessage(null)}
-                  className="flex-shrink-0 p-1 hover:bg-gray-100 rounded transition-colors"
+                  className="flex-shrink-0 p-1.5 hover:bg-white/50 rounded-lg transition-colors"
                 >
-                  <X size={14} className="text-gray-400" />
+                  <X size={14} className="text-gray-500" />
                 </button>
               </div>
             </div>

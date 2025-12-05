@@ -12,6 +12,7 @@ import { useNFT } from '../../context/NFTContext';
 import { createRequest } from '../../services/requests';
 import SuccessNotification from '../SuccessNotification';
 import NFTBenefitsModal from '../NFTBenefitsModal';
+import CryptoPaymentModal from '../Payment/CryptoPaymentModal';
 
 const EmptyLegDetail = () => {
   const { id } = useParams();
@@ -30,6 +31,7 @@ const EmptyLegDetail = () => {
   const [hasPet, setHasPet] = useState(false);
   const [co2Data, setCo2Data] = useState({ emissions: 0, offset: 0, distance: 0 });
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showCryptoModal, setShowCryptoModal] = useState(false);
 
   useEffect(() => {
     fetchEmptyLeg();
@@ -925,6 +927,18 @@ const EmptyLegDetail = () => {
                 {hasNFT && emptyLeg.price <= 1500 ? 'Get Flight FREE' : 'Request Flight'}
               </button>
 
+              {/* Pay with Crypto Button - Same size as Request Flight */}
+              <button
+                onClick={() => setShowCryptoModal(true)}
+                className="w-full bg-black text-white py-3 px-4 rounded text-sm font-semibold hover:bg-gray-800 transition-colors mt-2 flex items-center justify-center gap-2"
+              >
+                <svg viewBox="0 0 32 32" className="w-4 h-4">
+                  <circle cx="16" cy="16" r="16" fill="currentColor"/>
+                  <path fill="#000" d="M22.5 14.5c.3-2-1.2-3.1-3.3-3.8l.7-2.7-1.6-.4-.7 2.7c-.4-.1-.8-.2-1.3-.3l.7-2.7-1.6-.4-.7 2.7c-.4-.1-.7-.2-1.1-.3l-2.2-.5-.5 1.7s1.2.3 1.2.3c.7.2.8.6.8 1l-.8 3.2c.1 0 .1 0 .2.1-.1 0-.1 0-.2-.1l-1.1 4.5c-.1.2-.3.5-.8.4 0 0-1.2-.3-1.2-.3l-.8 1.8 2.1.5c.4.1.8.2 1.2.3l-.7 2.8 1.6.4.7-2.7c.4.1.9.2 1.3.3l-.7 2.7 1.6.4.7-2.8c2.9.5 5.1.3 6-2.3.7-2.1 0-3.3-1.5-4.1 1.1-.2 1.9-1 2.1-2.5z"/>
+                </svg>
+                Pay with Crypto
+              </button>
+
               {/* NFT Membership Link */}
               <div className="mt-4 text-center">
                 <button
@@ -1049,6 +1063,31 @@ const EmptyLegDetail = () => {
         hasNFT={hasNFT}
         usedBenefits={usedBenefits}
       />
+
+      {/* Crypto Payment Modal */}
+      {emptyLeg && (
+        <CryptoPaymentModal
+          isOpen={showCryptoModal}
+          onClose={() => setShowCryptoModal(false)}
+          service={{
+            id: emptyLeg.id,
+            title: `${emptyLeg.from_iata} → ${emptyLeg.to_iata}`,
+            price: hasNFT && emptyLeg.price <= 1500 ? 0 : (hasNFT ? emptyLeg.price * (1 - nftDiscount / 100) : emptyLeg.price),
+            originalPrice: emptyLeg.price,
+            currency: 'EUR',
+            departure: emptyLeg.from_city || emptyLeg.from_iata,
+            destination: emptyLeg.to_city || emptyLeg.to_iata,
+            departureDate: emptyLeg.departure_date,
+            passengers: passengers,
+            aircraft: emptyLeg.category || emptyLeg.aircraft_type
+          }}
+          serviceType="empty_leg"
+          onSuccess={() => {
+            setShowCryptoModal(false);
+            setShowSuccess(true);
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -11,6 +11,9 @@ interface CryptoPaymentModalProps {
   description?: string;
   orderId: string;
   userEmail?: string;
+  userId?: string;
+  serviceType?: 'empty_leg' | 'adventure_package' | 'co2_certificate';
+  serviceId?: string;
   onSuccess: (transactionData: any) => void;
 }
 
@@ -37,6 +40,9 @@ export default function CryptoPaymentModal({
   description,
   orderId,
   userEmail,
+  userId,
+  serviceType,
+  serviceId,
   onSuccess,
 }: CryptoPaymentModalProps) {
   const [selectedCrypto, setSelectedCrypto] = useState('BTC');
@@ -50,53 +56,65 @@ export default function CryptoPaymentModal({
     setError('');
 
     try {
-      // Call backend API to create CoinGate order
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
-      const response = await fetch(`${backendUrl}/api/coingate/create-order`, {
+      // Use Supabase Edge Function for payment creation
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Missing Supabase configuration');
+      }
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/create-coingate-payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseAnonKey}`
         },
         body: JSON.stringify({
-          price_amount: amount,
-          price_currency: currency,
-          receive_currency: selectedCrypto,
-          title: title,
-          description: description || title,
-          order_id: orderId,
-          purchaser_email: userEmail,
-          success_url: `${window.location.origin}/dashboard`,
-          cancel_url: `${window.location.origin}/dashboard`,
-          callback_url: `${window.location.origin}/api/coingate-callback`,
+          serviceType: serviceType || 'adventure_package',
+          serviceId: serviceId || orderId,
+          userId: userId || 'anonymous',
+          email: userEmail || 'guest@privatecharterx.com',
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create payment order');
+        const errorText = await response.text();
+        console.error('Edge function error:', errorText);
+        throw new Error(errorText || 'Failed to create payment order');
       }
 
-      const data = await response.json();
-      const order = data.order;
+      const result = await response.json();
 
-      // Save transaction data with actual CoinGate order details
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create payment');
+      }
+
+      // Save transaction data with CoinGate order details
       const transactionData = {
-        coingate_order_id: order.id,
-        order_id: order.order_id,
-        amount: order.price_amount,
-        currency: order.price_currency,
-        crypto_currency: order.receive_currency,
-        status: order.status,
-        payment_url: order.payment_url,
-        created_at: order.created_at,
+        coingate_order_id: result.coingateOrderId,
+        order_id: result.bookingId,
+        amount: result.priceBreakdown?.totalAmount || amount,
+        currency: result.priceBreakdown?.currency || currency,
+        crypto_currency: selectedCrypto,
+        status: 'pending',
+        payment_url: result.paymentUrl,
+        created_at: new Date().toISOString(),
       };
 
       onSuccess(transactionData);
 
-      // Open CoinGate checkout in new window
-      window.open(order.payment_url, '_blank', 'width=800,height=600,scrollbars=yes');
+      // Detect if mobile and use appropriate redirect
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-      onClose();
+      if (isMobile) {
+        // On mobile, redirect in the same window to avoid popup blockers
+        window.location.href = result.paymentUrl;
+      } else {
+        // On desktop, open in new window
+        window.open(result.paymentUrl, '_blank');
+        onClose();
+      }
 
     } catch (err: any) {
       console.error('Payment error:', err);

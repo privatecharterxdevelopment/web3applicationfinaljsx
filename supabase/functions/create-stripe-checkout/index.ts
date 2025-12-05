@@ -7,11 +7,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Chat limits for each tier
+// Chat limits for each tier - MUST match Subscriptionplans.jsx
 const TIER_CONFIG: Record<string, { chats: number | null; price: number }> = {
-  starter: { chats: 15, price: 20 },
-  pro: { chats: 30, price: 40 },
-  elite: { chats: null, price: 130 }, // null = unlimited
+  starter: { chats: 5, price: 20 },   // 5 AI conversations/month
+  pro: { chats: 20, price: 40 },       // 20 AI conversations/month
+  elite: { chats: null, price: 130 },  // unlimited - null = unlimited
 };
 
 serve(async (req) => {

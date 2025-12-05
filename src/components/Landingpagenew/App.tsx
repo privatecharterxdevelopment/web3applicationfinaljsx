@@ -1,6 +1,7 @@
 // App.tsx - Fixed AppKit configuration
 import React, { useState, useEffect, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 // QueryClient is provided from main.tsx
 import { useAuth0 } from '@auth0/auth0-react';
 import { ArrowRight, MapPin, Calendar, Users, Check } from 'lucide-react';
@@ -80,7 +81,6 @@ import Impressum from '../../pages/Legal/Impressum.tsx';
 import PrivacyPolicy from '../../pages/Legal/PrivacyPolicy.tsx';
 import TermsConditions from '../../pages/Legal/TermsConditions.tsx';
 import Partners from '../../pages/Partners.tsx';
-import AITravelAgent from '../../pages/web3/AITravelAgent.tsx';
 import LuxuryCars from '../../pages/LuxuryCars.tsx';
 import BlogPosts from '../../pages/BlogPosts.tsx';
 import ResetPassword from '../../pages/ResetPassword.tsx';
@@ -201,6 +201,50 @@ function ScrollToTop() {
   return null;
 }
 
+// Page transition animations
+const pageVariants = {
+  initial: {
+    opacity: 0,
+    y: 20
+  },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.4,
+      ease: [0.25, 0.46, 0.45, 0.94]
+    }
+  },
+  exit: {
+    opacity: 0,
+    y: -10,
+    transition: {
+      duration: 0.2,
+      ease: 'easeInOut'
+    }
+  }
+};
+
+// Wrapper component for page transitions
+function PageTransition({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={location.pathname}
+        variants={pageVariants}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        className="min-h-screen"
+      >
+        {children}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 // Main App Content Component (wrapped by AuthProvider)
 function AppContent() {
   const { isLoading } = useAuth0();
@@ -264,6 +308,7 @@ function AppContent() {
     <div>
       <Suspense fallback={<LoadingSpinner />}>
         <ScrollToTop />
+        <PageTransition>
         <Routes>
           {isAdminDomain ? (
             // Admin Routes
@@ -400,6 +445,7 @@ function AppContent() {
             </>
           )}
         </Routes>
+        </PageTransition>
 
         {!isAdminDomain && (
           <div className="fixed bottom-4 right-4 z-[100]">

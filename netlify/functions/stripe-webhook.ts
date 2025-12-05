@@ -67,12 +67,12 @@ export const handler: Handler = async (event) => {
   }
 };
 
-// Chat limits for each tier
+// Chat limits for each tier - MUST match Subscriptionplans.jsx
 const TIER_CHAT_LIMITS: Record<string, number | null> = {
   explorer: 1,
-  starter: 15,
-  pro: 30,
-  elite: null, // unlimited
+  starter: 5,    // $20/mo - 5 AI conversations
+  pro: 20,       // $40/mo - 20 AI conversations
+  elite: null,   // $130/mo - unlimited
 };
 
 async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
@@ -372,7 +372,91 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   console.log(`Checkout completed: ${session.id}`);
-  
-  // Subscription will be handled by customer.subscription.created webhook
-  // This is just for logging/tracking
+
+  // Extract user_id and tier from client_reference_id (format: "userId:tierId")
+  const clientRefId = session.client_reference_id;
+  if (!clientRefId) {
+    console.log('No client_reference_id in checkout session');
+    return;
+  }
+
+  const [userId, tierId] = clientRefId.split(':');
+  if (!userId) {
+    console.log('Could not extract user_id from client_reference_id:', clientRefId);
+    return;
+  }
+
+  console.log(`Checkout completed for user ${userId}, tier ${tierId || 'unknown'}`);
+
+  // If this is a subscription checkout, update the subscription metadata
+  if (session.subscription) {
+    try {
+      // Update subscription metadata with user_id and tier
+      await stripe.subscriptions.update(session.subscription as string, {
+        metadata: {
+          user_id: userId,
+          tier: tierId || 'starter',
+        }
+      });
+      console.log(`Updated subscription ${session.subscription} metadata with user_id: ${userId}, tier: ${tierId}`);
+
+      // Also directly update the database since subscription.updated will fire
+      const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+      const chatsLimit = TIER_CHAT_LIMITS[tierId || 'starter'] ?? 15;
+      const now = new Date();
+      const periodEnd = new Date(subscription.current_period_end * 1000);
+
+      // Update user_profiles table immediately
+      const { error: profileError } = await supabase.from('user_profiles').upsert({
+        user_id: userId,
+        subscription_tier: tierId || 'starter',
+        subscription_status: 'active',
+        chats_limit: chatsLimit,
+        chats_used: 0,
+        chats_reset_date: periodEnd.toISOString(),
+        stripe_customer_id: subscription.customer as string,
+        stripe_subscription_id: subscription.id,
+        current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+        current_period_end: periodEnd.toISOString(),
+        updated_at: now.toISOString(),
+      }, {
+        onConflict: 'user_id',
+        ignoreDuplicates: false
+      });
+
+      if (profileError) {
+        console.error('Error updating user_profiles from checkout:', profileError);
+      } else {
+        console.log(`User profile updated for ${userId} with tier ${tierId}, chats_limit: ${chatsLimit}`);
+      }
+    } catch (error) {
+      console.error('Error updating subscription metadata:', error);
+    }
+  }
+
+  // Also look up user by email if no client_reference_id worked
+  if (session.customer_email && !userId) {
+    try {
+      const { data: userProfile } = await supabase
+        .from('user_profiles')
+        .select('user_id')
+        .eq('email', session.customer_email)
+        .single();
+
+      if (userProfile?.user_id) {
+        console.log(`Found user by email ${session.customer_email}: ${userProfile.user_id}`);
+        // Update the subscription metadata
+        if (session.subscription) {
+          await stripe.subscriptions.update(session.subscription as string, {
+            metadata: {
+              user_id: userProfile.user_id,
+              tier: tierId || 'starter',
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error looking up user by email:', error);
+    }
+  }
 }

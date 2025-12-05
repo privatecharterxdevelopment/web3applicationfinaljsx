@@ -224,8 +224,15 @@ const CryptoPaymentModal = ({ isOpen, onClose, service, serviceType, onSuccess }
       setStep('redirect');
 
       // Auto-redirect after showing the URL
+      // Detect mobile and use appropriate redirect method
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       setTimeout(() => {
-        window.open(result.paymentUrl, '_blank');
+        if (isMobile) {
+          // On mobile, redirect in the same window to avoid popup blockers
+          window.location.href = result.paymentUrl;
+        } else {
+          window.open(result.paymentUrl, '_blank');
+        }
       }, 2000);
 
     } catch (err) {
@@ -455,14 +462,18 @@ const CryptoPaymentModal = ({ isOpen, onClose, service, serviceType, onSuccess }
             </div>
           )}
 
-          {/* Step: Redirect */}
+          {/* Step: Redirect - Keep loading while user completes payment on CoinGate */}
           {step === 'redirect' && (
             <div className="py-8 text-center">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-green-100 flex items-center justify-center">
-                <Check className="w-8 h-8 text-green-600" />
+              <div className="relative mx-auto w-16 h-16 mb-6">
+                <div className="absolute inset-0 rounded-full border-4 border-gray-200" />
+                <div className="absolute inset-0 rounded-full border-4 border-black border-t-transparent animate-spin" />
+                <div className="absolute inset-3 rounded-full bg-gray-100 flex items-center justify-center">
+                  <Bitcoin className="w-6 h-6 text-black" />
+                </div>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Payment Ready!</h3>
-              <p className="text-gray-500 mb-6">You will be redirected to complete your payment</p>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Complete Payment</h3>
+              <p className="text-gray-500 mb-6">Finish your payment on CoinGate to confirm</p>
 
               {/* Price Breakdown */}
               {priceBreakdown && (
