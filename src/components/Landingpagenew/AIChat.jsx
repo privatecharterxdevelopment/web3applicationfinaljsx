@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  ArrowLeft, Mic, Send, X, Volume2, VolumeX, Edit2, Shield, Wallet, ShoppingCart, MessageSquare, Plus, Crown, AlertCircle, Calendar, Trash2, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Plane, Clock, Upload, FileText, DollarSign, Users, MapPin, Anchor, Mountain, Car, Minus
+  ArrowLeft, Send, X, Edit2, Shield, Wallet, ShoppingCart, MessageSquare, Plus, Crown, AlertCircle, Calendar, Trash2, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Plane, Clock, Upload, FileText, DollarSign, Users, MapPin, Anchor, Mountain, Car, Minus
 } from 'lucide-react';
 import { calculateDistance, estimateDuration, estimateCost } from '../../utils/distanceCalculator';
 // Secure Claude API via Edge Function - API key stays server-side
@@ -13,7 +13,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.j
 
 // Services
 import { UnifiedSearchService, ImageUtils } from '../../services/supabaseService';
-import { HumeEVIClient } from '../../lib/humeClient';
 import ConversationStateManager from '../../services/ConversationStateManager';
 import SpheraWeb3Concierge from '../../services/SpheraWeb3Concierge';
 import { claudeService } from '../../services/claudeService';
@@ -220,20 +219,9 @@ const AIChat = ({
 
   console.log('👤 User info:', { userId: user?.id, isAdmin, hasAuthContext: !!authContext });
 
-  // Voice API keys (optional - voice will be skipped gracefully if missing)
-  const HUME_API_KEY = (import.meta.env?.VITE_HUME_API_KEY) || '';
-  const HUME_SECRET_KEY = (import.meta.env?.VITE_HUME_SECRET_KEY) || '';
-  // NOTE: ANTHROPIC_API_KEY removed - now using secure Edge Function via claudeEdgeService
-
   // =======================
   // ALL STATE & REFS FIRST
   // =======================
-  const humeEnabled = Boolean(HUME_API_KEY && HUME_SECRET_KEY);
-
-  const [humeClient] = useState(() => new HumeEVIClient(
-    HUME_API_KEY,
-    HUME_SECRET_KEY
-  ));
   const [conversationalAI] = useState(() => new SpheraWeb3Concierge());
   const [conversationState] = useState(() => new ConversationStateManager());
 
@@ -248,10 +236,6 @@ const AIChat = ({
   const setActiveChat = setActiveChatProp || setInternalActiveChat;
   const [chatsLoaded, setChatsLoaded] = useState(true); // Start as true so new chats work immediately
   const [currentMessage, setCurrentMessage] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
-  const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [lastInputMethod, setLastInputMethod] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const [loadingStage, setLoadingStage] = useState('searching');
@@ -307,10 +291,6 @@ const AIChat = ({
   // Chat limit tracking (for free users)
   const [chatLimitReached, setChatLimitReached] = useState(false);
 
-  // Voice Interaction State
-  const [isVoiceMode, setIsVoiceMode] = useState(false);
-  const [isVoiceMuted, setIsVoiceMuted] = useState(false);
-
   // Cart visibility
   const [showCartWidget, setShowCartWidget] = useState(false);
 
@@ -342,12 +322,6 @@ const AIChat = ({
 
   // All refs
   // NOTE: anthropicRef removed - now using claudeEdgeService for secure API calls
-  const humeClientRef = useRef(null);
-  const audioContextRef = useRef(null);
-  const recognitionRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
-  const currentAudioRef = useRef(null);
   const hasGreetedRef = useRef(false);
   const isReturningUserRef = useRef(false);
   const messagesEndRef = useRef(null);
@@ -358,16 +332,6 @@ const AIChat = ({
   // =======================
 
   // NOTE: Claude API initialization removed - now using claudeEdgeService for secure server-side API calls
-
-  // Initialize Hume AI Client for voice
-  useEffect(() => {
-    if (HUME_API_KEY && HUME_SECRET_KEY) {
-      humeClientRef.current = new HumeEVIClient(HUME_API_KEY, HUME_SECRET_KEY);
-      humeClientRef.current.connect().catch(err => {
-        console.warn('Hume AI connection failed:', err);
-      });
-    }
-  }, []);
 
   // URL-based chat loading: Load specific chat when navigating directly to /chat/:chatId
   // Only runs once on mount to load chat from DB if needed
@@ -412,9 +376,13 @@ const AIChat = ({
           });
           // Set as active chat
           setActiveChat(urlChatId);
-          // Load messages
+          // Load messages into the chat history
           if (result.chat.messages?.length > 0) {
-            setMessages(result.chat.messages);
+            setChatHistory(prev => prev.map(c =>
+              c.id === urlChatId
+                ? { ...c, messages: result.chat.messages }
+                : c
+            ));
           }
           console.log('✅ Chat loaded from URL successfully');
         } else {
@@ -429,112 +397,8 @@ const AIChat = ({
     loadChatFromUrl();
   }, [urlChatId, user?.id, chatHistory]); // chatHistory needed to check if chat exists locally
 
-  // Initialize Speech Recognition for Voice Mode
-  useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = 'en-US';
-
-      recognitionRef.current.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map(result => result[0].transcript)
-          .join('');
-
-        if (event.results[event.results.length - 1].isFinal) {
-          console.log('🎤 Voice input:', transcript);
-          handleSendMessage(transcript);
-        }
-      };
-
-      recognitionRef.current.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        if (event.error === 'no-speech') {
-          // Auto-restart if no speech detected
-          setTimeout(() => {
-            if (isVoiceMode) {
-              recognitionRef.current?.start();
-            }
-          }, 1000);
-        }
-      };
-
-      recognitionRef.current.onend = () => {
-        // Auto-restart if voice mode is still active
-        if (isVoiceMode) {
-          setTimeout(() => {
-            recognitionRef.current?.start();
-          }, 500);
-        }
-      };
-    }
-  }, []);
-
   // DO NOT auto-create welcome chat - let user choose service bubble
   // This prevents the endless loading issue
-
-  // Toggle Voice Mode
-  const toggleVoiceMode = useCallback(() => {
-    if (!recognitionRef.current) {
-      setToast({ message: 'Voice recognition not supported in this browser', type: 'error' });
-      return;
-    }
-
-    setIsVoiceMode(prev => {
-      const newMode = !prev;
-
-      if (newMode) {
-        // Start voice mode
-        try {
-          recognitionRef.current.start();
-          setIsListening(true);
-          setToast({ message: 'Voice mode activated - speak naturally', type: 'info' });
-        } catch (err) {
-          console.error('Failed to start speech recognition:', err);
-        }
-      } else {
-        // Stop voice mode
-        try {
-          recognitionRef.current.stop();
-          setIsListening(false);
-          setToast({ message: 'Voice mode deactivated', type: 'info' });
-        } catch (err) {
-          console.error('Failed to stop speech recognition:', err);
-        }
-      }
-
-      return newMode;
-    });
-  }, []);
-
-  // Text-to-Speech for AI responses
-  const speakResponse = useCallback((text) => {
-    if (isVoiceMuted || !isVoiceMode) return;
-
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
-    utterance.lang = 'en-US';
-
-    window.speechSynthesis.speak(utterance);
-  }, [isVoiceMuted, isVoiceMode]);
-
-  // Toggle Voice Mute
-  const toggleVoiceMute = useCallback(() => {
-    setIsVoiceMuted(prev => {
-      const newMuted = !prev;
-      if (newMuted) {
-        window.speechSynthesis.cancel();
-      }
-      return newMuted;
-    });
-  }, []);
 
   const currentChat = useMemo(() => {
     const chat = chatHistory.find(c => c.id === activeChat);
@@ -545,29 +409,6 @@ const AIChat = ({
     });
     return chat;
   }, [chatHistory, activeChat]);
-
-  // Define audio playback helper BEFORE any effects that reference it
-  const playHumeVoice = useCallback((audioBase64) => {
-    if (!voiceEnabled) return;
-    if (currentAudioRef.current) currentAudioRef.current.pause();
-    setIsSpeaking(true);
-    const audio = new Audio(`data:audio/mp3;base64,${audioBase64}`);
-    currentAudioRef.current = audio;
-    audio.onended = () => { setIsSpeaking(false); currentAudioRef.current = null; };
-    audio.onerror = () => { setIsSpeaking(false); currentAudioRef.current = null; };
-    audio.play().catch(() => { setIsSpeaking(false); });
-  }, [voiceEnabled]);
-
-  // Use Hume emotion context (when available) to gently adapt tone
-  const withEmpathy = useCallback((text) => {
-    try {
-      if (!humeEnabled || typeof humeClient?.getEmpatheticPrefix !== 'function') return text;
-      const prefix = humeClient.getEmpatheticPrefix();
-      return prefix ? `${prefix} ${text}` : text;
-    } catch {
-      return text;
-    }
-  }, [humeEnabled, humeClient]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -792,32 +633,6 @@ const AIChat = ({
   }, [chatHistory, activeChat, user?.id, chatsLoaded]);
 
   useEffect(() => {
-    if (!humeEnabled) return; // Skip Hume setup if keys are not configured
-    const initHume = async () => {
-      try {
-        await humeClient.connect();
-        humeClient.onMessage((data) => {
-          const text = data?.transcript || data?.text || data?.message;
-          if (text) {
-            setLastInputMethod('voice');
-            handleSendMessage(String(text));
-          }
-        });
-        humeClient.onAudio((audioBase64) => {
-          playHumeVoice(audioBase64);
-        });
-      } catch (error) {
-        console.log('Hume skipped');
-      }
-    };
-    initHume();
-    return () => {
-      humeClient.disconnect();
-      if (currentAudioRef.current) currentAudioRef.current.pause();
-    };
-  }, [humeClient, humeEnabled, playHumeVoice]);
-
-  useEffect(() => {
     if (activeChat !== 'new' && !hasGreetedRef.current && currentChat?.messages.length === 0) {
       const timeOfDay = new Date().getHours();
       let greeting = timeOfDay < 12 ? 'Good morning' : timeOfDay < 18 ? 'Good afternoon' : 'Good evening';
@@ -825,13 +640,12 @@ const AIChat = ({
       greeting += user?.name ? ` ${user.name}` : '';
       greeting += `. I'm Sphera, your luxury travel AI assistant. How can I help you today?`;
       
-      const finalGreeting = withEmpathy(greeting);
-      setChatHistory(prev => prev.map(c => 
-        c.id === activeChat ? { ...c, messages: [{ role: 'assistant', content: finalGreeting }] } : c
+      setChatHistory(prev => prev.map(c =>
+        c.id === activeChat ? { ...c, messages: [{ role: 'assistant', content: greeting }] } : c
       ));
       hasGreetedRef.current = true;
     }
-  }, [activeChat, currentChat, user, withEmpathy]);
+  }, [activeChat, currentChat, user]);
 
   // Ref to track which initial queries we've already processed (prevents double-processing)
   const processedQueriesRef = useRef(new Set());
@@ -907,9 +721,11 @@ const AIChat = ({
 
         // Send the message with a small delay to ensure UI is ready
         // Skip adding user message since it was already added during chat creation
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
           handleSendMessage(query, { skipAddUserMessage: true });
         }, 100);
+
+        return () => clearTimeout(timeoutId);
       }
     }
   }, [activeChat, chatHistory]);
@@ -950,41 +766,13 @@ const AIChat = ({
       setActiveChat(newChatId);
 
       // Clear the prop after a small delay to ensure state updates propagate
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         onAssistantMessageProcessed();
       }, 100);
+
+      return () => clearTimeout(timeoutId);
     }
   }, [initialAssistantMessage, onAssistantMessageProcessed]);
-
-  const toggleRecording = useCallback(async () => {
-    if (isRecording) {
-      if (mediaRecorderRef.current) mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      setIsListening(false);
-    } else {
-      if (!humeEnabled) {
-        alert('Voice capture not configured. Please set VITE_HUME_API_KEY and VITE_HUME_SECRET_KEY.');
-        return;
-      }
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const mediaRecorder = new MediaRecorder(stream);
-        mediaRecorderRef.current = mediaRecorder;
-        audioChunksRef.current = [];
-        mediaRecorder.ondataavailable = (event) => audioChunksRef.current.push(event.data);
-        mediaRecorder.onstop = async () => {
-          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-          await humeClient.sendAudio(audioBlob);
-          stream.getTracks().forEach(track => track.stop());
-        };
-        mediaRecorder.start();
-        setIsRecording(true);
-        setIsListening(true);
-      } catch (error) {
-        alert('Microphone access denied');
-      }
-    }
-  }, [isRecording, humeClient, humeEnabled]);
 
   const fetchWeather = useCallback(async (location) => {
     try {
@@ -1158,140 +946,18 @@ const AIChat = ({
     return R * c; // Distance in km
   }, []);
 
-  // Add a stop to a cart item (jet/helicopter)
-  const addStopToCartItem = useCallback((cartItemId, stopAirport, stopDuration = 60) => {
-    setCartItems(prev => prev.map(item => {
-      if ((item.cartId === cartItemId) && (item.type === 'jets' || item.type === 'jet' || item.type === 'helicopters' || item.type === 'helicopter')) {
-        const stops = item.stops || [];
-        const newStop = {
-          ...stopAirport,
-          stopDuration: stopDuration, // minutes at this stop
-          departureTime: null, // Will be calculated
-          arrivalTime: null
-        };
-        const updatedStops = [...stops, newStop];
+  // Format duration from hours to readable string
+  const formatDuration = (hours) => {
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  };
 
-        // Recalculate total distance and price with stops
-        const { totalDistance, totalFlightTime, legs, totalPrice } = calculateMultiStopRoute(item, updatedStops);
-
-        return {
-          ...item,
-          stops: updatedStops,
-          legs: legs,
-          totalDistance: totalDistance,
-          flightDistanceNm: totalDistance * 0.539957, // Convert km to nm
-          flightTimeHours: totalFlightTime,
-          estimatedDuration: formatDuration(totalFlightTime),
-          billedHours: Math.ceil(totalFlightTime),
-          estimatedPrice: totalPrice,
-          price: totalPrice,
-          basePrice: totalPrice,
-          totalWithFee: totalPrice,
-          priceCalculation: `${Math.ceil(totalFlightTime)}h × €${item.hourly_rate_eur?.toLocaleString() || 0}/hr`,
-          route: formatMultiStopRoute(item.from || item.origin, updatedStops, item.to || item.destination),
-          isMultiStop: true
-        };
-      }
-      return item;
-    }));
-
-    // Close the multi-stop form
-    setShowMultiStopForm(false);
-    setMultiStopItemId(null);
-    setStopSearchQuery('');
-    setStopSearchResults([]);
-
-    setToast({ message: `Stop added: ${stopAirport.name}`, type: 'cart' });
-  }, []);
-
-  // Remove a stop from a cart item
-  const removeStopFromCartItem = useCallback((cartItemId, stopIndex) => {
-    setCartItems(prev => prev.map(item => {
-      if (item.cartId === cartItemId && item.stops) {
-        const updatedStops = item.stops.filter((_, idx) => idx !== stopIndex);
-
-        if (updatedStops.length === 0) {
-          // No more stops - revert to direct route
-          const directDistance = calculateLegDistance(
-            { lat: item.originLat || 0, lng: item.originLng || 0 },
-            { lat: item.destLat || 0, lng: item.destLng || 0 }
-          );
-          const speedKmh = (item.speed_kts || 450) * 1.852;
-          const flightTime = directDistance / speedKmh;
-          const billedHours = Math.ceil(flightTime);
-          const price = billedHours * (item.hourly_rate_eur || 0);
-
-          return {
-            ...item,
-            stops: [],
-            legs: null,
-            totalDistance: directDistance,
-            flightTimeHours: flightTime,
-            estimatedDuration: formatDuration(flightTime),
-            billedHours: billedHours,
-            estimatedPrice: price,
-            price: price,
-            basePrice: price,
-            totalWithFee: price,
-            priceCalculation: `${billedHours}h × €${item.hourly_rate_eur?.toLocaleString() || 0}/hr`,
-            route: `${item.from || item.origin} → ${item.to || item.destination}`,
-            isMultiStop: false
-          };
-        }
-
-        // Recalculate with remaining stops
-        const { totalDistance, totalFlightTime, legs, totalPrice } = calculateMultiStopRoute(item, updatedStops);
-
-        return {
-          ...item,
-          stops: updatedStops,
-          legs: legs,
-          totalDistance: totalDistance,
-          flightDistanceNm: totalDistance * 0.539957,
-          flightTimeHours: totalFlightTime,
-          estimatedDuration: formatDuration(totalFlightTime),
-          billedHours: Math.ceil(totalFlightTime),
-          estimatedPrice: totalPrice,
-          price: totalPrice,
-          basePrice: totalPrice,
-          totalWithFee: totalPrice,
-          priceCalculation: `${Math.ceil(totalFlightTime)}h × €${item.hourly_rate_eur?.toLocaleString() || 0}/hr`,
-          route: formatMultiStopRoute(item.from || item.origin, updatedStops, item.to || item.destination),
-          isMultiStop: updatedStops.length > 0
-        };
-      }
-      return item;
-    }));
-
-    setToast({ message: 'Stop removed', type: 'cart' });
-  }, [calculateLegDistance]);
-
-  // Update stop duration (time spent at destination)
-  const updateStopDuration = useCallback((cartItemId, stopIndex, durationMinutes) => {
-    setCartItems(prev => prev.map(item => {
-      if (item.cartId === cartItemId && item.stops) {
-        const updatedStops = item.stops.map((stop, idx) =>
-          idx === stopIndex ? { ...stop, stopDuration: durationMinutes } : stop
-        );
-
-        // Recalculate schedule with new stop duration
-        const { totalDistance, totalFlightTime, legs, totalPrice } = calculateMultiStopRoute(item, updatedStops);
-
-        return {
-          ...item,
-          stops: updatedStops,
-          legs: legs,
-          totalDistance: totalDistance,
-          flightTimeHours: totalFlightTime,
-          estimatedPrice: totalPrice,
-          price: totalPrice,
-          basePrice: totalPrice,
-          totalWithFee: totalPrice
-        };
-      }
-      return item;
-    }));
-  }, []);
+  // Format multi-stop route string
+  const formatMultiStopRoute = (origin, stops, destination) => {
+    const stopNames = stops.map(s => s.code || s.name?.substring(0, 3).toUpperCase()).join(' → ');
+    return `${origin} → ${stopNames} → ${destination}`;
+  };
 
   // Calculate multi-stop route details
   const calculateMultiStopRoute = useCallback((item, stops) => {
@@ -1366,18 +1032,140 @@ const AIChat = ({
     };
   }, [calculateLegDistance]);
 
-  // Format duration from hours to readable string
-  const formatDuration = (hours) => {
-    const h = Math.floor(hours);
-    const m = Math.round((hours - h) * 60);
-    return h > 0 ? `${h}h ${m}m` : `${m}m`;
-  };
+  // Add a stop to a cart item (jet/helicopter)
+  const addStopToCartItem = useCallback((cartItemId, stopAirport, stopDuration = 60) => {
+    setCartItems(prev => prev.map(item => {
+      if ((item.cartId === cartItemId) && (item.type === 'jets' || item.type === 'jet' || item.type === 'helicopters' || item.type === 'helicopter')) {
+        const stops = item.stops || [];
+        const newStop = {
+          ...stopAirport,
+          stopDuration: stopDuration, // minutes at this stop
+          departureTime: null, // Will be calculated
+          arrivalTime: null
+        };
+        const updatedStops = [...stops, newStop];
 
-  // Format multi-stop route string
-  const formatMultiStopRoute = (origin, stops, destination) => {
-    const stopNames = stops.map(s => s.code || s.name?.substring(0, 3).toUpperCase()).join(' → ');
-    return `${origin} → ${stopNames} → ${destination}`;
-  };
+        // Recalculate total distance and price with stops
+        const { totalDistance, totalFlightTime, legs, totalPrice } = calculateMultiStopRoute(item, updatedStops);
+
+        return {
+          ...item,
+          stops: updatedStops,
+          legs: legs,
+          totalDistance: totalDistance,
+          flightDistanceNm: totalDistance * 0.539957, // Convert km to nm
+          flightTimeHours: totalFlightTime,
+          estimatedDuration: formatDuration(totalFlightTime),
+          billedHours: Math.ceil(totalFlightTime),
+          estimatedPrice: totalPrice,
+          price: totalPrice,
+          basePrice: totalPrice,
+          totalWithFee: totalPrice,
+          priceCalculation: `${Math.ceil(totalFlightTime)}h × €${item.hourly_rate_eur?.toLocaleString() || 0}/hr`,
+          route: formatMultiStopRoute(item.from || item.origin, updatedStops, item.to || item.destination),
+          isMultiStop: true
+        };
+      }
+      return item;
+    }));
+
+    // Close the multi-stop form
+    setShowMultiStopForm(false);
+    setMultiStopItemId(null);
+    setStopSearchQuery('');
+    setStopSearchResults([]);
+
+    setToast({ message: `Stop added: ${stopAirport.name}`, type: 'cart' });
+  }, [calculateMultiStopRoute, formatMultiStopRoute, formatDuration]);
+
+  // Remove a stop from a cart item
+  const removeStopFromCartItem = useCallback((cartItemId, stopIndex) => {
+    setCartItems(prev => prev.map(item => {
+      if (item.cartId === cartItemId && item.stops) {
+        const updatedStops = item.stops.filter((_, idx) => idx !== stopIndex);
+
+        if (updatedStops.length === 0) {
+          // No more stops - revert to direct route
+          const directDistance = calculateLegDistance(
+            { lat: item.originLat || 0, lng: item.originLng || 0 },
+            { lat: item.destLat || 0, lng: item.destLng || 0 }
+          );
+          const speedKmh = (item.speed_kts || 450) * 1.852;
+          const flightTime = directDistance / speedKmh;
+          const billedHours = Math.ceil(flightTime);
+          const price = billedHours * (item.hourly_rate_eur || 0);
+
+          return {
+            ...item,
+            stops: [],
+            legs: null,
+            totalDistance: directDistance,
+            flightTimeHours: flightTime,
+            estimatedDuration: formatDuration(flightTime),
+            billedHours: billedHours,
+            estimatedPrice: price,
+            price: price,
+            basePrice: price,
+            totalWithFee: price,
+            priceCalculation: `${billedHours}h × €${item.hourly_rate_eur?.toLocaleString() || 0}/hr`,
+            route: `${item.from || item.origin} → ${item.to || item.destination}`,
+            isMultiStop: false
+          };
+        }
+
+        // Recalculate with remaining stops
+        const { totalDistance, totalFlightTime, legs, totalPrice } = calculateMultiStopRoute(item, updatedStops);
+
+        return {
+          ...item,
+          stops: updatedStops,
+          legs: legs,
+          totalDistance: totalDistance,
+          flightDistanceNm: totalDistance * 0.539957,
+          flightTimeHours: totalFlightTime,
+          estimatedDuration: formatDuration(totalFlightTime),
+          billedHours: Math.ceil(totalFlightTime),
+          estimatedPrice: totalPrice,
+          price: totalPrice,
+          basePrice: totalPrice,
+          totalWithFee: totalPrice,
+          priceCalculation: `${Math.ceil(totalFlightTime)}h × €${item.hourly_rate_eur?.toLocaleString() || 0}/hr`,
+          route: formatMultiStopRoute(item.from || item.origin, updatedStops, item.to || item.destination),
+          isMultiStop: updatedStops.length > 0
+        };
+      }
+      return item;
+    }));
+
+    setToast({ message: 'Stop removed', type: 'cart' });
+  }, [calculateLegDistance, calculateMultiStopRoute, formatMultiStopRoute, formatDuration]);
+
+  // Update stop duration (time spent at destination)
+  const updateStopDuration = useCallback((cartItemId, stopIndex, durationMinutes) => {
+    setCartItems(prev => prev.map(item => {
+      if (item.cartId === cartItemId && item.stops) {
+        const updatedStops = item.stops.map((stop, idx) =>
+          idx === stopIndex ? { ...stop, stopDuration: durationMinutes } : stop
+        );
+
+        // Recalculate schedule with new stop duration
+        const { totalDistance, totalFlightTime, legs, totalPrice } = calculateMultiStopRoute(item, updatedStops);
+
+        return {
+          ...item,
+          stops: updatedStops,
+          legs: legs,
+          totalDistance: totalDistance,
+          flightTimeHours: totalFlightTime,
+          estimatedPrice: totalPrice,
+          price: totalPrice,
+          basePrice: totalPrice,
+          totalWithFee: totalPrice
+        };
+      }
+      return item;
+    }));
+  }, [calculateMultiStopRoute]);
 
   // Update origin or destination of a cart item
   const updateCartItemEndpoint = useCallback((cartItemId, endpointType, newAirport) => {
@@ -2108,7 +1896,7 @@ As their luxury travel consultant:
 
           setChatHistory(prev => prev.map(c => {
             if (c.id === activeChat) {
-              const updatedMessages = [...c.messages, { role: 'assistant', content: withEmpathy(aiResponse) }];
+              const updatedMessages = [...c.messages, { role: 'assistant', content: aiResponse }];
               setTypingMessageIndex(updatedMessages.length - 1);
               return { ...c, messages: updatedMessages };
             }
@@ -2119,7 +1907,7 @@ As their luxury travel consultant:
 
           setChatHistory(prev => prev.map(c => {
             if (c.id === activeChat) {
-              const updatedMessages = [...c.messages, { role: 'assistant', content: withEmpathy(fallbackResponse) }];
+              const updatedMessages = [...c.messages, { role: 'assistant', content: fallbackResponse }];
               setTypingMessageIndex(updatedMessages.length - 1);
               return { ...c, messages: updatedMessages };
             }
@@ -2345,7 +2133,7 @@ As their luxury travel consultant, provide an enthusiastic response that:
 
         setChatHistory(prev => prev.map(c => {
           if (c.id === activeChat) {
-            const updatedMessages = [...c.messages, { role: 'assistant', content: withEmpathy(aiResponse) }];
+            const updatedMessages = [...c.messages, { role: 'assistant', content: aiResponse }];
             setTypingMessageIndex(updatedMessages.length - 1);
             return { ...c, messages: updatedMessages };
           }
@@ -2375,7 +2163,7 @@ As their luxury travel consultant, provide an enthusiastic response that:
 
         setChatHistory(prev => prev.map(c => {
           if (c.id === activeChat) {
-            const updatedMessages = [...c.messages, { role: 'assistant', content: withEmpathy(response) }];
+            const updatedMessages = [...c.messages, { role: 'assistant', content: response }];
             setTypingMessageIndex(updatedMessages.length - 1);
             return { ...c, messages: updatedMessages };
           }
@@ -2417,19 +2205,54 @@ As their luxury travel consultant, provide an enthusiastic response that:
 
   // NEW CLAUDE-BASED MESSAGE HANDLER (via secure Edge Function)
   const handleSendMessage = async (message, { skipAddUserMessage = false } = {}) => {
-    if (!message.trim() || isProcessing) return;
-    // NOTE: anthropicRef check removed - claudeEdgeService is always available
+    console.log('🚀 handleSendMessage ENTRY:', {
+      message,
+      messageLength: message?.length,
+      trimmed: message?.trim(),
+      isProcessing,
+      activeChat,
+      chatHistoryLength: chatHistory.length,
+      userId: user?.id
+    });
+
+    if (!message.trim()) {
+      console.log('❌ BLOCKED: Empty message');
+      return;
+    }
+    if (isProcessing) {
+      console.log('❌ BLOCKED: Already processing');
+      return;
+    }
 
     // Check message limit (20 messages per chat, except Elite which has unlimited)
-    const existingChat = chatHistory.find(c => c.id === activeChat);
+    let existingChat = chatHistory.find(c => c.id === activeChat);
+    let effectiveActiveChat = activeChat;
+
+    console.log('📋 Chat state:', {
+      existingChat: existingChat ? { id: existingChat.id, title: existingChat.title, msgCount: existingChat.messages?.length } : null,
+      effectiveActiveChat
+    });
+
+    // CRITICAL: If activeChat points to a non-existent chat, treat as new chat
+    if (activeChat !== 'new' && !existingChat) {
+      console.warn('⚠️ Active chat not found in history, treating as new chat');
+      effectiveActiveChat = 'new';
+      setActiveChat('new');
+    }
+
     const currentMsgCount = existingChat?.messages?.filter(m => m.role === 'user').length || 0;
 
     // Elite tier has unlimited messages per chat
     const hasUnlimitedMessages = userSubscriptionLimits?.unlimited_messages === true;
 
-    if (!hasUnlimitedMessages && currentMsgCount >= MAX_MESSAGES_PER_CHAT && activeChat !== 'new') {
+    if (!hasUnlimitedMessages && currentMsgCount >= MAX_MESSAGES_PER_CHAT && effectiveActiveChat !== 'new') {
       setMessageLimitReached(true);
-      // Don't block - just show the limit reached UI
+      // Show subscription modal to prompt upgrade
+      setShowSubscriptionModal(true);
+      setToast({
+        message: `Message limit reached (${MAX_MESSAGES_PER_CHAT} messages per chat). Upgrade for more messages.`,
+        type: 'warning'
+      });
       return;
     }
 
@@ -2440,32 +2263,37 @@ As their luxury travel consultant, provide an enthusiastic response that:
 
     setShowWelcomeMessage(false);
     const userMessage = { role: 'user', content: message };
-    let workingChatId = activeChat;
+    let workingChatId = effectiveActiveChat;
 
     // Check if this is the first user message (chat only has welcome message)
     const isFirstUserMessage = existingChat && existingChat.messages.length === 1 &&
                                  existingChat.messages[0].role === 'assistant' &&
                                  existingChat.title === 'New Chat';
 
+    console.log('📝 Message flow:', { isFirstUserMessage, effectiveActiveChat, workingChatId });
+
     if (isFirstUserMessage) {
       // Update chat title based on first user message
+      console.log('✏️ First user message - updating chat title');
       const newTitle = message.substring(0, 50) + (message.length > 50 ? '...' : '');
 
       setChatHistory(prev => prev.map(c =>
-        c.id === activeChat
+        c.id === effectiveActiveChat
           ? { ...c, title: newTitle, messages: [...c.messages, userMessage] }
           : c
       ));
 
-      await chatService.updateChatMessages(activeChat, [...existingChat.messages, userMessage], user.id);
+      console.log('💾 Saving messages to database...');
+      await chatService.updateChatMessages(effectiveActiveChat, [...existingChat.messages, userMessage], user.id);
+      console.log('✅ Messages saved');
 
       // Update title in database
       try {
-        await chatService.updateChatTitle(activeChat, newTitle, user.id);
+        await chatService.updateChatTitle(effectiveActiveChat, newTitle, user.id);
       } catch (error) {
         console.warn('Failed to update chat title:', error);
       }
-    } else if (activeChat === 'new') {
+    } else if (effectiveActiveChat === 'new') {
       // Create new chat when starting from category overview
       const title = message.substring(0, 50) + (message.length > 50 ? '...' : '');
 
@@ -2555,18 +2383,99 @@ As their luxury travel consultant, provide an enthusiastic response that:
       setActiveChat(chatId);
       workingChatId = chatId;
 
+      // Update URL to reflect the new chat ID (only for real UUIDs, not temp IDs)
+      if (chatId && !chatId.startsWith('temp-')) {
+        navigate(`/chat/${chatId}`, { replace: true });
+        console.log('🔗 URL updated to:', `/chat/${chatId}`);
+      }
+
       console.log('✅ Active chat switched to:', chatId);
     } else {
-      // Regular message in existing chat - skip adding user message if already added (e.g., from initialQuery)
-      if (!skipAddUserMessage) {
-        setChatHistory(prev => prev.map(c =>
-          c.id === activeChat
-            ? { ...c, messages: [...c.messages, userMessage] }
-            : c
-        ));
+      // Check if this is a locally-created chat (from initialQuery) that needs to be saved to database
+      // These have numeric timestamp IDs instead of UUIDs
+      const isLocalOnlyChat = effectiveActiveChat && /^\d+$/.test(effectiveActiveChat) && !effectiveActiveChat.startsWith('temp-');
 
-        if (existingChat) {
-          await chatService.updateChatMessages(activeChat, [...existingChat.messages, userMessage], user.id);
+      if (isLocalOnlyChat && user?.id) {
+        // This is a local chat from initialQuery - save it to database with a proper UUID
+        console.log('🔄 Converting local chat to database chat:', effectiveActiveChat);
+
+        const title = existingChat?.title || message.substring(0, 50) + (message.length > 50 ? '...' : '');
+        const existingMessages = existingChat?.messages || [];
+
+        // Check subscription limit before creating
+        if (!isAdmin) {
+          try {
+            const { canStart, chatsUsed, chatsLimit } = await subscriptionService.canStartNewChat(user.id);
+            if (!canStart) {
+              console.log('🚫 Chat limit reached - BLOCKING');
+              setChatLimitReached(true);
+              setToast({
+                message: `You've reached your chat limit (${chatsUsed}/${chatsLimit}). Upgrade to continue.`,
+                type: 'warning'
+              });
+              setShowSubscriptionModal(true);
+              setIsProcessing(false);
+              return;
+            }
+          } catch (error) {
+            console.warn('Failed to check chat limit:', error);
+          }
+        }
+
+        try {
+          // Create the chat in database with all existing messages
+          const { success, chat } = await chatService.createChat(user.id, title, existingMessages[0] || userMessage);
+
+          if (success && chat) {
+            const newChatId = chat.id;
+            console.log('✅ Local chat saved to database with new ID:', newChatId);
+
+            // Update chat history: replace old local chat with new DB chat
+            setChatHistory(prev => prev.map(c =>
+              c.id === effectiveActiveChat
+                ? { ...c, id: newChatId, messages: existingMessages }
+                : c
+            ));
+
+            // Update active chat to the new ID
+            setActiveChat(newChatId);
+            workingChatId = newChatId;
+
+            // Update URL to reflect the new chat ID
+            navigate(`/chat/${newChatId}`, { replace: true });
+            console.log('🔗 URL updated to:', `/chat/${newChatId}`);
+
+            // Update messages in database
+            if (existingMessages.length > 1) {
+              await chatService.updateChatMessages(newChatId, existingMessages, user.id);
+            }
+
+            // Increment chat usage count
+            if (!isAdmin && userSubscriptionLimits?.tier !== 'elite') {
+              try {
+                await subscriptionService.incrementChatUsage(user.id);
+                await subscriptionService.createChatSession(user.id, newChatId);
+              } catch (usageError) {
+                console.warn('Failed to update chat usage:', usageError);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Failed to save local chat to database:', error);
+          setToast({ message: 'Failed to save chat. Please try again.', type: 'error' });
+        }
+      } else {
+        // Regular message in existing chat - skip adding user message if already added (e.g., from initialQuery)
+        if (!skipAddUserMessage) {
+          setChatHistory(prev => prev.map(c =>
+            c.id === effectiveActiveChat
+              ? { ...c, messages: [...c.messages, userMessage] }
+              : c
+          ));
+
+          if (existingChat) {
+            await chatService.updateChatMessages(effectiveActiveChat, [...existingChat.messages, userMessage], user.id);
+          }
         }
       }
     }
@@ -2705,6 +2614,7 @@ As their luxury travel consultant, provide an enthusiastic response that:
           // Format and save results as message
           if (toolResult.success) {
             let tabs = [];
+            const toolResults = []; // Declare array for tool results
 
             // Handle location restrictions (sanctioned/limited coverage)
             if (toolResult.restriction) {
@@ -3098,7 +3008,7 @@ As their luxury travel consultant, provide an enthusiastic response that:
         
         setChatHistory(prev => prev.map(c => 
           c.id === workingChatId
-            ? { ...c, messages: [...c.messages, { role: 'assistant', content: withEmpathy(msg) }] }
+            ? { ...c, messages: [...c.messages, { role: 'assistant', content: msg }] }
             : c
         ));
         return;
@@ -3121,9 +3031,9 @@ As their luxury travel consultant, provide an enthusiastic response that:
       // Add a message indicating consultation booking
       setChatHistory(prev => prev.map(c => 
         c.id === workingChatId
-          ? { ...c, messages: [...c.messages, { 
-              role: 'assistant', 
-              content: withEmpathy('I understand you\'re interested in our tokenization and blockchain features! For detailed guidance on asset tokenization and fractional ownership, I\'d recommend booking a consultation with our blockchain specialists. They can provide personalized advice tailored to your specific needs.'),
+          ? { ...c, messages: [...c.messages, {
+              role: 'assistant',
+              content: 'I understand you\'re interested in our tokenization and blockchain features! For detailed guidance on asset tokenization and fractional ownership, I\'d recommend booking a consultation with our blockchain specialists. They can provide personalized advice tailored to your specific needs.',
               action: 'consultation_booking'
             }] }
           : c
@@ -3164,7 +3074,7 @@ As their luxury travel consultant, provide an enthusiastic response that:
 
       setChatHistory(prev => prev.map(c =>
         c.id === workingChatId
-          ? { ...c, messages: [...c.messages, { role: 'assistant', content: withEmpathy(`Great, helicopter charter. Note: Helicopter routes are limited to 700km for optimal efficiency. ${next.question}`) }] }
+          ? { ...c, messages: [...c.messages, { role: 'assistant', content: `Great, helicopter charter. Note: Helicopter routes are limited to 700km for optimal efficiency. ${next.question}` }] }
           : c
       ));
       return;
@@ -3207,7 +3117,7 @@ As their luxury travel consultant, provide an enthusiastic response that:
       
       setChatHistory(prev => prev.map(c => 
         c.id === workingChatId
-          ? { ...c, messages: [...c.messages, { role: 'assistant', content: withEmpathy(`Perfect choice for value! Empty legs offer 30-50% savings on fixed routes. ${next.question}`) }] }
+          ? { ...c, messages: [...c.messages, { role: 'assistant', content: `Perfect choice for value! Empty legs offer 30-50% savings on fixed routes. ${next.question}` }] }
           : c
       ));
       return;
@@ -3240,13 +3150,13 @@ Keep responses conversational and ask for 1-2 details at a time.`;
 
         setChatHistory(prev => prev.map(c => 
           c.id === workingChatId
-            ? { ...c, messages: [...c.messages, { role: 'assistant', content: withEmpathy(aiResponse) }] }
+            ? { ...c, messages: [...c.messages, { role: 'assistant', content: aiResponse }] }
             : c
         ));
       } catch (error) {
         setChatHistory(prev => prev.map(c => 
           c.id === workingChatId
-            ? { ...c, messages: [...c.messages, { role: 'assistant', content: withEmpathy('Excellent choice for yacht charter! I\'ll need to know your budget range, number of guests, and preferred cruising area to find the perfect yacht for you.') }] }
+            ? { ...c, messages: [...c.messages, { role: 'assistant', content: 'Excellent choice for yacht charter! I\'ll need to know your budget range, number of guests, and preferred cruising area to find the perfect yacht for you.' }] }
             : c
         ));
       } finally {
@@ -3263,13 +3173,13 @@ Keep responses conversational and ask for 1-2 details at a time.`;
       if (isAddingToBooking) {
         setChatHistory(prev => prev.map(c => 
           c.id === workingChatId
-            ? { ...c, messages: [...c.messages, { role: 'assistant', content: withEmpathy('Perfect! I can add luxury car service to your booking. Which cities do you need ground transportation in?') }] }
+            ? { ...c, messages: [...c.messages, { role: 'assistant', content: 'Perfect! I can add luxury car service to your booking. Which cities do you need ground transportation in?' }] }
             : c
         ));
       } else {
         setChatHistory(prev => prev.map(c => 
           c.id === workingChatId
-            ? { ...c, messages: [...c.messages, { role: 'assistant', content: withEmpathy('Luxury chauffeur service available! Which city and what type of service do you need? (Airport transfer, hourly service, special events)') }] }
+            ? { ...c, messages: [...c.messages, { role: 'assistant', content: 'Luxury chauffeur service available! Which city and what type of service do you need? (Airport transfer, hourly service, special events)' }] }
             : c
         ));
       }
@@ -3303,7 +3213,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
           setChatHistory(prev => prev.map(c =>
             c.id === workingChatId
-              ? { ...c, messages: [...c.messages, { role: 'assistant', content: withEmpathy(aiResponse) }] }
+              ? { ...c, messages: [...c.messages, { role: 'assistant', content: aiResponse }] }
               : c
           ));
         } catch (error) {
@@ -3311,7 +3221,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
           setChatHistory(prev => prev.map(c =>
             c.id === workingChatId
-              ? { ...c, messages: [...c.messages, { role: 'assistant', content: withEmpathy(fallbackSuggestion) }] }
+              ? { ...c, messages: [...c.messages, { role: 'assistant', content: fallbackSuggestion }] }
               : c
           ));
         } finally {
@@ -3548,16 +3458,9 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         }
       }
 
-      const finalResponse = withEmpathy(aiResponse);
-
-      // Speak response if voice mode is active
-      if (isVoiceMode && !isVoiceMuted) {
-        speakResponse(finalResponse);
-      }
-
       setChatHistory(prev => prev.map(c =>
         c.id === workingChatId
-          ? { ...c, messages: [...c.messages, { role: 'assistant', content: finalResponse }] }
+          ? { ...c, messages: [...c.messages, { role: 'assistant', content: aiResponse }] }
           : c
       ));
 
@@ -3602,11 +3505,22 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
   // AUTO-CREATE NEW CHAT - When activeChat is 'new', create and switch immediately
   const pendingChatRef = useRef(null);
+  // Track if we're waiting for initialQuery to be processed
+  const waitingForInitialQueryRef = useRef(false);
 
   useEffect(() => {
     // Skip auto-create if there's an initialQuery - let the initialQuery effect handle chat creation
     if (initialQuery && initialQuery.trim()) {
       console.log('⏭️ Skipping auto-create: initialQuery will handle chat creation');
+      waitingForInitialQueryRef.current = true;
+      return;
+    }
+
+    // If we were waiting for initialQuery but it's now empty, it was just processed
+    // Don't auto-create in this case - the initialQuery effect already created the chat
+    if (waitingForInitialQueryRef.current) {
+      console.log('⏭️ Skipping auto-create: initialQuery was just processed');
+      waitingForInitialQueryRef.current = false;
       return;
     }
 
@@ -3614,27 +3528,38 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       // Check if we already have a pending chat being created
       if (pendingChatRef.current) return;
 
-      console.log('🆕 Auto-creating new chat session...');
-      const chatId = generateUUID();
-      const welcomeMsg = getWelcomeMessage();
-      const newChat = {
-        id: chatId,
-        title: '', // Empty until user sends first message
-        date: 'Just now',
-        messages: [{ role: 'assistant', content: welcomeMsg }]
-      };
+      // Add a small delay to allow initialQuery to be set if it's coming
+      const timeoutId = setTimeout(() => {
+        // Double-check initialQuery hasn't been set in the meantime
+        if (initialQuery && initialQuery.trim()) {
+          console.log('⏭️ Skipping auto-create: initialQuery was set during delay');
+          return;
+        }
 
-      pendingChatRef.current = chatId;
-      localChatIdsRef.current.add(chatId);
+        console.log('🆕 Auto-creating new chat session...');
+        const chatId = generateUUID();
+        const welcomeMsg = getWelcomeMessage();
+        const newChat = {
+          id: chatId,
+          title: '', // Empty until user sends first message
+          date: 'Just now',
+          messages: [{ role: 'assistant', content: welcomeMsg }]
+        };
 
-      // Add to history and switch in one go
-      setChatHistory(prev => [newChat, ...prev]);
-      setActiveChat(chatId);
+        pendingChatRef.current = chatId;
+        localChatIdsRef.current.add(chatId);
 
-      // Clear pending after state updates
-      setTimeout(() => {
-        pendingChatRef.current = null;
-      }, 100);
+        // Add to history and switch in one go
+        setChatHistory(prev => [newChat, ...prev]);
+        setActiveChat(chatId);
+
+        // Clear pending after state updates
+        setTimeout(() => {
+          pendingChatRef.current = null;
+        }, 100);
+      }, 50); // Small delay to let initialQuery effect run first
+
+      return () => clearTimeout(timeoutId);
     }
   }, [activeChat, user?.id, generateUUID, getWelcomeMessage, initialQuery]);
 
@@ -4227,8 +4152,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       {/* 3. INPUT - STICKY AT BOTTOM - Less padding on mobile */}
       <div className="flex-shrink-0 px-4 sm:px-6 pb-4 sm:pb-6 pt-3 sm:pt-4">
         <div className="max-w-3xl mx-auto">
-          {/* Chat Limit Reached (Free users - no more chats) */}
-          {chatLimitReached ? (
+          {/* Chat Limit Reached (Free users - no more chats) - Only block NEW chat creation, not existing chats */}
+          {chatLimitReached && activeChat === 'new' ? (
             <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
               <div className="flex items-center justify-between gap-4">
                 <p className="text-xs text-gray-500">
@@ -4306,8 +4231,11 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 value={currentMessage}
                 onChange={(e) => setCurrentMessage(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && currentMessage.trim() && !isSearching) {
-                    handleSendMessage(currentMessage);
+                  if (e.key === 'Enter') {
+                    console.log('⌨️ ENTER PRESSED!', { currentMessage, trimmed: currentMessage.trim(), isSearching });
+                    if (currentMessage.trim() && !isSearching) {
+                      handleSendMessage(currentMessage);
+                    }
                   }
                 }}
                 placeholder="Message Sphera..."
@@ -4327,7 +4255,10 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               )}
 
               <button
-                onClick={() => handleSendMessage(currentMessage)}
+                onClick={() => {
+                  console.log('🔘 SEND BUTTON CLICKED!', { currentMessage, isSearching });
+                  handleSendMessage(currentMessage);
+                }}
                 disabled={!currentMessage.trim() || isSearching}
                 className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
                   currentMessage.trim() && !isSearching
@@ -6396,8 +6327,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
           }}
           service={{
             ...selectedPaymentItem,
-            // Ensure price field is set correctly
-            price: selectedPaymentItem.price_usd || selectedPaymentItem.price || selectedPaymentItem.discounted_price || 0,
+            // Ensure price field is set correctly using centralized price calculator
+            price: calculateItemPrice(selectedPaymentItem) || selectedPaymentItem.price_usd || selectedPaymentItem.price || selectedPaymentItem.discounted_price || selectedPaymentItem.basePrice || 0,
             // Use original EmptyLegs_ id if available
             id: selectedPaymentItem.original_id || selectedPaymentItem.id
           }}

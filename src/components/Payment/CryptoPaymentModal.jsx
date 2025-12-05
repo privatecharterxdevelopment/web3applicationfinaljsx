@@ -247,12 +247,23 @@ const CryptoPaymentModal = ({ isOpen, onClose, service, serviceType, onSuccess }
   if (!isOpen) return null;
 
   const formatPrice = (price, currency = 'USD') => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(price);
+    // Sanitize currency - handle invalid values like '$', '€', etc.
+    let validCurrency = currency;
+    if (!currency || currency.length !== 3 || /[^A-Za-z]/.test(currency)) {
+      // Default to USD for invalid currency codes
+      validCurrency = 'USD';
+    }
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: validCurrency.toUpperCase(),
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(price);
+    } catch (e) {
+      // Fallback if still invalid
+      return `$${Number(price).toLocaleString()}`;
+    }
   };
 
   const serviceDetails = getServiceDetails();
