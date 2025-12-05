@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, User, Mail, MapPin, Phone, Check, Shield, Eye, EyeOff } from 'lucide-react';
 import Portal from '../Portal';
 import { supabase } from '../../lib/supabase';
@@ -600,6 +601,7 @@ export default function AppRegisterModal({
   onSwitchToLogin,
   onSuccess
 }: AppRegisterModalProps) {
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>(1);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -707,6 +709,9 @@ export default function AppRegisterModal({
 
         if (onSuccess) onSuccess();
         onClose();
+
+        // Navigate to dashboard/overview after successful registration
+        navigate('/dashboard');
       } else {
         setError(data?.error || 'Registration failed.');
       }

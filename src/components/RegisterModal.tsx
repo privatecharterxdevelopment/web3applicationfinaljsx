@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Mail, User } from 'lucide-react';
-import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import { supabase } from '../lib/supabase';
 import { AuthModal, FormField, PasswordField, ErrorAlert, LoadingButton, SuccessModal, SocialLoginButtons, OrDivider, FaceRegisterModal } from './auth';
 
@@ -10,8 +10,8 @@ interface RegisterModalProps {
   onSuccess?: () => void;
 }
 
-// Inner component that uses reCAPTCHA (only rendered on step 2)
-function RegisterModalWithRecaptcha({
+// Inner component for step 2 registration
+function RegisterModalStep2({
   onClose,
   onSwitchToLogin,
   onSuccess,
@@ -21,6 +21,7 @@ function RegisterModalWithRecaptcha({
   initialFormData: any;
   onGoBack: () => void;
 }) {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     ...initialFormData,
     phone: ''
@@ -31,7 +32,6 @@ function RegisterModalWithRecaptcha({
   const [showFaceChoice, setShowFaceChoice] = useState(false);
   const [showFaceRegister, setShowFaceRegister] = useState(false);
   const [registeredUserId, setRegisteredUserId] = useState<string | null>(null);
-  const { executeRecaptcha } = useGoogleReCaptcha();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -45,33 +45,17 @@ function RegisterModalWithRecaptcha({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
-    if (!executeRecaptcha) {
-      setError('reCAPTCHA not available. Please refresh the page and try again.');
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      // Execute reCAPTCHA v3
-      const recaptchaToken = executeRecaptcha ? await executeRecaptcha('register') : null;
-
-      if (!recaptchaToken) {
-        setError('reCAPTCHA verification failed. Please try again.');
-        setIsLoading(false);
-        return;
-      }
-
-      // Call our Edge Function for registration
+      // Call our Edge Function for registration (without reCAPTCHA)
       const { data, error: registerError } = await supabase.functions.invoke('register-with-verification', {
         body: {
           email: formData.email.trim(),
           password: formData.password,
           firstName: formData.firstName.trim(),
           lastName: formData.lastName.trim() || null,
-          phone: formData.phone.trim() || null,
-          recaptchaToken: recaptchaToken
+          phone: formData.phone.trim() || null
         }
       });
 
@@ -144,11 +128,13 @@ function RegisterModalWithRecaptcha({
   const handleSkipFaceRegistration = () => {
     if (onSuccess) onSuccess();
     handleClose();
+    navigate('/dashboard');
   };
 
   const handleFaceRegistrationSuccess = () => {
     if (onSuccess) onSuccess();
     handleClose();
+    navigate('/dashboard');
   };
 
   // Show Face Register Modal
@@ -403,20 +389,16 @@ export default function RegisterModal({
 
   const doPasswordsMatch = formData.password && formData.confirmPassword && formData.password === formData.confirmPassword;
 
-  // Step 2: Load reCAPTCHA and show final form
+  // Step 2: Show final form
   if (step === 2) {
     return (
-      <GoogleReCaptchaProvider
-        reCaptchaKey={import.meta.env.VITE_RECAPTCHA_SITE_KEY!}
-      >
-        <RegisterModalWithRecaptcha
-          onClose={onClose}
-          onSwitchToLogin={onSwitchToLogin}
-          onSuccess={onSuccess}
-          initialFormData={formData}
-          onGoBack={() => setStep(1)}
-        />
-      </GoogleReCaptchaProvider>
+      <RegisterModalStep2
+        onClose={onClose}
+        onSwitchToLogin={onSwitchToLogin}
+        onSuccess={onSuccess}
+        initialFormData={formData}
+        onGoBack={() => setStep(1)}
+      />
     );
   }
 
