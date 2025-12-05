@@ -426,7 +426,7 @@ const AIChat = ({
       };
       loadChatFromUrl();
     }
-  }, [urlChatId, user?.id, activeChat]); // Don't include chatHistory to avoid re-render loops
+  }, [urlChatId, user?.id]); // Don't include activeChat or chatHistory to avoid re-render loops
 
   // Initialize Speech Recognition for Voice Mode
   useEffect(() => {
@@ -856,18 +856,21 @@ const AIChat = ({
       // Store the query to be sent
       pendingQueryRef.current = initialQuery;
 
-      // Create a new chat with the initial query
+      // Create a new chat with the initial query - include user message from start
       const newChatId = Date.now().toString();
       initialQueryChatIdRef.current = newChatId;
+
+      // Create user message to show immediately
+      const userMessage = { role: 'user', content: initialQuery };
 
       const newChat = {
         id: newChatId,
         title: initialQuery.split(' ').slice(0, 5).join(' ') + '...',
         date: 'Just now',
-        messages: []
+        messages: [userMessage] // Include user message from the start so it displays
       };
 
-      console.log('🆕 Creating new chat:', newChatId);
+      console.log('🆕 Creating new chat with user message:', newChatId);
 
       // Mark as local chat to prevent URL-based DB fetch
       localChatIdsRef.current.add(newChatId);
@@ -902,8 +905,9 @@ const AIChat = ({
         initialQueryChatIdRef.current = null;
 
         // Send the message with a small delay to ensure UI is ready
+        // Skip adding user message since it was already added during chat creation
         setTimeout(() => {
-          handleSendMessage(query);
+          handleSendMessage(query, { skipAddUserMessage: true });
         }, 100);
       }
     }
@@ -2411,7 +2415,7 @@ As their luxury travel consultant, provide an enthusiastic response that:
   };
 
   // NEW CLAUDE-BASED MESSAGE HANDLER (via secure Edge Function)
-  const handleSendMessage = async (message) => {
+  const handleSendMessage = async (message, { skipAddUserMessage = false } = {}) => {
     if (!message.trim() || isProcessing) return;
     // NOTE: anthropicRef check removed - claudeEdgeService is always available
 
@@ -2552,15 +2556,17 @@ As their luxury travel consultant, provide an enthusiastic response that:
 
       console.log('✅ Active chat switched to:', chatId);
     } else {
-      // Regular message in existing chat
-      setChatHistory(prev => prev.map(c =>
-        c.id === activeChat
-          ? { ...c, messages: [...c.messages, userMessage] }
-          : c
-      ));
+      // Regular message in existing chat - skip adding user message if already added (e.g., from initialQuery)
+      if (!skipAddUserMessage) {
+        setChatHistory(prev => prev.map(c =>
+          c.id === activeChat
+            ? { ...c, messages: [...c.messages, userMessage] }
+            : c
+        ));
 
-      if (existingChat) {
-        await chatService.updateChatMessages(activeChat, [...existingChat.messages, userMessage], user.id);
+        if (existingChat) {
+          await chatService.updateChatMessages(activeChat, [...existingChat.messages, userMessage], user.id);
+        }
       }
     }
 

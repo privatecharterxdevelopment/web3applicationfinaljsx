@@ -1884,9 +1884,18 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   }, [isAuthenticated, user, showDashboard]);
 
-  // URL Sync: Initialize activeChat from URL parameter ONLY when on a chat route
-  // This should only run when navigating directly to a chat URL
+  // Ref to track if URL change was caused by us (internal navigation)
+  const isInternalNavigationRef = useRef(false);
+
+  // URL Sync: Initialize activeChat from URL parameter ONLY on direct URL access
+  // Skip if the URL change was caused by our own navigation
   useEffect(() => {
+    // Skip if this URL change was from internal navigation
+    if (isInternalNavigationRef.current) {
+      isInternalNavigationRef.current = false;
+      return;
+    }
+
     const currentPath = location.pathname;
     const isOnChatRoute = currentPath.startsWith('/dashboard/chat/');
 
@@ -1896,13 +1905,13 @@ const TokenizedAssetsGlassmorphic = () => {
       // Only update if different to prevent re-render loops
       if (activeChat !== targetChatId) {
         setActiveChat(targetChatId);
-        console.log('🔗 Initializing chat from URL:', urlChatId);
+        console.log('🔗 Initializing chat from URL (external):', urlChatId);
       }
       if (activeCategory !== 'chat') {
         setActiveCategory('chat');
       }
     }
-  }, [urlChatId, location.pathname]); // Check both urlChatId and current path
+  }, [urlChatId]); // Only depend on urlChatId, not location.pathname
 
   // URL Sync: Update URL when activeChat changes (only when in chat view)
   useEffect(() => {
@@ -1916,15 +1925,18 @@ const TokenizedAssetsGlassmorphic = () => {
       if (isOnDashboard || isOnChatRoute) {
         const newPath = `/dashboard/chat/${activeChat}`;
         if (currentPath !== newPath) {
+          // Mark that we're doing internal navigation to prevent the other effect from reacting
+          isInternalNavigationRef.current = true;
           navigate(newPath, { replace: true });
           console.log('🔗 Updating URL to:', newPath);
         }
       }
     } else if (activeCategory !== 'chat' && isOnChatRoute) {
       // If leaving chat view (activeCategory changed), clear the chat URL
+      isInternalNavigationRef.current = true;
       navigate('/dashboard', { replace: true });
     }
-  }, [activeChat, activeCategory, location.pathname, navigate]);
+  }, [activeChat, activeCategory, navigate]); // Remove location.pathname to prevent loop
 
   // Close mobile category menu when clicking outside
   useEffect(() => {
