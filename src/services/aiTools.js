@@ -397,6 +397,24 @@ export const aiToolDefinitions = [
     }
   },
   {
+    name: "lookupPlaceAddress",
+    description: "Look up the address and location details of a place such as a restaurant, hotel, landmark, business, or any point of interest. Use this when users ask 'where is [place]?', 'what's the address of [place]?', 'can you find [restaurant/hotel]?', or need location information for a specific venue. Returns the full address, coordinates, and place name.",
+    input_schema: {
+      type: "object",
+      properties: {
+        placeName: {
+          type: "string",
+          description: "Name of the place to look up (e.g., 'Nobu London', 'Four Seasons Hotel Milan', 'Eiffel Tower')"
+        },
+        city: {
+          type: "string",
+          description: "City or area to narrow down the search (e.g., 'Paris', 'Dubai', 'New York'). Helps find the correct location if the place name is common."
+        }
+      },
+      required: ["placeName"]
+    }
+  },
+  {
     name: "addToCart",
     description: "Add a service booking to the user's cart. Use this when user says 'add to cart', 'book it', 'I'll take it', or confirms they want to proceed with a specific aircraft, yacht, or service. IMPORTANT: Always include hourlyRate for jets/helicopters to calculate estimated total. After adding to cart, ask about additional services like ground transport.",
     input_schema: {
@@ -487,6 +505,9 @@ export async function executeTool(toolName, input) {
 
       case 'lookupLuxuryItem':
         return await lookupLuxuryItem(input);
+
+      case 'lookupPlaceAddress':
+        return await lookupPlaceAddress(input);
 
       case 'addCustomExtra':
         return addCustomExtra(input);
@@ -1872,6 +1893,202 @@ async function lookupLuxuryItem(params) {
       notes: `${category} - availability to be confirmed`,
       image: imageUrl
     }
+  };
+}
+
+/**
+ * Look up the address and location details of a place (restaurant, hotel, landmark, etc.)
+ * Uses Google Places API for rich details including photos, ratings, reviews, and contact info
+ * Falls back to Mapbox Geocoding API if Google Places fails
+ * @param {object} params - { placeName: string, city?: string }
+ * @returns {Promise<object>} - Place details including address, photos, ratings, reviews
+ */
+async function lookupPlaceAddress(params) {
+  const { placeName, city } = params;
+
+  if (!placeName) {
+    return {
+      success: false,
+      error: 'Place name is required'
+    };
+  }
+
+  // Combine place name with city for better accuracy
+  const searchQuery = city ? `${placeName} in ${city}` : placeName;
+
+  try {
+    // Try Google Places API first for rich details
+    const googlePlacesResult = await fetchGooglePlaces(searchQuery);
+
+    if (googlePlacesResult.success && googlePlacesResult.places?.length > 0) {
+      const place = googlePlacesResult.places[0];
+      const alternatives = googlePlacesResult.places.slice(1);
+
+      return {
+        success: true,
+        source: 'google_places',
+        place: {
+          id: place.id,
+          name: place.name,
+          fullAddress: place.address,
+          category: place.category,
+          primaryType: place.primaryType,
+          types: place.types,
+          coordinates: place.location,
+          // Rich details from Google Places
+          rating: place.rating,
+          reviewCount: place.reviewCount,
+          priceLevel: place.priceLevel,
+          photos: place.photos,
+          mainPhoto: place.mainPhoto,
+          website: place.website,
+          phone: place.phone,
+          googleMapsUrl: place.googleMapsUrl,
+          openingHours: place.openingHours,
+          description: place.description,
+          reviews: place.reviews,
+          features: place.features,
+          businessStatus: place.businessStatus
+        },
+        alternatives: alternatives.length > 0 ? alternatives.map(p => ({
+          id: p.id,
+          name: p.name,
+          address: p.address,
+          rating: p.rating,
+          reviewCount: p.reviewCount,
+          category: p.category,
+          mainPhoto: p.mainPhoto,
+          priceLevel: p.priceLevel
+        })) : null,
+        // Display configuration for the UI
+        displayType: 'place_card',
+        message: `Found "${place.name}" - ${place.category || 'Place'}`,
+        canArrangeTransfer: true,
+        transferNote: 'I can arrange a luxury car transfer to this location. Would you like me to check available vehicles?'
+      };
+    }
+
+    // Fallback to Mapbox Geocoding API
+    console.log('Google Places failed or no results, falling back to Mapbox');
+    return await fallbackToMapbox(searchQuery, placeName, city);
+
+  } catch (error) {
+    console.error('Place lookup error:', error);
+    // Try Mapbox as fallback
+    try {
+      return await fallbackToMapbox(searchQuery, placeName, city);
+    } catch (fallbackError) {
+      console.error('Mapbox fallback also failed:', fallbackError);
+      return {
+        success: false,
+        error: 'Unable to look up the place at this time. Please try again.'
+      };
+    }
+  }
+}
+
+/**
+ * Fetch place details from Google Places API via Edge Function
+ */
+async function fetchGooglePlaces(query) {
+  try {
+    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+    const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/google-places`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({
+        action: 'searchText',
+        query: query,
+        maxResults: 5
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Google Places API error:', response.status, errorData);
+      return { success: false, error: errorData.error || 'API request failed' };
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error calling Google Places edge function:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Fallback to Mapbox Geocoding API when Google Places is unavailable
+ */
+async function fallbackToMapbox(searchQuery, placeName, city) {
+  const response = await fetch(
+    `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?access_token=${MAPBOX_TOKEN}&types=poi,address,place&limit=3&language=en`
+  );
+
+  const data = await response.json();
+
+  if (!data.features || data.features.length === 0) {
+    return {
+      success: false,
+      error: `Could not find "${placeName}"${city ? ` in ${city}` : ''}. Please try with more specific details or check the spelling.`
+    };
+  }
+
+  // Get the best match (first result)
+  const place = data.features[0];
+
+  // Extract address components from context
+  const context = place.context || [];
+  const getContextValue = (type) => {
+    const item = context.find(c => c.id.startsWith(type));
+    return item ? item.text : null;
+  };
+
+  const neighborhood = getContextValue('neighborhood');
+  const locality = getContextValue('locality');
+  const placeContext = getContextValue('place');
+  const region = getContextValue('region');
+  const country = getContextValue('country');
+  const postcode = getContextValue('postcode');
+
+  // Check for alternative results
+  const alternatives = data.features.slice(1).map(f => ({
+    name: f.text,
+    address: f.place_name,
+    coordinates: {
+      latitude: f.center[1],
+      longitude: f.center[0]
+    }
+  }));
+
+  return {
+    success: true,
+    source: 'mapbox',
+    place: {
+      name: place.text,
+      fullAddress: place.place_name,
+      streetAddress: place.address ? `${place.address} ${place.text}` : place.text,
+      neighborhood: neighborhood || locality,
+      city: placeContext || locality,
+      region: region,
+      postalCode: postcode,
+      country: country,
+      coordinates: {
+        latitude: place.center[1],
+        longitude: place.center[0]
+      },
+      placeType: place.place_type?.[0] || 'poi',
+      category: place.properties?.category || 'Place'
+    },
+    alternatives: alternatives.length > 0 ? alternatives : null,
+    displayType: 'place_basic',
+    message: `Found "${place.text}" at ${place.place_name}`,
+    canArrangeTransfer: true,
+    transferNote: 'I can arrange a luxury car transfer to this location. Would you like me to check available vehicles?'
   };
 }
 

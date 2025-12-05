@@ -43,6 +43,7 @@ import LoadingMessage from '../LoadingMessage';
 import BulkOrderInterface from '../BulkOrderInterface';
 import SubscriptionModal from '../SubscriptionModal';
 import CryptoPaymentModal from '../Payment/CryptoPaymentModal';
+import PlaceCard from '../PlaceCard';
 
 // Web3
 import { useAccount, useDisconnect, useSignMessage } from 'wagmi';
@@ -107,15 +108,6 @@ const Toast = ({ message, type = 'info', onClose }) => {
     </div>
   );
 };
-
-// Typing Animation Component
-const TypingAnimation = () => (
-  <div className="flex gap-1 py-2">
-    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-  </div>
-);
 
 // Typing Text Effect Component - Smooth word-by-word streaming like ChatGPT
 const TypingText = ({ text, speed = 30, onComplete }) => {
@@ -1793,6 +1785,8 @@ Your quote has been received and will be reviewed within 12 hours.`;
         serviceType = 'yachts';
       } else if (lowerQuery.match(/car|chauffeur|driver|taxi|transfer/)) {
         serviceType = 'luxuryCars';
+      } else if (lowerQuery.match(/hotel|hotels|accommodation|stay|room|resort|lodge/)) {
+        serviceType = 'hotels';
       }
 
       // Extract simple date windows (support "next week")
@@ -1862,6 +1856,13 @@ Your quote has been received and will be reviewed within 12 hours.`;
             totalResults: results.luxuryCars?.length || 0,
             luxuryCars: results.luxuryCars || []
           };
+        } else if (serviceType === 'hotels') {
+          // For hotels, redirect user to the Hotels section
+          filteredResults = {
+            totalResults: 0,
+            hotels: [],
+            redirectToHotels: true
+          };
         }
       } else {
         // No specific service type requested - show all available results
@@ -1869,6 +1870,34 @@ Your quote has been received and will be reviewed within 12 hours.`;
       }
 
       console.log('📊 Filtered results:', filteredResults);
+
+      // Handle hotel search - redirect to Hotels section
+      if (filteredResults.redirectToHotels) {
+        const hotelResponse = `I'd be happy to help you find the perfect hotel! 🏨
+
+Our hotel booking system offers access to over 2 million properties worldwide with exclusive rates.
+
+**Would you like me to take you to our Hotels section?** There you can:
+• Search by city, dates, and number of guests
+• Filter by star rating and price range
+• View room options and amenities
+• Book securely with cryptocurrency
+
+Just say "yes" or "take me to hotels" and I'll navigate you there, or you can click on **Hotels** in the menu.`;
+
+        setChatHistory(prev => prev.map(c => {
+          if (c.id === activeChat) {
+            const updatedMessages = [...c.messages, { role: 'assistant', content: hotelResponse }];
+            setTypingMessageIndex(updatedMessages.length - 1);
+            return { ...c, messages: updatedMessages };
+          }
+          return c;
+        }));
+
+        setAssistantTyping(false);
+        setIsSearching(false);
+        return;
+      }
 
       if (filteredResults.totalResults === 0) {
         // Use AI to generate intelligent "no results" response
@@ -2759,6 +2788,30 @@ As their luxury travel consultant, provide an enthusiastic response that:
               ));
               setIsProcessing(false);
               return; // Exit early - don't continue to AI follow-up
+            } else if (toolUse.name === 'lookupPlaceAddress' && toolResult.place) {
+              // Show place card with rich info (photos, ratings, reviews)
+              const place = toolResult.place;
+              const placeMessage = {
+                role: 'assistant',
+                content: toolResult.message || `Found "${place.name}"`,
+                placeCard: {
+                  place: place,
+                  alternatives: toolResult.alternatives,
+                  source: toolResult.source,
+                  displayType: toolResult.displayType,
+                  canArrangeTransfer: toolResult.canArrangeTransfer
+                }
+              };
+
+              setChatHistory(prev => prev.map(c =>
+                c.id === workingChatId
+                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), placeMessage] }
+                  : c
+              ));
+
+              await chatService.updateChatMessages(workingChatId, [...conversationHistory, placeMessage], user.id);
+              setIsProcessing(false);
+              return; // Exit early - place card is self-contained
             }
 
             // Only add results message if we have tabs to display
@@ -4106,28 +4159,29 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                         </div>
                       </div>
                     )}
+
+                    {/* Place Card - Rich place info with photos, ratings, reviews */}
+                    {msg.placeCard && msg.placeCard.place && (
+                      <div className="mt-3">
+                        <PlaceCard
+                          place={msg.placeCard.place}
+                          alternatives={msg.placeCard.alternatives}
+                          showAlternatives={msg.placeCard.alternatives?.length > 0}
+                          onRequestTransfer={(place) => {
+                            // Pre-fill transfer request with place address
+                            const transferMessage = `I'd like a transfer to ${place.name} at ${place.fullAddress}`;
+                            handleSendMessage(transferMessage);
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               );
             })}
 
-            {assistantTyping && !isSearching && (
-              <div className="flex justify-start w-full">
-                <div className="flex flex-col gap-1 ml-12" style={{ maxWidth: '75%' }}>
-                  <div className="flex items-center gap-2 px-2">
-                    <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
-                    <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
-                    <span className="text-xs text-gray-400">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
-                  </div>
-                  <div className="px-4 py-3 bg-gray-200 text-black border border-gray-300 rounded-2xl">
-                    <TypingAnimation />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Show loading indicator when searching OR processing AI response */}
-            {(isSearching || isProcessing) && (
+            {/* Single loading indicator for all AI processing states */}
+            {(assistantTyping || isSearching || isProcessing) && (
               <div className="flex justify-start w-full">
                 <div className="flex flex-col gap-1 ml-12" style={{ maxWidth: '75%' }}>
                   <div className="flex items-center gap-2 px-2">

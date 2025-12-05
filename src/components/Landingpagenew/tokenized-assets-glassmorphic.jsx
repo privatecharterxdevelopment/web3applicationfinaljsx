@@ -77,6 +77,7 @@ import EscrowPage from './EscrowPage';
 import { airportsJsonService } from '../../services/airportsJsonService';
 import { isNativeApp } from '../../utils/platform';
 import { AppLoginModal, AppRegisterModal } from '../auth';
+import HotelBookingView from '../Hotels/HotelBookingView';
 
 // Settings Page Component
 const SettingsPage = ({ user, kycStatus, setKycStatus, setActiveCategory }) => {
@@ -3528,6 +3529,7 @@ const TokenizedAssetsGlassmorphic = () => {
     { id: 'jets', label: 'Jets', icon: Plane, category: 'jets' },
     { id: 'helicopter', label: 'Helis', icon: Zap, category: 'helicopter' },
     { id: 'empty-legs', label: 'Empty Legs', icon: MapPin, category: 'empty-legs' },
+    { id: 'hotels', label: 'Hotels', icon: Building2, category: 'hotels' },
     { id: 'adventures', label: 'Adventures', icon: Mountain, category: 'adventures' },
     // { id: 'assets', label: 'Events & Sports', icon: Calendar, category: 'assets' }, // Hidden for MVP
     // { id: 'luxury-cars', label: 'Luxury Cars', icon: Car, category: 'luxury-cars' }, // Hidden - now integrated into Ground Transport
@@ -9090,6 +9092,13 @@ const TokenizedAssetsGlassmorphic = () => {
                   <div className="text-sm text-gray-600">No empty legs found matching your criteria.</div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* HOTELS SECTION */}
+          {!isTransitioning && activeCategory === 'hotels' && (
+            <div className="w-full flex-1 flex flex-col -mx-4 md:-mx-6 -my-4 md:-my-6">
+              <HotelBookingView onBack={() => setActiveCategory('jets')} />
             </div>
           )}
 
