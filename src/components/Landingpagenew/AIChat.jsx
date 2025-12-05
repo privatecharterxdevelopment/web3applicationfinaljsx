@@ -2672,6 +2672,28 @@ As their luxury travel consultant, provide an enthusiastic response that:
                 count: toolResult.results.length,
                 items: toolResult.results
               });
+            } else if (toolUse.name === 'searchAirportTransfer' && toolResult.results && toolResult.results.length > 0) {
+              // Add route info and type to each vehicle for display
+              const transferResults = toolResult.results.map(vehicle => ({
+                ...vehicle,
+                type: 'transfer', // Required for SearchResults component to render correctly
+                route: toolResult.route,
+                pricing: toolResult.pricing,
+                booking: toolResult.booking,
+                // Add route distance/duration to item for display
+                distanceKm: toolResult.route?.distanceKm || vehicle.distanceKm,
+                durationMinutes: toolResult.route?.durationMinutes || vehicle.durationMinutes,
+                // Use totalWithFee as the display price
+                price: vehicle.totalWithFee || vehicle.basePrice || vehicle.price || vehicle.hourly_rate_eur
+              }));
+              tabs.push({
+                id: 'transfers',
+                title: 'Ground Transport',
+                count: transferResults.length,
+                items: transferResults,
+                routeInfo: toolResult.route,
+                pricingInfo: toolResult.pricing
+              });
             } else if (toolUse.name === 'addToCart' && toolResult.action === 'ADD_TO_CART' && toolResult.cartItem) {
               // Instead of auto-adding to cart, show action buttons for user to confirm
               const confirmMessage = {
