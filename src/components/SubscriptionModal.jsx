@@ -1,9 +1,12 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 
 const SubscriptionModal = ({ isOpen, onClose, currentTier = 'explorer', onUpgrade }) => {
   const { user } = useAuth();
+  const isNative = Capacitor.isNativePlatform();
 
   // Use environment variables for Stripe payment links
   const stripePaymentLinks = {
@@ -46,7 +49,7 @@ const SubscriptionModal = ({ isOpen, onClose, currentTier = 'explorer', onUpgrad
     }
   ];
 
-  const handlePlanClick = (plan) => {
+  const handlePlanClick = async (plan) => {
     if (onUpgrade) {
       onUpgrade(plan.id);
     } else if (plan.stripeLink) {
@@ -68,8 +71,22 @@ const SubscriptionModal = ({ isOpen, onClose, currentTier = 'explorer', onUpgrad
         ? `${plan.stripeLink}?${params.toString()}`
         : plan.stripeLink;
 
-      console.log('🔗 Redirecting to Stripe payment:', { tier: plan.id, userId: user?.id });
-      window.location.href = url;
+      console.log('🔗 Redirecting to Stripe payment:', { tier: plan.id, userId: user?.id, isNative });
+
+      // Use Capacitor Browser for native apps (opens in-app browser like Safari View Controller)
+      // This keeps user in the app and allows return after payment
+      if (isNative) {
+        try {
+          await Browser.open({ url, presentationStyle: 'fullscreen' });
+        } catch (error) {
+          console.error('Failed to open browser:', error);
+          // Fallback to window.location if Browser fails
+          window.location.href = url;
+        }
+      } else {
+        // Web: use window.location for redirect
+        window.location.href = url;
+      }
     } else {
       console.warn('No Stripe payment link configured for', plan.id);
       alert('Payment link not configured. Please contact support.');
