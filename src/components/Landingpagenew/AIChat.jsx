@@ -3685,14 +3685,22 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
   console.log('🎨 Rendering: CHAT VIEW with chat:', renderChat.id, renderChat.title);
 
   // CHAT VIEW - Messages flow from bottom like WhatsApp
+  // Using h-[100dvh] for proper mobile viewport height (accounts for iOS Safari address bar)
   return (
-    <div className="ai-chat-page h-full flex bg-transparent overflow-hidden">
+    <div className="ai-chat-page h-[100dvh] flex bg-transparent overflow-hidden" style={{ height: '100dvh', minHeight: '-webkit-fill-available' }}>
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-      {/* 1. HEADER - STICKY TOP - More compact on mobile */}
-      <div className="flex-shrink-0 px-3 sm:px-6 py-2 sm:py-4 bg-white/10 border-b border-white/20" style={{ backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)' }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      {/* 1. HEADER - STICKY TOP - Compact on mobile with safe area */}
+      <div
+        className="flex-shrink-0 px-3 sm:px-6 py-2 sm:py-3 bg-white/10 border-b border-white/20"
+        style={{
+          backdropFilter: 'blur(40px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+          paddingTop: 'max(0.5rem, env(safe-area-inset-top))'
+        }}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
             <button
               onClick={() => {
                 // Navigate back to overview/chat history
@@ -3706,38 +3714,30 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 setCartItems([]);
                 setSearchResults(null);
               }}
-              className="px-3 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors"
+              className="flex-shrink-0 p-2 sm:px-3 sm:py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors"
             >
               <ArrowLeft size={18} />
             </button>
-            <h2 className="text-lg font-semibold text-black truncate max-w-md">
-              {renderChat?.title || renderChat?.messages?.find(m => m.role === 'user')?.content?.slice(0, 50) || 'New chat'}
+            <h2 className="text-sm sm:text-lg font-semibold text-black truncate">
+              {renderChat?.title || renderChat?.messages?.find(m => m.role === 'user')?.content?.slice(0, 30) || 'New chat'}
             </h2>
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* 1. Chat Counter - Clickable to open subscriptions */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+            {/* 1. Chat Counter - Clickable to open subscriptions - Hide text on mobile */}
             <button
               onClick={() => setShowSubscriptionModal(true)}
-              className="px-2 py-1 bg-white/80 hover:bg-white rounded-md text-[11px] font-medium text-gray-600 transition-colors flex items-center gap-1.5 border border-gray-200/50"
+              className="px-1.5 sm:px-2 py-1 bg-white/80 hover:bg-white rounded-md text-[10px] sm:text-[11px] font-medium text-gray-600 transition-colors flex items-center gap-1 border border-gray-200/50"
               title="Manage subscription"
             >
               {userSubscriptionLimits?.tier === 'elite' || userSubscriptionLimits?.unlimited_chats ? (
-                <span className="flex items-center gap-1 text-gray-600">
-                  <span className="text-base font-light">∞</span>
-                </span>
+                <span className="text-sm sm:text-base font-light">∞</span>
               ) : userSubscriptionLimits?.tier === 'pro' ? (
-                <span className="flex items-center gap-1 text-gray-600">
-                  <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 20}</span>
-                </span>
+                <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 20}</span>
               ) : userSubscriptionLimits?.tier === 'starter' ? (
-                <span className="flex items-center gap-1 text-gray-600">
-                  <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 5}</span>
-                </span>
+                <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 5}</span>
               ) : (
-                <span className="flex items-center gap-1 text-gray-600">
-                  <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 1}</span>
-                </span>
+                <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 1}</span>
               )}
             </button>
 
@@ -3749,16 +3749,16 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             >
               <ShoppingCart size={14} />
               {cartItems.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-gray-900 text-white text-[9px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-medium">
+                <span className="absolute -top-0.5 -right-0.5 bg-gray-900 text-white text-[8px] sm:text-[9px] rounded-full w-3 h-3 sm:w-3.5 sm:h-3.5 flex items-center justify-center font-medium">
                   {cartItems.length}
                 </span>
               )}
             </button>
 
-            {/* 3. Report Issue Button - Last */}
+            {/* 3. Report Issue Button - Hidden on very small screens */}
             <button
               onClick={() => setShowReportIssueModal(true)}
-              className="p-1.5 bg-white/80 hover:bg-white rounded-md text-gray-400 hover:text-gray-600 transition-colors border border-gray-200/50"
+              className="hidden xs:flex p-1.5 bg-white/80 hover:bg-white rounded-md text-gray-400 hover:text-gray-600 transition-colors border border-gray-200/50"
               title="Report"
             >
               <AlertCircle size={14} />
@@ -4226,8 +4226,13 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         </div>
       </div>
 
-      {/* 3. INPUT - STICKY AT BOTTOM - Less padding on mobile */}
-      <div className="flex-shrink-0 px-4 sm:px-6 pb-4 sm:pb-6 pt-3 sm:pt-4">
+      {/* 3. INPUT - STICKY AT BOTTOM - Safe area padding for iPhone */}
+      <div
+        className="flex-shrink-0 px-3 sm:px-6 pt-2 sm:pt-3"
+        style={{
+          paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))'
+        }}
+      >
         <div className="max-w-3xl mx-auto">
           {/* Chat Limit Reached (Free users - no more chats) - Only block NEW chat creation, not existing chats */}
           {chatLimitReached && activeChat === 'new' ? (
@@ -4288,19 +4293,19 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             </div>
           ) : (
             /* Normal Input */
-            <div className="flex items-center gap-3 bg-gray-50 border border-gray-300 rounded-xl px-4 py-3">
+            <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 border border-gray-300 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3">
               {/* Break the Price Button - Left side of input */}
               <button
                 onClick={() => setShowBreakThePrice(true)}
                 disabled={!canUseBreakThePrice() || isSearching}
-                className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                className={`flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-colors ${
                   canUseBreakThePrice()
                     ? 'bg-gray-800 text-white hover:bg-gray-700'
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 } disabled:opacity-50`}
                 title={canUseBreakThePrice() ? 'Break the Price - Upload competitor quote' : 'Upgrade to unlock Break the Price'}
               >
-                <Upload size={18} />
+                <Upload size={16} className="sm:w-[18px] sm:h-[18px]" />
               </button>
 
               <input
@@ -4317,12 +4322,12 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 }}
                 placeholder="Message Sphera..."
                 disabled={isSearching}
-                className="flex-1 bg-transparent border-none outline-none text-sm text-gray-700 placeholder-gray-400 disabled:cursor-not-allowed"
+                className="flex-1 bg-transparent border-none outline-none text-sm text-gray-700 placeholder-gray-400 disabled:cursor-not-allowed min-w-0"
               />
 
-              {/* Message counter - hide for Elite (unlimited) */}
+              {/* Message counter - hide on mobile, hide for Elite (unlimited) */}
               {messageCount > 0 && !userSubscriptionLimits?.unlimited_messages && (
-                <span className={`text-xs px-2 py-1 rounded-full ${
+                <span className={`hidden sm:inline-block text-xs px-2 py-1 rounded-full flex-shrink-0 ${
                   messageCount >= MAX_MESSAGES_PER_CHAT - 3
                     ? 'bg-gray-200 text-gray-700'
                     : 'bg-gray-100 text-gray-500'
@@ -4337,13 +4342,13 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   handleSendMessage(currentMessage);
                 }}
                 disabled={!currentMessage.trim() || isSearching}
-                className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                className={`flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
                   currentMessage.trim() && !isSearching
                     ? 'bg-gray-200 text-gray-600 hover:bg-gray-300 hover:scale-110'
                     : 'bg-gray-100 text-gray-300 cursor-not-allowed'
                 }`}
               >
-                <Send size={18} />
+                <Send size={16} className="sm:w-[18px] sm:h-[18px]" />
               </button>
             </div>
           )}
