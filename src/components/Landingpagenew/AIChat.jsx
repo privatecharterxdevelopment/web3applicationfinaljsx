@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Mic, Send, X, Volume2, VolumeX, Edit2, Shield, Wallet, ShoppingCart, MessageSquare, Plus, Crown, AlertCircle, Calendar, Trash2, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Plane, Clock, Upload, FileText, DollarSign, Users, MapPin, Anchor, Mountain, Car, Minus
 } from 'lucide-react';
@@ -205,7 +205,8 @@ const AIChat = ({
   activeChat: activeChatProp,
   setActiveChat: setActiveChatProp,
   chatHistory: chatHistoryProp,
-  setChatHistory: setChatHistoryProp
+  setChatHistory: setChatHistoryProp,
+  onBack = null // Callback to navigate back to overview
 }) => {
   // Use auth context (returns null if not in AuthProvider)
   const authContext = useAuth();
@@ -215,6 +216,7 @@ const AIChat = ({
   // URL routing for direct chat links
   const { chatId: urlChatId } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   console.log('👤 User info:', { userId: user?.id, isAdmin, hasAuthContext: !!authContext });
 
@@ -330,6 +332,8 @@ const AIChat = ({
   const [stopSearchQuery, setStopSearchQuery] = useState('');
   const [stopSearchResults, setStopSearchResults] = useState([]);
   const [isSearchingStops, setIsSearchingStops] = useState(false);
+  const [editingEndpoint, setEditingEndpoint] = useState(null); // 'origin' | 'destination' | null
+  const [editEndpointItemId, setEditEndpointItemId] = useState(null); // Which cart item's endpoint is being edited
 
   // Web3 Wallet
   const { address: walletAddress, isConnected: isWalletConnected } = useAccount();
@@ -347,6 +351,7 @@ const AIChat = ({
   const hasGreetedRef = useRef(false);
   const isReturningUserRef = useRef(false);
   const messagesEndRef = useRef(null);
+  const localChatIdsRef = useRef(new Set()); // Track locally created chat IDs to skip DB fetch
 
   // =======================
   // EFFECTS & CALLBACKS
@@ -367,6 +372,21 @@ const AIChat = ({
   // URL-based chat loading: Load specific chat when navigating to /chat/:chatId
   useEffect(() => {
     if (urlChatId && urlChatId !== 'new' && user?.id) {
+      // Skip if this is a locally-created chat (not saved to DB yet)
+      if (localChatIdsRef.current.has(urlChatId)) {
+        console.log('🏠 Skipping DB fetch for locally-created chat:', urlChatId);
+        setActiveChat(urlChatId);
+        return;
+      }
+
+      // Check if chat already exists in local history
+      const existsLocally = chatHistory.find(c => c.id === urlChatId);
+      if (existsLocally) {
+        console.log('📂 Chat found in local history:', urlChatId);
+        setActiveChat(urlChatId);
+        return;
+      }
+
       console.log('🔗 Loading chat from URL:', urlChatId);
       // Load the specific chat from the database
       const loadChatFromUrl = async () => {
@@ -400,7 +420,7 @@ const AIChat = ({
       };
       loadChatFromUrl();
     }
-  }, [urlChatId, user?.id]);
+  }, [urlChatId, user?.id, chatHistory]);
 
   // Initialize Speech Recognition for Voice Mode
   useEffect(() => {
@@ -674,10 +694,50 @@ const AIChat = ({
     try {
       const profile = await subscriptionService.getUserProfile(user.id);
       setUserProfile(profile);
+
+      // Check if user has reached chat limit on load (strict enforcement)
+      if (!isAdmin && profile) {
+        const { canStart, chatsUsed, chatsLimit } = await subscriptionService.canStartNewChat(user.id);
+        if (!canStart) {
+          console.log('🚫 User has reached chat limit on load:', { chatsUsed, chatsLimit });
+          setChatLimitReached(true);
+        } else {
+          setChatLimitReached(false);
+        }
+      }
     } catch (error) {
       console.error('Error loading user profile:', error);
     }
   };
+
+  // Handle subscription success - refresh profile when returning from Stripe payment
+  useEffect(() => {
+    const subscriptionSuccess = searchParams.get('subscription_success');
+    if (subscriptionSuccess === 'true' && user?.id) {
+      console.log('🎉 Subscription success detected - refreshing profile...');
+      // Clear the URL parameter
+      setSearchParams(prev => {
+        prev.delete('subscription_success');
+        return prev;
+      });
+      // Refresh profile and reset chat limit state
+      loadUserProfile();
+      setToast({ message: 'Subscription activated! Your chat limits have been updated.', type: 'success' });
+    }
+  }, [searchParams, user?.id]);
+
+  // Refresh profile when window regains focus (useful when payment completed in another tab)
+  useEffect(() => {
+    const handleFocus = async () => {
+      if (user?.id && showSubscriptionModal) {
+        console.log('🔄 Window focused with subscription modal open - refreshing profile...');
+        await loadUserProfile();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user?.id, showSubscriptionModal]);
 
   // Load user's chat history from database
   useEffect(() => {
@@ -693,7 +753,15 @@ const AIChat = ({
           date: new Date(chat.updated_at).toLocaleDateString(),
           messages: chat.messages || []
         }));
-        setChatHistory(formattedChats);
+        // Merge with existing local chats (don't overwrite locally-created chats)
+        setChatHistory(prev => {
+          // Get IDs of locally-created chats that aren't in the DB yet
+          const localOnlyChats = prev.filter(c => localChatIdsRef.current.has(c.id));
+          // Combine: local chats first, then DB chats (avoiding duplicates)
+          const dbChatIds = new Set(formattedChats.map(c => c.id));
+          const uniqueLocalChats = localOnlyChats.filter(c => !dbChatIds.has(c.id));
+          return [...uniqueLocalChats, ...formattedChats];
+        });
       }
       setChatsLoaded(true);
     };
@@ -1293,12 +1361,122 @@ const AIChat = ({
     const stopNames = stops.map(s => s.code || s.name?.substring(0, 3).toUpperCase()).join(' → ');
     return `${origin} → ${stopNames} → ${destination}`;
   };
+
+  // Update origin or destination of a cart item
+  const updateCartItemEndpoint = useCallback((cartItemId, endpointType, newAirport) => {
+    setCartItems(prev => prev.map(item => {
+      if (item.cartId !== cartItemId) return item;
+      if (item.type !== 'jets' && item.type !== 'jet' && item.type !== 'helicopters' && item.type !== 'helicopter') return item;
+
+      let updatedItem = { ...item };
+
+      if (endpointType === 'origin') {
+        updatedItem = {
+          ...updatedItem,
+          from: newAirport.city || newAirport.name,
+          from_city: newAirport.city || newAirport.name,
+          origin: newAirport.city || newAirport.name,
+          from_iata: newAirport.code || newAirport.iata,
+          originIata: newAirport.code || newAirport.iata,
+          originLat: newAirport.lat,
+          originLng: newAirport.lng
+        };
+      } else if (endpointType === 'destination') {
+        updatedItem = {
+          ...updatedItem,
+          to: newAirport.city || newAirport.name,
+          to_city: newAirport.city || newAirport.name,
+          destination: newAirport.city || newAirport.name,
+          to_iata: newAirport.code || newAirport.iata,
+          destinationIata: newAirport.code || newAirport.iata,
+          destLat: newAirport.lat,
+          destLng: newAirport.lng
+        };
+      }
+
+      // Recalculate route with stops if any
+      if (updatedItem.stops && updatedItem.stops.length > 0) {
+        const { totalDistance, totalFlightTime, legs, totalPrice } = calculateMultiStopRoute(updatedItem, updatedItem.stops);
+        updatedItem = {
+          ...updatedItem,
+          legs: legs,
+          totalDistance: totalDistance,
+          flightDistanceNm: totalDistance * 0.539957,
+          flightTimeHours: totalFlightTime,
+          estimatedDuration: formatDuration(totalFlightTime),
+          billedHours: Math.ceil(totalFlightTime),
+          estimatedPrice: totalPrice,
+          price: totalPrice,
+          basePrice: totalPrice,
+          totalWithFee: totalPrice,
+          priceCalculation: `${Math.ceil(totalFlightTime)}h × €${updatedItem.hourly_rate_eur?.toLocaleString() || 0}/hr`,
+          route: formatMultiStopRoute(
+            updatedItem.from || updatedItem.origin,
+            updatedItem.stops,
+            updatedItem.to || updatedItem.destination
+          )
+        };
+      } else {
+        // Direct route - recalculate
+        const origin = { lat: updatedItem.originLat || 0, lng: updatedItem.originLng || 0 };
+        const dest = { lat: updatedItem.destLat || 0, lng: updatedItem.destLng || 0 };
+        const distanceKm = calculateLegDistance(origin, dest);
+        const speedKmh = (updatedItem.speed_kts || 450) * 1.852;
+        const flightTimeHours = distanceKm / speedKmh;
+        const billedHours = Math.ceil(flightTimeHours);
+        const totalPrice = billedHours * (updatedItem.hourly_rate_eur || 0);
+
+        updatedItem = {
+          ...updatedItem,
+          totalDistance: distanceKm,
+          flightDistanceNm: distanceKm * 0.539957,
+          flightTimeHours: flightTimeHours,
+          estimatedDuration: formatDuration(flightTimeHours),
+          billedHours: billedHours,
+          estimatedPrice: totalPrice,
+          price: totalPrice,
+          basePrice: totalPrice,
+          totalWithFee: totalPrice,
+          priceCalculation: `${billedHours}h × €${updatedItem.hourly_rate_eur?.toLocaleString() || 0}/hr`,
+          route: `${updatedItem.from || updatedItem.origin} → ${updatedItem.to || updatedItem.destination}`
+        };
+      }
+
+      return updatedItem;
+    }));
+
+    // Close the modal
+    setEditingEndpoint(null);
+    setEditEndpointItemId(null);
+    setStopSearchQuery('');
+    setStopSearchResults([]);
+
+    setToast({ message: `${endpointType === 'origin' ? 'Departure' : 'Arrival'} updated`, type: 'cart' });
+  }, [calculateLegDistance, calculateMultiStopRoute]);
   // ===== END MULTI-STOP FUNCTIONS =====
 
-  // Break the Price - check if user has access
+  // Break the Price - check if user has access AND has available chats
   const canUseBreakThePrice = useCallback(() => {
-    if (!userSubscriptionLimits) return false;
-    return userSubscriptionLimits.break_the_price === true;
+    if (!userSubscriptionLimits) {
+      console.log('🔒 canUseBreakThePrice: No subscription limits loaded');
+      return false;
+    }
+    // Must have break_the_price feature enabled (starter, pro, elite)
+    if (userSubscriptionLimits.break_the_price !== true) {
+      console.log('🔒 canUseBreakThePrice: Feature not enabled for tier:', userSubscriptionLimits.tier);
+      return false;
+    }
+    // Elite users always have access (unlimited)
+    if (userSubscriptionLimits.tier === 'elite' || userSubscriptionLimits.unlimited_chats) {
+      console.log('🔓 canUseBreakThePrice: Elite user - unlimited access');
+      return true;
+    }
+    // Non-elite users need at least 1 chat remaining (break the price costs 1 chat)
+    const chatsRemaining = userSubscriptionLimits.chats_remaining ??
+      ((userSubscriptionLimits.chats_limit || 0) - (userSubscriptionLimits.chats_used || 0));
+    const hasAccess = chatsRemaining >= 1;
+    console.log(`🔐 canUseBreakThePrice: ${hasAccess ? '🔓' : '🔒'} chatsRemaining=${chatsRemaining}, tier=${userSubscriptionLimits.tier}`);
+    return hasAccess;
   }, [userSubscriptionLimits]);
 
   // Convert PDF to images for Claude Vision analysis
@@ -1597,13 +1775,15 @@ Your quote has been received and will be reviewed within 12 hours.`;
     }
   }, [user?.id, activeChat, canUseBreakThePrice, userSubscriptionLimits, convertPdfToImages, parseExtractedQuoteData]);
 
-  // Fetch user subscription limits on mount
+  // Fetch user subscription limits on mount and when subscription changes
   useEffect(() => {
     const fetchSubscriptionLimits = async () => {
       if (!user?.id) return;
       try {
+        console.log('🔄 Fetching subscription limits for user:', user.id, 'tier:', user.subscription_tier);
         const { data, error } = await supabase.rpc('get_chat_limits', { p_user_id: user.id });
         if (!error && data) {
+          console.log('✅ Subscription limits received:', data);
           setUserSubscriptionLimits(data);
         }
       } catch (err) {
@@ -1611,6 +1791,39 @@ Your quote has been received and will be reviewed within 12 hours.`;
       }
     };
     fetchSubscriptionLimits();
+  }, [user?.id, user?.subscription_tier]); // Re-fetch when tier changes via AuthContext
+
+  // Set up real-time listener for user_profiles changes to update subscription limits
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('aichat_profile_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_profiles',
+          filter: `user_id=eq.${user.id}`
+        },
+        async (payload) => {
+          console.log('📡 AIChat: Subscription changed, refreshing limits...', payload.new);
+          // Re-fetch subscription limits when profile updates
+          const { data, error } = await supabase.rpc('get_chat_limits', { p_user_id: user.id });
+          if (!error && data) {
+            console.log('✅ AIChat: Updated subscription limits:', data);
+            setUserSubscriptionLimits(data);
+            // Also reload user profile
+            loadUserProfile();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user?.id]);
 
   const handleSaveAdjustment = (adjustedItem) => {
@@ -2248,16 +2461,20 @@ As their luxury travel consultant, provide an enthusiastic response that:
         return;
       }
 
-      // Check if user can start a new chat (subscription limit)
+      // Check if user can start a new chat (subscription limit) - STRICT enforcement
       if (!isAdmin) {
         try {
           const { canStart, chatsUsed, chatsLimit } = await subscriptionService.canStartNewChat(user.id);
           if (!canStart) {
+            console.log('🚫 Chat limit reached - BLOCKING');
             setChatLimitReached(true);
             setToast({
-              message: `You've used your free chat. Upgrade to continue booking luxury travel.`,
+              message: `You've reached your chat limit (${chatsUsed}/${chatsLimit}). Upgrade to continue.`,
               type: 'warning'
             });
+            // Show subscription modal immediately for upgrade
+            setShowSubscriptionModal(true);
+            setIsProcessing(false);
             return;
           }
         } catch (error) {
@@ -2280,8 +2497,8 @@ As their luxury travel consultant, provide an enthusiastic response that:
           chatTitle = chat.title;
           console.log('✅ Chat created in database:', { id: chatId, title: chatTitle });
 
-          // Increment chat usage count for subscription tracking
-          if (!isAdmin) {
+          // Increment chat usage count for subscription tracking (skip for admin and elite users)
+          if (!isAdmin && userSubscriptionLimits?.tier !== 'elite') {
             try {
               await subscriptionService.incrementChatUsage(user.id);
               // Also create chat usage record for message tracking
@@ -2694,15 +2911,19 @@ As their luxury travel consultant, provide an enthusiastic response that:
         console.log('📊 Subscription check result:', { canStart, chatsUsed, chatsLimit });
 
         if (!canStart) {
-          console.log('⚠️ Limit reached - allowing chat but showing warning');
+          console.log('🚫 Chat limit reached - BLOCKING new chat');
           // Show toast notification
           setToast({
-            message: `Chat limit reached (${chatsUsed}/${chatsLimit}). Upgrade to continue using Sphera AI.`,
+            message: `You've reached your chat limit (${chatsUsed}/${chatsLimit}). Upgrade to continue using Sphera AI.`,
             type: 'warning'
           });
-          // Set flag to show warning message in chat
-          setLimitWarningShown(true);
-          // Continue creating chat anyway
+          // Show subscription modal immediately
+          setShowSubscriptionModal(true);
+          // Set flag to block future attempts
+          setChatLimitReached(true);
+          setIsProcessing(false);
+          // BLOCK - do not continue creating chat
+          return;
         }
       } else if (isAdmin) {
         console.log('👑 Admin user - bypassing subscription limits');
@@ -2718,8 +2939,8 @@ As their luxury travel consultant, provide an enthusiastic response that:
       console.log('💾 Chat creation result:', { success, chatId: chat?.id });
 
       if (success) {
-        // Increment chat usage (non-critical - don't block if it fails)
-        if (user?.id && !isAdmin) {
+        // Increment chat usage (non-critical - don't block if it fails, skip for elite users)
+        if (user?.id && !isAdmin && userSubscriptionLimits?.tier !== 'elite') {
           try {
             await subscriptionService.incrementChatUsage(user.id);
             await loadUserProfile(); // Reload profile to update UI
@@ -3342,186 +3563,97 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
     }
   };
 
-  // NEW CHAT VIEW - Clean welcome with input ready
-  if (activeChat === 'new') {
-    console.log('🎨 Rendering: NEW CHAT VIEW (clean welcome)');
+  // Generate a proper UUID v4
+  const generateUUID = useCallback(() => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }, []);
 
-    // Handle sending message from new chat view
-    const handleNewChatMessage = (message) => {
-      if (!message.trim()) return;
+  // Generate the Sphera AI welcome message
+  const getWelcomeMessage = useCallback(() => {
+    const timeOfDay = new Date().getHours();
+    let greeting = timeOfDay < 12 ? 'Good morning' : timeOfDay < 18 ? 'Good afternoon' : 'Good evening';
+    greeting += user?.name ? ` ${user.name}` : '';
+    greeting += `. I'm Sphera, your luxury travel AI assistant. How can I help you today?`;
+    return greeting;
+  }, [user?.name]);
 
-      // Create chat immediately and switch to it
-      const chatId = `chat-${Date.now()}`;
-      const userMessage = { role: 'user', content: message };
-      const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
+  // AUTO-CREATE NEW CHAT - When activeChat is 'new', create and switch immediately
+  const pendingChatRef = useRef(null);
 
+  useEffect(() => {
+    // Skip auto-create if there's an initialQuery - let the initialQuery effect handle chat creation
+    if (initialQuery && initialQuery.trim()) {
+      console.log('⏭️ Skipping auto-create: initialQuery will handle chat creation');
+      return;
+    }
+
+    if (activeChat === 'new' && user?.id) {
+      // Check if we already have a pending chat being created
+      if (pendingChatRef.current) return;
+
+      console.log('🆕 Auto-creating new chat session...');
+      const chatId = generateUUID();
+      const welcomeMsg = getWelcomeMessage();
       const newChat = {
         id: chatId,
-        title: message.slice(0, 50) + (message.length > 50 ? '...' : ''),
+        title: '', // Empty until user sends first message
         date: 'Just now',
-        messages: [userMessage, loadingMsg]
+        messages: [{ role: 'assistant', content: welcomeMsg }]
       };
 
+      pendingChatRef.current = chatId;
+      localChatIdsRef.current.add(chatId);
+
+      // Add to history and switch in one go
       setChatHistory(prev => [newChat, ...prev]);
       setActiveChat(chatId);
-      setCurrentMessage('');
 
-      // Send the message to AI after switching
+      // Clear pending after state updates
       setTimeout(() => {
-        handleSendMessage(message);
+        pendingChatRef.current = null;
       }, 100);
-    };
+    }
+  }, [activeChat, user?.id, generateUUID, getWelcomeMessage, initialQuery]);
 
-    return (
-      <div className="h-full bg-transparent flex flex-col overflow-hidden">
-        {/* Welcome Header */}
-        <div className="flex-shrink-0 px-4 sm:px-8 py-6 sm:py-10 text-center">
-          <h2 className="text-2xl sm:text-3xl font-light text-gray-900 mb-2">How can I help you today?</h2>
-          <p className="text-sm text-gray-500">Ask me anything about private jets, yachts, luxury cars, and more</p>
-        </div>
+  // Simple fallback for rendering - create a temporary chat object if needed
+  const renderChat = useMemo(() => {
+    // If we have a current chat from history, use it
+    if (currentChat) return currentChat;
 
-        {/* Spacer */}
-        <div className="flex-1"></div>
+    // Generate welcome message for placeholder chats
+    const welcomeMsg = getWelcomeMessage();
+    const defaultMessages = [{ role: 'assistant', content: welcomeMsg }];
 
-        {/* FIXED INPUT - Floating bottom - Less padding on mobile */}
-        <div className="flex-shrink-0 px-4 sm:px-6 pb-4 sm:pb-6">
-          <div className="max-w-3xl mx-auto">
-            {/* Chat Limit Reached (Free users - no more chats) */}
-            {chatLimitReached ? (
-              <div className="bg-white/90 backdrop-blur-xl border border-gray-300 rounded-xl p-4 shadow-lg">
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <AlertCircle size={20} className="text-gray-600" />
-                    <span className="font-medium text-gray-900">Chat Limit Reached</span>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-4">
-                    You've used your free chat. Upgrade to continue booking luxury travel.
-                  </p>
-                  <button
-                    onClick={() => setShowSubscriptionModal(true)}
-                    className="w-full py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
-                  >
-                    <Crown size={18} />
-                    Upgrade Now
-                  </button>
-                </div>
-              </div>
-            ) : messageLimitReached ? (
-              /* Message Limit Reached (20 messages per chat) */
-              <div className="bg-white/90 backdrop-blur-xl border border-gray-300 rounded-xl p-4 shadow-lg">
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <MessageSquare size={20} className="text-gray-500" />
-                    <span className="font-medium text-gray-900">Message Limit Reached</span>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-4">
-                    You've reached 20 messages for this conversation.
-                    {cartItems.length > 0 && ` You have ${cartItems.length} item${cartItems.length > 1 ? 's' : ''} in your cart.`}
-                  </p>
-                  <div className="flex gap-3">
-                    {/* Show View Cart button if items in cart */}
-                    {cartItems.length > 0 ? (
-                      <>
-                        <button
-                          onClick={() => setShowCartSidebar(true)}
-                          className="flex-1 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
-                        >
-                          <ShoppingCart size={18} />
-                          View Cart ({cartItems.length})
-                        </button>
-                        <button
-                          onClick={() => setShowRequestForm(true)}
-                          className="flex-1 py-3 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-colors font-medium border border-gray-300 flex items-center justify-center gap-2"
-                        >
-                          <Send size={18} />
-                          Send Request
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => setShowRequestForm(true)}
-                          className="flex-1 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
-                        >
-                          <Send size={18} />
-                          Send Request
-                        </button>
-                        <button
-                          onClick={() => setShowSubscriptionModal(true)}
-                          className="flex-1 py-3 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-colors font-medium border border-gray-300 flex items-center justify-center gap-2"
-                        >
-                          <Crown size={18} />
-                          Upgrade
-                        </button>
-                      </>
-                    )}
-                  </div>
-                  {/* Upgrade option for more messages */}
-                  <button
-                    onClick={() => setShowSubscriptionModal(true)}
-                    className="mt-3 w-full py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors flex items-center justify-center gap-1"
-                  >
-                    <Crown size={14} />
-                    Need more messages? Upgrade your plan
-                  </button>
-                </div>
-              </div>
-            ) : (
-              /* Normal Input */
-              <div className="flex items-center gap-2 bg-white/60 backdrop-blur-xl border border-gray-300 rounded-xl px-3 py-2 focus-within:border-gray-400 transition-colors shadow-lg">
-                {/* Voice input button hidden for now
-                <button
-                  onClick={toggleVoiceMode}
-                  className={`flex-shrink-0 p-2 rounded-lg transition-colors ${
-                    isVoiceMode
-                      ? 'bg-red-500 text-white animate-pulse'
-                      : 'text-gray-600 hover:bg-gray-200'
-                  }`}
-                  title={isVoiceMode ? 'Voice Mode Active - Click to Stop' : 'Click for Voice Mode'}
-                >
-                  {isVoiceMode ? <X size={16} /> : <Mic size={16} />}
-                </button>
-                */}
+    // If activeChat is 'new' or we're waiting for state to update, use a placeholder
+    if (activeChat === 'new' || pendingChatRef.current) {
+      return {
+        id: pendingChatRef.current || 'temp',
+        title: '', // Empty until user sends first message
+        date: 'Just now',
+        messages: defaultMessages
+      };
+    }
 
-                <input
-                  type="text"
-                  value={currentMessage}
-                  onChange={(e) => setCurrentMessage(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && currentMessage.trim()) {
-                      handleNewChatMessage(currentMessage);
-                    }
-                  }}
-                  placeholder="Type your request... e.g. 'Private jet from London to Monaco'"
-                  className="flex-1 bg-transparent border-none outline-none text-sm text-gray-900 placeholder-gray-500"
-                  autoFocus
-                />
+    // If we have a valid activeChat ID but no match in history yet, create placeholder
+    if (activeChat && activeChat !== 'new') {
+      return {
+        id: activeChat,
+        title: '', // Empty until user sends first message
+        date: 'Just now',
+        messages: defaultMessages
+      };
+    }
 
-                {/* Sphera AI version */}
-                <span className="text-[10px] text-gray-400">sphera 1.0</span>
+    return null;
+  }, [currentChat, activeChat, getWelcomeMessage]);
 
-                <button
-                  onClick={() => handleNewChatMessage(currentMessage)}
-                  disabled={!currentMessage.trim()}
-                  className={`flex-shrink-0 p-2 rounded-lg transition-colors ${
-                    currentMessage.trim()
-                      ? 'bg-black text-white hover:bg-gray-800'
-                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  }`}
-                >
-                  <Send size={16} />
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!currentChat) {
-    console.log('⚠️ No currentChat found. Showing loading state. ActiveChat:', activeChat);
-    // Show loading state while chat is being added to history
+  // Only show loading if we truly have no chat to render
+  if (!renderChat) {
+    console.log('⚠️ No chat to render. ActiveChat:', activeChat);
     return (
       <div className="h-full bg-transparent flex flex-col overflow-hidden">
         <div className="flex-1 flex items-center justify-center">
@@ -3531,7 +3663,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
     );
   }
 
-  console.log('🎨 Rendering: CHAT VIEW with chat:', currentChat.id, currentChat.title);
+  console.log('🎨 Rendering: CHAT VIEW with chat:', renderChat.id, renderChat.title);
 
   // CHAT VIEW - Messages flow from bottom like WhatsApp
   return (
@@ -3544,7 +3676,13 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
-                setActiveChat('new');
+                // Navigate back to overview/chat history
+                if (onBack) {
+                  onBack();
+                } else {
+                  // Fallback: navigate to dashboard
+                  navigate('/dashboard');
+                }
                 setWeather(null);
                 setCartItems([]);
                 setSearchResults(null);
@@ -3554,100 +3692,57 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               <ArrowLeft size={18} />
             </button>
             <h2 className="text-lg font-semibold text-black truncate max-w-md">
-              {currentChat?.messages?.[0]?.content || currentChat?.title || 'New Conversation'}
+              {renderChat?.title || renderChat?.messages?.find(m => m.role === 'user')?.content?.slice(0, 50) || 'New chat'}
             </h2>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Cart - Always visible */}
-            <button
-              onClick={() => setShowCartSidebar(true)}
-              className="relative p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
-            >
-              <ShoppingCart size={18} />
-              {cartItems.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {cartItems.length}
-                </span>
-              )}
-            </button>
-
-            {/* Send Request - Always visible but disabled when empty */}
-            <button
-              onClick={() => setShowRequestForm(true)}
-              disabled={cartItems.length === 0}
-              className={`px-4 py-2 text-sm rounded-full transition-colors ${
-                cartItems.length > 0
-                  ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              Send Request
-            </button>
-
-            {/* Voice Mute Toggle - hidden for now
-            <button
-              onClick={toggleVoiceMute}
-              className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
-              title={isVoiceMuted ? 'Voice Muted' : 'Voice Active'}
-            >
-              {isVoiceMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-            </button>
-            */}
-
-            {/* Chat Counter - Clickable to open subscriptions */}
+          <div className="flex items-center gap-2">
+            {/* 1. Chat Counter - Clickable to open subscriptions */}
             <button
               onClick={() => setShowSubscriptionModal(true)}
-              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-900 transition-colors flex items-center gap-2"
-              title="Click to manage subscription"
+              className="px-2 py-1 bg-white/80 hover:bg-white rounded-md text-[11px] font-medium text-gray-600 transition-colors flex items-center gap-1.5 border border-gray-200/50"
+              title="Manage subscription"
             >
-              {userSubscriptionLimits?.tier === 'elite' ? (
-                <span className="flex items-center gap-1.5 text-gray-800">
-                  <Crown size={14} />
-                  <span>Elite</span>
+              {userSubscriptionLimits?.tier === 'elite' || userSubscriptionLimits?.unlimited_chats ? (
+                <span className="flex items-center gap-1 text-gray-600">
+                  <span className="text-base font-light">∞</span>
                 </span>
               ) : userSubscriptionLimits?.tier === 'pro' ? (
-                <span className="flex items-center gap-1.5">
-                  <span className="text-gray-600">Pro</span>
-                  <span className="text-gray-400">•</span>
+                <span className="flex items-center gap-1 text-gray-600">
                   <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 20}</span>
                 </span>
               ) : userSubscriptionLimits?.tier === 'starter' ? (
-                <span className="flex items-center gap-1.5">
-                  <span className="text-gray-600">Starter</span>
-                  <span className="text-gray-400">•</span>
+                <span className="flex items-center gap-1 text-gray-600">
                   <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 5}</span>
                 </span>
               ) : (
-                <span className="flex items-center gap-1.5">
-                  <span className="text-gray-500">Free</span>
-                  <span className="text-gray-400">•</span>
-                  <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 2}</span>
+                <span className="flex items-center gap-1 text-gray-600">
+                  <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 1}</span>
                 </span>
               )}
             </button>
 
-            {/* Report Issue Button */}
-            <button
-              onClick={() => setShowReportIssueModal(true)}
-              className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors"
-              title="Report an issue"
-            >
-              <AlertCircle size={16} />
-            </button>
-
-            {/* Cart Button - Header */}
+            {/* 2. Cart Button */}
             <button
               onClick={() => setShowCartSidebar(true)}
-              className="relative p-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors"
-              title="View cart"
+              className="relative p-1.5 bg-white/80 hover:bg-white rounded-md text-gray-600 transition-colors border border-gray-200/50"
+              title="Cart"
             >
-              <ShoppingCart size={16} />
+              <ShoppingCart size={14} />
               {cartItems.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-medium">
+                <span className="absolute -top-1 -right-1 bg-gray-900 text-white text-[9px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-medium">
                   {cartItems.length}
                 </span>
               )}
+            </button>
+
+            {/* 3. Report Issue Button - Last */}
+            <button
+              onClick={() => setShowReportIssueModal(true)}
+              className="p-1.5 bg-white/80 hover:bg-white rounded-md text-gray-400 hover:text-gray-600 transition-colors border border-gray-200/50"
+              title="Report"
+            >
+              <AlertCircle size={14} />
             </button>
 
             {/* Chat Sessions Dropdown - Hidden, can be accessed via menu if needed */}
@@ -3761,9 +3856,9 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       {/* 2. MESSAGES - FLOW FROM BOTTOM - Less padding on mobile */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-6 py-3 sm:py-4 flex flex-col-reverse">
         <div className="max-w-3xl mx-auto space-y-4 flex flex-col w-full">
-            {currentChat?.messages.map((msg, idx) => {
+            {renderChat?.messages.map((msg, idx) => {
               const timestamp = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-              const isLastMessage = idx === currentChat.messages.length - 1;
+              const isLastMessage = idx === renderChat.messages.length - 1;
               const shouldType = msg.role === 'assistant' && isLastMessage && typingMessageIndex === idx;
 
               // Render SearchResults if this is a results message
@@ -4113,64 +4208,61 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       {/* 3. INPUT - STICKY AT BOTTOM - Less padding on mobile */}
       <div className="flex-shrink-0 px-4 sm:px-6 pb-4 sm:pb-6 pt-3 sm:pt-4">
         <div className="max-w-3xl mx-auto">
-          {/* Message Limit Reached (20 messages per chat) */}
-          {messageLimitReached ? (
-            <div className="bg-white border border-gray-300 rounded-xl p-4 shadow-sm">
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <MessageSquare size={20} className="text-blue-500" />
-                  <span className="font-medium text-gray-900">Message Limit Reached</span>
-                </div>
-                <p className="text-sm text-gray-600 mb-4">
-                  You've reached 20 messages for this conversation.
-                  {cartItems.length > 0 && ` You have ${cartItems.length} item${cartItems.length > 1 ? 's' : ''} in your cart.`}
+          {/* Chat Limit Reached (Free users - no more chats) */}
+          {chatLimitReached ? (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-xs text-gray-500">
+                  Chat limit reached. Upgrade to continue.
                 </p>
-                <div className="flex gap-3">
-                  {/* Show checkout option if cart has items */}
+                <button
+                  onClick={() => setShowSubscriptionModal(true)}
+                  className="px-4 py-1.5 bg-gray-900 text-white text-xs rounded-md hover:bg-gray-800 transition-colors whitespace-nowrap"
+                >
+                  Upgrade
+                </button>
+              </div>
+            </div>
+          ) : messageLimitReached ? (
+          /* Message Limit Reached (20 messages per chat) */
+            <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-xs text-gray-500">
+                  Message limit reached.{cartItems.length > 0 && ` ${cartItems.length} item${cartItems.length > 1 ? 's' : ''} in cart.`}
+                </p>
+                <div className="flex items-center gap-2">
                   {cartItems.length > 0 ? (
                     <>
                       <button
                         onClick={() => setShowCartSidebar(true)}
-                        className="flex-1 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium flex items-center justify-center gap-2"
+                        className="px-3 py-1.5 bg-gray-200 text-gray-700 text-xs rounded-md hover:bg-gray-300 transition-colors whitespace-nowrap"
                       >
-                        <ShoppingCart size={18} />
-                        View Cart ({cartItems.length})
+                        Cart ({cartItems.length})
                       </button>
                       <button
                         onClick={() => setShowRequestForm(true)}
-                        className="flex-1 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
+                        className="px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md hover:bg-gray-800 transition-colors whitespace-nowrap"
                       >
-                        <Send size={18} />
-                        Send Request
+                        Send
                       </button>
                     </>
                   ) : (
                     <>
                       <button
                         onClick={() => setShowRequestForm(true)}
-                        className="flex-1 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
+                        className="px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md hover:bg-gray-800 transition-colors whitespace-nowrap"
                       >
-                        <Send size={18} />
                         Send Request
                       </button>
                       <button
                         onClick={() => setShowSubscriptionModal(true)}
-                        className="flex-1 py-3 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-colors font-medium border border-gray-300 flex items-center justify-center gap-2"
+                        className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-md hover:bg-gray-200 transition-colors border border-gray-200 whitespace-nowrap"
                       >
-                        <Crown size={18} />
                         Upgrade
                       </button>
                     </>
                   )}
                 </div>
-                {/* Upgrade option for more messages */}
-                <button
-                  onClick={() => setShowSubscriptionModal(true)}
-                  className="mt-3 w-full py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors flex items-center justify-center gap-1"
-                >
-                  <Crown size={14} />
-                  Need more messages? Upgrade your plan
-                </button>
               </div>
             </div>
           ) : (
@@ -4243,22 +4335,24 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   <X size={18} />
                 </button>
               </div>
-              {/* Add Extra Button - toggles inline form in cart dropdown */}
-              <button
-                onClick={() => setShowInlineExtras(!showInlineExtras)}
-                className={`mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  showInlineExtras
-                    ? 'bg-gray-900 text-white'
-                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                }`}
-              >
-                {showInlineExtras ? <X size={16} /> : <Plus size={16} />}
-                {showInlineExtras ? 'Close Extras' : '+ Extra Services'}
-              </button>
+              {/* Add Extra Button - only show when cart has items */}
+              {cartItems.length > 0 && (
+                <button
+                  onClick={() => setShowInlineExtras(!showInlineExtras)}
+                  className={`mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    showInlineExtras
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  {showInlineExtras ? <X size={16} /> : <Plus size={16} />}
+                  {showInlineExtras ? 'Close Extras' : '+ Extra Services'}
+                </button>
+              )}
             </div>
 
-            {/* Inline Extras Form - shown inside cart dropdown */}
-            {showInlineExtras && (
+            {/* Inline Extras Form - shown inside cart dropdown, only when cart has items */}
+            {showInlineExtras && cartItems.length > 0 && (
               <div className="border-b border-gray-200 bg-gray-50 p-3 flex-shrink-0 max-h-[40vh] overflow-y-auto">
                 {!selectedExtraCategory ? (
                   <>
@@ -4662,13 +4756,23 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
                                   {/* Current Route Display */}
                                   <div className="space-y-1.5">
-                                    {/* Origin */}
-                                    <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                                    {/* Origin - Clickable */}
+                                    <div
+                                      className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-green-50 hover:border-green-200 border border-transparent transition-colors group"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingEndpoint('origin');
+                                        setEditEndpointItemId(item.cartId);
+                                        setStopSearchQuery('');
+                                        setStopSearchResults([]);
+                                      }}
+                                    >
                                       <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
                                       <div className="flex-1 min-w-0">
                                         <p className="text-[10px] text-gray-500">Departure</p>
                                         <p className="text-xs font-medium text-gray-900 truncate">{item.from || item.origin || item.from_city}</p>
                                       </div>
+                                      <Edit2 size={12} className="text-gray-400 group-hover:text-green-600 transition-colors" />
                                     </div>
 
                                     {/* Stops */}
@@ -4740,13 +4844,23 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                       </div>
                                     )}
 
-                                    {/* Destination */}
-                                    <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                                    {/* Destination - Clickable */}
+                                    <div
+                                      className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-red-50 hover:border-red-200 border border-transparent transition-colors group"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingEndpoint('destination');
+                                        setEditEndpointItemId(item.cartId);
+                                        setStopSearchQuery('');
+                                        setStopSearchResults([]);
+                                      }}
+                                    >
                                       <div className="w-3 h-3 bg-red-500 rounded-full flex-shrink-0"></div>
                                       <div className="flex-1 min-w-0">
                                         <p className="text-[10px] text-gray-500">Arrival</p>
                                         <p className="text-xs font-medium text-gray-900 truncate">{item.to || item.destination || item.to_city}</p>
                                       </div>
+                                      <Edit2 size={12} className="text-gray-400 group-hover:text-red-600 transition-colors" />
                                     </div>
                                   </div>
 
@@ -5247,8 +5361,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           </div>
                           <button
                             onClick={async () => {
-                              // Save to bookings and AI requests before opening payment
-                              await saveBookingToDatabase(firstPayableItem, 'pending');
+                              // Edge Function creates the booking - no need to pre-save
+                              // Just track in AI requests for conversation history
                               await saveToAIRequests(firstPayableItem);
 
                               setShowCartSidebar(false);
@@ -5336,9 +5450,9 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
                           <button
                             onClick={async () => {
-                              // First, save payable item to bookings and AI requests
+                              // Edge Function creates the booking - no need to pre-save
+                              // Just track in AI requests for conversation history
                               const firstPayableItem = payableItems[0];
-                              await saveBookingToDatabase(firstPayableItem, 'pending');
                               await saveToAIRequests(firstPayableItem);
 
                               // Then, create request for request-only items
@@ -5520,6 +5634,121 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               <div className="mt-3 pt-3 border-t border-gray-200 flex-shrink-0">
                 <p className="text-[10px] text-gray-500 text-center">
                   Stops allow you to make intermediate landings. Each stop adds to the total flight time and cost.
+                </p>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Edit Origin/Destination Modal */}
+      {editingEndpoint && editEndpointItemId && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-[60] animate-fade-in" onClick={() => {
+            setEditingEndpoint(null);
+            setEditEndpointItemId(null);
+            setStopSearchQuery('');
+            setStopSearchResults([]);
+          }} />
+          <div className="fixed inset-0 flex items-center justify-center z-[61] p-4 animate-fade-in">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-4 animate-scale-in max-h-[80vh] overflow-hidden flex flex-col">
+              <div className="flex justify-between items-center mb-4 flex-shrink-0">
+                <h3 className="text-lg font-semibold">
+                  {editingEndpoint === 'origin' ? 'Change Departure' : 'Change Arrival'}
+                </h3>
+                <button
+                  onClick={() => {
+                    setEditingEndpoint(null);
+                    setEditEndpointItemId(null);
+                    setStopSearchQuery('');
+                    setStopSearchResults([]);
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Search Input */}
+              <div className="relative mb-3 flex-shrink-0">
+                <input
+                  type="text"
+                  value={stopSearchQuery}
+                  onChange={(e) => {
+                    setStopSearchQuery(e.target.value);
+                    searchStopAirports(e.target.value);
+                  }}
+                  placeholder="Search city or airport..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  autoFocus
+                />
+                {isSearchingStops && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                  </div>
+                )}
+              </div>
+
+              {/* Search Results */}
+              <div className="flex-1 overflow-y-auto min-h-0">
+                {stopSearchResults.length > 0 ? (
+                  <div className="space-y-1">
+                    {stopSearchResults.map((airport, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          updateCartItemEndpoint(editEndpointItemId, editingEndpoint, {
+                            name: airport.city || airport.name,
+                            code: airport.iata || airport.code,
+                            city: airport.city,
+                            country: airport.country,
+                            lat: airport.lat || airport.latitude,
+                            lng: airport.lng || airport.lon || airport.longitude
+                          });
+                          setEditingEndpoint(null);
+                          setEditEndpointItemId(null);
+                          setStopSearchQuery('');
+                          setStopSearchResults([]);
+                        }}
+                        className="w-full p-3 text-left hover:bg-gray-100 rounded-lg transition-colors flex items-start gap-3"
+                      >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          editingEndpoint === 'origin' ? 'bg-green-100' : 'bg-red-100'
+                        }`}>
+                          <Plane size={16} className={editingEndpoint === 'origin' ? 'text-green-600' : 'text-red-600'} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900">{airport.city || airport.name}</span>
+                            {airport.iata && (
+                              <span className="text-[10px] px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded font-medium">{airport.iata}</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 truncate">{airport.name || airport.airport}</p>
+                          <p className="text-[10px] text-gray-400">{airport.country}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : stopSearchQuery.length >= 2 && !isSearchingStops ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <MapPin size={32} className="mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">No airports found</p>
+                    <p className="text-xs text-gray-400">Try a different search term</p>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Plane size={32} className="mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Search for a city or airport</p>
+                    <p className="text-xs text-gray-400">Type at least 2 characters</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Info footer */}
+              <div className="mt-3 pt-3 border-t border-gray-200 flex-shrink-0">
+                <p className="text-[10px] text-gray-500 text-center">
+                  Changing the {editingEndpoint === 'origin' ? 'departure' : 'arrival'} will recalculate distance, flight time, and price.
                 </p>
               </div>
             </div>
@@ -5811,12 +6040,18 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       {/* Subscription Modal */}
       <SubscriptionModal
         isOpen={showSubscriptionModal}
-        onClose={() => setShowSubscriptionModal(false)}
+        onClose={async () => {
+          setShowSubscriptionModal(false);
+          // Refresh profile when modal closes (in case webhook updated limits while modal was open)
+          if (user?.id) {
+            console.log('🔄 Modal closed - refreshing subscription profile...');
+            await loadUserProfile();
+          }
+        }}
         currentTier={userProfile?.subscription_tier || 'explorer'}
         onUpgrade={async (tierId) => {
           // Handle Stripe checkout for subscription upgrade
           console.log('Upgrade to:', tierId);
-          // TODO: Implement Stripe checkout
           // After successful upgrade, reload profile
           await loadUserProfile();
         }}
@@ -6084,7 +6319,34 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
                       if (error) throw error;
 
-                      setToast({ message: 'Report submitted successfully. Thank you for your feedback!', type: 'success' });
+                      // Send email notification to admin
+                      try {
+                        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+                        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+                        await fetch(`${supabaseUrl}/functions/v1/ai-chat-report-notifications`, {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${supabaseAnonKey}`,
+                          },
+                          body: JSON.stringify({
+                            userId: user?.id,
+                            userEmail: user?.email,
+                            userName: user?.name || user?.full_name,
+                            userPhone: user?.phone || userProfile?.phone,
+                            chatId: currentChat?.id,
+                            rating: reportIssueForm.rating,
+                            message: reportIssueForm.message,
+                            chatContext: JSON.stringify(currentChat?.messages?.slice(-5) || [])
+                          })
+                        });
+                        console.log('Report email notification sent to admin');
+                      } catch (emailErr) {
+                        console.error('Failed to send report email (non-blocking):', emailErr);
+                      }
+
+                      setToast({ message: 'Report submitted. Thank you for your feedback!', type: 'success' });
                       setShowReportIssueModal(false);
                       setReportIssueForm({ message: '', rating: 0 });
                     } catch (err) {

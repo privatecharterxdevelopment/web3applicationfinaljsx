@@ -19,6 +19,7 @@ dotenv.config();
 // Import API modules
 const stripeConnectApi = require('./api/stripe-connect-partners.cjs');
 const stripeWebhook = require('./api/webhooks/stripe-connect-webhook.cjs');
+const stripeSubscriptionWebhook = require('./api/webhooks/stripe-subscription-webhook.cjs');
 const newsletterApi = require('./api/newsletter.cjs');
 const coingateApi = require('./api/coingate.cjs');
 
@@ -35,8 +36,9 @@ app.use(cors({
   credentials: true
 }));
 
-// Webhook endpoint needs raw body for signature verification
+// Webhook endpoints need raw body for signature verification
 app.use('/webhooks/stripe-connect', express.raw({ type: 'application/json' }));
+app.use('/webhooks/stripe-subscription', express.raw({ type: 'application/json' }));
 
 // JSON body parser for all other routes
 app.use(express.json());
@@ -104,6 +106,7 @@ app.post('/api/coingate/create-order', coingateApi.createOrder);
 // ============================================================
 
 app.post('/webhooks/stripe-connect', stripeWebhook.handleStripeConnectWebhook);
+app.post('/webhooks/stripe-subscription', stripeSubscriptionWebhook.handleStripeSubscriptionWebhook);
 
 // ============================================================
 // Health Check and Status
@@ -129,7 +132,7 @@ app.get('/', (req, res) => {
       partners: '/api/partners/*',
       admin: '/api/admin/*',
       newsletter: '/api/newsletter/*',
-      webhooks: '/webhooks/stripe-connect'
+      webhooks: '/webhooks/stripe-connect, /webhooks/stripe-subscription'
     }
   });
 });

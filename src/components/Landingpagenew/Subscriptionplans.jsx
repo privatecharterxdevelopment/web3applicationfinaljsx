@@ -3,14 +3,73 @@
  * Design: Card/Grid layout with MyBookingsView header styling
  */
 
-import React, { useState } from 'react';
-import { X, Loader2, Crown, MessageSquare, ArrowLeft, Check, Sparkles, Users } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Loader2, Crown, MessageSquare, ArrowLeft, Check, Sparkles, Users, CheckCircle, Infinity } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { subscriptionService } from '../../services/subscriptionService';
 
 const PricingPackages = ({ onClose, onBack }) => {
   const { user } = useAuth();
+  const [userSubscription, setUserSubscription] = useState(null);
+  const [loadingSubscription, setLoadingSubscription] = useState(true);
   const [showBusinessModal, setShowBusinessModal] = useState(false);
+
+  // Load user's current subscription
+  useEffect(() => {
+    const loadSubscription = async () => {
+      if (!user?.id) {
+        setLoadingSubscription(false);
+        return;
+      }
+      try {
+        const profile = await subscriptionService.getUserProfile(user.id);
+        setUserSubscription({
+          tier: profile?.subscription_tier || 'explorer',
+          chatsUsed: profile?.chats_used || 0,
+          chatsLimit: profile?.chats_limit,
+          unlimited: profile?.chats_limit === null
+        });
+      } catch (error) {
+        console.error('Error loading subscription:', error);
+      } finally {
+        setLoadingSubscription(false);
+      }
+    };
+    loadSubscription();
+
+    // Set up real-time listener for subscription changes
+    if (!user?.id) return;
+
+    const subscription = supabase
+      .channel('subscription_plans_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_profiles',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('📡 Subscription updated in real-time:', payload.new);
+          const newProfile = payload.new;
+          if (newProfile) {
+            setUserSubscription({
+              tier: newProfile.subscription_tier || 'explorer',
+              chatsUsed: newProfile.chats_used || 0,
+              chatsLimit: newProfile.chats_limit,
+              unlimited: newProfile.chats_limit === null
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, [user?.id, user?.subscription_tier]);
   const [businessForm, setBusinessForm] = useState({
     name: '',
     email: '',
@@ -195,12 +254,16 @@ const PricingPackages = ({ onClose, onBack }) => {
         {/* Stats - Minimal Inline */}
         <div className="flex items-center gap-6 mt-4 text-sm">
           <div>
-            <span className="text-gray-400">Plans</span>
-            <span className="ml-2 font-medium text-gray-900">{plans.length}</span>
+            <span className="text-gray-400">Current Plan</span>
+            <span className="ml-2 font-medium text-gray-900 capitalize">
+              {loadingSubscription ? '...' : userSubscription?.tier || 'Explorer'}
+            </span>
           </div>
           <div>
-            <span className="text-gray-400">Starting at</span>
-            <span className="ml-2 font-medium text-gray-900">$20/mo</span>
+            <span className="text-gray-400">Chats</span>
+            <span className="ml-2 font-medium text-gray-900">
+              {loadingSubscription ? '...' : userSubscription?.unlimited ? '∞ Unlimited' : `${userSubscription?.chatsUsed || 0}/${userSubscription?.chatsLimit || 1}`}
+            </span>
           </div>
           <div className="flex items-center gap-1">
             <Sparkles size={12} className="text-amber-500" />
@@ -210,20 +273,75 @@ const PricingPackages = ({ onClose, onBack }) => {
         </div>
       </div>
 
+      {/* Current Plan Banner */}
+      {userSubscription && userSubscription.tier !== 'explorer' && (
+        <div className="mx-6 mt-4 bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-5 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center">
+                <Crown size={24} className="text-amber-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-semibold capitalize">{userSubscription.tier} Plan</h3>
+                  <span className="px-2 py-0.5 bg-white/20 text-white/70 text-[10px] font-medium rounded-full">
+                    ACTIVE
+                  </span>
+                </div>
+                <p className="text-gray-400 text-sm mt-0.5">
+                  {userSubscription.unlimited ? (
+                    <span className="flex items-center gap-1">
+                      <Infinity size={14} />
+                      Unlimited conversations & messages
+                    </span>
+                  ) : (
+                    `${userSubscription.chatsLimit - userSubscription.chatsUsed} conversations remaining this month`
+                  )}
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              {userSubscription.unlimited ? (
+                <div className="text-2xl font-light">∞</div>
+              ) : (
+                <>
+                  <div className="text-2xl font-light">{userSubscription.chatsLimit - userSubscription.chatsUsed}</div>
+                  <div className="text-xs text-gray-400">chats left</div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Plans Grid - Glassmorphic Design */}
       <div className="px-6 py-6 bg-gradient-to-br from-gray-100/50 via-gray-50/50 to-gray-100/50">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl">
-          {plans.map((plan) => (
-            <div
+          {plans.map((plan) => {
+            const isCurrentPlan = userSubscription?.tier === plan.id;
+
+            return (
+              <div
               key={plan.id}
               className={`relative bg-white/80 backdrop-blur-md rounded-2xl p-6 transition-all duration-300 hover:bg-white/90 hover:shadow-xl hover:-translate-y-1 ${
-                plan.popular
+                isCurrentPlan
+                  ? 'border-2 border-emerald-500 ring-2 ring-emerald-500/20 shadow-lg'
+                  : plan.popular
                   ? 'border-2 border-gray-900/20 ring-1 ring-gray-900/5 shadow-lg'
                   : 'border border-gray-200/60 hover:border-gray-300/80'
               }`}
             >
+              {/* Current Plan Badge */}
+              {isCurrentPlan && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="inline-flex items-center gap-1 bg-emerald-500 text-white px-3 py-1 rounded-full text-[10px] font-medium tracking-wide shadow-lg">
+                    <CheckCircle size={10} />
+                    CURRENT PLAN
+                  </span>
+                </div>
+              )}
               {/* Popular Badge */}
-              {plan.popular && (
+              {plan.popular && !isCurrentPlan && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <span className="inline-flex items-center gap-1 bg-gray-900 text-white px-3 py-1 rounded-full text-[10px] font-medium tracking-wide shadow-lg">
                     <Sparkles size={10} />
@@ -233,7 +351,7 @@ const PricingPackages = ({ onClose, onBack }) => {
               )}
 
               {/* Plan Header */}
-              <div className={`${plan.popular ? 'mt-2' : ''}`}>
+              <div className={`${plan.popular || isCurrentPlan ? 'mt-2' : ''}`}>
                 <h3 className="text-lg font-semibold text-gray-900 tracking-tight">
                   {plan.name}
                 </h3>
@@ -272,10 +390,12 @@ const PricingPackages = ({ onClose, onBack }) => {
 
               {/* CTA Button */}
               <button
-                onClick={() => handlePlanClick(plan)}
-                disabled={processingPlan === plan.id}
+                onClick={() => !isCurrentPlan && handlePlanClick(plan)}
+                disabled={processingPlan === plan.id || isCurrentPlan}
                 className={`w-full py-3 rounded-xl text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
-                  plan.popular
+                  isCurrentPlan
+                    ? 'bg-emerald-500 text-white cursor-default'
+                    : plan.popular
                     ? 'bg-gray-900 text-white hover:bg-gray-800 shadow-md hover:shadow-lg'
                     : 'bg-gray-100 text-gray-900 hover:bg-gray-200 border border-gray-200'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
@@ -285,12 +405,18 @@ const PricingPackages = ({ onClose, onBack }) => {
                     <Loader2 size={16} className="animate-spin" />
                     Processing...
                   </>
+                ) : isCurrentPlan ? (
+                  <>
+                    <CheckCircle size={16} />
+                    Current Plan
+                  </>
                 ) : (
                   'Select Plan'
                 )}
               </button>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Business Solutions Card - Glassmorphic Full Width */}

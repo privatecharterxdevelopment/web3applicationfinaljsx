@@ -117,10 +117,10 @@ WHERE id = 'explorer';
 
 UPDATE subscription_tiers SET
     price_monthly_usd = 20,
-    chats_limit = 15,
+    chats_limit = 5,
     features = '[
-        "15 AI Conversations/month",
-        "20 messages per chat",
+        "5 AI Conversations/month",
+        "50 messages per conversation",
         "Break the Price (costs 1 chat)",
         "Voice & Text Support",
         "Email Support"
@@ -129,10 +129,10 @@ WHERE id = 'starter';
 
 UPDATE subscription_tiers SET
     price_monthly_usd = 40,
-    chats_limit = 30,
+    chats_limit = 20,
     features = '[
-        "30 AI Conversations/month",
-        "20 messages per chat",
+        "20 AI Conversations/month",
+        "100 messages per conversation",
         "Break the Price (costs 1 chat)",
         "Priority Support",
         "Dedicated Manager"

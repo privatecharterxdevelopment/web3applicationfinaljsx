@@ -1896,7 +1896,8 @@ const TokenizedAssetsGlassmorphic = () => {
 
   // URL Sync: Update URL when activeChat changes (only when in chat view)
   useEffect(() => {
-    if (activeCategory === 'chat' && activeChat) {
+    // Skip URL update for 'new' state to prevent blinking - only update for real chat IDs
+    if (activeCategory === 'chat' && activeChat && activeChat !== 'new') {
       const currentPath = location.pathname;
       const isOnChatRoute = currentPath.startsWith('/dashboard/chat/');
       const isOnDashboard = currentPath === '/dashboard';
@@ -2415,6 +2416,7 @@ const TokenizedAssetsGlassmorphic = () => {
     const tab = params.get('tab') || '';
     const login = params.get('login') === 'true';
     const assistantMessage = params.get('assistantMessage') || '';
+    const newChat = params.get('newChat') === 'true';
     // Departure/destination for private-jet booking
     const departureCode = params.get('departure') || '';
     const departureName = params.get('departureName') || '';
@@ -2422,7 +2424,7 @@ const TokenizedAssetsGlassmorphic = () => {
     const destinationName = params.get('destinationName') || '';
 
     // If there's a tab or query in the URL
-    if (tab || query || assistantMessage) {
+    if (tab || query || assistantMessage || newChat) {
       let targetTab = tab || 'ai-chat'; // Default to ai-chat if there's a query
       const tabNeedsAuth = ['ai-chat', 'concierge', 'spv', 'tokenize', 'pvcx', 'escrow', 'profile', 'charter', 'private-jet'].includes(targetTab);
 
@@ -2433,13 +2435,17 @@ const TokenizedAssetsGlassmorphic = () => {
 
       if (isAuthenticated) {
         // User is authenticated - navigate directly
-        console.log('🔗 Processing URL params - tab:', targetTab, 'query:', query, 'assistantMessage:', assistantMessage);
+        console.log('🔗 Processing URL params - tab:', targetTab, 'query:', query, 'assistantMessage:', assistantMessage, 'newChat:', newChat);
 
         if (query) {
           setAiChatQuery(query);
         }
         if (assistantMessage) {
           setAiAssistantMessage(assistantMessage);
+        }
+        // If newChat=true and navigating to chat, set activeChat to 'new'
+        if (newChat && targetTab === 'chat') {
+          setActiveChat('new');
         }
         // Store initial flight data for private-jet booking
         if (targetTab === 'private-jet' && departureCode && destinationCode) {
@@ -2456,7 +2462,7 @@ const TokenizedAssetsGlassmorphic = () => {
       } else if (tabNeedsAuth && login) {
         // Tab needs auth and login=true was passed - store params and show login modal
         console.log('🔐 Showing login modal for protected tab:', targetTab);
-        pendingUrlParamsRef.current = { query, tab: targetTab, assistantMessage, departureCode, departureName, destinationCode, destinationName };
+        pendingUrlParamsRef.current = { query, tab: targetTab, assistantMessage, newChat, departureCode, departureName, destinationCode, destinationName };
         setShowLoginModal(true);
 
         // Clean up URL
@@ -2475,8 +2481,8 @@ const TokenizedAssetsGlassmorphic = () => {
   // After successful login, process any pending URL params
   useEffect(() => {
     if (!initializing && isAuthenticated && pendingUrlParamsRef.current) {
-      let { query, tab, assistantMessage, departureCode, departureName, destinationCode, destinationName } = pendingUrlParamsRef.current;
-      console.log('✅ Post-login: Processing pending params - tab:', tab, 'query:', query, 'assistantMessage:', assistantMessage);
+      let { query, tab, assistantMessage, newChat, departureCode, departureName, destinationCode, destinationName } = pendingUrlParamsRef.current;
+      console.log('✅ Post-login: Processing pending params - tab:', tab, 'query:', query, 'assistantMessage:', assistantMessage, 'newChat:', newChat);
 
       if (query) {
         setAiChatQuery(query);
@@ -2493,6 +2499,10 @@ const TokenizedAssetsGlassmorphic = () => {
       }
       // Map 'ai-chat' URL param to 'chat' internal category
       const targetTab = (tab === 'ai-chat' || !tab) ? 'chat' : tab;
+      // If newChat=true and navigating to chat, set activeChat to 'new'
+      if (newChat && targetTab === 'chat') {
+        setActiveChat('new');
+      }
       setActiveCategory(targetTab);
       setShowDashboard(true);
       pendingUrlParamsRef.current = null; // Clear after processing
@@ -3864,10 +3874,9 @@ const TokenizedAssetsGlassmorphic = () => {
                     setSidebarExpanded(true);
                     return;
                   }
-                  // Start a new chat - reset conversation and go to chat view
+                  // Start a new chat - go to chat view and reset to new chat screen
                   setActiveCategory('chat');
-                  // Dispatch event to reset the AI chat conversation
-                  window.dispatchEvent(new CustomEvent('ai-chat-new-conversation'));
+                  setActiveChat('new'); // Reset to new chat screen directly
                   // Close mobile menu after selection
                   if (isMobileMenuOpen) {
                     setIsMobileMenuOpen(false);
@@ -4898,7 +4907,7 @@ const TokenizedAssetsGlassmorphic = () => {
                         <button
                           onClick={() => {
                             setActiveCategory('chat');
-                            window.dispatchEvent(new CustomEvent('ai-chat-new-conversation'));
+                            setActiveChat('new'); // Reset to new chat screen directly
                           }}
                           className="px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 transition-all inline-flex items-center gap-2"
                         >
@@ -5139,7 +5148,7 @@ const TokenizedAssetsGlassmorphic = () => {
                   <button
                     onClick={() => {
                       setActiveCategory('chat');
-                      window.dispatchEvent(new CustomEvent('ai-chat-new-conversation'));
+                      setActiveChat('new'); // Reset to new chat screen directly
                     }}
                     className="w-full px-4 py-3 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-all flex items-center justify-center gap-2"
                   >
@@ -10126,6 +10135,9 @@ const TokenizedAssetsGlassmorphic = () => {
                               description: `${offer.destination || selectedAdventure?.location} - ${offer.duration || 'Flexible duration'}`,
                               orderId: `ADV-${offer.id}-${Date.now()}`,
                               userEmail: user.email,
+                              userId: user.id,
+                              serviceType: 'adventure_package',
+                              serviceId: offer.id,
                               adventureData: {
                                 offer_id: offer.id,
                                 offer_title: offer.title || selectedAdventure?.name,
@@ -11021,6 +11033,10 @@ const TokenizedAssetsGlassmorphic = () => {
               onAssistantMessageProcessed={() => setAiAssistantMessage('')}
               cartItems={cartItems}
               setCartItems={setCartItems}
+              onBack={() => {
+                setActiveChat(null);
+                setActiveCategory('chat-history');
+              }}
             />
           )}
 
@@ -11994,6 +12010,9 @@ const TokenizedAssetsGlassmorphic = () => {
           description={cryptoPaymentData.description}
           orderId={cryptoPaymentData.orderId}
           userEmail={cryptoPaymentData.userEmail}
+          userId={cryptoPaymentData.userId}
+          serviceType={cryptoPaymentData.serviceType}
+          serviceId={cryptoPaymentData.serviceId}
           onSuccess={async (transactionData) => {
             try {
               // Save crypto transaction to database

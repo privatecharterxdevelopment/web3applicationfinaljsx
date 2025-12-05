@@ -50,10 +50,25 @@ const SubscriptionModal = ({ isOpen, onClose, currentTier = 'explorer', onUpgrad
     if (onUpgrade) {
       onUpgrade(plan.id);
     } else if (plan.stripeLink) {
-      // Add user email as prefilled customer if available
-      const url = user?.email
-        ? `${plan.stripeLink}?prefilled_email=${encodeURIComponent(user.email)}`
+      // Build URL with parameters for Stripe Payment Link
+      const params = new URLSearchParams();
+
+      // Add user email for prefilled customer
+      if (user?.email) {
+        params.set('prefilled_email', user.email);
+      }
+
+      // Add client_reference_id with user_id and tier for webhook to identify the user
+      // Format: userId:tierId (e.g., "abc123:starter")
+      if (user?.id) {
+        params.set('client_reference_id', `${user.id}:${plan.id}`);
+      }
+
+      const url = params.toString()
+        ? `${plan.stripeLink}?${params.toString()}`
         : plan.stripeLink;
+
+      console.log('🔗 Redirecting to Stripe payment:', { tier: plan.id, userId: user?.id });
       window.location.href = url;
     } else {
       console.warn('No Stripe payment link configured for', plan.id);

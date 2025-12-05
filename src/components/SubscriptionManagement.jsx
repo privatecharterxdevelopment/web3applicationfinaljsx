@@ -136,8 +136,8 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
   const getPlanFeatures = (tier) => {
     const features = {
       explorer: { chats: '1 total', support: 'Email', concierge: 'No' },
-      starter: { chats: '15/month', support: 'Email + Voice', concierge: 'No' },
-      pro: { chats: '30/month', support: 'Priority', concierge: 'Yes' },
+      starter: { chats: '5/month', support: 'Email + Voice', concierge: 'No' },
+      pro: { chats: '20/month', support: 'Priority', concierge: 'Yes' },
       elite: { chats: 'Unlimited', support: '24/7 VIP', concierge: 'Yes' }
     };
     return features[tier] || features.explorer;

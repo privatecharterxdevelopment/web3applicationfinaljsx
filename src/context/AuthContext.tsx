@@ -41,6 +41,7 @@ interface AuthContextType {
   signIn: (email: string, password: string, options?: SignInOptions) => Promise<void>;
   signUp: (email: string, password: string, firstName: string, lastName?: string, options?: SignUpOptions) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshSubscription: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -116,10 +117,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else if (profile) {
             console.log('✅ Profile loaded successfully');
 
-            // Load subscription data WITH TIMEOUT
+            // Load subscription data from user_profiles table (single source of truth)
             const subQueryPromise = supabase
-              .from('user_subscriptions')
-              .select('*')
+              .from('user_profiles')
+              .select('subscription_tier, subscription_status, chats_limit, chats_used')
               .eq('user_id', session.user.id)
               .single();
 
@@ -127,20 +128,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               setTimeout(() => reject(new Error('Subscription query timeout')), 2000)
             );
 
-            const { data: subscription } = await Promise.race([
+            const { data: userProfile } = await Promise.race([
               subQueryPromise,
               subTimeoutPromise
             ]).catch(err => {
-              console.error('❌ Subscription query failed (non-blocking):', err.message);
+              console.error('❌ User profile subscription query failed (non-blocking):', err.message);
               return { data: null };
             }) as any;
 
             setUser({
               ...profile,
               email_verified: session.user.email_confirmed_at !== null,
-              subscription_tier: subscription?.tier || 'explorer',
-              chat_limit: subscription?.metadata?.chat_limit || 2,
-              chats_used: subscription?.metadata?.chats_used || 0
+              subscription_tier: userProfile?.subscription_tier || 'explorer',
+              chat_limit: userProfile?.chats_limit ?? 1,
+              chats_used: userProfile?.chats_used || 0
             });
           } else {
             console.log('⚠️ No profile found, using auth data');
@@ -212,6 +213,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             user_role: session.user.user_metadata?.role || 'user'
           });
         } else {
+          // Also load subscription data from user_profiles on sign-in
+          const { data: userProfile } = await supabase
+            .from('user_profiles')
+            .select('subscription_tier, subscription_status, chats_limit, chats_used')
+            .eq('user_id', session.user.id)
+            .single();
+
           setUser({
             id: profile.id,
             email: profile.email,
@@ -219,7 +227,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             last_name: profile.last_name,
             email_verified: profile.email_verified,
             user_role: profile.user_role || 'user',
-            created_at: profile.created_at
+            created_at: profile.created_at,
+            subscription_tier: userProfile?.subscription_tier || 'explorer',
+            chat_limit: userProfile?.chats_limit ?? 1,
+            chats_used: userProfile?.chats_used || 0
           });
         }
 
@@ -234,10 +245,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
+    // Set up real-time subscription for user_profiles changes
+    // This will automatically update UI when admin changes subscription or user upgrades via Stripe
+    let profileSubscription: any = null;
+
+    const setupProfileSubscription = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        profileSubscription = supabase
+          .channel('user_profiles_changes')
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'user_profiles',
+              filter: `user_id=eq.${session.user.id}`
+            },
+            (payload) => {
+              console.log('📡 Real-time subscription update received:', payload.new);
+              const newProfile = payload.new as any;
+              setUser(prev => prev ? {
+                ...prev,
+                subscription_tier: newProfile.subscription_tier || 'explorer',
+                chat_limit: newProfile.chats_limit ?? 1,
+                chats_used: newProfile.chats_used || 0
+              } : null);
+            }
+          )
+          .subscribe();
+      }
+    };
+
+    setupProfileSubscription();
+
     return () => {
       isMounted = false;
       isInitializing = false;
       subscription.unsubscribe();
+      if (profileSubscription) {
+        supabase.removeChannel(profileSubscription);
+      }
     };
   }, []);
 
@@ -329,7 +377,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error('⚠️ User profile creation error:', profileError);
         }
 
-        // Create extended profile in user_profiles table
+        // Create extended profile in user_profiles table with subscription data
         try {
           const { error: extendedProfileError } = await supabase
             .from('user_profiles')
@@ -341,44 +389,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               city: '',
               country: '',
               postal_code: '',
-              kyc_status: 'not_started'
+              kyc_status: 'not_started',
+              // Subscription data (single source of truth)
+              subscription_tier: 'explorer',
+              subscription_status: 'active',
+              chats_limit: 1, // Free tier: 1 chat only
+              chats_used: 0
             }]);
 
           if (extendedProfileError) {
             console.error('⚠️ Error creating extended profile:', extendedProfileError);
           } else {
-            console.log('✅ Extended profile created in user_profiles table');
+            console.log('✅ Extended profile with subscription created in user_profiles table');
           }
         } catch (extendedProfileError) {
           console.error('⚠️ Extended profile creation error:', extendedProfileError);
-        }
-
-        // Create FREE subscription (Explorer tier) automatically
-        try {
-          const { error: subscriptionError } = await supabase
-            .from('user_subscriptions')
-            .insert([{
-              user_id: data.user.id,
-              tier: 'explorer',
-              status: 'active',
-              price_eur: 0,
-              commission_rate: 0.20, // 20% commission for free tier
-              billing_cycle: null,
-              current_period_start: new Date().toISOString(),
-              current_period_end: null, // No end date for free tier
-              metadata: {
-                chat_limit: 2,
-                chats_used: 0
-              }
-            }]);
-
-          if (subscriptionError) {
-            console.error('⚠️ Error creating free subscription:', subscriptionError);
-          } else {
-            console.log('✅ FREE subscription (Explorer) created automatically');
-          }
-        } catch (subscriptionError) {
-          console.error('⚠️ Free subscription creation error:', subscriptionError);
         }
 
         return;
@@ -427,6 +452,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Function to refresh subscription data from user_profiles - call this after subscription changes
+  const refreshSubscription = async () => {
+    if (!user?.id) {
+      console.log('⚠️ Cannot refresh subscription: No user logged in');
+      return;
+    }
+
+    try {
+      console.log('🔄 Refreshing subscription data for user:', user.id);
+
+      const { data: userProfile, error } = await supabase
+        .from('user_profiles')
+        .select('subscription_tier, subscription_status, chats_limit, chats_used')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        console.error('❌ Error refreshing subscription:', error);
+        return;
+      }
+
+      if (userProfile) {
+        console.log('✅ Subscription refreshed:', userProfile.subscription_tier);
+        setUser(prev => prev ? {
+          ...prev,
+          subscription_tier: userProfile.subscription_tier || 'explorer',
+          chat_limit: userProfile.chats_limit ?? 1,
+          chats_used: userProfile.chats_used || 0
+        } : null);
+      }
+    } catch (error) {
+      console.error('❌ Error refreshing subscription:', error);
+    }
+  };
+
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user && !initializing,
@@ -434,7 +494,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initializing,
     signIn,
     signUp,
-    signOut
+    signOut,
+    refreshSubscription
   };
 
   return (
