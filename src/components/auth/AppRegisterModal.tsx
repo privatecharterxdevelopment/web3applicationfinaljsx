@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, User, Mail, MapPin, Phone, Check, Shield, Eye, EyeOff } from 'lucide-react';
-import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import Portal from '../Portal';
 import { supabase } from '../../lib/supabase';
-
-const RECAPTCHA_SITE_KEY = '6LdA4fcrAAAAAEE-ojHle6bq-Xbhdz2yS5myYlSG';
 
 // Background videos for each step
 const stepVideos = [
@@ -593,21 +590,16 @@ const Step4Terms = ({
         )}
       </button>
 
-      {/* reCAPTCHA notice */}
-      <p className="mt-4 text-white/40 text-xs text-center">
-        Protected by reCAPTCHA. Google <span className="underline">Privacy</span> & <span className="underline">Terms</span> apply.
-      </p>
     </div>
   );
 };
 
-// Main Registration Component with reCAPTCHA
-function AppRegisterForm({
+// Main Registration Component
+export default function AppRegisterModal({
   onClose,
   onSwitchToLogin,
   onSuccess
 }: AppRegisterModalProps) {
-  const { executeRecaptcha } = useGoogleReCaptcha();
   const [step, setStep] = useState<Step>(1);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -625,32 +617,18 @@ function AppRegisterForm({
   });
 
   const handleSubmit = async () => {
-    if (!executeRecaptcha) {
-      setError('reCAPTCHA is loading. Please wait.');
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
 
     try {
-      const recaptchaToken = await executeRecaptcha('register');
-
-      if (!recaptchaToken) {
-        setError('reCAPTCHA verification failed.');
-        setIsLoading(false);
-        return;
-      }
-
-      // Call registration edge function
+      // Call registration edge function (without reCAPTCHA)
       const { data, error: registerError } = await supabase.functions.invoke('register-with-verification', {
         body: {
           email: formData.email.trim(),
           password: formData.password,
           firstName: formData.firstName.trim(),
           lastName: formData.lastName.trim() || null,
-          phone: formData.phone.trim() || null,
-          recaptchaToken
+          phone: formData.phone.trim() || null
         }
       });
 
@@ -818,14 +796,5 @@ function AppRegisterForm({
         </div>
       </div>
     </Portal>
-  );
-}
-
-// Export with reCAPTCHA provider
-export default function AppRegisterModal(props: AppRegisterModalProps) {
-  return (
-    <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_SITE_KEY}>
-      <AppRegisterForm {...props} />
-    </GoogleReCaptchaProvider>
   );
 }

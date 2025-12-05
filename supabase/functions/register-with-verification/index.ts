@@ -13,7 +13,7 @@ interface RegistrationRequest {
   firstName: string;
   lastName?: string;
   phone?: string;
-  recaptchaToken: string;
+  recaptchaToken?: string; // Optional - reCAPTCHA removed
 }
 
 // Function to send email to existing users
@@ -118,8 +118,8 @@ serve(async (req) => {
     const registrationData: RegistrationRequest = await req.json();
     const { email, password, firstName, lastName, phone, recaptchaToken } = registrationData;
 
-    // Validate required fields
-    if (!email || !password || !firstName || !recaptchaToken) {
+    // Validate required fields (reCAPTCHA no longer required)
+    if (!email || !password || !firstName) {
       return new Response(JSON.stringify({
         success: false,
         error: 'Missing required fields'
@@ -155,65 +155,6 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         success: false,
         error: `Password must meet all requirements: ${failedRequirements.map(req => req.label).join(', ')}`
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Verify reCAPTCHA token
-    const recaptchaSecretKey = Deno.env.get('RECAPTCHA_SECRET_KEY');
-    if (!recaptchaSecretKey) {
-      console.error('reCAPTCHA secret key not configured');
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'reCAPTCHA configuration error'
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    const recaptchaResponse = await fetch('https://www.google.com/recaptcha/api/siteverify', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: `secret=${recaptchaSecretKey}&response=${recaptchaToken}`
-    });
-
-    const recaptchaResult = await recaptchaResponse.json();
-
-    // For reCAPTCHA v3, verify success, score, and action
-    if (!recaptchaResult.success) {
-      console.warn('reCAPTCHA verification failed:', recaptchaResult['error-codes']);
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'reCAPTCHA verification failed. Please try again.'
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Verify score (reCAPTCHA v3 specific)
-    if (recaptchaResult.score && recaptchaResult.score < 0.5) {
-      console.warn('reCAPTCHA score too low:', recaptchaResult.score);
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'reCAPTCHA verification failed. Please try again.'
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Verify action matches expected value
-    if (recaptchaResult.action && recaptchaResult.action !== 'register') {
-      console.warn('reCAPTCHA action mismatch:', recaptchaResult.action);
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'reCAPTCHA verification failed. Please try again.'
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

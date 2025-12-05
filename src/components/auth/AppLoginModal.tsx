@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
-import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import Portal from '../Portal';
 import { useAuth } from '../../context/AuthContext';
-
-const RECAPTCHA_SITE_KEY = '6LdA4fcrAAAAAEE-ojHle6bq-Xbhdz2yS5myYlSG';
 
 // Background video for login
 const loginVideo = 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/moreVideos/13736229-uhd_3840_2160_30fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzEzNzM2MjI5LXVoZF8zODQwXzIxNjBfMzBmcHMubXA0IiwiaWF0IjoxNzYwOTEyMTU3LCJleHAiOjc3NjUyNDI1NzU3fQ.Oq64TE_BAxshzy6AS9U5AnboXpjnQZWubm8HW5eGavs';
@@ -16,14 +13,14 @@ interface AppLoginModalProps {
   onForgotPassword?: () => void;
 }
 
-function AppLoginForm({
+export default function AppLoginModal({
   onClose,
   onSwitchToRegister,
   onSuccess,
   onForgotPassword
 }: AppLoginModalProps) {
-  const { signIn } = useAuth();
-  const { executeRecaptcha } = useGoogleReCaptcha();
+  const auth = useAuth();
+  const signIn = auth?.signIn;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -45,23 +42,15 @@ function AppLoginForm({
       return;
     }
 
-    if (!executeRecaptcha) {
-      setError('reCAPTCHA is loading. Please wait.');
+    if (!signIn) {
+      setError('Authentication not available. Please refresh.');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const captchaToken = await executeRecaptcha('login');
-
-      if (!captchaToken) {
-        setError('reCAPTCHA verification failed.');
-        setIsLoading(false);
-        return;
-      }
-
-      await signIn(email, password, { captchaToken });
+      await signIn(email, password);
 
       if (onSuccess) onSuccess();
       onClose();
@@ -201,21 +190,8 @@ function AppLoginForm({
             Don't have an account? <span className="text-white font-medium">Create one</span>
           </button>
 
-          {/* reCAPTCHA notice */}
-          <p className="mt-6 text-white/40 text-xs text-center">
-            Protected by reCAPTCHA. Google Privacy & Terms apply.
-          </p>
         </div>
       </div>
     </Portal>
-  );
-}
-
-// Export with reCAPTCHA provider
-export default function AppLoginModal(props: AppLoginModalProps) {
-  return (
-    <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_SITE_KEY}>
-      <AppLoginForm {...props} />
-    </GoogleReCaptchaProvider>
   );
 }
