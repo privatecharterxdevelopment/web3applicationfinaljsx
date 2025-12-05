@@ -9017,17 +9017,16 @@ const TokenizedAssetsGlassmorphic = () => {
                             </>
                           ) : (
                               <>
-                                <div className="flex justify-between text-xs md:text-sm">
-                                  <span className="text-gray-600">Price</span>
+                                <div className="flex justify-between text-xs">
+                                  <span className="text-gray-500">Price</span>
                                   <span className="text-gray-900">{selectedEmptyLeg.totalPrice}</span>
                                 </div>
-                                <div className="flex justify-between text-sm md:text-base pt-2 border-t border-gray-200">
-                                  <span className="font-semibold text-gray-900">Final Price</span>
+                                <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
+                                  <span className="font-medium text-gray-900">Total</span>
                                   <span className="font-semibold text-gray-900">{selectedEmptyLeg.totalPrice}</span>
                                 </div>
                               </>
                             )}
-                          </div>
                         </div>
 
                         {/* Action Buttons - Clean */}
