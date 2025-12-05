@@ -1900,13 +1900,15 @@ const TokenizedAssetsGlassmorphic = () => {
   }, [urlChatId, activeChat, activeCategory]);
 
   // URL Sync: Update URL when activeChat changes (only when in chat view)
+  // This effect only updates the URL to reflect chat state - it should NOT prevent navigation away
   useEffect(() => {
-    // Skip URL update for 'new' state to prevent blinking - only update for real chat IDs
-    if (activeCategory === 'chat' && activeChat && activeChat !== 'new') {
-      const currentPath = location.pathname;
-      const isOnChatRoute = currentPath.startsWith('/dashboard/chat/');
-      const isOnDashboard = currentPath === '/dashboard';
+    const currentPath = location.pathname;
+    const isOnChatRoute = currentPath.startsWith('/dashboard/chat/');
+    const isOnDashboard = currentPath === '/dashboard';
 
+    // Only sync URL if we're actively in chat category AND on a chat-related route
+    // Don't force navigation - let user navigate away freely
+    if (activeCategory === 'chat' && activeChat && activeChat !== 'new') {
       // Only update URL if we're on dashboard or already on a chat route
       if (isOnDashboard || isOnChatRoute) {
         const newPath = `/dashboard/chat/${activeChat}`;
@@ -1915,10 +1917,9 @@ const TokenizedAssetsGlassmorphic = () => {
           console.log('🔗 Updating URL to:', newPath);
         }
       }
-    } else if (activeCategory !== 'chat' && location.pathname.startsWith('/dashboard/chat/')) {
-      // If leaving chat view, return to dashboard
-      navigate('/dashboard', { replace: true });
     }
+    // Removed: The auto-redirect to /dashboard when leaving chat
+    // This was preventing users from navigating to other pages
   }, [activeChat, activeCategory, location.pathname, navigate]);
 
   // Close mobile category menu when clicking outside
