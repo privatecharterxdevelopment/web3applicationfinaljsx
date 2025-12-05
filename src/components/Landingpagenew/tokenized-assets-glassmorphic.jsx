@@ -1884,22 +1884,25 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   }, [isAuthenticated, user, showDashboard]);
 
-  // URL Sync: Initialize activeChat from URL parameter ONLY when urlChatId changes
-  // This should NOT run when activeCategory changes (that would block navigation to other pages)
+  // URL Sync: Initialize activeChat from URL parameter ONLY when on a chat route
+  // This should only run when navigating directly to a chat URL
   useEffect(() => {
-    if (urlChatId) {
+    const currentPath = location.pathname;
+    const isOnChatRoute = currentPath.startsWith('/dashboard/chat/');
+
+    // Only set chat category if URL explicitly has chat ID AND we're on the chat route
+    if (urlChatId && isOnChatRoute) {
       const targetChatId = urlChatId === 'new' ? 'new' : urlChatId;
       // Only update if different to prevent re-render loops
       if (activeChat !== targetChatId) {
         setActiveChat(targetChatId);
         console.log('🔗 Initializing chat from URL:', urlChatId);
       }
-      // Only set to chat category if not already set and URL explicitly has chat ID
       if (activeCategory !== 'chat') {
         setActiveCategory('chat');
       }
     }
-  }, [urlChatId]); // IMPORTANT: Only depend on urlChatId, not activeCategory
+  }, [urlChatId, location.pathname]); // Check both urlChatId and current path
 
   // URL Sync: Update URL when activeChat changes (only when in chat view)
   useEffect(() => {
