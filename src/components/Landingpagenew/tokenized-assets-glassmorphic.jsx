@@ -3523,10 +3523,11 @@ const TokenizedAssetsGlassmorphic = () => {
   };
 
   // RWS Category menu - for Real World Services
+  // Note: externalLink removed from empty-legs to keep it within dashboard on mobile
   const rwsCategoryMenu = [
-    { id: 'jets', label: 'Jets', icon: Plane, category: 'jets', externalLink: '/private-jets' },
-    { id: 'helicopter', label: 'Helis', icon: Zap, category: 'helicopter', externalLink: '/helicopter-charter' },
-    { id: 'empty-legs', label: 'Empty Legs', icon: MapPin, category: 'empty-legs', externalLink: '/empty-legs' },
+    { id: 'jets', label: 'Jets', icon: Plane, category: 'jets' },
+    { id: 'helicopter', label: 'Helis', icon: Zap, category: 'helicopter' },
+    { id: 'empty-legs', label: 'Empty Legs', icon: MapPin, category: 'empty-legs' },
     { id: 'adventures', label: 'Adventures', icon: Mountain, category: 'adventures' },
     // { id: 'assets', label: 'Events & Sports', icon: Calendar, category: 'assets' }, // Hidden for MVP
     // { id: 'luxury-cars', label: 'Luxury Cars', icon: Car, category: 'luxury-cars' }, // Hidden - now integrated into Ground Transport
@@ -8844,229 +8845,177 @@ const TokenizedAssetsGlassmorphic = () => {
                 </div>
               )}
 
-              {/* Empty Leg Detail View - Full Layout */}
+              {/* Empty Leg Detail View - Modern Monochromatic Layout */}
               {showEmptyLegDetail && selectedEmptyLeg && (() => {
                 const rawData = selectedEmptyLeg.rawData || {};
                 return (
-                  <div className="w-full max-w-7xl">
-                    {/* Header Section with Image and Main Info */}
-                    <div className="bg-white/35 rounded-lg border border-gray-300/50 mb-4 md:mb-6 overflow-hidden" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                      <div className="flex flex-col md:grid md:grid-cols-2 md:gap-0">
-                        {/* Left: Aircraft Image */}
-                        <div className="relative h-48 md:h-96">
-                          <img
-                            src={selectedEmptyLeg.image}
-                            alt={selectedEmptyLeg.name}
-                            className="w-full h-full object-cover"
-                          />
-                          {/* Badges on Image */}
-                          <div className="absolute top-3 left-3 md:top-4 md:left-4 flex gap-1.5 md:gap-2">
-                            <span className="bg-white px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-medium text-gray-800">● Available</span>
-                            <span className="bg-blue-500 text-white px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-medium">✈ Empty Leg</span>
+                  <div className="w-full max-w-5xl mx-auto">
+                    {/* Compact Header Card */}
+                    <div className="bg-white rounded-xl border border-gray-100 mb-4 overflow-hidden shadow-sm">
+                      {/* Image - Smaller on desktop */}
+                      <div className="relative h-40 md:h-52 bg-gray-100">
+                        <img
+                          src={selectedEmptyLeg.image}
+                          alt={selectedEmptyLeg.name}
+                          className="w-full h-full object-cover"
+                        />
+                        {/* Minimal badges */}
+                        <div className="absolute top-3 left-3 flex gap-1.5">
+                          <span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full text-[10px] font-medium border border-emerald-200">Available</span>
+                          <span className="bg-gray-900 text-white px-2 py-0.5 rounded-full text-[10px] font-medium">Empty Leg</span>
+                        </div>
+                      </div>
+
+                      {/* Flight Info - Compact */}
+                      <div className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <Plane size={14} className="text-gray-600" />
+                          </div>
+                          <div className="flex-1">
+                            <h1 className="text-sm font-medium text-gray-900">{selectedEmptyLeg.name}</h1>
+                            <p className="text-xs text-gray-500">{rawData.from_city || 'Departure'} → {rawData.to_city || 'Arrival'}</p>
                           </div>
                         </div>
 
-                        {/* Right: Flight Info */}
-                        <div className="flex-1 p-4 md:p-5 flex flex-col">
-                          <div className="flex items-center justify-between mb-2 md:mb-3">
-                            <span className="bg-black text-white px-2 py-0.5 md:py-1 rounded text-[10px] md:text-xs font-semibold uppercase">PCX EMPTY LEG</span>
+                        {/* Key Metrics Row */}
+                        <div className="flex items-center gap-4 pt-3 border-t border-gray-50">
+                          <div className="flex-1">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Date</p>
+                            <p className="text-sm font-medium text-gray-900">{selectedEmptyLeg.departureDate}</p>
                           </div>
-
-                          <h1 className="text-lg md:text-2xl font-semibold mb-2 md:mb-4 text-gray-900">{selectedEmptyLeg.name}</h1>
-                          <p className="text-xs md:text-sm text-gray-600 mb-3 md:mb-4">{rawData.from_city || 'Departure'} to {rawData.to_city || 'Arrival'}</p>
-
-                          {/* Tabs - Scrollable on mobile */}
-                          <div className="flex space-x-4 md:space-x-6 border-b border-gray-300/50 mb-3 md:mb-4 overflow-x-auto pb-0 -mx-1 px-1">
-                            <button className="pb-2 md:pb-3 text-xs md:text-sm font-medium text-gray-800 border-b-2 border-gray-800 whitespace-nowrap">Flight Details</button>
-                            <button className="pb-2 md:pb-3 text-xs md:text-sm font-medium text-gray-600 hover:text-gray-800 whitespace-nowrap">Aircraft</button>
-                            <button className="pb-2 md:pb-3 text-xs md:text-sm font-medium text-gray-600 hover:text-gray-800 whitespace-nowrap">Operator</button>
-                            <button className="pb-2 md:pb-3 text-xs md:text-sm font-medium text-gray-600 hover:text-gray-800 whitespace-nowrap">Map</button>
+                          <div className="flex-1">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Capacity</p>
+                            <p className="text-sm font-medium text-gray-900">{rawData.capacity || rawData.pax || 'N/A'} pax</p>
                           </div>
-
-                          {/* Key Info Grid */}
-                          <div className="grid grid-cols-3 gap-2 md:gap-4 mb-3 md:mb-4">
-                            <div>
-                              <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">Departure</p>
-                              <p className="text-xs md:text-base font-semibold text-gray-800">{selectedEmptyLeg.departureDate}</p>
-                              <p className="text-[10px] md:text-xs text-gray-500">TBD</p>
-                            </div>
-                            <div>
-                              <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">Capacity</p>
-                              <p className="text-xs md:text-base font-semibold text-gray-800">{rawData.capacity || rawData.pax || 'N/A'} pax</p>
-                            </div>
-                            <div>
-                              <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">Price</p>
-                              <p className="text-xs md:text-base font-semibold text-gray-800">{selectedEmptyLeg.totalPrice}</p>
-                            </div>
-                          </div>
-
-                          {/* Links */}
-                          <div className="flex space-x-3 md:space-x-4 text-[10px] md:text-xs mt-auto">
-                            <a href="#" className="text-gray-600 hover:text-gray-800">Flight tracking ↗</a>
-                            <a href="#" className="text-gray-600 hover:text-gray-800">Terms & Conditions ⚖</a>
+                          <div className="flex-1">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Price</p>
+                            <p className="text-sm font-semibold text-gray-900">{selectedEmptyLeg.totalPrice}</p>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Bottom Section: Flight Details + Booking */}
-                    <div className="flex flex-col md:grid md:grid-cols-3 gap-4 md:gap-6">
-                      {/* Left: Flight Details */}
-                      <div className="md:col-span-2 bg-white/35 rounded-lg border border-gray-300/50 p-4 md:p-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                        <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4 md:mb-6">Flight Details</h2>
+                    {/* Details Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {/* Flight Details Card */}
+                      <div className="md:col-span-2 bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+                        <h2 className="text-sm font-medium text-gray-900 mb-4">Flight Details</h2>
 
-                        <div className="grid grid-cols-2 gap-3 md:gap-6 mb-4 md:mb-6">
-                          <div>
-                            <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">From</p>
-                            <p className="text-xs md:text-sm font-semibold text-gray-800">{rawData.from_city || 'Teterboro'} ({rawData.from_iata || 'TEB'})</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="py-2 border-b border-gray-50">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">From</p>
+                            <p className="text-sm text-gray-900">{rawData.from_city || 'TBD'} ({rawData.from_iata || '-'})</p>
                           </div>
-                          <div>
-                            <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">To</p>
-                            <p className="text-xs md:text-sm font-semibold text-gray-800">{rawData.to_city || 'Porto Alegre'} ({rawData.to_iata || 'POA'})</p>
+                          <div className="py-2 border-b border-gray-50">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">To</p>
+                            <p className="text-sm text-gray-900">{rawData.to_city || 'TBD'} ({rawData.to_iata || '-'})</p>
                           </div>
-                          <div>
-                            <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">Departure Date</p>
-                            <p className="text-xs md:text-sm font-semibold text-gray-800">{selectedEmptyLeg.departureDate}</p>
+                          <div className="py-2 border-b border-gray-50">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Date</p>
+                            <p className="text-sm text-gray-900">{selectedEmptyLeg.departureDate}</p>
                           </div>
-                          <div>
-                            <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">Departure Time</p>
-                            <p className="text-xs md:text-sm font-semibold text-gray-800">Flexible</p>
+                          <div className="py-2 border-b border-gray-50">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Time</p>
+                            <p className="text-sm text-gray-900">Flexible</p>
                           </div>
-                          <div>
-                            <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">Flight Duration</p>
-                            <p className="text-xs md:text-sm font-semibold text-gray-800">TBD</p>
+                          <div className="py-2 border-b border-gray-50">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Aircraft</p>
+                            <p className="text-sm text-gray-900">{rawData.category || rawData.aircraft_type || 'Private Jet'}</p>
                           </div>
-                          <div>
-                            <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">Distance</p>
-                            <p className="text-xs md:text-sm font-semibold text-gray-800">N/A</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">Passengers</p>
-                            <p className="text-xs md:text-sm font-semibold text-gray-800">{rawData.capacity || rawData.pax || '14'}</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] md:text-xs text-gray-600 mb-0.5 md:mb-1">Luggage Capacity</p>
-                            <p className="text-xs md:text-sm font-semibold text-gray-800">Standard</p>
+                          <div className="py-2 border-b border-gray-50">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Passengers</p>
+                            <p className="text-sm text-gray-900">{rawData.capacity || rawData.pax || 'N/A'}</p>
                           </div>
                         </div>
 
-                        {/* GREEN CO2 Certificate Box */}
-                        <div className="bg-green-50 border-2 border-green-500 rounded-lg p-3 md:p-6 mb-4 md:mb-6">
-                          <div className="flex items-start gap-2 md:gap-3 mb-2 md:mb-3">
-                            <span className="text-lg md:text-2xl">🌿</span>
-                            <div>
-                              <h3 className="text-sm md:text-base font-bold text-green-900 mb-1 md:mb-2">CO₂ Certificate INCLUDED</h3>
-                              <p className="text-xs md:text-sm text-green-800 mb-2 md:mb-3">All empty leg flights include a complimentary CO₂ offset certificate – no additional cost!</p>
-                              <div className="flex items-start gap-1.5 md:gap-2">
-                                <span className="text-green-600">✓</span>
-                                <p className="text-xs md:text-sm text-green-900">
-                                  <span className="font-semibold">Classic or Blockchain Certificate:</span> Choose between traditional carbon offset certificate or blockchain-verified NFT certificate at checkout.
-                                </p>
-                              </div>
-                            </div>
+                        {/* CO2 - Minimal */}
+                        <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                          <div className="flex items-center gap-2">
+                            <Leaf size={14} className="text-emerald-500" />
+                            <p className="text-xs text-gray-700">
+                              <span className="font-medium">CO₂ Certificate included</span>
+                              <span className="text-gray-500"> · Classic or blockchain-verified</span>
+                            </p>
                           </div>
                         </div>
                       </div>
 
-                      {/* Right: Book This Flight Sidebar */}
-                      <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-5 shadow-sm">
-                        <h2 className="text-sm md:text-base font-semibold text-gray-900 mb-4 md:mb-5">Book This Flight</h2>
+                      {/* Right: Book This Flight Sidebar - Minimal */}
+                      <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+                        <h2 className="text-sm font-medium text-gray-900 mb-4">Book This Flight</h2>
 
-                        <div className="grid grid-cols-3 md:block md:space-y-3 gap-2 mb-4 md:mb-5">
-                          <div>
-                            <p className="text-[10px] md:text-xs text-gray-500 mb-0.5 md:mb-1">Base Price</p>
-                            <p className="text-sm md:text-lg font-semibold text-gray-900">{selectedEmptyLeg.totalPrice}</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] md:text-xs text-gray-500 mb-0.5 md:mb-1">Departure</p>
-                            <p className="text-xs md:text-sm font-medium text-gray-900">{selectedEmptyLeg.departureDate}</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] md:text-xs text-gray-500 mb-0.5 md:mb-1">Max Capacity</p>
-                            <p className="text-xs md:text-sm font-medium text-gray-900">{rawData.capacity || rawData.pax || '14'} pax</p>
+                        {/* Price Summary */}
+                        <div className="p-3 bg-gray-50 rounded-lg mb-4">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-gray-500">Total Price</span>
+                            <span className="text-lg font-semibold text-gray-900">{selectedEmptyLeg.totalPrice}</span>
                           </div>
                         </div>
 
-                        <div className="border-t border-gray-100 pt-4 md:pt-5 mb-4 md:mb-5">
-                          <h3 className="text-[10px] md:text-xs font-semibold text-gray-900 mb-2 md:mb-3">Booking Details</h3>
-
-                          <div className="grid grid-cols-3 gap-1.5 md:gap-2.5 mb-3 md:mb-4">
-                            <div>
-                              <p className="text-[10px] md:text-xs text-gray-500 mb-1 md:mb-1.5">Passengers</p>
-                              <div className="flex items-center justify-between border border-gray-200 rounded-lg px-1.5 md:px-2.5 py-1 md:py-1.5 bg-white">
-                                <button
-                                  onClick={() => setEmptyLegPassengers(Math.max(1, emptyLegPassengers - 1))}
-                                  className="text-gray-500 hover:text-gray-900 text-xs md:text-sm"
-                                >−</button>
-                                <span className="text-xs md:text-sm font-medium text-gray-900">{emptyLegPassengers}</span>
-                                <button
-                                  onClick={() => setEmptyLegPassengers(Math.min(rawData.capacity || rawData.pax || 14, emptyLegPassengers + 1))}
-                                  className="text-gray-500 hover:text-gray-900 text-xs md:text-sm"
-                                >+</button>
-                              </div>
-                            </div>
-                            <div>
-                              <p className="text-[10px] md:text-xs text-gray-500 mb-1 md:mb-1.5">Luggage</p>
-                              <div className="flex items-center justify-between border border-gray-200 rounded-lg px-1.5 md:px-2.5 py-1 md:py-1.5 bg-white">
-                                <button
-                                  onClick={() => setEmptyLegLuggage(Math.max(0, emptyLegLuggage - 1))}
-                                  className="text-gray-500 hover:text-gray-900 text-xs md:text-sm"
-                                >−</button>
-                                <span className="text-xs md:text-sm font-medium text-gray-900">{emptyLegLuggage}</span>
-                                <button
-                                  onClick={() => setEmptyLegLuggage(Math.min((rawData.capacity || rawData.pax || 14) * 2, emptyLegLuggage + 1))}
-                                  className="text-gray-500 hover:text-gray-900 text-xs md:text-sm"
-                                >+</button>
-                              </div>
-                            </div>
-                            <div>
-                              <p className="text-[10px] md:text-xs text-gray-500 mb-1 md:mb-1.5">Pet</p>
+                        {/* Booking Inputs - Compact */}
+                        <div className="space-y-3 mb-4">
+                          <div className="flex items-center justify-between py-2 border-b border-gray-50">
+                            <span className="text-xs text-gray-600">Passengers</span>
+                            <div className="flex items-center gap-3">
                               <button
-                                onClick={() => setEmptyLegHasPet(!emptyLegHasPet)}
-                                className={`w-full flex items-center justify-center border rounded-lg px-1.5 md:px-2.5 py-1 md:py-1.5 text-xs md:text-sm font-medium transition-colors ${
-                                  emptyLegHasPet
-                                    ? 'bg-black text-white border-black'
-                                    : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                                }`}
-                              >
-                                {emptyLegHasPet ? 'Yes' : 'No'}
-                              </button>
+                                onClick={() => setEmptyLegPassengers(Math.max(1, emptyLegPassengers - 1))}
+                                className="w-6 h-6 rounded-full border border-gray-200 text-gray-500 hover:border-gray-900 hover:text-gray-900 text-xs flex items-center justify-center"
+                              >−</button>
+                              <span className="text-sm font-medium text-gray-900 w-4 text-center">{emptyLegPassengers}</span>
+                              <button
+                                onClick={() => setEmptyLegPassengers(Math.min(rawData.capacity || rawData.pax || 14, emptyLegPassengers + 1))}
+                                className="w-6 h-6 rounded-full border border-gray-200 text-gray-500 hover:border-gray-900 hover:text-gray-900 text-xs flex items-center justify-center"
+                              >+</button>
                             </div>
                           </div>
+                          <div className="flex items-center justify-between py-2 border-b border-gray-50">
+                            <span className="text-xs text-gray-600">Luggage</span>
+                            <div className="flex items-center gap-3">
+                              <button
+                                onClick={() => setEmptyLegLuggage(Math.max(0, emptyLegLuggage - 1))}
+                                className="w-6 h-6 rounded-full border border-gray-200 text-gray-500 hover:border-gray-900 hover:text-gray-900 text-xs flex items-center justify-center"
+                              >−</button>
+                              <span className="text-sm font-medium text-gray-900 w-4 text-center">{emptyLegLuggage}</span>
+                              <button
+                                onClick={() => setEmptyLegLuggage(Math.min((rawData.capacity || rawData.pax || 14) * 2, emptyLegLuggage + 1))}
+                                className="w-6 h-6 rounded-full border border-gray-200 text-gray-500 hover:border-gray-900 hover:text-gray-900 text-xs flex items-center justify-center"
+                              >+</button>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between py-2">
+                            <span className="text-xs text-gray-600">Pet onboard</span>
+                            <button
+                              onClick={() => setEmptyLegHasPet(!emptyLegHasPet)}
+                              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                                emptyLegHasPet
+                                  ? 'bg-gray-900 text-white'
+                                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                              }`}
+                            >
+                              {emptyLegHasPet ? 'Yes' : 'No'}
+                            </button>
+                          </div>
+                        </div>
 
-                          <div className="space-y-2 md:space-y-2.5 mb-3 md:mb-4 border-t border-gray-100 pt-3 md:pt-4">
-                            {rawData.price ? (
-                              <>
-                                <div className="flex justify-between text-xs md:text-sm">
-                                  <span className="text-gray-600">Base Price</span>
-                                  <span className="text-gray-900">${(rawData.price / 1.081).toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between text-xs md:text-sm">
-                                  <span className="text-gray-600">VAT (8.1%)</span>
-                                  <span className="text-gray-900">${(rawData.price - (rawData.price / 1.081)).toFixed(2)}</span>
-                                </div>
-
-                                {/* PVCX Earnings Box */}
-                                {(rawData.distance_km || rawData.distance) && (
-                                  <div className="border border-gray-300 rounded-lg p-2 md:p-3 bg-blue-50/30 mt-2 md:mt-3 mb-2 md:mb-3">
-                                    <div className="flex justify-between items-center">
-                                      <div className="flex items-center gap-1.5 md:gap-2">
-                                        <Coins size={14} className="text-blue-600 md:w-4 md:h-4" />
-                                        <span className="text-xs md:text-sm text-gray-700">Earnings $PVCX</span>
-                                      </div>
-                                      <span className="text-xs md:text-sm font-medium text-blue-900">
-                                        {((rawData.distance_km || rawData.distance) * 1.5).toFixed(0)} $PVCX
-                                      </span>
-                                    </div>
-                                  </div>
-                                )}
-
-                                <div className="flex justify-between text-sm md:text-base pt-2 border-t border-gray-200">
-                                  <span className="font-semibold text-gray-900">Final Price</span>
-                                  <span className="font-semibold text-gray-900">${rawData.price.toFixed(2)}</span>
-                                </div>
-                              </>
-                            ) : (
+                        {/* Price Breakdown - Minimal */}
+                        <div className="space-y-2 mb-4 pt-3 border-t border-gray-100">
+                          {rawData.price ? (
+                            <>
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-500">Subtotal</span>
+                                <span className="text-gray-900">${(rawData.price / 1.081).toFixed(0)}</span>
+                              </div>
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-500">VAT</span>
+                                <span className="text-gray-900">${(rawData.price - (rawData.price / 1.081)).toFixed(0)}</span>
+                              </div>
+                              <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
+                                <span className="font-medium text-gray-900">Total</span>
+                                <span className="font-semibold text-gray-900">${rawData.price.toFixed(0)}</span>
+                              </div>
+                            </>
+                          ) : (
                               <>
                                 <div className="flex justify-between text-xs md:text-sm">
                                   <span className="text-gray-600">Price</span>
@@ -9081,14 +9030,7 @@ const TokenizedAssetsGlassmorphic = () => {
                           </div>
                         </div>
 
-                        <button
-                          onClick={requestEmptyLegFlight}
-                          className="w-full bg-black text-white py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-semibold hover:bg-gray-800 transition-colors mb-2 md:mb-3"
-                        >
-                          Request Flight
-                        </button>
-
-                        {/* Pay with Crypto Button */}
+                        {/* Action Buttons - Clean */}
                         <BuyWithCryptoButton
                           serviceType="empty_leg"
                           serviceId={selectedEmptyLeg?.rawData?.id || selectedEmptyLeg?.id}
@@ -9105,92 +9047,38 @@ const TokenizedAssetsGlassmorphic = () => {
                           rawData={selectedEmptyLeg?.rawData}
                           user={user}
                           variant="gradient"
-                          className="mb-2 md:mb-3"
+                          className="mb-3"
                         />
 
+                        {/* Request Flight - Secondary */}
+                        <button
+                          onClick={requestEmptyLegFlight}
+                          className="w-full py-2.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors mb-3"
+                        >
+                          Request Flight
+                        </button>
+
+                        {/* NFT Check - Minimal */}
                         <button
                           onClick={checkNFTMembership}
                           disabled={isCheckingNFT}
-                          className="block w-full text-center text-[10px] md:text-xs text-gray-600 hover:text-gray-900 transition-colors"
+                          className="w-full text-center text-xs text-gray-400 hover:text-gray-600 transition-colors"
                         >
-                          {isCheckingNFT ? 'Checking...' : 'Check NFT Membership for Discounts'}
+                          {isCheckingNFT ? 'Checking...' : 'Check NFT benefits'}
                         </button>
-
-                        {address && (
-                          <p className="text-xs text-gray-500 text-center mt-4">{address.slice(0, 6)}...{address.slice(-4)}</p>
-                        )}
                       </div>
                     </div>
 
-                    {/* Contact Section - Need Assistance */}
-                    <div className="bg-white/35 rounded-lg border border-gray-300/50 p-4 md:p-8 mt-4 md:mt-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                      <div className="text-center mb-4 md:mb-6">
-                        <h3 className="text-base md:text-xl font-semibold text-gray-900 mb-1 md:mb-2">Need Assistance?</h3>
-                        <p className="text-xs md:text-sm text-gray-600">Our team is here to help you find the perfect flight</p>
-                      </div>
-
-                      {/* Team Bubbles */}
-                      <div className="flex justify-center gap-3 md:gap-4 mb-4 md:mb-6">
-                        <div className="flex flex-col items-center">
-                          <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gray-200 border-2 border-white shadow-md flex items-center justify-center text-xl md:text-2xl">
-                            👨‍✈️
-                          </div>
-                          <span className="text-[10px] md:text-xs text-gray-600 mt-1 md:mt-2">Expert</span>
+                    {/* Help - Minimal Footer */}
+                    <div className="mt-4 p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Mail size={14} className="text-gray-400" />
+                          <span className="text-xs text-gray-500">Need help?</span>
                         </div>
-                        <div className="flex flex-col items-center">
-                          <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gray-200 border-2 border-white shadow-md flex items-center justify-center text-xl md:text-2xl">
-                            👩‍✈️
-                          </div>
-                          <span className="text-[10px] md:text-xs text-gray-600 mt-1 md:mt-2">Advisor</span>
-                        </div>
-                        <div className="flex flex-col items-center">
-                          <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gray-200 border-2 border-white shadow-md flex items-center justify-center text-xl md:text-2xl">
-                            🧑‍✈️
-                          </div>
-                          <span className="text-[10px] md:text-xs text-gray-600 mt-1 md:mt-2">Support</span>
-                        </div>
-                      </div>
-
-                      {/* Contact Info */}
-                      <div className="flex items-center justify-center gap-1.5 md:gap-2 mb-4 md:mb-6">
-                        <Mail size={14} className="text-gray-600 md:w-[18px] md:h-[18px]" />
-                        <a href="mailto:bookings@privatecharterx.com" className="text-xs md:text-base text-gray-900 hover:text-black font-medium">
-                          bookings@privatecharterx.com
+                        <a href="mailto:bookings@privatecharterx.com" className="text-xs font-medium text-gray-900 hover:underline">
+                          Contact us
                         </a>
-                      </div>
-
-                      {/* Social Share */}
-                      <div className="border-t border-gray-300 pt-4 md:pt-6">
-                        <p className="text-xs md:text-sm text-gray-600 text-center mb-2 md:mb-3">Share this flight</p>
-                        <div className="flex justify-center gap-2 md:gap-3">
-                          <button
-                            onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out this flight on PrivateCharterX!')}&url=${encodeURIComponent(window.location.href)}`, '_blank')}
-                            className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
-                          >
-                            <svg className="w-3 h-3 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"></path></svg>
-                          </button>
-                          <button
-                            onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank')}
-                            className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
-                          >
-                            <svg className="w-3 h-3 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"></path></svg>
-                          </button>
-                          <button
-                            onClick={() => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`, '_blank')}
-                            className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
-                          >
-                            <svg className="w-3 h-3 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"></path><circle cx="4" cy="4" r="2"></circle></svg>
-                          </button>
-                          <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(window.location.href);
-                              alert('Link copied to clipboard!');
-                            }}
-                            className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors"
-                          >
-                            <svg className="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                          </button>
-                        </div>
                       </div>
                     </div>
                   </div>
