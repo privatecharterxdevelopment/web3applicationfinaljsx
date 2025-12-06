@@ -77,20 +77,50 @@ export const chatService = {
 
   /**
    * Update chat messages
+   * Uses upsert to create the chat if it doesn't exist
    */
   async updateChatMessages(chatId, messages, userId) {
     try {
+      // First try to update existing chat
       const { data, error } = await supabase
         .from('ai_chat_sessions')
-        .update({ messages })
+        .update({ messages, updated_at: new Date().toISOString() })
         .eq('id', chatId)
         .eq('user_id', userId)
-        .select()
-        .single();
+        .select();
+
+      // If no rows updated, the chat doesn't exist yet - create it
+      if (!error && (!data || data.length === 0)) {
+        console.log('📝 Chat not found, creating new chat session...');
+
+        // Generate title from first user message
+        const firstUserMsg = messages.find(m => m.role === 'user');
+        const title = firstUserMsg?.content?.slice(0, 50) || 'New Chat';
+
+        const { data: newChat, error: createError } = await supabase
+          .from('ai_chat_sessions')
+          .insert({
+            id: chatId,
+            user_id: userId,
+            title,
+            messages,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('❌ Error creating chat:', createError);
+          return { success: false, error: createError };
+        }
+
+        return { success: true, chat: newChat, created: true };
+      }
 
       if (error) throw error;
 
-      return { success: true, chat: data };
+      return { success: true, chat: data?.[0] };
     } catch (error) {
       console.error('❌ Error updating chat messages:', error);
       return { success: false, error };
