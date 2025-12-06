@@ -2422,9 +2422,10 @@ As their luxury travel consultant, provide an enthusiastic response that:
       workingChatId = chatId;
 
       // Update URL to reflect the new chat ID (only for real UUIDs, not temp IDs)
+      // Use /dashboard/chat/ to keep dashboard wrapper with sidebar
       if (chatId && !chatId.startsWith('temp-')) {
-        navigate(`/chat/${chatId}`, { replace: true });
-        console.log('🔗 URL updated to:', `/chat/${chatId}`);
+        navigate(`/dashboard/chat/${chatId}`, { replace: true });
+        console.log('🔗 URL updated to:', `/dashboard/chat/${chatId}`);
       }
 
       console.log('✅ Active chat switched to:', chatId);
@@ -2479,9 +2480,9 @@ As their luxury travel consultant, provide an enthusiastic response that:
             setActiveChat(newChatId);
             workingChatId = newChatId;
 
-            // Update URL to reflect the new chat ID
-            navigate(`/chat/${newChatId}`, { replace: true });
-            console.log('🔗 URL updated to:', `/chat/${newChatId}`);
+            // Update URL to reflect the new chat ID (use dashboard route for sidebar)
+            navigate(`/dashboard/chat/${newChatId}`, { replace: true });
+            console.log('🔗 URL updated to:', `/dashboard/chat/${newChatId}`);
 
             // Update messages in database
             if (existingMessages.length > 1) {

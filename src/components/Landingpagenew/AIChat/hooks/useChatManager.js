@@ -85,9 +85,9 @@ export function useChatManager({ user, isAdmin, navigate, onToast }) {
           }
         }
 
-        // Update URL
+        // Update URL (use dashboard route to keep sidebar)
         if (navigate && chat.id) {
-          navigate(`/chat/${chat.id}`, { replace: true });
+          navigate(`/dashboard/chat/${chat.id}`, { replace: true });
         }
 
         return chat;
@@ -113,9 +113,9 @@ export function useChatManager({ user, isAdmin, navigate, onToast }) {
       dispatch(chatActions.setMessageCount(userMsgCount));
     }
 
-    // Update URL
+    // Update URL (use dashboard route to keep sidebar)
     if (navigate && chatId && chatId !== 'new') {
-      navigate(`/chat/${chatId}`, { replace: true });
+      navigate(`/dashboard/chat/${chatId}`, { replace: true });
     }
   }, [navigate, state.chatHistory]);
 

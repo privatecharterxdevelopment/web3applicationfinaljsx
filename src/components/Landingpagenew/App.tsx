@@ -1,6 +1,6 @@
 // App.tsx - Fixed AppKit configuration
 import React, { useState, useEffect, Suspense } from 'react';
-import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 // QueryClient is provided from main.tsx
 import { useAuth0 } from '@auth0/auth0-react';
@@ -201,6 +201,12 @@ function ScrollToTop() {
   return null;
 }
 
+// Redirect /chat/:chatId to /dashboard/chat/:chatId to preserve sidebar layout
+function ChatRedirect() {
+  const { chatId } = useParams();
+  return <Navigate to={`/dashboard/chat/${chatId}`} replace />;
+}
+
 // Page transition animations
 const pageVariants = {
   initial: {
@@ -371,11 +377,11 @@ function AppContent() {
               {/* Legacy redirect - /glas now redirects to /dashboard */}
               <Route path="/glas" element={<Navigate to="/dashboard" replace />} />
 
-              {/* AI Chat direct route */}
-              <Route path="/chat" element={<AIChat />} />
+              {/* AI Chat direct route - redirect to dashboard */}
+              <Route path="/chat" element={<Navigate to="/dashboard?tab=ai-chat" replace />} />
 
-              {/* AI Chat with specific conversation ID */}
-              <Route path="/chat/:chatId" element={<AIChat />} />
+              {/* AI Chat with specific conversation ID - redirect to dashboard */}
+              <Route path="/chat/:chatId" element={<ChatRedirect />} />
 
               {/* Individual Project Pages */}
               <Route path="/project/:projectId" element={<ProjectPage />} />
