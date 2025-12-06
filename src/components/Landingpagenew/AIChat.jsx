@@ -2285,12 +2285,17 @@ As their luxury travel consultant, provide an enthusiastic response that:
 
     if (!hasUnlimitedMessages && currentMsgCount >= MAX_MESSAGES_PER_CHAT && effectiveActiveChat !== 'new') {
       setMessageLimitReached(true);
-      // Show subscription modal to prompt upgrade
-      setShowSubscriptionModal(true);
-      setToast({
-        message: `Message limit reached (${MAX_MESSAGES_PER_CHAT} messages per chat). Upgrade for more messages.`,
-        type: 'warning'
-      });
+      // Show message limit reached as a chat message with subscription link
+      const limitMessage = {
+        role: 'assistant',
+        content: `You have reached the message limit (${MAX_MESSAGES_PER_CHAT} messages per chat). To continue chatting, please [get a subscription](#subscription) or start a new chat.`,
+        isLimitMessage: true
+      };
+      setChatHistory(prev => prev.map(c =>
+        c.id === effectiveActiveChat
+          ? { ...c, messages: [...c.messages, { role: 'user', content: message }, limitMessage] }
+          : c
+      ));
       return;
     }
 
@@ -2349,14 +2354,24 @@ As their luxury travel consultant, provide an enthusiastic response that:
         try {
           const { canStart, chatsUsed, chatsLimit } = await subscriptionService.canStartNewChat(user.id);
           if (!canStart) {
-            console.log('🚫 Chat limit reached - BLOCKING');
+            console.log('🚫 Chat limit reached - showing message in chat');
             setChatLimitReached(true);
-            setToast({
-              message: `You've reached your chat limit (${chatsUsed}/${chatsLimit}). Upgrade to continue.`,
-              type: 'warning'
-            });
-            // Show subscription modal immediately for upgrade
-            setShowSubscriptionModal(true);
+            // Don't block - instead show user message and limit message in chat
+            const limitMessage = {
+              role: 'assistant',
+              content: `You have reached your chat limit (${chatsUsed}/${chatsLimit} chats used). To continue using Sphera AI, please [get a subscription](#subscription).`,
+              isLimitMessage: true
+            };
+            // Create a "fake" chat just to show the limit message
+            const tempChatId = `limit-${Date.now()}`;
+            const tempChat = {
+              id: tempChatId,
+              title: message.substring(0, 30) + '...',
+              date: 'Just now',
+              messages: [userMessage, limitMessage]
+            };
+            setChatHistory(prev => [tempChat, ...prev]);
+            setActiveChat(tempChatId);
             setIsProcessing(false);
             return;
           }
@@ -2446,13 +2461,19 @@ As their luxury travel consultant, provide an enthusiastic response that:
           try {
             const { canStart, chatsUsed, chatsLimit } = await subscriptionService.canStartNewChat(user.id);
             if (!canStart) {
-              console.log('🚫 Chat limit reached - BLOCKING');
+              console.log('🚫 Chat limit reached - showing message in chat');
               setChatLimitReached(true);
-              setToast({
-                message: `You've reached your chat limit (${chatsUsed}/${chatsLimit}). Upgrade to continue.`,
-                type: 'warning'
-              });
-              setShowSubscriptionModal(true);
+              // Show limit message in current chat
+              const limitMessage = {
+                role: 'assistant',
+                content: `You have reached your chat limit (${chatsUsed}/${chatsLimit} chats used). To continue using Sphera AI, please [get a subscription](#subscription).`,
+                isLimitMessage: true
+              };
+              setChatHistory(prev => prev.map(c =>
+                c.id === effectiveActiveChat
+                  ? { ...c, messages: [...c.messages, limitMessage] }
+                  : c
+              ));
               setIsProcessing(false);
               return;
             }
@@ -3797,16 +3818,9 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="font-semibold text-gray-900">Your Chats</h3>
                         <button
-                          onClick={async () => {
+                          onClick={() => {
                             setShowChatSessions(false);
-                            // Check if user can start new chat
-                            if (user?.id) {
-                              const { canStart } = await subscriptionService.canStartNewChat(user.id);
-                              if (!canStart) {
-                                setShowSubscriptionModal(true);
-                                return;
-                              }
-                            }
+                            // Let user start new chat - limit check happens when they send first message
                             setActiveChat('new');
                             setWeather(null);
                             setCartItems([]);
@@ -3968,6 +3982,18 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           speed={15}
                           onComplete={() => setTypingMessageIndex(null)}
                         />
+                      ) : msg.isLimitMessage ? (
+                        // Special rendering for limit messages with clickable subscription link
+                        <p className="text-sm leading-relaxed whitespace-pre-line">
+                          {msg.content.split('[get a subscription](#subscription)')[0]}
+                          <button
+                            onClick={() => setShowSubscriptionModal(true)}
+                            className="text-gray-900 underline hover:text-black font-medium"
+                          >
+                            get a subscription
+                          </button>
+                          {msg.content.split('[get a subscription](#subscription)')[1] || '.'}
+                        </p>
                       ) : (
                         <p className="text-sm leading-relaxed whitespace-pre-line">{msg.content}</p>
                       )}
