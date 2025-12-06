@@ -423,150 +423,147 @@ export default function FloatingSearchModal() {
           <span className="text-[10px] text-gray-400 flex-shrink-0">sphera 1.0</span>
         </div>
 
-        {/* Charter Fields - Expandable, Mobile: 2 rows, Desktop: 1 row */}
+        {/* Charter Fields - Expandable, Mobile optimized with equal width fields */}
         <div className={`transition-all duration-150 ${showCharterFields ? 'max-h-[300px] opacity-100 mt-2 sm:mt-3' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-          {/* Mobile: Stack vertically, Desktop: Single row */}
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
-            {/* Row 1 on mobile: Departure & Destination */}
-            <div className="flex gap-2 flex-1">
-              {/* Departure Input with Dropdown */}
-              <div className="flex-1 relative">
-                <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 bg-gray-50 rounded-lg sm:rounded-xl border border-gray-200 focus-within:border-gray-400 focus-within:bg-white transition-all">
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="3" />
-                    <path d="M12 2v4m0 12v4M2 12h4m12 0h4" />
-                  </svg>
-                  <input
-                    type="text"
-                    value={departureInput}
-                    onChange={(e) => {
-                      setDepartureInput(e.target.value);
-                      searchDepartureAirports(e.target.value);
-                      if (departureAirport && e.target.value !== `${departureAirport.city} (${departureAirport.code})`) {
-                        setDepartureAirport(null);
-                      }
+          {/* Mobile: Stack all fields vertically, Desktop: Single row */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:gap-2">
+            {/* Departure Input with Dropdown - Full width on mobile */}
+            <div className="w-full sm:flex-1 relative">
+              <div className="flex items-center gap-2 px-3 py-2.5 sm:py-2.5 bg-gray-50 rounded-xl border border-gray-200 focus-within:border-gray-400 focus-within:bg-white transition-all">
+                <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M12 2v4m0 12v4M2 12h4m12 0h4" />
+                </svg>
+                <input
+                  type="text"
+                  value={departureInput}
+                  onChange={(e) => {
+                    setDepartureInput(e.target.value);
+                    searchDepartureAirports(e.target.value);
+                    if (departureAirport && e.target.value !== `${departureAirport.city} (${departureAirport.code})`) {
+                      setDepartureAirport(null);
+                    }
+                  }}
+                  onFocus={() => {
+                    setShowDepartureDropdown(true);
+                    searchDepartureAirports(departureInput || '');
+                  }}
+                  onBlur={() => {
+                    setTimeout(() => setShowDepartureDropdown(false), 200);
+                  }}
+                  placeholder="From (city/airport)"
+                  className="flex-1 bg-transparent border-none outline-none text-[14px] sm:text-[13px] text-gray-800 placeholder-gray-400 min-w-0"
+                />
+                {departureAirport && (
+                  <button
+                    onClick={() => {
+                      setDepartureAirport(null);
+                      setDepartureInput('');
                     }}
-                    onFocus={() => {
-                      setShowDepartureDropdown(true);
-                      searchDepartureAirports(departureInput || '');
-                    }}
-                    onBlur={() => {
-                      setTimeout(() => setShowDepartureDropdown(false), 200);
-                    }}
-                    placeholder="From (city/airport)"
-                    className="flex-1 bg-transparent border-none outline-none text-[12px] sm:text-[13px] text-gray-800 placeholder-gray-400 min-w-0"
-                  />
-                  {departureAirport && (
-                    <button
-                      onClick={() => {
-                        setDepartureAirport(null);
-                        setDepartureInput('');
-                      }}
-                      className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
-                    >
-                      <X size={12} />
-                    </button>
-                  )}
-                </div>
-                {/* Departure Dropdown */}
-                {showDepartureDropdown && showCharterFields && (
-                  <div className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto z-50">
-                    {isLoadingDeparture ? (
-                      <div className="px-3 py-2 text-center text-gray-500 text-xs">Searching...</div>
-                    ) : departureAirports.length > 0 ? (
-                      departureAirports.map(airport => (
-                        <button
-                          key={airport.code}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => handleDepartureSelect(airport)}
-                          className="w-full px-3 py-2 text-left hover:bg-gray-50 border-b border-gray-50 last:border-0"
-                        >
-                          <div className="font-medium text-gray-900 text-xs truncate">{airport.name}</div>
-                          <div className="text-[10px] text-gray-400 truncate">{airport.code} • {airport.city}, {airport.country}</div>
-                        </button>
-                      ))
-                    ) : departureInput.length >= 1 ? (
-                      <div className="px-3 py-2 text-center text-gray-500 text-xs">No airports found</div>
-                    ) : (
-                      <div className="px-3 py-2 text-center text-gray-400 text-xs">Popular airports</div>
-                    )}
-                  </div>
+                    className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                  >
+                    <X size={14} />
+                  </button>
                 )}
               </div>
-
-              {/* Destination Input with Dropdown */}
-              <div className="flex-1 relative">
-                <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 bg-gray-50 rounded-lg sm:rounded-xl border border-gray-200 focus-within:border-gray-400 focus-within:bg-white transition-all">
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                    <circle cx="12" cy="10" r="3" />
-                  </svg>
-                  <input
-                    type="text"
-                    value={destinationInput}
-                    onChange={(e) => {
-                      setDestinationInput(e.target.value);
-                      searchDestinationAirports(e.target.value);
-                      if (destinationAirport && e.target.value !== `${destinationAirport.city} (${destinationAirport.code})`) {
-                        setDestinationAirport(null);
-                      }
-                    }}
-                    onFocus={() => {
-                      setShowDestinationDropdown(true);
-                      searchDestinationAirports(destinationInput || '');
-                    }}
-                    onBlur={() => {
-                      setTimeout(() => setShowDestinationDropdown(false), 200);
-                    }}
-                    placeholder="To (city/airport)"
-                    className="flex-1 bg-transparent border-none outline-none text-[12px] sm:text-[13px] text-gray-800 placeholder-gray-400 min-w-0"
-                  />
-                  {destinationAirport && (
-                    <button
-                      onClick={() => {
-                        setDestinationAirport(null);
-                        setDestinationInput('');
-                      }}
-                      className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
-                    >
-                      <X size={12} />
-                    </button>
+              {/* Departure Dropdown */}
+              {showDepartureDropdown && showCharterFields && (
+                <div className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto z-50">
+                  {isLoadingDeparture ? (
+                    <div className="px-3 py-2 text-center text-gray-500 text-xs">Searching...</div>
+                  ) : departureAirports.length > 0 ? (
+                    departureAirports.map(airport => (
+                      <button
+                        key={airport.code}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => handleDepartureSelect(airport)}
+                        className="w-full px-3 py-2.5 text-left hover:bg-gray-50 border-b border-gray-50 last:border-0"
+                      >
+                        <div className="font-medium text-gray-900 text-sm truncate">{airport.name}</div>
+                        <div className="text-xs text-gray-400 truncate">{airport.code} • {airport.city}, {airport.country}</div>
+                      </button>
+                    ))
+                  ) : departureInput.length >= 1 ? (
+                    <div className="px-3 py-2 text-center text-gray-500 text-xs">No airports found</div>
+                  ) : (
+                    <div className="px-3 py-2 text-center text-gray-400 text-xs">Type to search airports</div>
                   )}
                 </div>
-                {/* Destination Dropdown */}
-                {showDestinationDropdown && showCharterFields && (
-                  <div className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto z-50">
-                    {isLoadingDestination ? (
-                      <div className="px-3 py-2 text-center text-gray-500 text-xs">Searching...</div>
-                    ) : destinationAirports.length > 0 ? (
-                      destinationAirports.map(airport => (
-                        <button
-                          key={airport.code}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => handleDestinationSelect(airport)}
-                          className="w-full px-3 py-2 text-left hover:bg-gray-50 border-b border-gray-50 last:border-0"
-                        >
-                          <div className="font-medium text-gray-900 text-xs truncate">{airport.name}</div>
-                          <div className="text-[10px] text-gray-400 truncate">{airport.code} • {airport.city}, {airport.country}</div>
-                        </button>
-                      ))
-                    ) : destinationInput.length >= 1 ? (
-                      <div className="px-3 py-2 text-center text-gray-500 text-xs">No airports found</div>
-                    ) : (
-                      <div className="px-3 py-2 text-center text-gray-400 text-xs">Popular airports</div>
-                    )}
-                  </div>
-                )}
-              </div>
+              )}
             </div>
 
-            {/* Row 2 on mobile: Go Button (full width on mobile) */}
+            {/* Destination Input with Dropdown - Full width on mobile */}
+            <div className="w-full sm:flex-1 relative">
+              <div className="flex items-center gap-2 px-3 py-2.5 sm:py-2.5 bg-gray-50 rounded-xl border border-gray-200 focus-within:border-gray-400 focus-within:bg-white transition-all">
+                <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                <input
+                  type="text"
+                  value={destinationInput}
+                  onChange={(e) => {
+                    setDestinationInput(e.target.value);
+                    searchDestinationAirports(e.target.value);
+                    if (destinationAirport && e.target.value !== `${destinationAirport.city} (${destinationAirport.code})`) {
+                      setDestinationAirport(null);
+                    }
+                  }}
+                  onFocus={() => {
+                    setShowDestinationDropdown(true);
+                    searchDestinationAirports(destinationInput || '');
+                  }}
+                  onBlur={() => {
+                    setTimeout(() => setShowDestinationDropdown(false), 200);
+                  }}
+                  placeholder="To (city/airport)"
+                  className="flex-1 bg-transparent border-none outline-none text-[14px] sm:text-[13px] text-gray-800 placeholder-gray-400 min-w-0"
+                />
+                {destinationAirport && (
+                  <button
+                    onClick={() => {
+                      setDestinationAirport(null);
+                      setDestinationInput('');
+                    }}
+                    className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+              {/* Destination Dropdown */}
+              {showDestinationDropdown && showCharterFields && (
+                <div className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto z-50">
+                  {isLoadingDestination ? (
+                    <div className="px-3 py-2 text-center text-gray-500 text-xs">Searching...</div>
+                  ) : destinationAirports.length > 0 ? (
+                    destinationAirports.map(airport => (
+                      <button
+                        key={airport.code}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => handleDestinationSelect(airport)}
+                        className="w-full px-3 py-2.5 text-left hover:bg-gray-50 border-b border-gray-50 last:border-0"
+                      >
+                        <div className="font-medium text-gray-900 text-sm truncate">{airport.name}</div>
+                        <div className="text-xs text-gray-400 truncate">{airport.code} • {airport.city}, {airport.country}</div>
+                      </button>
+                    ))
+                  ) : destinationInput.length >= 1 ? (
+                    <div className="px-3 py-2 text-center text-gray-500 text-xs">No airports found</div>
+                  ) : (
+                    <div className="px-3 py-2 text-center text-gray-400 text-xs">Type to search airports</div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Search Button - Full width on mobile, auto width on desktop */}
             <button
               onClick={handleCharterJetSubmit}
               disabled={!departureAirport || !destinationAirport}
-              className="w-full sm:w-auto px-4 py-2 sm:py-2.5 bg-gray-900 text-white rounded-lg sm:rounded-xl text-[12px] sm:text-xs font-medium transition-all duration-100 hover:bg-black active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-5 py-2.5 bg-gray-900 text-white rounded-xl text-[14px] sm:text-xs font-medium transition-all duration-100 hover:bg-black active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path d="M5 12h14m-7-7 7 7-7 7" />
               </svg>
               Search Jets

@@ -23,7 +23,16 @@ class SubscriptionService {
       return data;
     } catch (error) {
       console.error('Error getting user profile:', error);
-      throw error;
+      // Return a default profile object to prevent blocking new users
+      // This ensures users can always chat even if DB has issues
+      return {
+        user_id: userId,
+        subscription_tier: 'explorer',
+        subscription_status: 'active',
+        chats_limit: 1,
+        chats_used: 0,
+        chats_reset_date: null
+      };
     }
   }
 
@@ -54,7 +63,16 @@ class SubscriptionService {
       return data;
     } catch (error) {
       console.error('Error creating default profile:', error);
-      throw error;
+      // Return a default profile object so new users can still use the chat
+      // The profile will be created on the next successful request
+      return {
+        user_id: userId,
+        subscription_tier: 'explorer',
+        subscription_status: 'active',
+        chats_limit: 1,
+        chats_used: 0,
+        chats_reset_date: null
+      };
     }
   }
 
@@ -110,7 +128,19 @@ class SubscriptionService {
       };
     } catch (error) {
       console.error('Error checking chat availability:', error);
-      throw error;
+      // On error, allow the user to proceed (fail open for new users)
+      // This ensures newly registered users can use the chat even if profile creation has issues
+      return {
+        canStart: true,
+        unlimited: false,
+        unlimitedMessages: false,
+        chatsUsed: 0,
+        chatsLimit: 1,
+        chatsRemaining: 1,
+        tier: 'explorer',
+        resetDate: null,
+        error: true // Flag to indicate this is a fallback response
+      };
     }
   }
 

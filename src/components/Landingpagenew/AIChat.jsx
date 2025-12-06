@@ -663,9 +663,18 @@ const AIChat = ({
       // Store the query to be sent
       pendingQueryRef.current = initialQuery;
 
-      // Create a new chat with the initial query - include user message from start
+      // Create a new chat with the initial query - include welcome message and user message
       const newChatId = Date.now().toString();
       initialQueryChatIdRef.current = newChatId;
+
+      // Generate welcome message based on time of day and user name
+      const timeOfDay = new Date().getHours();
+      let welcomeGreeting = timeOfDay < 12 ? 'Good morning' : timeOfDay < 18 ? 'Good afternoon' : 'Good evening';
+      welcomeGreeting += user?.name ? ` ${user.name}` : '';
+      welcomeGreeting += `. I'm Sphera, your luxury travel AI assistant. How can I help you today?`;
+
+      // Create welcome message from Sphera AI
+      const welcomeMessage = { role: 'assistant', content: welcomeGreeting };
 
       // Create user message to show immediately
       const userMessage = { role: 'user', content: initialQuery };
@@ -674,10 +683,10 @@ const AIChat = ({
         id: newChatId,
         title: initialQuery.split(' ').slice(0, 5).join(' ') + '...',
         date: 'Just now',
-        messages: [userMessage] // Include user message from the start so it displays
+        messages: [welcomeMessage, userMessage] // Include welcome message and user message
       };
 
-      console.log('🆕 Creating new chat with user message:', newChatId);
+      console.log('🆕 Creating new chat with welcome + user message:', newChatId);
 
       // Mark as local chat to prevent URL-based DB fetch
       localChatIdsRef.current.add(newChatId);
@@ -689,7 +698,7 @@ const AIChat = ({
       // Clear the initial query prop so parent doesn't keep passing it
       onQueryProcessed();
     }
-  }, [initialQuery, onQueryProcessed]);
+  }, [initialQuery, onQueryProcessed, user?.name]);
 
   // Process the pending query after chat is set up and active
   useEffect(() => {
@@ -3874,7 +3883,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
       {/* 2. MESSAGES - FLOW FROM BOTTOM - Less padding on mobile */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-6 py-3 sm:py-4 flex flex-col-reverse">
-        <div className="max-w-3xl mx-auto space-y-4 flex flex-col w-full">
+        <div className="max-w-3xl mx-auto space-y-3 sm:space-y-4 flex flex-col w-full">
             {renderChat?.messages.map((msg, idx) => {
               const timestamp = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
               const isLastMessage = idx === renderChat.messages.length - 1;
@@ -3899,18 +3908,18 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   key={idx}
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in w-full`}
                 >
-                  <div className={`${msg.role === 'user' ? 'items-end mr-0' : 'items-start ml-12'} flex flex-col gap-1`} style={{ maxWidth: '75%' }}>
-                    <div className="flex items-center gap-2 px-2">
+                  <div className={`${msg.role === 'user' ? 'items-end' : 'items-start ml-0 sm:ml-8'} flex flex-col gap-1 max-w-[85%] sm:max-w-[75%]`}>
+                    <div className="flex items-center gap-1.5 sm:gap-2 px-1 sm:px-2">
                       {msg.role === 'assistant' && (
-                        <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
+                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-600 rounded-full animate-pulse"></div>
                       )}
-                      <span className="text-xs text-gray-600 font-medium">
+                      <span className="text-[10px] sm:text-xs text-gray-600 font-medium">
                         {msg.role === 'user' ? 'You' : 'Sphera AI'}
                       </span>
-                      <span className="text-xs text-gray-400">{timestamp}</span>
+                      <span className="text-[10px] sm:text-xs text-gray-400">{timestamp}</span>
                     </div>
                     <div
-                      className={`px-4 py-3 rounded-2xl transition-all duration-300 ${
+                      className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl transition-all duration-300 ${
                         msg.role === 'user'
                           ? 'bg-black text-white'
                           : 'bg-gray-200 text-black border border-gray-300'
@@ -4183,13 +4192,13 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             {/* Single loading indicator for all AI processing states */}
             {(assistantTyping || isSearching || isProcessing) && (
               <div className="flex justify-start w-full">
-                <div className="flex flex-col gap-1 ml-12" style={{ maxWidth: '75%' }}>
-                  <div className="flex items-center gap-2 px-2">
-                    <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
-                    <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
-                    <span className="text-xs text-gray-400">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                <div className="flex flex-col gap-1 ml-0 sm:ml-8 max-w-[85%] sm:max-w-[75%]">
+                  <div className="flex items-center gap-1.5 sm:gap-2 px-1 sm:px-2">
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-600 rounded-full animate-pulse"></div>
+                    <span className="text-[10px] sm:text-xs text-gray-600 font-medium">Sphera AI</span>
+                    <span className="text-[10px] sm:text-xs text-gray-400">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
-                  <div className="px-4 py-3 bg-gray-200 text-black border border-gray-300 rounded-2xl">
+                  <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-200 text-black border border-gray-300 rounded-2xl">
                     <LoadingMessage stage={isSearching ? loadingStage : 'thinking'} />
                   </div>
                 </div>
