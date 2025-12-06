@@ -2253,13 +2253,6 @@ As their luxury travel consultant, provide an enthusiastic response that:
       userId: user?.id
     });
 
-    console.log('💎 Elite check:', {
-      tier: userSubscriptionLimits?.tier,
-      unlimited_messages: userSubscriptionLimits?.unlimited_messages,
-      unlimited_chats: userSubscriptionLimits?.unlimited_chats,
-      isElite: userSubscriptionLimits?.tier === 'elite' || userSubscriptionLimits?.unlimited_messages === true
-    });
-
     if (!message.trim()) {
       console.log('❌ BLOCKED: Empty message');
       return;
@@ -2287,10 +2280,9 @@ As their luxury travel consultant, provide an enthusiastic response that:
 
     const currentMsgCount = existingChat?.messages?.filter(m => m.role === 'user').length || 0;
 
-    // Elite tier has unlimited messages per chat - check BOTH conditions
-    const hasUnlimitedMessages = userSubscriptionLimits?.unlimited_messages === true || userSubscriptionLimits?.tier === 'elite';
+    // Elite tier has unlimited messages per chat
+    const hasUnlimitedMessages = userSubscriptionLimits?.unlimited_messages === true;
 
-    // SKIP limit check entirely for Elite users
     if (!hasUnlimitedMessages && currentMsgCount >= MAX_MESSAGES_PER_CHAT && effectiveActiveChat !== 'new') {
       setMessageLimitReached(true);
       // Show message limit reached as a chat message with subscription link
@@ -2308,8 +2300,7 @@ As their luxury travel consultant, provide an enthusiastic response that:
     }
 
     // Update message count (still track for non-Elite users)
-    const isElite = userSubscriptionLimits?.tier === 'elite' || userSubscriptionLimits?.unlimited_messages === true;
-    if (!isElite) {
+    if (!hasUnlimitedMessages) {
       setMessageCount(currentMsgCount + 1);
     }
 
@@ -2363,18 +2354,25 @@ As their luxury travel consultant, provide an enthusiastic response that:
         try {
           const { canStart, chatsUsed, chatsLimit } = await subscriptionService.canStartNewChat(user.id);
           if (!canStart) {
-            console.log('🚫 Chat limit reached - blocking chat creation');
+            console.log('🚫 Chat limit reached - showing message in chat');
             setChatLimitReached(true);
-
-            // Show toast and subscription modal
-            setToast({
-              message: `Chat limit reached (${chatsUsed}/${chatsLimit}). Upgrade to continue.`,
-              type: 'warning'
-            });
-            setShowSubscriptionModal(true);
+            // Don't block - instead show user message and limit message in chat
+            const limitMessage = {
+              role: 'assistant',
+              content: `You have reached your chat limit (${chatsUsed}/${chatsLimit} chats used). To continue using Sphera AI, please [get a subscription](#subscription).`,
+              isLimitMessage: true
+            };
+            // Create a "fake" chat just to show the limit message
+            const tempChatId = `limit-${Date.now()}`;
+            const tempChat = {
+              id: tempChatId,
+              title: message.substring(0, 30) + '...',
+              date: 'Just now',
+              messages: [userMessage, limitMessage]
+            };
+            setChatHistory(prev => [tempChat, ...prev]);
+            setActiveChat(tempChatId);
             setIsProcessing(false);
-
-            // IMPORTANT: Don't create any chat, just block
             return;
           }
         } catch (error) {
@@ -2418,15 +2416,12 @@ As their luxury travel consultant, provide an enthusiastic response that:
         setToast({ message: 'Using offline mode (database timeout)', type: 'warning' });
       }
 
-      // Include welcome message before user message
-      const welcomeMsg = getWelcomeMessage();
-      const welcomeMessage = { role: 'assistant', content: welcomeMsg };
       const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
       const newChat = {
         id: chatId,
         title: chatTitle,
         date: 'Just now',
-        messages: [welcomeMessage, userMessage, loadingMsg]
+        messages: [userMessage, loadingMsg]
       };
 
       console.log('✅ Adding chat to history:', { id: chatId, title: chatTitle });
@@ -3766,7 +3761,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               className="px-1.5 sm:px-2 py-1 bg-white/80 hover:bg-white rounded-md text-[10px] sm:text-[11px] font-medium text-gray-600 transition-colors flex items-center gap-1 border border-gray-200/50"
               title="Manage subscription"
             >
-              {(userSubscriptionLimits?.tier === 'elite' || userSubscriptionLimits?.unlimited_chats) ? (
+              {userSubscriptionLimits?.tier === 'elite' || userSubscriptionLimits?.unlimited_chats ? (
                 <span className="text-sm sm:text-base font-light">∞</span>
               ) : userSubscriptionLimits?.tier === 'pro' ? (
                 <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 20}</span>
@@ -3980,11 +3975,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                         </div>
                       )}
                       {msg.isLoading ? (
-                        <div className="flex gap-1">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                        </div>
+                        <TypingAnimation />
                       ) : shouldType ? (
                         <TypingText
                           text={msg.content}
@@ -4225,15 +4216,16 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               );
             })}
 
-            {/* Single loading indicator for all AI processing states - Monochromatic */}
+            {/* Single loading indicator for all AI processing states */}
             {(assistantTyping || isSearching || isProcessing) && (
               <div className="flex justify-start w-full">
                 <div className="flex flex-col gap-1 ml-0 sm:ml-8 max-w-[85%] sm:max-w-[75%]">
                   <div className="flex items-center gap-1.5 sm:gap-2 px-1 sm:px-2">
-                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-400 rounded-full animate-pulse"></div>
-                    <span className="text-[10px] sm:text-xs text-gray-500 font-medium">Sphera AI</span>
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-600 rounded-full animate-pulse"></div>
+                    <span className="text-[10px] sm:text-xs text-gray-600 font-medium">Sphera AI</span>
+                    <span className="text-[10px] sm:text-xs text-gray-400">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
-                  <div className="px-3 sm:px-4 py-3 sm:py-3.5 bg-gray-100 border border-gray-200 rounded-2xl">
+                  <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-200 text-black border border-gray-300 rounded-2xl">
                     <LoadingMessage stage={isSearching ? loadingStage : 'thinking'} />
                   </div>
                 </div>
@@ -4279,7 +4271,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       >
         <div className="max-w-3xl mx-auto">
           {/* Chat Limit Reached (Free users - no more chats) - Only block NEW chat creation, not existing chats */}
-          {(chatLimitReached && activeChat === 'new' && !(userSubscriptionLimits?.tier === 'elite' || userSubscriptionLimits?.unlimited_chats)) ? (
+          {chatLimitReached && activeChat === 'new' ? (
             <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
               <div className="flex items-center justify-between gap-4">
                 <p className="text-xs text-gray-500">
@@ -4370,7 +4362,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               />
 
               {/* Message counter - hide on mobile, hide for Elite (unlimited) */}
-              {messageCount > 0 && !(userSubscriptionLimits?.unlimited_messages || userSubscriptionLimits?.tier === 'elite') && (
+              {messageCount > 0 && !userSubscriptionLimits?.unlimited_messages && (
                 <span className={`hidden sm:inline-block text-xs px-2 py-1 rounded-full flex-shrink-0 ${
                   messageCount >= MAX_MESSAGES_PER_CHAT - 3
                     ? 'bg-gray-200 text-gray-700'
