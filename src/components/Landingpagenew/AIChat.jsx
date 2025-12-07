@@ -2544,9 +2544,10 @@ As their luxury travel consultant, provide an enthusiastic response that:
               return; // Exit early - hotels handled
             } else if (toolUse.name === 'searchYachtsAndAdventures' && toolResult.results?.adventures?.length > 0) {
               // Show adventure package results as cards
+              const adventureCount = toolResult.results.adventures.length;
               const adventureMessage = {
                 role: 'adventures',
-                content: `Found ${toolResult.results.adventures.length} adventure package${toolResult.results.adventures.length > 1 ? 's' : ''} for you!`,
+                content: `Found ${adventureCount} adventure package${adventureCount > 1 ? 's' : ''} for you! Browse the options below - click on any card to see details, add to cart, or request a booking. Would you like me to tell you more about any of these packages?`,
                 adventures: toolResult.results.adventures,
                 params: toolResult.params
               };
@@ -2557,45 +2558,8 @@ As their luxury travel consultant, provide an enthusiastic response that:
                   : c
               ));
 
-              // Get AI follow-up about the adventures
-              const adventureSummary = {
-                success: true,
-                adventureCount: toolResult.results.adventures.length,
-                adventures: toolResult.results.adventures.slice(0, 3).map(a => ({
-                  title: a.title || a.name,
-                  destination: a.destination,
-                  duration: a.duration,
-                  price: a.price,
-                  priceOnRequest: a.price_on_request,
-                  packageType: a.package_type,
-                  difficultyLevel: a.difficulty_level
-                }))
-              };
-
-              try {
-                const adventureFollowUp = await claudeEdgeService.messages.create({
-                  model: 'claude-sonnet-4-20250514',
-                  max_tokens: 512,
-                  system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
-                  messages: [
-                    ...claudeMessages,
-                    { role: 'assistant', content: response.content },
-                    { role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUse.id, content: JSON.stringify(adventureSummary) }] }
-                  ]
-                });
-
-                const adventureAiText = adventureFollowUp.content.find(block => block.type === 'text')?.text;
-                if (adventureAiText) {
-                  const adventureAiMessage = { role: 'assistant', content: adventureAiText };
-                  setChatHistory(prev => prev.map(c =>
-                    c.id === workingChatId
-                      ? { ...c, messages: [...c.messages, adventureAiMessage] }
-                      : c
-                  ));
-                }
-              } catch (followUpError) {
-                console.warn('Adventure follow-up failed:', followUpError);
-              }
+              // No automatic AI follow-up - just show the cards and let user explore
+              // User can ask for more details if interested
 
               setIsProcessing(false);
               return; // Exit early - adventures handled
