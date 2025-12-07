@@ -78,6 +78,7 @@ import { airportsJsonService } from '../../services/airportsJsonService';
 import { isNativeApp } from '../../utils/platform';
 import { AppLoginModal, AppRegisterModal } from '../auth';
 import HotelBookingView from '../Hotels/HotelBookingView';
+import HotelsView from '../Hotels/HotelsView';
 
 // Settings Page Component
 const SettingsPage = ({ user, kycStatus, setKycStatus, setActiveCategory }) => {
@@ -9097,8 +9098,8 @@ const TokenizedAssetsGlassmorphic = () => {
 
           {/* HOTELS SECTION */}
           {!isTransitioning && activeCategory === 'hotels' && (
-            <div className="w-full flex-1 flex flex-col -mx-4 md:-mx-6 -my-4 md:-my-6">
-              <HotelBookingView onBack={() => setActiveCategory('jets')} />
+            <div className="w-full flex-1 flex flex-col">
+              <HotelsView onBack={() => setActiveCategory('jets')} />
             </div>
           )}
 

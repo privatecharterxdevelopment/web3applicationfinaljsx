@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 interface PaymentRequest {
-  serviceType: 'empty_leg' | 'adventure_package' | 'co2_certificate';
+  serviceType: 'empty_leg' | 'adventure_package' | 'co2_certificate' | 'hotel_booking';
   serviceId: string;
   userId: string;
   walletAddress?: string;
@@ -16,6 +16,22 @@ interface PaymentRequest {
   contactPhone?: string;
   passengers?: number;
   specialRequests?: string;
+  // Hotel-specific fields
+  hotelData?: {
+    hotelId: string;
+    hotelName: string;
+    hotelAddress?: string;
+    hotelCity?: string;
+    hotelImage?: string;
+    roomType?: string;
+    checkIn: string;
+    checkOut: string;
+    guests: number;
+    rooms: number;
+    pricePerNight: number;
+    totalPrice: number;
+    boardType?: string;
+  };
 }
 
 interface ServiceDetails {
@@ -56,7 +72,7 @@ serve(async (req) => {
     );
 
     const paymentData: PaymentRequest = await req.json();
-    const { serviceType, serviceId, userId, walletAddress, email, contactName, contactPhone, passengers, specialRequests } = paymentData;
+    const { serviceType, serviceId, userId, walletAddress, email, contactName, contactPhone, passengers, specialRequests, hotelData } = paymentData;
 
     // Validate required fields
     if (!serviceType || !serviceId || !userId || !email) {
@@ -162,6 +178,63 @@ serve(async (req) => {
         };
         break;
 
+      case 'hotel_booking':
+        tableName = 'hotel_bookings';
+        // Hotel bookings get their data from the request (from AI Chat or HotelDetail)
+        if (!hotelData) {
+          throw new Error('Hotel booking data is required');
+        }
+
+        serviceDetails = {
+          id: hotelData.hotelId || serviceId,
+          title: `${hotelData.hotelName} - ${hotelData.roomType || 'Room'}`,
+          description: `${hotelData.hotelCity || ''} · ${hotelData.checkIn} to ${hotelData.checkOut} · ${hotelData.guests} guest${hotelData.guests > 1 ? 's' : ''}`,
+          image_url: hotelData.hotelImage,
+          price: hotelData.totalPrice,
+          currency: 'USD',
+          origin: hotelData.hotelCity,
+          departure_date: hotelData.checkIn,
+          return_date: hotelData.checkOut
+        };
+
+        // Create hotel booking record in hotel_bookings table
+        const { data: hotelBooking, error: hotelBookingError } = await supabaseAdmin
+          .from('hotel_bookings')
+          .insert({
+            user_id: userId,
+            hotel_id: hotelData.hotelId,
+            hotel_name: hotelData.hotelName,
+            hotel_address: hotelData.hotelAddress,
+            hotel_city: hotelData.hotelCity,
+            hotel_image: hotelData.hotelImage,
+            check_in_date: hotelData.checkIn,
+            check_out_date: hotelData.checkOut,
+            room_type: hotelData.roomType,
+            room_count: hotelData.rooms || 1,
+            guests: hotelData.guests,
+            total_price: hotelData.totalPrice,
+            currency: 'USD',
+            payment_method: 'crypto',
+            payment_status: 'pending',
+            booking_status: 'pending',
+            guest_name: contactName,
+            guest_email: email,
+            guest_phone: contactPhone,
+            special_requests: specialRequests,
+            wallet_address: walletAddress
+          })
+          .select()
+          .single();
+
+        if (hotelBookingError) {
+          console.error('Error creating hotel booking:', hotelBookingError);
+          throw new Error('Failed to create hotel booking record');
+        }
+
+        // Use hotel booking ID as the service ID for the rest of the flow
+        serviceDetails.id = hotelBooking.id;
+        break;
+
       default:
         throw new Error(`Invalid service type: ${serviceType}`);
     }
@@ -176,49 +249,71 @@ serve(async (req) => {
     const coingateFee = Math.round(basePrice * COINGATE_FEE_PERCENT * 100) / 100;
     const totalAmount = Math.round((basePrice + platformFee + coingateFee) * 100) / 100;
 
-    // Create booking record in user_bookings
-    const { data: booking, error: bookingError } = await supabaseAdmin
-      .from('user_bookings')
-      .insert({
-        user_id: userId,
-        booking_type: serviceType,
-        service_id: serviceId,
-        service_title: serviceDetails.title,
-        service_description: serviceDetails.description,
-        service_image_url: serviceDetails.image_url,
-        origin: serviceDetails.origin,
-        destination: serviceDetails.destination,
-        departure_date: serviceDetails.departure_date,
-        return_date: serviceDetails.return_date,
-        passengers: passengers || 1,
-        duration: serviceDetails.duration,
-        aircraft_type: serviceDetails.aircraft_type,
-        co2_tons_offset: serviceDetails.co2_tons,
-        certification_type: serviceDetails.certification_type,
-        base_price: basePrice,
-        platform_fee: platformFee,
-        coingate_fee: coingateFee,
-        total_amount: totalAmount,
-        currency: serviceDetails.currency,
-        payment_method: 'crypto',
-        payment_status: 'pending',
-        booking_status: 'pending',
-        wallet_address: walletAddress,
-        contact_name: contactName,
-        contact_email: email,
-        contact_phone: contactPhone,
-        special_requests: specialRequests,
-        metadata: {
-          source_table: tableName,
-          created_via: 'coingate_payment'
-        }
-      })
-      .select()
-      .single();
+    let booking: any;
 
-    if (bookingError || !booking) {
-      console.error('Error creating booking:', bookingError);
-      throw new Error('Failed to create booking record');
+    // For hotel bookings, we already created the record in hotel_bookings table
+    // For other types, create in user_bookings
+    if (serviceType === 'hotel_booking') {
+      // The booking record was already created in the switch case above
+      // serviceDetails.id contains the hotel booking ID
+      booking = { id: serviceDetails.id };
+
+      // Update the hotel booking with fee information
+      await supabaseAdmin
+        .from('hotel_bookings')
+        .update({
+          platform_fee: platformFee,
+          coingate_fee: coingateFee,
+          total_with_fees: totalAmount
+        })
+        .eq('id', serviceDetails.id);
+    } else {
+      // Create booking record in user_bookings for non-hotel services
+      const { data: userBooking, error: bookingError } = await supabaseAdmin
+        .from('user_bookings')
+        .insert({
+          user_id: userId,
+          booking_type: serviceType,
+          service_id: serviceId,
+          service_title: serviceDetails.title,
+          service_description: serviceDetails.description,
+          service_image_url: serviceDetails.image_url,
+          origin: serviceDetails.origin,
+          destination: serviceDetails.destination,
+          departure_date: serviceDetails.departure_date,
+          return_date: serviceDetails.return_date,
+          passengers: passengers || 1,
+          duration: serviceDetails.duration,
+          aircraft_type: serviceDetails.aircraft_type,
+          co2_tons_offset: serviceDetails.co2_tons,
+          certification_type: serviceDetails.certification_type,
+          base_price: basePrice,
+          platform_fee: platformFee,
+          coingate_fee: coingateFee,
+          total_amount: totalAmount,
+          currency: serviceDetails.currency,
+          payment_method: 'crypto',
+          payment_status: 'pending',
+          booking_status: 'pending',
+          wallet_address: walletAddress,
+          contact_name: contactName,
+          contact_email: email,
+          contact_phone: contactPhone,
+          special_requests: specialRequests,
+          metadata: {
+            source_table: tableName,
+            created_via: 'coingate_payment'
+          }
+        })
+        .select()
+        .single();
+
+      if (bookingError || !userBooking) {
+        console.error('Error creating booking:', bookingError);
+        throw new Error('Failed to create booking record');
+      }
+
+      booking = userBooking;
     }
 
     // Get CoinGate API configuration
@@ -262,10 +357,17 @@ serve(async (req) => {
       console.error('CoinGate API error:', coingateResult);
 
       // Delete the booking record since payment creation failed
-      await supabaseAdmin
-        .from('user_bookings')
-        .delete()
-        .eq('id', booking.id);
+      if (serviceType === 'hotel_booking') {
+        await supabaseAdmin
+          .from('hotel_bookings')
+          .delete()
+          .eq('id', booking.id);
+      } else {
+        await supabaseAdmin
+          .from('user_bookings')
+          .delete()
+          .eq('id', booking.id);
+      }
 
       throw new Error(`CoinGate error: ${coingateResult.message || coingateResult.reason || 'Unknown error'}`);
     }
@@ -273,22 +375,36 @@ serve(async (req) => {
     console.log('CoinGate order created:', coingateResult);
 
     // Update booking with CoinGate details
-    const { error: updateError } = await supabaseAdmin
-      .from('user_bookings')
-      .update({
-        coingate_order_id: coingateResult.id.toString(),
-        coingate_payment_url: coingateResult.payment_url,
-        coingate_token: coingateResult.token,
-        metadata: {
-          ...booking.metadata,
-          coingate_created_at: coingateResult.created_at,
-          coingate_expire_at: coingateResult.expire_at
-        }
-      })
-      .eq('id', booking.id);
+    if (serviceType === 'hotel_booking') {
+      const { error: updateError } = await supabaseAdmin
+        .from('hotel_bookings')
+        .update({
+          coingate_order_id: coingateResult.id.toString(),
+          coingate_payment_url: coingateResult.payment_url
+        })
+        .eq('id', booking.id);
 
-    if (updateError) {
-      console.error('Error updating booking with CoinGate details:', updateError);
+      if (updateError) {
+        console.error('Error updating hotel booking with CoinGate details:', updateError);
+      }
+    } else {
+      const { error: updateError } = await supabaseAdmin
+        .from('user_bookings')
+        .update({
+          coingate_order_id: coingateResult.id.toString(),
+          coingate_payment_url: coingateResult.payment_url,
+          coingate_token: coingateResult.token,
+          metadata: {
+            ...booking.metadata,
+            coingate_created_at: coingateResult.created_at,
+            coingate_expire_at: coingateResult.expire_at
+          }
+        })
+        .eq('id', booking.id);
+
+      if (updateError) {
+        console.error('Error updating booking with CoinGate details:', updateError);
+      }
     }
 
     // Return success response

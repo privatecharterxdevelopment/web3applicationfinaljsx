@@ -14,7 +14,9 @@ import {
   Users,
   Bed,
   Calendar,
-  Check
+  Check,
+  ShoppingCart,
+  Plus
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -22,8 +24,9 @@ import { useNavigate } from 'react-router-dom';
  * HotelCard - Displays hotel information from search results
  * Shows photo, ratings, amenities, rooms, and prices
  * Monochromatic, glassmorphic design matching the chat UI
+ * Supports adding to cart for combined checkout with other services
  */
-const HotelCard = ({ hotel, rooms = [], onSelectRoom, onViewDetails, checkIn, checkOut }) => {
+const HotelCard = ({ hotel, rooms = [], onSelectRoom, onViewDetails, onAddToCart, checkIn, checkOut }) => {
   const [showRooms, setShowRooms] = useState(false);
   const [imageError, setImageError] = useState(false);
   const navigate = useNavigate();
@@ -227,14 +230,65 @@ const HotelCard = ({ hotel, rooms = [], onSelectRoom, onViewDetails, checkIn, ch
         )}
 
         {/* Action Buttons */}
-        <div className="mt-3 pt-2.5 border-t border-gray-50 flex gap-2">
-          <button
-            onClick={handleViewDetails}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 text-xs font-medium rounded-lg transition-colors border border-gray-100"
-          >
-            <Building2 size={12} />
-            <span>View Details</span>
-          </button>
+        <div className="mt-3 pt-2.5 border-t border-gray-50 flex flex-col gap-2">
+          {/* Primary row: View Details + Add to Cart */}
+          <div className="flex gap-2">
+            <button
+              onClick={handleViewDetails}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 text-xs font-medium rounded-lg transition-colors border border-gray-100"
+            >
+              <Building2 size={12} />
+              <span>View Details</span>
+            </button>
+            {rooms.length > 0 && (onAddToCart || onSelectRoom) && (
+              <button
+                onClick={() => {
+                  const firstRoom = rooms[0];
+                  const firstRate = firstRoom?.rates?.[0];
+                  if (firstRoom && firstRate) {
+                    // Calculate nights
+                    const nights = checkIn && checkOut
+                      ? Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24))
+                      : 1;
+
+                    // Build cart item
+                    const cartItem = {
+                      id: `hotel-${Date.now()}`,
+                      type: 'hotel',
+                      serviceType: 'hotel_booking',
+                      name: hotel.name,
+                      hotelId: hotel.hotelId,
+                      hotelCity: hotel.city,
+                      hotelImage: hotel.mainImage || hotel.images?.[0],
+                      roomType: firstRoom.roomName,
+                      checkIn,
+                      checkOut,
+                      nights,
+                      guests: firstRoom.maxOccupancy || 2,
+                      rooms: 1,
+                      pricePerNight: firstRate.totalRate,
+                      totalPrice: firstRate.totalRate * nights,
+                      boardType: firstRate.boardType || 'Room Only',
+                      currency: hotel.currency || 'USD',
+                      cancellation: firstRate.cancellation
+                    };
+
+                    if (onAddToCart) {
+                      onAddToCart(cartItem);
+                    } else if (onSelectRoom) {
+                      onSelectRoom(hotel, firstRoom, firstRate);
+                    }
+                  }
+                }}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium rounded-lg transition-colors"
+              >
+                <Plus size={12} />
+                <span>Add to Cart</span>
+              </button>
+            )}
+          </div>
+
+          {/* Secondary row: Book Now (direct booking) */}
           {rooms.length > 0 && onSelectRoom && (
             <button
               onClick={() => {
@@ -244,7 +298,7 @@ const HotelCard = ({ hotel, rooms = [], onSelectRoom, onViewDetails, checkIn, ch
                   onSelectRoom(hotel, firstRoom, firstRate);
                 }
               }}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium rounded-lg transition-colors"
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-lg transition-colors border border-gray-200"
             >
               <Calendar size={12} />
               <span>Book Now</span>

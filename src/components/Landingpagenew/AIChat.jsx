@@ -3796,6 +3796,35 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                 const bookingMessage = `I'd like to book ${room.roomName} at ${hotel.name} for ${nights} night(s). Check-in: ${msg.params?.checkIn || 'TBD'}, Check-out: ${msg.params?.checkOut || 'TBD'}. Rate: $${rate.totalRate}/night (${rate.boardType}).`;
                                 handleSendMessage(bookingMessage);
                               }}
+                              onAddToCart={(cartItem) => {
+                                // Add hotel to cart directly
+                                addToCart(cartItem);
+                                // Show confirmation message
+                                const confirmMessage = {
+                                  role: 'confirm_booking',
+                                  content: `Hotel "${cartItem.name}" has been added to your cart!`,
+                                  bookingType: 'hotel_booking',
+                                  bookingData: cartItem,
+                                  displayInfo: {
+                                    type: 'Hotel Booking',
+                                    name: cartItem.name,
+                                    city: cartItem.hotelCity,
+                                    roomType: cartItem.roomType,
+                                    checkIn: cartItem.checkIn,
+                                    checkOut: cartItem.checkOut,
+                                    nights: `${cartItem.nights} night${cartItem.nights > 1 ? 's' : ''}`,
+                                    guests: cartItem.guests,
+                                    pricePerNight: `$${cartItem.pricePerNight}`,
+                                    totalPrice: `$${cartItem.totalPrice}`,
+                                    boardType: cartItem.boardType
+                                  }
+                                };
+                                setChatHistory(prev => prev.map(c =>
+                                  c.id === currentChatId
+                                    ? { ...c, messages: [...c.messages, confirmMessage] }
+                                    : c
+                                ));
+                              }}
                               onViewDetails={(hotel) => {
                                 navigate(`/hotel/${hotel.hotelId}`);
                               }}
