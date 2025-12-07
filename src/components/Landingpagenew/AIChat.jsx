@@ -44,6 +44,7 @@ import BulkOrderInterface from '../BulkOrderInterface';
 import SubscriptionModal from '../SubscriptionModal';
 import CryptoPaymentModal from '../Payment/CryptoPaymentModal';
 import PlaceCard from '../PlaceCard';
+import HotelCard from '../HotelCard';
 
 // Web3
 import { useAccount, useDisconnect, useSignMessage } from 'wagmi';
@@ -2482,6 +2483,85 @@ As their luxury travel consultant, provide an enthusiastic response that:
 
               setIsProcessing(false);
               return; // Exit early - place card and optional follow-up handled
+            } else if (toolUse.name === 'searchHotels' && toolResult.results?.length > 0) {
+              // Show hotel search results
+              const hotelMessage = {
+                role: 'hotels',
+                content: toolResult.message || `Found ${toolResult.results.length} hotels in ${toolResult.city}`,
+                hotels: toolResult.results,
+                city: toolResult.city,
+                params: toolResult.params,
+                isDemo: toolResult.isDemo
+              };
+
+              setChatHistory(prev => prev.map(c =>
+                c.id === workingChatId
+                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), hotelMessage] }
+                  : c
+              ));
+
+              // Get AI follow-up about the hotels
+              const hotelSummary = {
+                success: true,
+                city: toolResult.city,
+                hotelCount: toolResult.results.length,
+                hotels: toolResult.results.slice(0, 3).map(h => ({
+                  name: h.hotel?.name,
+                  rating: h.hotel?.rating,
+                  starRating: h.hotel?.starRating,
+                  minRate: h.totalRate || h.hotel?.minRate,
+                  amenities: h.hotel?.amenities?.slice(0, 4)
+                }))
+              };
+
+              try {
+                const hotelFollowUp = await claudeEdgeService.messages.create({
+                  model: 'claude-sonnet-4-20250514',
+                  max_tokens: 512,
+                  system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
+                  messages: [
+                    ...claudeMessages,
+                    { role: 'assistant', content: response.content },
+                    { role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUse.id, content: JSON.stringify(hotelSummary) }] }
+                  ]
+                });
+
+                const hotelAiText = hotelFollowUp.content.find(block => block.type === 'text')?.text;
+                if (hotelAiText) {
+                  const hotelAiMessage = { role: 'assistant', content: hotelAiText };
+                  setChatHistory(prev => prev.map(c =>
+                    c.id === workingChatId
+                      ? { ...c, messages: [...c.messages, hotelAiMessage] }
+                      : c
+                  ));
+                }
+              } catch (followUpError) {
+                console.warn('Hotel follow-up failed:', followUpError);
+              }
+
+              setIsProcessing(false);
+              return; // Exit early - hotels handled
+            } else if (toolUse.name === 'addHotelToCart' && toolResult.success) {
+              // Handle hotel added to cart
+              if (toolResult.cartItem) {
+                setCart(prev => [...prev, toolResult.cartItem]);
+              }
+
+              const confirmMessage = {
+                role: 'confirm_booking',
+                content: toolResult.additionalServicesPrompt || toolResult.message,
+                bookingType: 'hotel_booking',
+                bookingData: toolResult.cartItem,
+                displayInfo: toolResult.displayInfo
+              };
+
+              setChatHistory(prev => prev.map(c =>
+                c.id === workingChatId
+                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), confirmMessage] }
+                  : c
+              ));
+              setIsProcessing(false);
+              return; // Exit early
             }
 
             // Only add results message if we have tabs to display
@@ -3691,6 +3771,45 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 );
               }
 
+              // Render HotelCard if this is a hotels message
+              if (msg.role === 'hotels' && msg.hotels?.length > 0) {
+                return (
+                  <div key={idx} className="flex justify-start animate-fade-in w-full my-4">
+                    <div className="flex flex-col gap-2 ml-12 w-full" style={{ maxWidth: '100%' }}>
+                      <div className="flex items-center gap-2 px-2">
+                        <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
+                        <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
+                        <span className="text-xs text-gray-400">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      <p className="text-sm text-gray-600 px-2 mb-2">{msg.content}</p>
+                      <div className="flex gap-4 overflow-x-auto pb-2 px-2" style={{ scrollbarWidth: 'thin' }}>
+                        {msg.hotels.map((hotelData, hIdx) => (
+                          <div key={hIdx} className="flex-shrink-0">
+                            <HotelCard
+                              hotel={hotelData.hotel}
+                              rooms={hotelData.rooms}
+                              onSelectRoom={(hotel, room, rate) => {
+                                // Build the booking confirmation message
+                                const nights = msg.params?.checkIn && msg.params?.checkOut
+                                  ? Math.ceil((new Date(msg.params.checkOut) - new Date(msg.params.checkIn)) / (1000 * 60 * 60 * 24))
+                                  : 1;
+                                const bookingMessage = `I'd like to book ${room.roomName} at ${hotel.name} for ${nights} night(s). Check-in: ${msg.params?.checkIn || 'TBD'}, Check-out: ${msg.params?.checkOut || 'TBD'}. Rate: $${rate.totalRate}/night (${rate.boardType}).`;
+                                handleSendMessage(bookingMessage);
+                              }}
+                              onViewDetails={(hotel) => {
+                                navigate(`/hotel/${hotel.hotelId}`);
+                              }}
+                              checkIn={msg.params?.checkIn}
+                              checkOut={msg.params?.checkOut}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
               // Render regular messages
               return (
                 <div
@@ -3786,8 +3905,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
                     {/* Booking Action Buttons - Add to Cart & Send Custom Request */}
                     {msg.action === 'confirm_booking' && msg.bookingData && (
-                      <div className="mt-3 flex flex-col gap-2">
-                        {/* Add to Cart Button - Light Grey */}
+                      <div className="mt-3 flex gap-2">
+                        {/* Add to Cart Button - Small, elegant */}
                         <button
                           onClick={() => {
                             const cartItem = {
@@ -3809,13 +3928,13 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                 : c
                             ));
                           }}
-                          className="w-full px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 border border-gray-300"
+                          className="flex-1 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-200 hover:border-gray-300"
                         >
-                          <ShoppingCart size={18} />
+                          <ShoppingCart size={14} />
                           Add to Cart
                         </button>
 
-                        {/* Send Custom Request Button - Monochromatic (adds to cart then sends) */}
+                        {/* Send Request Button - Small, elegant with darker border */}
                         <button
                           onClick={async () => {
                             try {
@@ -3864,10 +3983,10 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                               setToast({ message: 'Failed to send request. Please try again.', type: 'error' });
                             }
                           }}
-                          className="w-full px-5 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 border border-gray-700"
+                          className="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-300 hover:border-gray-400"
                         >
-                          <Send size={18} />
-                          Send Custom Request
+                          <Send size={14} />
+                          Send Request
                         </button>
                       </div>
                     )}
@@ -5041,9 +5160,9 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                               });
                               setShowCryptoPayment(true);
                             }}
-                            className="w-full bg-gray-900 text-white py-3 rounded-xl hover:bg-gray-800 transition-all duration-300 flex items-center justify-center gap-2 font-medium"
+                            className="w-full px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-300 hover:border-gray-400"
                           >
-                            <Wallet size={18} />
+                            <Wallet size={14} />
                             Pay ${payableTotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} with Crypto
                           </button>
                         </div>
@@ -5056,8 +5175,9 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                             setShowCartSidebar(false);
                             setShowRequestForm(true);
                           }}
-                          className="w-full bg-black text-white py-3 rounded-xl hover:bg-gray-800 transition-all duration-300"
+                          className="w-full px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-300 hover:border-gray-400"
                         >
+                          <Send size={14} />
                           Send Request
                         </button>
                       );
@@ -5176,9 +5296,9 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                               });
                               setShowCryptoPayment(true);
                             }}
-                            className="w-full bg-gray-900 text-white py-3 rounded-xl hover:bg-gray-800 transition-all duration-300 flex items-center justify-center gap-2 font-medium"
+                            className="w-full px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-300 hover:border-gray-400"
                           >
-                            <Wallet size={18} />
+                            <Wallet size={14} />
                             Pay ${payableTotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} & Send Request
                           </button>
                           <button
@@ -5186,8 +5306,9 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                               setShowCartSidebar(false);
                               setShowRequestForm(true);
                             }}
-                            className="w-full bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 transition-all duration-300 text-sm"
+                            className="w-full px-3 py-2 bg-white hover:bg-gray-50 text-gray-600 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-200 hover:border-gray-300"
                           >
+                            <Send size={14} />
                             Send All as Request Instead
                           </button>
                         </div>

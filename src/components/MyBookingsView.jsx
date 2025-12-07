@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Plane, Mountain, Leaf, Clock, Check, X, ChevronRight, Search,
   Wallet, ExternalLink, Copy, CheckCircle, Calendar, Users, MapPin,
-  Receipt, Bitcoin, Sparkles, ArrowLeft, ChevronDown
+  Receipt, Bitcoin, Sparkles, ArrowLeft, ChevronDown, Building2, Star, Bed
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -24,15 +24,58 @@ const MyBookingsView = ({ user, onBack }) => {
   const loadBookings = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // Fetch regular bookings
+      const { data: regularBookings, error: regularError } = await supabase
         .from('user_bookings')
         .select('*, booking_transactions(*)')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (!error && data) {
-        setBookings(data);
-      }
+      // Fetch hotel bookings
+      const { data: hotelBookings, error: hotelError } = await supabase
+        .from('hotel_bookings')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      // Transform hotel bookings to match regular booking structure
+      const transformedHotelBookings = (hotelBookings || []).map(hotel => ({
+        id: hotel.id,
+        booking_type: 'hotel_booking',
+        service_title: hotel.hotel_name,
+        origin: hotel.hotel_city,
+        destination: null,
+        departure_date: hotel.check_in_date,
+        return_date: hotel.check_out_date,
+        passengers: hotel.guests,
+        base_price: hotel.total_price,
+        total_amount: hotel.total_price,
+        currency: hotel.currency || 'USD',
+        payment_status: hotel.payment_status,
+        booking_status: hotel.booking_status,
+        crypto_currency: hotel.crypto_currency,
+        coingate_payment_url: hotel.coingate_payment_url,
+        transaction_hash: hotel.transaction_hash,
+        created_at: hotel.created_at,
+        // Hotel-specific fields
+        hotel_image: hotel.hotel_image,
+        hotel_address: hotel.hotel_address,
+        room_type: hotel.room_type,
+        room_count: hotel.room_count,
+        check_in_date: hotel.check_in_date,
+        check_out_date: hotel.check_out_date,
+        guest_name: hotel.guest_name,
+        guest_email: hotel.guest_email,
+        special_requests: hotel.special_requests
+      }));
+
+      // Combine and sort all bookings by created_at
+      const allBookings = [
+        ...(regularBookings || []),
+        ...transformedHotelBookings
+      ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      setBookings(allBookings);
     } catch (error) {
       console.error('Error loading bookings:', error);
     } finally {
@@ -44,13 +87,17 @@ const MyBookingsView = ({ user, onBack }) => {
     if (booking.service_title && !booking.service_title.includes('undefined')) {
       return booking.service_title;
     }
+    if (booking.booking_type === 'hotel_booking' && booking.origin) {
+      return `${booking.service_title || 'Hotel'} - ${booking.origin}`;
+    }
     if (booking.origin && booking.destination) {
       return `${booking.origin} → ${booking.destination}`;
     }
     const typeLabels = {
       empty_leg: 'Empty Leg Flight',
       adventure_package: 'Adventure Package',
-      co2_certificate: 'CO2 Certificate'
+      co2_certificate: 'CO2 Certificate',
+      hotel_booking: 'Hotel Booking'
     };
     return typeLabels[booking.booking_type] || 'Private Charter Booking';
   };
@@ -92,6 +139,7 @@ const MyBookingsView = ({ user, onBack }) => {
     if (type === 'empty_leg') return <Plane size={14} />;
     if (type === 'adventure_package') return <Mountain size={14} />;
     if (type === 'co2_certificate') return <Leaf size={14} />;
+    if (type === 'hotel_booking') return <Building2 size={14} />;
     return <Plane size={14} />;
   };
 
@@ -99,7 +147,8 @@ const MyBookingsView = ({ user, onBack }) => {
     const labels = {
       empty_leg: 'Empty Leg',
       adventure_package: 'Adventure',
-      co2_certificate: 'CO2 Offset'
+      co2_certificate: 'CO2 Offset',
+      hotel_booking: 'Hotel'
     };
     return labels[type] || 'Booking';
   };
@@ -269,32 +318,93 @@ const MyBookingsView = ({ user, onBack }) => {
                   {/* Expanded Details */}
                   {isExpanded && (
                     <div className="px-4 pb-4 pt-2 border-t border-gray-50">
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                        {booking.origin && (
-                          <div>
-                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">From</p>
-                            <p className="text-sm text-gray-900">{booking.origin}</p>
+                      {/* Hotel-specific details */}
+                      {booking.booking_type === 'hotel_booking' ? (
+                        <div className="mb-4">
+                          {/* Hotel image and info */}
+                          {booking.hotel_image && (
+                            <div className="mb-3">
+                              <img
+                                src={booking.hotel_image}
+                                alt={booking.service_title}
+                                className="w-full h-32 object-cover rounded-lg"
+                              />
+                            </div>
+                          )}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            {booking.check_in_date && (
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Check-in</p>
+                                <p className="text-sm text-gray-900">{format(new Date(booking.check_in_date), 'MMM d, yyyy')}</p>
+                              </div>
+                            )}
+                            {booking.check_out_date && (
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Check-out</p>
+                                <p className="text-sm text-gray-900">{format(new Date(booking.check_out_date), 'MMM d, yyyy')}</p>
+                              </div>
+                            )}
+                            {booking.room_type && (
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Room</p>
+                                <p className="text-sm text-gray-900">{booking.room_type}</p>
+                              </div>
+                            )}
+                            {booking.passengers && (
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Guests</p>
+                                <p className="text-sm text-gray-900">{booking.passengers}</p>
+                              </div>
+                            )}
+                            {booking.room_count && booking.room_count > 1 && (
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Rooms</p>
+                                <p className="text-sm text-gray-900">{booking.room_count}</p>
+                              </div>
+                            )}
+                            {booking.hotel_address && (
+                              <div className="col-span-2">
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Address</p>
+                                <p className="text-sm text-gray-900">{booking.hotel_address}</p>
+                              </div>
+                            )}
                           </div>
-                        )}
-                        {booking.destination && (
-                          <div>
-                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">To</p>
-                            <p className="text-sm text-gray-900">{booking.destination}</p>
-                          </div>
-                        )}
-                        {booking.passengers && (
-                          <div>
-                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Passengers</p>
-                            <p className="text-sm text-gray-900">{booking.passengers}</p>
-                          </div>
-                        )}
-                        {booking.aircraft_type && (
-                          <div>
-                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Aircraft</p>
-                            <p className="text-sm text-gray-900">{booking.aircraft_type}</p>
-                          </div>
-                        )}
-                      </div>
+                          {booking.special_requests && (
+                            <div className="mt-3 p-2 bg-gray-50 rounded-lg">
+                              <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Special Requests</p>
+                              <p className="text-xs text-gray-600">{booking.special_requests}</p>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        /* Regular booking details */
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                          {booking.origin && (
+                            <div>
+                              <p className="text-[10px] text-gray-400 uppercase tracking-wide">From</p>
+                              <p className="text-sm text-gray-900">{booking.origin}</p>
+                            </div>
+                          )}
+                          {booking.destination && (
+                            <div>
+                              <p className="text-[10px] text-gray-400 uppercase tracking-wide">To</p>
+                              <p className="text-sm text-gray-900">{booking.destination}</p>
+                            </div>
+                          )}
+                          {booking.passengers && (
+                            <div>
+                              <p className="text-[10px] text-gray-400 uppercase tracking-wide">Passengers</p>
+                              <p className="text-sm text-gray-900">{booking.passengers}</p>
+                            </div>
+                          )}
+                          {booking.aircraft_type && (
+                            <div>
+                              <p className="text-[10px] text-gray-400 uppercase tracking-wide">Aircraft</p>
+                              <p className="text-sm text-gray-900">{booking.aircraft_type}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Payment Breakdown */}
                       <div className="bg-gray-50 rounded-lg p-3 mb-3">
@@ -416,49 +526,123 @@ const MyBookingsView = ({ user, onBack }) => {
                 </span>
               </div>
 
-              {/* Route */}
-              {(selectedBooking.origin || selectedBooking.destination) && (
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1">
-                      <p className="text-xs text-gray-400">From</p>
-                      <p className="text-sm font-medium text-gray-900">{selectedBooking.origin || '-'}</p>
+              {/* Hotel-specific modal content */}
+              {selectedBooking.booking_type === 'hotel_booking' ? (
+                <>
+                  {/* Hotel image */}
+                  {selectedBooking.hotel_image && (
+                    <div className="rounded-xl overflow-hidden">
+                      <img
+                        src={selectedBooking.hotel_image}
+                        alt={selectedBooking.service_title}
+                        className="w-full h-40 object-cover"
+                      />
                     </div>
-                    <Plane size={14} className="text-gray-400" />
-                    <div className="flex-1 text-right">
-                      <p className="text-xs text-gray-400">To</p>
-                      <p className="text-sm font-medium text-gray-900">{selectedBooking.destination || '-'}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
+                  )}
 
-              {/* Details */}
-              <div className="grid grid-cols-3 gap-3">
-                {selectedBooking.departure_date && (
-                  <div className="bg-gray-50 rounded-lg p-3 text-center">
-                    <Calendar size={14} className="text-gray-400 mx-auto mb-1" />
-                    <p className="text-[10px] text-gray-400">Date</p>
-                    <p className="text-xs font-medium text-gray-900">
-                      {format(new Date(selectedBooking.departure_date), 'MMM d')}
-                    </p>
+                  {/* Hotel location */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="flex items-center gap-3">
+                      <Building2 size={14} className="text-gray-400" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{selectedBooking.origin}</p>
+                        {selectedBooking.hotel_address && (
+                          <p className="text-xs text-gray-500">{selectedBooking.hotel_address}</p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                )}
-                {selectedBooking.passengers && (
-                  <div className="bg-gray-50 rounded-lg p-3 text-center">
-                    <Users size={14} className="text-gray-400 mx-auto mb-1" />
-                    <p className="text-[10px] text-gray-400">Passengers</p>
-                    <p className="text-xs font-medium text-gray-900">{selectedBooking.passengers}</p>
+
+                  {/* Hotel Details */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {selectedBooking.check_in_date && (
+                      <div className="bg-gray-50 rounded-lg p-3 text-center">
+                        <Calendar size={14} className="text-gray-400 mx-auto mb-1" />
+                        <p className="text-[10px] text-gray-400">Check-in</p>
+                        <p className="text-xs font-medium text-gray-900">
+                          {format(new Date(selectedBooking.check_in_date), 'MMM d, yyyy')}
+                        </p>
+                      </div>
+                    )}
+                    {selectedBooking.check_out_date && (
+                      <div className="bg-gray-50 rounded-lg p-3 text-center">
+                        <Calendar size={14} className="text-gray-400 mx-auto mb-1" />
+                        <p className="text-[10px] text-gray-400">Check-out</p>
+                        <p className="text-xs font-medium text-gray-900">
+                          {format(new Date(selectedBooking.check_out_date), 'MMM d, yyyy')}
+                        </p>
+                      </div>
+                    )}
+                    {selectedBooking.room_type && (
+                      <div className="bg-gray-50 rounded-lg p-3 text-center">
+                        <Bed size={14} className="text-gray-400 mx-auto mb-1" />
+                        <p className="text-[10px] text-gray-400">Room</p>
+                        <p className="text-xs font-medium text-gray-900">{selectedBooking.room_type}</p>
+                      </div>
+                    )}
+                    {selectedBooking.passengers && (
+                      <div className="bg-gray-50 rounded-lg p-3 text-center">
+                        <Users size={14} className="text-gray-400 mx-auto mb-1" />
+                        <p className="text-[10px] text-gray-400">Guests</p>
+                        <p className="text-xs font-medium text-gray-900">{selectedBooking.passengers}</p>
+                      </div>
+                    )}
                   </div>
-                )}
-                {selectedBooking.crypto_currency && (
-                  <div className="bg-gray-50 rounded-lg p-3 text-center">
-                    <Bitcoin size={14} className="text-gray-400 mx-auto mb-1" />
-                    <p className="text-[10px] text-gray-400">Paid with</p>
-                    <p className="text-xs font-medium text-gray-900">{selectedBooking.crypto_currency}</p>
+
+                  {selectedBooking.special_requests && (
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Special Requests</p>
+                      <p className="text-xs text-gray-600">{selectedBooking.special_requests}</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {/* Route */}
+                  {(selectedBooking.origin || selectedBooking.destination) && (
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-400">From</p>
+                          <p className="text-sm font-medium text-gray-900">{selectedBooking.origin || '-'}</p>
+                        </div>
+                        <Plane size={14} className="text-gray-400" />
+                        <div className="flex-1 text-right">
+                          <p className="text-xs text-gray-400">To</p>
+                          <p className="text-sm font-medium text-gray-900">{selectedBooking.destination || '-'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Details */}
+                  <div className="grid grid-cols-3 gap-3">
+                    {selectedBooking.departure_date && (
+                      <div className="bg-gray-50 rounded-lg p-3 text-center">
+                        <Calendar size={14} className="text-gray-400 mx-auto mb-1" />
+                        <p className="text-[10px] text-gray-400">Date</p>
+                        <p className="text-xs font-medium text-gray-900">
+                          {format(new Date(selectedBooking.departure_date), 'MMM d')}
+                        </p>
+                      </div>
+                    )}
+                    {selectedBooking.passengers && (
+                      <div className="bg-gray-50 rounded-lg p-3 text-center">
+                        <Users size={14} className="text-gray-400 mx-auto mb-1" />
+                        <p className="text-[10px] text-gray-400">Passengers</p>
+                        <p className="text-xs font-medium text-gray-900">{selectedBooking.passengers}</p>
+                      </div>
+                    )}
+                    {selectedBooking.crypto_currency && (
+                      <div className="bg-gray-50 rounded-lg p-3 text-center">
+                        <Bitcoin size={14} className="text-gray-400 mx-auto mb-1" />
+                        <p className="text-[10px] text-gray-400">Paid with</p>
+                        <p className="text-xs font-medium text-gray-900">{selectedBooking.crypto_currency}</p>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </>
+              )}
 
               {/* Payment Summary */}
               <div className="bg-gray-900 text-white rounded-xl p-4">

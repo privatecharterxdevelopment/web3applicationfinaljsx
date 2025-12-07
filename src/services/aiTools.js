@@ -4,6 +4,7 @@
  */
 
 import { UnifiedSearchService } from './supabaseService';
+import { hotelService } from './hotelService';
 
 // Mapbox token for geocoding and directions
 const MAPBOX_TOKEN = 'pk.eyJ1IjoicHJpdmF0ZWNoYXJ0ZXJ4IiwiYSI6ImNsdGJ2dG4zazFucGsya21tNXRldW5udjYifQ.NrWJLJuG9n6b1jhRh5AkSg';
@@ -468,6 +469,133 @@ export const aiToolDefinitions = [
       },
       required: ["serviceType", "name"]
     }
+  },
+  {
+    name: "searchHotels",
+    description: "Search for hotels in a specific city or destination. Use this when users ask about hotels, accommodations, places to stay, or lodging. Returns hotel options with availability, prices, amenities, and ratings.",
+    input_schema: {
+      type: "object",
+      properties: {
+        city: {
+          type: "string",
+          description: "City name to search for hotels (e.g., 'Dubai', 'Paris', 'London', 'New York')"
+        },
+        checkIn: {
+          type: "string",
+          description: "Check-in date in YYYY-MM-DD format"
+        },
+        checkOut: {
+          type: "string",
+          description: "Check-out date in YYYY-MM-DD format"
+        },
+        guests: {
+          type: "number",
+          description: "Number of guests/adults"
+        },
+        rooms: {
+          type: "number",
+          description: "Number of rooms needed (default: 1)"
+        },
+        starRating: {
+          type: "array",
+          items: { type: "number" },
+          description: "Filter by star rating (e.g., [4, 5] for 4 and 5 star hotels)"
+        },
+        maxPrice: {
+          type: "number",
+          description: "Maximum price per night in USD"
+        }
+      },
+      required: ["city"]
+    }
+  },
+  {
+    name: "getHotelDetails",
+    description: "Get detailed information about a specific hotel including rooms, rates, amenities, and reviews. Use this when a user wants more details about a specific hotel from the search results.",
+    input_schema: {
+      type: "object",
+      properties: {
+        hotelId: {
+          type: "string",
+          description: "The hotel ID from search results"
+        },
+        hotelName: {
+          type: "string",
+          description: "Name of the hotel"
+        },
+        checkIn: {
+          type: "string",
+          description: "Check-in date in YYYY-MM-DD format"
+        },
+        checkOut: {
+          type: "string",
+          description: "Check-out date in YYYY-MM-DD format"
+        },
+        guests: {
+          type: "number",
+          description: "Number of guests"
+        }
+      },
+      required: ["hotelId"]
+    }
+  },
+  {
+    name: "addHotelToCart",
+    description: "Add a hotel booking to the user's cart. Use when user confirms they want to book a specific hotel room. Requires hotel details, room selection, dates, and guest count.",
+    input_schema: {
+      type: "object",
+      properties: {
+        hotelId: {
+          type: "string",
+          description: "Hotel ID from search results"
+        },
+        hotelName: {
+          type: "string",
+          description: "Name of the hotel"
+        },
+        hotelCity: {
+          type: "string",
+          description: "City where the hotel is located"
+        },
+        hotelImage: {
+          type: "string",
+          description: "URL of the hotel image"
+        },
+        roomType: {
+          type: "string",
+          description: "Selected room type (e.g., 'Deluxe Room', 'Executive Suite')"
+        },
+        checkIn: {
+          type: "string",
+          description: "Check-in date in YYYY-MM-DD format"
+        },
+        checkOut: {
+          type: "string",
+          description: "Check-out date in YYYY-MM-DD format"
+        },
+        guests: {
+          type: "number",
+          description: "Number of guests"
+        },
+        rooms: {
+          type: "number",
+          description: "Number of rooms"
+        },
+        pricePerNight: {
+          type: "number",
+          description: "Price per night in USD"
+        },
+        totalPrice: {
+          type: "number",
+          description: "Total price for the stay"
+        },
+        boardType: {
+          type: "string",
+          description: "Meal plan (e.g., 'Room Only', 'Breakfast', 'Half Board')"
+        }
+      },
+      required: ["hotelName", "roomType", "checkIn", "checkOut", "guests", "pricePerNight"]
+    }
   }
 ];
 
@@ -514,6 +642,15 @@ export async function executeTool(toolName, input) {
 
       case 'addToCart':
         return addToCart(input);
+
+      case 'searchHotels':
+        return await searchHotels(input);
+
+      case 'getHotelDetails':
+        return await getHotelDetails(input);
+
+      case 'addHotelToCart':
+        return addHotelToCart(input);
 
       default:
         return {
@@ -2326,5 +2463,335 @@ Just let me know what you need!`,
       estimatedPrice ? `Est. total: €${estimatedPrice.toLocaleString()}` : null,
       'Final pricing confirmed upon booking'
     ].filter(Boolean)
+  };
+}
+
+// ============================================
+// HOTEL SEARCH AND BOOKING TOOLS
+// ============================================
+
+// City code mapping for hotel searches
+const CITY_CODES = {
+  'dubai': { cityCode: 'DXB', countryCode: 'AE' },
+  'paris': { cityCode: 'PAR', countryCode: 'FR' },
+  'london': { cityCode: 'LON', countryCode: 'GB' },
+  'new york': { cityCode: 'NYC', countryCode: 'US' },
+  'tokyo': { cityCode: 'TYO', countryCode: 'JP' },
+  'miami': { cityCode: 'MIA', countryCode: 'US' },
+  'los angeles': { cityCode: 'LAX', countryCode: 'US' },
+  'zurich': { cityCode: 'ZRH', countryCode: 'CH' },
+  'geneva': { cityCode: 'GVA', countryCode: 'CH' },
+  'milan': { cityCode: 'MIL', countryCode: 'IT' },
+  'rome': { cityCode: 'ROM', countryCode: 'IT' },
+  'barcelona': { cityCode: 'BCN', countryCode: 'ES' },
+  'madrid': { cityCode: 'MAD', countryCode: 'ES' },
+  'amsterdam': { cityCode: 'AMS', countryCode: 'NL' },
+  'singapore': { cityCode: 'SIN', countryCode: 'SG' },
+  'hong kong': { cityCode: 'HKG', countryCode: 'HK' },
+  'bangkok': { cityCode: 'BKK', countryCode: 'TH' },
+  'maldives': { cityCode: 'MLE', countryCode: 'MV' },
+  'nice': { cityCode: 'NCE', countryCode: 'FR' },
+  'monaco': { cityCode: 'MCM', countryCode: 'MC' },
+  'cannes': { cityCode: 'NCE', countryCode: 'FR' },
+  'st tropez': { cityCode: 'NCE', countryCode: 'FR' },
+  'ibiza': { cityCode: 'IBZ', countryCode: 'ES' },
+  'mykonos': { cityCode: 'JMK', countryCode: 'GR' },
+  'santorini': { cityCode: 'JTR', countryCode: 'GR' }
+};
+
+/**
+ * Get city codes from city name
+ */
+function getCityCodes(cityName) {
+  const normalized = cityName.toLowerCase().trim();
+  return CITY_CODES[normalized] || { cityCode: normalized.toUpperCase().slice(0, 3), countryCode: null };
+}
+
+/**
+ * Search for hotels in a city
+ */
+async function searchHotels(params) {
+  console.log('🏨 searchHotels called with:', params);
+
+  const { city, checkIn, checkOut, guests = 2, rooms = 1, starRating, maxPrice } = params;
+
+  if (!city) {
+    return {
+      success: false,
+      error: 'City is required for hotel search'
+    };
+  }
+
+  // Get city codes
+  const cityCodes = getCityCodes(city);
+
+  // Set default dates if not provided
+  const today = new Date();
+  const defaultCheckIn = new Date(today);
+  defaultCheckIn.setDate(defaultCheckIn.getDate() + 1);
+  const defaultCheckOut = new Date(defaultCheckIn);
+  defaultCheckOut.setDate(defaultCheckOut.getDate() + 1);
+
+  const searchParams = {
+    cityCode: cityCodes.cityCode,
+    countryCode: cityCodes.countryCode,
+    checkIn: checkIn || defaultCheckIn.toISOString().split('T')[0],
+    checkOut: checkOut || defaultCheckOut.toISOString().split('T')[0],
+    adults: guests,
+    children: 0,
+    currency: 'USD',
+    starRating: starRating || undefined,
+    maxPrice: maxPrice || undefined,
+    limit: 10
+  };
+
+  try {
+    const { data, error } = await hotelService.searchHotels(searchParams);
+
+    if (error) {
+      console.error('Hotel search error:', error);
+      // Return sample hotels for demo
+      return {
+        success: true,
+        results: generateSampleHotels(city, guests, searchParams.checkIn, searchParams.checkOut),
+        total: 6,
+        params: searchParams,
+        city,
+        isDemo: true,
+        message: `Found hotels in ${city}. Select one to view details and book.`
+      };
+    }
+
+    return {
+      success: true,
+      results: data || [],
+      total: data?.length || 0,
+      params: searchParams,
+      city,
+      message: data?.length > 0
+        ? `Found ${data.length} hotels in ${city}. Would you like to see details for any of these?`
+        : `No hotels found in ${city}. Try adjusting your search criteria.`
+    };
+  } catch (err) {
+    console.error('searchHotels error:', err);
+    // Return sample hotels for demo
+    return {
+      success: true,
+      results: generateSampleHotels(city, guests, searchParams.checkIn, searchParams.checkOut),
+      total: 6,
+      params: searchParams,
+      city,
+      isDemo: true,
+      message: `Found hotels in ${city}. Select one to view details and book.`
+    };
+  }
+}
+
+/**
+ * Generate sample hotels for demo when API is unavailable
+ */
+function generateSampleHotels(city, guests, checkIn, checkOut) {
+  const hotelNames = [
+    'Grand Palace Hotel', 'The Ritz Residence', 'Skyline Tower',
+    'Royal Oceanfront', 'Metropolitan Suites', 'Park Avenue Grand'
+  ];
+
+  return hotelNames.map((baseName, i) => ({
+    hotel: {
+      hotelId: `hotel-${city.toLowerCase().replace(/\s/g, '-')}-${i}`,
+      name: `${baseName} ${city}`,
+      address: `${100 + i * 20} Main Boulevard`,
+      city: city,
+      country: 'Various',
+      starRating: 4 + (i % 2),
+      rating: 4.2 + (Math.random() * 0.7),
+      reviewCount: 150 + Math.floor(Math.random() * 500),
+      description: `Experience luxury and comfort at ${baseName} ${city}, featuring world-class amenities and exceptional service.`,
+      images: [
+        `https://images.unsplash.com/photo-${1566073771259 + i * 1000}-6a6d97dfc61d?w=800`,
+        `https://images.unsplash.com/photo-${1582719508461 + i * 1000}-905c673771fd?w=800`
+      ],
+      mainImage: `https://images.unsplash.com/photo-1566073771259-6a6d97dfc61d?w=800`,
+      amenities: ['wifi', 'parking', 'breakfast', 'gym', 'pool', 'spa', 'restaurant', 'bar'],
+      currency: 'USD',
+      minRate: 180 + Math.floor(Math.random() * 300)
+    },
+    rooms: [
+      {
+        roomId: `room-${i}-deluxe`,
+        roomName: 'Deluxe Room',
+        roomType: 'deluxe',
+        maxOccupancy: 2,
+        bedType: 'King',
+        size: 35,
+        sizeUnit: 'sqm',
+        amenities: ['wifi', 'minibar', 'safe', 'air conditioning', 'room service'],
+        rates: [
+          {
+            rateId: `rate-${i}-1`,
+            rateName: 'Best Available Rate',
+            totalRate: 180 + Math.floor(Math.random() * 100),
+            currency: 'USD',
+            boardType: 'Room Only',
+            cancellation: { refundable: true },
+            roomType: 'deluxe',
+            maxOccupancy: 2
+          },
+          {
+            rateId: `rate-${i}-2`,
+            rateName: 'With Breakfast',
+            totalRate: 220 + Math.floor(Math.random() * 100),
+            currency: 'USD',
+            boardType: 'Breakfast Included',
+            cancellation: { refundable: true },
+            roomType: 'deluxe',
+            maxOccupancy: 2
+          }
+        ]
+      },
+      {
+        roomId: `room-${i}-suite`,
+        roomName: 'Executive Suite',
+        roomType: 'suite',
+        maxOccupancy: 4,
+        bedType: 'King + Sofa Bed',
+        size: 65,
+        sizeUnit: 'sqm',
+        amenities: ['wifi', 'minibar', 'safe', 'air conditioning', 'living room', 'balcony'],
+        rates: [
+          {
+            rateId: `rate-${i}-3`,
+            rateName: 'Suite Rate',
+            totalRate: 350 + Math.floor(Math.random() * 150),
+            currency: 'USD',
+            boardType: 'Breakfast Included',
+            cancellation: { refundable: true },
+            roomType: 'suite',
+            maxOccupancy: 4
+          }
+        ]
+      }
+    ],
+    totalRate: 180 + Math.floor(Math.random() * 300),
+    currency: 'USD'
+  }));
+}
+
+/**
+ * Get detailed hotel information
+ */
+async function getHotelDetails(params) {
+  console.log('🏨 getHotelDetails called with:', params);
+
+  const { hotelId, hotelName, checkIn, checkOut, guests } = params;
+
+  try {
+    const [detailsRes, reviewsRes] = await Promise.all([
+      hotelService.getHotelDetails(hotelId),
+      hotelService.getHotelReviews(hotelId)
+    ]);
+
+    return {
+      success: true,
+      hotel: detailsRes.data || { hotelId, name: hotelName },
+      reviews: reviewsRes.data || [],
+      params,
+      message: `Here are the details for ${hotelName || 'this hotel'}. Would you like to book a room?`
+    };
+  } catch (err) {
+    console.error('getHotelDetails error:', err);
+    return {
+      success: true,
+      hotel: { hotelId, name: hotelName },
+      reviews: [],
+      params,
+      message: `Hotel details for ${hotelName}. Select a room type to proceed with booking.`
+    };
+  }
+}
+
+/**
+ * Add hotel booking to cart
+ */
+function addHotelToCart(params) {
+  console.log('🏨 addHotelToCart called with:', params);
+
+  const {
+    hotelId,
+    hotelName,
+    hotelCity,
+    hotelImage,
+    roomType,
+    checkIn,
+    checkOut,
+    guests,
+    rooms = 1,
+    pricePerNight,
+    totalPrice,
+    boardType = 'Room Only'
+  } = params;
+
+  // Calculate nights
+  const checkInDate = new Date(checkIn);
+  const checkOutDate = new Date(checkOut);
+  const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+
+  // Calculate total if not provided
+  const calculatedTotal = totalPrice || (pricePerNight * nights * rooms);
+
+  const cartItem = {
+    id: `hotel-${Date.now()}`,
+    type: 'hotel',
+    serviceType: 'hotel_booking',
+    name: hotelName,
+    hotelId,
+    hotelCity,
+    hotelImage,
+    roomType,
+    checkIn,
+    checkOut,
+    nights,
+    guests,
+    rooms,
+    pricePerNight,
+    totalPrice: calculatedTotal,
+    boardType,
+    currency: 'USD'
+  };
+
+  return {
+    success: true,
+    action: 'ADD_TO_CART',
+    message: `Added ${hotelName} - ${roomType} to your cart`,
+    cartItem,
+    displayInfo: {
+      type: 'Hotel Booking',
+      name: hotelName,
+      city: hotelCity,
+      roomType,
+      checkIn,
+      checkOut,
+      nights: `${nights} night${nights > 1 ? 's' : ''}`,
+      guests,
+      rooms,
+      pricePerNight: `$${pricePerNight}`,
+      totalPrice: `$${calculatedTotal}`,
+      boardType
+    },
+    askAdditionalServices: true,
+    additionalServicesPrompt: `Your hotel booking has been added to cart!
+
+🏨 **${hotelName}** - ${roomType}
+📍 ${hotelCity}
+📅 ${checkIn} → ${checkOut} (${nights} nights)
+👥 ${guests} guest${guests > 1 ? 's' : ''}
+💰 **Total: $${calculatedTotal}**
+
+Would you like to add any additional services?
+• **Airport Transfer** - Pick-up from the airport to your hotel
+• **Ground Transport** - Car rental or chauffeur service
+• **Activities** - Local tours and experiences
+
+Just let me know!`
   };
 }

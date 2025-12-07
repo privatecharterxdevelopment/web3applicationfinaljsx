@@ -119,6 +119,7 @@ import LuxuryCarDetail from './LuxuryCarDetail.jsx';
 import JetDetail from './JetDetail.jsx';
 import HelicopterDetail from './HelicopterDetail.jsx';
 import CO2CertificateDetail from './CO2CertificateDetail.jsx';
+import HotelDetail from './HotelDetail.jsx';
 
 // Import Chat Widget
 import ChatWidget from './ChatWidget.jsx';
@@ -393,6 +394,7 @@ function AppContent() {
               <Route path="/jet/:id" element={<JetDetail />} />
               <Route path="/helicopter/:id" element={<HelicopterDetail />} />
               <Route path="/co2-certificate/:id" element={<CO2CertificateDetail />} />
+              <Route path="/hotel/:id" element={<HotelDetail />} />
 
               {/* Legacy redirect - kept for backwards compatibility */}
               <Route path="/tokenized-assets/dashboard" element={<Navigate to="/dashboard" replace />} />
