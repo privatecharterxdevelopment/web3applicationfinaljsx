@@ -1,110 +1,87 @@
 import React, { useState, useEffect } from 'react';
 
 /**
- * Aviation-themed loading animation for Sphera AI
- * Shows a flying plane animation with status messages
+ * Monochromatic loading animation for Sphera AI
+ * Clean, minimal design with subtle animations
  */
-const LoadingMessage = ({ stage = 'searching' }) => {
+const LoadingMessage = ({ stage = 'thinking' }) => {
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 
   // Define loading stages with their messages
   const loadingStages = {
     searching: [
-      'Searching flight options',
+      'Searching options',
       'Checking availability',
-      'Finding best routes',
+      'Finding routes',
       'Analyzing prices'
     ],
     thinking: [
-      'Processing request',
-      'Analyzing options',
-      'Preparing response'
+      'Thinking',
+      'Processing',
+      'Analyzing'
     ],
     generating: [
       'Generating results',
-      'Preparing recommendations',
-      'Finalizing details'
+      'Preparing response',
+      'Finalizing'
     ],
     booking: [
       'Preparing booking',
       'Checking availability',
-      'Calculating pricing'
+      'Calculating'
     ],
     saving: [
-      'Saving changes',
-      'Syncing data'
+      'Saving',
+      'Syncing'
     ]
   };
 
-  const messages = loadingStages[stage] || loadingStages.searching;
+  const messages = loadingStages[stage] || loadingStages.thinking;
 
   // Cycle through messages
   useEffect(() => {
     const messageInterval = setInterval(() => {
       setCurrentMessageIndex(prev => (prev + 1) % messages.length);
-    }, 2000);
+    }, 2500);
 
     return () => clearInterval(messageInterval);
   }, [messages.length]);
 
   return (
     <div className="flex items-center gap-3">
-      {/* Aviation-themed plane animation */}
-      <div className="relative w-8 h-8 flex items-center justify-center">
-        {/* Plane icon that moves side to side */}
-        <svg
-          className="w-5 h-5 text-gray-600 animate-plane-fly"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-        >
-          <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
-        </svg>
-        {/* Trail effect */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-6 h-0.5 bg-gradient-to-r from-transparent via-gray-300 to-transparent animate-trail opacity-50"></div>
-        </div>
+      {/* Monochromatic pulsing dots */}
+      <div className="flex items-center gap-1">
+        <div className="w-2 h-2 bg-gray-500 rounded-full animate-pulse-dot-1"></div>
+        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse-dot-2"></div>
+        <div className="w-2 h-2 bg-gray-300 rounded-full animate-pulse-dot-3"></div>
       </div>
 
-      {/* Status message */}
-      <span className="text-sm text-gray-600 font-medium">
+      {/* Status message - clean typography */}
+      <span className="text-sm text-gray-600 font-medium tracking-tight">
         {messages[currentMessageIndex]}
-        <span className="inline-flex ml-1">
-          <span className="animate-dot-1">.</span>
-          <span className="animate-dot-2">.</span>
-          <span className="animate-dot-3">.</span>
-        </span>
       </span>
 
       {/* CSS for animations */}
       <style>{`
-        @keyframes plane-fly {
-          0%, 100% { transform: translateX(-2px) rotate(-5deg); }
-          50% { transform: translateX(2px) rotate(5deg); }
+        @keyframes pulse-dot {
+          0%, 100% {
+            opacity: 0.4;
+            transform: scale(0.8);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1);
+          }
         }
-        @keyframes trail {
-          0%, 100% { opacity: 0.3; transform: scaleX(0.5); }
-          50% { opacity: 0.6; transform: scaleX(1); }
+        .animate-pulse-dot-1 {
+          animation: pulse-dot 1.4s ease-in-out infinite;
         }
-        @keyframes dot-bounce {
-          0%, 80%, 100% { opacity: 0.3; }
-          40% { opacity: 1; }
-        }
-        .animate-plane-fly {
-          animation: plane-fly 1.5s ease-in-out infinite;
-        }
-        .animate-trail {
-          animation: trail 1.5s ease-in-out infinite;
-        }
-        .animate-dot-1 {
-          animation: dot-bounce 1.4s infinite;
-          animation-delay: 0s;
-        }
-        .animate-dot-2 {
-          animation: dot-bounce 1.4s infinite;
+        .animate-pulse-dot-2 {
+          animation: pulse-dot 1.4s ease-in-out infinite;
           animation-delay: 0.2s;
         }
-        .animate-dot-3 {
-          animation: dot-bounce 1.4s infinite;
+        .animate-pulse-dot-3 {
+          animation: pulse-dot 1.4s ease-in-out infinite;
           animation-delay: 0.4s;
         }
       `}</style>

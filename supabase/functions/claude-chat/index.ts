@@ -81,7 +81,7 @@ serve(async (req) => {
       )
     }
 
-    // Build the request to Claude API
+    // Build the request to Claude API with prompt caching support
     const claudeRequest: any = {
       model,
       max_tokens,
@@ -89,10 +89,12 @@ serve(async (req) => {
       messages
     }
 
+    // Pass system prompt as-is (supports cache_control)
     if (system) {
       claudeRequest.system = system
     }
 
+    // Pass tools as-is (supports cache_control)
     if (tools && tools.length > 0) {
       claudeRequest.tools = tools
     }
@@ -101,15 +103,16 @@ serve(async (req) => {
       claudeRequest.tool_choice = tool_choice
     }
 
-    console.log('Sending request to Claude API...')
+    console.log('Sending request to Claude API...', { model, hasTools: !!tools, hasSystem: !!system })
 
-    // Call Claude API
+    // Call Claude API with prompt caching (GA) and token-efficient tools
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
+        'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'prompt-caching-2024-07-31,token-efficient-tools-2025-02-19'
       },
       body: JSON.stringify(claudeRequest)
     })

@@ -30,6 +30,7 @@ const AdventureDetail = () => {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showCryptoPayment, setShowCryptoPayment] = useState(false);
+push to git
 
   useEffect(() => {
     fetchAdventure();

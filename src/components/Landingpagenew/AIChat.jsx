@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Send, X, Edit2, Shield, Wallet, ShoppingCart, MessageSquare, Plus, Crown, AlertCircle, Calendar, Trash2, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Plane, Clock, Upload, FileText, DollarSign, Users, MapPin, Anchor, Mountain, Car, Minus
+  ArrowLeft, Mic, Send, X, Volume2, VolumeX, Edit2, Shield, Wallet, ShoppingCart, MessageSquare, Plus, Crown, AlertCircle, Calendar, Trash2, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Plane, Clock, Upload, FileText, DollarSign, Users, MapPin, Anchor, Mountain, Car, Minus
 } from 'lucide-react';
 import { calculateDistance, estimateDuration, estimateCost } from '../../utils/distanceCalculator';
 // Secure Claude API via Edge Function - API key stays server-side
@@ -13,6 +13,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.j
 
 // Services
 import { UnifiedSearchService, ImageUtils } from '../../services/supabaseService';
+import { HumeEVIClient } from '../../lib/humeClient';
 import ConversationStateManager from '../../services/ConversationStateManager';
 import SpheraWeb3Concierge from '../../services/SpheraWeb3Concierge';
 import { claudeService } from '../../services/claudeService';
@@ -30,7 +31,6 @@ import {
   searchYachtsAndAdventures,
   searchLuxuryCars
 } from '../../services/aiTools';
-import { airportsJsonService as airportsService } from '../../services/airportsJsonService';
 
 // Components
 import SearchResults from '../SearchResults';
@@ -108,6 +108,15 @@ const Toast = ({ message, type = 'info', onClose }) => {
     </div>
   );
 };
+
+// Typing Animation Component
+const TypingAnimation = () => (
+  <div className="flex gap-1 py-2">
+    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+  </div>
+);
 
 // Typing Text Effect Component - Smooth word-by-word streaming like ChatGPT
 const TypingText = ({ text, speed = 30, onComplete }) => {
@@ -196,8 +205,7 @@ const AIChat = ({
   activeChat: activeChatProp,
   setActiveChat: setActiveChatProp,
   chatHistory: chatHistoryProp,
-  setChatHistory: setChatHistoryProp,
-  onBack = null // Callback to navigate back to overview
+  setChatHistory: setChatHistoryProp
 }) => {
   // Use auth context (returns null if not in AuthProvider)
   const authContext = useAuth();
@@ -207,13 +215,23 @@ const AIChat = ({
   // URL routing for direct chat links
   const { chatId: urlChatId } = useParams();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
 
   console.log('👤 User info:', { userId: user?.id, isAdmin, hasAuthContext: !!authContext });
+
+  // Voice API keys (optional - voice will be skipped gracefully if missing)
+  const HUME_API_KEY = (import.meta.env?.VITE_HUME_API_KEY) || '';
+  const HUME_SECRET_KEY = (import.meta.env?.VITE_HUME_SECRET_KEY) || '';
+  // NOTE: ANTHROPIC_API_KEY removed - now using secure Edge Function via claudeEdgeService
 
   // =======================
   // ALL STATE & REFS FIRST
   // =======================
+  const humeEnabled = Boolean(HUME_API_KEY && HUME_SECRET_KEY);
+
+  const [humeClient] = useState(() => new HumeEVIClient(
+    HUME_API_KEY,
+    HUME_SECRET_KEY
+  ));
   const [conversationalAI] = useState(() => new SpheraWeb3Concierge());
   const [conversationState] = useState(() => new ConversationStateManager());
 
@@ -228,6 +246,10 @@ const AIChat = ({
   const setActiveChat = setActiveChatProp || setInternalActiveChat;
   const [chatsLoaded, setChatsLoaded] = useState(true); // Start as true so new chats work immediately
   const [currentMessage, setCurrentMessage] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [lastInputMethod, setLastInputMethod] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const [loadingStage, setLoadingStage] = useState('searching');
@@ -283,6 +305,10 @@ const AIChat = ({
   // Chat limit tracking (for free users)
   const [chatLimitReached, setChatLimitReached] = useState(false);
 
+  // Voice Interaction State
+  const [isVoiceMode, setIsVoiceMode] = useState(false);
+  const [isVoiceMuted, setIsVoiceMuted] = useState(false);
+
   // Cart visibility
   const [showCartWidget, setShowCartWidget] = useState(false);
 
@@ -298,15 +324,6 @@ const AIChat = ({
     notes: ''
   });
 
-  // Multi-stop flight management
-  const [showMultiStopForm, setShowMultiStopForm] = useState(false);
-  const [multiStopItemId, setMultiStopItemId] = useState(null); // Which cart item is being edited for multi-stop
-  const [stopSearchQuery, setStopSearchQuery] = useState('');
-  const [stopSearchResults, setStopSearchResults] = useState([]);
-  const [isSearchingStops, setIsSearchingStops] = useState(false);
-  const [editingEndpoint, setEditingEndpoint] = useState(null); // 'origin' | 'destination' | null
-  const [editEndpointItemId, setEditEndpointItemId] = useState(null); // Which cart item's endpoint is being edited
-
   // Web3 Wallet
   const { address: walletAddress, isConnected: isWalletConnected } = useAccount();
   const { disconnect: disconnectWallet } = useDisconnect();
@@ -314,10 +331,15 @@ const AIChat = ({
 
   // All refs
   // NOTE: anthropicRef removed - now using claudeEdgeService for secure API calls
+  const humeClientRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const currentAudioRef = useRef(null);
   const hasGreetedRef = useRef(false);
   const isReturningUserRef = useRef(false);
   const messagesEndRef = useRef(null);
-  const localChatIdsRef = useRef(new Set()); // Track locally created chat IDs to skip DB fetch
 
   // =======================
   // EFFECTS & CALLBACKS
@@ -325,72 +347,160 @@ const AIChat = ({
 
   // NOTE: Claude API initialization removed - now using claudeEdgeService for secure server-side API calls
 
-  // URL-based chat loading: Load specific chat when navigating directly to /chat/:chatId
-  // Only runs once on mount to load chat from DB if needed
-  const urlChatLoadedRef = useRef(false);
-
+  // Initialize Hume AI Client for voice
   useEffect(() => {
-    // Only load once
-    if (urlChatLoadedRef.current) return;
-    if (!urlChatId || urlChatId === 'new' || !user?.id) return;
-
-    // Skip if this is a locally-created chat (not saved to DB yet)
-    if (localChatIdsRef.current.has(urlChatId)) {
-      console.log('🏠 Skipping DB fetch for locally-created chat:', urlChatId);
-      urlChatLoadedRef.current = true;
-      return;
+    if (HUME_API_KEY && HUME_SECRET_KEY) {
+      humeClientRef.current = new HumeEVIClient(HUME_API_KEY, HUME_SECRET_KEY);
+      humeClientRef.current.connect().catch(err => {
+        console.warn('Hume AI connection failed:', err);
+      });
     }
+  }, []);
 
-    // Check if chat already exists in local history
-    const existsLocally = chatHistory.find(c => c.id === urlChatId);
-    if (existsLocally) {
-      console.log('📂 Chat found in local history:', urlChatId);
-      urlChatLoadedRef.current = true;
-      return;
-    }
-
-    urlChatLoadedRef.current = true;
-    console.log('🔗 Loading chat from URL:', urlChatId);
-
-    // Load the specific chat from the database
-    const loadChatFromUrl = async () => {
-      try {
-        const result = await chatService.loadChat(urlChatId, user.id);
-        if (result.success && result.chat) {
-          // Add to chat history if not already there
-          setChatHistory(prev => {
-            const exists = prev.find(c => c.id === urlChatId);
-            if (exists) return prev;
-            return [...prev, {
-              ...result.chat,
-              date: new Date(result.chat.updated_at).toLocaleDateString()
-            }];
-          });
-          // Set as active chat
-          setActiveChat(urlChatId);
-          // Load messages into the chat history
-          if (result.chat.messages?.length > 0) {
-            setChatHistory(prev => prev.map(c =>
-              c.id === urlChatId
-                ? { ...c, messages: result.chat.messages }
-                : c
-            ));
+  // URL-based chat loading: Load specific chat when navigating to /chat/:chatId
+  useEffect(() => {
+    if (urlChatId && urlChatId !== 'new' && user?.id) {
+      console.log('🔗 Loading chat from URL:', urlChatId);
+      // Load the specific chat from the database
+      const loadChatFromUrl = async () => {
+        try {
+          const result = await chatService.loadChat(urlChatId, user.id);
+          if (result.success && result.chat) {
+            // Add to chat history if not already there
+            setChatHistory(prev => {
+              const exists = prev.find(c => c.id === urlChatId);
+              if (exists) return prev;
+              return [...prev, {
+                ...result.chat,
+                date: new Date(result.chat.updated_at).toLocaleDateString()
+              }];
+            });
+            // Set as active chat
+            setActiveChat(urlChatId);
+            // Load messages
+            if (result.chat.messages?.length > 0) {
+              setMessages(result.chat.messages);
+            }
+            console.log('✅ Chat loaded from URL successfully');
+          } else {
+            console.log('⚠️ Chat not found, starting new chat');
+            setActiveChat('new');
           }
-          console.log('✅ Chat loaded from URL successfully');
-        } else {
-          console.log('⚠️ Chat not found, starting new chat');
+        } catch (err) {
+          console.error('Error loading chat from URL:', err);
           setActiveChat('new');
         }
-      } catch (err) {
-        console.error('Error loading chat from URL:', err);
-        setActiveChat('new');
-      }
-    };
-    loadChatFromUrl();
-  }, [urlChatId, user?.id, chatHistory]); // chatHistory needed to check if chat exists locally
+      };
+      loadChatFromUrl();
+    }
+  }, [urlChatId, user?.id]);
+
+  // Initialize Speech Recognition for Voice Mode
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'en-US';
+
+      recognitionRef.current.onresult = (event) => {
+        const transcript = Array.from(event.results)
+          .map(result => result[0].transcript)
+          .join('');
+
+        if (event.results[event.results.length - 1].isFinal) {
+          console.log('🎤 Voice input:', transcript);
+          handleSendMessage(transcript);
+        }
+      };
+
+      recognitionRef.current.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        if (event.error === 'no-speech') {
+          // Auto-restart if no speech detected
+          setTimeout(() => {
+            if (isVoiceMode) {
+              recognitionRef.current?.start();
+            }
+          }, 1000);
+        }
+      };
+
+      recognitionRef.current.onend = () => {
+        // Auto-restart if voice mode is still active
+        if (isVoiceMode) {
+          setTimeout(() => {
+            recognitionRef.current?.start();
+          }, 500);
+        }
+      };
+    }
+  }, []);
 
   // DO NOT auto-create welcome chat - let user choose service bubble
   // This prevents the endless loading issue
+
+  // Toggle Voice Mode
+  const toggleVoiceMode = useCallback(() => {
+    if (!recognitionRef.current) {
+      setToast({ message: 'Voice recognition not supported in this browser', type: 'error' });
+      return;
+    }
+
+    setIsVoiceMode(prev => {
+      const newMode = !prev;
+
+      if (newMode) {
+        // Start voice mode
+        try {
+          recognitionRef.current.start();
+          setIsListening(true);
+          setToast({ message: 'Voice mode activated - speak naturally', type: 'info' });
+        } catch (err) {
+          console.error('Failed to start speech recognition:', err);
+        }
+      } else {
+        // Stop voice mode
+        try {
+          recognitionRef.current.stop();
+          setIsListening(false);
+          setToast({ message: 'Voice mode deactivated', type: 'info' });
+        } catch (err) {
+          console.error('Failed to stop speech recognition:', err);
+        }
+      }
+
+      return newMode;
+    });
+  }, []);
+
+  // Text-to-Speech for AI responses
+  const speakResponse = useCallback((text) => {
+    if (isVoiceMuted || !isVoiceMode) return;
+
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    utterance.lang = 'en-US';
+
+    window.speechSynthesis.speak(utterance);
+  }, [isVoiceMuted, isVoiceMode]);
+
+  // Toggle Voice Mute
+  const toggleVoiceMute = useCallback(() => {
+    setIsVoiceMuted(prev => {
+      const newMuted = !prev;
+      if (newMuted) {
+        window.speechSynthesis.cancel();
+      }
+      return newMuted;
+    });
+  }, []);
 
   const currentChat = useMemo(() => {
     const chat = chatHistory.find(c => c.id === activeChat);
@@ -401,6 +511,29 @@ const AIChat = ({
     });
     return chat;
   }, [chatHistory, activeChat]);
+
+  // Define audio playback helper BEFORE any effects that reference it
+  const playHumeVoice = useCallback((audioBase64) => {
+    if (!voiceEnabled) return;
+    if (currentAudioRef.current) currentAudioRef.current.pause();
+    setIsSpeaking(true);
+    const audio = new Audio(`data:audio/mp3;base64,${audioBase64}`);
+    currentAudioRef.current = audio;
+    audio.onended = () => { setIsSpeaking(false); currentAudioRef.current = null; };
+    audio.onerror = () => { setIsSpeaking(false); currentAudioRef.current = null; };
+    audio.play().catch(() => { setIsSpeaking(false); });
+  }, [voiceEnabled]);
+
+  // Use Hume emotion context (when available) to gently adapt tone
+  const withEmpathy = useCallback((text) => {
+    try {
+      if (!humeEnabled || typeof humeClient?.getEmpatheticPrefix !== 'function') return text;
+      const prefix = humeClient.getEmpatheticPrefix();
+      return prefix ? `${prefix} ${text}` : text;
+    } catch {
+      return text;
+    }
+  }, [humeEnabled, humeClient]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -534,50 +667,10 @@ const AIChat = ({
     try {
       const profile = await subscriptionService.getUserProfile(user.id);
       setUserProfile(profile);
-
-      // Check if user has reached chat limit on load (strict enforcement)
-      if (!isAdmin && profile) {
-        const { canStart, chatsUsed, chatsLimit } = await subscriptionService.canStartNewChat(user.id);
-        if (!canStart) {
-          console.log('🚫 User has reached chat limit on load:', { chatsUsed, chatsLimit });
-          setChatLimitReached(true);
-        } else {
-          setChatLimitReached(false);
-        }
-      }
     } catch (error) {
       console.error('Error loading user profile:', error);
     }
   };
-
-  // Handle subscription success - refresh profile when returning from Stripe payment
-  useEffect(() => {
-    const subscriptionSuccess = searchParams.get('subscription_success');
-    if (subscriptionSuccess === 'true' && user?.id) {
-      console.log('🎉 Subscription success detected - refreshing profile...');
-      // Clear the URL parameter
-      setSearchParams(prev => {
-        prev.delete('subscription_success');
-        return prev;
-      });
-      // Refresh profile and reset chat limit state
-      loadUserProfile();
-      setToast({ message: 'Subscription activated! Your chat limits have been updated.', type: 'success' });
-    }
-  }, [searchParams, user?.id]);
-
-  // Refresh profile when window regains focus (useful when payment completed in another tab)
-  useEffect(() => {
-    const handleFocus = async () => {
-      if (user?.id && showSubscriptionModal) {
-        console.log('🔄 Window focused with subscription modal open - refreshing profile...');
-        await loadUserProfile();
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [user?.id, showSubscriptionModal]);
 
   // Load user's chat history from database
   useEffect(() => {
@@ -593,15 +686,7 @@ const AIChat = ({
           date: new Date(chat.updated_at).toLocaleDateString(),
           messages: chat.messages || []
         }));
-        // Merge with existing local chats (don't overwrite locally-created chats)
-        setChatHistory(prev => {
-          // Get IDs of locally-created chats that aren't in the DB yet
-          const localOnlyChats = prev.filter(c => localChatIdsRef.current.has(c.id));
-          // Combine: local chats first, then DB chats (avoiding duplicates)
-          const dbChatIds = new Set(formattedChats.map(c => c.id));
-          const uniqueLocalChats = localOnlyChats.filter(c => !dbChatIds.has(c.id));
-          return [...uniqueLocalChats, ...formattedChats];
-        });
+        setChatHistory(formattedChats);
       }
       setChatsLoaded(true);
     };
@@ -625,6 +710,32 @@ const AIChat = ({
   }, [chatHistory, activeChat, user?.id, chatsLoaded]);
 
   useEffect(() => {
+    if (!humeEnabled) return; // Skip Hume setup if keys are not configured
+    const initHume = async () => {
+      try {
+        await humeClient.connect();
+        humeClient.onMessage((data) => {
+          const text = data?.transcript || data?.text || data?.message;
+          if (text) {
+            setLastInputMethod('voice');
+            handleSendMessage(String(text));
+          }
+        });
+        humeClient.onAudio((audioBase64) => {
+          playHumeVoice(audioBase64);
+        });
+      } catch (error) {
+        console.log('Hume skipped');
+      }
+    };
+    initHume();
+    return () => {
+      humeClient.disconnect();
+      if (currentAudioRef.current) currentAudioRef.current.pause();
+    };
+  }, [humeClient, humeEnabled, playHumeVoice]);
+
+  useEffect(() => {
     if (activeChat !== 'new' && !hasGreetedRef.current && currentChat?.messages.length === 0) {
       const timeOfDay = new Date().getHours();
       let greeting = timeOfDay < 12 ? 'Good morning' : timeOfDay < 18 ? 'Good afternoon' : 'Good evening';
@@ -632,12 +743,13 @@ const AIChat = ({
       greeting += user?.name ? ` ${user.name}` : '';
       greeting += `. I'm Sphera, your luxury travel AI assistant. How can I help you today?`;
       
-      setChatHistory(prev => prev.map(c =>
-        c.id === activeChat ? { ...c, messages: [{ role: 'assistant', content: greeting }] } : c
+      const finalGreeting = withEmpathy(greeting);
+      setChatHistory(prev => prev.map(c => 
+        c.id === activeChat ? { ...c, messages: [{ role: 'assistant', content: finalGreeting }] } : c
       ));
       hasGreetedRef.current = true;
     }
-  }, [activeChat, currentChat, user]);
+  }, [activeChat, currentChat, user, withEmpathy]);
 
   // Ref to track which initial queries we've already processed (prevents double-processing)
   const processedQueriesRef = useRef(new Set());
@@ -663,33 +775,21 @@ const AIChat = ({
       // Store the query to be sent
       pendingQueryRef.current = initialQuery;
 
-      // Create a new chat with the initial query - include welcome message and user message
+      // Create a new chat with the initial query - include user message and loading indicator
       const newChatId = Date.now().toString();
       initialQueryChatIdRef.current = newChatId;
 
-      // Generate welcome message based on time of day and user name
-      const timeOfDay = new Date().getHours();
-      let welcomeGreeting = timeOfDay < 12 ? 'Good morning' : timeOfDay < 18 ? 'Good afternoon' : 'Good evening';
-      welcomeGreeting += user?.name ? ` ${user.name}` : '';
-      welcomeGreeting += `. I'm Sphera, your luxury travel AI assistant. How can I help you today?`;
-
-      // Create welcome message from Sphera AI
-      const welcomeMessage = { role: 'assistant', content: welcomeGreeting };
-
-      // Create user message to show immediately
       const userMessage = { role: 'user', content: initialQuery };
+      const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
 
       const newChat = {
         id: newChatId,
         title: initialQuery.split(' ').slice(0, 5).join(' ') + '...',
         date: 'Just now',
-        messages: [welcomeMessage, userMessage] // Include welcome message and user message
+        messages: [userMessage, loadingMsg]
       };
 
-      console.log('🆕 Creating new chat with welcome + user message:', newChatId);
-
-      // Mark as local chat to prevent URL-based DB fetch
-      localChatIdsRef.current.add(newChatId);
+      console.log('🆕 Creating new chat with message:', newChatId);
 
       // Add to chat history and set as active
       setChatHistory(prev => [newChat, ...prev]);
@@ -698,7 +798,7 @@ const AIChat = ({
       // Clear the initial query prop so parent doesn't keep passing it
       onQueryProcessed();
     }
-  }, [initialQuery, onQueryProcessed, user?.name]);
+  }, [initialQuery, onQueryProcessed]);
 
   // Process the pending query after chat is set up and active
   useEffect(() => {
@@ -714,19 +814,111 @@ const AIChat = ({
       const chatExists = chatHistory.find(c => c.id === chatId);
 
       if (chatExists) {
-        console.log('🚀 Sending initial query to AI:', query);
+        console.log('🚀 Processing initial query to AI:', query);
 
         // Clear refs before sending to prevent double-send
         pendingQueryRef.current = null;
         initialQueryChatIdRef.current = null;
 
-        // Send the message with a small delay to ensure UI is ready
-        // Skip adding user message since it was already added during chat creation
-        const timeoutId = setTimeout(() => {
-          handleSendMessage(query, { skipAddUserMessage: true });
-        }, 100);
+        // Call Claude AI directly (message already shown in UI)
+        const processInitialQuery = async () => {
+          setIsProcessing(true);
+          try {
+            const systemPrompt = getSystemPrompt();
+            const userMessage = { role: 'user', content: query };
 
-        return () => clearTimeout(timeoutId);
+            const response = await claudeEdgeService.messages.create({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 4096,
+              system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
+              messages: [userMessage],
+              tools: aiToolDefinitions.map((tool, index) =>
+                index === aiToolDefinitions.length - 1
+                  ? { ...tool, cache_control: { type: "ephemeral" } }
+                  : tool
+              ),
+              tool_choice: { type: "auto" }
+            });
+
+            console.log('🤖 Claude response for initial query:', response);
+
+            // Handle the response
+            if (response.stop_reason === 'tool_use') {
+              const toolUse = response.content.find(block => block.type === 'tool_use');
+              if (toolUse) {
+                console.log('🔧 Tool used:', toolUse.name, toolUse.input);
+                const toolResult = await executeTool(toolUse.name, toolUse.input);
+
+                // Get AI follow-up response
+                const followUp = await claudeEdgeService.messages.create({
+                  model: 'claude-sonnet-4-20250514',
+                  max_tokens: 1024,
+                  system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
+                  messages: [
+                    userMessage,
+                    { role: 'assistant', content: response.content },
+                    { role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUse.id, content: JSON.stringify(toolResult) }] }
+                  ]
+                });
+
+                const aiText = followUp.content.find(block => block.type === 'text')?.text || 'Here are the results!';
+                const aiMessage = { role: 'assistant', content: aiText };
+
+                // Handle results display
+                let resultsMessage = null;
+                if (toolResult.success && toolResult.results) {
+                  let tabs = [];
+                  if (toolUse.name === 'searchEmptyLegs' && toolResult.results.length > 0) {
+                    tabs.push({ id: 'emptylegs', title: 'Empty Legs', count: toolResult.results.length, items: toolResult.results });
+                  } else if (toolUse.name === 'searchPrivateJets' && toolResult.results.length > 0) {
+                    tabs.push({ id: 'jets', title: 'Private Jets', count: toolResult.results.length, items: toolResult.results });
+                  } else if (toolUse.name === 'searchHelicopters' && toolResult.results.length > 0) {
+                    tabs.push({ id: 'helicopters', title: 'Helicopters', count: toolResult.results.length, items: toolResult.results });
+                  } else if (toolUse.name === 'searchLuxuryCars' && toolResult.results.length > 0) {
+                    tabs.push({ id: 'luxury_cars', title: 'Luxury Cars', count: toolResult.results.length, items: toolResult.results });
+                  }
+                  if (tabs.length > 0) {
+                    resultsMessage = { role: 'results', content: JSON.stringify({ tabs }), tabs };
+                  }
+                }
+
+                // Update chat with results and AI message
+                setChatHistory(prev => prev.map(c =>
+                  c.id === chatId
+                    ? { ...c, messages: [
+                        ...c.messages.filter(m => !m.isLoading),
+                        ...(resultsMessage ? [resultsMessage] : []),
+                        aiMessage
+                      ]}
+                    : c
+                ));
+              }
+            } else {
+              // Regular text response
+              const textBlock = response.content.find(block => block.type === 'text');
+              const aiMessage = { role: 'assistant', content: textBlock?.text || 'How can I help you today?' };
+
+              setChatHistory(prev => prev.map(c =>
+                c.id === chatId
+                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), aiMessage] }
+                  : c
+              ));
+            }
+          } catch (error) {
+            console.error('❌ Error processing initial query:', error);
+            const errorMessage = { role: 'assistant', content: 'I apologize, but I encountered an error. Please try again or rephrase your request.' };
+            setChatHistory(prev => prev.map(c =>
+              c.id === chatId
+                ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), errorMessage] }
+                : c
+            ));
+          } finally {
+            setIsProcessing(false);
+          }
+        };
+
+        // Execute after a small delay
+        setTimeout(processInitialQuery, 100);
       }
     }
   }, [activeChat, chatHistory]);
@@ -760,20 +952,45 @@ const AIChat = ({
         }]
       };
 
-      // Mark as local chat to prevent URL-based DB fetch
-      localChatIdsRef.current.add(newChatId);
-
       setChatHistory(prev => [newChat, ...prev]);
       setActiveChat(newChatId);
 
       // Clear the prop after a small delay to ensure state updates propagate
-      const timeoutId = setTimeout(() => {
+      setTimeout(() => {
         onAssistantMessageProcessed();
       }, 100);
-
-      return () => clearTimeout(timeoutId);
     }
   }, [initialAssistantMessage, onAssistantMessageProcessed]);
+
+  const toggleRecording = useCallback(async () => {
+    if (isRecording) {
+      if (mediaRecorderRef.current) mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      setIsListening(false);
+    } else {
+      if (!humeEnabled) {
+        alert('Voice capture not configured. Please set VITE_HUME_API_KEY and VITE_HUME_SECRET_KEY.');
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        audioChunksRef.current = [];
+        mediaRecorder.ondataavailable = (event) => audioChunksRef.current.push(event.data);
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          await humeClient.sendAudio(audioBlob);
+          stream.getTracks().forEach(track => track.stop());
+        };
+        mediaRecorder.start();
+        setIsRecording(true);
+        setIsListening(true);
+      } catch (error) {
+        alert('Microphone access denied');
+      }
+    }
+  }, [isRecording, humeClient, humeEnabled]);
 
   const fetchWeather = useCallback(async (location) => {
     try {
@@ -914,375 +1131,10 @@ const AIChat = ({
     setShowAdjustModal(true);
   };
 
-  // ===== MULTI-STOP FLIGHT FUNCTIONS =====
-
-  // Search airports for stop locations
-  const searchStopAirports = useCallback(async (query) => {
-    if (!query || query.length < 2) {
-      setStopSearchResults([]);
-      return;
-    }
-    setIsSearchingStops(true);
-    try {
-      const results = await airportsService.searchAirports(query);
-      setStopSearchResults(results.slice(0, 8)); // Limit to 8 results
-    } catch (error) {
-      console.error('Error searching airports:', error);
-      setStopSearchResults([]);
-    } finally {
-      setIsSearchingStops(false);
-    }
-  }, []);
-
-  // Calculate distance between two points using Haversine formula
-  const calculateLegDistance = useCallback((from, to) => {
-    if (!from || !to) return 0;
-    const R = 6371; // Earth's radius in km
-    const dLat = (to.lat - from.lat) * Math.PI / 180;
-    const dLon = (to.lng - from.lng) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(from.lat * Math.PI / 180) * Math.cos(to.lat * Math.PI / 180) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c; // Distance in km
-  }, []);
-
-  // Format duration from hours to readable string
-  const formatDuration = (hours) => {
-    const h = Math.floor(hours);
-    const m = Math.round((hours - h) * 60);
-    return h > 0 ? `${h}h ${m}m` : `${m}m`;
-  };
-
-  // Format multi-stop route string
-  const formatMultiStopRoute = (origin, stops, destination) => {
-    const stopNames = stops.map(s => s.code || s.name?.substring(0, 3).toUpperCase()).join(' → ');
-    return `${origin} → ${stopNames} → ${destination}`;
-  };
-
-  // Calculate multi-stop route details
-  const calculateMultiStopRoute = useCallback((item, stops) => {
-    const legs = [];
-    let totalDistance = 0;
-    let totalFlightTime = 0;
-
-    // Speed in km/h (convert from knots)
-    const speedKmh = (item.speed_kts || 450) * 1.852;
-    const hourlyRate = item.hourly_rate_eur || 5000;
-
-    // Get origin coordinates
-    const origin = {
-      name: item.from || item.origin || item.from_city,
-      code: item.from_iata || item.originIata || '',
-      lat: item.originLat || 0,
-      lng: item.originLng || 0
-    };
-
-    // Get destination coordinates
-    const destination = {
-      name: item.to || item.destination || item.to_city,
-      code: item.to_iata || item.destinationIata || '',
-      lat: item.destLat || 0,
-      lng: item.destLng || 0
-    };
-
-    // Build waypoints: origin -> stops -> destination
-    const waypoints = [origin, ...stops, destination];
-
-    // Calculate each leg
-    let currentTime = item.departure_time ? new Date(`2000-01-01T${item.departure_time}`) : new Date();
-
-    for (let i = 0; i < waypoints.length - 1; i++) {
-      const from = waypoints[i];
-      const to = waypoints[i + 1];
-
-      const legDistance = calculateLegDistance(from, to);
-      const legFlightTime = legDistance / speedKmh; // hours
-
-      const departureTime = new Date(currentTime);
-      const arrivalTime = new Date(currentTime.getTime() + legFlightTime * 60 * 60 * 1000);
-
-      legs.push({
-        from: from.name || from.city,
-        fromCode: from.code || '',
-        to: to.name || to.city,
-        toCode: to.code || '',
-        distance: Math.round(legDistance),
-        flightTime: legFlightTime,
-        departureTime: departureTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-        arrivalTime: arrivalTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-        stopDuration: to.stopDuration || 0
-      });
-
-      totalDistance += legDistance;
-      totalFlightTime += legFlightTime;
-
-      // Add stop duration to current time for next leg departure
-      currentTime = new Date(arrivalTime.getTime() + (to.stopDuration || 0) * 60 * 1000);
-    }
-
-    // Calculate total price (billed hours × hourly rate)
-    const billedHours = Math.ceil(totalFlightTime);
-    const totalPrice = billedHours * hourlyRate;
-
-    return {
-      legs,
-      totalDistance: Math.round(totalDistance),
-      totalFlightTime,
-      totalPrice
-    };
-  }, [calculateLegDistance]);
-
-  // Add a stop to a cart item (jet/helicopter)
-  const addStopToCartItem = useCallback((cartItemId, stopAirport, stopDuration = 60) => {
-    setCartItems(prev => prev.map(item => {
-      if ((item.cartId === cartItemId) && (item.type === 'jets' || item.type === 'jet' || item.type === 'helicopters' || item.type === 'helicopter')) {
-        const stops = item.stops || [];
-        const newStop = {
-          ...stopAirport,
-          stopDuration: stopDuration, // minutes at this stop
-          departureTime: null, // Will be calculated
-          arrivalTime: null
-        };
-        const updatedStops = [...stops, newStop];
-
-        // Recalculate total distance and price with stops
-        const { totalDistance, totalFlightTime, legs, totalPrice } = calculateMultiStopRoute(item, updatedStops);
-
-        return {
-          ...item,
-          stops: updatedStops,
-          legs: legs,
-          totalDistance: totalDistance,
-          flightDistanceNm: totalDistance * 0.539957, // Convert km to nm
-          flightTimeHours: totalFlightTime,
-          estimatedDuration: formatDuration(totalFlightTime),
-          billedHours: Math.ceil(totalFlightTime),
-          estimatedPrice: totalPrice,
-          price: totalPrice,
-          basePrice: totalPrice,
-          totalWithFee: totalPrice,
-          priceCalculation: `${Math.ceil(totalFlightTime)}h × €${item.hourly_rate_eur?.toLocaleString() || 0}/hr`,
-          route: formatMultiStopRoute(item.from || item.origin, updatedStops, item.to || item.destination),
-          isMultiStop: true
-        };
-      }
-      return item;
-    }));
-
-    // Close the multi-stop form
-    setShowMultiStopForm(false);
-    setMultiStopItemId(null);
-    setStopSearchQuery('');
-    setStopSearchResults([]);
-
-    setToast({ message: `Stop added: ${stopAirport.name}`, type: 'cart' });
-  }, [calculateMultiStopRoute, formatMultiStopRoute, formatDuration]);
-
-  // Remove a stop from a cart item
-  const removeStopFromCartItem = useCallback((cartItemId, stopIndex) => {
-    setCartItems(prev => prev.map(item => {
-      if (item.cartId === cartItemId && item.stops) {
-        const updatedStops = item.stops.filter((_, idx) => idx !== stopIndex);
-
-        if (updatedStops.length === 0) {
-          // No more stops - revert to direct route
-          const directDistance = calculateLegDistance(
-            { lat: item.originLat || 0, lng: item.originLng || 0 },
-            { lat: item.destLat || 0, lng: item.destLng || 0 }
-          );
-          const speedKmh = (item.speed_kts || 450) * 1.852;
-          const flightTime = directDistance / speedKmh;
-          const billedHours = Math.ceil(flightTime);
-          const price = billedHours * (item.hourly_rate_eur || 0);
-
-          return {
-            ...item,
-            stops: [],
-            legs: null,
-            totalDistance: directDistance,
-            flightTimeHours: flightTime,
-            estimatedDuration: formatDuration(flightTime),
-            billedHours: billedHours,
-            estimatedPrice: price,
-            price: price,
-            basePrice: price,
-            totalWithFee: price,
-            priceCalculation: `${billedHours}h × €${item.hourly_rate_eur?.toLocaleString() || 0}/hr`,
-            route: `${item.from || item.origin} → ${item.to || item.destination}`,
-            isMultiStop: false
-          };
-        }
-
-        // Recalculate with remaining stops
-        const { totalDistance, totalFlightTime, legs, totalPrice } = calculateMultiStopRoute(item, updatedStops);
-
-        return {
-          ...item,
-          stops: updatedStops,
-          legs: legs,
-          totalDistance: totalDistance,
-          flightDistanceNm: totalDistance * 0.539957,
-          flightTimeHours: totalFlightTime,
-          estimatedDuration: formatDuration(totalFlightTime),
-          billedHours: Math.ceil(totalFlightTime),
-          estimatedPrice: totalPrice,
-          price: totalPrice,
-          basePrice: totalPrice,
-          totalWithFee: totalPrice,
-          priceCalculation: `${Math.ceil(totalFlightTime)}h × €${item.hourly_rate_eur?.toLocaleString() || 0}/hr`,
-          route: formatMultiStopRoute(item.from || item.origin, updatedStops, item.to || item.destination),
-          isMultiStop: updatedStops.length > 0
-        };
-      }
-      return item;
-    }));
-
-    setToast({ message: 'Stop removed', type: 'cart' });
-  }, [calculateLegDistance, calculateMultiStopRoute, formatMultiStopRoute, formatDuration]);
-
-  // Update stop duration (time spent at destination)
-  const updateStopDuration = useCallback((cartItemId, stopIndex, durationMinutes) => {
-    setCartItems(prev => prev.map(item => {
-      if (item.cartId === cartItemId && item.stops) {
-        const updatedStops = item.stops.map((stop, idx) =>
-          idx === stopIndex ? { ...stop, stopDuration: durationMinutes } : stop
-        );
-
-        // Recalculate schedule with new stop duration
-        const { totalDistance, totalFlightTime, legs, totalPrice } = calculateMultiStopRoute(item, updatedStops);
-
-        return {
-          ...item,
-          stops: updatedStops,
-          legs: legs,
-          totalDistance: totalDistance,
-          flightTimeHours: totalFlightTime,
-          estimatedPrice: totalPrice,
-          price: totalPrice,
-          basePrice: totalPrice,
-          totalWithFee: totalPrice
-        };
-      }
-      return item;
-    }));
-  }, [calculateMultiStopRoute]);
-
-  // Update origin or destination of a cart item
-  const updateCartItemEndpoint = useCallback((cartItemId, endpointType, newAirport) => {
-    setCartItems(prev => prev.map(item => {
-      if (item.cartId !== cartItemId) return item;
-      if (item.type !== 'jets' && item.type !== 'jet' && item.type !== 'helicopters' && item.type !== 'helicopter') return item;
-
-      let updatedItem = { ...item };
-
-      if (endpointType === 'origin') {
-        updatedItem = {
-          ...updatedItem,
-          from: newAirport.city || newAirport.name,
-          from_city: newAirport.city || newAirport.name,
-          origin: newAirport.city || newAirport.name,
-          from_iata: newAirport.code || newAirport.iata,
-          originIata: newAirport.code || newAirport.iata,
-          originLat: newAirport.lat,
-          originLng: newAirport.lng
-        };
-      } else if (endpointType === 'destination') {
-        updatedItem = {
-          ...updatedItem,
-          to: newAirport.city || newAirport.name,
-          to_city: newAirport.city || newAirport.name,
-          destination: newAirport.city || newAirport.name,
-          to_iata: newAirport.code || newAirport.iata,
-          destinationIata: newAirport.code || newAirport.iata,
-          destLat: newAirport.lat,
-          destLng: newAirport.lng
-        };
-      }
-
-      // Recalculate route with stops if any
-      if (updatedItem.stops && updatedItem.stops.length > 0) {
-        const { totalDistance, totalFlightTime, legs, totalPrice } = calculateMultiStopRoute(updatedItem, updatedItem.stops);
-        updatedItem = {
-          ...updatedItem,
-          legs: legs,
-          totalDistance: totalDistance,
-          flightDistanceNm: totalDistance * 0.539957,
-          flightTimeHours: totalFlightTime,
-          estimatedDuration: formatDuration(totalFlightTime),
-          billedHours: Math.ceil(totalFlightTime),
-          estimatedPrice: totalPrice,
-          price: totalPrice,
-          basePrice: totalPrice,
-          totalWithFee: totalPrice,
-          priceCalculation: `${Math.ceil(totalFlightTime)}h × €${updatedItem.hourly_rate_eur?.toLocaleString() || 0}/hr`,
-          route: formatMultiStopRoute(
-            updatedItem.from || updatedItem.origin,
-            updatedItem.stops,
-            updatedItem.to || updatedItem.destination
-          )
-        };
-      } else {
-        // Direct route - recalculate
-        const origin = { lat: updatedItem.originLat || 0, lng: updatedItem.originLng || 0 };
-        const dest = { lat: updatedItem.destLat || 0, lng: updatedItem.destLng || 0 };
-        const distanceKm = calculateLegDistance(origin, dest);
-        const speedKmh = (updatedItem.speed_kts || 450) * 1.852;
-        const flightTimeHours = distanceKm / speedKmh;
-        const billedHours = Math.ceil(flightTimeHours);
-        const totalPrice = billedHours * (updatedItem.hourly_rate_eur || 0);
-
-        updatedItem = {
-          ...updatedItem,
-          totalDistance: distanceKm,
-          flightDistanceNm: distanceKm * 0.539957,
-          flightTimeHours: flightTimeHours,
-          estimatedDuration: formatDuration(flightTimeHours),
-          billedHours: billedHours,
-          estimatedPrice: totalPrice,
-          price: totalPrice,
-          basePrice: totalPrice,
-          totalWithFee: totalPrice,
-          priceCalculation: `${billedHours}h × €${updatedItem.hourly_rate_eur?.toLocaleString() || 0}/hr`,
-          route: `${updatedItem.from || updatedItem.origin} → ${updatedItem.to || updatedItem.destination}`
-        };
-      }
-
-      return updatedItem;
-    }));
-
-    // Close the modal
-    setEditingEndpoint(null);
-    setEditEndpointItemId(null);
-    setStopSearchQuery('');
-    setStopSearchResults([]);
-
-    setToast({ message: `${endpointType === 'origin' ? 'Departure' : 'Arrival'} updated`, type: 'cart' });
-  }, [calculateLegDistance, calculateMultiStopRoute]);
-  // ===== END MULTI-STOP FUNCTIONS =====
-
-  // Break the Price - check if user has access AND has available chats
+  // Break the Price - check if user has access
   const canUseBreakThePrice = useCallback(() => {
-    if (!userSubscriptionLimits) {
-      console.log('🔒 canUseBreakThePrice: No subscription limits loaded');
-      return false;
-    }
-    // Must have break_the_price feature enabled (starter, pro, elite)
-    if (userSubscriptionLimits.break_the_price !== true) {
-      console.log('🔒 canUseBreakThePrice: Feature not enabled for tier:', userSubscriptionLimits.tier);
-      return false;
-    }
-    // Elite users always have access (unlimited)
-    if (userSubscriptionLimits.tier === 'elite' || userSubscriptionLimits.unlimited_chats) {
-      console.log('🔓 canUseBreakThePrice: Elite user - unlimited access');
-      return true;
-    }
-    // Non-elite users need at least 1 chat remaining (break the price costs 1 chat)
-    const chatsRemaining = userSubscriptionLimits.chats_remaining ??
-      ((userSubscriptionLimits.chats_limit || 0) - (userSubscriptionLimits.chats_used || 0));
-    const hasAccess = chatsRemaining >= 1;
-    console.log(`🔐 canUseBreakThePrice: ${hasAccess ? '🔓' : '🔒'} chatsRemaining=${chatsRemaining}, tier=${userSubscriptionLimits.tier}`);
-    return hasAccess;
+    if (!userSubscriptionLimits) return false;
+    return userSubscriptionLimits.break_the_price === true;
   }, [userSubscriptionLimits]);
 
   // Convert PDF to images for Claude Vision analysis
@@ -1495,6 +1347,7 @@ End your response with: "Please review the information above. If everything is c
         const response = await claudeEdgeService.messages.create({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 1024,
+          system: [{ type: "text", text: "You are a travel quote analysis expert. Extract key details from travel quotes.", cache_control: { type: "ephemeral" } }],
           messages: [{
             role: 'user',
             content: [
@@ -1581,15 +1434,13 @@ Your quote has been received and will be reviewed within 12 hours.`;
     }
   }, [user?.id, activeChat, canUseBreakThePrice, userSubscriptionLimits, convertPdfToImages, parseExtractedQuoteData]);
 
-  // Fetch user subscription limits on mount and when subscription changes
+  // Fetch user subscription limits on mount
   useEffect(() => {
     const fetchSubscriptionLimits = async () => {
       if (!user?.id) return;
       try {
-        console.log('🔄 Fetching subscription limits for user:', user.id, 'tier:', user.subscription_tier);
         const { data, error } = await supabase.rpc('get_chat_limits', { p_user_id: user.id });
         if (!error && data) {
-          console.log('✅ Subscription limits received:', data);
           setUserSubscriptionLimits(data);
         }
       } catch (err) {
@@ -1597,39 +1448,6 @@ Your quote has been received and will be reviewed within 12 hours.`;
       }
     };
     fetchSubscriptionLimits();
-  }, [user?.id, user?.subscription_tier]); // Re-fetch when tier changes via AuthContext
-
-  // Set up real-time listener for user_profiles changes to update subscription limits
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const channel = supabase
-      .channel('aichat_profile_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'user_profiles',
-          filter: `user_id=eq.${user.id}`
-        },
-        async (payload) => {
-          console.log('📡 AIChat: Subscription changed, refreshing limits...', payload.new);
-          // Re-fetch subscription limits when profile updates
-          const { data, error } = await supabase.rpc('get_chat_limits', { p_user_id: user.id });
-          if (!error && data) {
-            console.log('✅ AIChat: Updated subscription limits:', data);
-            setUserSubscriptionLimits(data);
-            // Also reload user profile
-            loadUserProfile();
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [user?.id]);
 
   const handleSaveAdjustment = (adjustedItem) => {
@@ -1794,8 +1612,6 @@ Your quote has been received and will be reviewed within 12 hours.`;
         serviceType = 'yachts';
       } else if (lowerQuery.match(/car|chauffeur|driver|taxi|transfer/)) {
         serviceType = 'luxuryCars';
-      } else if (lowerQuery.match(/hotel|hotels|accommodation|stay|room|resort|lodge/)) {
-        serviceType = 'hotels';
       }
 
       // Extract simple date windows (support "next week")
@@ -1865,13 +1681,6 @@ Your quote has been received and will be reviewed within 12 hours.`;
             totalResults: results.luxuryCars?.length || 0,
             luxuryCars: results.luxuryCars || []
           };
-        } else if (serviceType === 'hotels') {
-          // For hotels, redirect user to the Hotels section
-          filteredResults = {
-            totalResults: 0,
-            hotels: [],
-            redirectToHotels: true
-          };
         }
       } else {
         // No specific service type requested - show all available results
@@ -1879,34 +1688,6 @@ Your quote has been received and will be reviewed within 12 hours.`;
       }
 
       console.log('📊 Filtered results:', filteredResults);
-
-      // Handle hotel search - redirect to Hotels section
-      if (filteredResults.redirectToHotels) {
-        const hotelResponse = `I'd be happy to help you find the perfect hotel! 🏨
-
-Our hotel booking system offers access to over 2 million properties worldwide with exclusive rates.
-
-**Would you like me to take you to our Hotels section?** There you can:
-• Search by city, dates, and number of guests
-• Filter by star rating and price range
-• View room options and amenities
-• Book securely with cryptocurrency
-
-Just say "yes" or "take me to hotels" and I'll navigate you there, or you can click on **Hotels** in the menu.`;
-
-        setChatHistory(prev => prev.map(c => {
-          if (c.id === activeChat) {
-            const updatedMessages = [...c.messages, { role: 'assistant', content: hotelResponse }];
-            setTypingMessageIndex(updatedMessages.length - 1);
-            return { ...c, messages: updatedMessages };
-          }
-          return c;
-        }));
-
-        setAssistantTyping(false);
-        setIsSearching(false);
-        return;
-      }
 
       if (filteredResults.totalResults === 0) {
         // Use AI to generate intelligent "no results" response
@@ -1934,7 +1715,7 @@ As their luxury travel consultant:
 
           setChatHistory(prev => prev.map(c => {
             if (c.id === activeChat) {
-              const updatedMessages = [...c.messages, { role: 'assistant', content: aiResponse }];
+              const updatedMessages = [...c.messages, { role: 'assistant', content: withEmpathy(aiResponse) }];
               setTypingMessageIndex(updatedMessages.length - 1);
               return { ...c, messages: updatedMessages };
             }
@@ -1945,7 +1726,7 @@ As their luxury travel consultant:
 
           setChatHistory(prev => prev.map(c => {
             if (c.id === activeChat) {
-              const updatedMessages = [...c.messages, { role: 'assistant', content: fallbackResponse }];
+              const updatedMessages = [...c.messages, { role: 'assistant', content: withEmpathy(fallbackResponse) }];
               setTypingMessageIndex(updatedMessages.length - 1);
               return { ...c, messages: updatedMessages };
             }
@@ -2171,7 +1952,7 @@ As their luxury travel consultant, provide an enthusiastic response that:
 
         setChatHistory(prev => prev.map(c => {
           if (c.id === activeChat) {
-            const updatedMessages = [...c.messages, { role: 'assistant', content: aiResponse }];
+            const updatedMessages = [...c.messages, { role: 'assistant', content: withEmpathy(aiResponse) }];
             setTypingMessageIndex(updatedMessages.length - 1);
             return { ...c, messages: updatedMessages };
           }
@@ -2201,7 +1982,7 @@ As their luxury travel consultant, provide an enthusiastic response that:
 
         setChatHistory(prev => prev.map(c => {
           if (c.id === activeChat) {
-            const updatedMessages = [...c.messages, { role: 'assistant', content: response }];
+            const updatedMessages = [...c.messages, { role: 'assistant', content: withEmpathy(response) }];
             setTypingMessageIndex(updatedMessages.length - 1);
             return { ...c, messages: updatedMessages };
           }
@@ -2242,101 +2023,51 @@ As their luxury travel consultant, provide an enthusiastic response that:
   };
 
   // NEW CLAUDE-BASED MESSAGE HANDLER (via secure Edge Function)
-  const handleSendMessage = async (message, { skipAddUserMessage = false } = {}) => {
-    console.log('🚀 handleSendMessage ENTRY:', {
-      message,
-      messageLength: message?.length,
-      trimmed: message?.trim(),
-      isProcessing,
-      activeChat,
-      chatHistoryLength: chatHistory.length,
-      userId: user?.id
-    });
+  const handleSendMessage = async (message) => {
+    if (!message.trim() || isProcessing) return;
+    // NOTE: anthropicRef check removed - claudeEdgeService is always available
 
-    if (!message.trim()) {
-      console.log('❌ BLOCKED: Empty message');
-      return;
-    }
-    if (isProcessing) {
-      console.log('❌ BLOCKED: Already processing');
-      return;
-    }
+    const existingChat = chatHistory.find(c => c.id === activeChat);
 
-    // Check message limit (20 messages per chat, except Elite which has unlimited)
-    let existingChat = chatHistory.find(c => c.id === activeChat);
-    let effectiveActiveChat = activeChat;
-
-    console.log('📋 Chat state:', {
-      existingChat: existingChat ? { id: existingChat.id, title: existingChat.title, msgCount: existingChat.messages?.length } : null,
-      effectiveActiveChat
-    });
-
-    // CRITICAL: If activeChat points to a non-existent chat, treat as new chat
-    if (activeChat !== 'new' && !existingChat) {
-      console.warn('⚠️ Active chat not found in history, treating as new chat');
-      effectiveActiveChat = 'new';
-      setActiveChat('new');
-    }
-
-    const currentMsgCount = existingChat?.messages?.filter(m => m.role === 'user').length || 0;
-
-    // Elite tier has unlimited messages per chat
-    const hasUnlimitedMessages = userSubscriptionLimits?.unlimited_messages === true;
-
-    if (!hasUnlimitedMessages && currentMsgCount >= MAX_MESSAGES_PER_CHAT && effectiveActiveChat !== 'new') {
-      setMessageLimitReached(true);
-      // Show message limit reached as a chat message with subscription link
-      const limitMessage = {
-        role: 'assistant',
-        content: `You have reached the message limit (${MAX_MESSAGES_PER_CHAT} messages per chat). To continue chatting, please [get a subscription](#subscription) or start a new chat.`,
-        isLimitMessage: true
-      };
-      setChatHistory(prev => prev.map(c =>
-        c.id === effectiveActiveChat
-          ? { ...c, messages: [...c.messages, { role: 'user', content: message }, limitMessage] }
-          : c
-      ));
-      return;
-    }
-
-    // Update message count (still track for non-Elite users)
-    if (!hasUnlimitedMessages) {
-      setMessageCount(currentMsgCount + 1);
-    }
+    // SKIP CHAT LIMITS FOR TESTING - chat limits disabled
+    // const currentMsgCount = existingChat?.messages?.filter(m => m.role === 'user').length || 0;
+    // const hasUnlimitedMessages = userSubscriptionLimits?.unlimited_messages === true;
+    // if (!hasUnlimitedMessages && currentMsgCount >= MAX_MESSAGES_PER_CHAT && activeChat !== 'new') {
+    //   setMessageLimitReached(true);
+    //   return;
+    // }
+    // if (!hasUnlimitedMessages) {
+    //   setMessageCount(currentMsgCount + 1);
+    // }
 
     setShowWelcomeMessage(false);
     const userMessage = { role: 'user', content: message };
-    let workingChatId = effectiveActiveChat;
+    let workingChatId = activeChat;
 
     // Check if this is the first user message (chat only has welcome message)
     const isFirstUserMessage = existingChat && existingChat.messages.length === 1 &&
                                  existingChat.messages[0].role === 'assistant' &&
                                  existingChat.title === 'New Chat';
 
-    console.log('📝 Message flow:', { isFirstUserMessage, effectiveActiveChat, workingChatId });
-
     if (isFirstUserMessage) {
       // Update chat title based on first user message
-      console.log('✏️ First user message - updating chat title');
       const newTitle = message.substring(0, 50) + (message.length > 50 ? '...' : '');
 
       setChatHistory(prev => prev.map(c =>
-        c.id === effectiveActiveChat
+        c.id === activeChat
           ? { ...c, title: newTitle, messages: [...c.messages, userMessage] }
           : c
       ));
 
-      console.log('💾 Saving messages to database...');
-      await chatService.updateChatMessages(effectiveActiveChat, [...existingChat.messages, userMessage], user.id);
-      console.log('✅ Messages saved');
+      await chatService.updateChatMessages(activeChat, [...existingChat.messages, userMessage], user.id);
 
       // Update title in database
       try {
-        await chatService.updateChatTitle(effectiveActiveChat, newTitle, user.id);
+        await chatService.updateChatTitle(activeChat, newTitle, user.id);
       } catch (error) {
         console.warn('Failed to update chat title:', error);
       }
-    } else if (effectiveActiveChat === 'new') {
+    } else if (activeChat === 'new') {
       // Create new chat when starting from category overview
       const title = message.substring(0, 50) + (message.length > 50 ? '...' : '');
 
@@ -2349,37 +2080,22 @@ As their luxury travel consultant, provide an enthusiastic response that:
         return;
       }
 
-      // Check if user can start a new chat (subscription limit) - STRICT enforcement
-      if (!isAdmin) {
-        try {
-          const { canStart, chatsUsed, chatsLimit } = await subscriptionService.canStartNewChat(user.id);
-          if (!canStart) {
-            console.log('🚫 Chat limit reached - showing message in chat');
-            setChatLimitReached(true);
-            // Don't block - instead show user message and limit message in chat
-            const limitMessage = {
-              role: 'assistant',
-              content: `You have reached your chat limit (${chatsUsed}/${chatsLimit} chats used). To continue using Sphera AI, please [get a subscription](#subscription).`,
-              isLimitMessage: true
-            };
-            // Create a "fake" chat just to show the limit message
-            const tempChatId = `limit-${Date.now()}`;
-            const tempChat = {
-              id: tempChatId,
-              title: message.substring(0, 30) + '...',
-              date: 'Just now',
-              messages: [userMessage, limitMessage]
-            };
-            setChatHistory(prev => [tempChat, ...prev]);
-            setActiveChat(tempChatId);
-            setIsProcessing(false);
-            return;
-          }
-        } catch (error) {
-          console.warn('Failed to check chat limit:', error);
-          // Continue anyway on error
-        }
-      }
+      // SKIP CHAT LIMITS FOR TESTING
+      // if (!isAdmin) {
+      //   try {
+      //     const { canStart, chatsUsed, chatsLimit } = await subscriptionService.canStartNewChat(user.id);
+      //     if (!canStart) {
+      //       setChatLimitReached(true);
+      //       setToast({
+      //         message: `You've used your free chat. Upgrade to continue booking luxury travel.`,
+      //         type: 'warning'
+      //       });
+      //       return;
+      //     }
+      //   } catch (error) {
+      //     console.warn('Failed to check chat limit:', error);
+      //   }
+      // }
 
       // Reset message count for new chat
       setMessageCount(0);
@@ -2395,16 +2111,15 @@ As their luxury travel consultant, provide an enthusiastic response that:
           chatTitle = chat.title;
           console.log('✅ Chat created in database:', { id: chatId, title: chatTitle });
 
-          // Increment chat usage count for subscription tracking (skip for admin and elite users)
-          if (!isAdmin && userSubscriptionLimits?.tier !== 'elite') {
-            try {
-              await subscriptionService.incrementChatUsage(user.id);
-              // Also create chat usage record for message tracking
-              await subscriptionService.createChatSession(user.id, chatId);
-            } catch (usageError) {
-              console.warn('Failed to update chat usage:', usageError);
-            }
-          }
+          // SKIP SUBSCRIPTION TRACKING FOR TESTING
+          // if (!isAdmin) {
+          //   try {
+          //     await subscriptionService.incrementChatUsage(user.id);
+          //     await subscriptionService.createChatSession(user.id, chatId);
+          //   } catch (usageError) {
+          //     console.warn('Failed to update chat usage:', usageError);
+          //   }
+          // }
         } else {
           throw new Error('Chat creation returned false');
         }
@@ -2436,107 +2151,17 @@ As their luxury travel consultant, provide an enthusiastic response that:
       setActiveChat(chatId);
       workingChatId = chatId;
 
-      // Update URL to reflect the new chat ID (only for real UUIDs, not temp IDs)
-      // Use /dashboard/chat/ to keep dashboard wrapper with sidebar
-      if (chatId && !chatId.startsWith('temp-')) {
-        navigate(`/dashboard/chat/${chatId}`, { replace: true });
-        console.log('🔗 URL updated to:', `/dashboard/chat/${chatId}`);
-      }
-
       console.log('✅ Active chat switched to:', chatId);
     } else {
-      // Check if this is a locally-created chat (from initialQuery) that needs to be saved to database
-      // These have numeric timestamp IDs instead of UUIDs
-      const isLocalOnlyChat = effectiveActiveChat && /^\d+$/.test(effectiveActiveChat) && !effectiveActiveChat.startsWith('temp-');
+      // Regular message in existing chat
+      setChatHistory(prev => prev.map(c =>
+        c.id === activeChat
+          ? { ...c, messages: [...c.messages, userMessage] }
+          : c
+      ));
 
-      if (isLocalOnlyChat && user?.id) {
-        // This is a local chat from initialQuery - save it to database with a proper UUID
-        console.log('🔄 Converting local chat to database chat:', effectiveActiveChat);
-
-        const title = existingChat?.title || message.substring(0, 50) + (message.length > 50 ? '...' : '');
-        const existingMessages = existingChat?.messages || [];
-
-        // Check subscription limit before creating
-        if (!isAdmin) {
-          try {
-            const { canStart, chatsUsed, chatsLimit } = await subscriptionService.canStartNewChat(user.id);
-            if (!canStart) {
-              console.log('🚫 Chat limit reached - showing message in chat');
-              setChatLimitReached(true);
-              // Show limit message in current chat
-              const limitMessage = {
-                role: 'assistant',
-                content: `You have reached your chat limit (${chatsUsed}/${chatsLimit} chats used). To continue using Sphera AI, please [get a subscription](#subscription).`,
-                isLimitMessage: true
-              };
-              setChatHistory(prev => prev.map(c =>
-                c.id === effectiveActiveChat
-                  ? { ...c, messages: [...c.messages, limitMessage] }
-                  : c
-              ));
-              setIsProcessing(false);
-              return;
-            }
-          } catch (error) {
-            console.warn('Failed to check chat limit:', error);
-          }
-        }
-
-        try {
-          // Create the chat in database with all existing messages
-          const { success, chat } = await chatService.createChat(user.id, title, existingMessages[0] || userMessage);
-
-          if (success && chat) {
-            const newChatId = chat.id;
-            console.log('✅ Local chat saved to database with new ID:', newChatId);
-
-            // Update chat history: replace old local chat with new DB chat
-            setChatHistory(prev => prev.map(c =>
-              c.id === effectiveActiveChat
-                ? { ...c, id: newChatId, messages: existingMessages }
-                : c
-            ));
-
-            // Update active chat to the new ID
-            setActiveChat(newChatId);
-            workingChatId = newChatId;
-
-            // Update URL to reflect the new chat ID (use dashboard route for sidebar)
-            navigate(`/dashboard/chat/${newChatId}`, { replace: true });
-            console.log('🔗 URL updated to:', `/dashboard/chat/${newChatId}`);
-
-            // Update messages in database
-            if (existingMessages.length > 1) {
-              await chatService.updateChatMessages(newChatId, existingMessages, user.id);
-            }
-
-            // Increment chat usage count
-            if (!isAdmin && userSubscriptionLimits?.tier !== 'elite') {
-              try {
-                await subscriptionService.incrementChatUsage(user.id);
-                await subscriptionService.createChatSession(user.id, newChatId);
-              } catch (usageError) {
-                console.warn('Failed to update chat usage:', usageError);
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Failed to save local chat to database:', error);
-          setToast({ message: 'Failed to save chat. Please try again.', type: 'error' });
-        }
-      } else {
-        // Regular message in existing chat - skip adding user message if already added (e.g., from initialQuery)
-        if (!skipAddUserMessage) {
-          setChatHistory(prev => prev.map(c =>
-            c.id === effectiveActiveChat
-              ? { ...c, messages: [...c.messages, userMessage] }
-              : c
-          ));
-
-          if (existingChat) {
-            await chatService.updateChatMessages(effectiveActiveChat, [...existingChat.messages, userMessage], user.id);
-          }
-        }
+      if (existingChat) {
+        await chatService.updateChatMessages(activeChat, [...existingChat.messages, userMessage], user.id);
       }
     }
 
@@ -2674,7 +2299,6 @@ As their luxury travel consultant, provide an enthusiastic response that:
           // Format and save results as message
           if (toolResult.success) {
             let tabs = [];
-            const toolResults = []; // Declare array for tool results
 
             // Handle location restrictions (sanctioned/limited coverage)
             if (toolResult.restriction) {
@@ -2731,28 +2355,6 @@ As their luxury travel consultant, provide an enthusiastic response that:
                 title: 'Luxury Cars',
                 count: toolResult.results.length,
                 items: toolResult.results
-              });
-            } else if (toolUse.name === 'searchAirportTransfer' && toolResult.results && toolResult.results.length > 0) {
-              // Add route info and type to each vehicle for display
-              const transferResults = toolResult.results.map(vehicle => ({
-                ...vehicle,
-                type: 'transfer', // Required for SearchResults component to render correctly
-                route: toolResult.route,
-                pricing: toolResult.pricing,
-                booking: toolResult.booking,
-                // Add route distance/duration to item for display
-                distanceKm: toolResult.route?.distanceKm || vehicle.distanceKm,
-                durationMinutes: toolResult.route?.durationMinutes || vehicle.durationMinutes,
-                // Use totalWithFee as the display price
-                price: vehicle.totalWithFee || vehicle.basePrice || vehicle.price || vehicle.hourly_rate_eur
-              }));
-              tabs.push({
-                id: 'transfers',
-                title: 'Ground Transport',
-                count: transferResults.length,
-                items: transferResults,
-                routeInfo: toolResult.route,
-                pricingInfo: toolResult.pricing
               });
             } else if (toolUse.name === 'addToCart' && toolResult.action === 'ADD_TO_CART' && toolResult.cartItem) {
               // Instead of auto-adding to cart, show action buttons for user to confirm
@@ -2820,18 +2422,13 @@ As their luxury travel consultant, provide an enthusiastic response that:
               setIsProcessing(false);
               return; // Exit early - don't continue to AI follow-up
             } else if (toolUse.name === 'lookupPlaceAddress' && toolResult.place) {
-              // Show place card with rich info (photos, ratings, reviews)
-              const place = toolResult.place;
+              // Show place card with rich Google Places data
               const placeMessage = {
-                role: 'assistant',
-                content: toolResult.message || `Found "${place.name}"`,
-                placeCard: {
-                  place: place,
-                  alternatives: toolResult.alternatives,
-                  source: toolResult.source,
-                  displayType: toolResult.displayType,
-                  canArrangeTransfer: toolResult.canArrangeTransfer
-                }
+                role: 'place',
+                content: toolResult.message || `Found ${toolResult.place.name}`,
+                place: toolResult.place,
+                alternatives: toolResult.alternatives || [],
+                canArrangeTransfer: toolResult.canArrangeTransfer
               };
 
               setChatHistory(prev => prev.map(c =>
@@ -2840,9 +2437,51 @@ As their luxury travel consultant, provide an enthusiastic response that:
                   : c
               ));
 
-              await chatService.updateChatMessages(workingChatId, [...conversationHistory, placeMessage], user.id);
+              // Get AI follow-up with a summarized version (to avoid token limits)
+              const placeSummary = {
+                success: true,
+                place: {
+                  name: toolResult.place.name,
+                  fullAddress: toolResult.place.fullAddress,
+                  category: toolResult.place.category,
+                  rating: toolResult.place.rating,
+                  reviewCount: toolResult.place.reviewCount,
+                  priceLevel: toolResult.place.priceLevel,
+                  phone: toolResult.place.phone,
+                  website: toolResult.place.website ? 'Available' : null,
+                  openNow: toolResult.place.openingHours?.openNow
+                },
+                canArrangeTransfer: toolResult.canArrangeTransfer
+              };
+
+              try {
+                const placeFollowUp = await claudeEdgeService.messages.create({
+                  model: 'claude-sonnet-4-20250514',
+                  max_tokens: 512,
+                  system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
+                  messages: [
+                    ...claudeMessages,
+                    { role: 'assistant', content: response.content },
+                    { role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUse.id, content: JSON.stringify(placeSummary) }] }
+                  ]
+                });
+
+                const placeAiText = placeFollowUp.content.find(block => block.type === 'text')?.text;
+                if (placeAiText) {
+                  const placeAiMessage = { role: 'assistant', content: placeAiText };
+                  setChatHistory(prev => prev.map(c =>
+                    c.id === workingChatId
+                      ? { ...c, messages: [...c.messages, placeAiMessage] }
+                      : c
+                  ));
+                }
+              } catch (followUpError) {
+                console.warn('Place follow-up failed:', followUpError);
+                // Place card is already shown, so this is not critical
+              }
+
               setIsProcessing(false);
-              return; // Exit early - place card is self-contained
+              return; // Exit early - place card and optional follow-up handled
             }
 
             // Only add results message if we have tabs to display
@@ -2946,19 +2585,15 @@ As their luxury travel consultant, provide an enthusiastic response that:
         console.log('📊 Subscription check result:', { canStart, chatsUsed, chatsLimit });
 
         if (!canStart) {
-          console.log('🚫 Chat limit reached - BLOCKING new chat');
+          console.log('⚠️ Limit reached - allowing chat but showing warning');
           // Show toast notification
           setToast({
-            message: `You've reached your chat limit (${chatsUsed}/${chatsLimit}). Upgrade to continue using Sphera AI.`,
+            message: `Chat limit reached (${chatsUsed}/${chatsLimit}). Upgrade to continue using Sphera AI.`,
             type: 'warning'
           });
-          // Show subscription modal immediately
-          setShowSubscriptionModal(true);
-          // Set flag to block future attempts
-          setChatLimitReached(true);
-          setIsProcessing(false);
-          // BLOCK - do not continue creating chat
-          return;
+          // Set flag to show warning message in chat
+          setLimitWarningShown(true);
+          // Continue creating chat anyway
         }
       } else if (isAdmin) {
         console.log('👑 Admin user - bypassing subscription limits');
@@ -2974,8 +2609,8 @@ As their luxury travel consultant, provide an enthusiastic response that:
       console.log('💾 Chat creation result:', { success, chatId: chat?.id });
 
       if (success) {
-        // Increment chat usage (non-critical - don't block if it fails, skip for elite users)
-        if (user?.id && !isAdmin && userSubscriptionLimits?.tier !== 'elite') {
+        // Increment chat usage (non-critical - don't block if it fails)
+        if (user?.id && !isAdmin) {
           try {
             await subscriptionService.incrementChatUsage(user.id);
             await loadUserProfile(); // Reload profile to update UI
@@ -3114,7 +2749,7 @@ As their luxury travel consultant, provide an enthusiastic response that:
         
         setChatHistory(prev => prev.map(c => 
           c.id === workingChatId
-            ? { ...c, messages: [...c.messages, { role: 'assistant', content: msg }] }
+            ? { ...c, messages: [...c.messages, { role: 'assistant', content: withEmpathy(msg) }] }
             : c
         ));
         return;
@@ -3137,9 +2772,9 @@ As their luxury travel consultant, provide an enthusiastic response that:
       // Add a message indicating consultation booking
       setChatHistory(prev => prev.map(c => 
         c.id === workingChatId
-          ? { ...c, messages: [...c.messages, {
-              role: 'assistant',
-              content: 'I understand you\'re interested in our tokenization and blockchain features! For detailed guidance on asset tokenization and fractional ownership, I\'d recommend booking a consultation with our blockchain specialists. They can provide personalized advice tailored to your specific needs.',
+          ? { ...c, messages: [...c.messages, { 
+              role: 'assistant', 
+              content: withEmpathy('I understand you\'re interested in our tokenization and blockchain features! For detailed guidance on asset tokenization and fractional ownership, I\'d recommend booking a consultation with our blockchain specialists. They can provide personalized advice tailored to your specific needs.'),
               action: 'consultation_booking'
             }] }
           : c
@@ -3180,7 +2815,7 @@ As their luxury travel consultant, provide an enthusiastic response that:
 
       setChatHistory(prev => prev.map(c =>
         c.id === workingChatId
-          ? { ...c, messages: [...c.messages, { role: 'assistant', content: `Great, helicopter charter. Note: Helicopter routes are limited to 700km for optimal efficiency. ${next.question}` }] }
+          ? { ...c, messages: [...c.messages, { role: 'assistant', content: withEmpathy(`Great, helicopter charter. Note: Helicopter routes are limited to 700km for optimal efficiency. ${next.question}`) }] }
           : c
       ));
       return;
@@ -3223,7 +2858,7 @@ As their luxury travel consultant, provide an enthusiastic response that:
       
       setChatHistory(prev => prev.map(c => 
         c.id === workingChatId
-          ? { ...c, messages: [...c.messages, { role: 'assistant', content: `Perfect choice for value! Empty legs offer 30-50% savings on fixed routes. ${next.question}` }] }
+          ? { ...c, messages: [...c.messages, { role: 'assistant', content: withEmpathy(`Perfect choice for value! Empty legs offer 30-50% savings on fixed routes. ${next.question}`) }] }
           : c
       ));
       return;
@@ -3256,13 +2891,13 @@ Keep responses conversational and ask for 1-2 details at a time.`;
 
         setChatHistory(prev => prev.map(c => 
           c.id === workingChatId
-            ? { ...c, messages: [...c.messages, { role: 'assistant', content: aiResponse }] }
+            ? { ...c, messages: [...c.messages, { role: 'assistant', content: withEmpathy(aiResponse) }] }
             : c
         ));
       } catch (error) {
         setChatHistory(prev => prev.map(c => 
           c.id === workingChatId
-            ? { ...c, messages: [...c.messages, { role: 'assistant', content: 'Excellent choice for yacht charter! I\'ll need to know your budget range, number of guests, and preferred cruising area to find the perfect yacht for you.' }] }
+            ? { ...c, messages: [...c.messages, { role: 'assistant', content: withEmpathy('Excellent choice for yacht charter! I\'ll need to know your budget range, number of guests, and preferred cruising area to find the perfect yacht for you.') }] }
             : c
         ));
       } finally {
@@ -3279,13 +2914,13 @@ Keep responses conversational and ask for 1-2 details at a time.`;
       if (isAddingToBooking) {
         setChatHistory(prev => prev.map(c => 
           c.id === workingChatId
-            ? { ...c, messages: [...c.messages, { role: 'assistant', content: 'Perfect! I can add luxury car service to your booking. Which cities do you need ground transportation in?' }] }
+            ? { ...c, messages: [...c.messages, { role: 'assistant', content: withEmpathy('Perfect! I can add luxury car service to your booking. Which cities do you need ground transportation in?') }] }
             : c
         ));
       } else {
         setChatHistory(prev => prev.map(c => 
           c.id === workingChatId
-            ? { ...c, messages: [...c.messages, { role: 'assistant', content: 'Luxury chauffeur service available! Which city and what type of service do you need? (Airport transfer, hourly service, special events)' }] }
+            ? { ...c, messages: [...c.messages, { role: 'assistant', content: withEmpathy('Luxury chauffeur service available! Which city and what type of service do you need? (Airport transfer, hourly service, special events)') }] }
             : c
         ));
       }
@@ -3319,7 +2954,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
           setChatHistory(prev => prev.map(c =>
             c.id === workingChatId
-              ? { ...c, messages: [...c.messages, { role: 'assistant', content: aiResponse }] }
+              ? { ...c, messages: [...c.messages, { role: 'assistant', content: withEmpathy(aiResponse) }] }
               : c
           ));
         } catch (error) {
@@ -3327,7 +2962,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
           setChatHistory(prev => prev.map(c =>
             c.id === workingChatId
-              ? { ...c, messages: [...c.messages, { role: 'assistant', content: fallbackSuggestion }] }
+              ? { ...c, messages: [...c.messages, { role: 'assistant', content: withEmpathy(fallbackSuggestion) }] }
               : c
           ));
         } finally {
@@ -3564,9 +3199,16 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         }
       }
 
+      const finalResponse = withEmpathy(aiResponse);
+
+      // Speak response if voice mode is active
+      if (isVoiceMode && !isVoiceMuted) {
+        speakResponse(finalResponse);
+      }
+
       setChatHistory(prev => prev.map(c =>
         c.id === workingChatId
-          ? { ...c, messages: [...c.messages, { role: 'assistant', content: aiResponse }] }
+          ? { ...c, messages: [...c.messages, { role: 'assistant', content: finalResponse }] }
           : c
       ));
 
@@ -3591,119 +3233,182 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
     }
   };
 
-  // Generate a proper UUID v4
-  const generateUUID = useCallback(() => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
-  }, []);
+  // NEW CHAT VIEW - Welcome message with suggestion bubbles
+  if (activeChat === 'new') {
+    console.log('🎨 Rendering: NEW CHAT VIEW (welcome with suggestions)');
 
-  // Generate the Sphera AI welcome message
-  const getWelcomeMessage = useCallback(() => {
-    const timeOfDay = new Date().getHours();
-    let greeting = timeOfDay < 12 ? 'Good morning' : timeOfDay < 18 ? 'Good afternoon' : 'Good evening';
-    greeting += user?.name ? ` ${user.name}` : '';
-    greeting += `. I'm Sphera, your luxury travel AI assistant. How can I help you today?`;
-    return greeting;
-  }, [user?.name]);
+    // Quick suggestion bubbles - small, blurred, monochromatic
+    const quickSuggestions = [
+      { id: 'jets', label: 'Private Jets', prompt: 'I need to book a private jet' },
+      { id: 'restaurants', label: 'Restaurants', prompt: 'Find me a luxury restaurant' },
+      { id: 'transfer', label: 'Airport Transfer', prompt: 'I need an airport transfer' },
+      { id: 'emptylegs', label: 'Empty Legs', prompt: 'Show me available empty leg flights' },
+      { id: 'tokenization', label: 'Tokenization', prompt: 'How does asset tokenization work?' },
+      { id: 'yachts', label: 'Yachts', prompt: 'I want to charter a yacht' },
+    ];
 
-  // AUTO-CREATE NEW CHAT - When activeChat is 'new', create and switch immediately
-  const pendingChatRef = useRef(null);
-  // Track if we're waiting for initialQuery to be processed
-  const waitingForInitialQueryRef = useRef(false);
+    // Get time-based greeting
+    const getGreeting = () => {
+      const hour = new Date().getHours();
+      if (hour < 12) return 'Good morning';
+      if (hour < 18) return 'Good afternoon';
+      return 'Good evening';
+    };
 
-  useEffect(() => {
-    // Skip auto-create if there's an initialQuery - let the initialQuery effect handle chat creation
-    if (initialQuery && initialQuery.trim()) {
-      console.log('⏭️ Skipping auto-create: initialQuery will handle chat creation');
-      waitingForInitialQueryRef.current = true;
-      return;
-    }
+    return (
+      <div className="h-full bg-transparent flex flex-col overflow-hidden">
+        {/* Messages area with welcome */}
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 flex flex-col justify-end">
+          <div className="max-w-3xl mx-auto w-full space-y-4">
+            {/* Sphera Welcome Message */}
+            <div className="flex justify-start animate-fade-in">
+              <div className="flex flex-col gap-2 ml-0 sm:ml-12" style={{ maxWidth: '85%' }}>
+                <div className="flex items-center gap-2 px-2">
+                  <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
+                  <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
+                </div>
+                <div className="px-5 py-4 bg-gray-100 text-gray-800 border border-gray-200 rounded-2xl">
+                  <p className="text-sm leading-relaxed">
+                    {getGreeting()}{user?.name ? `, ${user.name.split(' ')[0]}` : ''}! I'm Sphera, your luxury travel and Web3 concierge.
+                  </p>
+                  <p className="text-sm leading-relaxed mt-2 text-gray-600">
+                    I can help you book private jets, find restaurants, arrange transfers, explore tokenization, and much more. What would you like to do today?
+                  </p>
+                </div>
 
-    // If we were waiting for initialQuery but it's now empty, it was just processed
-    // Don't auto-create in this case - the initialQuery effect already created the chat
-    if (waitingForInitialQueryRef.current) {
-      console.log('⏭️ Skipping auto-create: initialQuery was just processed');
-      waitingForInitialQueryRef.current = false;
-      return;
-    }
+                {/* Quick Suggestion Bubbles - Small, blurred, monochromatic */}
+                <div className="flex flex-wrap gap-2 mt-2 px-2">
+                  {quickSuggestions.map((suggestion, index) => (
+                    <button
+                      key={suggestion.id}
+                      onClick={() => {
+                        // Create new chat and send the prompt
+                        const chatId = `chat-${Date.now()}`;
+                        const userMessage = { role: 'user', content: suggestion.prompt };
+                        const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
 
-    if (activeChat === 'new' && user?.id) {
-      // Check if we already have a pending chat being created
-      if (pendingChatRef.current) return;
+                        const newChat = {
+                          id: chatId,
+                          title: suggestion.label,
+                          date: 'Just now',
+                          messages: [userMessage, loadingMsg]
+                        };
 
-      // Add a small delay to allow initialQuery to be set if it's coming
-      const timeoutId = setTimeout(() => {
-        // Double-check initialQuery hasn't been set in the meantime
-        if (initialQuery && initialQuery.trim()) {
-          console.log('⏭️ Skipping auto-create: initialQuery was set during delay');
-          return;
-        }
+                        setChatHistory(prev => [newChat, ...prev]);
+                        setActiveChat(chatId);
 
-        console.log('🆕 Auto-creating new chat session...');
-        const chatId = generateUUID();
-        const welcomeMsg = getWelcomeMessage();
-        const newChat = {
-          id: chatId,
-          title: '', // Empty until user sends first message
-          date: 'Just now',
-          messages: [{ role: 'assistant', content: welcomeMsg }]
-        };
+                        setTimeout(() => {
+                          handleSendMessage(suggestion.prompt);
+                        }, 100);
+                      }}
+                      className="group"
+                      style={{
+                        animation: `fadeIn 0.3s ease-out ${0.1 + index * 0.05}s both`
+                      }}
+                    >
+                      <div className="px-3 py-1.5 bg-white/40 backdrop-blur-sm border border-gray-200/60 rounded-full hover:bg-white/70 hover:border-gray-300 transition-all duration-200 hover:shadow-sm">
+                        <span className="text-xs font-medium text-gray-500 group-hover:text-gray-700 transition-colors">
+                          {suggestion.label}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        pendingChatRef.current = chatId;
-        localChatIdsRef.current.add(chatId);
+        {/* Input at bottom */}
+        <div className="flex-shrink-0 px-4 sm:px-6 pb-4 sm:pb-6">
+          <div className="max-w-3xl mx-auto">
+            <div className="flex items-center gap-3 bg-gray-50 border border-gray-300 rounded-xl px-4 py-3">
+              <input
+                type="text"
+                value={currentMessage}
+                onChange={(e) => setCurrentMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && currentMessage.trim()) {
+                    // Create new chat and send message
+                    const chatId = `chat-${Date.now()}`;
+                    const userMessage = { role: 'user', content: currentMessage };
+                    const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
 
-        // Add to history and switch in one go
-        setChatHistory(prev => [newChat, ...prev]);
-        setActiveChat(chatId);
+                    const newChat = {
+                      id: chatId,
+                      title: currentMessage.split(' ').slice(0, 4).join(' ') + '...',
+                      date: 'Just now',
+                      messages: [userMessage, loadingMsg]
+                    };
 
-        // Clear pending after state updates
-        setTimeout(() => {
-          pendingChatRef.current = null;
-        }, 100);
-      }, 50); // Small delay to let initialQuery effect run first
+                    setChatHistory(prev => [newChat, ...prev]);
+                    setActiveChat(chatId);
+                    const msgToSend = currentMessage;
+                    setCurrentMessage('');
 
-      return () => clearTimeout(timeoutId);
-    }
-  }, [activeChat, user?.id, generateUUID, getWelcomeMessage, initialQuery]);
+                    setTimeout(() => {
+                      handleSendMessage(msgToSend);
+                    }, 100);
+                  }
+                }}
+                placeholder="Message Sphera... e.g. 'Private jet from London to Monaco'"
+                className="flex-1 bg-transparent border-none outline-none text-sm text-gray-700 placeholder-gray-400"
+              />
 
-  // Simple fallback for rendering - create a temporary chat object if needed
-  const renderChat = useMemo(() => {
-    // If we have a current chat from history, use it
-    if (currentChat) return currentChat;
+              <button
+                onClick={() => {
+                  if (currentMessage.trim()) {
+                    const chatId = `chat-${Date.now()}`;
+                    const userMessage = { role: 'user', content: currentMessage };
+                    const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
 
-    // Generate welcome message for placeholder chats
-    const welcomeMsg = getWelcomeMessage();
-    const defaultMessages = [{ role: 'assistant', content: welcomeMsg }];
+                    const newChat = {
+                      id: chatId,
+                      title: currentMessage.split(' ').slice(0, 4).join(' ') + '...',
+                      date: 'Just now',
+                      messages: [userMessage, loadingMsg]
+                    };
 
-    // If activeChat is 'new' or we're waiting for state to update, use a placeholder
-    if (activeChat === 'new' || pendingChatRef.current) {
-      return {
-        id: pendingChatRef.current || 'temp',
-        title: '', // Empty until user sends first message
-        date: 'Just now',
-        messages: defaultMessages
-      };
-    }
+                    setChatHistory(prev => [newChat, ...prev]);
+                    setActiveChat(chatId);
+                    const msgToSend = currentMessage;
+                    setCurrentMessage('');
 
-    // If we have a valid activeChat ID but no match in history yet, create placeholder
-    if (activeChat && activeChat !== 'new') {
-      return {
-        id: activeChat,
-        title: '', // Empty until user sends first message
-        date: 'Just now',
-        messages: defaultMessages
-      };
-    }
+                    setTimeout(() => {
+                      handleSendMessage(msgToSend);
+                    }, 100);
+                  }
+                }}
+                disabled={!currentMessage.trim()}
+                className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                  currentMessage.trim()
+                    ? 'bg-gray-200 text-gray-600 hover:bg-gray-300 hover:scale-110'
+                    : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                }`}
+              >
+                <Send size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
 
-    return null;
-  }, [currentChat, activeChat, getWelcomeMessage]);
+        {/* Animation keyframes */}
+        <style>{`
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
-  // Only show loading if we truly have no chat to render
-  if (!renderChat) {
-    console.log('⚠️ No chat to render. ActiveChat:', activeChat);
+  // EXISTING CHAT VIEW (conversation mode)
+  // This handles activeChat !== 'new' which shows the actual conversation
+
+  if (!currentChat) {
+    console.log('⚠️ No currentChat found. Showing loading state. ActiveChat:', activeChat);
+    // Show loading state while chat is being added to history
     return (
       <div className="h-full bg-transparent flex flex-col overflow-hidden">
         <div className="flex-1 flex items-center justify-center">
@@ -3713,86 +3418,123 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
     );
   }
 
-  console.log('🎨 Rendering: CHAT VIEW with chat:', renderChat.id, renderChat.title);
+  console.log('🎨 Rendering: CHAT VIEW with chat:', currentChat.id, currentChat.title);
 
   // CHAT VIEW - Messages flow from bottom like WhatsApp
-  // Using h-[100dvh] for proper mobile viewport height (accounts for iOS Safari address bar)
   return (
-    <div className="ai-chat-page h-[100dvh] flex bg-transparent overflow-hidden" style={{ height: '100dvh', minHeight: '-webkit-fill-available' }}>
+    <div className="ai-chat-page h-full flex bg-transparent overflow-hidden">
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-      {/* 1. HEADER - STICKY TOP - Compact on mobile with safe area */}
-      <div
-        className="flex-shrink-0 px-3 sm:px-6 py-2 sm:py-3 bg-white/10 border-b border-white/20"
-        style={{
-          backdropFilter: 'blur(40px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-          paddingTop: 'max(0.5rem, env(safe-area-inset-top))'
-        }}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+      {/* 1. HEADER - STICKY TOP - More compact on mobile */}
+      <div className="flex-shrink-0 px-3 sm:px-6 py-2 sm:py-4 bg-white/10 border-b border-white/20" style={{ backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)' }}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => {
-                // Navigate back to overview/chat history
-                if (onBack) {
-                  onBack();
-                } else {
-                  // Fallback: navigate to dashboard
-                  navigate('/dashboard');
-                }
+                setActiveChat('new');
                 setWeather(null);
                 setCartItems([]);
                 setSearchResults(null);
               }}
-              className="flex-shrink-0 p-2 sm:px-3 sm:py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors"
+              className="px-3 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors"
             >
               <ArrowLeft size={18} />
             </button>
-            <h2 className="text-sm sm:text-lg font-semibold text-black truncate">
-              {renderChat?.title || renderChat?.messages?.find(m => m.role === 'user')?.content?.slice(0, 30) || 'New chat'}
+            <h2 className="text-lg font-semibold text-black truncate max-w-md">
+              {currentChat?.messages?.[0]?.content || currentChat?.title || 'New Conversation'}
             </h2>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-            {/* 1. Chat Counter - Clickable to open subscriptions - Hide text on mobile */}
-            <button
-              onClick={() => setShowSubscriptionModal(true)}
-              className="px-1.5 sm:px-2 py-1 bg-white/80 hover:bg-white rounded-md text-[10px] sm:text-[11px] font-medium text-gray-600 transition-colors flex items-center gap-1 border border-gray-200/50"
-              title="Manage subscription"
-            >
-              {userSubscriptionLimits?.tier === 'elite' || userSubscriptionLimits?.unlimited_chats ? (
-                <span className="text-sm sm:text-base font-light">∞</span>
-              ) : userSubscriptionLimits?.tier === 'pro' ? (
-                <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 20}</span>
-              ) : userSubscriptionLimits?.tier === 'starter' ? (
-                <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 5}</span>
-              ) : (
-                <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 1}</span>
-              )}
-            </button>
-
-            {/* 2. Cart Button */}
+          <div className="flex items-center gap-3">
+            {/* Cart - Always visible */}
             <button
               onClick={() => setShowCartSidebar(true)}
-              className="relative p-1.5 bg-white/80 hover:bg-white rounded-md text-gray-600 transition-colors border border-gray-200/50"
-              title="Cart"
+              className="relative p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
             >
-              <ShoppingCart size={14} />
+              <ShoppingCart size={18} />
               {cartItems.length > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-gray-900 text-white text-[8px] sm:text-[9px] rounded-full w-3 h-3 sm:w-3.5 sm:h-3.5 flex items-center justify-center font-medium">
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   {cartItems.length}
                 </span>
               )}
             </button>
 
-            {/* 3. Report Issue Button - Hidden on very small screens */}
+            {/* Send Request - Always visible but disabled when empty */}
+            <button
+              onClick={() => setShowRequestForm(true)}
+              disabled={cartItems.length === 0}
+              className={`px-4 py-2 text-sm rounded-full transition-colors ${
+                cartItems.length > 0
+                  ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              Send Request
+            </button>
+
+            {/* Voice Mute Toggle - hidden for now
+            <button
+              onClick={toggleVoiceMute}
+              className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
+              title={isVoiceMuted ? 'Voice Muted' : 'Voice Active'}
+            >
+              {isVoiceMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+            </button>
+            */}
+
+            {/* Chat Counter - Clickable to open subscriptions */}
+            <button
+              onClick={() => setShowSubscriptionModal(true)}
+              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-900 transition-colors flex items-center gap-2"
+              title="Click to manage subscription"
+            >
+              {userSubscriptionLimits?.tier === 'elite' ? (
+                <span className="flex items-center gap-1.5 text-gray-800">
+                  <Crown size={14} />
+                  <span>Elite</span>
+                </span>
+              ) : userSubscriptionLimits?.tier === 'pro' ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="text-gray-600">Pro</span>
+                  <span className="text-gray-400">•</span>
+                  <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 20}</span>
+                </span>
+              ) : userSubscriptionLimits?.tier === 'starter' ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="text-gray-600">Starter</span>
+                  <span className="text-gray-400">•</span>
+                  <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 5}</span>
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5">
+                  <span className="text-gray-500">Free</span>
+                  <span className="text-gray-400">•</span>
+                  <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 2}</span>
+                </span>
+              )}
+            </button>
+
+            {/* Report Issue Button */}
             <button
               onClick={() => setShowReportIssueModal(true)}
-              className="hidden xs:flex p-1.5 bg-white/80 hover:bg-white rounded-md text-gray-400 hover:text-gray-600 transition-colors border border-gray-200/50"
-              title="Report"
+              className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors"
+              title="Report an issue"
             >
-              <AlertCircle size={14} />
+              <AlertCircle size={16} />
+            </button>
+
+            {/* Cart Button - Header */}
+            <button
+              onClick={() => setShowCartSidebar(true)}
+              className="relative p-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors"
+              title="View cart"
+            >
+              <ShoppingCart size={16} />
+              {cartItems.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-medium">
+                  {cartItems.length}
+                </span>
+              )}
             </button>
 
             {/* Chat Sessions Dropdown - Hidden, can be accessed via menu if needed */}
@@ -3818,9 +3560,16 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="font-semibold text-gray-900">Your Chats</h3>
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             setShowChatSessions(false);
-                            // Let user start new chat - limit check happens when they send first message
+                            // Check if user can start new chat
+                            if (user?.id) {
+                              const { canStart } = await subscriptionService.canStartNewChat(user.id);
+                              if (!canStart) {
+                                setShowSubscriptionModal(true);
+                                return;
+                              }
+                            }
                             setActiveChat('new');
                             setWeather(null);
                             setCartItems([]);
@@ -3898,10 +3647,10 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
       {/* 2. MESSAGES - FLOW FROM BOTTOM - Less padding on mobile */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-6 py-3 sm:py-4 flex flex-col-reverse">
-        <div className="max-w-3xl mx-auto space-y-3 sm:space-y-4 flex flex-col w-full">
-            {renderChat?.messages.map((msg, idx) => {
+        <div className="max-w-3xl mx-auto space-y-4 flex flex-col w-full">
+            {currentChat?.messages.map((msg, idx) => {
               const timestamp = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-              const isLastMessage = idx === renderChat.messages.length - 1;
+              const isLastMessage = idx === currentChat.messages.length - 1;
               const shouldType = msg.role === 'assistant' && isLastMessage && typingMessageIndex === idx;
 
               // Render SearchResults if this is a results message
@@ -3917,24 +3666,49 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 );
               }
 
+              // Render PlaceCard if this is a place message
+              if (msg.role === 'place' && msg.place) {
+                return (
+                  <div key={idx} className="flex justify-start animate-fade-in w-full my-4">
+                    <div className="flex flex-col gap-2 ml-12" style={{ maxWidth: '380px' }}>
+                      <div className="flex items-center gap-2 px-2">
+                        <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
+                        <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
+                        <span className="text-xs text-gray-400">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      <PlaceCard
+                        place={msg.place}
+                        alternatives={msg.alternatives}
+                        showAlternatives={msg.alternatives?.length > 0}
+                        onRequestTransfer={msg.canArrangeTransfer ? (place) => {
+                          // Send a message to arrange transfer to this place
+                          const transferRequest = `I'd like to arrange a luxury car transfer to ${place.name} at ${place.fullAddress}`;
+                          handleSendMessage(transferRequest);
+                        } : null}
+                      />
+                    </div>
+                  </div>
+                );
+              }
+
               // Render regular messages
               return (
                 <div
                   key={idx}
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in w-full`}
                 >
-                  <div className={`${msg.role === 'user' ? 'items-end' : 'items-start ml-0 sm:ml-8'} flex flex-col gap-1 max-w-[85%] sm:max-w-[75%]`}>
-                    <div className="flex items-center gap-1.5 sm:gap-2 px-1 sm:px-2">
+                  <div className={`${msg.role === 'user' ? 'items-end mr-0' : 'items-start ml-12'} flex flex-col gap-1`} style={{ maxWidth: '75%' }}>
+                    <div className="flex items-center gap-2 px-2">
                       {msg.role === 'assistant' && (
-                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-600 rounded-full animate-pulse"></div>
+                        <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
                       )}
-                      <span className="text-[10px] sm:text-xs text-gray-600 font-medium">
+                      <span className="text-xs text-gray-600 font-medium">
                         {msg.role === 'user' ? 'You' : 'Sphera AI'}
                       </span>
-                      <span className="text-[10px] sm:text-xs text-gray-400">{timestamp}</span>
+                      <span className="text-xs text-gray-400">{timestamp}</span>
                     </div>
                     <div
-                      className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl transition-all duration-300 ${
+                      className={`px-4 py-3 rounded-2xl transition-all duration-300 ${
                         msg.role === 'user'
                           ? 'bg-black text-white'
                           : 'bg-gray-200 text-black border border-gray-300'
@@ -3982,18 +3756,6 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           speed={15}
                           onComplete={() => setTypingMessageIndex(null)}
                         />
-                      ) : msg.isLimitMessage ? (
-                        // Special rendering for limit messages with clickable subscription link
-                        <p className="text-sm leading-relaxed whitespace-pre-line">
-                          {msg.content.split('[get a subscription](#subscription)')[0]}
-                          <button
-                            onClick={() => setShowSubscriptionModal(true)}
-                            className="text-gray-900 underline hover:text-black font-medium"
-                          >
-                            get a subscription
-                          </button>
-                          {msg.content.split('[get a subscription](#subscription)')[1] || '.'}
-                        </p>
                       ) : (
                         <p className="text-sm leading-relaxed whitespace-pre-line">{msg.content}</p>
                       )}
@@ -4195,38 +3957,36 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                         </div>
                       </div>
                     )}
-
-                    {/* Place Card - Rich place info with photos, ratings, reviews */}
-                    {msg.placeCard && msg.placeCard.place && (
-                      <div className="mt-3">
-                        <PlaceCard
-                          place={msg.placeCard.place}
-                          alternatives={msg.placeCard.alternatives}
-                          showAlternatives={msg.placeCard.alternatives?.length > 0}
-                          onRequestTransfer={(place) => {
-                            // Pre-fill transfer request with place address
-                            const transferMessage = `I'd like a transfer to ${place.name} at ${place.fullAddress}`;
-                            handleSendMessage(transferMessage);
-                          }}
-                        />
-                      </div>
-                    )}
                   </div>
                 </div>
               );
             })}
 
-            {/* Single loading indicator for all AI processing states */}
-            {(assistantTyping || isSearching || isProcessing) && (
+            {assistantTyping && !isSearching && (
               <div className="flex justify-start w-full">
-                <div className="flex flex-col gap-1 ml-0 sm:ml-8 max-w-[85%] sm:max-w-[75%]">
-                  <div className="flex items-center gap-1.5 sm:gap-2 px-1 sm:px-2">
-                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-600 rounded-full animate-pulse"></div>
-                    <span className="text-[10px] sm:text-xs text-gray-600 font-medium">Sphera AI</span>
-                    <span className="text-[10px] sm:text-xs text-gray-400">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                <div className="flex flex-col gap-1 ml-12" style={{ maxWidth: '75%' }}>
+                  <div className="flex items-center gap-2 px-2">
+                    <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
+                    <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
+                    <span className="text-xs text-gray-400">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
-                  <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-200 text-black border border-gray-300 rounded-2xl">
-                    <LoadingMessage stage={isSearching ? loadingStage : 'thinking'} />
+                  <div className="px-4 py-3 bg-gray-200 text-black border border-gray-300 rounded-2xl">
+                    <TypingAnimation />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isSearching && (
+              <div className="flex justify-start w-full">
+                <div className="flex flex-col gap-1 ml-12" style={{ maxWidth: '75%' }}>
+                  <div className="flex items-center gap-2 px-2">
+                    <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
+                    <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
+                    <span className="text-xs text-gray-400">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  <div className="px-4 py-3 bg-gray-200 text-black border border-gray-300 rounded-2xl">
+                    <LoadingMessage stage={loadingStage} />
                   </div>
                 </div>
               </div>
@@ -4262,86 +4022,84 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         </div>
       </div>
 
-      {/* 3. INPUT - STICKY AT BOTTOM - Safe area padding for iPhone */}
-      <div
-        className="flex-shrink-0 px-3 sm:px-6 pt-2 sm:pt-3"
-        style={{
-          paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))'
-        }}
-      >
+      {/* 3. INPUT - STICKY AT BOTTOM - Less padding on mobile */}
+      <div className="flex-shrink-0 px-4 sm:px-6 pb-4 sm:pb-6 pt-3 sm:pt-4">
         <div className="max-w-3xl mx-auto">
-          {/* Chat Limit Reached (Free users - no more chats) - Only block NEW chat creation, not existing chats */}
-          {chatLimitReached && activeChat === 'new' ? (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
-              <div className="flex items-center justify-between gap-4">
-                <p className="text-xs text-gray-500">
-                  Chat limit reached. Upgrade to continue.
+          {/* Message Limit Reached (20 messages per chat) */}
+          {messageLimitReached ? (
+            <div className="bg-white border border-gray-300 rounded-xl p-4 shadow-sm">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <MessageSquare size={20} className="text-blue-500" />
+                  <span className="font-medium text-gray-900">Message Limit Reached</span>
+                </div>
+                <p className="text-sm text-gray-600 mb-4">
+                  You've reached 20 messages for this conversation.
+                  {cartItems.length > 0 && ` You have ${cartItems.length} item${cartItems.length > 1 ? 's' : ''} in your cart.`}
                 </p>
-                <button
-                  onClick={() => setShowSubscriptionModal(true)}
-                  className="px-4 py-1.5 bg-gray-900 text-white text-xs rounded-md hover:bg-gray-800 transition-colors whitespace-nowrap"
-                >
-                  Upgrade
-                </button>
-              </div>
-            </div>
-          ) : messageLimitReached ? (
-          /* Message Limit Reached (20 messages per chat) */
-            <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
-              <div className="flex items-center justify-between gap-4">
-                <p className="text-xs text-gray-500">
-                  Message limit reached.{cartItems.length > 0 && ` ${cartItems.length} item${cartItems.length > 1 ? 's' : ''} in cart.`}
-                </p>
-                <div className="flex items-center gap-2">
+                <div className="flex gap-3">
+                  {/* Show checkout option if cart has items */}
                   {cartItems.length > 0 ? (
                     <>
                       <button
                         onClick={() => setShowCartSidebar(true)}
-                        className="px-3 py-1.5 bg-gray-200 text-gray-700 text-xs rounded-md hover:bg-gray-300 transition-colors whitespace-nowrap"
+                        className="flex-1 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium flex items-center justify-center gap-2"
                       >
-                        Cart ({cartItems.length})
+                        <ShoppingCart size={18} />
+                        View Cart ({cartItems.length})
                       </button>
                       <button
                         onClick={() => setShowRequestForm(true)}
-                        className="px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md hover:bg-gray-800 transition-colors whitespace-nowrap"
+                        className="flex-1 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
                       >
-                        Send
+                        <Send size={18} />
+                        Send Request
                       </button>
                     </>
                   ) : (
                     <>
                       <button
                         onClick={() => setShowRequestForm(true)}
-                        className="px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md hover:bg-gray-800 transition-colors whitespace-nowrap"
+                        className="flex-1 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
                       >
+                        <Send size={18} />
                         Send Request
                       </button>
                       <button
                         onClick={() => setShowSubscriptionModal(true)}
-                        className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-md hover:bg-gray-200 transition-colors border border-gray-200 whitespace-nowrap"
+                        className="flex-1 py-3 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-colors font-medium border border-gray-300 flex items-center justify-center gap-2"
                       >
+                        <Crown size={18} />
                         Upgrade
                       </button>
                     </>
                   )}
                 </div>
+                {/* Upgrade option for more messages */}
+                <button
+                  onClick={() => setShowSubscriptionModal(true)}
+                  className="mt-3 w-full py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors flex items-center justify-center gap-1"
+                >
+                  <Crown size={14} />
+                  Need more messages? Upgrade your plan
+                </button>
               </div>
             </div>
           ) : (
             /* Normal Input */
-            <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 border border-gray-300 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3">
+            <div className="flex items-center gap-3 bg-gray-50 border border-gray-300 rounded-xl px-4 py-3">
               {/* Break the Price Button - Left side of input */}
               <button
                 onClick={() => setShowBreakThePrice(true)}
                 disabled={!canUseBreakThePrice() || isSearching}
-                className={`flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-colors ${
+                className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
                   canUseBreakThePrice()
                     ? 'bg-gray-800 text-white hover:bg-gray-700'
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 } disabled:opacity-50`}
                 title={canUseBreakThePrice() ? 'Break the Price - Upload competitor quote' : 'Upgrade to unlock Break the Price'}
               >
-                <Upload size={16} className="sm:w-[18px] sm:h-[18px]" />
+                <Upload size={18} />
               </button>
 
               <input
@@ -4349,21 +4107,18 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 value={currentMessage}
                 onChange={(e) => setCurrentMessage(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    console.log('⌨️ ENTER PRESSED!', { currentMessage, trimmed: currentMessage.trim(), isSearching });
-                    if (currentMessage.trim() && !isSearching) {
-                      handleSendMessage(currentMessage);
-                    }
+                  if (e.key === 'Enter' && currentMessage.trim() && !isSearching) {
+                    handleSendMessage(currentMessage);
                   }
                 }}
                 placeholder="Message Sphera..."
                 disabled={isSearching}
-                className="flex-1 bg-transparent border-none outline-none text-sm text-gray-700 placeholder-gray-400 disabled:cursor-not-allowed min-w-0"
+                className="flex-1 bg-transparent border-none outline-none text-sm text-gray-700 placeholder-gray-400 disabled:cursor-not-allowed"
               />
 
-              {/* Message counter - hide on mobile, hide for Elite (unlimited) */}
+              {/* Message counter - HIDDEN FOR TESTING (limits disabled)
               {messageCount > 0 && !userSubscriptionLimits?.unlimited_messages && (
-                <span className={`hidden sm:inline-block text-xs px-2 py-1 rounded-full flex-shrink-0 ${
+                <span className={`text-xs px-2 py-1 rounded-full ${
                   messageCount >= MAX_MESSAGES_PER_CHAT - 3
                     ? 'bg-gray-200 text-gray-700'
                     : 'bg-gray-100 text-gray-500'
@@ -4371,20 +4126,18 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   {messageCount}/{MAX_MESSAGES_PER_CHAT}
                 </span>
               )}
+              */}
 
               <button
-                onClick={() => {
-                  console.log('🔘 SEND BUTTON CLICKED!', { currentMessage, isSearching });
-                  handleSendMessage(currentMessage);
-                }}
+                onClick={() => handleSendMessage(currentMessage)}
                 disabled={!currentMessage.trim() || isSearching}
-                className={`flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
                   currentMessage.trim() && !isSearching
                     ? 'bg-gray-200 text-gray-600 hover:bg-gray-300 hover:scale-110'
                     : 'bg-gray-100 text-gray-300 cursor-not-allowed'
                 }`}
               >
-                <Send size={16} className="sm:w-[18px] sm:h-[18px]" />
+                <Send size={18} />
               </button>
             </div>
           )}
@@ -4403,24 +4156,22 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   <X size={18} />
                 </button>
               </div>
-              {/* Add Extra Button - only show when cart has items */}
-              {cartItems.length > 0 && (
-                <button
-                  onClick={() => setShowInlineExtras(!showInlineExtras)}
-                  className={`mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    showInlineExtras
-                      ? 'bg-gray-900 text-white'
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                  }`}
-                >
-                  {showInlineExtras ? <X size={16} /> : <Plus size={16} />}
-                  {showInlineExtras ? 'Close Extras' : '+ Extra Services'}
-                </button>
-              )}
+              {/* Add Extra Button - toggles inline form in cart dropdown */}
+              <button
+                onClick={() => setShowInlineExtras(!showInlineExtras)}
+                className={`mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  showInlineExtras
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                }`}
+              >
+                {showInlineExtras ? <X size={16} /> : <Plus size={16} />}
+                {showInlineExtras ? 'Close Extras' : '+ Extra Services'}
+              </button>
             </div>
 
-            {/* Inline Extras Form - shown inside cart dropdown, only when cart has items */}
-            {showInlineExtras && cartItems.length > 0 && (
+            {/* Inline Extras Form - shown inside cart dropdown */}
+            {showInlineExtras && (
               <div className="border-b border-gray-200 bg-gray-50 p-3 flex-shrink-0 max-h-[40vh] overflow-y-auto">
                 {!selectedExtraCategory ? (
                   <>
@@ -4803,158 +4554,6 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                       </label>
                                     ))}
                                   </div>
-                                </div>
-
-                                {/* Multi-Stop Flight Section */}
-                                <div className="mt-3 pt-3 border-t border-gray-200">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <p className="text-xs font-medium text-gray-700">Multi-Stop Route</p>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setShowMultiStopForm(true);
-                                        setMultiStopItemId(item.cartId);
-                                      }}
-                                      className="text-[10px] px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors flex items-center gap-1"
-                                    >
-                                      <Plus size={10} />
-                                      Add Stop
-                                    </button>
-                                  </div>
-
-                                  {/* Current Route Display */}
-                                  <div className="space-y-1.5">
-                                    {/* Origin - Clickable */}
-                                    <div
-                                      className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-green-50 hover:border-green-200 border border-transparent transition-colors group"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setEditingEndpoint('origin');
-                                        setEditEndpointItemId(item.cartId);
-                                        setStopSearchQuery('');
-                                        setStopSearchResults([]);
-                                      }}
-                                    >
-                                      <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-[10px] text-gray-500">Departure</p>
-                                        <p className="text-xs font-medium text-gray-900 truncate">{item.from || item.origin || item.from_city}</p>
-                                      </div>
-                                      <Edit2 size={12} className="text-gray-400 group-hover:text-green-600 transition-colors" />
-                                    </div>
-
-                                    {/* Stops */}
-                                    {item.stops && item.stops.length > 0 && item.stops.map((stop, stopIdx) => (
-                                      <div key={stopIdx} className="space-y-1">
-                                        {/* Leg info */}
-                                        {item.legs && item.legs[stopIdx] && (
-                                          <div className="flex items-center justify-center gap-2 py-1">
-                                            <div className="flex-1 h-px bg-gray-200"></div>
-                                            <span className="text-[9px] text-gray-400 px-1">
-                                              {item.legs[stopIdx].distance} km • {formatDuration(item.legs[stopIdx].flightTime)}
-                                            </span>
-                                            <div className="flex-1 h-px bg-gray-200"></div>
-                                          </div>
-                                        )}
-                                        {/* Stop card */}
-                                        <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-100">
-                                          <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0"></div>
-                                          <div className="flex-1 min-w-0">
-                                            <p className="text-[10px] text-blue-600">Stop {stopIdx + 1}</p>
-                                            <p className="text-xs font-medium text-gray-900 truncate">{stop.name || stop.city}</p>
-                                            <div className="flex items-center gap-2 mt-1">
-                                              <span className="text-[9px] text-gray-500">Stay:</span>
-                                              <select
-                                                value={stop.stopDuration || 60}
-                                                onChange={(e) => {
-                                                  e.stopPropagation();
-                                                  updateStopDuration(item.cartId, stopIdx, parseInt(e.target.value));
-                                                }}
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="text-[9px] bg-white border border-gray-200 rounded px-1 py-0.5"
-                                              >
-                                                <option value={30}>30 min</option>
-                                                <option value={60}>1 hour</option>
-                                                <option value={120}>2 hours</option>
-                                                <option value={180}>3 hours</option>
-                                                <option value={240}>4 hours</option>
-                                                <option value={480}>8 hours</option>
-                                                <option value={1440}>1 day</option>
-                                              </select>
-                                              {item.legs && item.legs[stopIdx] && (
-                                                <span className="text-[9px] text-gray-400 ml-1">
-                                                  Depart: {item.legs[stopIdx + 1]?.departureTime || '--:--'}
-                                                </span>
-                                              )}
-                                            </div>
-                                          </div>
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              removeStopFromCartItem(item.cartId, stopIdx);
-                                            }}
-                                            className="p-1 hover:bg-red-100 text-gray-400 hover:text-red-500 rounded transition-colors"
-                                          >
-                                            <X size={12} />
-                                          </button>
-                                        </div>
-                                      </div>
-                                    ))}
-
-                                    {/* Final leg info */}
-                                    {item.legs && item.legs.length > 0 && (
-                                      <div className="flex items-center justify-center gap-2 py-1">
-                                        <div className="flex-1 h-px bg-gray-200"></div>
-                                        <span className="text-[9px] text-gray-400 px-1">
-                                          {item.legs[item.legs.length - 1].distance} km • {formatDuration(item.legs[item.legs.length - 1].flightTime)}
-                                        </span>
-                                        <div className="flex-1 h-px bg-gray-200"></div>
-                                      </div>
-                                    )}
-
-                                    {/* Destination - Clickable */}
-                                    <div
-                                      className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-red-50 hover:border-red-200 border border-transparent transition-colors group"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setEditingEndpoint('destination');
-                                        setEditEndpointItemId(item.cartId);
-                                        setStopSearchQuery('');
-                                        setStopSearchResults([]);
-                                      }}
-                                    >
-                                      <div className="w-3 h-3 bg-red-500 rounded-full flex-shrink-0"></div>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-[10px] text-gray-500">Arrival</p>
-                                        <p className="text-xs font-medium text-gray-900 truncate">{item.to || item.destination || item.to_city}</p>
-                                      </div>
-                                      <Edit2 size={12} className="text-gray-400 group-hover:text-red-600 transition-colors" />
-                                    </div>
-                                  </div>
-
-                                  {/* Multi-stop summary */}
-                                  {item.isMultiStop && item.legs && (
-                                    <div className="mt-3 p-2 bg-gray-100 rounded-lg">
-                                      <div className="grid grid-cols-2 gap-2 text-[10px]">
-                                        <div>
-                                          <span className="text-gray-500">Total Distance:</span>
-                                          <span className="ml-1 font-medium text-gray-900">{item.totalDistance?.toLocaleString()} km</span>
-                                        </div>
-                                        <div>
-                                          <span className="text-gray-500">Flight Time:</span>
-                                          <span className="ml-1 font-medium text-gray-900">{item.estimatedDuration}</span>
-                                        </div>
-                                        <div>
-                                          <span className="text-gray-500">Stops:</span>
-                                          <span className="ml-1 font-medium text-gray-900">{item.stops?.length || 0}</span>
-                                        </div>
-                                        <div>
-                                          <span className="text-gray-500">Billed:</span>
-                                          <span className="ml-1 font-medium text-gray-900">{item.billedHours}h</span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
                                 </div>
                               </div>
                             )}
@@ -5429,8 +5028,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           </div>
                           <button
                             onClick={async () => {
-                              // Edge Function creates the booking - no need to pre-save
-                              // Just track in AI requests for conversation history
+                              // Save to bookings and AI requests before opening payment
+                              await saveBookingToDatabase(firstPayableItem, 'pending');
                               await saveToAIRequests(firstPayableItem);
 
                               setShowCartSidebar(false);
@@ -5518,9 +5117,9 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
                           <button
                             onClick={async () => {
-                              // Edge Function creates the booking - no need to pre-save
-                              // Just track in AI requests for conversation history
+                              // First, save payable item to bookings and AI requests
                               const firstPayableItem = payableItems[0];
+                              await saveBookingToDatabase(firstPayableItem, 'pending');
                               await saveToAIRequests(firstPayableItem);
 
                               // Then, create request for request-only items
@@ -5598,228 +5197,6 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 </div>
               </>
             )}
-          </div>
-        </>
-      )}
-
-      {/* Multi-Stop Airport Search Modal */}
-      {showMultiStopForm && (
-        <>
-          <div className="fixed inset-0 bg-black/50 z-[60] animate-fade-in" onClick={() => {
-            setShowMultiStopForm(false);
-            setMultiStopItemId(null);
-            setStopSearchQuery('');
-            setStopSearchResults([]);
-          }} />
-          <div className="fixed inset-0 flex items-center justify-center z-[61] p-4 animate-fade-in">
-            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-4 animate-scale-in max-h-[80vh] overflow-hidden flex flex-col">
-              <div className="flex justify-between items-center mb-4 flex-shrink-0">
-                <h3 className="text-lg font-semibold">Add Stop</h3>
-                <button
-                  onClick={() => {
-                    setShowMultiStopForm(false);
-                    setMultiStopItemId(null);
-                    setStopSearchQuery('');
-                    setStopSearchResults([]);
-                  }}
-                  className="p-2 hover:bg-gray-100 rounded-lg"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              {/* Search Input */}
-              <div className="relative mb-3 flex-shrink-0">
-                <input
-                  type="text"
-                  value={stopSearchQuery}
-                  onChange={(e) => {
-                    setStopSearchQuery(e.target.value);
-                    searchStopAirports(e.target.value);
-                  }}
-                  placeholder="Search city or airport..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                  autoFocus
-                />
-                {isSearchingStops && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
-                  </div>
-                )}
-              </div>
-
-              {/* Search Results */}
-              <div className="flex-1 overflow-y-auto min-h-0">
-                {stopSearchResults.length > 0 ? (
-                  <div className="space-y-1">
-                    {stopSearchResults.map((airport, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          addStopToCartItem(multiStopItemId, {
-                            name: airport.city || airport.name,
-                            code: airport.iata || airport.code,
-                            city: airport.city,
-                            country: airport.country,
-                            lat: airport.lat || airport.latitude,
-                            lng: airport.lng || airport.lon || airport.longitude
-                          }, 60);
-                        }}
-                        className="w-full p-3 text-left hover:bg-gray-100 rounded-lg transition-colors flex items-start gap-3"
-                      >
-                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Plane size={16} className="text-gray-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-gray-900">{airport.city || airport.name}</span>
-                            {airport.iata && (
-                              <span className="text-[10px] px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded font-medium">{airport.iata}</span>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-500 truncate">{airport.name || airport.airport}</p>
-                          <p className="text-[10px] text-gray-400">{airport.country}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ) : stopSearchQuery.length >= 2 && !isSearchingStops ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <MapPin size={32} className="mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">No airports found</p>
-                    <p className="text-xs text-gray-400">Try a different search term</p>
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <Plane size={32} className="mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">Search for a city or airport</p>
-                    <p className="text-xs text-gray-400">Type at least 2 characters</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Info footer */}
-              <div className="mt-3 pt-3 border-t border-gray-200 flex-shrink-0">
-                <p className="text-[10px] text-gray-500 text-center">
-                  Stops allow you to make intermediate landings. Each stop adds to the total flight time and cost.
-                </p>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Edit Origin/Destination Modal */}
-      {editingEndpoint && editEndpointItemId && (
-        <>
-          <div className="fixed inset-0 bg-black/50 z-[60] animate-fade-in" onClick={() => {
-            setEditingEndpoint(null);
-            setEditEndpointItemId(null);
-            setStopSearchQuery('');
-            setStopSearchResults([]);
-          }} />
-          <div className="fixed inset-0 flex items-center justify-center z-[61] p-4 animate-fade-in">
-            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-4 animate-scale-in max-h-[80vh] overflow-hidden flex flex-col">
-              <div className="flex justify-between items-center mb-4 flex-shrink-0">
-                <h3 className="text-lg font-semibold">
-                  {editingEndpoint === 'origin' ? 'Change Departure' : 'Change Arrival'}
-                </h3>
-                <button
-                  onClick={() => {
-                    setEditingEndpoint(null);
-                    setEditEndpointItemId(null);
-                    setStopSearchQuery('');
-                    setStopSearchResults([]);
-                  }}
-                  className="p-2 hover:bg-gray-100 rounded-lg"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              {/* Search Input */}
-              <div className="relative mb-3 flex-shrink-0">
-                <input
-                  type="text"
-                  value={stopSearchQuery}
-                  onChange={(e) => {
-                    setStopSearchQuery(e.target.value);
-                    searchStopAirports(e.target.value);
-                  }}
-                  placeholder="Search city or airport..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                  autoFocus
-                />
-                {isSearchingStops && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
-                  </div>
-                )}
-              </div>
-
-              {/* Search Results */}
-              <div className="flex-1 overflow-y-auto min-h-0">
-                {stopSearchResults.length > 0 ? (
-                  <div className="space-y-1">
-                    {stopSearchResults.map((airport, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          updateCartItemEndpoint(editEndpointItemId, editingEndpoint, {
-                            name: airport.city || airport.name,
-                            code: airport.iata || airport.code,
-                            city: airport.city,
-                            country: airport.country,
-                            lat: airport.lat || airport.latitude,
-                            lng: airport.lng || airport.lon || airport.longitude
-                          });
-                          setEditingEndpoint(null);
-                          setEditEndpointItemId(null);
-                          setStopSearchQuery('');
-                          setStopSearchResults([]);
-                        }}
-                        className="w-full p-3 text-left hover:bg-gray-100 rounded-lg transition-colors flex items-start gap-3"
-                      >
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          editingEndpoint === 'origin' ? 'bg-green-100' : 'bg-red-100'
-                        }`}>
-                          <Plane size={16} className={editingEndpoint === 'origin' ? 'text-green-600' : 'text-red-600'} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-gray-900">{airport.city || airport.name}</span>
-                            {airport.iata && (
-                              <span className="text-[10px] px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded font-medium">{airport.iata}</span>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-500 truncate">{airport.name || airport.airport}</p>
-                          <p className="text-[10px] text-gray-400">{airport.country}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ) : stopSearchQuery.length >= 2 && !isSearchingStops ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <MapPin size={32} className="mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">No airports found</p>
-                    <p className="text-xs text-gray-400">Try a different search term</p>
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <Plane size={32} className="mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">Search for a city or airport</p>
-                    <p className="text-xs text-gray-400">Type at least 2 characters</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Info footer */}
-              <div className="mt-3 pt-3 border-t border-gray-200 flex-shrink-0">
-                <p className="text-[10px] text-gray-500 text-center">
-                  Changing the {editingEndpoint === 'origin' ? 'departure' : 'arrival'} will recalculate distance, flight time, and price.
-                </p>
-              </div>
-            </div>
           </div>
         </>
       )}
@@ -5902,14 +5279,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           range_km: item.range_km,
                           speed_kts: item.speed_kts,
                           hourly_rate_eur: item.hourly_rate_eur,
-                          estimated_flight_time: item.estimated_flight_time || item.flightTime || item.estimatedDuration,
-                          distance_km: item.distance_km || item.distanceKm || item.totalDistance,
-                          billed_hours: item.billedHours,
-                          // Multi-stop route info
-                          is_multi_stop: item.isMultiStop || false,
-                          stops: item.stops || [],
-                          legs: item.legs || [],
-                          total_distance_km: item.totalDistance,
+                          estimated_flight_time: item.estimated_flight_time || item.flightTime,
+                          distance_km: item.distance_km || item.distanceKm,
                           // For luxury cars
                           brand: item.brand,
                           model: item.model,
@@ -5959,9 +5330,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           vat_amount: vatAmount,
                           grand_total: grandTotal,
                           has_estimates: cartItems.some(item => item.isEstimate),
-                          has_custom_requests: customExtras.length > 0,
-                          has_multi_stop_flights: cartItems.some(item => item.isMultiStop),
-                          multi_stop_count: cartItems.filter(item => item.isMultiStop).length
+                          has_custom_requests: customExtras.length > 0
                         },
                         payment_method: selectedPaymentMethod || 'bank_transfer',
                         created_via: 'sphera_ai_assistant',
@@ -6108,18 +5477,12 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       {/* Subscription Modal */}
       <SubscriptionModal
         isOpen={showSubscriptionModal}
-        onClose={async () => {
-          setShowSubscriptionModal(false);
-          // Refresh profile when modal closes (in case webhook updated limits while modal was open)
-          if (user?.id) {
-            console.log('🔄 Modal closed - refreshing subscription profile...');
-            await loadUserProfile();
-          }
-        }}
+        onClose={() => setShowSubscriptionModal(false)}
         currentTier={userProfile?.subscription_tier || 'explorer'}
         onUpgrade={async (tierId) => {
           // Handle Stripe checkout for subscription upgrade
           console.log('Upgrade to:', tierId);
+          // TODO: Implement Stripe checkout
           // After successful upgrade, reload profile
           await loadUserProfile();
         }}
@@ -6387,34 +5750,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
                       if (error) throw error;
 
-                      // Send email notification to admin
-                      try {
-                        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-                        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-                        await fetch(`${supabaseUrl}/functions/v1/ai-chat-report-notifications`, {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${supabaseAnonKey}`,
-                          },
-                          body: JSON.stringify({
-                            userId: user?.id,
-                            userEmail: user?.email,
-                            userName: user?.name || user?.full_name,
-                            userPhone: user?.phone || userProfile?.phone,
-                            chatId: currentChat?.id,
-                            rating: reportIssueForm.rating,
-                            message: reportIssueForm.message,
-                            chatContext: JSON.stringify(currentChat?.messages?.slice(-5) || [])
-                          })
-                        });
-                        console.log('Report email notification sent to admin');
-                      } catch (emailErr) {
-                        console.error('Failed to send report email (non-blocking):', emailErr);
-                      }
-
-                      setToast({ message: 'Report submitted. Thank you for your feedback!', type: 'success' });
+                      setToast({ message: 'Report submitted successfully. Thank you for your feedback!', type: 'success' });
                       setShowReportIssueModal(false);
                       setReportIssueForm({ message: '', rating: 0 });
                     } catch (err) {
@@ -6445,8 +5781,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
           }}
           service={{
             ...selectedPaymentItem,
-            // Ensure price field is set correctly using centralized price calculator
-            price: calculateItemPrice(selectedPaymentItem) || selectedPaymentItem.price_usd || selectedPaymentItem.price || selectedPaymentItem.discounted_price || selectedPaymentItem.basePrice || 0,
+            // Ensure price field is set correctly
+            price: selectedPaymentItem.price_usd || selectedPaymentItem.price || selectedPaymentItem.discounted_price || 0,
             // Use original EmptyLegs_ id if available
             id: selectedPaymentItem.original_id || selectedPaymentItem.id
           }}

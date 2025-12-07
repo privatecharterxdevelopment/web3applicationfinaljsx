@@ -50,46 +50,52 @@ const SubscriptionModal = ({ isOpen, onClose, currentTier = 'explorer', onUpgrad
   ];
 
   const handlePlanClick = async (plan) => {
+    console.log('🛒 Plan clicked:', plan.id, 'stripeLink:', plan.stripeLink);
+
     if (onUpgrade) {
       onUpgrade(plan.id);
-    } else if (plan.stripeLink) {
-      // Build URL with parameters for Stripe Payment Link
-      const params = new URLSearchParams();
+      return;
+    }
 
-      // Add user email for prefilled customer
-      if (user?.email) {
-        params.set('prefilled_email', user.email);
-      }
+    if (!plan.stripeLink) {
+      console.warn('No Stripe payment link configured for', plan.id);
+      alert('Payment link not configured. Please contact support.');
+      return;
+    }
 
-      // Add client_reference_id with user_id and tier for webhook to identify the user
-      // Format: userId:tierId (e.g., "abc123:starter")
-      if (user?.id) {
-        params.set('client_reference_id', `${user.id}:${plan.id}`);
-      }
+    // Build URL with parameters for Stripe Payment Link
+    const params = new URLSearchParams();
 
-      const url = params.toString()
-        ? `${plan.stripeLink}?${params.toString()}`
-        : plan.stripeLink;
+    // Add user email for prefilled customer
+    if (user?.email) {
+      params.set('prefilled_email', user.email);
+    }
 
-      console.log('🔗 Redirecting to Stripe payment:', { tier: plan.id, userId: user?.id, isNative });
+    // Add client_reference_id with user_id and tier for webhook to identify the user
+    // Format: userId:tierId (e.g., "abc123:starter")
+    if (user?.id) {
+      params.set('client_reference_id', `${user.id}:${plan.id}`);
+    }
 
-      // Use Capacitor Browser for native apps (opens in-app browser like Safari View Controller)
-      // This keeps user in the app and allows return after payment
-      if (isNative) {
-        try {
-          await Browser.open({ url, presentationStyle: 'fullscreen' });
-        } catch (error) {
-          console.error('Failed to open browser:', error);
-          // Fallback to window.location if Browser fails
-          window.location.href = url;
-        }
-      } else {
-        // Web: use window.location for redirect
+    const url = params.toString()
+      ? `${plan.stripeLink}?${params.toString()}`
+      : plan.stripeLink;
+
+    console.log('🔗 Redirecting to Stripe payment:', { tier: plan.id, userId: user?.id, url, isNative });
+
+    // Use Capacitor Browser for native apps (opens in-app browser like Safari View Controller)
+    // This keeps user in the app and allows return after payment
+    if (isNative) {
+      try {
+        await Browser.open({ url, presentationStyle: 'fullscreen' });
+      } catch (error) {
+        console.error('Failed to open browser:', error);
+        // Fallback to window.location if Browser fails
         window.location.href = url;
       }
     } else {
-      console.warn('No Stripe payment link configured for', plan.id);
-      alert('Payment link not configured. Please contact support.');
+      // Web: use window.location for redirect
+      window.location.href = url;
     }
   };
 
