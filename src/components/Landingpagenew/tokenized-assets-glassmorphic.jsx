@@ -3531,7 +3531,7 @@ const TokenizedAssetsGlassmorphic = () => {
     { id: 'helicopter', label: 'Helis', icon: Zap, category: 'helicopter' },
     { id: 'empty-legs', label: 'Empty Legs', icon: MapPin, category: 'empty-legs' },
     { id: 'hotels', label: 'Hotels', icon: Building2, category: 'hotels' },
-    { id: 'adventures', label: 'Adventures', icon: Mountain, category: 'adventures' },
+    // { id: 'adventures', label: 'Adventures', icon: Mountain, category: 'adventures' }, // Hidden - Adventures only available via AI Chat
     // { id: 'assets', label: 'Events & Sports', icon: Calendar, category: 'assets' }, // Hidden for MVP
     // { id: 'luxury-cars', label: 'Luxury Cars', icon: Car, category: 'luxury-cars' }, // Hidden - now integrated into Ground Transport
     { id: 'ground-transport', label: 'Ground Transport', icon: Car, category: 'ground-transport' }

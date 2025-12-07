@@ -255,7 +255,7 @@ export default function FloatingSearchModal() {
         navigateWithAuth('/dashboard?tab=spv');
         break;
       case 'adventure package':
-        navigate('/dashboard?tab=adventures');
+        navigateWithAuth('/dashboard?tab=ai-chat&query=show me adventure packages');
         break;
       case 'holiday planer':
         navigateWithAuth('/dashboard?tab=ai-chat&query=help me plan my holiday');

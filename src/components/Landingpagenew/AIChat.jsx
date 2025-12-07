@@ -45,6 +45,7 @@ import SubscriptionModal from '../SubscriptionModal';
 import CryptoPaymentModal from '../Payment/CryptoPaymentModal';
 import PlaceCard from '../PlaceCard';
 import HotelCard from '../HotelCard';
+import AdventureCard from '../AdventureCard';
 
 // Web3
 import { useAccount, useDisconnect, useSignMessage } from 'wagmi';
@@ -2541,6 +2542,63 @@ As their luxury travel consultant, provide an enthusiastic response that:
 
               setIsProcessing(false);
               return; // Exit early - hotels handled
+            } else if (toolUse.name === 'searchYachtsAndAdventures' && toolResult.results?.adventures?.length > 0) {
+              // Show adventure package results as cards
+              const adventureMessage = {
+                role: 'adventures',
+                content: `Found ${toolResult.results.adventures.length} adventure package${toolResult.results.adventures.length > 1 ? 's' : ''} for you!`,
+                adventures: toolResult.results.adventures,
+                params: toolResult.params
+              };
+
+              setChatHistory(prev => prev.map(c =>
+                c.id === workingChatId
+                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), adventureMessage] }
+                  : c
+              ));
+
+              // Get AI follow-up about the adventures
+              const adventureSummary = {
+                success: true,
+                adventureCount: toolResult.results.adventures.length,
+                adventures: toolResult.results.adventures.slice(0, 3).map(a => ({
+                  title: a.title || a.name,
+                  destination: a.destination,
+                  duration: a.duration,
+                  price: a.price,
+                  priceOnRequest: a.price_on_request,
+                  packageType: a.package_type,
+                  difficultyLevel: a.difficulty_level
+                }))
+              };
+
+              try {
+                const adventureFollowUp = await claudeEdgeService.messages.create({
+                  model: 'claude-sonnet-4-20250514',
+                  max_tokens: 512,
+                  system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
+                  messages: [
+                    ...claudeMessages,
+                    { role: 'assistant', content: response.content },
+                    { role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUse.id, content: JSON.stringify(adventureSummary) }] }
+                  ]
+                });
+
+                const adventureAiText = adventureFollowUp.content.find(block => block.type === 'text')?.text;
+                if (adventureAiText) {
+                  const adventureAiMessage = { role: 'assistant', content: adventureAiText };
+                  setChatHistory(prev => prev.map(c =>
+                    c.id === workingChatId
+                      ? { ...c, messages: [...c.messages, adventureAiMessage] }
+                      : c
+                  ));
+                }
+              } catch (followUpError) {
+                console.warn('Adventure follow-up failed:', followUpError);
+              }
+
+              setIsProcessing(false);
+              return; // Exit early - adventures handled
             } else if (toolUse.name === 'addHotelToCart' && toolResult.success) {
               // Handle hotel added to cart
               if (toolResult.cartItem) {
@@ -3320,10 +3378,10 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
     // Quick suggestion bubbles - small, blurred, monochromatic
     const quickSuggestions = [
       { id: 'jets', label: 'Private Jets', prompt: 'I need to book a private jet' },
+      { id: 'adventures', label: 'Adventures', prompt: 'Show me adventure packages' },
       { id: 'restaurants', label: 'Restaurants', prompt: 'Find me a luxury restaurant' },
       { id: 'transfer', label: 'Airport Transfer', prompt: 'I need an airport transfer' },
       { id: 'emptylegs', label: 'Empty Legs', prompt: 'Show me available empty leg flights' },
-      { id: 'tokenization', label: 'Tokenization', prompt: 'How does asset tokenization work?' },
       { id: 'yachts', label: 'Yachts', prompt: 'I want to charter a yacht' },
     ];
 
@@ -3830,6 +3888,73 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                               }}
                               checkIn={msg.params?.checkIn}
                               checkOut={msg.params?.checkOut}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Render AdventureCard if this is an adventures message
+              if (msg.role === 'adventures' && msg.adventures?.length > 0) {
+                return (
+                  <div key={idx} className="flex justify-start animate-fade-in w-full my-4">
+                    <div className="flex flex-col gap-2 ml-12 w-full" style={{ maxWidth: '100%' }}>
+                      <div className="flex items-center gap-2 px-2">
+                        <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
+                        <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
+                        <span className="text-xs text-gray-400">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      <p className="text-sm text-gray-600 px-2 mb-2">{msg.content}</p>
+                      <div className="flex gap-4 overflow-x-auto pb-2 px-2" style={{ scrollbarWidth: 'thin' }}>
+                        {msg.adventures.map((adventure, aIdx) => (
+                          <div key={aIdx} className="flex-shrink-0">
+                            <AdventureCard
+                              adventure={adventure}
+                              onAddToCart={(cartItem) => {
+                                // Add adventure to cart
+                                addToCart({
+                                  type: 'adventure',
+                                  id: cartItem.item?.id || `adventure-${Date.now()}`,
+                                  name: cartItem.item?.title || cartItem.item?.name || 'Adventure Package',
+                                  destination: cartItem.item?.destination,
+                                  price: cartItem.totalPrice,
+                                  pricePerPerson: cartItem.item?.price,
+                                  guests: cartItem.guests,
+                                  selectedDate: cartItem.selectedDate,
+                                  duration: cartItem.item?.duration,
+                                  packageType: cartItem.item?.package_type,
+                                  image: cartItem.item?.image_url
+                                });
+                                // Show confirmation message
+                                const confirmMessage = {
+                                  role: 'confirm_booking',
+                                  content: `Adventure "${cartItem.item?.title || cartItem.item?.name}" has been added to your cart!`,
+                                  bookingType: 'adventure_booking',
+                                  bookingData: cartItem,
+                                  displayInfo: {
+                                    type: 'Adventure Package',
+                                    name: cartItem.item?.title || cartItem.item?.name,
+                                    destination: cartItem.item?.destination,
+                                    duration: cartItem.item?.duration,
+                                    guests: `${cartItem.guests} guest${cartItem.guests > 1 ? 's' : ''}`,
+                                    date: cartItem.selectedDate || 'Flexible',
+                                    totalPrice: `€${cartItem.totalPrice?.toLocaleString() || 'On Request'}`
+                                  }
+                                };
+                                setChatHistory(prev => prev.map(c =>
+                                  c.id === currentChatId
+                                    ? { ...c, messages: [...c.messages, confirmMessage] }
+                                    : c
+                                ));
+                              }}
+                              onRequestBooking={(requestData) => {
+                                // Send request message to AI
+                                const requestMessage = `I'd like to request a booking for the adventure "${requestData.item?.title || requestData.item?.name}" in ${requestData.item?.destination}. Guests: ${requestData.guests}${requestData.selectedDate ? `, preferred date: ${requestData.selectedDate}` : ''}. Please provide more details and availability.`;
+                                handleSendMessage(requestMessage);
+                              }}
                             />
                           </div>
                         ))}

@@ -172,6 +172,7 @@ const MyBookingsView = ({ user, onBack }) => {
 
   const filteredBookings = bookings.filter(booking => {
     if (filter === 'all') return true;
+    if (filter === 'hotel_booking') return booking.booking_type === 'hotel_booking';
     return booking.payment_status === filter;
   });
 
@@ -226,8 +227,8 @@ const MyBookingsView = ({ user, onBack }) => {
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex items-center gap-1 mt-4">
-          {['all', 'paid', 'pending'].map(status => (
+        <div className="flex items-center gap-1 mt-4 flex-wrap">
+          {['all', 'paid', 'pending', 'hotel_booking'].map(status => (
             <button
               key={status}
               onClick={() => setFilter(status)}
@@ -237,7 +238,7 @@ const MyBookingsView = ({ user, onBack }) => {
                   : 'text-gray-500 hover:bg-gray-100'
               }`}
             >
-              {status === 'all' ? 'All' : status === 'paid' ? 'Confirmed' : 'Pending'}
+              {status === 'all' ? 'All' : status === 'paid' ? 'Confirmed' : status === 'pending' ? 'Pending' : 'Hotels'}
             </button>
           ))}
         </div>

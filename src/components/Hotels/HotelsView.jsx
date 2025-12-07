@@ -9,17 +9,154 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { hotelService } from '../../services/hotelService';
 import FavouriteButton from '../Favourites/FavouriteButton';
+import HotelDetailInline from './HotelDetailInline';
 
-// Popular destinations for quick search
-const popularDestinations = [
-  { city: 'Dubai', countryCode: 'AE', cityCode: 'DXB', image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=400' },
-  { city: 'Paris', countryCode: 'FR', cityCode: 'PAR', image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=400' },
-  { city: 'London', countryCode: 'GB', cityCode: 'LON', image: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=400' },
-  { city: 'New York', countryCode: 'US', cityCode: 'NYC', image: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=400' },
-  { city: 'Tokyo', countryCode: 'JP', cityCode: 'TYO', image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400' },
-  { city: 'Miami', countryCode: 'US', cityCode: 'MIA', image: 'https://images.unsplash.com/photo-1506966953602-c20cc11f75e3?w=400' },
-  { city: 'Monaco', countryCode: 'MC', cityCode: 'MCM', image: 'https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=400' },
-  { city: 'Singapore', countryCode: 'SG', cityCode: 'SIN', image: 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=400' },
+// Popular hotels to show by default (instead of city cards)
+const popularHotels = [
+  {
+    hotel: {
+      hotelId: 'burj-al-arab',
+      name: 'Burj Al Arab Jumeirah',
+      address: 'Jumeirah Beach Road',
+      city: 'Dubai',
+      country: 'AE',
+      starRating: 5,
+      rating: 4.9,
+      reviewCount: 2450,
+      description: 'Iconic sail-shaped luxury hotel with opulent suites and world-class dining.',
+      mainImage: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800',
+      amenities: ['wifi', 'pool', 'spa', 'restaurant', 'gym', 'parking'],
+      minRate: 1500
+    },
+    rooms: [{ roomId: 'suite-1', roomName: 'Deluxe Suite', rates: [{ rateId: 'r1', totalRate: 1500, boardType: 'Breakfast', cancellation: { refundable: true } }] }],
+    totalRate: 1500
+  },
+  {
+    hotel: {
+      hotelId: 'ritz-paris',
+      name: 'Ritz Paris',
+      address: '15 Place Vendôme',
+      city: 'Paris',
+      country: 'FR',
+      starRating: 5,
+      rating: 4.8,
+      reviewCount: 1890,
+      description: 'Legendary palace hotel in the heart of Paris with timeless elegance.',
+      mainImage: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800',
+      amenities: ['wifi', 'spa', 'restaurant', 'gym', 'parking', 'pool'],
+      minRate: 1200
+    },
+    rooms: [{ roomId: 'room-1', roomName: 'Superior Room', rates: [{ rateId: 'r2', totalRate: 1200, boardType: 'Room Only', cancellation: { refundable: true } }] }],
+    totalRate: 1200
+  },
+  {
+    hotel: {
+      hotelId: 'claridges-london',
+      name: "Claridge's",
+      address: 'Brook Street, Mayfair',
+      city: 'London',
+      country: 'GB',
+      starRating: 5,
+      rating: 4.9,
+      reviewCount: 1650,
+      description: 'Art Deco masterpiece in Mayfair with impeccable British service.',
+      mainImage: 'https://images.unsplash.com/photo-1566073771259-6a6d97dfc61d?w=800',
+      amenities: ['wifi', 'spa', 'restaurant', 'gym', 'parking'],
+      minRate: 950
+    },
+    rooms: [{ roomId: 'room-2', roomName: 'Deluxe Room', rates: [{ rateId: 'r3', totalRate: 950, boardType: 'Breakfast', cancellation: { refundable: true } }] }],
+    totalRate: 950
+  },
+  {
+    hotel: {
+      hotelId: 'plaza-nyc',
+      name: 'The Plaza',
+      address: '768 5th Avenue',
+      city: 'New York',
+      country: 'US',
+      starRating: 5,
+      rating: 4.7,
+      reviewCount: 3200,
+      description: 'Iconic landmark overlooking Central Park with legendary service.',
+      mainImage: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800',
+      amenities: ['wifi', 'spa', 'restaurant', 'gym', 'parking'],
+      minRate: 895
+    },
+    rooms: [{ roomId: 'room-3', roomName: 'Plaza Room', rates: [{ rateId: 'r4', totalRate: 895, boardType: 'Room Only', cancellation: { refundable: true } }] }],
+    totalRate: 895
+  },
+  {
+    hotel: {
+      hotelId: 'aman-tokyo',
+      name: 'Aman Tokyo',
+      address: 'Otemachi Tower',
+      city: 'Tokyo',
+      country: 'JP',
+      starRating: 5,
+      rating: 4.9,
+      reviewCount: 980,
+      description: 'Serene urban sanctuary blending Japanese traditions with modern luxury.',
+      mainImage: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800',
+      amenities: ['wifi', 'spa', 'restaurant', 'gym', 'pool'],
+      minRate: 1100
+    },
+    rooms: [{ roomId: 'room-4', roomName: 'Deluxe Room', rates: [{ rateId: 'r5', totalRate: 1100, boardType: 'Breakfast', cancellation: { refundable: true } }] }],
+    totalRate: 1100
+  },
+  {
+    hotel: {
+      hotelId: 'faena-miami',
+      name: 'Faena Miami Beach',
+      address: '3201 Collins Avenue',
+      city: 'Miami',
+      country: 'US',
+      starRating: 5,
+      rating: 4.8,
+      reviewCount: 1420,
+      description: 'Theatrical beachfront resort with bold design and vibrant nightlife.',
+      mainImage: 'https://images.unsplash.com/photo-1506966953602-c20cc11f75e3?w=800',
+      amenities: ['wifi', 'pool', 'spa', 'restaurant', 'gym', 'parking'],
+      minRate: 750
+    },
+    rooms: [{ roomId: 'room-5', roomName: 'Ocean View', rates: [{ rateId: 'r6', totalRate: 750, boardType: 'Room Only', cancellation: { refundable: true } }] }],
+    totalRate: 750
+  },
+  {
+    hotel: {
+      hotelId: 'hotel-de-paris',
+      name: 'Hôtel de Paris Monte-Carlo',
+      address: 'Place du Casino',
+      city: 'Monaco',
+      country: 'MC',
+      starRating: 5,
+      rating: 4.9,
+      reviewCount: 1150,
+      description: 'Belle Époque palace overlooking Casino Square with Michelin dining.',
+      mainImage: 'https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=800',
+      amenities: ['wifi', 'spa', 'restaurant', 'gym', 'pool', 'parking'],
+      minRate: 1350
+    },
+    rooms: [{ roomId: 'room-6', roomName: 'Superior Room', rates: [{ rateId: 'r7', totalRate: 1350, boardType: 'Breakfast', cancellation: { refundable: true } }] }],
+    totalRate: 1350
+  },
+  {
+    hotel: {
+      hotelId: 'marina-bay-sands',
+      name: 'Marina Bay Sands',
+      address: '10 Bayfront Avenue',
+      city: 'Singapore',
+      country: 'SG',
+      starRating: 5,
+      rating: 4.7,
+      reviewCount: 5200,
+      description: 'Architectural marvel with the world\'s largest rooftop infinity pool.',
+      mainImage: 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=800',
+      amenities: ['wifi', 'pool', 'spa', 'restaurant', 'gym', 'parking'],
+      minRate: 550
+    },
+    rooms: [{ roomId: 'room-7', roomName: 'Deluxe Room', rates: [{ rateId: 'r8', totalRate: 550, boardType: 'Room Only', cancellation: { refundable: true } }] }],
+    totalRate: 550
+  }
 ];
 
 // City code mapping
@@ -46,8 +183,7 @@ const HotelsView = ({ onBack }) => {
   // View state
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'tabs'
   const [filtersVisible, setFiltersVisible] = useState(false);
-  const [showHotelDetail, setShowHotelDetail] = useState(false);
-  const [selectedHotel, setSelectedHotel] = useState(null);
+  const [selectedHotelData, setSelectedHotelData] = useState(null); // For inline hotel detail
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -184,19 +320,22 @@ const HotelsView = ({ onBack }) => {
     }));
   };
 
-  // Handle hotel click
+  // Handle hotel click - show inline detail instead of navigating away
   const handleHotelClick = (hotelResult) => {
-    navigate(`/hotel/${hotelResult.hotel.hotelId}`, {
-      state: {
-        hotel: hotelResult.hotel,
-        availableRooms: hotelResult.rooms,
-        checkIn: checkInDate,
-        checkOut: checkOutDate,
-        adults,
-        children,
-        roomCount: rooms
-      }
+    setSelectedHotelData({
+      hotel: hotelResult.hotel,
+      availableRooms: hotelResult.rooms,
+      checkIn: checkInDate,
+      checkOut: checkOutDate,
+      adults,
+      children,
+      roomCount: rooms
     });
+  };
+
+  // Handle back from hotel detail
+  const handleBackFromDetail = () => {
+    setSelectedHotelData(null);
   };
 
   // Filter hotels
@@ -240,6 +379,16 @@ const HotelsView = ({ onBack }) => {
     setStarRating([]);
     setRegionFilter('all');
   };
+
+  // If hotel detail is selected, show inline detail view
+  if (selectedHotelData) {
+    return (
+      <HotelDetailInline
+        hotelData={selectedHotelData}
+        onBack={handleBackFromDetail}
+      />
+    );
+  }
 
   return (
     <div className="w-full flex-1 flex flex-col">
@@ -393,37 +542,157 @@ const HotelsView = ({ onBack }) => {
         </div>
       )}
 
-      {/* Popular Destinations - Show when no search yet */}
-      {!hasSearched && (
+      {/* Popular Hotels - Show when no search yet */}
+      {!hasSearched && !selectedHotelData && (
         <div className="mb-6">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Popular Destinations</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {popularDestinations.map((dest) => (
-              <button
-                key={dest.cityCode}
-                onClick={() => {
-                  setSelectedDestination(dest);
-                  setSearchQuery(dest.city);
-                  setTimeout(() => handleSearch(), 100);
-                }}
-                className={`relative overflow-hidden rounded-xl aspect-[4/3] group transition-all ${
-                  selectedDestination?.cityCode === dest.cityCode
-                    ? 'ring-2 ring-gray-800'
-                    : 'hover:ring-2 hover:ring-gray-300'
-                }`}
-              >
-                <img
-                  src={dest.image}
-                  alt={dest.city}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <div className="absolute bottom-3 left-3 text-white">
-                  <p className="font-semibold text-sm">{dest.city}</p>
-                  <p className="text-xs text-white/80">{dest.countryCode}</p>
+          <h3 className="text-sm font-medium text-gray-700 mb-3">Popular Hotels</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5">
+            {popularHotels.map((hotelData) => {
+              const hotel = hotelData.hotel;
+              const lowestRate = hotel.minRate || hotelData.totalRate;
+
+              return (
+                <div
+                  key={hotel.hotelId}
+                  onClick={() => handleHotelClick(hotelData)}
+                  className="bg-white/35 hover:bg-white/40 rounded-xl overflow-hidden hover:shadow-lg cursor-pointer border border-gray-300/50"
+                  style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                >
+                  {/* Mobile: Vertical stacked layout */}
+                  <div className="md:hidden">
+                    <div className="relative h-36 bg-white/10">
+                      <img
+                        src={hotel.mainImage}
+                        alt={hotel.name}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+                        <div className="bg-white/90 px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 backdrop-blur-sm">
+                          <Building2 size={10} className="text-gray-600" />
+                          <span className="text-gray-800">{hotel.starRating}★</span>
+                        </div>
+                      </div>
+                      <FavouriteButton
+                        item={{
+                          id: hotel.hotelId,
+                          type: 'hotel',
+                          name: hotel.name,
+                          location: hotel.city,
+                          image: hotel.mainImage,
+                          category: 'Hotel',
+                          price: `$${lowestRate}`,
+                          metadata: { starRating: hotel.starRating, rating: hotel.rating, amenities: hotel.amenities }
+                        }}
+                        variant="floating"
+                        size={16}
+                      />
+                    </div>
+                    <div className="p-3">
+                      <h3 className="text-sm font-semibold text-gray-800 mb-1 line-clamp-1">{hotel.name}</h3>
+                      <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
+                        <MapPin size={10} />
+                        <span className="line-clamp-1">{hotel.city}</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        <div className="text-center bg-gray-100/50 rounded-lg py-1.5">
+                          <span className="text-[10px] text-gray-500 block">From</span>
+                          <span className="text-xs font-semibold text-gray-800">${lowestRate}</span>
+                        </div>
+                        <div className="text-center bg-gray-100/50 rounded-lg py-1.5">
+                          <span className="text-[10px] text-gray-500 block">Rating</span>
+                          <span className="text-xs font-semibold text-gray-800">{hotel.rating?.toFixed(1) || 'N/A'}</span>
+                        </div>
+                        <div className="text-center bg-gray-100/50 rounded-lg py-1.5">
+                          <span className="text-[10px] text-gray-500 block">Reviews</span>
+                          <span className="text-xs font-semibold text-gray-800">{hotel.reviewCount || 0}</span>
+                        </div>
+                      </div>
+                      <button className="w-full py-2 bg-gray-800 text-white rounded-lg text-xs font-medium">
+                        View Details
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Desktop: Horizontal layout */}
+                  <div className="hidden md:flex h-64">
+                    <div className="w-2/5 bg-white/10 relative flex-shrink-0 rounded-l-xl overflow-hidden">
+                      <img
+                        src={hotel.mainImage}
+                        alt={hotel.name}
+                        className="w-full h-64 object-cover"
+                      />
+                      <div className="absolute top-3 left-3 flex flex-col space-y-1.5">
+                        <div className="flex space-x-1.5">
+                          <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium flex items-center space-x-1 backdrop-blur-sm">
+                            <Building2 size={12} className="text-gray-600" />
+                            <span className="text-gray-800">{hotel.starRating}★ Hotel</span>
+                          </div>
+                        </div>
+                      </div>
+                      <FavouriteButton
+                        item={{
+                          id: hotel.hotelId,
+                          type: 'hotel',
+                          name: hotel.name,
+                          location: hotel.city,
+                          image: hotel.mainImage,
+                          category: 'Hotel',
+                          price: `$${lowestRate}`,
+                          metadata: { starRating: hotel.starRating, rating: hotel.rating, amenities: hotel.amenities }
+                        }}
+                        variant="floating"
+                        size={18}
+                      />
+                    </div>
+                    <div className="flex-1 p-5 flex flex-col">
+                      <div className="flex items-center justify-between mb-3">
+                        <img
+                          src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_logo_vectorized.glb.png"
+                          alt="PrivateCharterX"
+                          className="h-6 w-auto object-contain"
+                        />
+                      </div>
+                      <h3 className="text-base font-semibold text-gray-800 mb-2 line-clamp-2 overflow-hidden">{hotel.name}</h3>
+                      <div className="flex items-center gap-1 text-sm text-gray-500 mb-3">
+                        <MapPin size={14} />
+                        <span>{hotel.address}, {hotel.city}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 mb-4">
+                        {(hotel.amenities || []).slice(0, 5).map((amenity, i) => (
+                          <span
+                            key={i}
+                            className="flex items-center gap-1 px-2 py-0.5 bg-gray-100/50 rounded text-[10px] text-gray-600 capitalize"
+                          >
+                            {getAmenityIcon(amenity)}
+                            {amenity}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex justify-between mt-auto mb-3">
+                        <div className="flex flex-col space-y-1">
+                          <span className="text-xs text-gray-600">From</span>
+                          <span className="text-sm font-semibold text-gray-800">${lowestRate}/night</span>
+                        </div>
+                        <div className="flex flex-col space-y-1">
+                          <span className="text-xs text-gray-600">Rating</span>
+                          <div className="flex items-center gap-1">
+                            <Star size={12} className="fill-yellow-400 text-yellow-400" />
+                            <span className="text-sm font-semibold text-gray-800">{hotel.rating?.toFixed(1) || 'N/A'}</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col space-y-1">
+                          <span className="text-xs text-gray-600">Reviews</span>
+                          <span className="text-sm font-semibold text-gray-800">{hotel.reviewCount || 0}</span>
+                        </div>
+                      </div>
+                      <div className="flex space-x-4 pt-4 border-t border-gray-600/30 text-xs">
+                        <span className="text-gray-600 hover:text-gray-800 cursor-pointer">Book now ↗</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </button>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
