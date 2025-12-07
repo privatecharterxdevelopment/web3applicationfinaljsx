@@ -43,7 +43,9 @@ export default function FloatingSearchModal() {
     'Family trip planned for the weekend?',
     'we try to beat the quote of others',
     'private island trip?',
-    'lets make your travel plans happen'
+    'lets make your travel plans happen',
+    'Book your stay at the Ritz Carlton',
+    'book a Night at Burj Al Arab'
   ];
 
   // Typing and deleting animation for titles
@@ -239,6 +241,9 @@ export default function FloatingSearchModal() {
         break;
       case 'helicopter':
         navigate('/dashboard?tab=helicopter');
+        break;
+      case 'hotels':
+        navigate('/dashboard?tab=hotels');
         break;
       case 'airportransfer':
         navigateWithAuth('/dashboard?tab=concierge&service=airport-transfer');
@@ -573,7 +578,7 @@ export default function FloatingSearchModal() {
 
         {/* RWA Categories */}
         <div className={`flex flex-wrap gap-1 sm:gap-2 px-0 transition-all duration-150 ${currentOpenSection === 'rwa' ? 'max-h-[300px] opacity-100 mt-2 sm:mt-3 mb-1 sm:mb-2' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-          {['p/jets', 'emptylegs', 'helicopter', 'airportransfer', 'concierge', 'SPV Formation', 'adventure package', 'holiday planer', 'travel designer', 'Co2 certificate'].map(cat => (
+          {['p/jets', 'emptylegs', 'helicopter', 'hotels', 'airportransfer', 'concierge', 'SPV Formation', 'adventure package', 'holiday planer', 'travel designer', 'Co2 certificate'].map(cat => (
             <div
               key={cat}
               onClick={() => handleRWAClick(cat)}
