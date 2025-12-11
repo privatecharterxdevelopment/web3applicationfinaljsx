@@ -109,12 +109,16 @@ const MessageBubble = memo(function MessageBubble({
                 >
                   Request Changes
                 </button>
-                <button
-                  onClick={() => onAction?.('pay_crypto', message.bookingData)}
-                  className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Pay with Crypto
-                </button>
+                {/* Only show Pay with Crypto if item has a valid price */}
+                {(message.bookingData.price || message.bookingData.price_usd || message.bookingData.basePrice) > 0 && (
+                  <button
+                    onClick={() => onAction?.('pay_crypto', message.bookingData)}
+                    className="px-3 py-1.5 bg-white/50 hover:bg-white/70 text-gray-700 text-xs rounded-lg transition-colors border border-gray-200/50"
+                    style={{ backdropFilter: 'blur(8px)' }}
+                  >
+                    Pay with Crypto
+                  </button>
+                )}
               </>
             )}
 

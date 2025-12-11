@@ -5254,8 +5254,16 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     const payableTypes = ['empty_legs', 'emptyleg', 'adventure', 'fixed_offer'];
                     // Exclude already paid items from calculations
                     const unpaidItems = cartItems.filter(item => !item.isPaid && item.paymentStatus !== 'pending_confirmation');
-                    const payableItems = unpaidItems.filter(item => payableTypes.includes(item.type));
-                    const requestOnlyItems = unpaidItems.filter(item => !payableTypes.includes(item.type));
+                    // Only consider items payable if they have a valid price > 0
+                    const payableItems = unpaidItems.filter(item =>
+                      payableTypes.includes(item.type) &&
+                      (item.price_usd || item.price || item.basePrice) > 0
+                    );
+                    const requestOnlyItems = unpaidItems.filter(item =>
+                      !payableTypes.includes(item.type) ||
+                      !(item.price_usd || item.price || item.basePrice) ||
+                      (item.price_usd || item.price || item.basePrice) <= 0
+                    );
                     const paidItems = cartItems.filter(item => item.isPaid || item.paymentStatus === 'pending_confirmation');
                     const hasPayableItems = payableItems.length > 0;
                     const hasRequestOnlyItems = requestOnlyItems.length > 0;
