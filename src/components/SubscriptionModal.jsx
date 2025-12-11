@@ -102,60 +102,70 @@ const SubscriptionModal = ({ isOpen, onClose, currentTier = 'explorer', onUpgrad
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-      <div className="bg-[#fafafa] rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative">
-        {/* Header - Left Aligned */}
-        <div className="p-6 border-b border-gray-200 relative">
-          <h2 className="text-2xl font-light text-gray-900 tracking-tight mb-1">Plans & Pricing</h2>
-          <p className="text-sm text-gray-500">Select the perfect plan for your needs</p>
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+      <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-xl max-h-[80vh] overflow-y-auto relative border border-gray-200/50">
+        {/* Header - Compact */}
+        <div className="p-4 border-b border-gray-100 relative">
+          <h2 className="text-base font-semibold text-gray-900">Plans & Pricing</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Select the perfect plan for your needs</p>
           <button
             onClick={onClose}
-            className="absolute top-6 right-6 p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="absolute top-3 right-3 p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <X size={24} className="text-gray-400" />
+            <X size={16} className="text-gray-400" />
           </button>
         </div>
 
-        {/* Plans Grid - Only 3 Plans */}
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Plans Grid - Compact Vertical Stack */}
+        <div className="p-3">
+          <div className="space-y-2">
             {plans.map((plan) => (
               <div
                 key={plan.id}
                 onClick={() => handlePlanClick(plan)}
-                className={`group bg-white/50 backdrop-blur-sm border rounded-2xl p-6 hover:shadow-lg transition-all duration-300 cursor-pointer ${
-                  plan.popular ? 'border-gray-900 ring-1 ring-gray-900/10' : 'border-gray-200 hover:border-gray-300'
+                className={`group bg-white/50 backdrop-blur-sm border rounded-xl p-3 hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-[1.01] ${
+                  plan.popular ? 'border-gray-800 ring-1 ring-gray-800/10' : 'border-gray-200/60 hover:border-gray-300/60'
                 }`}
               >
-                {plan.popular && (
-                  <div className="mb-4">
-                    <span className="bg-gray-900 text-white px-3 py-1 rounded-full text-xs font-medium">
-                      MOST POPULAR
-                    </span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-semibold text-gray-900">
+                          {plan.name}
+                        </h3>
+                        {plan.popular && (
+                          <span className="bg-gray-900 text-white px-1.5 py-0.5 rounded text-[9px] font-medium">
+                            POPULAR
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-gray-500 text-[11px]">{plan.tagline}</p>
+                    </div>
                   </div>
-                )}
 
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                  {plan.name}
-                </h3>
-                <p className="text-gray-500 text-sm mb-3">{plan.tagline}</p>
-
-                <div className="mb-4">
-                  <span className="text-3xl font-light text-gray-900">${plan.price}</span>
-                  <span className="text-gray-500 text-sm">/{plan.period}</span>
+                  <div className="text-right">
+                    <span className="text-lg font-semibold text-gray-900">${plan.price}</span>
+                    <span className="text-gray-400 text-xs">/{plan.period}</span>
+                  </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {plan.tags.map((tag, index) => (
-                    <span key={index} className="bg-gray-100 px-2 py-1 rounded-full text-xs text-gray-700 border border-gray-200">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                  <div className="flex flex-wrap gap-1">
+                    {plan.tags.slice(0, 3).map((tag, index) => (
+                      <span key={index} className="bg-gray-100/80 px-1.5 py-0.5 rounded text-[9px] text-gray-600">
+                        {tag}
+                      </span>
+                    ))}
+                    {plan.tags.length > 3 && (
+                      <span className="text-[9px] text-gray-400">+{plan.tags.length - 3} more</span>
+                    )}
+                  </div>
 
-                <button className="w-full py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium">
-                  Select Plan
-                </button>
+                  <button className="px-3 py-1.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-[11px] font-medium">
+                    Select
+                  </button>
+                </div>
               </div>
             ))}
           </div>

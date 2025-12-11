@@ -2871,7 +2871,15 @@ const TokenizedAssetsGlassmorphic = () => {
           created_at: chat.created_at,
           updated_at: chat.updated_at
         }));
-        setChatHistory(formattedChats);
+        // Merge with existing chats to preserve any newly created chats not yet in DB
+        setChatHistory(prev => {
+          // Get IDs of chats from database
+          const dbChatIds = new Set(formattedChats.map(c => c.id));
+          // Keep any local chats that aren't in the database yet (newly created)
+          const localOnlyChats = prev.filter(c => !dbChatIds.has(c.id));
+          // Combine: local-only chats first (most recent), then DB chats
+          return [...localOnlyChats, ...formattedChats];
+        });
       }
     } catch (error) {
       console.error('Error fetching chat history:', error);
@@ -5556,21 +5564,22 @@ const TokenizedAssetsGlassmorphic = () => {
                               setActiveCategory('helicopter');
                             }
                           } else if (item.action === 'chat' || item.action === 'ai-chat') {
-                            // Navigate to AI Chat with query and trigger new chat
+                            // Navigate to AI Chat with query
+                            // Don't set activeChat here - let AIChat.jsx handle chat creation
                             const queryText = item.query || item.label || '';
                             setAiChatQuery(queryText);
-                            setActiveChat('new'); // Reset to new chat to trigger new session
-                            setActiveCategory('chat'); // Must be 'chat' to render AIChat component
+                            setActiveCategory('chat');
                           } else {
                             // Navigate to category
                             setActiveCategory(item.action);
                           }
                         }}
                         onOpenAIChat={(query) => {
-                          // Navigate to AI Chat with the query and trigger new chat
+                          // Navigate to AI Chat with the query
+                          // Don't set activeChat here - let AIChat.jsx handle chat creation
+                          // to avoid race condition where activeChat points to non-existent chat
                           setAiChatQuery(query);
-                          setActiveChat('new'); // Reset to new chat to trigger new session
-                          setActiveCategory('chat'); // Must be 'chat' to render AIChat component
+                          setActiveCategory('chat');
                         }}
                         placeholder="I need a..."
                       />

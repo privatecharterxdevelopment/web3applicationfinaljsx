@@ -54,7 +54,6 @@ const CryptoPaymentModal = ({ isOpen, onClose, service, serviceType, onSuccess }
   const [paymentUrl, setPaymentUrl] = useState(null);
   const [priceBreakdown, setPriceBreakdown] = useState(null);
   const [email, setEmail] = useState(user?.email || '');
-  const [step, setStep] = useState('details'); // 'details' | 'processing' | 'redirect' | 'success'
 
   // Get wallet address from connected wallet
   const walletAddress = address || '';
@@ -113,36 +112,42 @@ const CryptoPaymentModal = ({ isOpen, onClose, service, serviceType, onSuccess }
     return service?.currency || 'USD';
   };
 
-  // Reset state when modal opens
+  // Auto-create payment and redirect when modal opens
   useEffect(() => {
-    if (isOpen) {
-      setStep('details');
+    if (isOpen && !isLoading && !paymentUrl && !error) {
+      setError(null);
+      setEmail(user?.email || '');
+      // Automatically start payment creation
+      handleCreatePayment();
+    }
+  }, [isOpen]);
+
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
       setError(null);
       setPaymentUrl(null);
-      setEmail(user?.email || '');
+      setIsLoading(false);
     }
-  }, [isOpen, user]);
+  }, [isOpen]);
 
   const handleConnectWallet = () => {
     openWalletModal();
   };
 
   const handleCreatePayment = async () => {
-    if (!email) {
-      setError('Please enter your email address');
-      return;
-    }
+    // Use user email as default if available
+    const paymentEmail = email || user?.email || '';
 
     setIsLoading(true);
     setError(null);
-    setStep('processing');
 
     try {
       console.log('Creating payment with:', {
         serviceType,
         serviceId: service.id,
         userId: user?.id,
-        email,
+        email: paymentEmail,
         walletAddress,
         service
       });
@@ -152,24 +157,19 @@ const CryptoPaymentModal = ({ isOpen, onClose, service, serviceType, onSuccess }
 
       if (isTestMode) {
         console.log('🧪 DEV MODE: Simulating payment creation...');
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         const mockBookingId = `test-${Date.now()}`;
-        const basePrice = getServicePrice();
-        const platformFee = basePrice * 0.025;
-        const coingateFee = basePrice * 0.01;
-        const totalAmount = basePrice + platformFee + coingateFee;
+        const mockPaymentUrl = `https://sandbox.coingate.com/pay/${mockBookingId}`;
 
-        setPaymentUrl(`https://sandbox.coingate.com/pay/${mockBookingId}`);
-        setPriceBreakdown({
-          basePrice,
-          platformFee,
-          coingateFee,
-          totalAmount,
-          currency: getServiceCurrency(),
-          pvcxReward: totalAmount * 0.015
-        });
-        setStep('redirect');
+        // Direct redirect to CoinGate
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+          window.location.href = mockPaymentUrl;
+        } else {
+          window.open(mockPaymentUrl, '_blank');
+          onClose(); // Close modal after opening payment
+        }
         return;
       }
 
@@ -193,7 +193,7 @@ const CryptoPaymentModal = ({ isOpen, onClose, service, serviceType, onSuccess }
             serviceType: serviceType || service.type,
             serviceId: service.id,
             userId: user?.id,
-            email,
+            email: paymentEmail,
             walletAddress,
             contactName: user?.first_name ? `${user.first_name} ${user.last_name || ''}` : null
           })
@@ -219,26 +219,18 @@ const CryptoPaymentModal = ({ isOpen, onClose, service, serviceType, onSuccess }
         throw new Error(result.error || 'Failed to create payment');
       }
 
-      setPaymentUrl(result.paymentUrl);
-      setPriceBreakdown(result.priceBreakdown);
-      setStep('redirect');
-
-      // Auto-redirect after showing the URL
-      // Detect mobile and use appropriate redirect method
+      // Direct redirect to CoinGate - no intermediate modal
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      setTimeout(() => {
-        if (isMobile) {
-          // On mobile, redirect in the same window to avoid popup blockers
-          window.location.href = result.paymentUrl;
-        } else {
-          window.open(result.paymentUrl, '_blank');
-        }
-      }, 2000);
+      if (isMobile) {
+        window.location.href = result.paymentUrl;
+      } else {
+        window.open(result.paymentUrl, '_blank');
+        onClose(); // Close modal after opening payment
+      }
 
     } catch (err) {
       console.error('Payment creation error:', err);
       setError(err.message || 'Failed to create payment. Please try again.');
-      setStep('details');
     } finally {
       setIsLoading(false);
     }
@@ -266,7 +258,6 @@ const CryptoPaymentModal = ({ isOpen, onClose, service, serviceType, onSuccess }
     }
   };
 
-  const serviceDetails = getServiceDetails();
   const displayPrice = getServicePrice();
   const displayCurrency = getServiceCurrency();
 
@@ -275,207 +266,15 @@ const CryptoPaymentModal = ({ isOpen, onClose, service, serviceType, onSuccess }
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-        onClick={onClose}
+        onClick={!isLoading ? onClose : undefined}
       />
 
-      {/* Modal - Monochromatic Design */}
-      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
-        {/* Header */}
-        <div className="bg-black px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                <Bitcoin className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h2 className="text-white font-semibold">Pay with Crypto</h2>
-                <p className="text-white/60 text-sm">Secure payment via CoinGate</p>
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-full hover:bg-white/10 transition-colors"
-            >
-              <X className="w-5 h-5 text-white/70" />
-            </button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
-          {/* Service Info Card */}
-          <div className="bg-gray-50 rounded-xl p-4 mb-6">
-            <div className="flex items-start gap-4">
-              {(service?.image_url || service?.image || service?.aircraft_image) ? (
-                <img
-                  src={service.image_url || service.image || service.aircraft_image}
-                  alt={getServiceTitle()}
-                  className="w-20 h-20 rounded-lg object-cover"
-                />
-              ) : (
-                <div className="w-20 h-20 rounded-lg bg-black flex items-center justify-center">
-                  <Plane className="w-8 h-8 text-white" />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-bold text-gray-900 truncate">
-                  {getServiceTitle()}
-                </h3>
-                <p className="text-gray-500 text-sm mt-0.5">
-                  {getServiceDescription()}
-                </p>
-
-                {/* Service Details */}
-                {serviceDetails.length > 0 && (
-                  <div className="flex flex-wrap gap-3 mt-2">
-                    {serviceDetails.map((detail, idx) => (
-                      <div key={idx} className="flex items-center gap-1 text-xs text-gray-600">
-                        <detail.icon className="w-3.5 h-3.5" />
-                        <span>{detail.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <p className="text-xl font-bold text-black mt-2">
-                  {formatPrice(displayPrice, displayCurrency)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Step: Details */}
-          {step === 'details' && (
-            <>
-              {/* Email Input */}
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-medium mb-2">
-                  Email for receipt
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-black transition-all"
-                />
-              </div>
-
-              {/* Wallet Connection for PVCX Rewards */}
-              <div className="mb-6">
-                <label className="block text-gray-700 text-sm font-medium mb-2">
-                  Wallet for PVCX Rewards
-                  <span className="text-gray-400 font-normal ml-2">(Base Network)</span>
-                </label>
-
-                {isConnected && walletAddress ? (
-                  <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-green-50 border border-green-200">
-                    <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                      <Check className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-green-800">Wallet Connected</p>
-                      <p className="text-xs text-green-600 font-mono truncate">
-                        {walletAddress}
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleConnectWallet}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 hover:border-black hover:bg-gray-100 transition-all group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center">
-                        <Wallet className="w-4 h-4 text-white" />
-                      </div>
-                      <div className="text-left">
-                        <p className="text-sm font-medium text-gray-900">Connect Wallet</p>
-                        <p className="text-xs text-gray-500">To receive 1.5% PVCX rewards</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-black transition-colors" />
-                  </button>
-                )}
-              </div>
-
-              {/* Supported Cryptos */}
-              <div className="mb-6">
-                <p className="text-gray-700 text-sm font-medium mb-3">Supported cryptocurrencies</p>
-                <div className="flex gap-2 justify-center">
-                  {['BTC', 'ETH', 'USDC', 'USDT', 'LTC'].map((crypto) => {
-                    const Icon = CryptoIcons[crypto];
-                    return (
-                      <div
-                        key={crypto}
-                        className="flex flex-col items-center gap-1 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
-                      >
-                        <Icon />
-                        <span className="text-gray-600 text-xs font-medium">{crypto}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* PVCX Reward Banner */}
-              <div className="mb-6 p-4 rounded-xl bg-black text-white">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-white/10">
-                    <Sparkles className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">Earn 1.5% in $PVCX Rewards</p>
-                    <p className="text-white/60 text-sm">
-                      ~{formatPrice(displayPrice * 0.015, displayCurrency)} worth of $PVCX tokens
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Error Message */}
-              {error && (
-                <div className="mb-4 p-4 rounded-xl bg-red-50 border border-red-200 flex items-center gap-3">
-                  <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-                  <p className="text-red-700 text-sm">{error}</p>
-                </div>
-              )}
-
-              {/* Pay Button */}
-              <button
-                onClick={handleCreatePayment}
-                disabled={isLoading || !email}
-                className="w-full py-4 rounded-xl bg-black text-white font-bold text-lg hover:bg-gray-900 transition-all transform hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3"
-              >
-                <Bitcoin className="w-5 h-5" />
-                Continue to Payment
-              </button>
-
-              {/* Fee Info */}
-              <p className="text-gray-400 text-xs text-center mt-4">
-                Platform fee: 2.5% • Processing fee: 1% • Powered by CoinGate
-              </p>
-            </>
-          )}
-
-          {/* Step: Processing */}
-          {step === 'processing' && (
-            <div className="py-12 text-center">
-              <div className="relative mx-auto w-20 h-20 mb-6">
-                <div className="absolute inset-0 rounded-full border-4 border-gray-200" />
-                <div className="absolute inset-0 rounded-full border-4 border-black border-t-transparent animate-spin" />
-                <div className="absolute inset-4 rounded-full bg-gray-100 flex items-center justify-center">
-                  <Bitcoin className="w-6 h-6 text-black" />
-                </div>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Creating Payment...</h3>
-              <p className="text-gray-500">Please wait while we set up your crypto payment</p>
-            </div>
-          )}
-
-          {/* Step: Redirect - Keep loading while user completes payment on CoinGate */}
-          {step === 'redirect' && (
-            <div className="py-8 text-center">
+      {/* Simple Loading Modal - Direct redirect to CoinGate */}
+      <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+        <div className="p-8">
+          {/* Loading State */}
+          {isLoading && !error && (
+            <div className="text-center">
               <div className="relative mx-auto w-16 h-16 mb-6">
                 <div className="absolute inset-0 rounded-full border-4 border-gray-200" />
                 <div className="absolute inset-0 rounded-full border-4 border-black border-t-transparent animate-spin" />
@@ -483,54 +282,39 @@ const CryptoPaymentModal = ({ isOpen, onClose, service, serviceType, onSuccess }
                   <Bitcoin className="w-6 h-6 text-black" />
                 </div>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Complete Payment</h3>
-              <p className="text-gray-500 mb-6">Finish your payment on CoinGate to confirm</p>
-
-              {/* Price Breakdown */}
-              {priceBreakdown && (
-                <div className="mb-6 p-4 rounded-xl bg-gray-50 text-left">
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Base Price</span>
-                      <span className="text-gray-900 font-medium">{formatPrice(priceBreakdown.basePrice, priceBreakdown.currency)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Platform Fee (2.5%)</span>
-                      <span className="text-gray-900">{formatPrice(priceBreakdown.platformFee, priceBreakdown.currency)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Processing Fee (1%)</span>
-                      <span className="text-gray-900">{formatPrice(priceBreakdown.coingateFee, priceBreakdown.currency)}</span>
-                    </div>
-                    <div className="border-t border-gray-200 pt-2 flex justify-between font-bold">
-                      <span className="text-gray-900">Total</span>
-                      <span className="text-black">{formatPrice(priceBreakdown.totalAmount, priceBreakdown.currency)}</span>
-                    </div>
-                    {walletAddress && (
-                      <div className="border-t border-gray-200 pt-2 flex justify-between text-green-600">
-                        <span>PVCX Reward</span>
-                        <span className="font-medium">+{formatPrice(priceBreakdown.totalAmount * 0.015, priceBreakdown.currency)}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {paymentUrl && (
-                <a
-                  href={paymentUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-black text-white font-bold hover:bg-gray-900 transition-all"
-                >
-                  <ExternalLink className="w-5 h-5" />
-                  Open Payment Page
-                </a>
-              )}
-
-              <p className="text-gray-400 text-xs mt-4">
-                Complete the payment on CoinGate to confirm your booking
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Opening CoinGate...</h3>
+              <p className="text-gray-500 text-sm">Preparing your crypto payment</p>
+              <p className="text-xl font-bold text-black mt-4">
+                {formatPrice(displayPrice, displayCurrency)}
               </p>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && (
+            <div className="text-center">
+              <div className="mx-auto w-16 h-16 mb-6 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertCircle className="w-8 h-8 text-red-500" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Payment Error</h3>
+              <p className="text-red-600 text-sm mb-6">{error}</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={onClose}
+                  className="flex-1 px-4 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setError(null);
+                    handleCreatePayment();
+                  }}
+                  className="flex-1 px-4 py-3 rounded-xl bg-black text-white font-medium hover:bg-gray-900 transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
             </div>
           )}
         </div>

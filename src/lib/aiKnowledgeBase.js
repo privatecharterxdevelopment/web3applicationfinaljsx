@@ -463,10 +463,21 @@ export const SERVICES = {
 
     keywords: ["taxi", "car", "chauffeur", "transfer", "ground transport", "limousine", "pickup"],
 
+    // IMPORTANT: For taxi requests, call searchAirportTransfer IMMEDIATELY
+    // Show vehicles first, then direct user to Ground Transport page
+    // Ask ONE follow-up question max: "Where would you like to go from [pickup]?"
+    aiInstructions: `When user asks about taxi/transfer:
+1. IMMEDIATELY call searchAirportTransfer tool (no parameters required)
+2. Show available vehicles in results
+3. Say: "Here are our chauffeur vehicles. For the easiest booking, go to **Ground Transport** in the menu - you can set pickup and destination on our interactive map."
+4. If they want to book via chat, ask ONE question: "Where would you like to go from/to?" (both in same question)
+5. NEVER ask multiple sequential questions`,
+
     searchBehavior: {
       minResults: 3,
       maxResults: 6,
-      filterFields: ["category", "location", "passengers"]
+      filterFields: ["category", "location", "passengers"],
+      immediateSearch: true  // Search without waiting for all parameters
     },
 
     categories: {
@@ -1664,7 +1675,7 @@ ONLY search the database for BOOKABLE services:
 - Private jet/charter → Search "jets" database, show 5-8 results
 - Helicopter → Search "helicopters" database, show 3-5 results
 - Yacht/boat → INQUIRY ONLY - collect details via sequential questions
-- Car/taxi/transfer → Search "taxi_cars" database, show 3+ results
+- Car/taxi/transfer → IMMEDIATELY call searchAirportTransfer tool, show vehicles, then direct user to Ground Transport page for easy booking with interactive map. Ask ONE follow-up question max if needed (pickup + destination in same question).
 - Luxury car/Ferrari/Lamborghini/supercar → Search "luxury_cars" database, show 5+ results
 - Adventure/package → Search "fixed_offers" database, direct checkout available
 

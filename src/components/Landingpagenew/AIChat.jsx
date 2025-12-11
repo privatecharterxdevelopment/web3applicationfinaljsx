@@ -3654,8 +3654,21 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             </h2>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Cart & Send Request buttons hidden - available in cart sidebar and bottom area */}
+          <div className="flex items-center gap-2">
+            {/* Cart icon - always visible */}
+            <button
+              onClick={() => setShowCartSidebar(true)}
+              className="relative p-2 rounded-xl bg-white/40 hover:bg-white/60 text-gray-700 transition-all duration-200 border border-gray-200/40 hover:border-gray-300/50 group"
+              style={{ backdropFilter: 'blur(8px)' }}
+              title="View Cart"
+            >
+              <ShoppingCart size={16} className="group-hover:scale-105 transition-transform" />
+              {cartItems.length > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-gray-900 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                  {cartItems.length}
+                </span>
+              )}
+            </button>
 
             {/* Voice Mute Toggle - hidden for now
             <button
@@ -3670,31 +3683,32 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             {/* Chat Counter - Clickable to open subscriptions */}
             <button
               onClick={() => setShowSubscriptionModal(true)}
-              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-900 transition-colors flex items-center gap-2"
+              className="px-2.5 py-1.5 bg-white/40 hover:bg-white/60 rounded-xl text-xs font-medium text-gray-700 transition-all duration-200 flex items-center gap-1.5 border border-gray-200/40 hover:border-gray-300/50"
+              style={{ backdropFilter: 'blur(8px)' }}
               title="Click to manage subscription"
             >
               {userSubscriptionLimits?.tier === 'elite' ? (
-                <span className="flex items-center gap-1.5 text-gray-800">
-                  <Crown size={14} />
-                  <span>Elite</span>
+                <span className="flex items-center gap-1">
+                  <Crown size={12} className="text-amber-600" />
+                  <span className="text-gray-700">Elite</span>
                 </span>
               ) : userSubscriptionLimits?.tier === 'pro' ? (
-                <span className="flex items-center gap-1.5">
+                <span className="flex items-center gap-1">
                   <span className="text-gray-600">Pro</span>
-                  <span className="text-gray-400">•</span>
-                  <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 20}</span>
+                  <span className="text-gray-300">•</span>
+                  <span className="text-gray-500">{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 20}</span>
                 </span>
               ) : userSubscriptionLimits?.tier === 'starter' ? (
-                <span className="flex items-center gap-1.5">
+                <span className="flex items-center gap-1">
                   <span className="text-gray-600">Starter</span>
-                  <span className="text-gray-400">•</span>
-                  <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 5}</span>
+                  <span className="text-gray-300">•</span>
+                  <span className="text-gray-500">{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 5}</span>
                 </span>
               ) : (
-                <span className="flex items-center gap-1.5">
+                <span className="flex items-center gap-1">
                   <span className="text-gray-500">Free</span>
-                  <span className="text-gray-400">•</span>
-                  <span>{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 2}</span>
+                  <span className="text-gray-300">•</span>
+                  <span className="text-gray-400">{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 2}</span>
                 </span>
               )}
             </button>
@@ -3702,10 +3716,11 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             {/* Report Issue Button */}
             <button
               onClick={() => setShowReportIssueModal(true)}
-              className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors"
+              className="p-2 bg-white/40 hover:bg-white/60 rounded-xl text-gray-500 hover:text-gray-700 transition-all duration-200 border border-gray-200/40 hover:border-gray-300/50"
+              style={{ backdropFilter: 'blur(8px)' }}
               title="Report an issue"
             >
-              <AlertCircle size={16} />
+              <AlertCircle size={14} />
             </button>
 
             {/* Cart Button - Hidden from header, available in cart sidebar */}
@@ -5232,7 +5247,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     );
                   })()}
 
-                  {/* Smart checkout: split payable vs request-only items */}
+                  {/* Smart checkout: Two simple buttons */}
                   {(() => {
                     const payableTypes = ['empty_legs', 'emptyleg', 'adventure', 'fixed_offer'];
                     // Exclude already paid items from calculations
@@ -5240,19 +5255,14 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     const payableItems = unpaidItems.filter(item => payableTypes.includes(item.type));
                     const requestOnlyItems = unpaidItems.filter(item => !payableTypes.includes(item.type));
                     const paidItems = cartItems.filter(item => item.isPaid || item.paymentStatus === 'pending_confirmation');
-                    const allPayable = requestOnlyItems.length === 0 && payableItems.length > 0;
-                    const allRequestOnly = payableItems.length === 0 && requestOnlyItems.length > 0;
-                    const hasMixedCart = payableItems.length > 0 && requestOnlyItems.length > 0;
+                    const hasPayableItems = payableItems.length > 0;
+                    const hasRequestOnlyItems = requestOnlyItems.length > 0;
                     const onlyPaidItems = unpaidItems.length === 0 && paidItems.length > 0;
 
-                    // Calculate totals with 8.1% VAT
+                    // Calculate totals for payable items
                     const payableSubtotal = payableItems.reduce((sum, item) => sum + (item.price_usd || item.price || item.basePrice || 0), 0);
                     const payableVAT = payableSubtotal * 0.081;
                     const payableTotal = payableSubtotal + payableVAT;
-
-                    const requestSubtotal = requestOnlyItems.reduce((sum, item) => sum + (item.price_usd || item.price || item.basePrice || 0), 0);
-                    const requestVAT = requestSubtotal * 0.081;
-                    const requestTotal = requestSubtotal + requestVAT;
 
                     // Helper function to save booking to database (for tracking purposes)
                     const saveBookingToDatabase = async (item, status = 'pending') => {
@@ -5334,18 +5344,18 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     // If all items are already paid
                     if (onlyPaidItems) {
                       return (
-                        <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                        <div className="bg-green-50/80 rounded-xl p-4 border border-green-200/50" style={{ backdropFilter: 'blur(8px)' }}>
                           <div className="flex items-center gap-2 mb-2">
-                            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                            <span className="text-sm font-semibold text-green-800">All Payments Initiated</span>
+                            <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
+                            <span className="text-xs font-semibold text-green-800">All Payments Initiated</span>
                           </div>
-                          <p className="text-xs text-green-700 mb-3">
+                          <p className="text-[11px] text-green-700 mb-3">
                             Your payment{paidItems.length > 1 ? 's are' : ' is'} being processed via CoinGate.
-                            Check your email for confirmation.
                           </p>
                           <button
                             onClick={() => setShowCartSidebar(false)}
-                            className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg transition-all"
+                            className="w-full px-3 py-2 bg-white/60 hover:bg-white/80 text-green-800 text-xs font-medium rounded-lg transition-all border border-green-200/50"
+                            style={{ backdropFilter: 'blur(4px)' }}
                           >
                             Continue Browsing
                           </button>
@@ -5353,32 +5363,16 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       );
                     }
 
-                    if (allPayable) {
-                      // All items can be paid directly - process first item
-                      const firstPayableItem = payableItems[0];
-                      return (
-                        <div className="space-y-2">
-                          {/* Show pay now breakdown */}
-                          <div className="bg-gray-100 rounded-lg p-3 mb-2">
-                            <div className="flex justify-between text-xs text-gray-600 mb-1">
-                              <span>Subtotal</span>
-                              <span>${payableSubtotal.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between text-xs text-gray-600 mb-1">
-                              <span>VAT (8.1%)</span>
-                              <span>${payableVAT.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                            </div>
-                            <div className="flex justify-between text-sm font-bold text-gray-900 pt-1 border-t border-gray-300">
-                              <span>To Pay Now</span>
-                              <span>${payableTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                            </div>
-                          </div>
+                    // Two simple buttons: Pay with Crypto (if payable items exist) OR Send Request
+                    return (
+                      <div className="flex gap-2">
+                        {/* Pay with Crypto button - only show if there are payable items */}
+                        {hasPayableItems && (
                           <button
                             onClick={async () => {
-                              // Save to bookings and AI requests before opening payment
+                              const firstPayableItem = payableItems[0];
                               await saveBookingToDatabase(firstPayableItem, 'pending');
                               await saveToAIRequests(firstPayableItem);
-
                               setShowCartSidebar(false);
                               setSelectedPaymentItem({
                                 ...firstPayableItem,
@@ -5388,160 +5382,28 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                               });
                               setShowCryptoPayment(true);
                             }}
-                            className="w-full px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-300 hover:border-gray-400"
+                            className="flex-1 px-3 py-2.5 bg-white/50 hover:bg-white/70 text-gray-800 text-xs font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-200/50 hover:border-gray-300/50"
+                            style={{ backdropFilter: 'blur(8px)' }}
                           >
                             <Wallet size={14} />
-                            Pay ${payableTotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} with Crypto
+                            Pay with Crypto
                           </button>
-                        </div>
-                      );
-                    } else if (allRequestOnly) {
-                      // All items need to be requested
-                      return (
+                        )}
+
+                        {/* Send Request button - always show */}
                         <button
                           onClick={() => {
                             setShowCartSidebar(false);
                             setShowRequestForm(true);
                           }}
-                          className="w-full px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-300 hover:border-gray-400"
+                          className={`${hasPayableItems ? 'flex-1' : 'w-full'} px-3 py-2.5 bg-gray-900/90 hover:bg-gray-800 text-white text-xs font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-700/50`}
+                          style={{ backdropFilter: 'blur(8px)' }}
                         >
                           <Send size={14} />
                           Send Request
                         </button>
-                      );
-                    } else {
-                      // Mixed cart: some payable, some request-only
-                      return (
-                        <div className="space-y-2">
-                          {/* Pay now section */}
-                          <div className="bg-gray-100 rounded-lg p-3 mb-2">
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
-                              <span className="text-xs font-semibold text-gray-800">Pay Now (Direct Booking)</span>
-                            </div>
-                            <div className="text-[10px] text-gray-600 pl-4 mb-2">
-                              {payableItems.map(i => i.name || i.title).join(', ')}
-                            </div>
-                            <div className="pl-4 space-y-1 text-[10px]">
-                              <div className="flex justify-between text-gray-600">
-                                <span>Subtotal</span>
-                                <span>${payableSubtotal.toLocaleString()}</span>
-                              </div>
-                              <div className="flex justify-between text-gray-600">
-                                <span>VAT (8.1%)</span>
-                                <span>${payableVAT.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                              </div>
-                              <div className="flex justify-between font-bold text-gray-900 pt-1 border-t border-gray-300">
-                                <span>To Pay</span>
-                                <span>${payableTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Request section */}
-                          <div className="bg-gray-50 rounded-lg p-3 mb-2">
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                              <span className="text-xs font-semibold text-gray-700">On Request (Quote Required)</span>
-                            </div>
-                            <div className="text-[10px] text-gray-600 pl-4 mb-2">
-                              {requestOnlyItems.map(i => i.name || i.title || i.aircraft_type).join(', ')}
-                            </div>
-                            <div className="pl-4 space-y-1 text-[10px]">
-                              <div className="flex justify-between text-gray-600">
-                                <span>Est. Subtotal</span>
-                                <span>~${requestSubtotal.toLocaleString()}</span>
-                              </div>
-                              <div className="flex justify-between text-gray-600">
-                                <span>Est. VAT (8.1%)</span>
-                                <span>~${requestVAT.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                              </div>
-                              <div className="flex justify-between font-bold text-gray-700 pt-1 border-t border-gray-200">
-                                <span>Est. Total</span>
-                                <span>~${requestTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <button
-                            onClick={async () => {
-                              // First, save payable item to bookings and AI requests
-                              const firstPayableItem = payableItems[0];
-                              await saveBookingToDatabase(firstPayableItem, 'pending');
-                              await saveToAIRequests(firstPayableItem);
-
-                              // Then, create request for request-only items
-                              try {
-                                if (user?.id) {
-                                  const requestData = {
-                                    source: 'ai_chat_mixed_cart',
-                                    request_id: `AI-MIX-${Date.now()}`,
-                                    items: requestOnlyItems.map(item => ({
-                                      ...item,
-                                      type: item.type,
-                                      name: item.name || item.title || item.aircraft_type || item.model,
-                                      base_price: item.price || item.basePrice || item.price_usd,
-                                      vat_8_1_percent: (item.price || item.basePrice || item.price_usd || 0) * 0.081,
-                                      total_with_vat: (item.price || item.basePrice || item.price_usd || 0) * 1.081,
-                                      from: item.from || item.from_city || item.origin,
-                                      to: item.to || item.to_city || item.destination,
-                                      date: item.date || item.departure_date,
-                                      passengers: item.passengers || item.pax,
-                                    })),
-                                    summary: {
-                                      total_items: requestOnlyItems.length,
-                                      subtotal: requestSubtotal,
-                                      vat_8_1_percent: requestVAT,
-                                      grand_total_with_vat: requestTotal,
-                                      note: 'Auto-created from mixed cart - user paid for other items'
-                                    },
-                                    paid_items_reference: payableItems.map(i => i.name || i.title).join(', '),
-                                    created_via: 'sphera_ai_mixed_cart',
-                                    conversation_id: activeChat
-                                  };
-
-                                  await supabase
-                                    .from('user_requests')
-                                    .insert([{
-                                      user_id: user.id,
-                                      type: 'ai_chat_bulk',
-                                      status: 'pending',
-                                      client_email: user.email,
-                                      data: requestData
-                                    }]);
-                                }
-                              } catch (err) {
-                                console.error('Error creating request for mixed cart:', err);
-                              }
-
-                              // Then open payment for first payable item
-                              setShowCartSidebar(false);
-                              setSelectedPaymentItem({
-                                ...firstPayableItem,
-                                price: payableSubtotal,
-                                price_with_vat: payableTotal,
-                                vat_amount: payableVAT
-                              });
-                              setShowCryptoPayment(true);
-                            }}
-                            className="w-full px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-300 hover:border-gray-400"
-                          >
-                            <Wallet size={14} />
-                            Pay ${payableTotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} & Send Request
-                          </button>
-                          <button
-                            onClick={() => {
-                              setShowCartSidebar(false);
-                              setShowRequestForm(true);
-                            }}
-                            className="w-full px-3 py-2 bg-white hover:bg-gray-50 text-gray-600 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-200 hover:border-gray-300"
-                          >
-                            <Send size={14} />
-                            Send All as Request Instead
-                          </button>
-                        </div>
-                      );
-                    }
+                      </div>
+                    );
                   })()}
                 </div>
               </>
@@ -5828,13 +5690,6 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         isOpen={showSubscriptionModal}
         onClose={() => setShowSubscriptionModal(false)}
         currentTier={userProfile?.subscription_tier || 'explorer'}
-        onUpgrade={async (tierId) => {
-          // Handle Stripe checkout for subscription upgrade
-          console.log('Upgrade to:', tierId);
-          // TODO: Implement Stripe checkout
-          // After successful upgrade, reload profile
-          await loadUserProfile();
-        }}
       />
 
       {/* Break the Price Modal */}
