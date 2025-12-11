@@ -265,29 +265,29 @@ export const aiToolDefinitions = [
   },
   {
     name: "searchAirportTransfer",
-    description: "Search for airport transfers and taxi services. IMPORTANT: If the user only mentions the airport but NOT the final destination (hotel, address, city center), you MUST ask them for their destination BEFORE calling this tool. Once you have both pickup (airport) and destination, call this tool to get available vehicles with estimated pricing based on distance.",
+    description: "Search for airport transfers, taxi, and chauffeur services. Call this tool immediately when user mentions taxi, transfer, chauffeur, airport pickup, or ground transport. Show available vehicles and direct user to the Ground Transport page for easy booking. For direct taxi bookings, guide users to the Ground Transport page where they can enter pickup/dropoff locations on an interactive map.",
     input_schema: {
       type: "object",
       properties: {
         from: {
           type: "string",
-          description: "Pickup location - usually an airport (e.g., 'Milan Malpensa', 'MXP', 'Zurich Airport')"
+          description: "Pickup location - airport, hotel, address, or city"
         },
         to: {
           type: "string",
-          description: "Final destination - hotel name, address, or landmark (e.g., 'Park Hyatt Milan', 'Four Seasons Geneva', 'city center')"
+          description: "Destination - hotel name, address, or landmark (optional)"
         },
         toCity: {
           type: "string",
-          description: "City of destination (e.g., 'Milan', 'Geneva', 'Zurich')"
+          description: "City of destination"
         },
         passengers: {
           type: "number",
-          description: "Total number of passengers - important for vehicle selection"
+          description: "Number of passengers (default: 1)"
         },
         vehicles: {
           type: "number",
-          description: "Number of vehicles needed (e.g., 2 for 8 passengers)"
+          description: "Number of vehicles needed"
         },
         date: {
           type: "string",
@@ -299,10 +299,10 @@ export const aiToolDefinitions = [
         },
         flightNumber: {
           type: "string",
-          description: "Flight number for airport pickups (for flight tracking)"
+          description: "Flight number for airport pickups"
         }
       },
-      required: ["from", "to", "passengers"]
+      required: []
     }
   },
   {
@@ -470,133 +470,22 @@ export const aiToolDefinitions = [
       required: ["serviceType", "name"]
     }
   },
-  {
-    name: "searchHotels",
-    description: "Search for hotels in a specific city or destination. Use this when users ask about hotels, accommodations, places to stay, or lodging. Returns hotel options with availability, prices, amenities, and ratings.",
-    input_schema: {
-      type: "object",
-      properties: {
-        city: {
-          type: "string",
-          description: "City name to search for hotels (e.g., 'Dubai', 'Paris', 'London', 'New York')"
-        },
-        checkIn: {
-          type: "string",
-          description: "Check-in date in YYYY-MM-DD format"
-        },
-        checkOut: {
-          type: "string",
-          description: "Check-out date in YYYY-MM-DD format"
-        },
-        guests: {
-          type: "number",
-          description: "Number of guests/adults"
-        },
-        rooms: {
-          type: "number",
-          description: "Number of rooms needed (default: 1)"
-        },
-        starRating: {
-          type: "array",
-          items: { type: "number" },
-          description: "Filter by star rating (e.g., [4, 5] for 4 and 5 star hotels)"
-        },
-        maxPrice: {
-          type: "number",
-          description: "Maximum price per night in USD"
-        }
-      },
-      required: ["city"]
-    }
-  },
-  {
-    name: "getHotelDetails",
-    description: "Get detailed information about a specific hotel including rooms, rates, amenities, and reviews. Use this when a user wants more details about a specific hotel from the search results.",
-    input_schema: {
-      type: "object",
-      properties: {
-        hotelId: {
-          type: "string",
-          description: "The hotel ID from search results"
-        },
-        hotelName: {
-          type: "string",
-          description: "Name of the hotel"
-        },
-        checkIn: {
-          type: "string",
-          description: "Check-in date in YYYY-MM-DD format"
-        },
-        checkOut: {
-          type: "string",
-          description: "Check-out date in YYYY-MM-DD format"
-        },
-        guests: {
-          type: "number",
-          description: "Number of guests"
-        }
-      },
-      required: ["hotelId"]
-    }
-  },
-  {
-    name: "addHotelToCart",
-    description: "Add a hotel booking to the user's cart. Use when user confirms they want to book a specific hotel room. Requires hotel details, room selection, dates, and guest count.",
-    input_schema: {
-      type: "object",
-      properties: {
-        hotelId: {
-          type: "string",
-          description: "Hotel ID from search results"
-        },
-        hotelName: {
-          type: "string",
-          description: "Name of the hotel"
-        },
-        hotelCity: {
-          type: "string",
-          description: "City where the hotel is located"
-        },
-        hotelImage: {
-          type: "string",
-          description: "URL of the hotel image"
-        },
-        roomType: {
-          type: "string",
-          description: "Selected room type (e.g., 'Deluxe Room', 'Executive Suite')"
-        },
-        checkIn: {
-          type: "string",
-          description: "Check-in date in YYYY-MM-DD format"
-        },
-        checkOut: {
-          type: "string",
-          description: "Check-out date in YYYY-MM-DD format"
-        },
-        guests: {
-          type: "number",
-          description: "Number of guests"
-        },
-        rooms: {
-          type: "number",
-          description: "Number of rooms"
-        },
-        pricePerNight: {
-          type: "number",
-          description: "Price per night in USD"
-        },
-        totalPrice: {
-          type: "number",
-          description: "Total price for the stay"
-        },
-        boardType: {
-          type: "string",
-          description: "Meal plan (e.g., 'Room Only', 'Breakfast', 'Half Board')"
-        }
-      },
-      required: ["hotelName", "roomType", "checkIn", "checkOut", "guests", "pricePerNight"]
-    }
-  }
+  // HOTEL TOOLS DISABLED - LiteAPI hotels temporarily removed
+  // {
+  //   name: "searchHotels",
+  //   description: "Search for hotels in a specific city or destination...",
+  //   ...
+  // },
+  // {
+  //   name: "getHotelDetails",
+  //   description: "Get detailed information about a specific hotel...",
+  //   ...
+  // },
+  // {
+  //   name: "addHotelToCart",
+  //   description: "Add a hotel booking to the user's cart...",
+  //   ...
+  // }
 ];
 
 /**
@@ -643,14 +532,13 @@ export async function executeTool(toolName, input) {
       case 'addToCart':
         return addToCart(input);
 
-      case 'searchHotels':
-        return await searchHotels(input);
-
-      case 'getHotelDetails':
-        return await getHotelDetails(input);
-
-      case 'addHotelToCart':
-        return addHotelToCart(input);
+      // HOTEL TOOLS DISABLED - LiteAPI hotels temporarily removed
+      // case 'searchHotels':
+      //   return await searchHotels(input);
+      // case 'getHotelDetails':
+      //   return await getHotelDetails(input);
+      // case 'addHotelToCart':
+      //   return addHotelToCart(input);
 
       default:
         return {
@@ -851,6 +739,7 @@ export async function searchEmptyLegs(params) {
 
 /**
  * Search for private jets
+ * Note: Uses getEstimatedFlightHours() defined after FLIGHT_DURATIONS constant
  */
 export async function searchPrivateJets(params) {
   const results = await UnifiedSearchService.searchAll({
@@ -861,11 +750,66 @@ export async function searchPrivateJets(params) {
     serviceTypes: { jets: true }
   });
 
+  // If we have from/to, calculate flight duration and estimated price for each jet
+  const { from, to } = params;
+  let jetsWithPricing = results.aircraft || [];
+
+  if (from && to) {
+    const flightHours = getEstimatedFlightHours(from, to);
+
+    if (flightHours) {
+      const hours = Math.floor(flightHours);
+      const minutes = Math.round((flightHours - hours) * 60);
+      const durationStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+
+      // Attach route info and calculated price to each jet
+      jetsWithPricing = jetsWithPricing.map(jet => {
+        const hourlyRate = jet.hourly_rate_eur || 0;
+        // Calculate price based on actual flight time (e.g., 1.5h × €9,000 = €13,500)
+        const estimatedPrice = Math.round(flightHours * hourlyRate);
+
+        return {
+          ...jet,
+          // Route info for cart calculation
+          from: from,
+          to: to,
+          from_city: from,
+          to_city: to,
+          route: `${from} → ${to}`,
+          // Flight calculation
+          flightHours: flightHours,
+          billedHours: flightHours, // Use actual hours, not rounded
+          estimatedDuration: durationStr,
+          flightDistance: Math.round(flightHours * (jet.speed_kts || 450)), // Approx distance in nm
+          // Price calculation
+          estimatedPrice: estimatedPrice,
+          price: estimatedPrice,
+          priceCalculation: hourlyRate ? `${durationStr} × €${hourlyRate.toLocaleString()}/hr` : null,
+          isEstimate: true
+        };
+      });
+    } else {
+      // No known flight duration - still attach route for reference
+      jetsWithPricing = jetsWithPricing.map(jet => ({
+        ...jet,
+        from: from,
+        to: to,
+        from_city: from,
+        to_city: to,
+        route: `${from} → ${to}`,
+        // Price will be calculated in addToCart using calculateDistance
+        isEstimate: true,
+        needsRouteCalculation: true
+      }));
+    }
+  }
+
   return {
     success: true,
-    results: results.aircraft || [],
-    total: results.aircraft?.length || 0,
-    params
+    results: jetsWithPricing,
+    total: jetsWithPricing.length,
+    params,
+    routeInfo: from && to ? { from, to } : null
   };
 }
 
@@ -881,11 +825,63 @@ export async function searchHelicopters(params) {
     serviceTypes: { helicopters: true }
   });
 
+  // If we have from/to, calculate flight duration and estimated price for each helicopter
+  const { from, to } = params;
+  let helicoptersWithPricing = results.helicopters || [];
+
+  if (from && to) {
+    // Helicopters are typically shorter range - use 150 kts average speed
+    const flightHours = getEstimatedFlightHours(from, to);
+
+    if (flightHours) {
+      // Helicopters often have minimum 30min billing, but calculate actual time
+      const actualHours = Math.max(0.5, flightHours); // Minimum 30 minutes
+      const hours = Math.floor(flightHours);
+      const minutes = Math.round((flightHours - hours) * 60);
+      const durationStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+
+      helicoptersWithPricing = helicoptersWithPricing.map(heli => {
+        const hourlyRate = heli.hourly_rate_eur || heli.price || 0;
+        // Calculate price based on actual flight time
+        const estimatedPrice = Math.round(actualHours * hourlyRate);
+
+        return {
+          ...heli,
+          from: from,
+          to: to,
+          from_city: from,
+          to_city: to,
+          route: `${from} → ${to}`,
+          flightHours: flightHours,
+          billedHours: actualHours,
+          estimatedDuration: durationStr,
+          flightDistance: Math.round(flightHours * (heli.speed_kts || 150)),
+          estimatedPrice: estimatedPrice,
+          price: estimatedPrice,
+          priceCalculation: hourlyRate ? `${durationStr} × €${hourlyRate.toLocaleString()}/hr` : null,
+          isEstimate: true
+        };
+      });
+    } else {
+      helicoptersWithPricing = helicoptersWithPricing.map(heli => ({
+        ...heli,
+        from: from,
+        to: to,
+        from_city: from,
+        to_city: to,
+        route: `${from} → ${to}`,
+        isEstimate: true,
+        needsRouteCalculation: true
+      }));
+    }
+  }
+
   return {
     success: true,
-    results: results.helicopters || [],
-    total: results.helicopters?.length || 0,
-    params
+    results: helicoptersWithPricing,
+    total: helicoptersWithPricing.length,
+    params,
+    routeInfo: from && to ? { from, to } : null
   };
 }
 
@@ -1355,23 +1351,84 @@ function calculateTransferPrice(distanceKm, vehiclesNeeded = 1) {
 }
 
 /**
+ * Default transfer vehicles - used when database is empty or as fallback
+ */
+const DEFAULT_TRANSFER_VEHICLES = [
+  {
+    id: 'bmw-7er-2015',
+    name: 'BMW 7 Series',
+    type: 'ground_transport',
+    seats: 4,
+    price_min_chf: 4.00,
+    price_max_chf: 7.50,
+    category: 'Executive Sedan',
+    image_url: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/uber%20imgs/sl_251110158_bmw-7-2015-seitenansicht_4x.png',
+    description: 'Luxury executive sedan with professional chauffeur'
+  },
+  {
+    id: 'mercedes-s-2018',
+    name: 'Mercedes S-Class',
+    type: 'ground_transport',
+    seats: 5,
+    price_min_chf: 4.50,
+    price_max_chf: 7.50,
+    category: 'First Class Sedan',
+    image_url: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/uber%20imgs/sl_253116175_mercedes-benz-s-2018-seitenansicht_4x.png',
+    description: 'Premium first-class sedan experience'
+  },
+  {
+    id: 'mercedes-vito',
+    name: 'Mercedes V-Class',
+    type: 'ground_transport',
+    seats: 7,
+    price_min_chf: 6.50,
+    price_max_chf: 9.00,
+    category: 'Executive Van',
+    image_url: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/uber%20imgs/vito.jpg',
+    description: 'Spacious luxury van for groups up to 7 passengers'
+  },
+  {
+    id: 'mercedes-maybach',
+    name: 'Mercedes Maybach',
+    type: 'ground_transport',
+    seats: 4,
+    price_min_chf: 8.00,
+    price_max_chf: 12.00,
+    category: 'Ultra Luxury',
+    image_url: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/uber%20imgs/sl_255110169_mercedes-benz-s-2020-seitenansicht_4x.png',
+    description: 'The ultimate in luxury chauffeur service'
+  }
+];
+
+/**
  * Search for airport transfers and taxi services
  * For chauffeur-driven transport, airport pickups, larger groups
  * Uses Mapbox for accurate distance/duration calculation
  */
 export async function searchAirportTransfer(params) {
-  const { from, to, toCity, passengers, vehicles, date, time, flightNumber } = params;
+  const { from, to, toCity, passengers, vehicles, date, time, flightNumber } = params || {};
 
-  const results = await UnifiedSearchService.searchAll({
-    q: from || to,
-    fromLocation: from,
-    location: to,
-    passengers: passengers,
-    serviceTypes: { taxi: true, groundTransport: true }
-  });
+  // Try to get vehicles from database
+  let transferVehicles = [];
 
-  // Get available transfer vehicles
-  let transferVehicles = results.groundTransport || results.taxi || [];
+  try {
+    const results = await UnifiedSearchService.searchAll({
+      q: from || to || 'transfer',
+      fromLocation: from,
+      location: to,
+      passengers: passengers,
+      serviceTypes: { taxi: true, groundTransport: true }
+    });
+    transferVehicles = results.groundTransport || results.luxuryCars || [];
+  } catch (err) {
+    console.error('Error fetching transfer vehicles:', err);
+  }
+
+  // Use default vehicles if database returned empty
+  if (transferVehicles.length === 0) {
+    console.log('📦 Using default transfer vehicles (database empty)');
+    transferVehicles = DEFAULT_TRANSFER_VEHICLES;
+  }
 
   // Calculate number of vehicles needed based on passenger count
   const passengersPerVehicle = 7; // Mercedes V-Class capacity
@@ -1523,6 +1580,19 @@ export async function searchAirportTransfer(params) {
       distanceKm ? `Distance: ${distanceKm} km` : null,
       durationMinutes ? `Drive time: ~${durationMinutes} min` : null,
       'Final price confirmed upon booking'
+    ].filter(Boolean),
+    // Direct booking link - guides user to Ground Transport page
+    groundTransportPage: {
+      available: true,
+      description: 'For the easiest booking experience, use our Ground Transport page with interactive map',
+      action: 'Navigate to Ground Transport in the sidebar menu',
+      category: 'ground-transport'
+    },
+    // Indicate if we have complete route info or need more details
+    needsMoreInfo: !from || !to,
+    missingInfo: [
+      !from ? 'pickup location' : null,
+      !to ? 'destination' : null
     ].filter(Boolean)
   };
 }
@@ -1607,6 +1677,43 @@ const FLIGHT_DURATIONS = {
   'hong kong-tokyo': 4.0,
   'singapore-tokyo': 7.0,
 };
+
+/**
+ * Get estimated flight duration between two cities
+ * Uses FLIGHT_DURATIONS lookup table
+ */
+function getEstimatedFlightHours(from, to) {
+  if (!from || !to) return null;
+
+  const fromCity = from.toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').replace(/airport/gi, '').trim();
+  const toCity = to.toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').replace(/airport/gi, '').trim();
+
+  // Try both directions in FLIGHT_DURATIONS
+  const routeKey1 = `${fromCity}-${toCity}`;
+  const routeKey2 = `${toCity}-${fromCity}`;
+
+  let hours = FLIGHT_DURATIONS[routeKey1] || FLIGHT_DURATIONS[routeKey2];
+
+  // Try partial matches
+  if (!hours) {
+    for (const [route, h] of Object.entries(FLIGHT_DURATIONS)) {
+      const [r1, r2] = route.split('-');
+      if ((fromCity.includes(r1) || r1.includes(fromCity)) &&
+          (toCity.includes(r2) || r2.includes(toCity))) {
+        hours = h;
+        break;
+      }
+      // Also try reverse match
+      if ((fromCity.includes(r2) || r2.includes(fromCity)) &&
+          (toCity.includes(r1) || r1.includes(toCity))) {
+        hours = h;
+        break;
+      }
+    }
+  }
+
+  return hours;
+}
 
 /**
  * Calculate estimated flight price

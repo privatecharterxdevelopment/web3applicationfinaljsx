@@ -794,11 +794,19 @@ const AIChat = ({
       console.log('🆕 Creating new chat with message:', newChatId);
 
       // Add to chat history and set as active
-      setChatHistory(prev => [newChat, ...prev]);
+      // IMPORTANT: Don't call onQueryProcessed() here - it causes a race condition
+      // The parent will clear initialQuery, but React may batch this before chatHistory updates
+      setChatHistory(prev => {
+        console.log('📚 Adding chat to history. Previous length:', prev.length);
+        return [newChat, ...prev];
+      });
       setActiveChat(newChatId);
 
-      // Clear the initial query prop so parent doesn't keep passing it
-      onQueryProcessed();
+      // Clear the initial query prop after a microtask to ensure state updates are flushed
+      // This prevents the race condition where initialQuery is cleared before chatHistory updates
+      Promise.resolve().then(() => {
+        onQueryProcessed();
+      });
     }
   }, [initialQuery, onQueryProcessed]);
 
@@ -885,35 +893,85 @@ const AIChat = ({
                 }
 
                 // Update chat with results and AI message
-                setChatHistory(prev => prev.map(c =>
-                  c.id === chatId
-                    ? { ...c, messages: [
-                        ...c.messages.filter(m => !m.isLoading),
+                setChatHistory(prev => {
+                  const existingChat = prev.find(c => c.id === chatId);
+                  if (!existingChat) {
+                    console.warn('⚠️ Chat not found in history during update, chatId:', chatId, '- recreating with query:', query);
+                    // Chat was lost - recreate it with the response
+                    const newChat = {
+                      id: chatId,
+                      title: query.split(' ').slice(0, 5).join(' ') + '...',
+                      date: 'Just now',
+                      messages: [
+                        { role: 'user', content: query },
                         ...(resultsMessage ? [resultsMessage] : []),
                         aiMessage
-                      ]}
-                    : c
-                ));
+                      ]
+                    };
+                    return [newChat, ...prev];
+                  }
+                  return prev.map(c =>
+                    c.id === chatId
+                      ? { ...c, messages: [
+                          ...c.messages.filter(m => !m.isLoading),
+                          ...(resultsMessage ? [resultsMessage] : []),
+                          aiMessage
+                        ]}
+                      : c
+                  );
+                });
               }
             } else {
               // Regular text response
               const textBlock = response.content.find(block => block.type === 'text');
               const aiMessage = { role: 'assistant', content: textBlock?.text || 'How can I help you today?' };
 
-              setChatHistory(prev => prev.map(c =>
-                c.id === chatId
-                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), aiMessage] }
-                  : c
-              ));
+              setChatHistory(prev => {
+                const existingChat = prev.find(c => c.id === chatId);
+                if (!existingChat) {
+                  console.warn('⚠️ Chat not found in history during text update, chatId:', chatId, '- recreating with query:', query);
+                  // Chat was lost - recreate it with the response
+                  const newChat = {
+                    id: chatId,
+                    title: query.split(' ').slice(0, 5).join(' ') + '...',
+                    date: 'Just now',
+                    messages: [
+                      { role: 'user', content: query },
+                      aiMessage
+                    ]
+                  };
+                  return [newChat, ...prev];
+                }
+                return prev.map(c =>
+                  c.id === chatId
+                    ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), aiMessage] }
+                    : c
+                );
+              });
             }
           } catch (error) {
             console.error('❌ Error processing initial query:', error);
             const errorMessage = { role: 'assistant', content: 'I apologize, but I encountered an error. Please try again or rephrase your request.' };
-            setChatHistory(prev => prev.map(c =>
-              c.id === chatId
-                ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), errorMessage] }
-                : c
-            ));
+            setChatHistory(prev => {
+              const existingChat = prev.find(c => c.id === chatId);
+              if (!existingChat) {
+                const newChat = {
+                  id: chatId,
+                  title: query.split(' ').slice(0, 5).join(' ') + '...',
+                  date: 'Just now',
+                  messages: [
+                    { role: 'user', content: query },
+                    errorMessage
+                  ]
+                };
+                return [newChat, ...prev];
+              }
+              return prev.map(c =>
+                c.id === chatId
+                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), errorMessage] }
+                  : c
+              );
+            });
           } finally {
             setIsProcessing(false);
           }
@@ -1020,8 +1078,24 @@ const AIChat = ({
     const isHelicopter = item.type === 'helicopters' || item.type === 'helicopter';
 
     if ((isJet || isHelicopter) && item.hourly_rate_eur) {
-      // FIRST: Check if item already has flightDistance and estimatedDuration (from search results)
-      if (item.flightDistance && item.estimatedDuration) {
+      // FIRST: Check if item already has estimatedPrice from search results (pre-calculated)
+      if (item.estimatedPrice && item.estimatedPrice > 0) {
+        // Use pre-calculated values from search
+        cartItem = {
+          ...cartItem,
+          flightDistanceNm: item.flightDistance,
+          flightTimeHours: item.flightHours || item.billedHours,
+          estimatedDuration: item.estimatedDuration,
+          billedHours: item.billedHours || item.flightHours,
+          estimatedPrice: item.estimatedPrice,
+          price: item.estimatedPrice,
+          basePrice: item.estimatedPrice,
+          totalWithFee: item.estimatedPrice,
+          isEstimate: true,
+          priceCalculation: item.priceCalculation || `${item.estimatedDuration} × €${item.hourly_rate_eur.toLocaleString()}/hr`,
+          route: item.route || `${item.from} → ${item.to}`
+        };
+      } else if (item.flightDistance && item.estimatedDuration) {
         // Parse duration to get hours (e.g., "2h 30m" -> 2.5)
         const durationMatch = item.estimatedDuration.match(/(\d+)h\s*(\d+)?m?/);
         let flightTimeHours = 1;
@@ -1029,11 +1103,8 @@ const AIChat = ({
           flightTimeHours = parseInt(durationMatch[1]) + (parseInt(durationMatch[2] || 0) / 60);
         }
 
-        // Round UP to nearest hour for billing
-        const billedHours = Math.ceil(flightTimeHours);
-
-        // Calculate estimated price
-        const estimatedPrice = billedHours * item.hourly_rate_eur;
+        // Calculate estimated price using ACTUAL flight time (not rounded)
+        const estimatedPrice = Math.round(flightTimeHours * item.hourly_rate_eur);
 
         // Add calculated fields to cart item
         cartItem = {
@@ -1041,13 +1112,13 @@ const AIChat = ({
           flightDistanceNm: item.flightDistance,
           flightTimeHours: flightTimeHours,
           estimatedDuration: item.estimatedDuration,
-          billedHours: billedHours,
+          billedHours: flightTimeHours,
           estimatedPrice: estimatedPrice,
           price: estimatedPrice,
           basePrice: estimatedPrice,
           totalWithFee: estimatedPrice,
           isEstimate: true,
-          priceCalculation: `${billedHours}h × €${item.hourly_rate_eur.toLocaleString()}/hr`,
+          priceCalculation: `${item.estimatedDuration} × €${item.hourly_rate_eur.toLocaleString()}/hr`,
           route: item.route || `${item.flightDistance.toLocaleString()} nm flight`
         };
       } else {
@@ -1066,11 +1137,8 @@ const AIChat = ({
             // Calculate flight time in hours
             const flightTimeHours = distanceNm / cruiseSpeedKts;
 
-            // Round UP to nearest hour for billing (40 min = 1 hour, 3h 20m = 4 hours)
-            const billedHours = Math.ceil(flightTimeHours);
-
-            // Calculate estimated price
-            const estimatedPrice = billedHours * item.hourly_rate_eur;
+            // Calculate estimated price using ACTUAL flight time (not rounded)
+            const estimatedPrice = Math.round(flightTimeHours * item.hourly_rate_eur);
 
             // Format duration string
             const hours = Math.floor(flightTimeHours);
@@ -1083,13 +1151,13 @@ const AIChat = ({
               flightDistanceNm: distanceNm,
               flightTimeHours: flightTimeHours,
               estimatedDuration: durationStr,
-              billedHours: billedHours,
+              billedHours: flightTimeHours,
               estimatedPrice: estimatedPrice,
               price: estimatedPrice,
               basePrice: estimatedPrice,
               totalWithFee: estimatedPrice,
               isEstimate: true,
-              priceCalculation: `${billedHours}h × €${item.hourly_rate_eur.toLocaleString()}/hr`,
+              priceCalculation: `${durationStr} × €${item.hourly_rate_eur.toLocaleString()}/hr`,
               route: `${origin} → ${destination}`
             };
           }
@@ -1527,6 +1595,11 @@ Your quote has been received and will be reviewed within 12 hours.`;
         if (only === 'helicopters') return 'helicopter_charter';
         if (only === 'luxury_cars' || only === 'cars') return 'luxury_car_rental';
         if (only === 'taxi_cars' || only === 'taxi' || only === 'transfer' || only === 'ground_transport') return 'ground_transport';
+        if (only === 'adventures' || only === 'adventure') return 'adventure_package';
+        // HOTELS DISABLED - LiteAPI hotels temporarily removed
+        // if (only === 'hotels' || only === 'hotel') return 'hotel_booking';
+        if (only === 'fixed_offer' || only === 'fixed_offers') return 'fixed_offer';
+        if (only === 'yachts' || only === 'yacht') return 'yacht_charter';
         return 'booking';
       };
 
@@ -3335,8 +3408,25 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
     }
   };
 
+  // If we have an initialQuery prop, show loading state while useEffect processes it
+  // This must come BEFORE the NEW CHAT VIEW check
+  if (initialQuery && initialQuery.trim() && !processedQueriesRef.current.has(initialQuery)) {
+    console.log('🎨 Rendering: INITIAL QUERY LOADING (waiting for useEffect to process)');
+    return (
+      <div className="h-full bg-transparent flex flex-col overflow-hidden">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800"></div>
+            <div className="text-gray-600 text-sm">Starting conversation...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // NEW CHAT VIEW - Welcome message with suggestion bubbles
-  if (activeChat === 'new') {
+  // Show this view if activeChat is 'new' or null (and no query being processed)
+  if (activeChat === 'new' || activeChat === null) {
     console.log('🎨 Rendering: NEW CHAT VIEW (welcome with suggestions)');
 
     // Quick suggestion bubbles - small, blurred, monochromatic
@@ -3509,8 +3599,25 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
   // This handles activeChat !== 'new' which shows the actual conversation
 
   if (!currentChat) {
-    console.log('⚠️ No currentChat found. Showing loading state. ActiveChat:', activeChat);
-    // Show loading state while chat is being added to history
+    console.log('⚠️ No currentChat found. ActiveChat:', activeChat, 'chatHistoryLength:', chatHistory.length);
+
+    // If activeChat is a numeric ID (not 'new' or null), we're waiting for chatHistory to sync
+    // This happens due to React state batching - activeChat updates before chatHistory prop arrives
+    // Show "Starting conversation" spinner while waiting
+    if (activeChat && activeChat !== 'new') {
+      return (
+        <div className="h-full bg-transparent flex flex-col overflow-hidden">
+          <div className="flex-1 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800"></div>
+              <div className="text-gray-600 text-sm">Starting conversation...</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Fallback loading state
     return (
       <div className="h-full bg-transparent flex flex-col overflow-hidden">
         <div className="flex-1 flex items-center justify-center">

@@ -60,8 +60,8 @@ const MyRequestsView = ({ user }) => {
 
   const getTypeLabel = (type) => {
     const labels = {
-      taxi_concierge: 'Taxi/Concierge',
-      ground_transport: 'Ground Transport',
+      taxi_concierge: 'Airport Transfer',
+      ground_transport: 'Airport Transfer',
       private_jet_charter: 'Private Jet Charter',
       helicopter_charter: 'Helicopter Charter',
       empty_leg: 'Empty Leg',
@@ -70,6 +70,9 @@ const MyRequestsView = ({ user }) => {
       adventure_package: 'Adventure Package',
       co2_certificate: 'CO2 Certificate',
       fixed_offer: 'Fixed Offer',
+      // hotel_booking: 'Hotel Booking', // DISABLED - LiteAPI hotels temporarily removed
+      yacht_charter: 'Yacht Charter',
+      booking: 'Multi-Service Booking',
       spv_formation: 'SPV Formation',
       tokenization: 'Asset Tokenization'
     };
@@ -131,23 +134,59 @@ const MyRequestsView = ({ user }) => {
 
             {/* Details Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 sm:gap-3 mb-3">
-              <div>
-                <p className="text-xs text-gray-600 mb-1">Distance</p>
-                <p className="text-sm font-semibold text-gray-800">{data.distance} km</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-600 mb-1">ETA</p>
-                <p className="text-sm font-semibold text-gray-800">{data.eta} min</p>
-              </div>
+              {data.distance && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Distance</p>
+                  <p className="text-sm font-semibold text-gray-800">{data.distance} km</p>
+                </div>
+              )}
+              {data.eta && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">ETA</p>
+                  <p className="text-sm font-semibold text-gray-800">{data.eta} min</p>
+                </div>
+              )}
               <div>
                 <p className="text-xs text-gray-600 mb-1">Pickup Time</p>
                 <p className="text-sm font-semibold text-gray-800">{data.pickupDate === 'Now' ? 'Now' : `${data.pickupDate} ${data.pickupTime}`}</p>
               </div>
-              <div>
-                <p className="text-xs text-gray-600 mb-1">Passengers</p>
-                <p className="text-sm font-semibold text-gray-800">{data.passengers}</p>
-              </div>
+              {data.passengers && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Passengers</p>
+                  <p className="text-sm font-semibold text-gray-800">{data.passengers}</p>
+                </div>
+              )}
+              {data.currency && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Currency</p>
+                  <p className="text-sm font-semibold text-gray-800">{data.currency}</p>
+                </div>
+              )}
+              {data.detectedCountry && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Region</p>
+                  <p className="text-sm font-semibold text-gray-800">{data.detectedCountry}</p>
+                </div>
+              )}
             </div>
+
+            {/* Extra Notes */}
+            {data.extraNotes && (
+              <div className="mb-3 p-3 bg-blue-50 rounded-lg">
+                <p className="text-xs font-medium text-blue-900 mb-1">Notes:</p>
+                <p className="text-xs text-blue-800">{data.extraNotes}</p>
+              </div>
+            )}
+
+            {/* Swiss Booking Badge */}
+            {data.isSwissBooking && (
+              <div className="mb-3">
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                  <Check size={12} />
+                  Instant Booking (Switzerland)
+                </span>
+              </div>
+            )}
 
             {/* Price */}
             <div className="p-3 bg-gradient-to-r from-gray-800 to-black rounded-lg">
@@ -521,18 +560,39 @@ const MyRequestsView = ({ user }) => {
       try { data = JSON.parse(data); } catch (e) { data = {}; }
     }
     data = data || {};
+
+    // Handle AI Chat cart submissions - extract first jet item
+    const jetItem = data.items?.find(i => i.type === 'jets' || i.type === 'aircraft') || data.items?.[0];
+
+    // Merge data from different sources
+    const aircraft = data.aircraft_model || data.aircraft || jetItem?.aircraft_model || jetItem?.model || jetItem?.name || data.manufacturer;
+    const passengers = data.passenger_capacity || data.capacity || data.passengers || jetItem?.max_passengers || jetItem?.passenger_capacity;
+    const route = data.route || jetItem?.route || (data.from && data.to ? `${data.from} → ${data.to}` : null) || (jetItem?.from && jetItem?.to ? `${jetItem.from} → ${jetItem.to}` : null);
+    const price = data.total || data.estimatedPrice || data.price || jetItem?.estimatedPrice || jetItem?.price;
+    const flightDuration = data.estimatedDuration || jetItem?.estimatedDuration;
+    const hourlyRate = data.hourly_rate_eur || jetItem?.hourly_rate_eur;
+    const category = data.category || jetItem?.category;
+    const jetImage = jetItem?.primaryImage || jetItem?.image_url || data.image_url;
+
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
         <div className="flex items-start gap-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center text-white flex-shrink-0">
-            <Plane size={24} />
-          </div>
+          {/* Jet Image or Icon */}
+          {jetImage ? (
+            <div className="flex-shrink-0">
+              <img src={jetImage} alt={aircraft} className="w-24 h-16 object-cover rounded-lg" />
+            </div>
+          ) : (
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center text-white flex-shrink-0">
+              <Plane size={24} />
+            </div>
+          )}
 
           <div className="flex-1">
             <div className="flex items-start justify-between mb-3">
               <div>
                 <h3 className="text-base font-semibold text-gray-800 mb-1">Private Jet Charter</h3>
-                <p className="text-sm text-gray-700 font-medium">{data.aircraft_model || data.manufacturer}</p>
+                <p className="text-sm text-gray-700 font-medium">{aircraft || 'Aircraft TBD'}</p>
               </div>
               <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${getStatusColor(request.status)}`}>
                 {getStatusIcon(request.status)}
@@ -540,12 +600,40 @@ const MyRequestsView = ({ user }) => {
               </div>
             </div>
 
+            {/* Route Info */}
+            {route && (
+              <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                  <span className="text-sm text-gray-800 font-medium">{route}</span>
+                </div>
+              </div>
+            )}
+
             {/* Details Grid */}
             <div className="grid grid-cols-2 gap-3 mb-3">
-              {data.passenger_capacity && (
+              {passengers && (
                 <div>
-                  <p className="text-xs text-gray-600 mb-1">Capacity</p>
-                  <p className="text-sm font-semibold text-gray-800">{data.passenger_capacity} passengers</p>
+                  <p className="text-xs text-gray-600 mb-1">Passengers</p>
+                  <p className="text-sm font-semibold text-gray-800">{passengers}</p>
+                </div>
+              )}
+              {flightDuration && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Flight Duration</p>
+                  <p className="text-sm font-semibold text-gray-800">{flightDuration}</p>
+                </div>
+              )}
+              {category && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Category</p>
+                  <p className="text-sm font-semibold text-gray-800">{category}</p>
+                </div>
+              )}
+              {hourlyRate && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Hourly Rate</p>
+                  <p className="text-sm font-semibold text-gray-800">€{hourlyRate.toLocaleString()}/hr</p>
                 </div>
               )}
               {data.range && (
@@ -554,14 +642,34 @@ const MyRequestsView = ({ user }) => {
                   <p className="text-sm font-semibold text-gray-800">{data.range}</p>
                 </div>
               )}
-              {data.has_nft && (
-                <div className="col-span-2">
-                  <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg">
-                    <span className="text-sm text-purple-800">🎫 NFT Discount Applied: {data.nft_discount}</span>
-                  </div>
+              {data.payment_method && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Payment</p>
+                  <p className="text-sm font-semibold text-gray-800 capitalize">{data.payment_method}</p>
                 </div>
               )}
             </div>
+
+            {/* NFT Discount */}
+            {data.has_nft && (
+              <div className="mb-3">
+                <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg">
+                  <span className="text-sm text-purple-800">🎫 NFT Discount Applied: {data.nft_discount}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Price */}
+            {price && (
+              <div className="p-3 bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg mb-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-blue-100">Estimated Price</p>
+                  <p className="text-base font-bold text-white">
+                    {typeof price === 'number' ? `€${price.toLocaleString()}` : price}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Timestamp */}
             <div className="flex items-center justify-between">
@@ -591,18 +699,38 @@ const MyRequestsView = ({ user }) => {
       try { data = JSON.parse(data); } catch (e) { data = {}; }
     }
     data = data || {};
+
+    // Handle AI Chat cart submissions - extract helicopter item
+    const heliItem = data.items?.find(i => i.type === 'helicopters') || data.items?.[0];
+
+    // Merge data from different sources
+    const helicopter = data.helicopter_name || data.name || heliItem?.name || heliItem?.helicopter_name || data.manufacturer;
+    const passengers = data.passengers || data.max_passengers || heliItem?.max_passengers || heliItem?.passengers;
+    const route = data.route || heliItem?.route || (data.from && data.to ? `${data.from} → ${data.to}` : null) || (heliItem?.from && heliItem?.to ? `${heliItem.from} → ${heliItem.to}` : null);
+    const price = data.total || data.estimatedPrice || data.discounted_price || data.total_price || heliItem?.estimatedPrice || heliItem?.price;
+    const flightDuration = data.flight_duration || data.estimatedDuration || heliItem?.estimatedDuration;
+    const hourlyRate = data.hourly_rate || data.hourly_rate_eur || heliItem?.hourly_rate_eur;
+    const heliImage = heliItem?.primaryImage || heliItem?.image_url || data.image_url;
+
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
         <div className="flex items-start gap-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-teal-600 to-teal-800 rounded-xl flex items-center justify-center text-white flex-shrink-0">
-            <Plane size={24} />
-          </div>
+          {/* Helicopter Image or Icon */}
+          {heliImage ? (
+            <div className="flex-shrink-0">
+              <img src={heliImage} alt={helicopter} className="w-24 h-16 object-cover rounded-lg" />
+            </div>
+          ) : (
+            <div className="w-12 h-12 bg-gradient-to-br from-teal-600 to-teal-800 rounded-xl flex items-center justify-center text-white flex-shrink-0">
+              <Plane size={24} />
+            </div>
+          )}
 
           <div className="flex-1">
             <div className="flex items-start justify-between mb-3">
               <div>
                 <h3 className="text-base font-semibold text-gray-800 mb-1">Helicopter Charter</h3>
-                <p className="text-sm text-gray-700 font-medium">{data.helicopter_name || data.manufacturer}</p>
+                <p className="text-sm text-gray-700 font-medium">{helicopter || 'Helicopter TBD'}</p>
               </div>
               <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${getStatusColor(request.status)}`}>
                 {getStatusIcon(request.status)}
@@ -610,24 +738,40 @@ const MyRequestsView = ({ user }) => {
               </div>
             </div>
 
+            {/* Route Info */}
+            {route && (
+              <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-teal-500"></div>
+                  <span className="text-sm text-gray-800 font-medium">{route}</span>
+                </div>
+              </div>
+            )}
+
             {/* Details Grid */}
             <div className="grid grid-cols-2 gap-3 mb-3">
-              {data.passengers && (
+              {passengers && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Passengers</p>
-                  <p className="text-sm font-semibold text-gray-800">{data.passengers}</p>
+                  <p className="text-sm font-semibold text-gray-800">{passengers}</p>
                 </div>
               )}
-              {data.flight_duration && (
+              {flightDuration && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Duration</p>
-                  <p className="text-sm font-semibold text-gray-800">{data.flight_duration} hours</p>
+                  <p className="text-sm font-semibold text-gray-800">{typeof flightDuration === 'number' ? `${flightDuration} hours` : flightDuration}</p>
                 </div>
               )}
-              {data.hourly_rate && (
+              {hourlyRate && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Hourly Rate</p>
-                  <p className="text-sm font-semibold text-gray-800">${data.hourly_rate}/hr</p>
+                  <p className="text-sm font-semibold text-gray-800">€{typeof hourlyRate === 'number' ? hourlyRate.toLocaleString() : hourlyRate}/hr</p>
+                </div>
+              )}
+              {data.payment_method && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Payment</p>
+                  <p className="text-sm font-semibold text-gray-800 capitalize">{data.payment_method}</p>
                 </div>
               )}
             </div>
@@ -640,18 +784,24 @@ const MyRequestsView = ({ user }) => {
               </div>
             )}
 
+            {/* NFT Discount */}
+            {data.has_nft && data.nft_discount && (
+              <div className="mb-3">
+                <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg">
+                  <span className="text-sm text-purple-800">🎫 NFT Discount: {data.nft_discount}</span>
+                </div>
+              </div>
+            )}
+
             {/* Price */}
-            {(data.discounted_price || data.total_price) && (
+            {price && (
               <div className="p-3 bg-gradient-to-r from-teal-600 to-teal-800 rounded-lg mb-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs text-teal-100">Total Price</p>
+                  <p className="text-xs text-teal-100">Estimated Price</p>
                   <p className="text-base font-bold text-white">
-                    ${(data.discounted_price || data.total_price).toLocaleString()}
+                    {typeof price === 'number' ? `€${price.toLocaleString()}` : price}
                   </p>
                 </div>
-                {data.has_nft && data.nft_discount && (
-                  <p className="text-xs text-teal-100 mt-1">🎫 NFT Discount: {data.nft_discount}</p>
-                )}
               </div>
             )}
 
@@ -889,6 +1039,213 @@ const MyRequestsView = ({ user }) => {
     );
   };
 
+  const renderHotelRequest = (request) => {
+    let data = request.data;
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch (e) { data = {}; }
+    }
+    data = data || {};
+
+    const hotelItem = data.items?.find(i => i.type === 'hotels' || i.type === 'hotel') || data.items?.[0];
+    const hotelName = data.hotel_name || hotelItem?.name || hotelItem?.hotel_name || 'Hotel';
+    const location = data.location || hotelItem?.location || hotelItem?.city;
+    const checkIn = data.check_in || hotelItem?.check_in;
+    const checkOut = data.check_out || hotelItem?.check_out;
+    const guests = data.guests || hotelItem?.guests;
+    const price = data.total || data.price || hotelItem?.price;
+    const hotelImage = hotelItem?.primaryImage || hotelItem?.image_url || data.image_url;
+
+    return (
+      <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+        <div className="flex items-start gap-4">
+          {hotelImage ? (
+            <div className="flex-shrink-0">
+              <img src={hotelImage} alt={hotelName} className="w-24 h-16 object-cover rounded-lg" />
+            </div>
+          ) : (
+            <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-xl flex items-center justify-center text-white flex-shrink-0">
+              <FileText size={24} />
+            </div>
+          )}
+          <div className="flex-1">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <h3 className="text-base font-semibold text-gray-800 mb-1">Hotel Booking</h3>
+                <p className="text-sm text-gray-700 font-medium">{hotelName}</p>
+              </div>
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${getStatusColor(request.status)}`}>
+                {getStatusIcon(request.status)}
+                <span className="capitalize">{request.status}</span>
+              </div>
+            </div>
+            {location && (
+              <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm text-gray-800 font-medium">{location}</span>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              {checkIn && <div><p className="text-xs text-gray-600 mb-1">Check-in</p><p className="text-sm font-semibold text-gray-800">{checkIn}</p></div>}
+              {checkOut && <div><p className="text-xs text-gray-600 mb-1">Check-out</p><p className="text-sm font-semibold text-gray-800">{checkOut}</p></div>}
+              {guests && <div><p className="text-xs text-gray-600 mb-1">Guests</p><p className="text-sm font-semibold text-gray-800">{guests}</p></div>}
+            </div>
+            {price && (
+              <div className="p-3 bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-lg mb-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-indigo-100">Total Price</p>
+                  <p className="text-base font-bold text-white">{typeof price === 'number' ? `€${price.toLocaleString()}` : price}</p>
+                </div>
+              </div>
+            )}
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-gray-500">{formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderYachtRequest = (request) => {
+    let data = request.data;
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch (e) { data = {}; }
+    }
+    data = data || {};
+
+    const yachtItem = data.items?.find(i => i.type === 'yachts' || i.type === 'yacht') || data.items?.[0];
+    const yachtName = data.yacht_name || yachtItem?.name || yachtItem?.yacht_name || 'Yacht';
+    const location = data.location || yachtItem?.location;
+    const duration = data.duration || yachtItem?.duration;
+    const guests = data.guests || yachtItem?.guests || yachtItem?.max_guests;
+    const price = data.total || data.price || yachtItem?.price;
+    const yachtImage = yachtItem?.primaryImage || yachtItem?.image_url || data.image_url;
+
+    return (
+      <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+        <div className="flex items-start gap-4">
+          {yachtImage ? (
+            <div className="flex-shrink-0">
+              <img src={yachtImage} alt={yachtName} className="w-24 h-16 object-cover rounded-lg" />
+            </div>
+          ) : (
+            <div className="w-12 h-12 bg-gradient-to-br from-cyan-600 to-cyan-800 rounded-xl flex items-center justify-center text-white flex-shrink-0">
+              <FileText size={24} />
+            </div>
+          )}
+          <div className="flex-1">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <h3 className="text-base font-semibold text-gray-800 mb-1">Yacht Charter</h3>
+                <p className="text-sm text-gray-700 font-medium">{yachtName}</p>
+              </div>
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${getStatusColor(request.status)}`}>
+                {getStatusIcon(request.status)}
+                <span className="capitalize">{request.status}</span>
+              </div>
+            </div>
+            {location && (
+              <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm text-gray-800 font-medium">{location}</span>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              {duration && <div><p className="text-xs text-gray-600 mb-1">Duration</p><p className="text-sm font-semibold text-gray-800">{duration}</p></div>}
+              {guests && <div><p className="text-xs text-gray-600 mb-1">Guests</p><p className="text-sm font-semibold text-gray-800">{guests}</p></div>}
+            </div>
+            {price && (
+              <div className="p-3 bg-gradient-to-r from-cyan-600 to-cyan-800 rounded-lg mb-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-cyan-100">Total Price</p>
+                  <p className="text-base font-bold text-white">{typeof price === 'number' ? `€${price.toLocaleString()}` : price}</p>
+                </div>
+              </div>
+            )}
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-gray-500">{formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderBookingRequest = (request) => {
+    let data = request.data;
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch (e) { data = {}; }
+    }
+    data = data || {};
+
+    const items = data.items || [];
+    const total = data.total;
+    const paymentMethod = data.payment_method;
+
+    return (
+      <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl flex items-center justify-center text-white flex-shrink-0">
+            <FileText size={24} />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <h3 className="text-base font-semibold text-gray-800 mb-1">Multi-Service Booking</h3>
+                <p className="text-xs text-gray-600">{items.length} item{items.length !== 1 ? 's' : ''} in request</p>
+              </div>
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${getStatusColor(request.status)}`}>
+                {getStatusIcon(request.status)}
+                <span className="capitalize">{request.status}</span>
+              </div>
+            </div>
+
+            {/* List all items */}
+            <div className="space-y-2 mb-3">
+              {items.map((item, idx) => (
+                <div key={idx} className="p-3 bg-gray-50 rounded-lg flex items-center gap-3">
+                  {item.primaryImage && <img src={item.primaryImage} alt={item.name} className="w-12 h-8 object-cover rounded" />}
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-800">{item.name || item.title || 'Item'}</p>
+                    <p className="text-xs text-gray-500 capitalize">{item.type?.replace(/_/g, ' ')}</p>
+                  </div>
+                  {(item.estimatedPrice || item.price) && (
+                    <p className="text-sm font-semibold text-gray-800">€{(item.estimatedPrice || item.price).toLocaleString()}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {paymentMethod && (
+              <div className="mb-3">
+                <p className="text-xs text-gray-600">Payment: <span className="font-medium capitalize">{paymentMethod}</span></p>
+              </div>
+            )}
+
+            {total && (
+              <div className="p-3 bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg mb-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-purple-100">Total</p>
+                  <p className="text-base font-bold text-white">€{total.toLocaleString()}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-gray-500">{formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}</p>
+              {request.admin_notes && <p className="text-xs text-blue-600 font-medium">Admin notes available</p>}
+            </div>
+
+            {request.admin_notes && (
+              <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                <p className="text-xs font-medium text-blue-900 mb-1">Admin Notes:</p>
+                <p className="text-xs text-blue-800">{request.admin_notes}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderGenericRequest = (request) => {
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
@@ -996,6 +1353,13 @@ const MyRequestsView = ({ user }) => {
                 return <div key={request.id}>{renderCO2CertificateRequest(request)}</div>;
               case 'fixed_offer':
                 return <div key={request.id}>{renderFixedOfferRequest(request)}</div>;
+              // HOTEL DISABLED - LiteAPI hotels temporarily removed
+              // case 'hotel_booking':
+              //   return <div key={request.id}>{renderHotelRequest(request)}</div>;
+              case 'yacht_charter':
+                return <div key={request.id}>{renderYachtRequest(request)}</div>;
+              case 'booking':
+                return <div key={request.id}>{renderBookingRequest(request)}</div>;
               default:
                 return <div key={request.id}>{renderGenericRequest(request)}</div>;
             }

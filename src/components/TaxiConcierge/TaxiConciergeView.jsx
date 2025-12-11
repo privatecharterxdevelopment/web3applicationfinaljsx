@@ -979,9 +979,34 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
               status: 'pending',
               data: {
                 ...requestData,
-                carImage: selectedCar.image,
-                carName: selectedCar.name,
-                carSeats: selectedCar.seats,
+                // Car details - use carToUse to ensure we have the selected car
+                carImage: carToUse.image,
+                carName: carToUse.name,
+                carSeats: carToUse.seats,
+                carId: carToUse.id,
+                // Location details
+                from: locationA,
+                to: locationB,
+                pickupLocation: locationA,
+                dropoffLocation: locationB,
+                // Route details
+                distance: distance,
+                eta: eta,
+                // Pricing
+                priceRange: `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`,
+                priceMin: priceRange.min,
+                priceMax: priceRange.max,
+                currency: selectedCurrency,
+                // Booking details
+                pickupDate: bookNow ? 'Now' : pickupDate,
+                pickupTime: bookNow ? 'Now' : pickupTime,
+                passengers: passengers,
+                bookNow: bookNow,
+                // Extra info
+                extraNotes: extraNotes,
+                isSwissBooking: isSwissBooking,
+                detectedCountry: detectedCountry,
+                // User info
                 user_email: user.email
               }
             }])
@@ -1169,28 +1194,9 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                       : 'border-transparent text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  Taxi
+                  Airport Transfer
                 </button>
-                <button
-                  onClick={() => setServiceCategory('concierge')}
-                  className={`px-3 py-2 text-xs font-medium transition-all border-b-2 ${
-                    serviceCategory === 'concierge'
-                      ? 'border-black text-black'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Concierge
-                </button>
-                <button
-                  onClick={() => setServiceCategory('luxury-cars')}
-                  className={`px-3 py-2 text-xs font-medium transition-all border-b-2 ${
-                    serviceCategory === 'luxury-cars'
-                      ? 'border-black text-black'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Luxury Cars
-                </button>
+                {/* Concierge and Luxury Cars hidden - services not currently available */}
               </div>
 
               {/* Location Inputs - Stack on mobile, side-by-side on desktop */}
