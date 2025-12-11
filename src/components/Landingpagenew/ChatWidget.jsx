@@ -3,15 +3,15 @@ import { MessageCircle, X, Send, Minimize2, Maximize2 } from 'lucide-react';
 import { supportTicketService } from '../../services/supportTicketService';
 import { supabase } from '../../lib/supabase';
 
-export default function ChatWidget() {
+export default function ChatWidget({ isVisible = false, onClose = null, embedded = false }) {
   const [userInfo, setUserInfo] = useState(null);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(embedded ? true : false);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [emailSent, setEmailSent] = useState(false);
-  const [shouldHide, setShouldHide] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [conversationSaved, setConversationSaved] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -148,34 +148,73 @@ export default function ChatWidget() {
     }
   };
 
-  // Check if we should hide the widget
-  // Hide on: taxi/concierge page, AI chat page, mobile devices, and non-profile pages
+  // When opened in embedded mode, set isOpen to true when isVisible changes
   useEffect(() => {
-    const checkHidePage = () => {
-      const taxiPage = document.querySelector('.taxi-concierge-page');
-      const aiChatPage = document.querySelector('.ai-chat-page');
-      const profilePage = document.querySelector('.profile-page, .dashboard-page, [data-page="profile"], [data-page="dashboard"]');
-      const isMobile = window.innerWidth < 768;
-      const isOnDashboard = window.location.pathname.includes('/dashboard') || window.location.pathname.includes('/profile');
+    if (embedded && isVisible) {
+      setIsOpen(true);
+    }
+  }, [embedded, isVisible]);
 
-      // Hide if: on taxi/AI chat page, on mobile, or NOT on profile/dashboard
-      setShouldHide(!!(taxiPage || aiChatPage || isMobile || !isOnDashboard));
-    };
+  // Function to save the entire conversation as a support request
+  const saveConversationAsRequest = async () => {
+    if (!userInfo?.id || conversationSaved) return;
 
-    checkHidePage();
+    try {
+      // Get all user messages from the conversation
+      const userMessages = messages.filter(m => m.sender === 'user');
+      if (userMessages.length === 0) return;
 
-    // Use MutationObserver to detect when taxi or AI chat page is loaded
-    const observer = new MutationObserver(checkHidePage);
-    observer.observe(document.body, { childList: true, subtree: true });
+      // Create a summary of the conversation
+      const conversationSummary = messages.map(m =>
+        `[${m.sender === 'user' ? 'Customer' : 'Support'}] ${m.text}`
+      ).join('\n');
 
-    // Also listen for resize events to handle mobile/desktop switching
-    window.addEventListener('resize', checkHidePage);
+      // Create support ticket with full conversation
+      const ticketData = {
+        user_id: userInfo.id,
+        subject: `Chat Support Request - ${userMessages[0]?.text?.substring(0, 50) || 'General Inquiry'}...`,
+        message: conversationSummary,
+        category: 'chat_support',
+        priority: 'normal',
+        status: 'open',
+        user_email: userInfo.email,
+        user_name: userInfo.name
+      };
 
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('resize', checkHidePage);
-    };
-  }, []);
+      const { data, error } = await supabase
+        .from('support_tickets')
+        .insert([ticketData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error saving support request:', error);
+        return;
+      }
+
+      console.log('✅ Chat conversation saved as support ticket:', data.id);
+      setConversationSaved(true);
+
+      // Send email notification with full conversation summary
+      try {
+        await supportTicketService.sendChatNotificationEmail({
+          message: conversationSummary,
+          name: userInfo.name || 'User',
+          email: userInfo.email || '',
+          phone: userInfo.phone || '',
+          userId: userInfo.id,
+          ticketId: data.id
+        });
+        console.log('✅ Email notification sent with chat summary');
+      } catch (emailError) {
+        console.error('Error sending email notification:', emailError);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error saving conversation:', error);
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -266,6 +305,15 @@ export default function ChatWidget() {
     if (!isOpen) {
       // Clear unread count when opening chat
       setUnreadCount(0);
+    } else {
+      // When closing chat, save conversation as support request
+      if (messages.filter(m => m.sender === 'user').length > 0) {
+        saveConversationAsRequest();
+      }
+      // Call onClose callback if provided (for embedded mode)
+      if (onClose) {
+        onClose();
+      }
     }
     setIsOpen(!isOpen);
   };
@@ -285,16 +333,17 @@ export default function ChatWidget() {
     'https://i.pravatar.cc/150?img=28'
   ];
 
-  // Don't render anything if on taxi/concierge page
-  if (shouldHide) {
+  // If not in embedded mode and not explicitly visible, don't render
+  // This effectively hides the chat button from everywhere unless triggered
+  if (!embedded && !isVisible && !isOpen) {
     return null;
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end">
-      {/* Chat Window - Smaller Square */}
+    <div className={`${embedded ? 'relative w-full h-full' : 'fixed bottom-6 right-6 z-[9999]'} flex flex-col items-end`}>
+      {/* Chat Window */}
       {isOpen && (
-        <div className="mb-2 w-[280px] h-[320px] transition-all duration-300 ease-out">
+        <div className={`${embedded ? 'w-full h-full' : 'mb-2 w-[280px] h-[320px]'} transition-all duration-300 ease-out`}>
           {/* Glassmorphic Container */}
           <div className="relative w-full h-full backdrop-blur-xl bg-gradient-to-br from-black/80 via-black/70 to-black/60 border border-white/20 rounded-2xl shadow-2xl overflow-hidden">
             {/* Animated Background Gradient */}
@@ -396,8 +445,8 @@ export default function ChatWidget() {
         </div>
       )}
 
-      {/* Chat Button - Simple "Need Help?" Text */}
-      {!isOpen && (
+      {/* Chat Button - Only show when NOT in embedded mode */}
+      {!isOpen && !embedded && (
         <button
           onClick={toggleChat}
           className="group relative px-3 py-2 bg-black border border-white/20 rounded-lg shadow-lg hover:bg-gray-900 transition-all duration-300 hover:scale-105"

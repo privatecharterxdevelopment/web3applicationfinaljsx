@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
   User, Mail, Phone, MapPin, Calendar, Shield, CheckCircle, Clock, XCircle,
   AlertCircle, Edit, Plus, ExternalLink, Sparkles, DollarSign, Plane,
-  Coins, Building2, Leaf, Users, Activity, Crown, ChevronRight, MessageSquare
+  Coins, Building2, Leaf, Users, Activity, Crown, ChevronRight, MessageSquare,
+  Headphones, X
 } from 'lucide-react';
 import { format, startOfMonth } from 'date-fns';
 import { supabase } from '../../lib/supabase';
@@ -18,6 +19,7 @@ import DashboardCard from '../Dashboard/DashboardCard';
 import BalanceHeader from '../Dashboard/BalanceHeader';
 import RecentActivity from '../Dashboard/RecentActivity';
 import QuickStats from '../Dashboard/QuickStats';
+import ChatWidget from './ChatWidget';
 
 export default function ProfileOverview() {
   const { user } = useAuth();
@@ -47,6 +49,9 @@ export default function ProfileOverview() {
   // Subscription state
   const [subscriptionData, setSubscriptionData] = useState(null);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
+
+  // Support chat state
+  const [showSupportChat, setShowSupportChat] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
@@ -766,9 +771,60 @@ export default function ProfileOverview() {
                 </div>
               )}
             </div>
+
+            {/* Support Card */}
+            <div className="bg-white/35 backdrop-blur-xl border border-gray-300/50 rounded-2xl p-4 sm:p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Headphones size={20} className="text-gray-700" />
+                <h2 className="text-lg font-semibold text-gray-900">Support</h2>
+              </div>
+
+              <p className="text-sm text-gray-600 mb-4">
+                Need help with your account, bookings, or have any questions? Our support team is here to assist you.
+              </p>
+
+              <button
+                onClick={() => setShowSupportChat(true)}
+                className="w-full px-4 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+              >
+                <MessageSquare size={16} />
+                Start Support Chat
+              </button>
+
+              <div className="mt-4 pt-4 border-t border-gray-200/50">
+                <p className="text-xs text-gray-500 mb-2">Other ways to reach us:</p>
+                <ul className="space-y-1.5 text-xs text-gray-600">
+                  <li className="flex items-center gap-2">
+                    <Mail size={12} />
+                    support@privatecharterx.com
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Support Chat Modal */}
+      {showSupportChat && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-md h-[500px] bg-white rounded-2xl shadow-2xl overflow-hidden">
+            {/* Close button */}
+            <button
+              onClick={() => setShowSupportChat(false)}
+              className="absolute top-4 right-4 z-10 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg transition-colors"
+            >
+              <X size={20} className="text-gray-600" />
+            </button>
+            {/* Embedded Chat Widget */}
+            <ChatWidget
+              isVisible={showSupportChat}
+              onClose={() => setShowSupportChat(false)}
+              embedded={true}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
