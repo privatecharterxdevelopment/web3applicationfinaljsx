@@ -73,6 +73,7 @@ const MyRequestsView = ({ user }) => {
       // hotel_booking: 'Hotel Booking', // DISABLED - LiteAPI hotels temporarily removed
       yacht_charter: 'Yacht Charter',
       booking: 'Multi-Service Booking',
+      ai_chat_bulk: 'AI Concierge Request',
       spv_formation: 'SPV Formation',
       tokenization: 'Asset Tokenization'
     };
@@ -1246,6 +1247,250 @@ const MyRequestsView = ({ user }) => {
     );
   };
 
+  // Comprehensive AI Chat Request Renderer - shows full details for each item
+  const renderAIChatRequest = (request) => {
+    let data = request.data;
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch (e) { data = {}; }
+    }
+    data = data || {};
+
+    const items = data.items || [];
+    const summary = data.summary || {};
+    const grandTotal = summary.grand_total || data.total || items.reduce((sum, item) => sum + (item.estimated_price || item.price || item.estimatedPrice || 0), 0);
+    const paymentMethod = data.payment_method;
+    const isFromAI = data.source === 'ai_chat' || data.created_via === 'sphera_ai_assistant';
+
+    // Helper to get item type icon color
+    const getItemTypeColor = (type) => {
+      const colors = {
+        jets: 'from-blue-600 to-blue-800',
+        aircraft: 'from-blue-600 to-blue-800',
+        helicopters: 'from-teal-600 to-teal-800',
+        empty_legs: 'from-amber-600 to-amber-800',
+        emptyleg: 'from-amber-600 to-amber-800',
+        yachts: 'from-cyan-600 to-cyan-800',
+        luxury_cars: 'from-purple-600 to-purple-800',
+        adventures: 'from-emerald-600 to-emerald-800',
+        fixed_offer: 'from-rose-600 to-rose-800',
+        ground_transport: 'from-gray-600 to-gray-800',
+        custom_extra: 'from-orange-500 to-orange-700'
+      };
+      return colors[type] || 'from-gray-600 to-gray-800';
+    };
+
+    return (
+      <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl flex items-center justify-center text-white flex-shrink-0">
+            <FileText size={24} />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <h3 className="text-base font-semibold text-gray-800 mb-1">
+                  {isFromAI ? 'AI Concierge Request' : 'Multi-Service Booking'}
+                </h3>
+                <p className="text-xs text-gray-600">
+                  {items.length} item{items.length !== 1 ? 's' : ''} • Request #{data.request_id?.replace('AI-', '') || request.id.slice(0, 8)}
+                </p>
+              </div>
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${getStatusColor(request.status)}`}>
+                {getStatusIcon(request.status)}
+                <span className="capitalize">{request.status}</span>
+              </div>
+            </div>
+
+            {/* Detailed Items List */}
+            <div className="space-y-3 mb-4">
+              {items.map((item, idx) => {
+                const itemName = item.name || item.title || item.aircraft_model || item.model || 'Service';
+                const itemType = item.type?.replace(/_/g, ' ');
+                const route = item.route || (item.from && item.to ? `${item.from} → ${item.to}` : null) || (item.origin && item.destination ? `${item.origin} → ${item.destination}` : null);
+                const itemPrice = item.estimated_price || item.price || item.estimatedPrice || item.totalWithFee || 0;
+                const itemImage = item.image || item.primaryImage || item.image_url;
+
+                return (
+                  <div key={idx} className="p-3 bg-gray-50/80 rounded-xl border border-gray-200/50">
+                    <div className="flex items-start gap-3">
+                      {/* Item Image or Icon */}
+                      {itemImage ? (
+                        <img src={itemImage} alt={itemName} className="w-16 h-12 object-cover rounded-lg flex-shrink-0" />
+                      ) : (
+                        <div className={`w-10 h-10 bg-gradient-to-br ${getItemTypeColor(item.type)} rounded-lg flex items-center justify-center text-white flex-shrink-0`}>
+                          {item.type?.includes('jet') || item.type === 'aircraft' ? <Plane size={18} /> :
+                           item.type?.includes('helicopter') ? <Plane size={18} /> :
+                           item.type?.includes('car') ? <Car size={18} /> :
+                           <FileText size={18} />}
+                        </div>
+                      )}
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800 truncate">{itemName}</p>
+                            <p className="text-[11px] text-gray-500 capitalize">{itemType}</p>
+                          </div>
+                          {itemPrice > 0 && (
+                            <p className="text-sm font-bold text-gray-900 whitespace-nowrap">
+                              €{itemPrice.toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Route */}
+                        {route && (
+                          <div className="flex items-center gap-1.5 mt-1.5">
+                            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                            <span className="text-xs text-gray-700">{route}</span>
+                          </div>
+                        )}
+
+                        {/* Details Grid */}
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[11px]">
+                          {/* Date */}
+                          {(item.date || item.departure_date) && (
+                            <span className="text-gray-600">
+                              <span className="text-gray-400">Date:</span> {item.date || item.departure_date}
+                            </span>
+                          )}
+                          {/* Time */}
+                          {(item.time || item.departure_time) && (
+                            <span className="text-gray-600">
+                              <span className="text-gray-400">Time:</span> {item.time || item.departure_time}
+                            </span>
+                          )}
+                          {/* Passengers */}
+                          {(item.passengers || item.pax) && (
+                            <span className="text-gray-600">
+                              <span className="text-gray-400">Pax:</span> {item.passengers || item.pax}
+                            </span>
+                          )}
+                          {/* Duration/Flight Time */}
+                          {(item.duration || item.estimated_flight_time || item.flightTime) && (
+                            <span className="text-gray-600">
+                              <span className="text-gray-400">Duration:</span> {item.duration || item.estimated_flight_time || item.flightTime}
+                            </span>
+                          )}
+                          {/* Distance */}
+                          {(item.distance_km || item.distanceKm) && (
+                            <span className="text-gray-600">
+                              <span className="text-gray-400">Distance:</span> {item.distance_km || item.distanceKm} km
+                            </span>
+                          )}
+                          {/* Category */}
+                          {item.category && (
+                            <span className="text-gray-600">
+                              <span className="text-gray-400">Category:</span> {item.category}
+                            </span>
+                          )}
+                          {/* Rental Days */}
+                          {item.rental_days && (
+                            <span className="text-gray-600">
+                              <span className="text-gray-400">Days:</span> {item.rental_days}
+                            </span>
+                          )}
+                          {/* Location */}
+                          {item.location && !route && (
+                            <span className="text-gray-600">
+                              <span className="text-gray-400">Location:</span> {item.location}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Special badges */}
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {item.isEstimate && (
+                            <span className="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-medium">ESTIMATE</span>
+                          )}
+                          {item.isCustomRequest && (
+                            <span className="text-[9px] bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded font-medium">CUSTOM REQUEST</span>
+                          )}
+                          {item.cateringOption && item.cateringOption !== 'standard' && (
+                            <span className="text-[9px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-medium">
+                              {item.cateringOption.toUpperCase()} CATERING
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Summary */}
+            {summary.services_subtotal > 0 && (
+              <div className="space-y-1 mb-3 text-xs">
+                <div className="flex justify-between text-gray-600">
+                  <span>Services ({summary.services_count || items.length})</span>
+                  <span>€{(summary.services_subtotal || 0).toLocaleString()}</span>
+                </div>
+                {summary.extras_subtotal > 0 && (
+                  <div className="flex justify-between text-gray-600">
+                    <span>Custom extras ({summary.extras_count})</span>
+                    <span>€{summary.extras_subtotal.toLocaleString()}</span>
+                  </div>
+                )}
+                {summary.catering_total > 0 && (
+                  <div className="flex justify-between text-gray-600">
+                    <span>Catering upgrades</span>
+                    <span>€{summary.catering_total.toLocaleString()}</span>
+                  </div>
+                )}
+                {summary.vat_amount > 0 && (
+                  <div className="flex justify-between text-gray-600">
+                    <span>VAT (8.1%)</span>
+                    <span>€{summary.vat_amount.toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Payment Method */}
+            {paymentMethod && (
+              <div className="mb-3">
+                <p className="text-xs text-gray-600">Payment: <span className="font-medium capitalize">{paymentMethod.replace(/_/g, ' ')}</span></p>
+              </div>
+            )}
+
+            {/* Total */}
+            {grandTotal > 0 && (
+              <div className="p-3 bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg mb-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-purple-100">{summary.has_estimates ? 'Est. Total' : 'Total'}</p>
+                  <p className="text-base font-bold text-white">
+                    {summary.has_estimates ? '~' : ''}€{grandTotal.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Timestamp & Source */}
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-gray-500">
+                {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
+              </p>
+              {isFromAI && (
+                <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+                  via Sphera AI
+                </span>
+              )}
+            </div>
+
+            {/* Admin Notes */}
+            {request.admin_notes && (
+              <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                <p className="text-xs font-medium text-blue-900 mb-1">Admin Notes:</p>
+                <p className="text-xs text-blue-800">{request.admin_notes}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderGenericRequest = (request) => {
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
@@ -1359,7 +1604,8 @@ const MyRequestsView = ({ user }) => {
               case 'yacht_charter':
                 return <div key={request.id}>{renderYachtRequest(request)}</div>;
               case 'booking':
-                return <div key={request.id}>{renderBookingRequest(request)}</div>;
+              case 'ai_chat_bulk':
+                return <div key={request.id}>{renderAIChatRequest(request)}</div>;
               default:
                 return <div key={request.id}>{renderGenericRequest(request)}</div>;
             }
