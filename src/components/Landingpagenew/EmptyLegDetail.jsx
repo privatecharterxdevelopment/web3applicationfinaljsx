@@ -927,17 +927,27 @@ const EmptyLegDetail = () => {
                 {hasNFT && emptyLeg.price <= 1500 ? 'Get Flight FREE' : 'Request Flight'}
               </button>
 
-              {/* Pay with Crypto Button - Same size as Request Flight */}
-              <button
-                onClick={() => setShowCryptoModal(true)}
-                className="w-full bg-black text-white py-3 px-4 rounded text-sm font-semibold hover:bg-gray-800 transition-colors mt-2 flex items-center justify-center gap-2"
-              >
-                <svg viewBox="0 0 32 32" className="w-4 h-4">
-                  <circle cx="16" cy="16" r="16" fill="currentColor"/>
-                  <path fill="#000" d="M22.5 14.5c.3-2-1.2-3.1-3.3-3.8l.7-2.7-1.6-.4-.7 2.7c-.4-.1-.8-.2-1.3-.3l.7-2.7-1.6-.4-.7 2.7c-.4-.1-.7-.2-1.1-.3l-2.2-.5-.5 1.7s1.2.3 1.2.3c.7.2.8.6.8 1l-.8 3.2c.1 0 .1 0 .2.1-.1 0-.1 0-.2-.1l-1.1 4.5c-.1.2-.3.5-.8.4 0 0-1.2-.3-1.2-.3l-.8 1.8 2.1.5c.4.1.8.2 1.2.3l-.7 2.8 1.6.4.7-2.7c.4.1.9.2 1.3.3l-.7 2.7 1.6.4.7-2.8c2.9.5 5.1.3 6-2.3.7-2.1 0-3.3-1.5-4.1 1.1-.2 1.9-1 2.1-2.5z"/>
-                </svg>
-                Pay with Crypto
-              </button>
+              {/* Pay with Crypto Button - Only show when price is available */}
+              {emptyLeg.price && emptyLeg.price > 0 ? (
+                <button
+                  onClick={() => setShowCryptoModal(true)}
+                  className="w-full bg-black text-white py-3 px-4 rounded text-sm font-semibold hover:bg-gray-800 transition-colors mt-2 flex items-center justify-center gap-2"
+                >
+                  <svg viewBox="0 0 32 32" className="w-4 h-4">
+                    <circle cx="16" cy="16" r="16" fill="currentColor"/>
+                    <path fill="#000" d="M22.5 14.5c.3-2-1.2-3.1-3.3-3.8l.7-2.7-1.6-.4-.7 2.7c-.4-.1-.8-.2-1.3-.3l.7-2.7-1.6-.4-.7 2.7c-.4-.1-.7-.2-1.1-.3l-2.2-.5-.5 1.7s1.2.3 1.2.3c.7.2.8.6.8 1l-.8 3.2c.1 0 .1 0 .2.1-.1 0-.1 0-.2-.1l-1.1 4.5c-.1.2-.3.5-.8.4 0 0-1.2-.3-1.2-.3l-.8 1.8 2.1.5c.4.1.8.2 1.2.3l-.7 2.8 1.6.4.7-2.7c.4.1.9.2 1.3.3l-.7 2.7 1.6.4.7-2.8c2.9.5 5.1.3 6-2.3.7-2.1 0-3.3-1.5-4.1 1.1-.2 1.9-1 2.1-2.5z"/>
+                  </svg>
+                  Pay with Crypto
+                </button>
+              ) : (
+                <button
+                  onClick={requestFlight}
+                  className="w-full bg-white/50 hover:bg-white/70 text-gray-700 py-3 px-4 rounded text-sm font-semibold transition-colors mt-2 flex items-center justify-center gap-2 border border-gray-200/50 hover:border-gray-300/50"
+                  style={{ backdropFilter: 'blur(8px)' }}
+                >
+                  Send Request
+                </button>
+              )}
 
               {/* NFT Membership Link */}
               <div className="mt-4 text-center">

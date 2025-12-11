@@ -474,17 +474,20 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                                 Add to Cart
                               </button>
 
-                              {/* Pay with Crypto - Direct checkout */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onPayCrypto && onPayCrypto(item);
-                                }}
-                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg font-medium transition-all text-sm"
-                              >
-                                <Wallet size={16} />
-                                Pay with Crypto
-                              </button>
+                              {/* Pay with Crypto - Only show when price is available */}
+                              {(item.price_usd || item.price) && (item.price_usd > 0 || item.price > 0) ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onPayCrypto && onPayCrypto(item);
+                                  }}
+                                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white/50 hover:bg-white/70 text-gray-700 rounded-lg font-medium transition-all text-sm border border-gray-200/50 hover:border-gray-300/50"
+                                  style={{ backdropFilter: 'blur(8px)' }}
+                                >
+                                  <Wallet size={16} />
+                                  Pay with Crypto
+                                </button>
+                              ) : null}
 
                               {/* Send Request */}
                               <button
@@ -492,7 +495,8 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                                   e.stopPropagation();
                                   onBookNow && onBookNow(item);
                                 }}
-                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium transition-colors text-sm"
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white/50 hover:bg-white/70 text-gray-700 rounded-lg font-medium transition-colors text-sm border border-gray-200/50 hover:border-gray-300/50"
+                                style={{ backdropFilter: 'blur(8px)' }}
                               >
                                 <CreditCard size={16} />
                                 Send Request
