@@ -4132,7 +4132,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                 : c
                             ));
                           }}
-                          className="flex-1 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-200 hover:border-gray-300"
+                          className="flex-1 px-3 py-2 bg-white/50 hover:bg-white/70 text-gray-700 text-xs font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-200/50 hover:border-gray-300/50"
+                          style={{ backdropFilter: 'blur(8px)' }}
                         >
                           <ShoppingCart size={14} />
                           Add to Cart
@@ -4187,7 +4188,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                               setToast({ message: 'Failed to send request. Please try again.', type: 'error' });
                             }
                           }}
-                          className="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-300 hover:border-gray-400"
+                          className="flex-1 px-3 py-2 bg-white/50 hover:bg-white/70 text-gray-700 text-xs font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-200/50 hover:border-gray-300/50"
+                          style={{ backdropFilter: 'blur(8px)' }}
                         >
                           <Send size={14} />
                           Send Request
@@ -5396,7 +5398,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                             setShowCartSidebar(false);
                             setShowRequestForm(true);
                           }}
-                          className={`${hasPayableItems ? 'flex-1' : 'w-full'} px-3 py-2.5 bg-gray-900/90 hover:bg-gray-800 text-white text-xs font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-700/50`}
+                          className={`${hasPayableItems ? 'flex-1' : 'w-full'} px-3 py-2.5 bg-white/50 hover:bg-white/70 text-gray-800 text-xs font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-200/50 hover:border-gray-300/50`}
                           style={{ backdropFilter: 'blur(8px)' }}
                         >
                           <Send size={14} />
