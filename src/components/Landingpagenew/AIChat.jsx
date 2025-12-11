@@ -3655,31 +3655,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Cart - Always visible */}
-            <button
-              onClick={() => setShowCartSidebar(true)}
-              className="relative p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
-            >
-              <ShoppingCart size={18} />
-              {cartItems.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {cartItems.length}
-                </span>
-              )}
-            </button>
-
-            {/* Send Request - Always visible but disabled when empty */}
-            <button
-              onClick={() => setShowRequestForm(true)}
-              disabled={cartItems.length === 0}
-              className={`px-4 py-2 text-sm rounded-full transition-colors ${
-                cartItems.length > 0
-                  ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              Send Request
-            </button>
+            {/* Cart & Send Request buttons hidden - available in cart sidebar and bottom area */}
 
             {/* Voice Mute Toggle - hidden for now
             <button
@@ -3732,19 +3708,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               <AlertCircle size={16} />
             </button>
 
-            {/* Cart Button - Header */}
-            <button
-              onClick={() => setShowCartSidebar(true)}
-              className="relative p-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors"
-              title="View cart"
-            >
-              <ShoppingCart size={16} />
-              {cartItems.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-medium">
-                  {cartItems.length}
-                </span>
-              )}
-            </button>
+            {/* Cart Button - Hidden from header, available in cart sidebar */}
 
             {/* Chat Sessions Dropdown - Hidden, can be accessed via menu if needed */}
             <div className="relative hidden">
@@ -4770,17 +4734,30 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
                     // Regular cart items (jets, helicopters, yachts, etc.)
                     const isExpanded = expandedCartItems[item.cartId || idx];
+                    const isPaidItem = item.isPaid || item.paymentStatus === 'pending_confirmation';
                     return (
-                      <div key={idx} className="bg-gray-50 rounded-xl border border-gray-200 animate-fade-in hover:border-gray-300 transition-all duration-300 overflow-hidden">
+                      <div key={idx} className={`rounded-xl border animate-fade-in transition-all duration-300 overflow-hidden ${
+                        isPaidItem
+                          ? 'bg-green-50 border-green-300 opacity-70'
+                          : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                      }`}>
+                        {/* Paid badge overlay */}
+                        {isPaidItem && (
+                          <div className="bg-green-100 px-3 py-1.5 border-b border-green-200 flex items-center gap-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            <span className="text-[10px] font-semibold text-green-800">PAYMENT INITIATED - Awaiting CoinGate Confirmation</span>
+                          </div>
+                        )}
                         {/* Collapsible Header - click to expand */}
                         <div
-                          className="p-3 flex items-center gap-3 cursor-pointer"
-                          onClick={() => setExpandedCartItems(prev => ({ ...prev, [item.cartId || idx]: !prev[item.cartId || idx] }))}
+                          className={`p-3 flex items-center gap-3 ${isPaidItem ? 'opacity-60' : 'cursor-pointer'}`}
+                          onClick={() => !isPaidItem && setExpandedCartItems(prev => ({ ...prev, [item.cartId || idx]: !prev[item.cartId || idx] }))}
                         >
                           {/* Type badge & name */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-0.5">
                               <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
+                                isPaidItem ? 'bg-green-600 text-white' :
                                 isJet ? 'bg-gray-800 text-white' :
                                 isHelicopter ? 'bg-gray-700 text-white' :
                                 isYacht ? 'bg-gray-600 text-white' :
@@ -4790,12 +4767,12 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                 isAdventure ? 'bg-gray-800 text-white' :
                                 'bg-gray-300 text-gray-700'
                               }`}>
-                                {isJet ? 'CHARTER' : isHelicopter ? 'HELI' : isYacht ? 'YACHT' : isLuxuryCar ? 'SUPERCAR' : isEmptyLeg ? 'EMPTY LEG' : isTransfer ? 'TRANSFER' : isAdventure ? 'EXPERIENCE' : 'SERVICE'}
+                                {isPaidItem ? 'PAID' : isJet ? 'CHARTER' : isHelicopter ? 'HELI' : isYacht ? 'YACHT' : isLuxuryCar ? 'SUPERCAR' : isEmptyLeg ? 'EMPTY LEG' : isTransfer ? 'TRANSFER' : isAdventure ? 'EXPERIENCE' : 'SERVICE'}
                               </span>
-                              {isEmptyLeg && (
+                              {!isPaidItem && isEmptyLeg && (
                                 <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-gray-200 text-gray-700">CRYPTO PAY</span>
                               )}
-                              {(isJet || isHelicopter) && !isEmptyLeg && (
+                              {!isPaidItem && (isJet || isHelicopter) && !isEmptyLeg && (
                                 <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-gray-200 text-gray-600">AI REQUEST</span>
                               )}
                             </div>
@@ -5258,11 +5235,15 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   {/* Smart checkout: split payable vs request-only items */}
                   {(() => {
                     const payableTypes = ['empty_legs', 'emptyleg', 'adventure', 'fixed_offer'];
-                    const payableItems = cartItems.filter(item => payableTypes.includes(item.type));
-                    const requestOnlyItems = cartItems.filter(item => !payableTypes.includes(item.type));
+                    // Exclude already paid items from calculations
+                    const unpaidItems = cartItems.filter(item => !item.isPaid && item.paymentStatus !== 'pending_confirmation');
+                    const payableItems = unpaidItems.filter(item => payableTypes.includes(item.type));
+                    const requestOnlyItems = unpaidItems.filter(item => !payableTypes.includes(item.type));
+                    const paidItems = cartItems.filter(item => item.isPaid || item.paymentStatus === 'pending_confirmation');
                     const allPayable = requestOnlyItems.length === 0 && payableItems.length > 0;
-                    const allRequestOnly = payableItems.length === 0;
+                    const allRequestOnly = payableItems.length === 0 && requestOnlyItems.length > 0;
                     const hasMixedCart = payableItems.length > 0 && requestOnlyItems.length > 0;
+                    const onlyPaidItems = unpaidItems.length === 0 && paidItems.length > 0;
 
                     // Calculate totals with 8.1% VAT
                     const payableSubtotal = payableItems.reduce((sum, item) => sum + (item.price_usd || item.price || item.basePrice || 0), 0);
@@ -5349,6 +5330,28 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                         return null;
                       }
                     };
+
+                    // If all items are already paid
+                    if (onlyPaidItems) {
+                      return (
+                        <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                            <span className="text-sm font-semibold text-green-800">All Payments Initiated</span>
+                          </div>
+                          <p className="text-xs text-green-700 mb-3">
+                            Your payment{paidItems.length > 1 ? 's are' : ' is'} being processed via CoinGate.
+                            Check your email for confirmation.
+                          </p>
+                          <button
+                            onClick={() => setShowCartSidebar(false)}
+                            className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg transition-all"
+                          >
+                            Continue Browsing
+                          </button>
+                        </div>
+                      );
+                    }
 
                     if (allPayable) {
                       // All items can be paid directly - process first item
@@ -6144,15 +6147,23 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             setShowCryptoPayment(false);
             setSelectedPaymentItem(null);
 
-            // Remove the paid item from cart
-            setCartItems(prev => prev.filter(item => item.cartId !== selectedPaymentItem.cartId));
+            // Mark the paid item as paid (grayed out) instead of removing it
+            // This allows user to continue with other cart items
+            setCartItems(prev => prev.map(item =>
+              item.cartId === selectedPaymentItem.cartId
+                ? { ...item, isPaid: true, paymentStatus: 'pending_confirmation', coingateOrderId: paymentData?.order_id }
+                : item
+            ));
 
             setToast({ message: 'Payment initiated! Complete the payment on CoinGate.', type: 'success' });
+
+            // Check if there are other unpaid items in cart
+            const otherUnpaidItems = cartItems.filter(item => item.cartId !== selectedPaymentItem.cartId && !item.isPaid);
 
             // Add confirmation message to chat
             const confirmMsg = {
               role: 'assistant',
-              content: `🎉 Payment initiated for ${selectedPaymentItem.name || selectedPaymentItem.title || 'your booking'}!\n\nPlease complete the payment on CoinGate. Once confirmed:\n• You'll receive a confirmation email\n• Your booking will appear in "My Bookings"\n• You'll earn 1.5% PVCX rewards\n\nThank you for choosing Sphera World!`
+              content: `🎉 Payment initiated for ${selectedPaymentItem.name || selectedPaymentItem.title || 'your booking'}!\n\nPlease complete the payment on CoinGate. Once confirmed:\n• You'll receive a confirmation email\n• Your booking will appear in "My Bookings"\n• You'll earn 1.5% PVCX rewards${otherUnpaidItems.length > 0 ? `\n\n📦 You still have ${otherUnpaidItems.length} other item${otherUnpaidItems.length > 1 ? 's' : ''} in your cart. Feel free to continue browsing or send a request for those!` : ''}\n\nThank you for choosing Sphera World!`
             };
             setChatHistory(prev => prev.map(c =>
               c.id === activeChat
