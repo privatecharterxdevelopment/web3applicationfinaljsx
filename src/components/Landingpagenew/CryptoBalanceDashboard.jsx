@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUpRight, ArrowDownLeft, History, Wallet, MessageCircle, Shield, User, Award, Plus, X, ExternalLink, LogOut, RefreshCw, Coins, Plane, Leaf } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, History, Wallet, MessageCircle, Shield, User, Award, Plus, X, ExternalLink, LogOut, RefreshCw, Coins, Plane, Leaf, Send, CheckCircle, Headphones } from 'lucide-react';
+import { supportTicketService } from '../../services/supportTicketService';
 import { LineChart, Line, ResponsiveContainer, YAxis, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import { useAccount, useBalance, useChainId } from 'wagmi';
@@ -41,6 +42,13 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
   // State for manual refresh trigger
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // State for Support modal
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const [supportMessage, setSupportMessage] = useState('');
+  const [supportCategory, setSupportCategory] = useState('general');
+  const [sendingSupport, setSendingSupport] = useState(false);
+  const [supportSent, setSupportSent] = useState(false);
 
   // State for Edit Profile modal
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -556,6 +564,63 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
     setActiveSection(activeSection === section ? null : section);
   };
 
+  // Handle support inquiry submission
+  const handleSupportSubmit = async () => {
+    if (!supportMessage.trim() || !user?.id) return;
+
+    setSendingSupport(true);
+    try {
+      // Save to support_tickets table
+      const { data, error } = await supabase
+        .from('support_tickets')
+        .insert([{
+          user_id: user.id,
+          subject: `Support Request - ${supportCategory.charAt(0).toUpperCase() + supportCategory.slice(1)}`,
+          message: supportMessage.trim(),
+          category: supportCategory,
+          priority: 'normal',
+          status: 'open',
+          user_email: user.email,
+          user_name: user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : user.email
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Send email notification
+      try {
+        await supportTicketService.sendChatNotificationEmail({
+          message: supportMessage.trim(),
+          name: user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : user.email,
+          email: user.email || '',
+          phone: '',
+          userId: user.id,
+          ticketId: data.id,
+          category: supportCategory
+        });
+      } catch (emailError) {
+        console.error('Email notification error:', emailError);
+      }
+
+      setSupportSent(true);
+      setSupportMessage('');
+      setSupportCategory('general');
+
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        setShowSupportModal(false);
+        setSupportSent(false);
+      }, 2000);
+
+    } catch (error) {
+      console.error('Error submitting support request:', error);
+      alert('Failed to submit support request. Please try again.');
+    } finally {
+      setSendingSupport(false);
+    }
+  };
+
   const getRequestTypeLabel = (type) => {
     const labels = {
       'private_jet_charter': 'Private Jet',
@@ -1012,7 +1077,7 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
               >
                 <div className="flex items-center gap-2">
                   <MessageCircle className="w-4 h-4 text-gray-600" />
-                  <span className="text-sm font-medium text-gray-900">Chat Support</span>
+                  <span className="text-sm font-medium text-gray-900">Support</span>
                 </div>
                 <Plus className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${activeSection === 'support' ? 'rotate-45' : ''}`} />
               </button>
@@ -1020,14 +1085,10 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                 <div className="p-4 bg-white/10">
                   <p className="text-sm text-gray-500 mb-2">Support available 24/7</p>
                   <button
-                    onClick={() => {
-                      // Find and click the chat widget button
-                      const chatButton = document.querySelector('[aria-label="Open chat"]');
-                      if (chatButton) chatButton.click();
-                    }}
+                    onClick={() => setShowSupportModal(true)}
                     className="w-full py-2 bg-black hover:bg-gray-800 text-white rounded-lg text-xs font-medium transition-all"
                   >
-                    Start Chat
+                    Contact Support
                   </button>
                 </div>
               </div>
@@ -1450,6 +1511,110 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
               >
                 {savingProfile ? 'Saving...' : 'Save Changes'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Support Inquiry Modal */}
+      {showSupportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+            {/* Close button */}
+            <button
+              onClick={() => {
+                setShowSupportModal(false);
+                setSupportSent(false);
+                setSupportMessage('');
+              }}
+              className="absolute top-4 right-4 z-10 p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-600" />
+            </button>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              {supportSent ? (
+                // Success State
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-8 h-8 text-green-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Request Sent!</h3>
+                  <p className="text-gray-600">
+                    Thank you for reaching out. We'll get back to you shortly.
+                  </p>
+                </div>
+              ) : (
+                // Form State
+                <>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center">
+                      <Headphones className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Contact Support</h3>
+                      <p className="text-sm text-gray-500">We'll respond within 24 hours</p>
+                    </div>
+                  </div>
+
+                  {/* Category Selection */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      What do you need help with?
+                    </label>
+                    <select
+                      value={supportCategory}
+                      onChange={(e) => setSupportCategory(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
+                    >
+                      <option value="general">General Inquiry</option>
+                      <option value="booking">Booking Issue</option>
+                      <option value="payment">Payment / Billing</option>
+                      <option value="account">Account Settings</option>
+                      <option value="technical">Technical Problem</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+
+                  {/* Message Input */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Describe your issue
+                    </label>
+                    <textarea
+                      value={supportMessage}
+                      onChange={(e) => setSupportMessage(e.target.value)}
+                      placeholder="Please describe how we can help you..."
+                      rows={5}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm resize-none"
+                    />
+                  </div>
+
+                  {/* Submit Button */}
+                  <button
+                    onClick={handleSupportSubmit}
+                    disabled={!supportMessage.trim() || sendingSupport}
+                    className="w-full px-4 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium flex items-center justify-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    {sendingSupport ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        Send Support Inquiry
+                      </>
+                    )}
+                  </button>
+
+                  <p className="text-xs text-gray-500 text-center mt-4">
+                    We'll contact you at {user?.email}
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </div>
