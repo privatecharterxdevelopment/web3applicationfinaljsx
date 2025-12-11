@@ -110,7 +110,7 @@ import LaunchpadPageNew from './LaunchpadPageNew.jsx';
 import CharterAJet from './CharterAJet.jsx';
 
 // Import AI Chat standalone view
-import AIChat from './AIChat.jsx';
+import AIChat from './AIChat';
 
 // Import Detail pages
 import EmptyLegDetail from './EmptyLegDetail.jsx';

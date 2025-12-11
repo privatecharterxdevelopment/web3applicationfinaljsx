@@ -1,14 +1,9 @@
 // AIChat Module - Main exports
-// This provides the refactored components, hooks, and utilities
+// Default export is the main AIChat component
+export { default } from './AIChat';
 
-// Components
+// Named exports for components, hooks, and utilities
 export * from './components';
-
-// Hooks
 export * from './hooks';
-
-// Reducers
 export * from './reducers';
-
-// Utils
 export * from './utils';

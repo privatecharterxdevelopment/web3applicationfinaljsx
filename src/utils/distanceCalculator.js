@@ -1,9 +1,9 @@
 // Distance calculator for flight range filtering
 // Uses Haversine formula to calculate distance between two cities
 
-// Major city coordinates database (airports)
+// Major city coordinates database (airports/heliports)
 const CITY_COORDINATES = {
-  // Europe
+  // Europe - Major Cities
   'london': { lat: 51.4700, lon: -0.4543 },
   'paris': { lat: 49.0097, lon: 2.5479 },
   'zurich': { lat: 47.4647, lon: 8.5492 },
@@ -24,6 +24,99 @@ const CITY_COORDINATES = {
   'moscow': { lat: 55.9726, lon: 37.4146 },
   'dublin': { lat: 53.4213, lon: -6.2701 },
   'lisbon': { lat: 38.7813, lon: -9.1361 },
+
+  // Europe - Luxury Destinations & Ski Resorts
+  'monaco': { lat: 43.7384, lon: 7.4246 },
+  'monte carlo': { lat: 43.7384, lon: 7.4246 },
+  'nice': { lat: 43.6655, lon: 7.2150 },
+  'cannes': { lat: 43.5485, lon: 7.0172 },
+  'st. moritz': { lat: 46.4908, lon: 9.8355 },
+  'st moritz': { lat: 46.4908, lon: 9.8355 },
+  'saint moritz': { lat: 46.4908, lon: 9.8355 },
+  'courchevel': { lat: 45.4150, lon: 6.6344 },
+  'zermatt': { lat: 46.0207, lon: 7.7491 },
+  'verbier': { lat: 46.0967, lon: 7.2286 },
+  'gstaad': { lat: 46.4750, lon: 7.2861 },
+  'davos': { lat: 46.8027, lon: 9.8360 },
+  'chamonix': { lat: 45.9237, lon: 6.8694 },
+  'megeve': { lat: 45.8567, lon: 6.6175 },
+  'val d\'isere': { lat: 45.4500, lon: 6.9833 },
+  'cortina': { lat: 46.5369, lon: 12.1356 },
+  'cortina d\'ampezzo': { lat: 46.5369, lon: 12.1356 },
+  'kitzbuhel': { lat: 47.4492, lon: 12.3919 },
+  'lech': { lat: 47.2078, lon: 10.1417 },
+  'innsbruck': { lat: 47.2601, lon: 11.3439 },
+  'salzburg': { lat: 47.7931, lon: 13.0024 },
+
+  // Italy - Luxury
+  'sardinia': { lat: 40.7214, lon: 9.5186 },
+  'porto cervo': { lat: 41.1333, lon: 9.5333 },
+  'olbia': { lat: 40.8987, lon: 9.5175 },
+  'naples': { lat: 40.8841, lon: 14.2681 },
+  'capri': { lat: 40.5533, lon: 14.2222 },
+  'amalfi': { lat: 40.6340, lon: 14.6027 },
+  'positano': { lat: 40.6280, lon: 14.4850 },
+  'florence': { lat: 43.8100, lon: 11.2051 },
+  'venice': { lat: 45.5053, lon: 12.3519 },
+  'portofino': { lat: 44.3033, lon: 9.2100 },
+  'lake como': { lat: 45.9894, lon: 9.2572 },
+  'como': { lat: 45.8100, lon: 9.0852 },
+
+  // France - Luxury
+  'st tropez': { lat: 43.2677, lon: 6.6407 },
+  'saint tropez': { lat: 43.2677, lon: 6.6407 },
+  'antibes': { lat: 43.5808, lon: 7.1239 },
+  'marseille': { lat: 43.4365, lon: 5.2151 },
+  'lyon': { lat: 45.7256, lon: 5.0811 },
+  'bordeaux': { lat: 44.8283, lon: -0.7155 },
+  'biarritz': { lat: 43.4682, lon: -1.5233 },
+  'deauville': { lat: 49.3539, lon: 0.0747 },
+
+  // Spain - Luxury
+  'ibiza': { lat: 38.8728, lon: 1.3731 },
+  'mallorca': { lat: 39.5996, lon: 2.7380 },
+  'palma': { lat: 39.5517, lon: 2.7388 },
+  'marbella': { lat: 36.5100, lon: -4.8826 },
+  'malaga': { lat: 36.6750, lon: -4.4990 },
+  'tenerife': { lat: 28.0448, lon: -16.5725 },
+  'valencia': { lat: 39.4893, lon: -0.4815 },
+  'seville': { lat: 37.4180, lon: -5.8931 },
+
+  // Greece - Islands
+  'mykonos': { lat: 37.4350, lon: 25.3481 },
+  'santorini': { lat: 36.3932, lon: 25.4615 },
+  'crete': { lat: 35.5138, lon: 24.0180 },
+  'corfu': { lat: 39.6019, lon: 19.9119 },
+  'rhodes': { lat: 36.4054, lon: 28.0862 },
+
+  // Croatia
+  'dubrovnik': { lat: 42.5614, lon: 18.2682 },
+  'split': { lat: 43.5389, lon: 16.2981 },
+  'hvar': { lat: 43.1725, lon: 16.4411 },
+
+  // UK
+  'manchester': { lat: 53.3537, lon: -2.2750 },
+  'birmingham': { lat: 52.4539, lon: -1.7480 },
+  'edinburgh': { lat: 55.9500, lon: -3.3725 },
+  'glasgow': { lat: 55.8719, lon: -4.4331 },
+  'jersey': { lat: 49.2078, lon: -2.1956 },
+  'guernsey': { lat: 49.4350, lon: -2.6019 },
+  'farnborough': { lat: 51.2758, lon: -0.7764 },
+  'luton': { lat: 51.8747, lon: -0.3683 },
+  'stansted': { lat: 51.8850, lon: 0.2350 },
+  'biggin hill': { lat: 51.3308, lon: 0.0325 },
+
+  // Scandinavia
+  'stockholm': { lat: 59.6519, lon: 17.9186 },
+  'oslo': { lat: 60.1976, lon: 11.1004 },
+  'copenhagen': { lat: 55.6181, lon: 12.6561 },
+  'helsinki': { lat: 60.3172, lon: 24.9633 },
+
+  // Portugal
+  'porto': { lat: 41.2481, lon: -8.6814 },
+  'faro': { lat: 37.0144, lon: -7.9659 },
+  'algarve': { lat: 37.0194, lon: -7.9322 },
+  'madeira': { lat: 32.6942, lon: -16.7744 },
   
   // North America
   'new york': { lat: 40.6413, lon: -73.7781 },

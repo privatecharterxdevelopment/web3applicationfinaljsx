@@ -4360,7 +4360,8 @@ const TokenizedAssetsGlassmorphic = () => {
 
           {/* CONTENT AREA */}
           <div className={`flex-1 ${activeCategory === 'chat' ? 'overflow-hidden' : 'overflow-y-auto'} ${
-            activeCategory === 'ground-transport' || activeCategory === 'chat' ? 'p-0 pt-2 sm:pt-4' :
+            activeCategory === 'chat' ? 'p-0' :
+            activeCategory === 'ground-transport' ? 'p-0 pt-2 sm:pt-4' :
             'px-4 sm:px-6 lg:px-8 pt-6 pb-8'
           }`}>
 
