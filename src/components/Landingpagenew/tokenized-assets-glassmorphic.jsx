@@ -43,8 +43,6 @@ import { chatService } from '../../services/chatService';
 import { subscriptionService } from '../../services/subscriptionService';
 import KYCForm from '../KYCForm';
 import ProfileSettings from '../ProfileSettings';
-import ProfileOverview from './ProfileOverview';
-import ProfileOverviewEnhanced from './ProfileOverviewEnhanced';
 import CryptoBalanceDashboard from './CryptoBalanceDashboard';
 import STOUTLDashboard from './STOUTLDashboard';
 import Marketplace from './Marketplace';
