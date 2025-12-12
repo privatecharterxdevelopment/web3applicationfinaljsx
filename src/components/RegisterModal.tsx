@@ -247,13 +247,6 @@ function RegisterModalStep2({
             We'll use this to send you important updates about your bookings
           </div>
 
-          {/* reCAPTCHA v3 is invisible and runs automatically */}
-          <div className="text-xs text-center text-gray-500">
-            This site is protected by reCAPTCHA and the Google{' '}
-            <a href="https://policies.google.com/privacy" className="underline hover:text-gray-700">Privacy Policy</a> and{' '}
-            <a href="https://policies.google.com/terms" className="underline hover:text-gray-700">Terms of Service</a> apply.
-          </div>
-
           <div className="flex gap-3">
             <button
               type="button"

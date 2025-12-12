@@ -1,12 +1,9 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Mail, Lock, User, Phone, X, ArrowRight } from 'lucide-react';
-import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import Portal from './Portal';
 import { supabase } from '../lib/supabase';
 import { VideoHero } from './auth';
 import FaceRegisterModal from './auth/FaceRegisterModal';
-
-const RECAPTCHA_SITE_KEY = '6LdA4fcrAAAAAEE-ojHle6bq-Xbhdz2yS5myYlSG';
 
 // Same videos as LoginModalNew
 const videos = [
@@ -31,8 +28,8 @@ interface RegisterModalNewProps {
 
 type RegistrationStep = 'basic-info' | 'phone-submit' | 'face-choice' | 'face-register';
 
-// Step 2 Component with reCAPTCHA v3
-function Step2WithRecaptcha({
+// Step 2 Component
+function Step2Form({
   formData,
   onClose,
   onSuccess,
@@ -48,7 +45,6 @@ function Step2WithRecaptcha({
   const [error, setError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState<RegistrationStep>('phone-submit');
   const [registeredUserId, setRegisteredUserId] = useState<string | null>(null);
-  const { executeRecaptcha } = useGoogleReCaptcha();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,23 +56,9 @@ function Step2WithRecaptcha({
       return;
     }
 
-    if (!executeRecaptcha) {
-      setError('reCAPTCHA is loading. Please wait a moment and try again.');
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      // Execute reCAPTCHA v3 (invisible)
-      const recaptchaToken = await executeRecaptcha('register');
-
-      if (!recaptchaToken) {
-        setError('reCAPTCHA verification failed. Please try again.');
-        setIsLoading(false);
-        return;
-      }
-
       // Call Supabase Edge Function for registration
       const { data, error: registerError } = await supabase.functions.invoke('register-with-verification', {
         body: {
@@ -84,8 +66,7 @@ function Step2WithRecaptcha({
           password: formData.password,
           firstName: formData.firstName.trim(),
           lastName: formData.lastName.trim() || null,
-          phone: phone.trim(),
-          recaptchaToken: recaptchaToken
+          phone: phone.trim()
         }
       });
 
@@ -391,13 +372,6 @@ function Step2WithRecaptcha({
                 </div>
               </div>
 
-              {/* reCAPTCHA v3 notice (invisible verification) */}
-              <div className="text-xs text-center text-gray-500 mb-4">
-                This site is protected by reCAPTCHA and the Google{' '}
-                <a href="https://policies.google.com/privacy" className="underline hover:text-gray-700">Privacy Policy</a> and{' '}
-                <a href="https://policies.google.com/terms" className="underline hover:text-gray-700">Terms of Service</a> apply.
-              </div>
-
               {/* Buttons */}
               <div className="flex gap-3 mb-4">
                 <button
@@ -528,17 +502,15 @@ export default function RegisterModalNew({
     onClose();
   };
 
-  // Step 2: Show final form with reCAPTCHA v3
+  // Step 2: Show final form
   if (step === 2) {
     return (
-      <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_SITE_KEY}>
-        <Step2WithRecaptcha
-          formData={formData}
-          onClose={handleClose}
-          onSuccess={onSuccess}
-          onGoBack={() => setStep(1)}
-        />
-      </GoogleReCaptchaProvider>
+      <Step2Form
+        formData={formData}
+        onClose={handleClose}
+        onSuccess={onSuccess}
+        onGoBack={() => setStep(1)}
+      />
     );
   }
 

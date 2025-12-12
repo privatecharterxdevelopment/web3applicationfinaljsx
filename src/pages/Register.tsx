@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { Mail, User } from 'lucide-react';
-import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import { supabase } from '../lib/supabase';
 import { AuthPageLayout, FormField, PasswordField, ErrorAlert, LoadingButton, SuccessModal } from '../components/auth';
 
@@ -18,7 +17,6 @@ export default function Register() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
-  const { executeRecaptcha } = useGoogleReCaptcha();
 
   // Check if already authenticated
   useEffect(() => {
@@ -54,30 +52,16 @@ export default function Register() {
       return;
     }
 
-    if (!executeRecaptcha) {
-      setError('reCAPTCHA not available. Please refresh the page and try again.');
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
-      // Execute reCAPTCHA v3
-      const recaptchaToken = executeRecaptcha ? await executeRecaptcha('register') : null;
-      
-      if (!recaptchaToken) {
-        setError('reCAPTCHA verification failed. Please try again.');
-        return;
-      }
-
       // Call our Edge Function for registration
       const { data, error: registerError } = await supabase.functions.invoke('register-with-verification', {
         body: {
           email: formData.email,
           password: formData.password,
           firstName: formData.firstName.trim(),
-          lastName: formData.lastName.trim() || null,
-          recaptchaToken: recaptchaToken
+          lastName: formData.lastName.trim() || null
         }
       });
 
@@ -202,13 +186,6 @@ export default function Register() {
             </span>
           </div>
         )}
-
-        {/* reCAPTCHA v3 is invisible and runs automatically */}
-        <div className="text-xs text-center text-gray-500">
-          This site is protected by reCAPTCHA and the Google{' '}
-          <a href="https://policies.google.com/privacy" className="underline hover:text-gray-700">Privacy Policy</a> and{' '}
-          <a href="https://policies.google.com/terms" className="underline hover:text-gray-700">Terms of Service</a> apply.
-        </div>
 
         <div className="flex items-center justify-between">
           <div className="text-sm">

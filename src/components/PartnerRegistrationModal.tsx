@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { X, Building2, Upload, Check, AlertCircle, Mail, Lock, User as UserIcon, Phone, MapPin, CreditCard, Wallet } from 'lucide-react';
-import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import { supabase } from '../lib/supabase';
 import Portal from './Portal';
 import { VideoHero } from './auth';
@@ -21,7 +20,6 @@ export default function PartnerRegistrationModal({ isOpen, onClose, onSuccess }:
   const [error, setError] = useState('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>('');
-  const { executeRecaptcha } = useGoogleReCaptcha();
 
   // Form data
   const [formData, setFormData] = useState({
@@ -109,16 +107,6 @@ export default function PartnerRegistrationModal({ isOpen, onClose, onSuccess }:
       }
       if (!formData.id_document_number || !formData.date_of_birth || !formData.address || !formData.city || !formData.country) {
         throw new Error('Please fill in all KYC details');
-      }
-
-      // reCAPTCHA verification
-      if (!executeRecaptcha) {
-        throw new Error('reCAPTCHA not available. Please refresh the page and try again.');
-      }
-
-      const recaptchaToken = await executeRecaptcha('partner_register');
-      if (!recaptchaToken) {
-        throw new Error('reCAPTCHA verification failed. Please try again.');
       }
 
       // 1. Create auth user

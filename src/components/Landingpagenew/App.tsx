@@ -11,7 +11,6 @@ import { WagmiProvider } from 'wagmi';
 import { mainnet, base } from 'wagmi/chains';
 import { createAppKit } from '@reown/appkit/react';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
-import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3';
 
 import Header from '../../components/Header.tsx';
 import LoginNew from '../../pages/LoginNew.tsx';

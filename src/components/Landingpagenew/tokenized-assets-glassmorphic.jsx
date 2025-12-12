@@ -22,7 +22,6 @@ import RegisterModal from '../RegisterModalNew';
 import ForgotPasswordModal from '../ForgotPasswordModal';
 import { ToastContainer } from '../Toast';
 import { useToast } from '../../hooks/useToast';
-import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3';
 import SuccessNotification from '../SuccessNotification';
 import UnifiedBookingFlow from '../../components/UnifiedBookingFlow';
 import TokenizeAssetFlow from './TokenizeAssetFlow';
@@ -3778,16 +3777,14 @@ const TokenizedAssetsGlassmorphic = () => {
           />
         )}
         {showPartnerRegisterModal && (
-          <GoogleReCaptchaProvider reCaptchaKey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}>
-            <PartnerRegistrationModal
-              isOpen={showPartnerRegisterModal}
-              onClose={() => setShowPartnerRegisterModal(false)}
-              onSuccess={() => {
-                setShowPartnerRegisterModal(false);
-                showToast('Partner registration successful! Please wait for verification.', 'success');
-              }}
-            />
-          </GoogleReCaptchaProvider>
+          <PartnerRegistrationModal
+            isOpen={showPartnerRegisterModal}
+            onClose={() => setShowPartnerRegisterModal(false)}
+            onSuccess={() => {
+              setShowPartnerRegisterModal(false);
+              showToast('Partner registration successful! Please wait for verification.', 'success');
+            }}
+          />
         )}
         <ToastContainer toasts={toasts} removeToast={removeToast} />
       </div>
@@ -11819,17 +11816,15 @@ const TokenizedAssetsGlassmorphic = () => {
       )}
 
       {showPartnerRegisterModal && (
-        <GoogleReCaptchaProvider reCaptchaKey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}>
-          <PartnerRegistrationModal
-            isOpen={showPartnerRegisterModal}
-            onClose={() => setShowPartnerRegisterModal(false)}
-            onSuccess={() => {
-              setShowPartnerRegisterModal(false);
-              // Optionally show success message
-              showToast('Partner registration successful! Please wait for verification.', 'success');
-            }}
-          />
-        </GoogleReCaptchaProvider>
+        <PartnerRegistrationModal
+          isOpen={showPartnerRegisterModal}
+          onClose={() => setShowPartnerRegisterModal(false)}
+          onSuccess={() => {
+            setShowPartnerRegisterModal(false);
+            // Optionally show success message
+            showToast('Partner registration successful! Please wait for verification.', 'success');
+          }}
+        />
       )}
 
       {/* Toast Notifications */}
