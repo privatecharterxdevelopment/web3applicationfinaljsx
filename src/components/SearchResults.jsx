@@ -279,7 +279,7 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                     {item.type === 'luxury_cars' && (item.daily_rate_eur || item.price) && `€${(item.daily_rate_eur || item.price).toLocaleString()}/day`}
                     {(item.type === 'ground_transport' || item.type === 'transfer' || item.type === 'taxi') && item.price && `€${item.price.toLocaleString()}`}
                     {item.type === 'adventures' && (item.price_eur || item.price) && `€${(item.price_eur || item.price).toLocaleString()}`}
-                    {item.type === 'wines' && (item.priceRange || (item.typicalPrice ? `€${item.typicalPrice.toLocaleString()}` : 'Price on request'))}
+                    {item.type === 'wines' && (item.priceRange || (item.typicalPrice || item.typical_price_eur || item.price ? `€${(item.typicalPrice || item.typical_price_eur || item.price).toLocaleString()}` : 'Price on request'))}
                   </p>
                   {item.type === 'empty_legs' && (
                     <p className="text-[10px] text-emerald-600">Save up to 70%</p>
@@ -1035,7 +1035,7 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                             <div>
                               <p className="text-[10px] text-gray-400">Price per bottle</p>
                               <p className="text-sm font-semibold text-gray-900">
-                                {item.priceRange || (item.typicalPrice ? `€${item.typicalPrice.toLocaleString()}` : 'On request')}
+                                {item.priceRange || (item.typicalPrice || item.typical_price_eur || item.price ? `€${(item.typicalPrice || item.typical_price_eur || item.price).toLocaleString()}` : 'On request')}
                               </p>
                             </div>
                             <div className="flex gap-2">
