@@ -14,11 +14,13 @@ export const CHAT_ACTIONS = {
   UPDATE_MESSAGE: 'UPDATE_MESSAGE',
   REMOVE_LOADING_MESSAGES: 'REMOVE_LOADING_MESSAGES',
   SET_CHAT_MESSAGES: 'SET_CHAT_MESSAGES',
+  UPDATE_STREAMING_MESSAGE: 'UPDATE_STREAMING_MESSAGE', // For real-time streaming
 
   // Loading states
   SET_PROCESSING: 'SET_PROCESSING',
   SET_SEARCHING: 'SET_SEARCHING',
   SET_ASSISTANT_TYPING: 'SET_ASSISTANT_TYPING',
+  SET_STREAMING: 'SET_STREAMING', // For streaming indicator
 
   // Limits
   SET_MESSAGE_COUNT: 'SET_MESSAGE_COUNT',
@@ -38,6 +40,7 @@ export const initialChatState = {
   activeChat: 'new',
   isProcessing: false,
   isSearching: false,
+  isStreaming: false, // For real-time streaming
   assistantTyping: false,
   messageCount: 0,
   messageLimitReached: false,
@@ -127,6 +130,29 @@ export function chatReducer(state, action) {
         )
       };
 
+    // Update streaming message content in real-time
+    case CHAT_ACTIONS.UPDATE_STREAMING_MESSAGE:
+      return {
+        ...state,
+        chatHistory: state.chatHistory.map(chat => {
+          if (chat.id !== action.payload.chatId) return chat;
+
+          // Find the last assistant message that's streaming
+          const messages = [...chat.messages];
+          const lastMsgIndex = messages.length - 1;
+
+          if (lastMsgIndex >= 0 && messages[lastMsgIndex].role === 'assistant') {
+            messages[lastMsgIndex] = {
+              ...messages[lastMsgIndex],
+              content: action.payload.content,
+              isStreaming: action.payload.isStreaming ?? true
+            };
+          }
+
+          return { ...chat, messages };
+        })
+      };
+
     // Loading states
     case CHAT_ACTIONS.SET_PROCESSING:
       return { ...state, isProcessing: action.payload };
@@ -136,6 +162,9 @@ export function chatReducer(state, action) {
 
     case CHAT_ACTIONS.SET_ASSISTANT_TYPING:
       return { ...state, assistantTyping: action.payload };
+
+    case CHAT_ACTIONS.SET_STREAMING:
+      return { ...state, isStreaming: action.payload };
 
     // Limits
     case CHAT_ACTIONS.SET_MESSAGE_COUNT:
@@ -176,10 +205,15 @@ export const chatActions = {
   updateMessage: (chatId, index, updates) => ({ type: CHAT_ACTIONS.UPDATE_MESSAGE, payload: { chatId, index, updates } }),
   removeLoadingMessages: (chatId) => ({ type: CHAT_ACTIONS.REMOVE_LOADING_MESSAGES, payload: chatId }),
   setChatMessages: (chatId, messages) => ({ type: CHAT_ACTIONS.SET_CHAT_MESSAGES, payload: { chatId, messages } }),
+  updateStreamingMessage: (chatId, content, isStreaming = true) => ({
+    type: CHAT_ACTIONS.UPDATE_STREAMING_MESSAGE,
+    payload: { chatId, content, isStreaming }
+  }),
 
   setProcessing: (value) => ({ type: CHAT_ACTIONS.SET_PROCESSING, payload: value }),
   setSearching: (value) => ({ type: CHAT_ACTIONS.SET_SEARCHING, payload: value }),
   setAssistantTyping: (value) => ({ type: CHAT_ACTIONS.SET_ASSISTANT_TYPING, payload: value }),
+  setStreaming: (value) => ({ type: CHAT_ACTIONS.SET_STREAMING, payload: value }),
 
   setMessageCount: (count) => ({ type: CHAT_ACTIONS.SET_MESSAGE_COUNT, payload: count }),
   setMessageLimitReached: (value) => ({ type: CHAT_ACTIONS.SET_MESSAGE_LIMIT_REACHED, payload: value }),

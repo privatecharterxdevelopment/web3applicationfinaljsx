@@ -384,6 +384,92 @@ export interface Database {
           updated_at?: string
         }
       }
+      travel_requests: {
+        Row: {
+          id: string
+          user_id: string | null
+          request_id: string
+          destination: string
+          departure_location: string | null
+          departure_date: string
+          return_date: string
+          adults: number
+          children: number
+          total_budget: number
+          estimated_cost: number | null
+          currency: string
+          budget_breakdown: Json | null
+          itinerary_data: Json | null
+          maps_data: Json | null
+          verified_venues: Json | null
+          status: 'draft' | 'pending_review' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled'
+          contact_name: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          special_requests: string | null
+          admin_notes: string | null
+          processed_by: string | null
+          processed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          request_id?: string
+          destination: string
+          departure_location?: string | null
+          departure_date: string
+          return_date: string
+          adults?: number
+          children?: number
+          total_budget: number
+          estimated_cost?: number | null
+          currency?: string
+          budget_breakdown?: Json | null
+          itinerary_data?: Json | null
+          maps_data?: Json | null
+          verified_venues?: Json | null
+          status?: 'draft' | 'pending_review' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled'
+          contact_name?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          special_requests?: string | null
+          admin_notes?: string | null
+          processed_by?: string | null
+          processed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          request_id?: string
+          destination?: string
+          departure_location?: string | null
+          departure_date?: string
+          return_date?: string
+          adults?: number
+          children?: number
+          total_budget?: number
+          estimated_cost?: number | null
+          currency?: string
+          budget_breakdown?: Json | null
+          itinerary_data?: Json | null
+          maps_data?: Json | null
+          verified_venues?: Json | null
+          status?: 'draft' | 'pending_review' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled'
+          contact_name?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          special_requests?: string | null
+          admin_notes?: string | null
+          processed_by?: string | null
+          processed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }

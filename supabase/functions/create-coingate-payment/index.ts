@@ -55,9 +55,7 @@ interface ServiceDetails {
 const PLATFORM_FEE_PERCENT = 0.025; // 2.5%
 const COINGATE_FEE_PERCENT = 0.01;  // 1%
 
-// Currency conversion rates (GBP to USD)
-// Note: For production, consider using a real-time forex API
-const GBP_TO_USD_RATE = 1.27;
+// No manual currency conversion - CoinGate handles all conversions automatically
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -102,24 +100,31 @@ serve(async (req) => {
           throw new Error(`Empty leg not found: ${serviceId}`);
         }
 
-        // Get price - prefer price_usd, otherwise convert from GBP
-        let priceUSD: number;
+        // Get price and currency from database - CoinGate handles conversion
+        let price: number;
+        let currency: string;
+
         if (emptyLeg.price_usd) {
-          priceUSD = parseFloat(emptyLeg.price_usd);
+          price = parseFloat(emptyLeg.price_usd);
+          currency = 'USD';
+        } else if (emptyLeg.price_eur) {
+          price = parseFloat(emptyLeg.price_eur);
+          currency = 'EUR';
         } else {
-          // EmptyLegs_ table stores prices in GBP, convert to USD
-          const priceGBP = parseFloat(emptyLeg.price || emptyLeg.discounted_price || 0);
-          priceUSD = Math.round(priceGBP * GBP_TO_USD_RATE * 100) / 100;
-          console.log(`Converting GBP ${priceGBP} to USD ${priceUSD}`);
+          // Legacy data - use original currency
+          price = parseFloat(emptyLeg.price || emptyLeg.discounted_price || 0);
+          currency = emptyLeg.currency || 'GBP';
         }
+
+        console.log(`EmptyLeg price: ${price} ${currency}`);
 
         serviceDetails = {
           id: emptyLeg.id,
           title: `${emptyLeg.departure_airport || emptyLeg.from_iata} → ${emptyLeg.arrival_airport || emptyLeg.to_iata}`,
           description: emptyLeg.description || `Empty leg flight on ${emptyLeg.aircraft_type}`,
           image_url: emptyLeg.image_url || emptyLeg.aircraft_image,
-          price: priceUSD,
-          currency: 'USD',
+          price: price,
+          currency: currency,
           origin: emptyLeg.departure_airport || emptyLeg.from_iata,
           destination: emptyLeg.arrival_airport || emptyLeg.to_iata,
           departure_date: emptyLeg.departure_date,
@@ -243,11 +248,13 @@ serve(async (req) => {
       throw new Error('Failed to load service details');
     }
 
-    // Calculate fees
+    // Calculate fees including Swiss VAT 8.1%
+    const VAT_RATE = 0.081; // 8.1% Swiss VAT
     const basePrice = serviceDetails.price;
     const platformFee = Math.round(basePrice * PLATFORM_FEE_PERCENT * 100) / 100;
+    const vatAmount = Math.round(basePrice * VAT_RATE * 100) / 100;
     const coingateFee = Math.round(basePrice * COINGATE_FEE_PERCENT * 100) / 100;
-    const totalAmount = Math.round((basePrice + platformFee + coingateFee) * 100) / 100;
+    const totalAmount = Math.round((basePrice + platformFee + vatAmount + coingateFee) * 100) / 100;
 
     let booking: any;
 
@@ -263,6 +270,7 @@ serve(async (req) => {
         .from('hotel_bookings')
         .update({
           platform_fee: platformFee,
+          vat_amount: vatAmount,
           coingate_fee: coingateFee,
           total_with_fees: totalAmount
         })
@@ -289,6 +297,7 @@ serve(async (req) => {
           certification_type: serviceDetails.certification_type,
           base_price: basePrice,
           platform_fee: platformFee,
+          vat_amount: vatAmount,
           coingate_fee: coingateFee,
           total_amount: totalAmount,
           currency: serviceDetails.currency,
@@ -417,6 +426,7 @@ serve(async (req) => {
       priceBreakdown: {
         basePrice,
         platformFee,
+        vatAmount,
         coingateFee,
         totalAmount,
         currency: serviceDetails.currency

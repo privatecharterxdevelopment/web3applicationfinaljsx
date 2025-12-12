@@ -228,12 +228,14 @@ export function useCartManager({ userHasNFT, usedNFTBenefitThisYear, nftBenefitC
     const customExtras = state.cartItems.filter(item =>
       item.isCustomExtra || item.type === 'custom_extra'
     );
+    // Payable items include empty legs, adventures, and wines (have fixed prices)
     const payableItems = state.cartItems.filter(item =>
       item.type === 'empty_legs' || item.type === 'emptyleg' ||
-      item.type === 'adventure' || item.type === 'adventures'
+      item.type === 'adventure' || item.type === 'adventures' ||
+      item.type === 'wines' || item.type === 'wine'
     );
     const requestOnlyItems = state.cartItems.filter(item =>
-      !['empty_legs', 'emptyleg', 'adventure', 'adventures'].includes(item.type)
+      !['empty_legs', 'emptyleg', 'adventure', 'adventures', 'wines', 'wine'].includes(item.type)
     );
 
     return {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUpRight, ArrowDownLeft, History, Wallet, MessageCircle, Shield, User, Award, Plus, X, ExternalLink, LogOut, RefreshCw, Coins, Plane, Leaf, Send, CheckCircle, Headphones } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, History, Wallet, MessageCircle, Shield, User, Award, Plus, X, ExternalLink, LogOut, RefreshCw, Coins, Plane, Leaf, Send, CheckCircle, Headphones, Camera, Loader2 } from 'lucide-react';
 import { supportTicketService } from '../../services/supportTicketService';
 import { LineChart, Line, ResponsiveContainer, YAxis, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
@@ -64,6 +64,11 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
   });
   const [kycSubmitted, setKycSubmitted] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
+
+  // State for profile avatar
+  const [avatarUrl, setAvatarUrl] = useState(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState(null);
 
   // Fetch ETH balance on Base - refetch every 30 seconds
   const { data: baseEthBalance, refetch: refetchBaseEth } = useBalance({
@@ -224,6 +229,10 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
 
       if (!error && data) {
         setUserProfile(data);
+        // Set avatar URL if exists
+        if (data.avatar_url) {
+          setAvatarUrl(data.avatar_url);
+        }
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -366,6 +375,97 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
       alert('Failed to save profile. Please try again.');
     } finally {
       setSavingProfile(false);
+    }
+  };
+
+  // Handle avatar file selection and upload
+  const handleAvatarChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file || !user?.id) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please select a valid image file (JPEG, PNG, WebP, or GIF)');
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size must be less than 5MB');
+      return;
+    }
+
+    // Show preview immediately
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarPreview(previewUrl);
+
+    setUploadingAvatar(true);
+    try {
+      // Generate file path: userId/timestamp.extension
+      const fileExt = file.name.split('.').pop()?.toLowerCase();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      // Delete old avatar if exists
+      if (avatarUrl) {
+        try {
+          // Extract path from URL
+          const oldPath = avatarUrl.split('/avatars/')[1];
+          if (oldPath) {
+            await supabase.storage.from('avatars').remove([oldPath]);
+          }
+        } catch (e) {
+          console.log('Could not delete old avatar:', e);
+        }
+      }
+
+      // Upload new avatar
+      const { data, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw new Error(uploadError.message);
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Update user_profiles with new avatar URL
+      const { data: existingProfile } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existingProfile) {
+        await supabase
+          .from('user_profiles')
+          .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
+          .eq('user_id', user.id);
+      } else {
+        await supabase
+          .from('user_profiles')
+          .insert({ user_id: user.id, avatar_url: publicUrl });
+      }
+
+      // Update local state
+      setAvatarUrl(publicUrl);
+      setAvatarPreview(null); // Clear preview, use actual URL
+
+      console.log('Avatar uploaded successfully:', publicUrl);
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      alert('Failed to upload avatar. Please try again.');
+      setAvatarPreview(null);
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -775,7 +875,7 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                 <div className="p-4 bg-white/10 space-y-2">
                   {balances.length > 0 ? (
                     balances.map((item) => (
-                      <div key={item.symbol} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-0">
+                      <div key={`${item.symbol}-${item.chain}`} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-0">
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">
                             <span className="text-xs font-medium text-gray-600">{item.symbol[0]}</span>
@@ -1139,8 +1239,35 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
             {/* Profile Settings Card */}
             <div className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl p-4">
               <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                  <User className="w-6 h-6 text-gray-600" />
+                {/* Clickable Avatar with Camera Overlay */}
+                <div className="relative group">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center overflow-hidden">
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-6 h-6 text-gray-600" />
+                    )}
+                    {uploadingAvatar && (
+                      <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                        <Loader2 className="w-5 h-5 text-white animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                  {/* Camera overlay - always visible */}
+                  <label className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-black hover:bg-gray-800 rounded-full flex items-center justify-center cursor-pointer transition-colors shadow-md border border-white">
+                    <Camera className="w-2.5 h-2.5 text-white" />
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                      onChange={handleAvatarChange}
+                      className="hidden"
+                      disabled={uploadingAvatar}
+                    />
+                  </label>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-900">
@@ -1260,7 +1387,7 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
           <div className="grid grid-cols-2 gap-4 mb-6">
             {balances.map((item) => (
               <div
-                key={item.symbol}
+                key={`${item.symbol}-${item.chain}`}
                 className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl p-4 hover:bg-white/20 transition-all"
               >
                 <div className="flex justify-between items-start mb-3">
@@ -1340,7 +1467,7 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                 const barWidth = (item.value / maxValue * 100);
 
                 return (
-                  <div key={item.symbol} className="group">
+                  <div key={`${item.symbol}-${item.chain}`} className="group">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-xs font-medium text-gray-600">{item.symbol}</span>
                       <span className="text-xs text-gray-400">{percentage.toFixed(1)}%</span>
@@ -1400,6 +1527,40 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
 
             {/* Modal Body */}
             <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+              {/* Profile Avatar Upload */}
+              <div className="flex flex-col items-center pb-4 border-b border-gray-100">
+                <div className="relative">
+                  <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                    {(avatarPreview || avatarUrl) ? (
+                      <img
+                        src={avatarPreview || avatarUrl}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-10 h-10 text-gray-500" />
+                    )}
+                    {uploadingAvatar && (
+                      <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                        <Loader2 className="w-6 h-6 text-white animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                  <label className="absolute -bottom-1 -right-1 w-8 h-8 bg-black hover:bg-gray-800 rounded-full flex items-center justify-center cursor-pointer transition-colors shadow-lg">
+                    <Camera className="w-4 h-4 text-white" />
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                      onChange={handleAvatarChange}
+                      className="hidden"
+                      disabled={uploadingAvatar}
+                    />
+                  </label>
+                </div>
+                <p className="text-xs text-gray-400 mt-3">Click camera icon to upload photo</p>
+                <p className="text-[10px] text-gray-300">Max 5MB · JPEG, PNG, WebP, GIF</p>
+              </div>
+
               {/* KYC Info Section (Read-Only) */}
               {kycSubmitted && (editProfileData.first_name || editProfileData.last_name) && (
                 <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">

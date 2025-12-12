@@ -1111,8 +1111,15 @@ const TokenizedAssetsGlassmorphic = () => {
   const { open } = useAppKit();
   const { hasNFT, nftDiscount, isCheckingNFT, checkNFTMembership, showNFTModal, closeNFTModal, nfts, usedBenefits } = useNFT();
 
-  const [activeCategory, setActiveCategory] = useState('overview');
+  const [activeCategory, setActiveCategoryInternal] = useState('overview');
   const [dashboardView, setDashboardView] = useState('overview');
+
+  // Wrapper for setActiveCategory to prevent invalid values and add logging
+  const setActiveCategory = useCallback((category) => {
+    const validCategory = category || 'overview'; // Default to 'overview' if empty/null
+    console.log('📍 Setting activeCategory:', validCategory, 'from:', category);
+    setActiveCategoryInternal(validCategory);
+  }, []);
   const [expandedMenus, setExpandedMenus] = useState({});
   const [expandedAIRequestId, setExpandedAIRequestId] = useState(null);
   const [expandedRequestId, setExpandedRequestId] = useState(null);
@@ -1883,6 +1890,14 @@ const TokenizedAssetsGlassmorphic = () => {
       setShowDashboard(true);
     }
   }, [isAuthenticated, user, showDashboard]);
+
+  // Ensure activeCategory is valid after authentication - prevent blank page
+  useEffect(() => {
+    if (isAuthenticated && user && !activeCategory) {
+      console.log('⚠️ activeCategory is empty, resetting to overview');
+      setActiveCategory('overview');
+    }
+  }, [isAuthenticated, user, activeCategory, setActiveCategory]);
 
   // URL Sync: Initialize chat from URL on first mount ONLY
   // This runs once when component mounts if there's a chat ID in URL
@@ -3656,6 +3671,16 @@ const TokenizedAssetsGlassmorphic = () => {
       </div>
     );
   }
+
+  // Debug log for render - helps identify blank page issues
+  console.log('🎯 Dashboard render:', {
+    activeCategory,
+    isAuthenticated,
+    hasUser: !!user,
+    userRole: user?.user_role,
+    webMode,
+    isTransitioning
+  });
 
   // Don't render dashboard content until authenticated
   // MOBILE FIX: If authenticated (even without showDashboard flag), show dashboard immediately
@@ -11717,6 +11742,7 @@ const TokenizedAssetsGlassmorphic = () => {
               </div>
             </div>
           )}
+
           </div>
         </main>
       </div>

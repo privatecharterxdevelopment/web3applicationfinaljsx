@@ -842,6 +842,7 @@ const AIChat = ({
             const systemPrompt = getSystemPrompt();
             const userMessage = { role: 'user', content: query };
 
+            // Claude handles ALL searches including wines - same as empty legs, jets, etc.
             const response = await claudeEdgeService.messages.create({
               model: 'claude-sonnet-4-20250514',
               max_tokens: 4096,
@@ -891,6 +892,8 @@ const AIChat = ({
                     tabs.push({ id: 'helicopters', title: 'Helicopters', count: toolResult.results.length, items: toolResult.results });
                   } else if (toolUse.name === 'searchLuxuryCars' && toolResult.results.length > 0) {
                     tabs.push({ id: 'luxury_cars', title: 'Luxury Cars', count: toolResult.results.length, items: toolResult.results });
+                  } else if (toolUse.name === 'searchWines' && toolResult.results.length > 0) {
+                    tabs.push({ id: 'wines', title: 'Wines', count: toolResult.results.length, items: toolResult.results });
                   }
                   if (tabs.length > 0) {
                     resultsMessage = { role: 'results', content: JSON.stringify({ tabs }), tabs };
@@ -1898,8 +1901,21 @@ As their luxury travel consultant:
             const opText = leg.operator ? ` • ${leg.operator}` : '';
             const subtitle = `${whenText}${opText}`.trim();
 
-            const currency = leg.currency || (leg.price_usd ? 'USD' : 'EUR');
-            const price = leg.price_usd || leg.price || leg.price_eur || null;
+            // Use original price from database - CoinGate handles currency conversion
+            let price = null;
+            let currency = 'USD';
+
+            if (leg.price_usd) {
+              price = parseFloat(leg.price_usd);
+              currency = 'USD';
+            } else if (leg.price_eur) {
+              price = parseFloat(leg.price_eur);
+              currency = 'EUR';
+            } else if (leg.price || leg.discounted_price) {
+              // Legacy data - use original currency from DB
+              price = parseFloat(leg.price || leg.discounted_price);
+              currency = leg.currency || 'GBP';
+            }
 
             const imageUrl = leg.image_url || leg.image_url_1 || leg.image_url_2 || leg.image_url_3 || leg.image_url_4 || leg.image_url_5 || (leg.aircraft?.images ? ImageUtils.getPrimaryImage(leg.aircraft.images) : null);
 
@@ -2374,6 +2390,10 @@ As their luxury travel consultant, provide an enthusiastic response that:
           content: msg.content
         }));
 
+      // Claude handles ALL searches including wines - same as empty legs, jets, etc.
+      console.log('🔧 Tools being sent to Claude:', aiToolDefinitions.map(t => t.name));
+      console.log('🔧 searchWines tool definition:', aiToolDefinitions.find(t => t.name === 'searchWines'));
+
       const response = await claudeEdgeService.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4096,
@@ -2409,14 +2429,8 @@ As their luxury travel consultant, provide an enthusiastic response that:
           ));
 
           await chatService.updateChatMessages(workingChatId, [...conversationHistory, initialMessage], user.id);
-        } else {
-          // Remove loading message if no text before tool use
-          setChatHistory(prev => prev.map(c =>
-            c.id === workingChatId
-              ? { ...c, messages: c.messages.filter(m => !m.isLoading) }
-              : c
-          ));
         }
+        // NOTE: Keep loading message visible - it will be removed when follow-up response is added
 
         const toolUse = response.content.find(block => block.type === 'tool_use');
         if (toolUse) {
@@ -2482,6 +2496,13 @@ As their luxury travel consultant, provide an enthusiastic response that:
               tabs.push({
                 id: 'luxury_cars',
                 title: 'Luxury Cars',
+                count: toolResult.results.length,
+                items: toolResult.results
+              });
+            } else if (toolUse.name === 'searchWines' && toolResult.results && toolResult.results.length > 0) {
+              tabs.push({
+                id: 'wines',
+                title: 'Wines',
                 count: toolResult.results.length,
                 items: toolResult.results
               });
@@ -2763,7 +2784,8 @@ As their luxury travel consultant, provide an enthusiastic response that:
           setChatHistory(prev => {
             const updated = prev.map(c => {
               if (c.id === workingChatId) {
-                const newMessages = [...c.messages, aiMessage];
+                // Remove loading messages and add the AI response
+                const newMessages = [...c.messages.filter(m => !m.isLoading), aiMessage];
                 followUpMessageIndex = newMessages.length - 1;
                 return { ...c, messages: newMessages };
               }
@@ -4722,9 +4744,12 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     const isHelicopter = item.type === 'helicopters' || item.type === 'helicopter';
                     const isYacht = item.type === 'yachts' || item.type === 'yacht';
                     const isLuxuryCar = item.type === 'luxury_cars' || item.type === 'luxury_car';
+                    const isWine = item.type === 'wines' || item.type === 'wine';
                     const isCustomExtra = item.type === 'custom_extra';
-                    const canDirectCheckout = isEmptyLeg || isAdventure;
+                    const canDirectCheckout = isEmptyLeg || isAdventure || isWine;
                     const hasAirportFee = item.airportPickupFee && item.airportPickupFee > 0;
+                    // Currency: Empty legs are USD, everything else is EUR
+                    const currencySymbol = item.currency === 'USD' || isEmptyLeg ? '$' : '€';
 
                     // Custom Extra - Special horizontal layout
                     if (isCustomExtra) {
@@ -4861,9 +4886,10 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                 isEmptyLeg ? 'bg-gray-800 text-white' :
                                 isTransfer ? 'bg-gray-400 text-white' :
                                 isAdventure ? 'bg-gray-800 text-white' :
+                                isWine ? 'bg-gray-700 text-white' :
                                 'bg-gray-300 text-gray-700'
                               }`}>
-                                {isPaidItem ? 'PAID' : isJet ? 'CHARTER' : isHelicopter ? 'HELI' : isYacht ? 'YACHT' : isLuxuryCar ? 'SUPERCAR' : isEmptyLeg ? 'EMPTY LEG' : isTransfer ? 'TRANSFER' : isAdventure ? 'EXPERIENCE' : 'SERVICE'}
+                                {isPaidItem ? 'PAID' : isJet ? 'CHARTER' : isHelicopter ? 'HELI' : isYacht ? 'YACHT' : isLuxuryCar ? 'SUPERCAR' : isEmptyLeg ? 'EMPTY LEG' : isTransfer ? 'TRANSFER' : isAdventure ? 'EXPERIENCE' : isWine ? 'WINE' : 'SERVICE'}
                               </span>
                               {!isPaidItem && isEmptyLeg && (
                                 <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-gray-200 text-gray-700">CRYPTO PAY</span>
@@ -4882,12 +4908,16 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                             {(isJet || isHelicopter) && item.estimatedDuration && (
                               <p className="text-[10px] text-gray-500">⏱️ {item.estimatedDuration} ({item.billedHours}h billed)</p>
                             )}
+                            {/* Wine details */}
+                            {isWine && item.producer && (
+                              <p className="text-[10px] text-gray-500 mt-0.5">{item.producer}{item.vintage ? ` · ${item.vintage}` : ''}</p>
+                            )}
                           </div>
                           {/* Price & expand icon */}
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <div className="text-right">
                               <p className="text-sm font-bold text-gray-900">
-                                {item.isEstimate ? '~' : ''}${(item.price || item.basePrice || item.price_usd || 0).toLocaleString()}
+                                {currencySymbol}{(item.price || item.basePrice || item.price_usd || 0).toLocaleString()}
                               </p>
                               {item.priceCalculation && (
                                 <p className="text-[9px] text-gray-400">{item.priceCalculation}</p>
@@ -5193,10 +5223,11 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                               {isLuxuryCar ? `${item.rentalDays || 1} day${(item.rentalDays || 1) > 1 ? 's' : ''} rental` :
                                isJet ? 'Charter quote' :
                                isCustomExtra ? `${item.quantity || 1}x ${item.category || 'item'}` :
+                               isWine ? `${item.quantity || 1}x bottle` :
                                item.isEstimate ? 'Base price (est.)' : 'Base price'}
                             </span>
                             <span className="text-gray-700">
-                              {item.isEstimate && isCustomExtra ? '~' : ''}${(item.basePrice || item.price_usd || item.price || 0).toLocaleString()}
+                              {item.isEstimate && isCustomExtra ? '~' : ''}{currencySymbol}{(item.basePrice || item.price_usd || item.price || 0).toLocaleString()}
                             </span>
                           </div>
 
@@ -5236,7 +5267,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                               {canDirectCheckout ? 'Direct booking' : (item.isEstimate ? 'Est. total' : 'Request quote')}
                             </span>
                             <span className="text-sm font-bold text-gray-900">
-                              {item.isEstimate ? '~' : ''}${((item.totalWithFee || item.price_usd || item.price || 0) + (item.cateringPrice || 0)).toLocaleString()}
+                              {item.isEstimate ? '~' : ''}{currencySymbol}{((item.totalWithFee || item.price_usd || item.price || 0) + (item.cateringPrice || 0)).toLocaleString()}
                             </span>
                           </div>
                         </div>
@@ -5251,14 +5282,22 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   {(() => {
                     const mainServices = cartItems.filter(item => item.type !== 'custom_extra');
                     const customExtras = cartItems.filter(item => item.type === 'custom_extra');
-                    const servicesSubtotal = mainServices.reduce((sum, item) => sum + (item.basePrice || item.price_usd || item.price || 0), 0);
+
+                    // Separate by currency - Empty legs are USD, everything else is EUR
+                    const usdItems = cartItems.filter(item => item.currency === 'USD' || item.type === 'empty_legs' || item.type === 'emptyleg');
+                    const eurItems = cartItems.filter(item => item.currency !== 'USD' && item.type !== 'empty_legs' && item.type !== 'emptyleg');
+
+                    const usdSubtotal = usdItems.reduce((sum, item) => sum + (item.basePrice || item.price_usd || item.price || 0), 0);
+                    const eurSubtotal = eurItems.reduce((sum, item) => sum + (item.basePrice || item.price || 0), 0);
+
                     const extrasSubtotal = customExtras.reduce((sum, item) => sum + (item.basePrice || item.price_usd || item.price || 0), 0);
                     const airportFees = cartItems.reduce((sum, item) => sum + (item.airportPickupFee || 0), 0);
                     const cateringTotal = cartItems.reduce((sum, item) => sum + (item.cateringPrice || 0), 0);
-                    const subtotalBeforeVAT = servicesSubtotal + extrasSubtotal + cateringTotal + airportFees;
-                    // Always calculate 8.1% VAT
-                    const vatAmount = subtotalBeforeVAT * 0.081;
-                    const grandTotal = subtotalBeforeVAT + vatAmount;
+
+                    const hasMixedCurrencies = usdItems.length > 0 && eurItems.length > 0;
+                    const primaryCurrency = usdItems.length > eurItems.length ? '$' : '€';
+
+                    // For mixed currencies, show separate totals
                     const hasEstimates = cartItems.some(item => item.isEstimate);
                     const hasCustomExtras = customExtras.length > 0;
 
@@ -5280,47 +5319,75 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                             <span className="text-[10px] text-gray-400">Availability TBC</span>
                           </div>
                         )}
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-gray-500">Services</span>
-                          <span className="text-gray-700">{hasEstimates ? '~' : ''}${servicesSubtotal.toLocaleString()}</span>
-                        </div>
+
+                        {/* Show EUR items if any */}
+                        {eurSubtotal > 0 && (
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-500">Services (EUR)</span>
+                            <span className="text-gray-700">{hasEstimates ? '~' : ''}€{eurSubtotal.toLocaleString()}</span>
+                          </div>
+                        )}
+
+                        {/* Show USD items if any */}
+                        {usdSubtotal > 0 && (
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-500">Services (USD)</span>
+                            <span className="text-gray-700">{hasEstimates ? '~' : ''}${usdSubtotal.toLocaleString()}</span>
+                          </div>
+                        )}
+
                         {extrasSubtotal > 0 && (
                           <div className="flex justify-between items-center text-sm">
                             <span className="text-gray-600">Custom extras</span>
-                            <span className="text-gray-600">~${extrasSubtotal.toLocaleString()}</span>
+                            <span className="text-gray-600">~€{extrasSubtotal.toLocaleString()}</span>
                           </div>
                         )}
                         {cateringTotal > 0 && (
                           <div className="flex justify-between items-center text-sm">
                             <span className="text-gray-500">Catering upgrades</span>
-                            <span className="text-gray-600">+${cateringTotal.toLocaleString()}</span>
+                            <span className="text-gray-600">+€{cateringTotal.toLocaleString()}</span>
                           </div>
                         )}
                         {airportFees > 0 && (
                           <div className="flex justify-between items-center text-sm">
                             <span className="text-gray-500">Airfield pickup fees</span>
-                            <span className="text-gray-600">+${airportFees.toLocaleString()}</span>
+                            <span className="text-gray-600">+€{airportFees.toLocaleString()}</span>
                           </div>
                         )}
-                        {/* Always show VAT 8.1% */}
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-gray-500">VAT (8.1%)</span>
-                          <span className="text-gray-600">{hasEstimates ? '~' : ''}+${vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                        </div>
+
+                        {/* VAT note for EUR items */}
+                        {eurSubtotal > 0 && (
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-500">VAT (8.1% on EUR)</span>
+                            <span className="text-gray-600">{hasEstimates ? '~' : ''}+€{(eurSubtotal * 0.081).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          </div>
+                        )}
+
                         <div className="flex justify-between items-center pt-2 border-t border-gray-200">
                           <span className="text-sm font-semibold text-gray-700">{hasEstimates ? 'Est. Total' : 'Total'}</span>
-                          <span className="text-lg font-bold text-gray-900">{hasEstimates ? '~' : ''}${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <div className="text-right">
+                            {hasMixedCurrencies ? (
+                              <>
+                                {eurSubtotal > 0 && <span className="text-lg font-bold text-gray-900 block">€{(eurSubtotal * 1.081).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>}
+                                {usdSubtotal > 0 && <span className="text-lg font-bold text-gray-900 block">${usdSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>}
+                              </>
+                            ) : (
+                              <span className="text-lg font-bold text-gray-900">
+                                {hasEstimates ? '~' : ''}{eurSubtotal > 0 ? '€' : '$'}{((eurSubtotal > 0 ? eurSubtotal * 1.081 : 0) + usdSubtotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            )}
+                          </div>
                         </div>
 
-                        {/* PVCX Rewards Estimate */}
-                        {grandTotal > 0 && (
+                        {/* PVCX Rewards Estimate - based on EUR equivalent */}
+                        {(eurSubtotal > 0 || usdSubtotal > 0) && (
                           <div className="flex justify-between items-center pt-2 mt-2 border-t border-dashed border-gray-200 bg-gray-100 -mx-4 px-4 py-2 -mb-3 rounded-b-lg">
                             <span className="text-xs text-gray-700 flex items-center gap-1.5">
                               <span className="text-sm">✨</span>
                               PVCX Reward (1.5%)
                             </span>
                             <span className="text-sm font-bold text-gray-800">
-                              +{(grandTotal * 0.015).toFixed(2)} PVCX
+                              +{((eurSubtotal * 1.081 + usdSubtotal * 0.92) * 0.015).toFixed(2)} PVCX
                             </span>
                           </div>
                         )}

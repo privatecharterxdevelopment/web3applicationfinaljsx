@@ -31,6 +31,7 @@ export type RequestType =
   | 'ground_transport'        // Ground transport/taxi
   | 'consultation'            // Consultation requests
   | 'ai_chat_bulk'            // AI Chat bulk requests (multiple items)
+  | 'travel_request'          // Luxury travel planning requests (min $20K)
   | string;                   // Allow any other string for flexibility
 
 interface CreateRequestOptions {

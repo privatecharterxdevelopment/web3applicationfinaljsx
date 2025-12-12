@@ -21,13 +21,25 @@ const MyBookingsView = ({ user, onBack }) => {
     }
   }, [user]);
 
+  // Check if CoinGate session has expired (default 60 minutes)
+  const isPaymentExpired = (booking) => {
+    // Check metadata.coingate_expire_at first
+    if (booking.metadata?.coingate_expire_at) {
+      return new Date(booking.metadata.coingate_expire_at) < new Date();
+    }
+    // Fallback: CoinGate sessions expire after 60 minutes
+    const createdAt = new Date(booking.created_at);
+    const expiryTime = new Date(createdAt.getTime() + 60 * 60 * 1000); // 60 minutes
+    return new Date() > expiryTime;
+  };
+
   const loadBookings = async () => {
     setLoading(true);
     try {
-      // Fetch regular bookings
+      // Fetch regular bookings including metadata
       const { data: regularBookings, error: regularError } = await supabase
         .from('user_bookings')
-        .select('*, booking_transactions(*)')
+        .select('*, booking_transactions(*), metadata')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -75,7 +87,25 @@ const MyBookingsView = ({ user, onBack }) => {
         ...transformedHotelBookings
       ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-      setBookings(allBookings);
+      // Mark expired pending payments and update their status in the database
+      const processedBookings = allBookings.map(booking => {
+        if (booking.payment_status === 'pending' && booking.coingate_payment_url) {
+          const expired = isPaymentExpired(booking);
+          if (expired) {
+            // Update status in database (fire and forget)
+            supabase
+              .from(booking.booking_type === 'hotel_booking' ? 'hotel_bookings' : 'user_bookings')
+              .update({ payment_status: 'expired' })
+              .eq('id', booking.id)
+              .then(() => console.log(`Marked booking ${booking.id} as expired`));
+
+            return { ...booking, payment_status: 'expired' };
+          }
+        }
+        return booking;
+      });
+
+      setBookings(processedBookings);
     } catch (error) {
       console.error('Error loading bookings:', error);
     } finally {
@@ -409,20 +439,34 @@ const MyBookingsView = ({ user, onBack }) => {
 
                       {/* Payment Breakdown */}
                       <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                        <div className="flex items-center justify-between text-xs mb-2">
-                          <span className="text-gray-500">Base Price</span>
-                          <span className="text-gray-900">{formatCurrency(booking.base_price, booking.currency)}</span>
-                        </div>
-                        {booking.platform_fee > 0 && (
-                          <div className="flex items-center justify-between text-xs mb-2">
-                            <span className="text-gray-500">Platform Fee</span>
-                            <span className="text-gray-900">{formatCurrency(booking.platform_fee, booking.currency)}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
-                          <span className="font-medium text-gray-900">Total</span>
-                          <span className="font-semibold text-gray-900">{formatCurrency(booking.total_amount, booking.currency)}</span>
-                        </div>
+                        {(() => {
+                          const basePrice = parseFloat(booking.base_price || 0);
+                          const platformFee = booking.platform_fee || Math.round(basePrice * 0.025 * 100) / 100;
+                          const vatRate = 0.081; // 8.1% Swiss VAT
+                          const vatAmount = booking.vat_amount || Math.round(basePrice * vatRate * 100) / 100;
+                          const total = booking.total_amount || (basePrice + platformFee + vatAmount);
+
+                          return (
+                            <>
+                              <div className="flex items-center justify-between text-xs mb-2">
+                                <span className="text-gray-500">Base Price</span>
+                                <span className="text-gray-900">{formatCurrency(basePrice, booking.currency)}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-xs mb-2">
+                                <span className="text-gray-500">Platform Fee (2.5%)</span>
+                                <span className="text-gray-900">+{formatCurrency(platformFee, booking.currency)}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-xs mb-2">
+                                <span className="text-gray-500">VAT (8.1% CH)</span>
+                                <span className="text-gray-900">+{formatCurrency(vatAmount, booking.currency)}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
+                                <span className="font-medium text-gray-900">Total</span>
+                                <span className="font-semibold text-gray-900">{formatCurrency(total, booking.currency)}</span>
+                              </div>
+                            </>
+                          );
+                        })()}
                         {booking.payment_status === 'paid' && (
                           <div className="flex items-center justify-between text-xs mt-2 pt-2 border-t border-gray-200">
                             <span className="text-emerald-600 flex items-center gap-1">
@@ -456,16 +500,23 @@ const MyBookingsView = ({ user, onBack }) => {
                       {/* Actions */}
                       <div className="flex items-center gap-2">
                         {booking.payment_status === 'pending' && booking.coingate_payment_url && (
-                          <a
-                            href={booking.coingate_payment_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 py-2 bg-gray-900 text-white text-xs font-medium rounded-lg flex items-center justify-center gap-1.5 hover:bg-gray-800 transition-colors"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Wallet size={12} />
-                            Complete Payment
-                          </a>
+                          isPaymentExpired(booking) ? (
+                            <div className="flex-1 py-2 bg-gray-200 text-gray-500 text-xs font-medium rounded-lg flex items-center justify-center gap-1.5 cursor-not-allowed">
+                              <Clock size={12} />
+                              Session Expired
+                            </div>
+                          ) : (
+                            <a
+                              href={booking.coingate_payment_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-1 py-2 bg-gray-900 text-white text-xs font-medium rounded-lg flex items-center justify-center gap-1.5 hover:bg-gray-800 transition-colors"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Wallet size={12} />
+                              Complete Payment
+                            </a>
+                          )
                         )}
                         <button
                           onClick={(e) => {
@@ -648,31 +699,43 @@ const MyBookingsView = ({ user, onBack }) => {
               {/* Payment Summary */}
               <div className="bg-gray-900 text-white rounded-xl p-4">
                 <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-3">Payment Summary</p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Base Price</span>
-                    <span>{formatCurrency(selectedBooking.base_price, selectedBooking.currency)}</span>
-                  </div>
-                  {selectedBooking.platform_fee > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Platform Fee</span>
-                      <span>{formatCurrency(selectedBooking.platform_fee, selectedBooking.currency)}</span>
+                {(() => {
+                  const basePrice = parseFloat(selectedBooking.base_price || 0);
+                  const platformFee = selectedBooking.platform_fee || Math.round(basePrice * 0.025 * 100) / 100;
+                  const vatRate = 0.081; // 8.1% Swiss VAT
+                  const vatAmount = selectedBooking.vat_amount || Math.round(basePrice * vatRate * 100) / 100;
+                  const total = selectedBooking.total_amount || (basePrice + platformFee + vatAmount);
+
+                  return (
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Base Price</span>
+                        <span>{formatCurrency(basePrice, selectedBooking.currency)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Platform Fee (2.5%)</span>
+                        <span>+{formatCurrency(platformFee, selectedBooking.currency)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">VAT (8.1% CH)</span>
+                        <span>+{formatCurrency(vatAmount, selectedBooking.currency)}</span>
+                      </div>
+                      <div className="flex justify-between pt-2 border-t border-gray-700 font-medium">
+                        <span>Total</span>
+                        <span>{formatCurrency(total, selectedBooking.currency)}</span>
+                      </div>
+                      {selectedBooking.payment_status === 'paid' && (
+                        <div className="flex justify-between pt-2 border-t border-gray-700 text-emerald-400">
+                          <span className="flex items-center gap-1">
+                            <Sparkles size={12} />
+                            PVCX Earned
+                          </span>
+                          <span>+{(total * 0.015).toFixed(2)}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  <div className="flex justify-between pt-2 border-t border-gray-700 font-medium">
-                    <span>Total</span>
-                    <span>{formatCurrency(selectedBooking.total_amount, selectedBooking.currency)}</span>
-                  </div>
-                  {selectedBooking.payment_status === 'paid' && (
-                    <div className="flex justify-between pt-2 border-t border-gray-700 text-emerald-400">
-                      <span className="flex items-center gap-1">
-                        <Sparkles size={12} />
-                        PVCX Earned
-                      </span>
-                      <span>+{(parseFloat(selectedBooking.total_amount || 0) * 0.015).toFixed(2)}</span>
-                    </div>
-                  )}
-                </div>
+                  );
+                })()}
               </div>
 
               {/* Transaction */}
@@ -695,16 +758,23 @@ const MyBookingsView = ({ user, onBack }) => {
 
               {/* Pending Payment CTA */}
               {selectedBooking.payment_status === 'pending' && selectedBooking.coingate_payment_url && (
-                <a
-                  href={selectedBooking.coingate_payment_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-3 bg-gray-900 text-white font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors"
-                >
-                  <Wallet size={16} />
-                  Complete Payment
-                  <ExternalLink size={14} />
-                </a>
+                isPaymentExpired(selectedBooking) ? (
+                  <div className="w-full py-3 bg-gray-200 text-gray-500 font-medium rounded-xl flex items-center justify-center gap-2 cursor-not-allowed">
+                    <Clock size={16} />
+                    Payment Session Expired
+                  </div>
+                ) : (
+                  <a
+                    href={selectedBooking.coingate_payment_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-3 bg-gray-900 text-white font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors"
+                  >
+                    <Wallet size={16} />
+                    Complete Payment
+                    <ExternalLink size={14} />
+                  </a>
+                )
               )}
 
               {/* Timestamp */}

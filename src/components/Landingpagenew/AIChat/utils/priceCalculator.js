@@ -28,6 +28,13 @@ export function calculateDistance(from, to) {
 export function calculateItemPrice(item) {
   if (!item) return 0;
 
+  // Handle wines - use typicalPrice or cartPrice
+  if (item.type === 'wines' || item.type === 'wine') {
+    const winePrice = item.cartPrice || item.typicalPrice || item.typical_price_eur || item.price || 0;
+    const quantity = item.quantity || 1;
+    return winePrice * quantity;
+  }
+
   // If item has a fixed price (empty legs, adventures, cars), use it directly
   if (item.price && item.type !== 'jet' && item.type !== 'helicopter' && item.type !== 'aircraft') {
     return item.price;
@@ -74,6 +81,11 @@ export function calculateItemPrice(item) {
  */
 export function getNormalizedPrice(item) {
   if (!item) return 0;
+
+  // Handle wines specifically
+  if (item.type === 'wines' || item.type === 'wine') {
+    return item.cartPrice || item.typicalPrice || item.typical_price_eur || item.price || 0;
+  }
 
   // Try calculated price first
   const calculatedPrice = calculateItemPrice(item);

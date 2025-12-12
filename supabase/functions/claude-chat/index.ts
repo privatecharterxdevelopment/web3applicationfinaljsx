@@ -1,5 +1,6 @@
 // Supabase Edge Function for Claude AI Chat
 // This keeps the API key secure on the server side
+// Supports both streaming and non-streaming responses
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -23,6 +24,7 @@ interface ChatRequest {
   temperature?: number
   tools?: any[]
   tool_choice?: any
+  stream?: boolean // New: Enable streaming
 }
 
 serve(async (req) => {
@@ -71,7 +73,8 @@ serve(async (req) => {
       max_tokens = 4096,
       temperature = 0.7,
       tools,
-      tool_choice
+      tool_choice,
+      stream = false
     } = body
 
     if (!messages || !Array.isArray(messages)) {
@@ -86,7 +89,8 @@ serve(async (req) => {
       model,
       max_tokens,
       temperature,
-      messages
+      messages,
+      stream
     }
 
     // Pass system prompt as-is (supports cache_control)
@@ -103,7 +107,7 @@ serve(async (req) => {
       claudeRequest.tool_choice = tool_choice
     }
 
-    console.log('Sending request to Claude API...', { model, hasTools: !!tools, hasSystem: !!system })
+    console.log('Sending request to Claude API...', { model, hasTools: !!tools, hasSystem: !!system, stream })
 
     // Call Claude API with prompt caching (GA) and token-efficient tools
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -130,6 +134,22 @@ serve(async (req) => {
       )
     }
 
+    // Handle streaming response
+    if (stream) {
+      console.log('Starting streaming response...')
+
+      // Pass through the SSE stream from Claude
+      return new Response(response.body, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive'
+        }
+      })
+    }
+
+    // Non-streaming response
     const data = await response.json()
     console.log('Claude response received successfully')
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -14,15 +14,22 @@ import {
   Building2,
   Wallet,
   ChevronRight,
+  ChevronLeft,
   MapPin,
   Search,
   X,
   Info,
-  Loader2
+  Loader2,
+  Image,
+  Trash2,
+  Eye,
+  CheckCircle,
+  Circle
 } from 'lucide-react';
 import TermsSignatureModal from './TermsSignatureModal';
-import { submitDraft } from '../../services/tokenizationService';
+import { submitDraft, saveDraft } from '../../services/tokenizationService';
 import { useAccount } from 'wagmi';
+import { supabase } from '../../lib/supabase';
 
 const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
   const { address } = useAccount();
@@ -93,6 +100,200 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
   });
 
   const totalSteps = tokenType === 'security' ? 7 : 7; // UTO: 7 steps (includes payment), STO: 7 steps
+
+  // File upload refs
+  const logoInputRef = useRef(null);
+  const headerInputRef = useRef(null);
+  const imagesInputRef = useRef(null);
+  const documentsInputRef = useRef(null);
+
+  // Upload states
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingHeader, setUploadingHeader] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [uploadingDoc, setUploadingDoc] = useState(null);
+
+  // File upload handler
+  const handleFileUpload = async (file, type) => {
+    if (!file) return null;
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = `tokenization/${type}/${fileName}`;
+
+    try {
+      const { data, error } = await supabase.storage
+        .from('uploads')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) throw error;
+
+      const { data: urlData } = supabase.storage
+        .from('uploads')
+        .getPublicUrl(filePath);
+
+      return {
+        name: file.name,
+        url: urlData.publicUrl,
+        path: filePath,
+        size: file.size,
+        type: file.type
+      };
+    } catch (error) {
+      console.error('Upload error:', error);
+      return null;
+    }
+  };
+
+  // Handle logo upload
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingLogo(true);
+    const uploaded = await handleFileUpload(file, 'logos');
+    if (uploaded) {
+      updateFormData('logo', uploaded);
+    }
+    setUploadingLogo(false);
+  };
+
+  // Handle header image upload
+  const handleHeaderUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingHeader(true);
+    const uploaded = await handleFileUpload(file, 'headers');
+    if (uploaded) {
+      updateFormData('headerImage', uploaded);
+    }
+    setUploadingHeader(false);
+  };
+
+  // Handle multiple images upload
+  const handleImagesUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    setUploadingImages(true);
+    const uploadPromises = files.map(file => handleFileUpload(file, 'images'));
+    const uploaded = await Promise.all(uploadPromises);
+    const validUploads = uploaded.filter(Boolean);
+
+    updateFormData('images', [...(formData.images || []), ...validUploads]);
+    setUploadingImages(false);
+  };
+
+  // Handle document upload
+  const handleDocumentUpload = async (e, docType) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingDoc(docType);
+    const uploaded = await handleFileUpload(file, 'documents');
+    if (uploaded) {
+      updateFormData(docType, uploaded);
+    }
+    setUploadingDoc(null);
+  };
+
+  // Remove uploaded file
+  const removeFile = (field, index = null) => {
+    if (index !== null) {
+      // Remove from array (images)
+      const updated = [...formData[field]];
+      updated.splice(index, 1);
+      updateFormData(field, updated);
+    } else {
+      // Remove single file
+      updateFormData(field, null);
+    }
+  };
+
+  // Handle final submission - save draft and open terms modal
+  const handleSubmitApplication = async () => {
+    if (!address) {
+      alert('Please connect your wallet to submit.');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Save draft first to get/update draft ID
+      const { data, error } = await supabase
+        .from('tokenization_drafts')
+        .upsert({
+          id: currentDraftId || undefined,
+          user_id: address,
+          token_type: tokenType,
+          asset_category: assetCategory,
+          current_step: currentStep,
+          status: 'draft',
+          asset_name: formData.assetName || null,
+          asset_description: formData.description || null,
+          asset_value: formData.assetValue ? parseFloat(formData.assetValue) : null,
+          asset_location: formData.location || null,
+          logo_url: formData.logo?.url || null,
+          header_image_url: formData.headerImage?.url || null,
+          token_standard: formData.tokenStandard || null,
+          total_supply: formData.totalSupply ? parseInt(formData.totalSupply) : null,
+          token_symbol: formData.tokenSymbol || null,
+          price_per_token: formData.pricePerToken ? parseFloat(formData.pricePerToken) : null,
+          minimum_investment: formData.minimumInvestment ? parseFloat(formData.minimumInvestment) : null,
+          expected_apy: formData.expectedAPY ? parseFloat(formData.expectedAPY) : null,
+          revenue_distribution: formData.revenueDistribution || null,
+          revenue_currency: formData.revenueCurrency || null,
+          lockup_period: formData.lockupPeriod ? parseInt(formData.lockupPeriod) : null,
+          has_spv: formData.hasSPV,
+          spv_details: formData.spvDetails || null,
+          operator: formData.operator || null,
+          management_fee: formData.managementFee || null,
+          access_rights: formData.accessRights || null,
+          validity_period: formData.validityPeriod || null,
+          is_transferable: formData.isTransferable,
+          is_burnable: formData.isBurnable,
+          jurisdiction: formData.jurisdiction || null,
+          needs_audit: formData.needsAudit,
+          issuer_wallet_address: formData.issuerWalletAddress || address,
+          membership_package: formData.membershipPackage || null,
+          form_data: {
+            ...formData,
+            images: formData.images?.map(img => ({ name: img.name, url: img.url, path: img.path })) || [],
+            prospectus: formData.prospectus ? { name: formData.prospectus.name, url: formData.prospectus.url } : null,
+            legalOpinion: formData.legalOpinion ? { name: formData.legalOpinion.name, url: formData.legalOpinion.url } : null,
+            ownershipProof: formData.ownershipProof ? { name: formData.ownershipProof.name, url: formData.ownershipProof.url } : null,
+            insurance: formData.insurance ? { name: formData.insurance.name, url: formData.insurance.url } : null,
+          },
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Save error:', error);
+        alert('Failed to save draft. Please try again.');
+        setIsSaving(false);
+        return;
+      }
+
+      // Update draft ID if new
+      if (data?.id) {
+        setCurrentDraftId(data.id);
+      }
+
+      setIsSaving(false);
+      // Open terms modal for signature
+      setShowTermsModal(true);
+    } catch (error) {
+      console.error('Save exception:', error);
+      alert('An error occurred while saving. Please try again.');
+      setIsSaving(false);
+    }
+  };
 
   // All countries for jurisdiction selection
   const countries = [
@@ -307,16 +508,16 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
     ];
 
     return (
-      <div className="flex-1 overflow-y-auto py-12 px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-light text-gray-900 mb-4 tracking-tighter">Tokenize Your Asset</h2>
-            <p className="text-gray-500 max-w-2xl mx-auto font-light">
-              Select your asset type to start the tokenization process. We support jets, helicopters, yachts, real estate, luxury cars, art collections, and business ventures.
+      <div className="flex-1 overflow-y-auto py-6 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-6">
+            <h2 className="text-xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter mb-2">Tokenize Your Asset</h2>
+            <p className="text-sm text-gray-600 max-w-xl">
+              Select your asset type to start the tokenization process
             </p>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-3 lg:grid-cols-5 gap-3">
             {assetTypes.map((asset) => (
               <button
                 key={asset.id}
@@ -325,38 +526,27 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
                   updateFormData('assetCategory', asset.id);
                   nextStep();
                 }}
-                className="relative rounded-2xl border-2 border-gray-200 bg-white/60 hover:bg-white/80 hover:border-gray-300 hover:shadow-xl transition-all duration-300 text-left group backdrop-blur-sm overflow-hidden"
+                className="relative rounded-xl border border-gray-200/80 bg-white/60 hover:bg-white/90 hover:border-gray-300 hover:shadow-lg transition-all duration-200 text-left group backdrop-blur-sm overflow-hidden"
               >
                 {asset.popular && (
-                  <div className="absolute top-3 right-3 z-10">
-                    <span className="px-3 py-1 bg-gray-900 text-white rounded-full text-[10px] font-bold shadow-lg">
-                      ⭐ POPULAR
+                  <div className="absolute top-2 right-2 z-10">
+                    <span className="px-1.5 py-0.5 bg-black text-white rounded text-[8px] font-bold">
+                      HOT
                     </span>
                   </div>
                 )}
 
-                <div className="w-full h-32 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden">
+                <div className="w-full h-20 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden">
                   <img
                     src={asset.imageUrl}
                     alt={asset.label}
-                    className={`w-full h-full object-contain group-hover:scale-110 transition-transform duration-300 p-2 ${asset.imageScale || ''}`}
+                    className={`w-full h-full object-contain group-hover:scale-105 transition-transform duration-200 p-1.5 ${asset.imageScale || ''}`}
                   />
                 </div>
 
-                <div className="p-6">
-                  <h3 className="text-lg font-light text-gray-900 tracking-tighter mb-2">{asset.label}</h3>
-                  <p className="text-xs text-gray-600 mb-3 line-clamp-2">{asset.description}</p>
-
-                  <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
-                    {asset.priceRange}
-                  </span>
-
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-gray-900">Get Started</span>
-                      <ArrowRight size={16} className="text-gray-900 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
+                <div className="p-2.5">
+                  <h3 className="text-xs font-medium text-gray-900 mb-0.5 truncate">{asset.label}</h3>
+                  <span className="text-[10px] text-gray-500">{asset.priceRange}</span>
                 </div>
               </button>
             ))}
@@ -366,161 +556,144 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
     );
   };
 
-  // Step 1: Token Type Selection
+  // Step 1: Token Type Selection - Compact Design
   const renderStep1 = () => (
-    <div className="flex-1 flex flex-col items-center justify-center py-12">
-      {/* Disclaimer Banner */}
-      <div className="w-full max-w-4xl px-8 mb-8">
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <div className="flex items-start gap-3">
-            <Info size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-blue-900 mb-1">SEC-Compliant Tokenization</p>
-              <p className="text-xs text-blue-700 leading-relaxed">
-                PrivateCharterX connects Real World Services (RWS) with Web3.0 technology.
-                Tokenization of securities is handled by our SEC-licensed partner company with shared platform access.
-                We do not tokenize assets ourselves.
-              </p>
+    <div className="flex-1 overflow-y-auto py-6 px-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-1">Choose Token Type</h2>
+          <p className="text-xs text-gray-600">Select the tokenization model for your {assetCategory?.replace('-', ' ') || 'asset'}</p>
+        </div>
+
+        {/* Token Type Cards - Horizontal Layout */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Utility Token Card */}
+          <button
+            onClick={() => handleTokenTypeSelect('utility')}
+            className="group bg-white/50 hover:bg-white/70 border border-gray-200 hover:border-black rounded-xl p-5 transition-all duration-200 hover:shadow-lg text-left relative overflow-hidden"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
+                <Coins size={20} className="text-white" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900">Utility Token</h3>
+                <div className="flex gap-1 mt-0.5">
+                  <span className="px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded text-[9px] font-medium">ERC-20</span>
+                  <span className="px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded text-[9px] font-medium">ERC-721</span>
+                </div>
+              </div>
             </div>
+
+            <p className="text-[11px] text-gray-600 mb-3 line-clamp-2">
+              Service access, memberships, VIP lounges, event tickets. NFT-based benefits.
+            </p>
+
+            <div className="space-y-1 mb-3">
+              <div className="flex items-center gap-1.5 text-[10px] text-gray-700">
+                <Check size={10} className="text-green-600" />
+                <span>Memberships & Access Rights</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[10px] text-gray-700">
+                <Check size={10} className="text-green-600" />
+                <span>Service Hours & VIP Access</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+              <span className="text-[10px] text-gray-500">Audit: Optional</span>
+              <span className="text-xs font-medium text-gray-900 group-hover:text-black flex items-center gap-1">
+                Select <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+              </span>
+            </div>
+          </button>
+
+          {/* Security Token Card */}
+          <button
+            onClick={() => handleTokenTypeSelect('security')}
+            className="group bg-white/50 hover:bg-white/70 border border-gray-200 hover:border-black rounded-xl p-5 transition-all duration-200 hover:shadow-lg text-left relative overflow-hidden"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
+                <Shield size={20} className="text-white" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900">Security Token</h3>
+                <div className="flex gap-1 mt-0.5">
+                  <span className="px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded text-[9px] font-medium">Reg-D</span>
+                  <span className="px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded text-[9px] font-medium">Reg-S</span>
+                  <span className="px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded text-[9px] font-medium">Reg-CF</span>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-gray-600 mb-3 line-clamp-2">
+              Investment assets with returns, APY, revenue distribution. Full compliance.
+            </p>
+
+            <div className="space-y-1 mb-3">
+              <div className="flex items-center gap-1.5 text-[10px] text-gray-700">
+                <Check size={10} className="text-green-600" />
+                <span>Fractional Ownership & Revenue</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[10px] text-gray-700">
+                <Check size={10} className="text-green-600" />
+                <span>KYC/AML & Accreditation</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+              <span className="text-[10px] text-gray-500">Audit: Required</span>
+              <span className="text-xs font-medium text-gray-900 group-hover:text-black flex items-center gap-1">
+                Select <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+              </span>
+            </div>
+          </button>
+        </div>
+
+        {/* Disclaimer - Compact */}
+        <div className="mt-4 bg-blue-50/60 border border-blue-100 rounded-lg p-3">
+          <div className="flex items-start gap-2">
+            <Info size={14} className="text-blue-600 flex-shrink-0 mt-0.5" />
+            <p className="text-[10px] text-blue-800">
+              <span className="font-medium">SEC-Compliant:</span> Security token offerings handled by our SEC-licensed partner.
+            </p>
           </div>
         </div>
-      </div>
-
-      <div className="text-center mb-12">
-        <h2 className="text-3xl font-semibold text-gray-900 mb-3">Choose Token Type</h2>
-        <p className="text-gray-700 text-sm">Select the tokenization model that fits your asset</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-6 max-w-4xl w-full px-8">
-        {/* Utility Token Card */}
-        <button
-          onClick={() => handleTokenTypeSelect('utility')}
-          className="group bg-white/30 hover:bg-white/40 border border-gray-300/50 hover:border-gray-400/60 rounded-2xl p-8 transition-all duration-300 hover:shadow-xl backdrop-blur-xl text-left"
-        >
-          <div className="flex items-start justify-between mb-6">
-            <div className="w-14 h-14 bg-black rounded-xl flex items-center justify-center">
-              <Coins size={28} className="text-white" />
-            </div>
-            <div className="flex gap-2">
-              <span className="px-2 py-1 bg-gray-200 text-gray-900 rounded-md text-[10px] font-medium">ERC-20</span>
-              <span className="px-2 py-1 bg-gray-200 text-gray-900 rounded-md text-[10px] font-medium">ERC-721</span>
-            </div>
-          </div>
-
-          <h3 className="text-xl font-semibold text-gray-900 mb-3">Utility Token</h3>
-          <p className="text-sm text-gray-700 mb-6 leading-relaxed">
-            Perfect for service access, memberships, VIP lounges, event tickets, and usage rights. NFT-based tokenization for exclusive benefits.
-          </p>
-
-          <div className="space-y-2 mb-6">
-            <div className="flex items-center gap-2 text-xs text-gray-700">
-              <Check size={14} className="text-gray-900" />
-              <span>Memberships & Access Rights</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-gray-700">
-              <Check size={14} className="text-gray-900" />
-              <span>Service Hours (Limousine, Jet, etc.)</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-gray-700">
-              <Check size={14} className="text-gray-900" />
-              <span>VIP Lounge & Event Access</span>
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-gray-300/50">
-            <div className="flex items-center gap-2 text-xs text-gray-600">
-              <Shield size={14} />
-              <span>Smart Contract Audit: <span className="font-medium text-gray-800">Optional</span></span>
-            </div>
-          </div>
-
-          <div className="mt-6 flex items-center justify-end text-gray-900 group-hover:text-black transition-colors">
-            <span className="text-sm font-medium">Select</span>
-            <ChevronRight size={18} className="ml-1 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </button>
-
-        {/* Security Token Card */}
-        <button
-          onClick={() => handleTokenTypeSelect('security')}
-          className="group bg-white/30 hover:bg-white/40 border border-gray-300/50 hover:border-gray-400/60 rounded-2xl p-8 transition-all duration-300 hover:shadow-xl backdrop-blur-xl text-left"
-        >
-          <div className="flex items-start justify-between mb-6">
-            <div className="w-14 h-14 bg-black rounded-xl flex items-center justify-center">
-              <Shield size={28} className="text-white" />
-            </div>
-            <div className="flex gap-2">
-              <span className="px-2 py-1 bg-gray-200 text-gray-900 rounded-md text-[10px] font-medium">Reg-D</span>
-              <span className="px-2 py-1 bg-gray-200 text-gray-900 rounded-md text-[10px] font-medium">Reg-S</span>
-              <span className="px-2 py-1 bg-gray-200 text-gray-900 rounded-md text-[10px] font-medium">Reg-CF</span>
-            </div>
-          </div>
-
-          <h3 className="text-xl font-semibold text-gray-900 mb-3">Security Token</h3>
-          <p className="text-sm text-gray-700 mb-6 leading-relaxed">
-            Tokenize investment assets with expected returns, APY, and revenue distribution. Full regulatory compliance and investor protections.
-          </p>
-
-          <div className="space-y-2 mb-6">
-            <div className="flex items-center gap-2 text-xs text-gray-700">
-              <Check size={14} className="text-gray-900" />
-              <span>Asset Ownership & Fractional Shares</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-gray-700">
-              <Check size={14} className="text-gray-900" />
-              <span>Revenue Distribution & APY</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-gray-700">
-              <Check size={14} className="text-gray-900" />
-              <span>KYC/AML & Investor Accreditation</span>
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-gray-300/50">
-            <div className="flex items-center gap-2 text-xs text-gray-600">
-              <Lock size={14} className="text-gray-900" />
-              <span>Smart Contract Audit: <span className="font-medium text-gray-900">Required</span></span>
-            </div>
-          </div>
-
-          <div className="mt-6 flex items-center justify-end text-gray-900 group-hover:text-black transition-colors">
-            <span className="text-sm font-medium">Select</span>
-            <ChevronRight size={18} className="ml-1 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </button>
       </div>
     </div>
   );
 
   // Step 2: Asset Information
   const renderStep2 = () => (
-    <div className="flex-1 overflow-y-auto py-8 px-8">
+    <div className="flex-1 overflow-y-auto py-6 px-6">
       <div className="max-w-3xl mx-auto">
-        <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Asset Information</h2>
-          <p className="text-sm text-gray-700">Provide details about the asset you want to tokenize</p>
+        <div className="mb-5">
+          <h2 className="text-xl font-semibold text-gray-900 mb-1">Asset Information</h2>
+          <p className="text-xs text-gray-700">Provide details about the asset you want to tokenize</p>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Asset Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">Asset Name *</label>
+            <label className="block text-xs font-medium text-gray-900 mb-1">Asset Name *</label>
             <input
               type="text"
               value={formData.assetName}
               onChange={(e) => updateFormData('assetName', e.target.value)}
               placeholder="e.g., Gulfstream G650"
-              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
+              className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
             />
           </div>
 
           {/* Asset Category */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">Asset Category *</label>
+            <label className="block text-xs font-medium text-gray-900 mb-1">Asset Category *</label>
             <select
               value={formData.assetCategory}
               onChange={(e) => updateFormData('assetCategory', e.target.value)}
-              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
+              className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
             >
               <option value="">Select category</option>
               <option value="jet">Private Jet</option>
@@ -538,77 +711,195 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">Asset Description *</label>
+            <label className="block text-xs font-medium text-gray-900 mb-1">Asset Description *</label>
             <textarea
               value={formData.description}
               onChange={(e) => updateFormData('description', e.target.value)}
               placeholder="Provide detailed information about the asset, its condition, features, and any relevant details..."
-              rows={5}
-              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl resize-none"
+              rows={3}
+              className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl resize-none"
             />
           </div>
 
-          {/* Asset Value */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">Asset Value (USD) *</label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 font-medium">$</span>
+          {/* Asset Value & Location - Side by Side */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-900 mb-1">Asset Value (USD) *</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-700 font-medium text-sm">$</span>
+                <input
+                  type="number"
+                  value={formData.assetValue}
+                  onChange={(e) => updateFormData('assetValue', e.target.value)}
+                  placeholder="5000000"
+                  className="w-full pl-7 pr-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-900 mb-1">Current Location *</label>
               <input
-                type="number"
-                value={formData.assetValue}
-                onChange={(e) => updateFormData('assetValue', e.target.value)}
-                placeholder="5000000"
-                className="w-full pl-8 pr-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
+                type="text"
+                value={formData.location}
+                onChange={(e) => updateFormData('location', e.target.value)}
+                placeholder="e.g., Dubai, UAE"
+                className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
               />
             </div>
           </div>
 
-          {/* Location */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">Current Location *</label>
-            <input
-              type="text"
-              value={formData.location}
-              onChange={(e) => updateFormData('location', e.target.value)}
-              placeholder="e.g., Dubai, UAE"
-              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
-            />
-          </div>
-
-          {/* Logo Upload */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">Asset Logo *</label>
-            <div className="border-2 border-dashed border-gray-300/50 rounded-xl p-6 bg-white/20 backdrop-blur-xl hover:bg-white/25 transition-all cursor-pointer">
-              <div className="flex flex-col items-center text-center">
-                <Upload size={28} className="text-gray-700 mb-2" />
-                <p className="text-sm text-gray-900 font-medium mb-1">Upload Logo</p>
-                <p className="text-xs text-gray-600">PNG, JPG, SVG (square recommended, max 2MB)</p>
-              </div>
+          {/* Logo & Header Image - Side by Side */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-900 mb-1">Asset Logo *</label>
+              <input
+                type="file"
+                ref={logoInputRef}
+                onChange={handleLogoUpload}
+                accept="image/*"
+                className="hidden"
+              />
+              {formData.logo ? (
+                <div className="border-2 border-green-300 rounded-lg p-3 bg-green-50/50 backdrop-blur-xl relative">
+                  <div className="flex items-center gap-2">
+                    <img src={formData.logo.url} alt="Logo" className="w-10 h-10 object-cover rounded" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-900 font-medium truncate">{formData.logo.name}</p>
+                      <p className="text-[10px] text-green-600">Uploaded</p>
+                    </div>
+                    <button
+                      onClick={() => removeFile('logo')}
+                      className="p-1 hover:bg-red-100 rounded transition-colors"
+                    >
+                      <Trash2 size={14} className="text-red-500" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => logoInputRef.current?.click()}
+                  className="border-2 border-dashed border-gray-300/50 rounded-lg p-3 bg-white/20 backdrop-blur-xl hover:bg-white/25 transition-all cursor-pointer"
+                >
+                  <div className="flex flex-col items-center text-center">
+                    {uploadingLogo ? (
+                      <Loader2 size={20} className="text-gray-700 mb-1 animate-spin" />
+                    ) : (
+                      <Upload size={20} className="text-gray-700 mb-1" />
+                    )}
+                    <p className="text-xs text-gray-900 font-medium">Upload Logo</p>
+                    <p className="text-[10px] text-gray-600">PNG, JPG, SVG (max 2MB)</p>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-
-          {/* Header Image Upload */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">Header Image *</label>
-            <div className="border-2 border-dashed border-gray-300/50 rounded-xl p-6 bg-white/20 backdrop-blur-xl hover:bg-white/25 transition-all cursor-pointer">
-              <div className="flex flex-col items-center text-center">
-                <Upload size={28} className="text-gray-700 mb-2" />
-                <p className="text-sm text-gray-900 font-medium mb-1">Upload Header Banner</p>
-                <p className="text-xs text-gray-600">PNG, JPG (1920x400px recommended, max 5MB)</p>
-              </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-900 mb-1">Header Image *</label>
+              <input
+                type="file"
+                ref={headerInputRef}
+                onChange={handleHeaderUpload}
+                accept="image/*"
+                className="hidden"
+              />
+              {formData.headerImage ? (
+                <div className="border-2 border-green-300 rounded-lg p-3 bg-green-50/50 backdrop-blur-xl relative">
+                  <div className="flex items-center gap-2">
+                    <img src={formData.headerImage.url} alt="Header" className="w-10 h-10 object-cover rounded" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-900 font-medium truncate">{formData.headerImage.name}</p>
+                      <p className="text-[10px] text-green-600">Uploaded</p>
+                    </div>
+                    <button
+                      onClick={() => removeFile('headerImage')}
+                      className="p-1 hover:bg-red-100 rounded transition-colors"
+                    >
+                      <Trash2 size={14} className="text-red-500" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => headerInputRef.current?.click()}
+                  className="border-2 border-dashed border-gray-300/50 rounded-lg p-3 bg-white/20 backdrop-blur-xl hover:bg-white/25 transition-all cursor-pointer"
+                >
+                  <div className="flex flex-col items-center text-center">
+                    {uploadingHeader ? (
+                      <Loader2 size={20} className="text-gray-700 mb-1 animate-spin" />
+                    ) : (
+                      <Upload size={20} className="text-gray-700 mb-1" />
+                    )}
+                    <p className="text-xs text-gray-900 font-medium">Upload Header</p>
+                    <p className="text-[10px] text-gray-600">1920x400px (max 5MB)</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Upload Asset Images */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">Asset Images & Documents *</label>
-            <div className="border-2 border-dashed border-gray-300/50 rounded-xl p-8 bg-white/20 backdrop-blur-xl hover:bg-white/25 transition-all cursor-pointer">
+            <label className="block text-xs font-medium text-gray-900 mb-1">Asset Images *</label>
+            <input
+              type="file"
+              ref={imagesInputRef}
+              onChange={handleImagesUpload}
+              accept="image/*"
+              multiple
+              className="hidden"
+            />
+
+            {/* Uploaded Images Grid */}
+            {formData.images && formData.images.length > 0 && (
+              <div className="grid grid-cols-4 gap-2 mb-2">
+                {formData.images.map((img, index) => (
+                  <div key={index} className="relative group">
+                    <img src={img.url} alt={img.name} className="w-full h-16 object-cover rounded-lg" />
+                    <button
+                      onClick={() => removeFile('images', index)}
+                      className="absolute top-1 right-1 p-1 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X size={10} className="text-white" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div
+              onClick={() => imagesInputRef.current?.click()}
+              className="border-2 border-dashed border-gray-300/50 rounded-lg p-4 bg-white/20 backdrop-blur-xl hover:bg-white/25 transition-all cursor-pointer"
+            >
               <div className="flex flex-col items-center text-center">
-                <Upload size={32} className="text-gray-700 mb-3" />
-                <p className="text-sm text-gray-900 font-medium mb-1">Click to upload or drag and drop</p>
-                <p className="text-xs text-gray-600">PNG, JPG, PDF up to 10MB each</p>
+                {uploadingImages ? (
+                  <Loader2 size={24} className="text-gray-700 mb-1 animate-spin" />
+                ) : (
+                  <Upload size={24} className="text-gray-700 mb-1" />
+                )}
+                <p className="text-xs text-gray-900 font-medium">
+                  {formData.images?.length > 0 ? 'Add more images' : 'Click to upload or drag and drop'}
+                </p>
+                <p className="text-[10px] text-gray-600">PNG, JPG up to 10MB each</p>
               </div>
             </div>
+          </div>
+
+          {/* Navigation Buttons */}
+          <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-200/50">
+            <button
+              onClick={prevStep}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-gray-900 transition-colors"
+            >
+              <ChevronLeft size={16} />
+              Back
+            </button>
+            <button
+              onClick={nextStep}
+              disabled={!formData.assetName || !formData.description || !formData.assetValue}
+              className="flex items-center gap-2 px-6 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Continue
+              <ChevronRight size={16} />
+            </button>
           </div>
         </div>
       </div>
@@ -617,77 +908,76 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
 
   // Step 3a: Utility Token Configuration
   const renderStep3Utility = () => (
-    <div className="flex-1 overflow-y-auto py-8 px-8">
+    <div className="flex-1 overflow-y-auto py-6 px-6">
       <div className="max-w-3xl mx-auto">
-        <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Utility Token Configuration</h2>
-          <p className="text-sm text-gray-700">Define your NFT-based utility token parameters</p>
+        <div className="mb-5">
+          <h2 className="text-xl font-semibold text-gray-900 mb-1">Utility Token Configuration</h2>
+          <p className="text-xs text-gray-700">Define your NFT-based utility token parameters</p>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Token Standard */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">Token Standard *</label>
-            <div className="grid grid-cols-2 gap-4">
+            <label className="block text-xs font-medium text-gray-900 mb-1">Token Standard *</label>
+            <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => updateFormData('tokenStandard', 'ERC-20')}
-                className={`p-4 rounded-xl border-2 transition-all backdrop-blur-xl ${
+                className={`p-3 rounded-lg border-2 transition-all backdrop-blur-xl ${
                   formData.tokenStandard === 'ERC-20'
                     ? 'bg-black text-white border-black'
                     : 'bg-white/20 border-gray-300/50 text-gray-900 hover:bg-white/30'
                 }`}
               >
-                <div className="font-medium mb-1">ERC-20</div>
-                <div className="text-xs opacity-80">Fungible tokens (e.g., 1000 identical)</div>
+                <div className="text-sm font-medium">ERC-20</div>
+                <div className="text-[10px] opacity-80">Fungible tokens</div>
               </button>
               <button
                 onClick={() => updateFormData('tokenStandard', 'ERC-721')}
-                className={`p-4 rounded-xl border-2 transition-all backdrop-blur-xl ${
+                className={`p-3 rounded-lg border-2 transition-all backdrop-blur-xl ${
                   formData.tokenStandard === 'ERC-721'
                     ? 'bg-black text-white border-black'
                     : 'bg-white/20 border-gray-300/50 text-gray-900 hover:bg-white/30'
                 }`}
               >
-                <div className="font-medium mb-1">ERC-721</div>
-                <div className="text-xs opacity-80">Unique NFTs (1-of-1)</div>
+                <div className="text-sm font-medium">ERC-721</div>
+                <div className="text-[10px] opacity-80">Unique NFTs</div>
               </button>
             </div>
           </div>
 
-          {/* Total Supply */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">Total Supply *</label>
-            <input
-              type="number"
-              value={formData.totalSupply}
-              onChange={(e) => updateFormData('totalSupply', e.target.value)}
-              placeholder="e.g., 100"
-              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
-            />
-            <p className="text-xs text-gray-600 mt-2">How many tokens/NFTs to mint</p>
-          </div>
-
-          {/* Token Symbol */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">Token Symbol *</label>
-            <input
-              type="text"
-              value={formData.tokenSymbol}
-              onChange={(e) => updateFormData('tokenSymbol', e.target.value)}
-              placeholder="e.g., VIP-LOUNGE"
-              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl uppercase"
-            />
+          {/* Total Supply & Token Symbol - Side by Side */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-900 mb-1">Total Supply *</label>
+              <input
+                type="number"
+                value={formData.totalSupply}
+                onChange={(e) => updateFormData('totalSupply', e.target.value)}
+                placeholder="e.g., 100"
+                className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-900 mb-1">Token Symbol *</label>
+              <input
+                type="text"
+                value={formData.tokenSymbol}
+                onChange={(e) => updateFormData('tokenSymbol', e.target.value)}
+                placeholder="e.g., VIP-LOUNGE"
+                className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl uppercase"
+              />
+            </div>
           </div>
 
           {/* Issuer Wallet Address */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
+            <label className="block text-xs font-medium text-gray-900 mb-1">
               Issuer Wallet Address *
               {address && (
                 <button
                   type="button"
                   onClick={() => updateFormData('issuerWalletAddress', address)}
-                  className="ml-2 text-xs text-blue-600 hover:text-blue-700"
+                  className="ml-2 text-[10px] text-blue-600 hover:text-blue-700"
                 >
                   (Use Connected Wallet)
                 </button>
@@ -698,83 +988,82 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
               value={formData.issuerWalletAddress || ''}
               onChange={(e) => updateFormData('issuerWalletAddress', e.target.value)}
               placeholder="0x..."
-              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl font-mono text-sm"
+              className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl font-mono text-xs"
             />
-            <p className="text-xs text-gray-600 mt-2">Wallet address where NFTs will be minted and issued from</p>
           </div>
 
           {/* Access Rights */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">Access Rights / Benefits *</label>
+            <label className="block text-xs font-medium text-gray-900 mb-1">Access Rights / Benefits *</label>
             <textarea
               value={formData.accessRights}
               onChange={(e) => updateFormData('accessRights', e.target.value)}
-              placeholder="e.g., 10 hours of limousine service, VIP lounge access for 1 year, exclusive event entry..."
-              rows={4}
-              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl resize-none"
+              placeholder="e.g., 10 hours of limousine service, VIP lounge access for 1 year..."
+              rows={2}
+              className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl resize-none"
             />
           </div>
 
           {/* Validity Period */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">Validity Period (Optional)</label>
+            <label className="block text-xs font-medium text-gray-900 mb-1">Validity Period (Optional)</label>
             <input
               type="text"
               value={formData.validityPeriod}
               onChange={(e) => updateFormData('validityPeriod', e.target.value)}
               placeholder="e.g., 12 months, No expiration"
-              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
+              className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
             />
           </div>
 
           {/* Smart Contract Features */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-3">Smart Contract Features</label>
-            <div className="space-y-3">
-              <label className="flex items-center gap-3 p-4 bg-white/20 rounded-xl border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
+            <label className="block text-xs font-medium text-gray-900 mb-2">Smart Contract Features</label>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 p-2.5 bg-white/20 rounded-lg border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
                 <input
                   type="checkbox"
                   checked={formData.isTransferable}
                   onChange={(e) => updateFormData('isTransferable', e.target.checked)}
-                  className="w-5 h-5 rounded border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
+                  className="w-4 h-4 rounded border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
                 />
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900">Transferable</div>
-                  <div className="text-xs text-gray-700">Token holders can transfer/sell their NFTs</div>
+                  <div className="text-xs font-medium text-gray-900">Transferable</div>
+                  <div className="text-[10px] text-gray-700">Token holders can transfer/sell their NFTs</div>
                 </div>
               </label>
 
-              <label className="flex items-center gap-3 p-4 bg-white/20 rounded-xl border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
+              <label className="flex items-center gap-2 p-2.5 bg-white/20 rounded-lg border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
                 <input
                   type="checkbox"
                   checked={formData.isBurnable}
                   onChange={(e) => updateFormData('isBurnable', e.target.checked)}
-                  className="w-5 h-5 rounded border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
+                  className="w-4 h-4 rounded border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
                 />
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900">Burnable</div>
-                  <div className="text-xs text-gray-700">Tokens can be destroyed after use</div>
+                  <div className="text-xs font-medium text-gray-900">Burnable</div>
+                  <div className="text-[10px] text-gray-700">Tokens can be destroyed after use</div>
                 </div>
               </label>
 
-              <label className="flex items-center gap-3 p-4 bg-white/20 rounded-xl border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
+              <label className="flex items-center gap-2 p-2.5 bg-white/20 rounded-lg border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
                 <input
                   type="checkbox"
                   checked={formData.needsAudit}
                   onChange={(e) => updateFormData('needsAudit', e.target.checked)}
-                  className="w-5 h-5 rounded border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
+                  className="w-4 h-4 rounded border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
                 />
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                  <div className="text-xs font-medium text-gray-900 flex items-center gap-1">
                     Smart Contract Audit (Optional)
                     <div className="group relative">
-                      <Info size={14} className="text-gray-600 cursor-help" />
-                      <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
-                        Professional security audit by certified third-party firms. Highly recommended for tokens with complex functionality or handling valuable assets.
+                      <Info size={12} className="text-gray-600 cursor-help" />
+                      <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-48 p-2 bg-gray-900 text-white text-[10px] rounded-lg shadow-lg z-10">
+                        Professional security audit by certified firms.
                       </div>
                     </div>
                   </div>
-                  <div className="text-xs text-gray-700">Professional security audit (+€8,500)</div>
+                  <div className="text-[10px] text-gray-700">Professional security audit (+€8,500)</div>
                 </div>
               </label>
             </div>
@@ -782,16 +1071,35 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
 
           {/* Jurisdiction */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">Legal Jurisdiction *</label>
+            <label className="block text-xs font-medium text-gray-900 mb-1">Legal Jurisdiction *</label>
             <button
               type="button"
               onClick={() => setShowJurisdictionPopup(true)}
-              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-left hover:bg-white/40 transition-all backdrop-blur-xl flex items-center justify-between"
+              className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-left hover:bg-white/40 transition-all backdrop-blur-xl flex items-center justify-between"
             >
-              <span className={formData.jurisdiction ? 'text-gray-900' : 'text-gray-500'}>
+              <span className={`text-sm ${formData.jurisdiction ? 'text-gray-900' : 'text-gray-500'}`}>
                 {formData.jurisdiction || 'Select jurisdiction'}
               </span>
-              <Search size={18} className="text-gray-600" />
+              <Search size={14} className="text-gray-600" />
+            </button>
+          </div>
+
+          {/* Navigation Buttons */}
+          <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-200/50">
+            <button
+              onClick={prevStep}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-gray-900 transition-colors"
+            >
+              <ChevronLeft size={16} />
+              Back
+            </button>
+            <button
+              onClick={nextStep}
+              disabled={!formData.totalSupply || !formData.tokenSymbol || !formData.jurisdiction}
+              className="flex items-center gap-2 px-6 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Continue
+              <ChevronRight size={16} />
             </button>
           </div>
         </div>
@@ -801,90 +1109,87 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
 
   // Step 3b: Security Token Configuration
   const renderStep3Security = () => (
-    <div className="flex-1 overflow-y-auto py-8 px-8">
+    <div className="flex-1 overflow-y-auto py-6 px-6">
       <div className="max-w-3xl mx-auto">
-        <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Security Token Configuration</h2>
-          <p className="text-sm text-gray-700">Configure investment terms and compliance settings</p>
+        <div className="mb-5">
+          <h2 className="text-xl font-semibold text-gray-900 mb-1">Security Token Configuration</h2>
+          <p className="text-xs text-gray-700">Configure investment terms and compliance settings</p>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* SEC Regulation Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">SEC Regulation Type *</label>
-            <div className="grid grid-cols-3 gap-3">
+            <label className="block text-xs font-medium text-gray-900 mb-1">SEC Regulation Type *</label>
+            <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={() => updateFormData('tokenStandard', 'Reg-D')}
-                className={`p-4 rounded-xl border-2 transition-all backdrop-blur-xl ${
+                className={`p-2.5 rounded-lg border-2 transition-all backdrop-blur-xl ${
                   formData.tokenStandard === 'Reg-D'
                     ? 'bg-blue-100 border-blue-500 text-blue-900'
                     : 'bg-white/20 border-gray-300/50 text-gray-900 hover:bg-white/30'
                 }`}
               >
-                <div className="font-medium mb-1">Reg-D</div>
-                <div className="text-xs opacity-80">Accredited investors only</div>
+                <div className="text-sm font-medium">Reg-D</div>
+                <div className="text-[10px] opacity-80">Accredited only</div>
               </button>
               <button
                 onClick={() => updateFormData('tokenStandard', 'Reg-S')}
-                className={`p-4 rounded-xl border-2 transition-all backdrop-blur-xl ${
+                className={`p-2.5 rounded-lg border-2 transition-all backdrop-blur-xl ${
                   formData.tokenStandard === 'Reg-S'
                     ? 'bg-blue-100 border-blue-500 text-blue-900'
                     : 'bg-white/20 border-gray-300/50 text-gray-900 hover:bg-white/30'
                 }`}
               >
-                <div className="font-medium mb-1">Reg-S</div>
-                <div className="text-xs opacity-80">Non-US investors</div>
+                <div className="text-sm font-medium">Reg-S</div>
+                <div className="text-[10px] opacity-80">Non-US investors</div>
               </button>
               <button
                 onClick={() => updateFormData('tokenStandard', 'Reg-CF')}
-                className={`p-4 rounded-xl border-2 transition-all backdrop-blur-xl ${
+                className={`p-2.5 rounded-lg border-2 transition-all backdrop-blur-xl ${
                   formData.tokenStandard === 'Reg-CF'
                     ? 'bg-blue-100 border-blue-500 text-blue-900'
                     : 'bg-white/20 border-gray-300/50 text-gray-900 hover:bg-white/30'
                 }`}
               >
-                <div className="font-medium mb-1">Reg-CF</div>
-                <div className="text-xs opacity-80">Crowdfunding (up to $5M)</div>
+                <div className="text-sm font-medium">Reg-CF</div>
+                <div className="text-[10px] opacity-80">Crowdfunding</div>
               </button>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Tokenization handled by our SEC-licensed partner with shared platform access
-            </p>
           </div>
 
-          {/* Total Supply */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">Total Token Supply *</label>
-            <input
-              type="number"
-              value={formData.totalSupply}
-              onChange={(e) => updateFormData('totalSupply', e.target.value)}
-              placeholder="e.g., 1000000"
-              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
-            />
-          </div>
-
-          {/* Token Symbol */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">Token Symbol *</label>
-            <input
-              type="text"
-              value={formData.tokenSymbol}
-              onChange={(e) => updateFormData('tokenSymbol', e.target.value)}
-              placeholder="e.g., G650-SEC"
-              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl uppercase"
-            />
+          {/* Total Supply & Token Symbol - Side by Side */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-900 mb-1">Total Token Supply *</label>
+              <input
+                type="number"
+                value={formData.totalSupply}
+                onChange={(e) => updateFormData('totalSupply', e.target.value)}
+                placeholder="e.g., 1000000"
+                className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-900 mb-1">Token Symbol *</label>
+              <input
+                type="text"
+                value={formData.tokenSymbol}
+                onChange={(e) => updateFormData('tokenSymbol', e.target.value)}
+                placeholder="e.g., G650-SEC"
+                className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl uppercase"
+              />
+            </div>
           </div>
 
           {/* Issuer Wallet Address */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
+            <label className="block text-xs font-medium text-gray-900 mb-1">
               Issuer Wallet Address *
               {address && (
                 <button
                   type="button"
                   onClick={() => updateFormData('issuerWalletAddress', address)}
-                  className="ml-2 text-xs text-blue-600 hover:text-blue-700"
+                  className="ml-2 text-[10px] text-blue-600 hover:text-blue-700"
                 >
                   (Use Connected Wallet)
                 </button>
@@ -895,135 +1200,118 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
               value={formData.issuerWalletAddress || ''}
               onChange={(e) => updateFormData('issuerWalletAddress', e.target.value)}
               placeholder="0x..."
-              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl font-mono text-sm"
+              className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl font-mono text-xs"
             />
-            <p className="text-xs text-gray-600 mt-2">Wallet address where security tokens will be issued from</p>
           </div>
 
-          {/* Price per Token & Minimum Investment */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Price per Token, Min Investment & APY */}
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">Price per Token (USD) *</label>
+              <label className="block text-xs font-medium text-gray-900 mb-1">Price/Token (USD) *</label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 font-medium">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-700 font-medium text-sm">$</span>
                 <input
                   type="number"
                   value={formData.pricePerToken}
                   onChange={(e) => updateFormData('pricePerToken', e.target.value)}
                   placeholder="100"
-                  className="w-full pl-8 pr-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
+                  className="w-full pl-7 pr-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">Minimum Investment (USD) *</label>
+              <label className="block text-xs font-medium text-gray-900 mb-1">Min. Investment *</label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 font-medium">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-700 font-medium text-sm">$</span>
                 <input
                   type="number"
                   value={formData.minimumInvestment}
                   onChange={(e) => updateFormData('minimumInvestment', e.target.value)}
                   placeholder="10000"
-                  className="w-full pl-8 pr-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
+                  className="w-full pl-7 pr-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
                 />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-900 mb-1">Expected APY %</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  step="0.1"
+                  value={formData.expectedAPY}
+                  onChange={(e) => updateFormData('expectedAPY', e.target.value)}
+                  placeholder="8.5"
+                  className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-700 font-medium text-xs">%</span>
               </div>
             </div>
           </div>
 
-          {/* Expected APY */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">Expected APY % (Optional)</label>
-            <div className="relative">
-              <input
-                type="number"
-                step="0.1"
-                value={formData.expectedAPY}
-                onChange={(e) => updateFormData('expectedAPY', e.target.value)}
-                placeholder="8.5"
-                className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
-              />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-700 font-medium">%</span>
-            </div>
-          </div>
-
-          {/* ROI Calculator - Live Preview */}
+          {/* ROI Calculator - Live Preview (Compact) */}
           {formData.assetValue && formData.expectedAPY && (
-            <div className="bg-white/25 border border-gray-300/50 rounded-xl p-6 backdrop-blur-xl">
-              <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Sparkles size={16} />
-                Projected Returns for Investors
+            <div className="bg-white/25 border border-gray-300/50 rounded-lg p-3 backdrop-blur-xl">
+              <h3 className="text-xs font-semibold text-gray-900 mb-2 flex items-center gap-1">
+                <Sparkles size={12} />
+                Projected Returns
               </h3>
-              <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-2">
                 {[25, 50, 100].map((percent) => {
                   const tokenizedValue = (parseFloat(formData.assetValue) * percent) / 100;
                   const annualDistribution = (tokenizedValue * parseFloat(formData.expectedAPY || 0)) / 100;
-                  const capitalRaised = tokenizedValue;
 
                   return (
-                    <div key={percent} className="bg-white/20 rounded-lg p-4 backdrop-blur-sm">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-gray-900">{percent}% Tokenized</span>
-                        <span className="text-xs text-gray-700">${capitalRaised.toLocaleString()} raised</span>
-                      </div>
-                      <div className="text-xs text-gray-700">
-                        → ${annualDistribution.toLocaleString()}/year distribution
-                      </div>
-                      <div className="text-xs text-gray-900 font-medium mt-1">
-                        {formData.expectedAPY}% ROI for investors
-                      </div>
+                    <div key={percent} className="bg-white/20 rounded-lg p-2 backdrop-blur-sm text-center">
+                      <div className="text-xs font-semibold text-gray-900">{percent}%</div>
+                      <div className="text-[10px] text-gray-700">${(tokenizedValue/1000).toFixed(0)}k raised</div>
+                      <div className="text-[10px] text-gray-900 font-medium">{formData.expectedAPY}% ROI</div>
                     </div>
                   );
                 })}
               </div>
-              <p className="text-xs text-gray-600 mt-4">
-                ⓘ Calculations based on your asset value and expected APY
-              </p>
             </div>
           )}
 
           {/* Operator Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-3">Who operates this asset? *</label>
-            <div className="space-y-3">
-              <label className="flex items-start gap-3 p-4 bg-white/20 rounded-xl border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
+            <label className="block text-xs font-medium text-gray-900 mb-2">Who operates this asset? *</label>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 p-2.5 bg-white/20 rounded-lg border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
                 <input
                   type="radio"
                   name="operator"
                   checked={formData.operator === 'owner'}
                   onChange={() => updateFormData('operator', 'owner')}
-                  className="w-5 h-5 mt-0.5 border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
+                  className="w-4 h-4 border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
                 />
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900">I operate it myself</div>
-                  <div className="text-xs text-gray-700">You manage the asset operations (as SPV managing director)</div>
+                  <div className="text-xs font-medium text-gray-900">I operate it myself</div>
                 </div>
               </label>
 
-              <label className="flex items-start gap-3 p-4 bg-white/20 rounded-xl border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
+              <label className="flex items-center gap-2 p-2.5 bg-white/20 rounded-lg border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
                 <input
                   type="radio"
                   name="operator"
                   checked={formData.operator === 'third-party'}
                   onChange={() => updateFormData('operator', 'third-party')}
-                  className="w-5 h-5 mt-0.5 border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
+                  className="w-4 h-4 border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
                 />
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900">Third-party operator</div>
-                  <div className="text-xs text-gray-700">External company manages operations</div>
+                  <div className="text-xs font-medium text-gray-900">Third-party operator</div>
                 </div>
               </label>
 
-              <label className="flex items-start gap-3 p-4 bg-white/20 rounded-xl border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
+              <label className="flex items-center gap-2 p-2.5 bg-white/20 rounded-lg border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
                 <input
                   type="radio"
                   name="operator"
                   checked={formData.operator === 'pcx-partners'}
                   onChange={() => updateFormData('operator', 'pcx-partners')}
-                  className="w-5 h-5 mt-0.5 border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
+                  className="w-4 h-4 border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
                 />
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900">Managed by PrivateCharterX partners</div>
-                  <div className="text-xs text-gray-700">Our verified partners handle operations</div>
+                  <div className="text-xs font-medium text-gray-900">Managed by PrivateCharterX partners</div>
                 </div>
               </label>
             </div>
@@ -1031,100 +1319,89 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
 
           {/* Revenue Distribution Currency - USDC/USDT with Logos */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-3">Revenue Distribution Currency *</label>
-            <div className="grid grid-cols-2 gap-4">
+            <label className="block text-xs font-medium text-gray-900 mb-2">Revenue Distribution Currency *</label>
+            <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => updateFormData('revenueCurrency', 'USDC')}
-                className={`p-5 rounded-xl border-2 transition-all backdrop-blur-xl ${
+                className={`p-3 rounded-lg border-2 transition-all backdrop-blur-xl ${
                   formData.revenueCurrency === 'USDC'
                     ? 'bg-blue-50 border-blue-500'
                     : 'bg-white/20 border-gray-300/50 hover:bg-white/30'
                 }`}
               >
-                <div className="flex flex-col items-center">
+                <div className="flex items-center gap-2">
                   <img
                     src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/pngtree-usdc-blue-coin-3d-rendering-front-view-cryptocurrency-illustration-cartoon-style-png-image_6443097.png"
                     alt="USDC"
-                    className="w-16 h-16 object-contain mb-3"
+                    className="w-8 h-8 object-contain"
                   />
-                  <div className="font-semibold text-gray-900 mb-1">USDC</div>
-                  <div className="text-xs text-gray-700 text-center">Circle regulated stablecoin</div>
-                  <div className="text-xs text-gray-600 mt-2">Recommended ✓</div>
+                  <div className="text-left">
+                    <div className="text-sm font-semibold text-gray-900">USDC</div>
+                    <div className="text-[10px] text-gray-600">Recommended ✓</div>
+                  </div>
                 </div>
               </button>
 
               <button
                 type="button"
                 onClick={() => updateFormData('revenueCurrency', 'USDT')}
-                className={`p-5 rounded-xl border-2 transition-all backdrop-blur-xl ${
+                className={`p-3 rounded-lg border-2 transition-all backdrop-blur-xl ${
                   formData.revenueCurrency === 'USDT'
                     ? 'bg-green-50 border-green-500'
                     : 'bg-white/20 border-gray-300/50 hover:bg-white/30'
                 }`}
               >
-                <div className="flex flex-col items-center">
+                <div className="flex items-center gap-2">
                   <img
                     src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/green-circle-with-large-t-it-that-is-labeled-t_767610-17.jpg"
                     alt="USDT"
-                    className="w-16 h-16 object-contain mb-3"
+                    className="w-8 h-8 object-contain"
                   />
-                  <div className="font-semibold text-gray-900 mb-1">USDT</div>
-                  <div className="text-xs text-gray-700 text-center">Tether stablecoin</div>
-                  <div className="text-xs text-gray-600 mt-2">High liquidity</div>
+                  <div className="text-left">
+                    <div className="text-sm font-semibold text-gray-900">USDT</div>
+                    <div className="text-[10px] text-gray-600">High liquidity</div>
+                  </div>
                 </div>
               </button>
             </div>
-            <div className="mt-3 bg-blue-50/50 border border-blue-200/50 rounded-lg p-3 backdrop-blur-sm">
-              <p className="text-xs text-blue-900">
-                ✓ Automated distribution via Smart Contract • On-chain transparent • Direct to investor wallets
-              </p>
-            </div>
           </div>
 
-          {/* Management Fee Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-3">Annual Management Fee *</label>
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                type="button"
-                onClick={() => updateFormData('managementFee', 2)}
-                className={`p-4 rounded-xl border-2 transition-all backdrop-blur-xl ${
-                  formData.managementFee === 2
-                    ? 'bg-black text-white border-black'
-                    : 'bg-white/20 border-gray-300/50 text-gray-900 hover:bg-white/30'
-                }`}
-              >
-                <div className="text-2xl font-bold mb-1">2%</div>
-                <div className="text-xs opacity-80">of tokenized value/year</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => updateFormData('managementFee', 3)}
-                className={`p-4 rounded-xl border-2 transition-all backdrop-blur-xl ${
-                  formData.managementFee === 3
-                    ? 'bg-black text-white border-black'
-                    : 'bg-white/20 border-gray-300/50 text-gray-900 hover:bg-white/30'
-                }`}
-              >
-                <div className="text-2xl font-bold mb-1">3%</div>
-                <div className="text-xs opacity-80">of tokenized value/year</div>
-              </button>
-            </div>
-            <p className="text-xs text-gray-600 mt-2">
-              Covers compliance monitoring, investor reporting, custody coordination, and platform maintenance
-            </p>
-          </div>
-
-          {/* Revenue Distribution & Lock-up Period */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Management Fee & Revenue Distribution & Lock-up - 3 columns */}
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">Revenue Distribution *</label>
+              <label className="block text-xs font-medium text-gray-900 mb-1">Management Fee *</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => updateFormData('managementFee', 2)}
+                  className={`p-2 rounded-lg border-2 transition-all backdrop-blur-xl ${
+                    formData.managementFee === 2
+                      ? 'bg-black text-white border-black'
+                      : 'bg-white/20 border-gray-300/50 text-gray-900 hover:bg-white/30'
+                  }`}
+                >
+                  <div className="text-sm font-bold">2%</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateFormData('managementFee', 3)}
+                  className={`p-2 rounded-lg border-2 transition-all backdrop-blur-xl ${
+                    formData.managementFee === 3
+                      ? 'bg-black text-white border-black'
+                      : 'bg-white/20 border-gray-300/50 text-gray-900 hover:bg-white/30'
+                  }`}
+                >
+                  <div className="text-sm font-bold">3%</div>
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-900 mb-1">Revenue Distribution *</label>
               <select
                 value={formData.revenueDistribution}
                 onChange={(e) => updateFormData('revenueDistribution', e.target.value)}
-                className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
+                className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
               >
                 <option value="monthly">Monthly</option>
                 <option value="quarterly">Quarterly</option>
@@ -1132,170 +1409,162 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">Lock-up Period (Months) *</label>
+              <label className="block text-xs font-medium text-gray-900 mb-1">Lock-up (Months) *</label>
               <input
                 type="number"
                 value={formData.lockupPeriod}
                 onChange={(e) => updateFormData('lockupPeriod', e.target.value)}
                 placeholder="12"
-                className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
+                className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
               />
             </div>
           </div>
 
           {/* SPV/Legal Entity */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-3">Asset Holding Structure *</label>
-            <div className="space-y-3">
-              <label className="flex items-start gap-3 p-4 bg-white/20 rounded-xl border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
+            <label className="block text-xs font-medium text-gray-900 mb-2">Asset Holding Structure *</label>
+            <div className="space-y-2">
+              <label className="flex items-start gap-2 p-2.5 bg-white/20 rounded-lg border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
                 <input
                   type="radio"
                   name="spv"
                   checked={formData.hasSPV === true}
                   onChange={() => updateFormData('hasSPV', true)}
-                  className="w-5 h-5 mt-0.5 border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
+                  className="w-4 h-4 mt-0.5 border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
                 />
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900 mb-1">I have an existing SPV/Legal Entity</div>
+                  <div className="text-xs font-medium text-gray-900">I have an existing SPV/Legal Entity</div>
                   {formData.hasSPV === true && (
                     <input
                       type="text"
                       value={formData.spvDetails}
                       onChange={(e) => updateFormData('spvDetails', e.target.value)}
-                      placeholder="Enter SPV/Entity name and registration details"
-                      className="w-full mt-2 px-3 py-2 bg-white/40 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50"
+                      placeholder="SPV/Entity name and details"
+                      className="w-full mt-1.5 px-2 py-1.5 bg-white/40 border border-gray-300/50 rounded text-xs text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50"
                     />
                   )}
                 </div>
               </label>
 
-              <label className="flex items-start gap-3 p-4 bg-white/20 rounded-xl border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
+              <label className="flex items-start gap-2 p-2.5 bg-white/20 rounded-lg border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
                 <input
                   type="radio"
                   name="spv"
                   checked={formData.hasSPV === false}
                   onChange={() => updateFormData('hasSPV', false)}
-                  className="w-5 h-5 mt-0.5 border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
+                  className="w-4 h-4 mt-0.5 border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
                 />
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900 mb-1">I need SPV-as-a-Service</div>
-                  <div className="text-xs text-gray-700">We'll help you set up an SPV through our verified partners (additional costs apply, discussed during consultation)</div>
+                  <div className="text-xs font-medium text-gray-900">I need SPV-as-a-Service</div>
+                  <div className="text-[10px] text-gray-700">We'll help set up an SPV through partners</div>
                 </div>
               </label>
             </div>
           </div>
 
-          {/* Compliance Info Box */}
-          <div className="bg-blue-50/50 border border-blue-200/50 rounded-xl p-4 backdrop-blur-xl">
-            <div className="flex items-start gap-3">
-              <AlertCircle size={20} className="text-blue-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <div className="text-sm font-medium text-blue-900 mb-2">Regulatory Compliance (Included)</div>
-                <div className="space-y-1 text-xs text-blue-800">
-                  <div className="flex items-center gap-2">
-                    <Check size={14} className="text-blue-600" />
-                    <span>KYC/AML verification for all investors and asset owners</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check size={14} className="text-blue-600" />
-                    <span>Investor accreditation checks</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check size={14} className="text-blue-600" />
-                    <span>Transfer restrictions & whitelist management</span>
-                  </div>
-                </div>
+          {/* Compliance Info Box - Compact */}
+          <div className="bg-blue-50/50 border border-blue-200/50 rounded-lg p-2.5 backdrop-blur-xl">
+            <div className="flex items-center gap-2">
+              <AlertCircle size={14} className="text-blue-600 flex-shrink-0" />
+              <div className="text-[10px] text-blue-900">
+                <span className="font-medium">Included:</span> KYC/AML • Investor accreditation • Transfer restrictions
               </div>
             </div>
           </div>
 
           {/* Jurisdiction */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">Regulatory Jurisdiction *</label>
+            <label className="block text-xs font-medium text-gray-900 mb-1">Regulatory Jurisdiction *</label>
             <button
               type="button"
               onClick={() => setShowJurisdictionPopup(true)}
-              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-left hover:bg-white/40 transition-all backdrop-blur-xl flex items-center justify-between"
+              className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-left hover:bg-white/40 transition-all backdrop-blur-xl flex items-center justify-between"
             >
-              <span className={formData.jurisdiction ? 'text-gray-900' : 'text-gray-500'}>
+              <span className={`text-sm ${formData.jurisdiction ? 'text-gray-900' : 'text-gray-500'}`}>
                 {formData.jurisdiction || 'Select jurisdiction'}
               </span>
-              <Search size={18} className="text-gray-600" />
+              <Search size={14} className="text-gray-600" />
             </button>
           </div>
 
-          {/* Legal Documents Upload */}
+          {/* Legal Documents Upload - Compact Grid */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-3">Legal Documents Required *</label>
-            <div className="space-y-3">
-              <div className="border border-gray-300/50 rounded-xl p-4 bg-white/20 backdrop-blur-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <FileText size={18} className="text-gray-700" />
-                    <span className="text-sm font-medium text-gray-900">Prospectus/Offering Memorandum</span>
+            <label className="block text-xs font-medium text-gray-900 mb-2">Legal Documents Required *</label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { name: 'Prospectus', field: 'prospectus' },
+                { name: 'Legal Opinion', field: 'legalOpinion' },
+                { name: 'Ownership Proof', field: 'ownershipProof' },
+                { name: 'Insurance', field: 'insurance' }
+              ].map((doc) => (
+                <div key={doc.name} className={`border rounded-lg p-2 backdrop-blur-xl ${formData[doc.field] ? 'border-green-300 bg-green-50/50' : 'border-gray-300/50 bg-white/20'}`}>
+                  <input
+                    type="file"
+                    id={`doc-${doc.field}`}
+                    onChange={(e) => handleDocumentUpload(e, doc.field)}
+                    accept=".pdf,.doc,.docx"
+                    className="hidden"
+                  />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                      <FileText size={12} className={formData[doc.field] ? 'text-green-600' : 'text-gray-700'} />
+                      <span className="text-[10px] font-medium text-gray-900 truncate">
+                        {formData[doc.field] ? formData[doc.field].name : doc.name}
+                      </span>
+                    </div>
+                    {formData[doc.field] ? (
+                      <button
+                        onClick={() => removeFile(doc.field)}
+                        className="p-1 hover:bg-red-100 rounded transition-colors ml-1"
+                      >
+                        <Trash2 size={12} className="text-red-500" />
+                      </button>
+                    ) : (
+                      <label
+                        htmlFor={`doc-${doc.field}`}
+                        className="px-2 py-1 bg-black text-white text-[10px] rounded hover:bg-gray-800 transition-all cursor-pointer flex items-center gap-1"
+                      >
+                        {uploadingDoc === doc.field ? (
+                          <Loader2 size={10} className="animate-spin" />
+                        ) : (
+                          'Upload'
+                        )}
+                      </label>
+                    )}
                   </div>
-                  <button className="px-3 py-1.5 bg-black text-white text-xs rounded-lg hover:bg-gray-800 transition-all">
-                    Upload
-                  </button>
                 </div>
-              </div>
-
-              <div className="border border-gray-300/50 rounded-xl p-4 bg-white/20 backdrop-blur-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <FileText size={18} className="text-gray-700" />
-                    <span className="text-sm font-medium text-gray-900">Legal Opinion Letter</span>
-                  </div>
-                  <button className="px-3 py-1.5 bg-black text-white text-xs rounded-lg hover:bg-gray-800 transition-all">
-                    Upload
-                  </button>
-                </div>
-              </div>
-
-              <div className="border border-gray-300/50 rounded-xl p-4 bg-white/20 backdrop-blur-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <FileText size={18} className="text-gray-700" />
-                    <span className="text-sm font-medium text-gray-900">Asset Ownership Proof</span>
-                  </div>
-                  <button className="px-3 py-1.5 bg-black text-white text-xs rounded-lg hover:bg-gray-800 transition-all">
-                    Upload
-                  </button>
-                </div>
-              </div>
-
-              <div className="border border-gray-300/50 rounded-xl p-4 bg-white/20 backdrop-blur-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <FileText size={18} className="text-gray-700" />
-                    <span className="text-sm font-medium text-gray-900">Insurance Certificate</span>
-                  </div>
-                  <button className="px-3 py-1.5 bg-black text-white text-xs rounded-lg hover:bg-gray-800 transition-all">
-                    Upload
-                  </button>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
           {/* Smart Contract Audit - Required */}
-          <div className="bg-red-50/50 border border-red-200/50 rounded-xl p-4 backdrop-blur-xl">
-            <div className="flex items-start gap-3">
-              <Lock size={20} className="text-red-600 mt-0.5 flex-shrink-0" />
-              <div className="flex-1">
-                <div className="text-sm font-medium text-red-900 mb-1">Smart Contract Audit (Required)</div>
-                <div className="text-xs text-red-800 mb-3">Professional security audit is mandatory for security tokens to ensure investor protection and regulatory compliance.</div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={true}
-                    disabled
-                    className="w-4 h-4 rounded border-gray-300 text-red-600"
-                  />
-                  <span className="text-xs font-medium text-red-900">Smart Contract Audit (€15,000+)</span>
-                </div>
+          <div className="bg-red-50/50 border border-red-200/50 rounded-lg p-2.5 backdrop-blur-xl">
+            <div className="flex items-center gap-2">
+              <Lock size={14} className="text-red-600 flex-shrink-0" />
+              <div className="flex items-center gap-2 flex-1">
+                <input type="checkbox" checked={true} disabled className="w-3 h-3 rounded border-gray-300 text-red-600" />
+                <span className="text-xs font-medium text-red-900">Smart Contract Audit Required (€15,000+)</span>
               </div>
             </div>
+          </div>
+
+          {/* Navigation Buttons */}
+          <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-200/50">
+            <button
+              onClick={prevStep}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-gray-900 transition-colors"
+            >
+              <ChevronLeft size={16} />
+              Back
+            </button>
+            <button
+              onClick={nextStep}
+              disabled={!formData.tokenStandard || !formData.pricePerToken || !formData.jurisdiction}
+              className="flex items-center gap-2 px-6 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Continue
+              <ChevronRight size={16} />
+            </button>
           </div>
         </div>
       </div>
@@ -1304,52 +1573,70 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
 
   // Step 4: Custody & Banking (Security Token only)
   const renderStep4 = () => (
-    <div className="flex-1 flex flex-col items-center justify-center py-12 px-8">
+    <div className="flex-1 flex flex-col items-center justify-center py-6 px-6">
       <div className="max-w-2xl w-full">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Building2 size={32} className="text-white" />
+        <div className="text-center mb-5">
+          <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center mx-auto mb-3">
+            <Building2 size={24} className="text-white" />
           </div>
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Custody & Compliance</h2>
-          <p className="text-sm text-gray-700">Digital token management & regulatory oversight</p>
+          <h2 className="text-xl font-semibold text-gray-900 mb-1">Custody & Compliance</h2>
+          <p className="text-xs text-gray-700">Digital token management & regulatory oversight</p>
         </div>
 
-        <div className="bg-white/25 border border-gray-300/50 rounded-2xl p-8 backdrop-blur-xl">
-          <div className="flex items-start gap-4 mb-6">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-              <AlertCircle size={24} className="text-blue-600" />
+        <div className="bg-white/25 border border-gray-300/50 rounded-xl p-5 backdrop-blur-xl">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <AlertCircle size={18} className="text-blue-600" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Asset Remains Operational</h3>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                Your physical asset (e.g., jet, yacht) remains fully operational and continues generating revenue in its day-to-day business operations.
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">Asset Remains Operational</h3>
+              <p className="text-xs text-gray-700">
+                Your physical asset continues generating revenue in day-to-day operations.
               </p>
             </div>
           </div>
 
-          <div className="space-y-4 mb-6">
-            <div className="flex items-center gap-3 text-sm text-gray-900">
-              <Check size={18} className="text-gray-900 flex-shrink-0" />
-              <span><strong>Digital token safekeeping</strong> - Custodian manages token registry</span>
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <div className="flex items-center gap-2 text-xs text-gray-900">
+              <Check size={14} className="text-gray-900 flex-shrink-0" />
+              <span>Token safekeeping</span>
             </div>
-            <div className="flex items-center gap-3 text-sm text-gray-900">
-              <Check size={18} className="text-gray-900 flex-shrink-0" />
-              <span><strong>KYC/AML compliance</strong> - Investor verification & accreditation</span>
+            <div className="flex items-center gap-2 text-xs text-gray-900">
+              <Check size={14} className="text-gray-900 flex-shrink-0" />
+              <span>KYC/AML compliance</span>
             </div>
-            <div className="flex items-center gap-3 text-sm text-gray-900">
-              <Check size={18} className="text-gray-900 flex-shrink-0" />
-              <span><strong>Revenue verification</strong> - Distribution oversight & escrow</span>
+            <div className="flex items-center gap-2 text-xs text-gray-900">
+              <Check size={14} className="text-gray-900 flex-shrink-0" />
+              <span>Revenue verification</span>
             </div>
-            <div className="flex items-center gap-3 text-sm text-gray-900">
-              <Check size={18} className="text-gray-900 flex-shrink-0" />
-              <span><strong>Regulatory reporting</strong> - Legal safekeeping & compliance</span>
+            <div className="flex items-center gap-2 text-xs text-gray-900">
+              <Check size={14} className="text-gray-900 flex-shrink-0" />
+              <span>Regulatory reporting</span>
             </div>
           </div>
 
-          <div className="bg-blue-50/50 border border-blue-200/50 rounded-xl p-4">
-            <p className="text-xs text-blue-900">
-              <span className="font-semibold">Note:</span> The physical asset stays with your SPV and continues operating. Our custodian banks manage only the digital tokens, compliance, and revenue verification. During consultation, you'll select your preferred custodian.
+          <div className="bg-blue-50/50 border border-blue-200/50 rounded-lg p-2.5">
+            <p className="text-[10px] text-blue-900">
+              <span className="font-semibold">Note:</span> Physical asset stays with your SPV. Custodians manage digital tokens, compliance & revenue verification.
             </p>
+          </div>
+
+          {/* Navigation Buttons */}
+          <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-200/50">
+            <button
+              onClick={prevStep}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-gray-900 transition-colors"
+            >
+              <ChevronLeft size={16} />
+              Back
+            </button>
+            <button
+              onClick={nextStep}
+              className="flex items-center gap-2 px-6 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+            >
+              Continue
+              <ChevronRight size={16} />
+            </button>
           </div>
         </div>
       </div>
@@ -1364,160 +1651,152 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
     const total = platformFee + auditFee + estimatedGas;
 
     return (
-      <div className="flex-1 overflow-y-auto py-8 px-8">
+      <div className="flex-1 overflow-y-auto py-6 px-6">
         <div className="max-w-3xl mx-auto">
-          <div className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Review & Submit</h2>
-            <p className="text-sm text-gray-700">Verify all information before submitting your tokenization request</p>
+          <div className="mb-5">
+            <h2 className="text-xl font-semibold text-gray-900 mb-1">Review & Submit</h2>
+            <p className="text-xs text-gray-700">Verify all information before submitting</p>
           </div>
 
           {/* Summary Cards */}
-          <div className="space-y-4 mb-8">
-            {/* Token Type */}
-            <div className="bg-white/25 border border-gray-300/50 rounded-xl p-6 backdrop-blur-xl">
-              <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                {tokenType === 'utility' ? <Coins size={18} /> : <Shield size={18} />}
-                Token Type
-              </h3>
-              <div className="flex items-center gap-3">
-                <span className="px-3 py-1.5 bg-black text-white rounded-lg text-sm font-medium">
-                  {tokenType === 'utility' ? 'Utility Token' : 'Security Token'}
-                </span>
-                <span className="px-3 py-1.5 bg-gray-100 text-gray-800 rounded-lg text-sm">
-                  {formData.tokenStandard}
-                </span>
+          <div className="space-y-3 mb-5">
+            {/* Token Type & Asset Info - Compact */}
+            <div className="bg-white/25 border border-gray-300/50 rounded-lg p-4 backdrop-blur-xl">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-semibold text-gray-900 flex items-center gap-1">
+                  {tokenType === 'utility' ? <Coins size={14} /> : <Shield size={14} />}
+                  Token Type
+                </h3>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-1 bg-black text-white rounded text-[10px] font-medium">
+                    {tokenType === 'utility' ? 'Utility' : 'Security'}
+                  </span>
+                  <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-[10px]">
+                    {formData.tokenStandard}
+                  </span>
+                </div>
               </div>
-            </div>
-
-            {/* Asset Information */}
-            <div className="bg-white/25 border border-gray-300/50 rounded-xl p-6 backdrop-blur-xl">
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">Asset Information</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-4 gap-3 text-xs">
                 <div>
-                  <div className="text-gray-700 mb-1">Asset Name</div>
-                  <div className="text-gray-900 font-medium">{formData.assetName || '-'}</div>
+                  <div className="text-gray-500 text-[10px]">Asset</div>
+                  <div className="text-gray-900 font-medium truncate">{formData.assetName || '-'}</div>
                 </div>
                 <div>
-                  <div className="text-gray-700 mb-1">Category</div>
+                  <div className="text-gray-500 text-[10px]">Category</div>
                   <div className="text-gray-900 font-medium">{formData.assetCategory || '-'}</div>
                 </div>
                 <div>
-                  <div className="text-gray-700 mb-1">Value</div>
+                  <div className="text-gray-500 text-[10px]">Value</div>
                   <div className="text-gray-900 font-medium">${formData.assetValue ? parseInt(formData.assetValue).toLocaleString() : '-'}</div>
                 </div>
                 <div>
-                  <div className="text-gray-700 mb-1">Location</div>
-                  <div className="text-gray-900 font-medium">{formData.location || '-'}</div>
+                  <div className="text-gray-500 text-[10px]">Location</div>
+                  <div className="text-gray-900 font-medium truncate">{formData.location || '-'}</div>
                 </div>
               </div>
             </div>
 
-            {/* Token Configuration */}
-            <div className="bg-white/25 border border-gray-300/50 rounded-xl p-6 backdrop-blur-xl">
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">Token Configuration</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+            {/* Token Configuration - Compact */}
+            <div className="bg-white/25 border border-gray-300/50 rounded-lg p-4 backdrop-blur-xl">
+              <h3 className="text-xs font-semibold text-gray-900 mb-3">Token Configuration</h3>
+              <div className="grid grid-cols-4 gap-3 text-xs">
                 <div>
-                  <div className="text-gray-700 mb-1">Total Supply</div>
+                  <div className="text-gray-500 text-[10px]">Supply</div>
                   <div className="text-gray-900 font-medium">{formData.totalSupply ? parseInt(formData.totalSupply).toLocaleString() : '-'}</div>
                 </div>
                 <div>
-                  <div className="text-gray-700 mb-1">Token Symbol</div>
+                  <div className="text-gray-500 text-[10px]">Symbol</div>
                   <div className="text-gray-900 font-medium">{formData.tokenSymbol || '-'}</div>
                 </div>
                 {tokenType === 'security' && (
                   <>
                     <div>
-                      <div className="text-gray-700 mb-1">Price per Token</div>
+                      <div className="text-gray-500 text-[10px]">Price/Token</div>
                       <div className="text-gray-900 font-medium">${formData.pricePerToken || '-'}</div>
                     </div>
                     <div>
-                      <div className="text-gray-700 mb-1">Expected APY</div>
+                      <div className="text-gray-500 text-[10px]">APY</div>
                       <div className="text-gray-900 font-medium">{formData.expectedAPY ? `${formData.expectedAPY}%` : '-'}</div>
-                    </div>
-                    <div>
-                      <div className="text-gray-700 mb-1">Revenue Distribution</div>
-                      <div className="text-gray-900 font-medium capitalize">{formData.revenueDistribution}</div>
-                    </div>
-                    <div>
-                      <div className="text-gray-700 mb-1">Lock-up Period</div>
-                      <div className="text-gray-900 font-medium">{formData.lockupPeriod ? `${formData.lockupPeriod} months` : '-'}</div>
                     </div>
                   </>
                 )}
                 <div>
-                  <div className="text-gray-700 mb-1">Jurisdiction</div>
-                  <div className="text-gray-900 font-medium capitalize">{formData.jurisdiction || '-'}</div>
+                  <div className="text-gray-500 text-[10px]">Jurisdiction</div>
+                  <div className="text-gray-900 font-medium">{formData.jurisdiction || '-'}</div>
                 </div>
               </div>
             </div>
 
-            {/* Cost Breakdown */}
-            <div className="bg-white/25 border border-gray-300/50 rounded-xl p-6 backdrop-blur-xl">
-              <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Wallet size={18} />
+            {/* Cost Breakdown - Compact */}
+            <div className="bg-white/25 border border-gray-300/50 rounded-lg p-4 backdrop-blur-xl">
+              <h3 className="text-xs font-semibold text-gray-900 mb-3 flex items-center gap-1">
+                <Wallet size={14} />
                 Cost Breakdown
               </h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-700">Platform Fee</span>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-600">Platform Fee</span>
                   <span className="text-gray-900 font-medium">€{platformFee.toLocaleString()}</span>
                 </div>
                 {auditFee > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-700">Smart Contract Audit</span>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-600">Smart Contract Audit</span>
                     <span className="text-gray-900 font-medium">€{auditFee.toLocaleString()}</span>
                   </div>
                 )}
                 {tokenType === 'security' && formData.hasSPV === false && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-700">SPV Setup (quoted separately)</span>
-                    <span className="text-gray-700 italic">TBD</span>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-600">SPV Setup</span>
+                    <span className="text-gray-600 italic">TBD</span>
                   </div>
                 )}
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-700">Estimated Gas Fees</span>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-600">Gas Fees</span>
                   <span className="text-gray-900 font-medium">~€{estimatedGas}</span>
                 </div>
-                <div className="pt-3 border-t border-gray-300/50 flex items-center justify-between">
-                  <span className="text-gray-900 font-semibold">Total</span>
+                <div className="pt-2 border-t border-gray-300/50 flex items-center justify-between">
+                  <span className="text-gray-900 font-semibold text-sm">Total</span>
                   <span className="text-gray-900 font-semibold text-lg">€{total.toLocaleString()}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Submission Info */}
-          <div className="bg-blue-50/50 border border-blue-200/50 rounded-xl p-6 backdrop-blur-xl mb-6">
-            <div className="flex items-start gap-3">
-              <AlertCircle size={20} className="text-blue-600 mt-0.5 flex-shrink-0" />
+          {/* Submission Info - Compact */}
+          <div className="bg-blue-50/50 border border-blue-200/50 rounded-lg p-3 backdrop-blur-xl">
+            <div className="flex items-start gap-2">
+              <AlertCircle size={14} className="text-blue-600 mt-0.5 flex-shrink-0" />
               <div>
-                <h4 className="text-sm font-semibold text-blue-900 mb-2">What happens after submission?</h4>
-                <ul className="space-y-2 text-xs text-blue-800">
-                  <li className="flex items-start gap-2">
-                    <Check size={14} className="text-blue-600 mt-0.5 flex-shrink-0" />
-                    <span>Your application will be reviewed by our compliance team</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check size={14} className="text-blue-600 mt-0.5 flex-shrink-0" />
-                    <span>KYC/AML verification process initiated</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check size={14} className="text-blue-600 mt-0.5 flex-shrink-0" />
-                    <span>You'll receive a consultation call within 24-48 hours</span>
-                  </li>
-                  {tokenType === 'security' && (
-                    <li className="flex items-start gap-2">
-                      <Check size={14} className="text-blue-600 mt-0.5 flex-shrink-0" />
-                      <span>Custodian selection and SPV setup (if needed) during consultation</span>
-                    </li>
-                  )}
-                  <li className="flex items-start gap-2">
-                    <Check size={14} className="text-blue-600 mt-0.5 flex-shrink-0" />
-                    <span>Legal review and smart contract deployment coordination</span>
-                  </li>
-                </ul>
+                <h4 className="text-xs font-semibold text-blue-900 mb-1">What happens next?</h4>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-blue-800">
+                  <span className="flex items-center gap-1"><Check size={10} className="text-blue-600" /> Compliance review</span>
+                  <span className="flex items-center gap-1"><Check size={10} className="text-blue-600" /> KYC/AML verification</span>
+                  <span className="flex items-center gap-1"><Check size={10} className="text-blue-600" /> Consultation within 24-48h</span>
+                  <span className="flex items-center gap-1"><Check size={10} className="text-blue-600" /> Smart contract deployment</span>
+                </div>
               </div>
             </div>
+          </div>
+
+          {/* Navigation Buttons */}
+          <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-200/50">
+            <button
+              onClick={prevStep}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-gray-900 transition-colors"
+            >
+              <ChevronLeft size={16} />
+              Back
+            </button>
+            <button
+              onClick={() => {
+                console.log('Submitting form:', formData);
+                alert('Form submitted! (Demo)');
+              }}
+              className="flex items-center gap-2 px-6 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+            >
+              Submit Application
+              <Check size={16} />
+            </button>
           </div>
         </div>
       </div>
@@ -1612,72 +1891,73 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
     };
 
     return (
-      <div className="flex-1 overflow-y-auto py-8 px-8">
+      <div className="flex-1 overflow-y-auto py-6 px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-8 text-center">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Choose Your NFT Membership Package</h2>
-            <p className="text-sm text-gray-700">Select the package that best fits your business needs</p>
+          <div className="mb-5 text-center">
+            <h2 className="text-xl font-semibold text-gray-900 mb-1">Choose Your NFT Membership Package</h2>
+            <p className="text-xs text-gray-700">Select the package that best fits your business needs</p>
           </div>
 
-          {/* Package Cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Package Cards - Compact */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
             {packages.map((pkg) => (
               <div
                 key={pkg.id}
                 onClick={() => updateFormData('membershipPackage', pkg.id)}
-                className={`relative bg-white/30 border-2 rounded-2xl p-6 backdrop-blur-xl cursor-pointer transition-all hover:shadow-lg ${
+                className={`relative bg-white/30 border-2 rounded-xl p-4 backdrop-blur-xl cursor-pointer transition-all hover:shadow-lg ${
                   formData.membershipPackage === pkg.id
                     ? 'border-black shadow-xl'
                     : 'border-gray-300/50 hover:border-gray-400'
                 } ${pkg.popular ? 'ring-2 ring-blue-500' : ''}`}
               >
                 {pkg.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-4 py-1 rounded-full">
-                    MOST POPULAR
+                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-bold px-3 py-0.5 rounded-full">
+                    POPULAR
                   </div>
                 )}
 
                 {/* Header */}
-                <div className="text-center mb-6">
-                  <div className="text-4xl mb-2">{pkg.icon}</div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-1">{pkg.name}</h3>
-                  <p className="text-sm text-gray-700">{pkg.memberCards}</p>
+                <div className="text-center mb-3">
+                  <div className="text-2xl mb-1">{pkg.icon}</div>
+                  <h3 className="text-sm font-bold text-gray-900">{pkg.name}</h3>
+                  <p className="text-[10px] text-gray-700">{pkg.memberCards}</p>
                 </div>
 
                 {/* Pricing */}
-                <div className="mb-6 pb-6 border-b border-gray-300/50">
-                  <div className="text-center mb-4">
-                    <div className="text-3xl font-bold text-gray-900">CHF {pkg.setupFee.toLocaleString()}</div>
-                    <div className="text-xs text-gray-600">Setup-Fee (einmalig)</div>
+                <div className="mb-3 pb-3 border-b border-gray-300/50">
+                  <div className="text-center mb-2">
+                    <div className="text-xl font-bold text-gray-900">CHF {pkg.setupFee.toLocaleString()}</div>
+                    <div className="text-[10px] text-gray-600">Setup (einmalig)</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-xl font-semibold text-gray-900">CHF {pkg.monthlyFee}/mo</div>
-                    <div className="text-xs text-gray-600">Monatlich</div>
+                    <div className="text-sm font-semibold text-gray-900">CHF {pkg.monthlyFee}/mo</div>
                   </div>
                 </div>
 
                 {/* Revenue Share */}
-                <div className="mb-6 pb-6 border-b border-gray-300/50">
-                  <div className="text-xs font-semibold text-gray-700 mb-2">Revenue-Share:</div>
-                  <div className="space-y-1 text-xs text-gray-600">
-                    <div>CHF {pkg.revenueShare.perNFT} pro verkauftem NFT</div>
-                    <div>{pkg.revenueShare.perBooking}% pro Buchung durch NFT-Holder</div>
+                <div className="mb-3 pb-3 border-b border-gray-300/50">
+                  <div className="text-[10px] font-semibold text-gray-700 mb-1">Revenue-Share:</div>
+                  <div className="text-[10px] text-gray-600">
+                    CHF {pkg.revenueShare.perNFT}/NFT • {pkg.revenueShare.perBooking}%/Buchung
                   </div>
                 </div>
 
-                {/* Benefits */}
-                <div className="space-y-2">
-                  {pkg.benefits.map((benefit, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-xs text-gray-700">
-                      <Check size={14} className="text-green-600 mt-0.5 flex-shrink-0" />
-                      <span>{benefit}</span>
+                {/* Benefits - Show first 5 only */}
+                <div className="space-y-1">
+                  {pkg.benefits.slice(0, 5).map((benefit, idx) => (
+                    <div key={idx} className="flex items-start gap-1 text-[10px] text-gray-700">
+                      <Check size={10} className="text-green-600 mt-0.5 flex-shrink-0" />
+                      <span className="line-clamp-1">{benefit}</span>
                     </div>
                   ))}
+                  {pkg.benefits.length > 5 && (
+                    <div className="text-[10px] text-gray-500 pl-3">+{pkg.benefits.length - 5} more benefits</div>
+                  )}
                 </div>
 
                 {/* Selected Indicator */}
                 {formData.membershipPackage === pkg.id && (
-                  <div className="absolute top-4 right-4 w-6 h-6 bg-black rounded-full flex items-center justify-center">
+                  <div className="absolute top-3 right-3 w-5 h-5 bg-black rounded-full flex items-center justify-center">
                     <Check size={16} className="text-white" />
                   </div>
                 )}
@@ -1772,9 +2052,30 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
             </div>
           )}
 
+          {/* Navigation Buttons */}
+          <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-200/50">
+            <button
+              onClick={prevStep}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-gray-900 transition-colors"
+            >
+              <ChevronLeft size={16} />
+              Back
+            </button>
+            {formData.membershipPackage && (
+              <button
+                onClick={() => nextStep()}
+                disabled={!formData.packageAddons.auditedContract && !paymentMethod}
+                className="flex items-center gap-2 px-6 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Continue to Preview
+                <ChevronRight size={16} />
+              </button>
+            )}
+          </div>
+
           {/* Total */}
           {formData.membershipPackage && (
-            <div className="bg-gradient-to-r from-gray-900 to-gray-700 rounded-2xl p-6 text-white">
+            <div className="bg-gradient-to-r from-gray-900 to-gray-700 rounded-2xl p-6 text-white mt-4">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm opacity-80 mb-1">Total Setup Fee</div>
@@ -1785,25 +2086,6 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
                     + CHF {packages.find(p => p.id === formData.membershipPackage).monthlyFee}/month starting next month
                   </div>
                 </div>
-                {paymentMethod && !formData.packageAddons.auditedContract && (
-                  <button
-                    onClick={() => nextStep()}
-                    disabled={!validateStep()}
-                    className="px-8 py-3 bg-white text-gray-900 rounded-xl font-semibold hover:bg-gray-100 transition-all disabled:opacity-50 flex items-center gap-2"
-                  >
-                    Continue to Preview
-                    <ArrowRight size={18} />
-                  </button>
-                )}
-                {formData.packageAddons.auditedContract && (
-                  <button
-                    onClick={() => nextStep()}
-                    className="px-8 py-3 bg-white text-gray-900 rounded-xl font-semibold hover:bg-gray-100 transition-all flex items-center gap-2"
-                  >
-                    Continue to Preview
-                    <ArrowRight size={18} />
-                  </button>
-                )}
               </div>
             </div>
           )}
@@ -1812,321 +2094,466 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
     );
   };
 
-  // Utility Token Preview (Step 6 for utility tokens)
-  const renderUtilityPreview = () => {
+  // Final Summary Card - Modern design with uploaded images
+  const renderFinalSummary = () => {
+    // Get category image for fallback
+    const getCategoryImage = () => {
+      const categoryImages = {
+        'jet': 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/serviceImagesVector/g6_2_transparent.png',
+        'helicopter': 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/serviceImagesVector/airbus_h145_helicopter_by_gamerzzon_dhhd2oc-pre-removebg-preview.png',
+        'yacht': 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/serviceImagesVector/pngtree-white-modern-yachts-png-image_11385792.png',
+        'real-estate': 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/serviceImagesVector/01_01%20(1).jpg',
+        'luxury-car': 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/serviceImagesVector/HOR_XB1_Ferrari_250_62_GTO.webp',
+        'art': 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/serviceImagesVector/danseur_ii_by_yann_guillon_master-removebg-preview.png',
+        'evtol': 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/serviceImagesVector/lilium-jet-transparent-bg.png',
+        'business': 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/serviceImagesVector/istockphoto-506918827-612x612-removebg-preview%20(1).png'
+      };
+      return categoryImages[assetCategory] || categoryImages['jet'];
+    };
+
+    // Get display image - prioritize uploaded header/images, fallback to category
+    const displayImage = formData.headerImage?.url ||
+                         (formData.images && formData.images.length > 0 ? formData.images[0].url : null) ||
+                         getCategoryImage();
+
     return (
-      <div className="flex-1 overflow-y-auto py-8 px-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="mb-8 text-center">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Token Preview</h2>
-            <p className="text-sm text-gray-700">This is how your utility token will appear on PrivateCharterX</p>
+      <div className="flex-1 overflow-y-auto py-6 px-4 md:px-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="mb-6 text-center">
+            <h2 className="text-2xl md:text-3xl font-light text-gray-900 tracking-tight mb-2">Review Your Submission</h2>
+            <p className="text-sm text-gray-600">Please review all information before submitting your tokenization request</p>
           </div>
 
-          {/* Preview Card */}
-          <div className="bg-white/30 border border-gray-300/50 rounded-2xl overflow-hidden backdrop-blur-xl shadow-xl">
-            {/* Header Image */}
-            <div className="h-48 bg-gradient-to-r from-gray-800 to-gray-600 relative">
-              <div className="absolute inset-0 flex items-center justify-center text-white/50">
-                {formData.headerImage ? (
-                  <span className="text-sm">Header Image Preview</span>
-                ) : (
-                  <span className="text-sm">No header image uploaded</span>
-                )}
+          {/* Main Summary Card */}
+          <div className="bg-white/70 backdrop-blur-xl border border-gray-200/60 rounded-2xl overflow-hidden shadow-lg">
+            {/* Hero Image Section */}
+            <div className="relative h-48 md:h-56 bg-gradient-to-br from-gray-900 to-gray-700 overflow-hidden">
+              <img
+                src={displayImage}
+                alt={formData.assetName || 'Asset'}
+                className="w-full h-full object-cover opacity-90"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+              {/* Overlay Content */}
+              <div className="absolute bottom-0 left-0 right-0 p-6">
+                <div className="flex items-end justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`px-2 py-1 rounded-md text-xs font-medium ${tokenType === 'security' ? 'bg-blue-500/90 text-white' : 'bg-purple-500/90 text-white'}`}>
+                        {tokenType === 'security' ? 'SECURITY TOKEN' : 'UTILITY TOKEN'}
+                      </span>
+                      <span className="px-2 py-1 bg-white/20 backdrop-blur-sm text-white rounded-md text-xs font-medium capitalize">
+                        {assetCategory?.replace('-', ' ')}
+                      </span>
+                    </div>
+                    <h1 className="text-2xl md:text-3xl font-bold text-white">{formData.assetName || 'Untitled Asset'}</h1>
+                    {formData.location && (
+                      <p className="text-white/80 text-sm flex items-center gap-1 mt-1">
+                        <MapPin size={14} />
+                        {formData.location}
+                      </p>
+                    )}
+                  </div>
+                  {formData.logo?.url && (
+                    <div className="w-16 h-16 bg-white rounded-xl shadow-lg overflow-hidden flex-shrink-0">
+                      <img src={formData.logo.url} alt="Logo" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Logo & Title */}
-            <div className="px-8 py-6">
-              <div className="flex items-start gap-6 mb-6">
-                {/* Logo */}
-                <div className="w-24 h-24 bg-white border-4 border-white rounded-xl flex items-center justify-center flex-shrink-0 -mt-16 shadow-lg">
-                  {formData.logo ? (
-                    <span className="text-xs text-gray-600">Logo</span>
-                  ) : (
-                    <Building2 size={32} className="text-gray-400" />
-                  )}
-                </div>
-
-                {/* Title & Basic Info */}
-                <div className="flex-1 pt-2">
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">{formData.assetName || 'Asset Name'}</h1>
-                  <div className="flex items-center gap-4 text-sm text-gray-700">
-                    <span className="flex items-center gap-1">
-                      <MapPin size={14} />
-                      {formData.location || 'Location'}
-                    </span>
-                    <span className="px-2 py-1 bg-black text-white rounded-md text-xs font-medium">
-                      {formData.tokenStandard}
-                    </span>
-                    <span className="px-2 py-1 bg-purple-100 text-purple-900 rounded-md text-xs font-medium">
-                      UTILITY TOKEN
-                    </span>
+            {/* Content Section */}
+            <div className="p-6">
+              {/* Key Metrics */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-gray-50/80 rounded-xl p-4 text-center">
+                  <div className="text-xs text-gray-500 mb-1">Asset Value</div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    ${formData.assetValue ? parseInt(formData.assetValue).toLocaleString() : '0'}
                   </div>
                 </div>
-
-                {/* Live Badge */}
-                <div className="flex flex-col items-end pt-2">
-                  <span className="px-3 py-1.5 bg-green-500 text-white rounded-full text-xs font-medium mb-2">
-                    ● LIVE
-                  </span>
+                <div className="bg-gray-50/80 rounded-xl p-4 text-center">
+                  <div className="text-xs text-gray-500 mb-1">Token Supply</div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {formData.totalSupply ? parseInt(formData.totalSupply).toLocaleString() : '0'}
+                  </div>
+                </div>
+                <div className="bg-gray-50/80 rounded-xl p-4 text-center">
+                  <div className="text-xs text-gray-500 mb-1">Symbol</div>
+                  <div className="text-lg font-semibold text-gray-900 font-mono">
+                    ${formData.tokenSymbol || 'TKN'}
+                  </div>
+                </div>
+                <div className="bg-gray-50/80 rounded-xl p-4 text-center">
+                  <div className="text-xs text-gray-500 mb-1">Price/Token</div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    ${formData.pricePerToken || '0'}
+                  </div>
                 </div>
               </div>
 
               {/* Description */}
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-2">About This Token</h3>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  {formData.description || 'No description provided'}
-                </p>
-              </div>
+              {formData.description && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-2">Description</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">{formData.description}</p>
+                </div>
+              )}
 
-              {/* Token Details */}
-              <div className="grid grid-cols-2 gap-6 mb-6">
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Token Details</h3>
+              {/* Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {/* Token Configuration */}
+                <div className="bg-gray-50/50 rounded-xl p-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <Coins size={16} className="text-gray-600" />
+                    Token Configuration
+                  </h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-700">Token Standard:</span>
-                      <span className="font-medium text-gray-900">{formData.tokenStandard}</span>
+                      <span className="text-gray-600">Standard:</span>
+                      <span className="font-medium text-gray-900">{formData.tokenStandard || 'TBD'}</span>
                     </div>
+                    {tokenType === 'security' && formData.expectedAPY && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Expected APY:</span>
+                        <span className="font-medium text-green-600">{formData.expectedAPY}%</span>
+                      </div>
+                    )}
+                    {formData.minimumInvestment && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Min. Investment:</span>
+                        <span className="font-medium text-gray-900">${parseInt(formData.minimumInvestment).toLocaleString()}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
-                      <span className="text-gray-700">Total Supply:</span>
-                      <span className="font-medium text-gray-900">{(parseFloat(formData.totalSupply || 0)).toLocaleString()} tokens</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">Symbol:</span>
-                      <span className="font-medium text-gray-900">{formData.tokenSymbol || '-'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">Transferable:</span>
+                      <span className="text-gray-600">Transferable:</span>
                       <span className="font-medium text-gray-900">{formData.isTransferable ? 'Yes' : 'No'}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">Burnable:</span>
-                      <span className="font-medium text-gray-900">{formData.isBurnable ? 'Yes' : 'No'}</span>
-                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Access Rights & Validity</h3>
+                {/* Compliance & Legal */}
+                <div className="bg-gray-50/50 rounded-xl p-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <Shield size={16} className="text-gray-600" />
+                    Compliance & Legal
+                  </h3>
                   <div className="space-y-2 text-sm">
-                    <div>
-                      <div className="text-gray-700 mb-1">Access Rights:</div>
-                      <div className="font-medium text-gray-900">{formData.accessRights || 'Not specified'}</div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Jurisdiction:</span>
+                      <span className="font-medium text-gray-900">{formData.jurisdiction || 'Not specified'}</span>
                     </div>
-                    <div>
-                      <div className="text-gray-700 mb-1">Validity Period:</div>
-                      <div className="font-medium text-gray-900">{formData.validityPeriod || 'Not specified'}</div>
-                    </div>
-                    <div>
-                      <div className="text-gray-700 mb-1">Jurisdiction:</div>
-                      <div className="font-medium text-gray-900">{formData.jurisdiction ? formData.jurisdiction.toUpperCase() : 'N/A'}</div>
-                    </div>
+                    {tokenType === 'security' && (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">SPV Structure:</span>
+                          <span className="font-medium text-gray-900">{formData.hasSPV ? 'Yes' : 'No'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Revenue Distribution:</span>
+                          <span className="font-medium text-gray-900 capitalize">{formData.revenueDistribution}</span>
+                        </div>
+                      </>
+                    )}
+                    {tokenType === 'utility' && formData.validityPeriod && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Validity:</span>
+                        <span className="font-medium text-gray-900">{formData.validityPeriod}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* Security Features */}
-              <div className="bg-white/40 rounded-xl p-4 backdrop-blur-sm mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Security & Compliance</h3>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  {formData.needsAudit && (
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <Check size={16} className="text-green-600" />
-                      <span>Smart Contract Audited</span>
-                    </div>
+              {/* Uploaded Files Summary */}
+              <div className="bg-green-50/50 border border-green-200/50 rounded-xl p-4 mb-6">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <CheckCircle size={16} className="text-green-600" />
+                  Uploaded Files
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className={`flex items-center gap-2 text-sm ${formData.logo ? 'text-green-700' : 'text-gray-400'}`}>
+                    {formData.logo ? <Check size={14} className="text-green-600" /> : <Circle size={14} />}
+                    <span>Logo</span>
+                  </div>
+                  <div className={`flex items-center gap-2 text-sm ${formData.headerImage ? 'text-green-700' : 'text-gray-400'}`}>
+                    {formData.headerImage ? <Check size={14} className="text-green-600" /> : <Circle size={14} />}
+                    <span>Header Image</span>
+                  </div>
+                  <div className={`flex items-center gap-2 text-sm ${formData.images?.length > 0 ? 'text-green-700' : 'text-gray-400'}`}>
+                    {formData.images?.length > 0 ? <Check size={14} className="text-green-600" /> : <Circle size={14} />}
+                    <span>Images ({formData.images?.length || 0})</span>
+                  </div>
+                  {tokenType === 'security' && (
+                    <>
+                      <div className={`flex items-center gap-2 text-sm ${formData.prospectus ? 'text-green-700' : 'text-gray-400'}`}>
+                        {formData.prospectus ? <Check size={14} className="text-green-600" /> : <Circle size={14} />}
+                        <span>Prospectus</span>
+                      </div>
+                      <div className={`flex items-center gap-2 text-sm ${formData.legalOpinion ? 'text-green-700' : 'text-gray-400'}`}>
+                        {formData.legalOpinion ? <Check size={14} className="text-green-600" /> : <Circle size={14} />}
+                        <span>Legal Opinion</span>
+                      </div>
+                      <div className={`flex items-center gap-2 text-sm ${formData.ownershipProof ? 'text-green-700' : 'text-gray-400'}`}>
+                        {formData.ownershipProof ? <Check size={14} className="text-green-600" /> : <Circle size={14} />}
+                        <span>Ownership Proof</span>
+                      </div>
+                    </>
                   )}
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <Check size={16} className="text-green-600" />
-                    <span>Blockchain Verified</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <Check size={16} className="text-green-600" />
-                    <span>{formData.tokenStandard} Standard</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <Check size={16} className="text-green-600" />
-                    <span>Transparent Supply</span>
-                  </div>
                 </div>
               </div>
 
-              {/* CTA Button */}
-              <div className="pt-4 border-t border-gray-300/50">
-                <button className="w-full py-4 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-all">
-                  Mint/Purchase Token
-                </button>
+              {/* What Happens Next */}
+              <div className="bg-blue-50/50 border border-blue-200/50 rounded-xl p-4 mb-6">
+                <h3 className="text-sm font-semibold text-blue-900 mb-2">What happens next?</h3>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-0.5">1.</span>
+                    <span>Our team will review your submission within <strong>24-48 hours</strong></span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-0.5">2.</span>
+                    <span>You'll receive an email with feedback or approval status</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-0.5">3.</span>
+                    <span>Once approved, your token will be deployed to the marketplace</span>
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
 
-          {/* Note */}
-          <div className="mt-6 bg-blue-50/50 border border-blue-200/50 rounded-xl p-4 text-center">
-            <p className="text-sm text-blue-900">
-              <strong>Note:</strong> This is a preview of how your utility token will appear on PrivateCharterX. Review carefully before submitting.
-            </p>
+          {/* Navigation Buttons */}
+          <div className="flex items-center justify-between pt-6 mt-4">
+            <button
+              onClick={prevStep}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:text-gray-900 transition-colors border border-gray-200 rounded-lg hover:bg-gray-50"
+            >
+              <ChevronLeft size={16} />
+              Back to Edit
+            </button>
+            <button
+              onClick={handleSubmitApplication}
+              disabled={isSaving || isSubmitting}
+              className="flex items-center gap-2 px-8 py-3 bg-black text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSaving || isSubmitting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  {isSaving ? 'Saving...' : 'Submitting...'}
+                </>
+              ) : (
+                <>
+                  Submit Request
+                  <ArrowRight size={16} />
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>
     );
   };
 
-  // Step 6: Token Offering Preview (Security Token only - before final submit)
-  const renderStep6 = () => {
-    const tokenizedValue = parseFloat(formData.assetValue || 0);
-    const annualDistribution = formData.expectedAPY ? (tokenizedValue * parseFloat(formData.expectedAPY)) / 100 : 0;
-    const managementFeeAmount = (tokenizedValue * formData.managementFee) / 100;
+  // Utility Token Preview (Step 6 for utility tokens) - Now uses renderFinalSummary
+  const renderUtilityPreview = () => renderFinalSummary();
+
+  // Step 6: Token Offering Preview (Security Token only) - Now uses renderFinalSummary
+  const renderStep6 = () => renderFinalSummary();
+
+  // Summary Tracker Component
+  const renderSummaryTracker = () => {
+    const steps = [
+      { id: 0, label: 'Asset Type', completed: !!assetCategory },
+      { id: 1, label: 'Token Type', completed: !!tokenType },
+      { id: 2, label: 'Asset Info', completed: !!(formData.assetName && formData.description && formData.assetValue) },
+      { id: 3, label: 'Token Config', completed: !!(formData.tokenStandard && formData.totalSupply && formData.tokenSymbol) },
+      { id: 4, label: tokenType === 'security' ? 'Custody' : 'Review', completed: currentStep > 4 },
+      { id: 5, label: tokenType === 'security' ? 'Review' : 'Package', completed: currentStep > 5 },
+      { id: 6, label: 'Preview', completed: currentStep > 6 },
+    ];
+
+    const formatValue = (value) => {
+      if (!value) return null;
+      if (typeof value === 'number') return value.toLocaleString();
+      if (typeof value === 'object' && value.name) return value.name;
+      return value;
+    };
 
     return (
-      <div className="flex-1 overflow-y-auto py-8 px-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="mb-8 text-center">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Token Offering Preview</h2>
-            <p className="text-sm text-gray-700">This is how your token offering will appear on PrivateCharterX</p>
-          </div>
+      <div className="bg-white/40 backdrop-blur-xl border border-gray-200/50 rounded-xl p-4 sticky top-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Eye size={16} />
+          Summary
+        </h3>
 
-          {/* Preview Card - How it will look on website */}
-          <div className="bg-white/30 border border-gray-300/50 rounded-2xl overflow-hidden backdrop-blur-xl shadow-xl">
-            {/* Header Image */}
-            <div className="h-48 bg-gradient-to-r from-gray-800 to-gray-600 relative">
-              <div className="absolute inset-0 flex items-center justify-center text-white/50">
-                {formData.headerImage ? (
-                  <span className="text-sm">Header Image Preview</span>
-                ) : (
-                  <span className="text-sm">No header image uploaded</span>
+        {/* Step Progress */}
+        <div className="space-y-2 mb-4 pb-4 border-b border-gray-200/50">
+          {steps.slice(0, tokenType ? 7 : 2).map((step) => (
+            <div key={step.id} className="flex items-center gap-2">
+              {step.completed ? (
+                <CheckCircle size={14} className="text-green-600 flex-shrink-0" />
+              ) : currentStep === step.id ? (
+                <div className="w-3.5 h-3.5 rounded-full border-2 border-black bg-black/20 flex-shrink-0" />
+              ) : (
+                <Circle size={14} className="text-gray-300 flex-shrink-0" />
+              )}
+              <span className={`text-xs ${currentStep === step.id ? 'font-medium text-gray-900' : step.completed ? 'text-gray-700' : 'text-gray-400'}`}>
+                {step.label}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Entered Information */}
+        <div className="space-y-3 text-xs">
+          {assetCategory && (
+            <div>
+              <div className="text-gray-500 mb-0.5">Asset Category</div>
+              <div className="text-gray-900 font-medium capitalize">{assetCategory.replace('-', ' ')}</div>
+            </div>
+          )}
+
+          {tokenType && (
+            <div>
+              <div className="text-gray-500 mb-0.5">Token Type</div>
+              <div className="text-gray-900 font-medium capitalize">{tokenType}</div>
+            </div>
+          )}
+
+          {formData.assetName && (
+            <div>
+              <div className="text-gray-500 mb-0.5">Asset Name</div>
+              <div className="text-gray-900 font-medium truncate">{formData.assetName}</div>
+            </div>
+          )}
+
+          {formData.assetValue && (
+            <div>
+              <div className="text-gray-500 mb-0.5">Asset Value</div>
+              <div className="text-gray-900 font-medium">${parseInt(formData.assetValue).toLocaleString()}</div>
+            </div>
+          )}
+
+          {formData.location && (
+            <div>
+              <div className="text-gray-500 mb-0.5">Location</div>
+              <div className="text-gray-900 font-medium truncate">{formData.location}</div>
+            </div>
+          )}
+
+          {formData.tokenStandard && (
+            <div>
+              <div className="text-gray-500 mb-0.5">Token Standard</div>
+              <div className="text-gray-900 font-medium">{formData.tokenStandard}</div>
+            </div>
+          )}
+
+          {formData.totalSupply && (
+            <div>
+              <div className="text-gray-500 mb-0.5">Total Supply</div>
+              <div className="text-gray-900 font-medium">{parseInt(formData.totalSupply).toLocaleString()} tokens</div>
+            </div>
+          )}
+
+          {formData.tokenSymbol && (
+            <div>
+              <div className="text-gray-500 mb-0.5">Symbol</div>
+              <div className="text-gray-900 font-medium">{formData.tokenSymbol}</div>
+            </div>
+          )}
+
+          {formData.pricePerToken && (
+            <div>
+              <div className="text-gray-500 mb-0.5">Price/Token</div>
+              <div className="text-gray-900 font-medium">${formData.pricePerToken}</div>
+            </div>
+          )}
+
+          {formData.expectedAPY && (
+            <div>
+              <div className="text-gray-500 mb-0.5">Expected APY</div>
+              <div className="text-gray-900 font-medium">{formData.expectedAPY}%</div>
+            </div>
+          )}
+
+          {formData.jurisdiction && (
+            <div>
+              <div className="text-gray-500 mb-0.5">Jurisdiction</div>
+              <div className="text-gray-900 font-medium">{formData.jurisdiction}</div>
+            </div>
+          )}
+
+          {/* Uploaded Files Summary */}
+          {(formData.logo || formData.headerImage || (formData.images && formData.images.length > 0)) && (
+            <div className="pt-2 border-t border-gray-200/50">
+              <div className="text-gray-500 mb-1">Uploaded Files</div>
+              <div className="space-y-1">
+                {formData.logo && (
+                  <div className="flex items-center gap-1.5 text-gray-700">
+                    <Image size={10} />
+                    <span>Logo</span>
+                    <CheckCircle size={10} className="text-green-600 ml-auto" />
+                  </div>
+                )}
+                {formData.headerImage && (
+                  <div className="flex items-center gap-1.5 text-gray-700">
+                    <Image size={10} />
+                    <span>Header</span>
+                    <CheckCircle size={10} className="text-green-600 ml-auto" />
+                  </div>
+                )}
+                {formData.images && formData.images.length > 0 && (
+                  <div className="flex items-center gap-1.5 text-gray-700">
+                    <Image size={10} />
+                    <span>{formData.images.length} image(s)</span>
+                    <CheckCircle size={10} className="text-green-600 ml-auto" />
+                  </div>
                 )}
               </div>
             </div>
+          )}
 
-            {/* Logo & Title */}
-            <div className="px-8 py-6">
-              <div className="flex items-start gap-6 mb-6">
-                {/* Logo */}
-                <div className="w-24 h-24 bg-white border-4 border-white rounded-xl flex items-center justify-center flex-shrink-0 -mt-16 shadow-lg">
-                  {formData.logo ? (
-                    <span className="text-xs text-gray-600">Logo</span>
-                  ) : (
-                    <Building2 size={32} className="text-gray-400" />
-                  )}
-                </div>
-
-                {/* Title & Basic Info */}
-                <div className="flex-1 pt-2">
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">{formData.assetName || 'Asset Name'}</h1>
-                  <div className="flex items-center gap-4 text-sm text-gray-700">
-                    <span className="flex items-center gap-1">
-                      <MapPin size={14} />
-                      {formData.location || 'Location'}
-                    </span>
-                    <span className="px-2 py-1 bg-black text-white rounded-md text-xs font-medium">
-                      {formData.tokenStandard}
-                    </span>
-                    <span className="px-2 py-1 bg-gray-200 text-gray-900 rounded-md text-xs font-medium">
-                      {formData.revenueCurrency}
-                    </span>
+          {/* Documents Summary */}
+          {(formData.prospectus || formData.legalOpinion || formData.ownershipProof || formData.insurance) && (
+            <div className="pt-2 border-t border-gray-200/50">
+              <div className="text-gray-500 mb-1">Documents</div>
+              <div className="space-y-1">
+                {formData.prospectus && (
+                  <div className="flex items-center gap-1.5 text-gray-700">
+                    <FileText size={10} />
+                    <span className="truncate">Prospectus</span>
+                    <CheckCircle size={10} className="text-green-600 ml-auto flex-shrink-0" />
                   </div>
-                </div>
-
-                {/* Live Badge */}
-                <div className="flex flex-col items-end">
-                  <span className="px-3 py-1.5 bg-green-500 text-white rounded-full text-xs font-medium mb-2">
-                    ● LIVE
-                  </span>
-                  <span className="text-sm font-semibold text-gray-900">${(parseFloat(formData.pricePerToken || 0)).toLocaleString()}/token</span>
-                </div>
-              </div>
-
-              {/* Stats Grid */}
-              <div className="grid grid-cols-4 gap-4 mb-6">
-                <div className="bg-white/40 rounded-xl p-4 backdrop-blur-sm">
-                  <div className="text-xs text-gray-600 mb-1">Asset Value</div>
-                  <div className="text-lg font-bold text-gray-900">${(parseFloat(formData.assetValue || 0)).toLocaleString()}</div>
-                </div>
-                <div className="bg-white/40 rounded-xl p-4 backdrop-blur-sm">
-                  <div className="text-xs text-gray-600 mb-1">Expected APY</div>
-                  <div className="text-lg font-bold text-green-600">{formData.expectedAPY || 0}%</div>
-                </div>
-                <div className="bg-white/40 rounded-xl p-4 backdrop-blur-sm">
-                  <div className="text-xs text-gray-600 mb-1">Min. Investment</div>
-                  <div className="text-lg font-bold text-gray-900">${(parseFloat(formData.minimumInvestment || 0)).toLocaleString()}</div>
-                </div>
-                <div className="bg-white/40 rounded-xl p-4 backdrop-blur-sm">
-                  <div className="text-xs text-gray-600 mb-1">Lock-up Period</div>
-                  <div className="text-lg font-bold text-gray-900">{formData.lockupPeriod || 0}mo</div>
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-2">About This Asset</h3>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  {formData.description || 'No description provided'}
-                </p>
-              </div>
-
-              {/* Investment Details */}
-              <div className="grid grid-cols-2 gap-6 mb-6">
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Investment Terms</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">Total Supply:</span>
-                      <span className="font-medium text-gray-900">{(parseFloat(formData.totalSupply || 0)).toLocaleString()} tokens</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">Revenue Distribution:</span>
-                      <span className="font-medium text-gray-900 capitalize">{formData.revenueDistribution}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">Annual Distribution:</span>
-                      <span className="font-medium text-green-600">${annualDistribution.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">Management Fee:</span>
-                      <span className="font-medium text-gray-900">{formData.managementFee}% (${managementFeeAmount.toLocaleString()}/year)</span>
-                    </div>
+                )}
+                {formData.legalOpinion && (
+                  <div className="flex items-center gap-1.5 text-gray-700">
+                    <FileText size={10} />
+                    <span className="truncate">Legal Opinion</span>
+                    <CheckCircle size={10} className="text-green-600 ml-auto flex-shrink-0" />
                   </div>
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Compliance & Security</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <Check size={16} className="text-green-600" />
-                      <span>KYC/AML Required</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <Check size={16} className="text-green-600" />
-                      <span>Smart Contract Audited</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <Check size={16} className="text-green-600" />
-                      <span>Custodian Bank Verified</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <Check size={16} className="text-green-600" />
-                      <span>Jurisdiction: {formData.jurisdiction ? formData.jurisdiction.toUpperCase() : 'N/A'}</span>
-                    </div>
+                )}
+                {formData.ownershipProof && (
+                  <div className="flex items-center gap-1.5 text-gray-700">
+                    <FileText size={10} />
+                    <span className="truncate">Ownership Proof</span>
+                    <CheckCircle size={10} className="text-green-600 ml-auto flex-shrink-0" />
                   </div>
-                </div>
-              </div>
-
-              {/* CTA Button */}
-              <div className="pt-4 border-t border-gray-300/50">
-                <button className="w-full py-4 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-all">
-                  Invest Now
-                </button>
+                )}
+                {formData.insurance && (
+                  <div className="flex items-center gap-1.5 text-gray-700">
+                    <FileText size={10} />
+                    <span className="truncate">Insurance</span>
+                    <CheckCircle size={10} className="text-green-600 ml-auto flex-shrink-0" />
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-
-          {/* Note */}
-          <div className="mt-6 bg-blue-50/50 border border-blue-200/50 rounded-xl p-4 text-center">
-            <p className="text-sm text-blue-900">
-              <strong>Note:</strong> This is a preview of how your token offering will appear to investors on PrivateCharterX. Review carefully before submitting.
-            </p>
-          </div>
+          )}
         </div>
       </div>
     );
@@ -2158,60 +2585,27 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
       {/* Progress Bar */}
       {currentStep > 0 && renderProgressBar()}
 
-      {/* Step Content */}
-      <div className="flex-1 overflow-y-auto">
-        {currentStep === 0 && renderStep0()}
-        {currentStep === 1 && renderStep1()}
-        {currentStep === 2 && renderStep2()}
-        {currentStep === 3 && (tokenType === 'utility' ? renderStep3Utility() : renderStep3Security())}
-        {currentStep === 4 && (tokenType === 'security' ? renderStep4() : renderStep5())}
-        {currentStep === 5 && (tokenType === 'security' ? renderStep5() : renderPaymentPackageSelection())}
-        {currentStep === 6 && (tokenType === 'security' ? renderStep6() : renderUtilityPreview())}
-        {currentStep === 7 && renderStep6()}
-      </div>
-
-      {/* Footer Navigation */}
-      {currentStep > 0 && (
-        <div className="px-8 py-6 border-t border-gray-300/50 bg-white/20 backdrop-blur-xl mt-6">
-          <div className="max-w-3xl mx-auto flex items-center justify-between">
-            <button
-              onClick={prevStep}
-              className="px-6 py-2.5 bg-white/40 hover:bg-white/50 border border-gray-300/50 text-gray-900 rounded-lg font-medium transition-all flex items-center gap-2"
-            >
-              <ArrowLeft size={18} />
-              Back
-            </button>
-
-            {currentStep < totalSteps ? (
-              <div className="flex flex-col items-end gap-2">
-                {!validateStep() && (
-                  <p className="text-xs text-red-600 font-medium flex items-center gap-1">
-                    <AlertCircle size={14} />
-                    Please fill in all required fields (*)
-                  </p>
-                )}
-                <button
-                  onClick={nextStep}
-                  disabled={!validateStep()}
-                  className="px-6 py-2.5 bg-black hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-all flex items-center gap-2"
-                >
-                  Continue
-                  <ArrowRight size={18} />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowTermsModal(true)}
-                disabled={isSubmitting}
-                className="px-6 py-2.5 bg-black hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-all flex items-center gap-2"
-              >
-                <Check size={18} />
-                Continue to Signature
-              </button>
-            )}
-          </div>
+      {/* Main Content with Summary Sidebar */}
+      <div className="flex-1 flex gap-6 px-4 md:px-6">
+        {/* Step Content */}
+        <div className={`flex-1 overflow-y-auto ${currentStep > 1 ? 'lg:pr-4' : ''}`}>
+          {currentStep === 0 && renderStep0()}
+          {currentStep === 1 && renderStep1()}
+          {currentStep === 2 && renderStep2()}
+          {currentStep === 3 && (tokenType === 'utility' ? renderStep3Utility() : renderStep3Security())}
+          {currentStep === 4 && (tokenType === 'security' ? renderStep4() : renderStep5())}
+          {currentStep === 5 && (tokenType === 'security' ? renderStep5() : renderPaymentPackageSelection())}
+          {currentStep === 6 && (tokenType === 'security' ? renderStep6() : renderUtilityPreview())}
+          {currentStep === 7 && renderStep6()}
         </div>
-      )}
+
+        {/* Summary Tracker Sidebar - Show from Step 2 onwards */}
+        {currentStep > 1 && (
+          <div className="hidden lg:block w-64 flex-shrink-0">
+            {renderSummaryTracker()}
+          </div>
+        )}
+      </div>
 
       {/* Jurisdiction Popup Modal */}
       {showJurisdictionPopup && (

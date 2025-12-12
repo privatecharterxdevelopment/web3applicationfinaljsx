@@ -5,6 +5,7 @@
 
 import { UnifiedSearchService } from './supabaseService';
 import { hotelService } from './hotelService';
+import { supabase } from '../lib/supabase';
 
 // Mapbox token for geocoding and directions
 const MAPBOX_TOKEN = 'pk.eyJ1IjoicHJpdmF0ZWNoYXJ0ZXJ4IiwiYSI6ImNsdGJ2dG4zazFucGsya21tNXRldW5udjYifQ.NrWJLJuG9n6b1jhRh5AkSg';
@@ -340,6 +341,107 @@ export const aiToolDefinitions = [
     }
   },
   {
+    name: "searchWines",
+    description: "MANDATORY: Search wines database. You MUST use this tool IMMEDIATELY when user says: 'wine', 'champagne', 'Dom Perignon', 'Krug', 'Cristal', 'Margaux', 'Petrus', 'do you have', 'show me wines', or ANY wine name. Database contains 105 premium wines. NEVER respond about wine availability without calling this tool first. When user asks 'do you have Dom Perignon' you MUST call searchWines with query='Dom Perignon'.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "The wine name to search. ALWAYS extract and pass this when user mentions a specific wine. User says 'Dom Perignon' → query='Dom Perignon'. User says 'Krug' → query='Krug'. User says 'Margaux' → query='Margaux'."
+        },
+        category: {
+          type: "string",
+          enum: ["champagne", "bordeaux", "burgundy", "italy", "white", "sweet"],
+          description: "Wine category. Use when user asks for a type: 'champagne' for champagne/sparkling, 'bordeaux' for Bordeaux reds, 'burgundy' for Burgundy wines, 'italy' for Italian wines (Barolo, Brunello, Amarone), 'white' for white wines, 'sweet' for dessert wines."
+        },
+        type: {
+          type: "string",
+          enum: ["red", "white", "sparkling", "rosé", "dessert"],
+          description: "Wine type filter."
+        },
+        country: {
+          type: "string",
+          description: "Country of origin: 'France', 'Italy', 'Spain', 'USA', etc."
+        },
+        region: {
+          type: "string",
+          description: "Specific wine region: 'Champagne', 'Bordeaux', 'Burgundy', 'Tuscany', 'Piedmont', 'Napa Valley', etc."
+        },
+        producer: {
+          type: "string",
+          description: "Wine producer/house name: 'Moët & Chandon', 'Louis Roederer', 'Château Margaux', etc."
+        },
+        vintage: {
+          type: "string",
+          description: "Vintage year: '2012', '2015', '2018', etc."
+        },
+        priceMin: {
+          type: "number",
+          description: "Minimum price in EUR"
+        },
+        priceMax: {
+          type: "number",
+          description: "Maximum price in EUR"
+        },
+        classification: {
+          type: "string",
+          description: "Wine classification: 'Grand Cru', 'Premier Cru', 'First Growth', etc."
+        }
+      },
+      required: []
+    }
+  },
+  {
+    name: "searchWineGlobal",
+    description: "ONLY use AFTER searchWines returns 0 results AND user confirms they want global sourcing. Do NOT use this tool without first trying searchWines. Searches wine merchants globally.",
+    input_schema: {
+      type: "object",
+      properties: {
+        wineName: {
+          type: "string",
+          description: "Full name of the wine to search for (e.g., 'Chateau Mouton Rothschild 1982', 'Screaming Eagle 2015')"
+        },
+        vintage: {
+          type: "string",
+          description: "Specific vintage year if known"
+        },
+        maxBudget: {
+          type: "number",
+          description: "Maximum budget in EUR (optional)"
+        }
+      },
+      required: ["wineName"]
+    }
+  },
+  {
+    name: "createWineRequest",
+    description: "Create a wine sourcing request when a specific wine cannot be found via web search. This creates a note/request that the PrivateCharterX wine team will process. Use when: 1) Web search found no pricing, 2) Wine is extremely rare, 3) User wants a specific bottle sourced. The team will contact user within 24-48 hours with availability and pricing.",
+    input_schema: {
+      type: "object",
+      properties: {
+        wineName: {
+          type: "string",
+          description: "Full name of the wine (e.g., 'Screaming Eagle Cabernet Sauvignon')"
+        },
+        vintage: {
+          type: "string",
+          description: "Specific vintage year (e.g., '2018')"
+        },
+        quantity: {
+          type: "number",
+          description: "Number of bottles requested",
+          default: 1
+        },
+        userNotes: {
+          type: "string",
+          description: "Any additional notes from user (e.g., 'preferably from original release', 'need by Dec 20')"
+        }
+      },
+      required: ["wineName", "quantity"]
+    }
+  },
+  {
     name: "lookupLuxuryItem",
     description: "Look up estimated market price for luxury items like fine wines, champagne, caviar, cigars, or other premium products. Use when a user requests a specific luxury item to be added to their booking. Returns estimated price and availability status. Note: Availability must be confirmed by our team.",
     input_schema: {
@@ -516,6 +618,15 @@ export async function executeTool(toolName, input) {
 
       case 'searchAirportTransfer':
         return await searchAirportTransfer(input);
+
+      case 'searchWines':
+        return await searchWines(input);
+
+      case 'searchWineGlobal':
+        return await searchWineGlobal(input);
+
+      case 'createWineRequest':
+        return createWineRequest(input);
 
       case 'calculateFlightPrice':
         return calculateFlightPrice(input);
@@ -2901,4 +3012,412 @@ Would you like to add any additional services?
 
 Just let me know!`
   };
+}
+
+// ============================================
+// WINE SOMMELIER SEARCH
+// ============================================
+
+/**
+ * Search for premium wines from our curated sommelier selection
+ * Table columns: id, name, producer, region, country, type, category, price_range_eur,
+ * typical_price_eur, vintage, alcohol, rating_points, serving_temp, aging_potential,
+ * decanting_time, tasting_notes, description, image_url, luxury_positioning,
+ * classification, created_at, updated_at, is_active
+ * @param {Object} params - Search parameters
+ * @returns {Promise<Object>} - Wine search results
+ */
+export async function searchWines(params) {
+  console.log('🍷🍷🍷 searchWines CALLED with params:', JSON.stringify(params));
+
+  const {
+    query,           // Wine name search (e.g., "Dom Perignon")
+    category,        // champagne, bordeaux, burgundy, italy, white, sweet
+    type,            // red, white, sparkling, rosé, dessert
+    country,         // France, Italy, Spain, USA, etc.
+    region,          // Champagne, Bordeaux, Tuscany, etc.
+    producer,        // Producer/house name
+    vintage,         // Year
+    priceMin,
+    priceMax,
+    classification   // Grand Cru, Premier Cru, etc.
+  } = params;
+
+  try {
+    console.log('🍷🍷🍷 WINE SEARCH PARAMS RECEIVED:', JSON.stringify(params));
+
+    // FIRST: Check if wines table has ANY data at all
+    const { data: allWines, error: countError } = await supabase
+      .from('wines')
+      .select('id, name, is_active')
+      .limit(5);
+
+    console.log('🍷 DEBUG - Sample wines from DB:', allWines);
+    console.log('🍷 DEBUG - Count error:', countError);
+
+    // Build Supabase query
+    let supabaseQuery = supabase
+      .from('wines')
+      .select('*');
+
+    console.log('🍷 Building query with ALL params:', { query, category, type, country, region, producer, vintage, priceMin, priceMax, classification });
+
+    // If NO params provided, return all wines (limited)
+    const hasAnyFilter = query || category || type || country || region || producer || vintage || priceMin || priceMax || classification;
+    console.log('🍷 Has any filter:', hasAnyFilter);
+
+    // QUERY - search by wine name (most important for specific requests)
+    if (query) {
+      console.log('🍷 Searching for wine with query:', query);
+
+      // Extract main search term - for "Dom Perignon" use "Perignon"
+      const searchTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+      const mainTerm = searchTerms.length > 1 ? searchTerms[searchTerms.length - 1] : searchTerms[0];
+      console.log('🍷 Search terms:', searchTerms, '-> Main term:', mainTerm);
+
+      // Replace vowels with underscore wildcard for accent-insensitive search
+      // "perignon" -> "p_r_gn_n" matches "Pérignon"
+      // "petrus" -> "p_tr_s" matches "Pétrus"
+      const wildcardTerm = mainTerm
+        .replace(/e/gi, '_')
+        .replace(/a/gi, '_')
+        .replace(/o/gi, '_')
+        .replace(/u/gi, '_')
+        .replace(/i/gi, '_');
+
+      console.log('🍷 Wildcard search term:', wildcardTerm);
+
+      // Use ilike with wildcard _ for accent-insensitive search
+      supabaseQuery = supabaseQuery.ilike('name', `%${wildcardTerm}%`);
+    }
+
+    // CATEGORY filter
+    if (category) {
+      supabaseQuery = supabaseQuery.ilike('category', `%${category}%`);
+    }
+
+    // TYPE filter (red, white, sparkling, etc.)
+    if (type) {
+      supabaseQuery = supabaseQuery.ilike('type', `%${type}%`);
+    }
+
+    // COUNTRY filter
+    if (country) {
+      supabaseQuery = supabaseQuery.ilike('country', `%${country}%`);
+    }
+
+    // REGION filter
+    if (region) {
+      supabaseQuery = supabaseQuery.or(`region.ilike.%${region}%,country.ilike.%${region}%`);
+    }
+
+    // PRODUCER filter
+    if (producer) {
+      supabaseQuery = supabaseQuery.ilike('producer', `%${producer}%`);
+    }
+
+    // VINTAGE filter
+    if (vintage) {
+      supabaseQuery = supabaseQuery.ilike('vintage', `%${vintage}%`);
+    }
+
+    // PRICE filters
+    if (priceMin) {
+      supabaseQuery = supabaseQuery.gte('typical_price_eur', priceMin);
+    }
+    if (priceMax) {
+      supabaseQuery = supabaseQuery.lte('typical_price_eur', priceMax);
+    }
+
+    // CLASSIFICATION filter
+    if (classification) {
+      supabaseQuery = supabaseQuery.ilike('classification', `%${classification}%`);
+    }
+
+    // Execute query with limit
+    const { data: wines, error } = await supabaseQuery
+      .order('typical_price_eur', { ascending: true })
+      .limit(20);
+
+    console.log('🍷 Query executed, found:', wines?.length || 0, 'wines');
+
+    if (error) {
+      console.error('Wine search error:', error);
+      return {
+        success: false,
+        error: 'Failed to search wines: ' + error.message,
+        results: []
+      };
+    }
+
+    // Format results for display
+    const formattedWines = (wines || []).map(wine => ({
+      id: wine.id,
+      name: wine.name,
+      producer: wine.producer,
+      vintage: wine.vintage,
+      // IMPORTANT: type must be 'wines' for SearchResults to recognize it
+      type: 'wines',
+      wineType: wine.type, // Original wine type (red, white, sparkling, etc.)
+      category: wine.category,
+      region: wine.region,
+      country: wine.country,
+      description: wine.description,
+      // Price display - use price_range_eur string or format from typical_price_eur
+      priceRange: wine.price_range_eur || (wine.typical_price_eur ? `€${wine.typical_price_eur}` : 'Price on request'),
+      typicalPrice: wine.typical_price_eur,
+      // Cart price fields - set all price fields the cart might look for
+      price: wine.typical_price_eur || 0,
+      unitPrice: wine.typical_price_eur || 0,
+      basePrice: wine.typical_price_eur || 0,
+      cartPrice: wine.typical_price_eur,
+      currency: 'EUR', // Wines are priced in EUR
+      image: wine.image_url,
+      image_url: wine.image_url, // Also set image_url for fallback
+      // Additional wine details
+      alcohol: wine.alcohol ? `${wine.alcohol}%` : null,
+      rating: wine.rating_points,
+      servingTemp: wine.serving_temp,
+      agingPotential: wine.aging_potential,
+      decantingTime: wine.decanting_time,
+      tastingNotes: wine.tasting_notes,
+      luxuryPositioning: wine.luxury_positioning,
+      classification: wine.classification,
+      // Format for display
+      displayTitle: `${wine.name}${wine.vintage ? ` ${wine.vintage}` : ''}`,
+      displaySubtitle: `${wine.producer || ''} · ${wine.region || wine.country || ''}`.replace(/^\s*·\s*|\s*·\s*$/g, '')
+    }));
+
+    console.log(`🍷 Found ${formattedWines.length} wines`);
+
+    // Debug: Log price info for each wine
+    formattedWines.forEach(w => {
+      console.log(`🍷 Wine: ${w.name}, Price: €${w.price}, typical_price_eur: ${w.typicalPrice}`);
+    });
+
+    // Get category counts for summary
+    const categoryCounts = {};
+    formattedWines.forEach(w => {
+      categoryCounts[w.category] = (categoryCounts[w.category] || 0) + 1;
+    });
+
+    // If specific wine was searched but not found, offer global sourcing
+    const isSpecificSearch = query && query.length > 3;
+    const notFoundButSearchable = formattedWines.length === 0 && isSpecificSearch;
+
+    if (notFoundButSearchable) {
+      return {
+        success: true,
+        results: [],
+        total: 0,
+        params,
+        displayType: 'wines',
+        notInStock: true,
+        searchedWine: query + (vintage ? ` ${vintage}` : ''),
+        message: `The requested wine "${query}${vintage ? ` ${vintage}` : ''}" is currently not in our curated selection.`,
+        globalSourcingAvailable: true,
+        globalSourcingPrompt: `However, our wine coordinators can source this wine globally if it's available from international merchants, auction houses, or importers. Would you like me to search globally for "${query}${vintage ? ` ${vintage}` : ''}"?`,
+        orderingNote: 'Global sourcing typically takes 1-12 days depending on location.',
+        cartIntegration: {
+          type: 'custom_extra',
+          category: 'wine',
+          priceField: 'typical_price_eur'
+        }
+      };
+    }
+
+    return {
+      success: true,
+      results: formattedWines,
+      total: formattedWines.length,
+      params,
+      categorySummary: categoryCounts,
+      displayType: 'wines',
+      message: formattedWines.length > 0
+        ? `Found ${formattedWines.length} wines from our sommelier selection`
+        : 'No wines found matching your criteria. You can browse our full collection or ask me to search globally for a specific wine.',
+      orderingNote: 'Order at least 24 hours before your flight for aircraft delivery.',
+      cartIntegration: {
+        type: 'custom_extra',
+        category: 'wine',
+        priceField: 'typical_price_eur'
+      }
+    };
+
+  } catch (error) {
+    console.error('Wine search error:', error);
+    return {
+      success: false,
+      error: error.message,
+      results: []
+    };
+  }
+}
+
+/**
+ * Search for wines globally via web search
+ * Used when wine is not in our curated selection
+ * @param {Object} params - Search parameters
+ * @returns {Promise<Object>} - Global wine search results
+ */
+async function searchWineGlobal(params) {
+  console.log('🌍🍷 searchWineGlobal called with:', params);
+
+  const { wineName, vintage, maxBudget } = params;
+
+  if (!wineName) {
+    return {
+      success: false,
+      error: 'Wine name is required for global search',
+      results: []
+    };
+  }
+
+  try {
+    // Build search query for wine
+    const searchQuery = `${wineName}${vintage ? ` ${vintage}` : ''} wine price buy`;
+
+    // Use web search to find wine information
+    // This will be processed by Claude's web search capability
+    // For now, we return a structured response that prompts the AI to do web search
+
+    const wineSearchTerm = `${wineName}${vintage ? ` ${vintage}` : ''}`;
+
+    // Generate a placeholder result that the AI will enhance with web search
+    const result = {
+      success: true,
+      isGlobalSearch: true,
+      searchedWine: wineSearchTerm,
+      displayType: 'wines_global',
+      requiresWebSearch: true,
+      webSearchQuery: searchQuery,
+      message: `Searching globally for "${wineSearchTerm}"...`,
+
+      // Instructions for AI to follow
+      aiInstructions: {
+        action: 'WEB_SEARCH_REQUIRED',
+        searchFor: `"${wineSearchTerm}" wine price availability buy merchant Wine-Searcher Vivino`,
+        extractFields: ['name', 'vintage', 'price', 'merchant', 'availability', 'image_url'],
+        formatAs: 'wine_cards',
+        priceMarkup: 1.10, // Internal markup - not shown to user
+        addNote: 'Price includes sourcing and transport'
+      },
+
+      // Pricing info (internal - not exposed to users)
+      sourcingInfo: {
+        deliveryTime: '1-12 days typical',
+        note: 'Price includes sourcing and transport'
+      },
+
+      // Placeholder for results (AI will fill this via web search)
+      results: [],
+
+      // If NO price found, create wine request note
+      fallbackIfNotFound: {
+        type: 'wine_request',
+        wine_name: wineSearchTerm,
+        vintage: vintage || null,
+        quantity: 'TBD - ask user',
+        message: "I couldn't find current pricing for this wine. I can create a sourcing request - our wine team at PrivateCharterX will contact you within 24-48 hours with availability and pricing.",
+        askUser: "How many bottles would you like our team to source?"
+      },
+
+      orderingNote: 'Global sourcing: Delivery typically 1-12 days.',
+
+      cartIntegration: {
+        type: 'custom_extra',
+        category: 'wine',
+        isGlobalSourcing: true,
+        requiresConfirmation: true
+      }
+    };
+
+    return result;
+
+  } catch (error) {
+    console.error('Global wine search error:', error);
+    return {
+      success: false,
+      error: error.message,
+      results: []
+    };
+  }
+}
+
+/**
+ * Create a wine sourcing request when wine cannot be found
+ * Used when web search finds no pricing or wine is extremely rare
+ * @param {Object} params - Request parameters
+ * @returns {Object} - Wine request to add to cart
+ */
+function createWineRequest(params) {
+  console.log('📝🍷 createWineRequest called with:', params);
+
+  const { wineName, vintage, quantity = 1, userNotes } = params;
+
+  if (!wineName) {
+    return {
+      success: false,
+      error: 'Wine name is required'
+    };
+  }
+
+  const wineFullName = `${wineName}${vintage ? ` ${vintage}` : ''}`;
+
+  // Create a cart-ready wine request item
+  const wineRequest = {
+    success: true,
+    type: 'wine_request',
+    displayType: 'wine_request',
+
+    // Item details for cart
+    item: {
+      id: `wine-request-${Date.now()}`,
+      type: 'wine_request',
+      category: 'wine',
+      name: wineFullName,
+      wine_name: wineName,
+      vintage: vintage || null,
+      quantity: quantity,
+      user_notes: userNotes || null,
+
+      // Price is TBD - team will confirm
+      price: null,
+      priceDisplay: 'Price TBD - Team will confirm',
+
+      // Status
+      status: 'pending_confirmation',
+      requiresTeamConfirmation: true,
+
+      // Display info
+      title: `Wine Sourcing Request: ${wineFullName}`,
+      description: `${quantity} bottle${quantity > 1 ? 's' : ''} requested. Our wine team will contact you within 24-48 hours with availability and pricing.`,
+      image_url: null // No image for requests
+    },
+
+    // Message to show user
+    message: `I've created a sourcing request for ${quantity} bottle${quantity > 1 ? 's' : ''} of ${wineFullName}. Our wine team at PrivateCharterX will contact you within 24-48 hours with availability and pricing.`,
+
+    // Cart integration
+    cartAction: 'add_wine_request',
+    cartItem: {
+      type: 'custom_extra',
+      category: 'wine_request',
+      name: `Wine Request: ${wineFullName}`,
+      quantity: quantity,
+      price: 0, // Price TBD
+      notes: `Wine: ${wineFullName}, Qty: ${quantity}${userNotes ? `, Notes: ${userNotes}` : ''}`,
+      status: 'pending_confirmation',
+      requiresConfirmation: true
+    },
+
+    // Next steps for AI
+    nextSteps: [
+      'Confirm with user if they want to add this request to their cart',
+      'Ask if they have any specific requirements (delivery date, condition, provenance)',
+      'Remind them: Team will contact within 24-48 hours'
+    ]
+  };
+
+  return wineRequest;
 }

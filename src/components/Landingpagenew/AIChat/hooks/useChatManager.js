@@ -266,6 +266,9 @@ export function useChatManager({ user, isAdmin, navigate, onToast }) {
     setProcessing: (value) => dispatch(chatActions.setProcessing(value)),
     setSearching: (value) => dispatch(chatActions.setSearching(value)),
     setAssistantTyping: (value) => dispatch(chatActions.setAssistantTyping(value)),
+    setStreaming: (value) => dispatch(chatActions.setStreaming(value)),
+    updateStreamingMessage: (chatId, content, isStreaming) =>
+      dispatch(chatActions.updateStreamingMessage(chatId, content, isStreaming)),
     setTypingMessageIndex: (index) => dispatch(chatActions.setTypingMessageIndex(index)),
     setShowWelcomeMessage: (value) => dispatch(chatActions.setShowWelcomeMessage(value)),
     setChatLimitReached: (value) => dispatch(chatActions.setChatLimitReached(value)),

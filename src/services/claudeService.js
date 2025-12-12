@@ -1,5 +1,6 @@
 // Claude Service - Now using secure Edge Function (API key stays server-side)
 // This is a wrapper around claudeEdgeService for backwards compatibility
+// Supports streaming for real-time text generation
 import { claudeEdgeService } from './claudeEdgeService';
 
 class ClaudeService {
@@ -48,17 +49,39 @@ class ClaudeService {
   }
 
   /**
-   * Stream a response from Claude (NOTE: streaming not yet supported via edge function)
-   * Falls back to regular message for now
+   * Stream a response from Claude with real-time text chunks
    * @param {Array} messages - Conversation history
-   * @param {Function} onChunk - Callback for each text chunk
+   * @param {Function} onChunk - Callback for each text chunk (chunk, fullText)
    * @param {Object} options - Additional options
+   * @returns {Promise<string>} - Complete response text
    */
   async streamMessage(messages, onChunk, options = {}) {
-    // Edge function doesn't support streaming yet, use regular message
-    const fullText = await this.sendMessage(messages, options);
-    onChunk(fullText, fullText);
-    return fullText;
+    try {
+      const fullText = await claudeEdgeService.messages.stream(
+        {
+          messages: messages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          })),
+          system: this.systemPrompt,
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: options.maxTokens || 8192,
+          temperature: options.temperature || 0.7
+        },
+        onChunk
+      );
+
+      return fullText;
+    } catch (error) {
+      console.error('Claude Streaming Error:', error.message);
+      // Fallback to non-streaming if streaming fails
+      console.log('Falling back to non-streaming response...');
+      const fullText = await this.sendMessage(messages, options);
+      if (onChunk) {
+        onChunk(fullText, fullText);
+      }
+      return fullText;
+    }
   }
 
   /**

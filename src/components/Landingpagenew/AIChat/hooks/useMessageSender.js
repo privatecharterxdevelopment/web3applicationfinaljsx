@@ -219,6 +219,162 @@ export function useMessageSender({
   ]);
 
   /**
+   * Send a message with streaming response (real-time text generation)
+   * @param {string} message - User message
+   * @param {Object} options - { skipAddUserMessage }
+   */
+  const sendStreamingMessage = useCallback(async (message, options = {}) => {
+    const { skipAddUserMessage = false } = options;
+
+    if (!message?.trim() || processingRef.current) return;
+    if (chatManager.isProcessing) return;
+
+    processingRef.current = true;
+    chatManager.setProcessing(true);
+    chatManager.setStreaming(true);
+
+    const { activeChat, chatHistory } = chatManager;
+    const existingChat = chatHistory.find(c => c.id === activeChat);
+    const currentMsgCount = existingChat?.messages?.filter(m => m.role === 'user').length || 0;
+
+    // Check message limit
+    const hasUnlimitedMessages = userSubscriptionLimits?.unlimited_messages === true;
+
+    if (!hasUnlimitedMessages && currentMsgCount >= MAX_MESSAGES_PER_CHAT && activeChat !== 'new') {
+      chatManager.setMessageLimitReached(true);
+      onToast?.({
+        message: `Message limit reached (${MAX_MESSAGES_PER_CHAT} messages per chat). Upgrade for more messages.`,
+        type: 'warning'
+      });
+      chatManager.setProcessing(false);
+      chatManager.setStreaming(false);
+      processingRef.current = false;
+      return;
+    }
+
+    if (!hasUnlimitedMessages) {
+      chatManager.setMessageCount(currentMsgCount + 1);
+    }
+
+    chatManager.setShowWelcomeMessage(false);
+    const userMessage = { role: 'user', content: message };
+    let workingChatId = activeChat;
+
+    try {
+      // Handle new chat creation
+      const isFirstUserMessage = existingChat &&
+        existingChat.messages.length === 1 &&
+        existingChat.messages[0].role === 'assistant' &&
+        existingChat.title === 'New Chat';
+
+      if (isFirstUserMessage) {
+        const newTitle = message.substring(0, 50) + (message.length > 50 ? '...' : '');
+        await chatManager.updateChatTitle(activeChat, newTitle);
+        chatManager.addMessage(activeChat, userMessage);
+        await chatManager.saveMessages(activeChat, [...existingChat.messages, userMessage]);
+      } else if (activeChat === 'new') {
+        const title = message.substring(0, 50) + (message.length > 50 ? '...' : '');
+        const newChat = await chatManager.createChat(title, userMessage);
+
+        if (!newChat) {
+          chatManager.setProcessing(false);
+          chatManager.setStreaming(false);
+          processingRef.current = false;
+          return;
+        }
+
+        workingChatId = newChat.id;
+      } else {
+        if (!skipAddUserMessage) {
+          chatManager.addMessage(activeChat, userMessage);
+          if (existingChat) {
+            await chatManager.saveMessages(activeChat, [...existingChat.messages, userMessage]);
+          }
+        }
+      }
+
+      // Add empty streaming message placeholder
+      chatManager.addMessage(workingChatId, {
+        role: 'assistant',
+        content: '',
+        isStreaming: true
+      });
+
+      // Build conversation history
+      let conversationHistory;
+      const currentChatObj = chatHistory.find(c => c.id === workingChatId) ||
+                             chatHistory.find(c => c.id === activeChat);
+
+      if (currentChatObj) {
+        conversationHistory = [...currentChatObj.messages.filter(msg => !msg.isLoading && !msg.isStreaming), userMessage];
+      } else {
+        conversationHistory = [userMessage];
+      }
+
+      const systemPrompt = getSystemPrompt();
+      const claudeMessages = conversationHistory
+        .filter(msg => msg.role !== 'results')
+        .map(msg => ({ role: msg.role, content: msg.content }));
+
+      console.log('📡 Starting streaming to Claude:', { messageCount: claudeMessages.length });
+
+      // Stream the response
+      const fullText = await claudeEdgeService.streamMessage(
+        {
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4096,
+          system: [{ type: "text", text: systemPrompt }],
+          messages: claudeMessages
+        },
+        // onChunk callback - update message in real-time
+        (chunk, fullTextSoFar) => {
+          chatManager.updateStreamingMessage(workingChatId, fullTextSoFar, true);
+        }
+      );
+
+      // Mark streaming complete
+      chatManager.updateStreamingMessage(workingChatId, fullText, false);
+      chatManager.setStreaming(false);
+
+      // Save to database
+      const updatedChat = chatHistory.find(c => c.id === workingChatId);
+      if (updatedChat) {
+        const finalMessages = updatedChat.messages.map(msg =>
+          msg.isStreaming ? { role: 'assistant', content: fullText } : msg
+        );
+        await chatManager.saveMessages(workingChatId, finalMessages);
+      }
+
+      return {
+        type: 'text',
+        content: fullText,
+        workingChatId
+      };
+
+    } catch (error) {
+      console.error('❌ Streaming error:', error);
+      chatManager.removeLoadingMessages(workingChatId);
+      chatManager.setStreaming(false);
+
+      const errorMsg = error.message || 'Failed to get AI response';
+      onToast?.({ message: `AI Error: ${errorMsg}`, type: 'error' });
+
+      return { type: 'error', error };
+    } finally {
+      chatManager.setProcessing(false);
+      chatManager.setStreaming(false);
+      processingRef.current = false;
+    }
+  }, [
+    chatManager,
+    user,
+    userSubscriptionLimits,
+    isAdmin,
+    getSystemPrompt,
+    onToast
+  ]);
+
+  /**
    * Send a follow-up message to Claude (after tool use)
    */
   const sendFollowUp = useCallback(async (conversationHistory, toolResults, workingChatId) => {
@@ -261,8 +417,10 @@ export function useMessageSender({
 
   return {
     sendMessage,
+    sendStreamingMessage,
     sendFollowUp,
-    isProcessing: chatManager.isProcessing
+    isProcessing: chatManager.isProcessing,
+    isStreaming: chatManager.isStreaming
   };
 }
 

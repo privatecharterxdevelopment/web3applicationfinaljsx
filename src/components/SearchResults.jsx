@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Check, X, Plane, Clock, MapPin, Users, Gauge, Fuel, ShoppingCart, CreditCard, Wallet } from 'lucide-react';
+import { ChevronDown, ChevronUp, Check, X, Plane, Clock, MapPin, Users, Gauge, Fuel, ShoppingCart, CreditCard, Wallet, Wine, Thermometer, Star, Grape } from 'lucide-react';
 import BookableServiceCard from './BookableServiceCard';
 
 /**
@@ -29,6 +29,14 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
   const [activeTab, setActiveTab] = useState(getInitialTab());
   const [expandedCards, setExpandedCards] = useState({});
   const [showAllItems, setShowAllItems] = useState(false);
+  const [expandedWineSections, setExpandedWineSections] = useState({});
+
+  const toggleWineSection = (itemId, section) => {
+    setExpandedWineSections(prev => ({
+      ...prev,
+      [`${itemId}-${section}`]: !prev[`${itemId}-${section}`]
+    }));
+  };
 
   if (!tabs || tabs.length === 0) {
     return null;
@@ -67,6 +75,7 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
              tab.id === 'helicopters' ? 'Helicopters' :
              tab.id === 'yachts' ? 'Yachts' :
              tab.id === 'adventures' ? 'Adventures' :
+             tab.id === 'wines' ? 'Wines' :
              (tab.id === 'luxury_cars' || tab.id === 'luxuryCars') ? 'Supercars' :
              (tab.id === 'transfers' || tab.id === 'ground_transport' || tab.id === 'taxi') ? 'Transfers' :
              tab.title}
@@ -98,13 +107,15 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
               >
                 {/* Service Icon/Image - smaller */}
                 <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500 flex-shrink-0 overflow-hidden">
-                  {(item.primaryImage || item.image_url || item.image_url_1) ? (
+                  {(item.primaryImage || item.image_url || item.image_url_1 || item.image) ? (
                     <img
-                      src={item.primaryImage || item.image_url || item.image_url_1}
+                      src={item.primaryImage || item.image_url || item.image_url_1 || item.image}
                       alt={item.name || item.title || 'Service'}
                       className="w-full h-full object-cover"
                       onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3l14 9-14 9V3z"/></svg>'; }}
                     />
+                  ) : item.type === 'wines' ? (
+                    <Wine size={14} className="text-gray-500" />
                   ) : (
                     <Plane size={14} />
                   )}
@@ -116,6 +127,8 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                     <p className="text-sm font-medium text-gray-900 truncate">
                       {item.type === 'empty_legs'
                         ? `${item.from_iata || item.from_city || '?'} → ${item.to_iata || item.to_city || '?'}`
+                        : item.type === 'wines'
+                        ? (item.displayTitle || item.name || 'Wine')
                         : (item.name || item.model || item.title || 'Unnamed Service')}
                     </p>
                     {/* Category Badge - subtle */}
@@ -230,6 +243,25 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                         )}
                       </>
                     )}
+
+                    {/* Wines */}
+                    {item.type === 'wines' && (
+                      <>
+                        {item.producer && <span>{item.producer}</span>}
+                        {item.region && (
+                          <>
+                            <span>•</span>
+                            <span>{item.region}</span>
+                          </>
+                        )}
+                        {item.category && (
+                          <>
+                            <span>•</span>
+                            <span className="capitalize">{item.category}</span>
+                          </>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -247,9 +279,13 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                     {item.type === 'luxury_cars' && (item.daily_rate_eur || item.price) && `€${(item.daily_rate_eur || item.price).toLocaleString()}/day`}
                     {(item.type === 'ground_transport' || item.type === 'transfer' || item.type === 'taxi') && item.price && `€${item.price.toLocaleString()}`}
                     {item.type === 'adventures' && (item.price_eur || item.price) && `€${(item.price_eur || item.price).toLocaleString()}`}
+                    {item.type === 'wines' && (item.priceRange || (item.typicalPrice ? `€${item.typicalPrice.toLocaleString()}` : 'Price on request'))}
                   </p>
                   {item.type === 'empty_legs' && (
                     <p className="text-[10px] text-emerald-600">Save up to 70%</p>
+                  )}
+                  {item.type === 'wines' && item.vintage && (
+                    <p className="text-[10px] text-gray-500">{item.vintage}</p>
                   )}
                 </div>
 
@@ -914,6 +950,114 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                               >
                                 <CreditCard size={16} />
                                 Send Request
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {/* WINES - Expanded Details - Compact & Foldable */}
+                      {item.type === 'wines' && (
+                        <>
+                          {/* Compact wine info grid */}
+                          <div className="col-span-2 md:col-span-4">
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-gray-600">
+                              {item.producer && <span><span className="text-gray-400">Producer:</span> {item.producer}</span>}
+                              {item.vintage && <span><span className="text-gray-400">Vintage:</span> {item.vintage}</span>}
+                              {item.region && <span><span className="text-gray-400">Region:</span> {item.region}{item.country ? `, ${item.country}` : ''}</span>}
+                              {(item.wineType || item.category) && <span><span className="text-gray-400">Type:</span> <span className="capitalize">{item.wineType || item.category}</span></span>}
+                              {item.alcohol && <span><span className="text-gray-400">ABV:</span> {item.alcohol}</span>}
+                              {item.rating && <span className="flex items-center gap-0.5"><span className="text-gray-400">Rating:</span> <Star size={9} className="text-gray-500 fill-gray-400" /> {item.rating}</span>}
+                              {item.classification && <span><span className="text-gray-400">Class:</span> {item.classification}</span>}
+                            </div>
+                          </div>
+
+                          {/* Foldable: Serving Recommendations */}
+                          {(item.servingTemp || item.decantingTime || item.agingPotential) && (
+                            <div className="col-span-2 md:col-span-4 mt-2">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); toggleWineSection(item.id, 'serving'); }}
+                                className="w-full flex items-center justify-between py-1.5 text-[11px] text-gray-500 hover:text-gray-700 border-b border-gray-100"
+                              >
+                                <span className="flex items-center gap-1.5 font-medium">
+                                  <Thermometer size={11} />
+                                  Serving
+                                </span>
+                                <ChevronDown size={12} className={`transition-transform ${expandedWineSections[`${item.id}-serving`] ? 'rotate-180' : ''}`} />
+                              </button>
+                              {expandedWineSections[`${item.id}-serving`] && (
+                                <div className="py-2 text-[11px] text-gray-600 flex flex-wrap gap-x-4 gap-y-1">
+                                  {item.servingTemp && <span><span className="text-gray-400">Temp:</span> {item.servingTemp}</span>}
+                                  {item.decantingTime && <span><span className="text-gray-400">Decant:</span> {item.decantingTime}</span>}
+                                  {item.agingPotential && <span><span className="text-gray-400">Aging:</span> {item.agingPotential}</span>}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Foldable: Tasting Notes */}
+                          {item.tastingNotes && (
+                            <div className="col-span-2 md:col-span-4">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); toggleWineSection(item.id, 'tasting'); }}
+                                className="w-full flex items-center justify-between py-1.5 text-[11px] text-gray-500 hover:text-gray-700 border-b border-gray-100"
+                              >
+                                <span className="flex items-center gap-1.5 font-medium">
+                                  <Grape size={11} />
+                                  Tasting Notes
+                                </span>
+                                <ChevronDown size={12} className={`transition-transform ${expandedWineSections[`${item.id}-tasting`] ? 'rotate-180' : ''}`} />
+                              </button>
+                              {expandedWineSections[`${item.id}-tasting`] && (
+                                <p className="py-2 text-[11px] text-gray-600 leading-relaxed">{item.tastingNotes}</p>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Foldable: Description */}
+                          {item.description && (
+                            <div className="col-span-2 md:col-span-4">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); toggleWineSection(item.id, 'description'); }}
+                                className="w-full flex items-center justify-between py-1.5 text-[11px] text-gray-500 hover:text-gray-700 border-b border-gray-100"
+                              >
+                                <span className="font-medium">Description</span>
+                                <ChevronDown size={12} className={`transition-transform ${expandedWineSections[`${item.id}-description`] ? 'rotate-180' : ''}`} />
+                              </button>
+                              {expandedWineSections[`${item.id}-description`] && (
+                                <p className="py-2 text-[11px] text-gray-600 leading-relaxed">{item.description}</p>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Price & Actions - Compact */}
+                          <div className="col-span-2 md:col-span-4 mt-3 flex items-center justify-between gap-4">
+                            <div>
+                              <p className="text-[10px] text-gray-400">Price per bottle</p>
+                              <p className="text-sm font-semibold text-gray-900">
+                                {item.priceRange || (item.typicalPrice ? `€${item.typicalPrice.toLocaleString()}` : 'On request')}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAddToCart && onAddToCart(item);
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-colors border border-gray-200"
+                              >
+                                <ShoppingCart size={12} />
+                                Add
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onBookNow && onBookNow(item);
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-xs font-medium transition-colors"
+                              >
+                                <CreditCard size={12} />
+                                Request
                               </button>
                             </div>
                           </div>
