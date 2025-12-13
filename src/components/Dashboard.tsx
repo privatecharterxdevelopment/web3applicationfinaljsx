@@ -2470,8 +2470,8 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
                               {data.original_price && data.discounted_price && data.original_price !== data.discounted_price ? (
                                 <>
                                   <div className="flex items-center gap-3 mb-2">
-                                    <span className="text-sm text-pink-700 line-through">€{data.original_price.toLocaleString()}</span>
-                                    <span className="text-2xl font-bold text-pink-900">€{data.discounted_price.toLocaleString()}</span>
+                                    <span className="text-sm text-pink-700 line-through">{data.currency === 'GBP' ? '£' : data.currency === 'USD' ? '$' : '€'}{data.original_price.toLocaleString()}</span>
+                                    <span className="text-2xl font-bold text-pink-900">{data.currency === 'GBP' ? '£' : data.currency === 'USD' ? '$' : '€'}{data.discounted_price.toLocaleString()}</span>
                                   </div>
                                   {data.has_nft && data.nft_discount && (
                                     <div className="text-xs text-pink-700">🎫 NFT Discount: {data.nft_discount}% OFF</div>
@@ -2482,7 +2482,7 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
                                 </>
                               ) : (
                                 <div className="text-2xl font-bold text-pink-900">
-                                  €{(data.discounted_price || data.original_price || data.price).toLocaleString()}
+                                  {data.currency === 'GBP' ? '£' : data.currency === 'USD' ? '$' : '€'}{(data.discounted_price || data.original_price || data.price).toLocaleString()}
                                 </div>
                               )}
                             </div>

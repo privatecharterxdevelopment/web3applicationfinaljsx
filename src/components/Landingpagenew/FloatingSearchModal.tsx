@@ -154,18 +154,18 @@ export default function FloatingSearchModal() {
     if (query.trim()) {
       // Navigate to AI chat with query - requires authentication
       if (isAuthenticated) {
-        // Navigate to glasdashboard AI chat with new conversation
-        navigate(`/dashboard?tab=ai-chat&query=${encodeURIComponent(query)}&newChat=true`);
+        // Navigate directly to chat route with query
+        navigate(`/dashboard/chat?query=${encodeURIComponent(query)}`);
       } else {
         // Navigate with login flag - will show login modal first
-        navigate(`/dashboard?tab=ai-chat&query=${encodeURIComponent(query)}&newChat=true&login=true`);
+        navigate(`/dashboard/chat?query=${encodeURIComponent(query)}&login=true`);
       }
     } else {
       // If no query, just open AI chat
       if (isAuthenticated) {
-        navigate(`/dashboard?tab=ai-chat&newChat=true`);
+        navigate('/dashboard/chat');
       } else {
-        navigate(`/dashboard?tab=ai-chat&newChat=true&login=true`);
+        navigate('/dashboard/chat?login=true');
       }
     }
   };
@@ -224,9 +224,9 @@ export default function FloatingSearchModal() {
   const handleBeatThePrice = () => {
     const prefilledMessage = encodeURIComponent('To beat the price kindly upload your recent Offer / quote as PDF or image and we try to beat the price within 12hrs.');
     if (isAuthenticated) {
-      navigate(`/dashboard?tab=ai-chat&newChat=true&assistantMessage=${prefilledMessage}`);
+      navigate(`/dashboard/chat?assistantMessage=${prefilledMessage}`);
     } else {
-      navigate(`/dashboard?tab=ai-chat&newChat=true&assistantMessage=${prefilledMessage}&login=true`);
+      navigate(`/dashboard/chat?assistantMessage=${prefilledMessage}&login=true`);
     }
   };
 
@@ -256,13 +256,13 @@ export default function FloatingSearchModal() {
         navigateWithAuth('/dashboard?tab=spv');
         break;
       case 'adventure package':
-        navigateWithAuth('/dashboard?tab=ai-chat&query=show me adventure packages');
+        navigateWithAuth('/dashboard/chat?query=show me adventure packages');
         break;
       case 'holiday planer':
-        navigateWithAuth('/dashboard?tab=ai-chat&query=help me plan my holiday');
+        navigateWithAuth('/dashboard/chat?query=help me plan my holiday');
         break;
       case 'travel designer':
-        navigateWithAuth('/dashboard?tab=ai-chat&query=design my travel itinerary');
+        navigateWithAuth('/dashboard/chat?query=design my travel itinerary');
         break;
       case 'Co2 certificate':
         navigate('/dashboard?tab=co2');

@@ -241,50 +241,52 @@ export default function NotificationCenter() {
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return (
-    <div className="w-full h-full p-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">
+    <div className="w-full h-full p-3 md:p-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      {/* Header - Mobile Optimized */}
+      <div className="flex items-start md:items-center justify-between mb-4 md:mb-8 gap-3">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl md:text-4xl font-light text-gray-900 tracking-tighter">
             Notifications
           </h1>
           {unreadCount > 0 && (
-            <p className="text-sm text-gray-600 mt-1">
-              You have {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+            <p className="text-xs md:text-sm text-gray-600 mt-1">
+              {unreadCount} unread
             </p>
           )}
         </div>
-        <button
-          onClick={handleMarkAllAsRead}
-          disabled={unreadCount === 0}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <CheckCircle size={16} />
-          Mark All Read
-        </button>
+        {unreadCount > 0 && (
+          <button
+            onClick={handleMarkAllAsRead}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-xs font-medium flex-shrink-0"
+          >
+            <CheckCircle size={14} />
+            <span className="hidden sm:inline">Mark All Read</span>
+            <span className="sm:hidden">Read All</span>
+          </button>
+        )}
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-6">
+      {/* Search Bar - Mobile Optimized */}
+      <div className="mb-4 md:mb-6">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 md:w-5 md:h-5" />
           <input
             type="text"
-            placeholder="Search notifications by title, message, or type..."
+            placeholder="Search notifications..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300/50 rounded-lg bg-white/60 text-sm text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-gray-300 focus:border-transparent transition-all"
+            className="w-full pl-9 md:pl-10 pr-4 py-2.5 md:py-3 border border-gray-300/50 rounded-lg bg-white/60 text-sm text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-gray-300 focus:border-transparent transition-all"
             style={{ backdropFilter: 'blur(10px) saturate(150%)' }}
           />
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="mb-6 overflow-x-auto">
-        <div className="flex gap-2 min-w-max">
+      {/* Filter Tabs - Mobile Optimized with horizontal scroll */}
+      <div className="mb-4 md:mb-6 -mx-3 md:mx-0 px-3 md:px-0 overflow-x-auto scrollbar-hide">
+        <div className="flex gap-1.5 md:gap-2 min-w-max pb-1">
           <button
             onClick={() => setActiveTab('all')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all whitespace-nowrap ${
               activeTab === 'all'
                 ? 'bg-gray-900 text-white'
                 : 'bg-white/60 text-gray-700 hover:bg-white/80 border border-gray-300/50'
@@ -295,7 +297,7 @@ export default function NotificationCenter() {
           </button>
           <button
             onClick={() => setActiveTab('unread')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all whitespace-nowrap ${
               activeTab === 'unread'
                 ? 'bg-gray-900 text-white'
                 : 'bg-white/60 text-gray-700 hover:bg-white/80 border border-gray-300/50'
@@ -306,7 +308,7 @@ export default function NotificationCenter() {
           </button>
           <button
             onClick={() => setActiveTab('booking_update')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all whitespace-nowrap ${
               activeTab === 'booking_update'
                 ? 'bg-gray-900 text-white'
                 : 'bg-white/60 text-gray-700 hover:bg-white/80 border border-gray-300/50'
@@ -317,7 +319,7 @@ export default function NotificationCenter() {
           </button>
           <button
             onClick={() => setActiveTab('document_status')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all whitespace-nowrap ${
               activeTab === 'document_status'
                 ? 'bg-gray-900 text-white'
                 : 'bg-white/60 text-gray-700 hover:bg-white/80 border border-gray-300/50'
@@ -328,7 +330,7 @@ export default function NotificationCenter() {
           </button>
           <button
             onClick={() => setActiveTab('p2p_bid')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all whitespace-nowrap ${
               activeTab === 'p2p_bid'
                 ? 'bg-gray-900 text-white'
                 : 'bg-white/60 text-gray-700 hover:bg-white/80 border border-gray-300/50'
@@ -339,7 +341,7 @@ export default function NotificationCenter() {
           </button>
           <button
             onClick={() => setActiveTab('calendar_entry')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all whitespace-nowrap ${
               activeTab === 'calendar_entry'
                 ? 'bg-gray-900 text-white'
                 : 'bg-white/60 text-gray-700 hover:bg-white/80 border border-gray-300/50'
@@ -381,30 +383,31 @@ export default function NotificationCenter() {
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
           {/* Render grouped notifications */}
           {Object.entries(groupedNotifications).map(([dateGroup, groupNotifications]) => {
             if (groupNotifications.length === 0) return null;
 
             return (
               <div key={dateGroup}>
-                <h2 className="text-sm font-semibold text-gray-500 mb-3 px-1">
+                <h2 className="text-xs md:text-sm font-semibold text-gray-500 mb-2 md:mb-3 px-1">
                   {dateGroup}
                 </h2>
-                <div className="space-y-3">
+                <div className="space-y-2 md:space-y-3">
                   {groupNotifications.map((notification) => (
                     <div
                       key={notification.id}
-                      className={`border rounded-xl p-4 transition-all ${
+                      onClick={() => !notification.is_read && handleMarkAsRead(notification.id)}
+                      className={`border rounded-xl p-3 md:p-4 transition-all cursor-pointer ${
                         !notification.is_read
                           ? 'border-gray-400/60 bg-white/50 shadow-sm'
                           : 'border-gray-300/50 bg-white/35'
-                      } hover:bg-white/60`}
+                      } hover:bg-white/60 active:scale-[0.99]`}
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
-                      <div className="flex items-start gap-4">
+                      <div className="flex items-start gap-3 md:gap-4">
                         {/* Notification Icon */}
-                        <div className={`w-10 h-10 flex-shrink-0 rounded-lg flex items-center justify-center text-lg ${
+                        <div className={`w-9 h-9 md:w-10 md:h-10 flex-shrink-0 rounded-lg flex items-center justify-center text-base md:text-lg ${
                           !notification.is_read ? 'bg-gray-100' : 'bg-gray-50'
                         }`}>
                           {getNotificationIcon(notification.type)}
@@ -412,10 +415,10 @@ export default function NotificationCenter() {
 
                         {/* Notification Content */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className={`font-medium text-sm ${
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-0.5 md:mb-1">
+                                <h3 className={`font-medium text-xs md:text-sm truncate ${
                                   !notification.is_read ? 'text-gray-900' : 'text-gray-700'
                                 }`}>
                                   {notification.title}
@@ -424,36 +427,42 @@ export default function NotificationCenter() {
                                   <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
                                 )}
                               </div>
-                              <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                              <p className="text-xs md:text-sm text-gray-600 mb-1.5 md:mb-2 line-clamp-2">
                                 {notification.message}
                               </p>
-                              <div className="flex items-center gap-3 flex-wrap">
-                                <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">
+                              <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+                                <span className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded bg-gray-100 text-gray-700">
                                   {notification.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                                 </span>
-                                <span className="text-xs text-gray-500">
+                                <span className="text-[10px] md:text-xs text-gray-500">
                                   {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                                 </span>
                               </div>
                             </div>
 
-                            {/* Actions */}
-                            <div className="flex gap-2 ml-2">
+                            {/* Actions - Only delete button on mobile */}
+                            <div className="flex gap-1 md:gap-2 flex-shrink-0">
                               {!notification.is_read && (
                                 <button
-                                  onClick={() => handleMarkAsRead(notification.id)}
-                                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkAsRead(notification.id);
+                                  }}
+                                  className="hidden md:flex p-2 hover:bg-gray-100 rounded-lg transition-colors"
                                   title="Mark as read"
                                 >
                                   <CheckCircle size={16} className="text-gray-600" />
                                 </button>
                               )}
                               <button
-                                onClick={() => handleDelete(notification.id)}
-                                className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(notification.id);
+                                }}
+                                className="p-1.5 md:p-2 hover:bg-red-50 rounded-lg transition-colors"
                                 title="Delete notification"
                               >
-                                <Trash2 size={16} className="text-red-500" />
+                                <Trash2 size={14} className="md:w-4 md:h-4 text-red-500" />
                               </button>
                             </div>
                           </div>

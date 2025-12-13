@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { convertToUSD } from '../../services/currencyService';
 
 const SPVFormationFlow = ({ onBack, onSuccess }) => {
   const { user } = useAuth();
@@ -101,10 +102,10 @@ const SPVFormationFlow = ({ onBack, onSuccess }) => {
   };
 
   const tiers = [
-    { id: 'premium', label: 'Premium', flag: '🇨🇭', price: '€6,000 - €8,500', tax: 'Low tax (8-17%)' },
-    { id: 'standard', label: 'Standard', flag: '🇰🇾', price: '€4,000 - €6,000', tax: '0% corporate tax', popular: true },
-    { id: 'budget', label: 'Budget', flag: '🇸🇨', price: '€3,000 - €4,200', tax: '0% tax' },
-    { id: 'usa', label: 'USA', flag: '🇺🇸', price: '€3,200 - €3,500', tax: 'US market access' }
+    { id: 'premium', label: 'Premium', flag: '🇨🇭', price: '$6,500 - $9,200', tax: 'Low tax (8-17%)' },
+    { id: 'standard', label: 'Standard', flag: '🇰🇾', price: '$4,300 - $6,500', tax: '0% corporate tax', popular: true },
+    { id: 'budget', label: 'Budget', flag: '🇸🇨', price: '$3,300 - $4,600', tax: '0% tax' },
+    { id: 'usa', label: 'USA', flag: '🇺🇸', price: '$3,500 - $3,800', tax: 'US market access' }
   ];
 
   const updateFormData = (field, value) => {
@@ -279,7 +280,7 @@ const SPVFormationFlow = ({ onBack, onSuccess }) => {
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-medium text-gray-900">{j.name}</span>
-                <span className="text-xs font-semibold text-gray-900">€{j.formation.toLocaleString()}</span>
+                <span className="text-xs font-semibold text-gray-900">${Math.round(convertToUSD(j.formation, 'EUR')).toLocaleString()}</span>
               </div>
               <p className="text-[10px] text-gray-500 mb-1.5 line-clamp-1">{j.description}</p>
               <div className="flex items-center gap-3 text-[10px] text-gray-400">
@@ -482,12 +483,12 @@ const SPVFormationFlow = ({ onBack, onSuccess }) => {
   const renderServicesTab = () => {
     const costs = calculateTotalCost();
     const services = [
-      { key: 'needsNomineeDirector', label: 'Nominee Director', price: '€1,800/year', desc: 'Professional nominee for privacy' },
-      { key: 'needsNomineeShareholder', label: 'Nominee Shareholder', price: '€1,500/year', desc: 'Confidential ownership' },
-      { key: 'needsBankAccountGuarantee', label: 'Bank Account Guarantee', price: '€2,500', desc: 'Guaranteed opening within 30 days' },
-      { key: 'needsAccounting', label: 'Accounting & Bookkeeping', price: '€2,000/year', desc: 'Full financial statements' },
-      { key: 'needsSubstancePackage', label: 'Substance Package', price: '€5,000/year', desc: 'Physical office, local employees' },
-      { key: 'needsVATRegistration', label: 'VAT/GST Registration', price: '€1,500', desc: 'For eligible jurisdictions' },
+      { key: 'needsNomineeDirector', label: 'Nominee Director', price: '$2,000/year', desc: 'Professional nominee for privacy' },
+      { key: 'needsNomineeShareholder', label: 'Nominee Shareholder', price: '$1,650/year', desc: 'Confidential ownership' },
+      { key: 'needsBankAccountGuarantee', label: 'Bank Account Guarantee', price: '$2,700', desc: 'Guaranteed opening within 30 days' },
+      { key: 'needsAccounting', label: 'Accounting & Bookkeeping', price: '$2,200/year', desc: 'Full financial statements' },
+      { key: 'needsSubstancePackage', label: 'Substance Package', price: '$5,400/year', desc: 'Physical office, local employees' },
+      { key: 'needsVATRegistration', label: 'VAT/GST Registration', price: '$1,650', desc: 'For eligible jurisdictions' },
       { key: 'needsExpressService', label: 'Express Service (24-48h)', price: '+50%', desc: 'Priority processing' }
     ];
 
@@ -515,15 +516,15 @@ const SPVFormationFlow = ({ onBack, onSuccess }) => {
         <div className="bg-gray-900 text-white rounded-xl p-4 mt-4">
           <div className="flex justify-between text-sm mb-1">
             <span className="text-gray-400">Formation</span>
-            <span>€{costs.formation.toLocaleString()}</span>
+            <span>${Math.round(convertToUSD(costs.formation, 'EUR')).toLocaleString()}</span>
           </div>
           <div className="flex justify-between text-sm mb-2">
             <span className="text-gray-400">Annual (Year 1)</span>
-            <span>€{costs.annual.toLocaleString()}</span>
+            <span>${Math.round(convertToUSD(costs.annual, 'EUR')).toLocaleString()}</span>
           </div>
           <div className="flex justify-between text-base font-semibold pt-2 border-t border-gray-700">
             <span>Total</span>
-            <span>€{(costs.formation + costs.annual).toLocaleString()}</span>
+            <span>${Math.round(convertToUSD(costs.formation + costs.annual, 'EUR')).toLocaleString()}</span>
           </div>
         </div>
       </div>
@@ -613,15 +614,15 @@ const SPVFormationFlow = ({ onBack, onSuccess }) => {
         <div className="bg-gray-900 text-white rounded-xl p-4">
           <div className="flex justify-between text-sm mb-1">
             <span className="text-gray-400">Formation</span>
-            <span>€{costs.formation.toLocaleString()}</span>
+            <span>${Math.round(convertToUSD(costs.formation, 'EUR')).toLocaleString()}</span>
           </div>
           <div className="flex justify-between text-sm mb-2">
             <span className="text-gray-400">Annual</span>
-            <span>€{costs.annual.toLocaleString()}</span>
+            <span>${Math.round(convertToUSD(costs.annual, 'EUR')).toLocaleString()}</span>
           </div>
           <div className="flex justify-between text-lg font-semibold pt-2 border-t border-gray-700">
             <span>Total</span>
-            <span>€{(costs.formation + costs.annual).toLocaleString()}</span>
+            <span>${Math.round(convertToUSD(costs.formation + costs.annual, 'EUR')).toLocaleString()}</span>
           </div>
         </div>
 
@@ -662,7 +663,7 @@ const SPVFormationFlow = ({ onBack, onSuccess }) => {
         {formData.jurisdictionDetails && (
           <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
             <span>{formData.jurisdiction}</span>
-            <span>€{formData.jurisdictionDetails.formation.toLocaleString()} formation</span>
+            <span>${Math.round(convertToUSD(formData.jurisdictionDetails.formation, 'EUR')).toLocaleString()} formation</span>
           </div>
         )}
       </div>

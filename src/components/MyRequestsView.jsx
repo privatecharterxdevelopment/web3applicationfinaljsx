@@ -96,26 +96,26 @@ const MyRequestsView = ({ user }) => {
     }
     data = data || {};
     return (
-      <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-        <div className="flex items-start gap-4">
+      <div className="bg-white/35 border border-gray-300/50 rounded-xl p-4 sm:p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+        <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
           {/* Car Image */}
           {data.carImage && (
             <div className="flex-shrink-0">
-              <img src={data.carImage} alt={data.carName} className="w-24 h-16 object-contain rounded-lg bg-white p-2" />
+              <img src={data.carImage} alt={data.carName} className="w-full sm:w-24 h-32 sm:h-16 object-contain rounded-lg bg-white p-2" />
             </div>
           )}
 
           {/* Request Details */}
-          <div className="flex-1">
-            <div className="flex items-start justify-between mb-3">
-              <div>
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+              <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <Car size={18} className="text-gray-700" />
-                  <h3 className="text-base font-semibold text-gray-800">{data.carName}</h3>
+                  <Car size={18} className="text-gray-700 flex-shrink-0" />
+                  <h3 className="text-base font-semibold text-gray-800 truncate">{data.carName}</h3>
                 </div>
                 <p className="text-xs text-gray-600">{data.carSeats} seats</p>
               </div>
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${getStatusColor(request.status)}`}>
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border self-start whitespace-nowrap ${getStatusColor(request.status)}`}>
                 {getStatusIcon(request.status)}
                 <span className="capitalize">{request.status}</span>
               </div>
@@ -245,72 +245,100 @@ const MyRequestsView = ({ user }) => {
       }
     }
     data = data || {};
-    console.log('Rendering Empty Leg Request:', { type: request.type, data });
-    return (
-      <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-pink-600 to-pink-800 rounded-xl flex items-center justify-center text-white flex-shrink-0">
-            <Plane size={24} />
-          </div>
 
-          <div className="flex-1">
-            <div className="flex items-start justify-between mb-3">
-              <div>
+    // Handle AI Chat cart submissions - extract empty leg item from items array
+    const emptyLegItem = data.items?.find(i => i.type === 'empty_legs' || i.type === 'emptyleg') || data.items?.[0] || {};
+
+    // Merge data from different sources (direct fields vs items array)
+    const fromCity = data.from_city || emptyLegItem.from_city || emptyLegItem.from || data.from_iata || emptyLegItem.from_iata;
+    const toCity = data.to_city || emptyLegItem.to_city || emptyLegItem.to || data.to_iata || emptyLegItem.to_iata;
+    const flightRoute = data.flight_route || (fromCity && toCity ? `${fromCity} → ${toCity}` : null) || emptyLegItem.title;
+    const aircraftType = data.aircraft_type || emptyLegItem.aircraft_type || emptyLegItem.model;
+    const departureDate = data.departure_date || emptyLegItem.departure_date || emptyLegItem.date;
+    const passengers = data.passengers || data.capacity || emptyLegItem.passengers || emptyLegItem.capacity || emptyLegItem.available_seats;
+    const price = data.price || data.total || emptyLegItem.price || emptyLegItem.price_usd || emptyLegItem.estimated_price;
+    const legImage = emptyLegItem.primaryImage || emptyLegItem.image_url || emptyLegItem.image;
+
+    return (
+      <div className="bg-white/35 border border-gray-300/50 rounded-xl p-4 sm:p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+        {/* Mobile: Stack vertically, Desktop: Side by side */}
+        <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+          {/* Empty Leg Image or Icon */}
+          {legImage ? (
+            <div className="flex-shrink-0">
+              <img src={legImage} alt={aircraftType || 'Empty Leg'} className="w-full sm:w-24 h-32 sm:h-16 object-cover rounded-lg" />
+            </div>
+          ) : (
+            <div className="w-12 h-12 bg-gradient-to-br from-pink-600 to-pink-800 rounded-xl flex items-center justify-center text-white flex-shrink-0">
+              <Plane size={24} />
+            </div>
+          )}
+
+          <div className="flex-1 min-w-0">
+            {/* Header with title and status */}
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+              <div className="min-w-0">
                 <h3 className="text-base font-semibold text-gray-800 mb-1">Empty Leg Flight</h3>
-                <p className="text-sm text-gray-700 font-medium">{data.flight_route || `${data.from_city} → ${data.to_city}`}</p>
+                <p className="text-sm text-gray-700 font-medium truncate">{flightRoute || 'Route TBD'}</p>
               </div>
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${getStatusColor(request.status)}`}>
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border self-start whitespace-nowrap ${getStatusColor(request.status)}`}>
                 {getStatusIcon(request.status)}
                 <span className="capitalize">{request.status}</span>
               </div>
             </div>
 
             {/* Route Info */}
-            <div className="mb-3 p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-3 h-3 rounded-full bg-black"></div>
-                <span className="text-sm text-gray-800 font-medium">{data.from_city || data.from_iata}</span>
+            {(fromCity || toCity) && (
+              <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                {fromCity && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 rounded-full bg-black"></div>
+                    <span className="text-sm text-gray-800 font-medium">{fromCity}</span>
+                  </div>
+                )}
+                {toCity && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-pink-500"></div>
+                    <span className="text-sm text-gray-800 font-medium">{toCity}</span>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-pink-500"></div>
-                <span className="text-sm text-gray-800 font-medium">{data.to_city || data.to_iata}</span>
-              </div>
-            </div>
+            )}
 
             {/* Details Grid */}
             <div className="grid grid-cols-2 gap-3 mb-3">
-              {data.aircraft_type && (
+              {aircraftType && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Aircraft</p>
-                  <p className="text-sm font-semibold text-gray-800">{data.aircraft_type}</p>
+                  <p className="text-sm font-semibold text-gray-800">{aircraftType}</p>
                 </div>
               )}
-              {data.departure_date && (
+              {departureDate && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Departure</p>
-                  <p className="text-sm font-semibold text-gray-800">{new Date(data.departure_date).toLocaleDateString()}</p>
+                  <p className="text-sm font-semibold text-gray-800">{new Date(departureDate).toLocaleDateString()}</p>
                 </div>
               )}
-              {data.passengers && (
+              {passengers && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Passengers</p>
-                  <p className="text-sm font-semibold text-gray-800">{data.passengers}</p>
+                  <p className="text-sm font-semibold text-gray-800">{passengers}</p>
                 </div>
               )}
-              {data.luggage && (
+              {(data.luggage || emptyLegItem.luggage) && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Luggage</p>
-                  <p className="text-sm font-semibold text-gray-800">{data.luggage}</p>
+                  <p className="text-sm font-semibold text-gray-800">{data.luggage || emptyLegItem.luggage}</p>
                 </div>
               )}
             </div>
 
             {/* Price */}
-            {data.price && (
+            {price && (
               <div className="p-3 bg-gradient-to-r from-pink-600 to-pink-800 rounded-lg mb-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-pink-100">Price</p>
-                  <p className="text-base font-bold text-white">{typeof data.price === 'number' ? `$${data.price.toLocaleString()}` : data.price}</p>
+                  <p className="text-base font-bold text-white">{typeof price === 'number' ? `$${price.toLocaleString()}` : price}</p>
                 </div>
               </div>
             )}
@@ -343,20 +371,41 @@ const MyRequestsView = ({ user }) => {
       try { data = JSON.parse(data); } catch (e) { data = {}; }
     }
     data = data || {};
-    return (
-      <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-amber-600 to-amber-800 rounded-xl flex items-center justify-center text-white flex-shrink-0">
-            <Plane size={24} />
-          </div>
 
-          <div className="flex-1">
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <h3 className="text-base font-semibold text-gray-800 mb-1">{data.adventure_name || 'Adventure Package'}</h3>
+    // Handle AI Chat cart submissions - extract adventure item from items array
+    const adventureItem = data.items?.find(i => i.type === 'adventures' || i.type === 'adventure') || data.items?.[0] || {};
+
+    // Merge data from different sources
+    const adventureName = data.adventure_name || adventureItem.name || adventureItem.title || 'Adventure Package';
+    const destination = data.destination || adventureItem.destination || adventureItem.location;
+    const duration = data.duration || adventureItem.duration;
+    const guests = data.guests || data.participants || adventureItem.guests || adventureItem.passengers;
+    const startDate = data.start_date || adventureItem.date || adventureItem.departure_date;
+    const price = data.price || data.total || adventureItem.price || adventureItem.estimated_price || adventureItem.price_eur;
+    const adventureImage = adventureItem.primaryImage || adventureItem.image_url || adventureItem.image || data.image_url;
+    const activities = data.activities || adventureItem.activities;
+
+    return (
+      <div className="bg-white/35 border border-gray-300/50 rounded-xl p-4 sm:p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+        <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+          {/* Adventure Image or Icon */}
+          {adventureImage ? (
+            <div className="flex-shrink-0">
+              <img src={adventureImage} alt={adventureName} className="w-full sm:w-24 h-32 sm:h-16 object-cover rounded-lg" />
+            </div>
+          ) : (
+            <div className="w-12 h-12 bg-gradient-to-br from-amber-600 to-amber-800 rounded-xl flex items-center justify-center text-white flex-shrink-0">
+              <Plane size={24} />
+            </div>
+          )}
+
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+              <div className="min-w-0">
+                <h3 className="text-base font-semibold text-gray-800 mb-1 truncate">{adventureName}</h3>
                 <p className="text-xs text-gray-600">Package ID: {data.adventure_id || request.id.slice(0, 8)}</p>
               </div>
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${getStatusColor(request.status)}`}>
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border self-start whitespace-nowrap ${getStatusColor(request.status)}`}>
                 {getStatusIcon(request.status)}
                 <span className="capitalize">{request.status}</span>
               </div>
@@ -364,28 +413,28 @@ const MyRequestsView = ({ user }) => {
 
             {/* Details Grid */}
             <div className="grid grid-cols-2 gap-3 mb-3">
-              {data.destination && (
+              {destination && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Destination</p>
-                  <p className="text-sm font-semibold text-gray-800">{data.destination}</p>
+                  <p className="text-sm font-semibold text-gray-800">{destination}</p>
                 </div>
               )}
-              {data.duration && (
+              {duration && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Duration</p>
-                  <p className="text-sm font-semibold text-gray-800">{data.duration}</p>
+                  <p className="text-sm font-semibold text-gray-800">{duration}</p>
                 </div>
               )}
-              {(data.participants || data.guests) && (
+              {guests && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Guests</p>
-                  <p className="text-sm font-semibold text-gray-800">{data.guests || data.participants}</p>
+                  <p className="text-sm font-semibold text-gray-800">{guests}</p>
                 </div>
               )}
-              {data.start_date && (
+              {startDate && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Start Date</p>
-                  <p className="text-sm font-semibold text-gray-800">{new Date(data.start_date).toLocaleDateString()}</p>
+                  <p className="text-sm font-semibold text-gray-800">{new Date(startDate).toLocaleDateString()}</p>
                 </div>
               )}
               {data.end_date && (
@@ -403,11 +452,11 @@ const MyRequestsView = ({ user }) => {
             </div>
 
             {/* Activities */}
-            {data.activities && Array.isArray(data.activities) && data.activities.length > 0 && (
+            {activities && Array.isArray(activities) && activities.length > 0 && (
               <div className="mb-3 p-3 bg-amber-50 rounded-lg">
                 <p className="text-xs font-medium text-amber-900 mb-2">Activities:</p>
                 <div className="flex flex-wrap gap-1">
-                  {data.activities.map((activity, idx) => (
+                  {activities.map((activity, idx) => (
                     <span key={idx} className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded">
                       {activity}
                     </span>
@@ -417,11 +466,11 @@ const MyRequestsView = ({ user }) => {
             )}
 
             {/* Price */}
-            {data.price && (
+            {price && (
               <div className="p-3 bg-gradient-to-r from-amber-600 to-amber-800 rounded-lg mb-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-amber-100">Total Price</p>
-                  <p className="text-base font-bold text-white">{typeof data.price === 'number' ? `$${data.price.toLocaleString()}` : data.price}</p>
+                  <p className="text-base font-bold text-white">{typeof price === 'number' ? `€${price.toLocaleString()}` : price}</p>
                 </div>
               </div>
             )}
@@ -454,20 +503,41 @@ const MyRequestsView = ({ user }) => {
       try { data = JSON.parse(data); } catch (e) { data = {}; }
     }
     data = data || {};
-    return (
-      <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-gray-700 to-gray-900 rounded-xl flex items-center justify-center text-white flex-shrink-0">
-            <Car size={24} />
-          </div>
 
-          <div className="flex-1">
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <h3 className="text-base font-semibold text-gray-800 mb-1">{data.car_name || `${data.brand} ${data.model}`}</h3>
-                <p className="text-xs text-gray-600">{data.category || 'Luxury Car Rental'}</p>
+    // Handle AI Chat cart submissions - extract car item from items array
+    const carItem = data.items?.find(i => i.type === 'luxury_cars' || i.type === 'cars') || data.items?.[0] || {};
+
+    // Merge data from different sources
+    const carName = data.car_name || carItem.name || carItem.title || (carItem.brand && carItem.model ? `${carItem.brand} ${carItem.model}` : null) || (data.brand && data.model ? `${data.brand} ${data.model}` : 'Luxury Car');
+    const category = data.category || carItem.category || 'Luxury Car Rental';
+    const year = data.year || carItem.year;
+    const location = data.location || carItem.location;
+    const rentalDays = data.rental_days || carItem.rental_days || carItem.rentalDays;
+    const pickupDate = data.pickup_date || carItem.date || carItem.departure_date;
+    const price = data.total_price || data.estimated_price || data.total || carItem.price || carItem.estimated_price || carItem.price_per_day;
+    const carImage = carItem.primaryImage || carItem.image_url || carItem.image || data.image_url;
+
+    return (
+      <div className="bg-white/35 border border-gray-300/50 rounded-xl p-4 sm:p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+        <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+          {/* Car Image or Icon */}
+          {carImage ? (
+            <div className="flex-shrink-0">
+              <img src={carImage} alt={carName} className="w-full sm:w-24 h-32 sm:h-16 object-cover rounded-lg" />
+            </div>
+          ) : (
+            <div className="w-12 h-12 bg-gradient-to-br from-gray-700 to-gray-900 rounded-xl flex items-center justify-center text-white flex-shrink-0">
+              <Car size={24} />
+            </div>
+          )}
+
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+              <div className="min-w-0">
+                <h3 className="text-base font-semibold text-gray-800 mb-1 truncate">{carName}</h3>
+                <p className="text-xs text-gray-600">{category}</p>
               </div>
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${getStatusColor(request.status)}`}>
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border self-start whitespace-nowrap ${getStatusColor(request.status)}`}>
                 {getStatusIcon(request.status)}
                 <span className="capitalize">{request.status}</span>
               </div>
@@ -475,28 +545,36 @@ const MyRequestsView = ({ user }) => {
 
             {/* Details Grid */}
             <div className="grid grid-cols-2 gap-3 mb-3">
-              {data.year && (
+              {year && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Year</p>
-                  <p className="text-sm font-semibold text-gray-800">{data.year}</p>
+                  <p className="text-sm font-semibold text-gray-800">{year}</p>
                 </div>
               )}
-              {data.rental_duration_type && (
+              {(rentalDays || data.rental_duration_type) && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Rental Duration</p>
-                  <p className="text-sm font-semibold text-gray-800">{data.rental_duration_count} {data.rental_duration_type}</p>
+                  <p className="text-sm font-semibold text-gray-800">
+                    {rentalDays ? `${rentalDays} days` : `${data.rental_duration_count} ${data.rental_duration_type}`}
+                  </p>
                 </div>
               )}
-              {data.pickup_date && (
+              {(pickupDate || data.pickup_date) && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Pickup</p>
-                  <p className="text-sm font-semibold text-gray-800">{new Date(data.pickup_date).toLocaleDateString()} {data.pickup_time}</p>
+                  <p className="text-sm font-semibold text-gray-800">{new Date(pickupDate || data.pickup_date).toLocaleDateString()} {data.pickup_time || ''}</p>
                 </div>
               )}
               {data.dropoff_date && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Dropoff</p>
                   <p className="text-sm font-semibold text-gray-800">{new Date(data.dropoff_date).toLocaleDateString()} {data.dropoff_time}</p>
+                </div>
+              )}
+              {location && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Location</p>
+                  <p className="text-sm font-semibold text-gray-800">{location}</p>
                 </div>
               )}
             </div>
@@ -520,14 +598,12 @@ const MyRequestsView = ({ user }) => {
             )}
 
             {/* Price */}
-            {(data.total_price || data.estimated_price) && (
+            {price && (
               <div className="p-3 bg-gradient-to-r from-gray-700 to-gray-900 rounded-lg mb-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-gray-300">Total Price</p>
                   <p className="text-base font-bold text-white">
-                    {typeof (data.total_price || data.estimated_price) === 'number'
-                      ? `$${(data.total_price || data.estimated_price).toLocaleString()}`
-                      : (data.total_price || data.estimated_price)}
+                    {typeof price === 'number' ? `€${price.toLocaleString()}` : price}
                   </p>
                 </div>
               </div>
@@ -576,12 +652,12 @@ const MyRequestsView = ({ user }) => {
     const jetImage = jetItem?.primaryImage || jetItem?.image_url || data.image_url;
 
     return (
-      <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-        <div className="flex items-start gap-4">
+      <div className="bg-white/35 border border-gray-300/50 rounded-xl p-4 sm:p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+        <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
           {/* Jet Image or Icon */}
           {jetImage ? (
             <div className="flex-shrink-0">
-              <img src={jetImage} alt={aircraft} className="w-24 h-16 object-cover rounded-lg" />
+              <img src={jetImage} alt={aircraft} className="w-full sm:w-24 h-32 sm:h-16 object-cover rounded-lg" />
             </div>
           ) : (
             <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center text-white flex-shrink-0">
@@ -589,13 +665,13 @@ const MyRequestsView = ({ user }) => {
             </div>
           )}
 
-          <div className="flex-1">
-            <div className="flex items-start justify-between mb-3">
-              <div>
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+              <div className="min-w-0">
                 <h3 className="text-base font-semibold text-gray-800 mb-1">Private Jet Charter</h3>
-                <p className="text-sm text-gray-700 font-medium">{aircraft || 'Aircraft TBD'}</p>
+                <p className="text-sm text-gray-700 font-medium truncate">{aircraft || 'Aircraft TBD'}</p>
               </div>
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${getStatusColor(request.status)}`}>
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border self-start whitespace-nowrap ${getStatusColor(request.status)}`}>
                 {getStatusIcon(request.status)}
                 <span className="capitalize">{request.status}</span>
               </div>
@@ -714,12 +790,12 @@ const MyRequestsView = ({ user }) => {
     const heliImage = heliItem?.primaryImage || heliItem?.image_url || data.image_url;
 
     return (
-      <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-        <div className="flex items-start gap-4">
+      <div className="bg-white/35 border border-gray-300/50 rounded-xl p-4 sm:p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+        <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
           {/* Helicopter Image or Icon */}
           {heliImage ? (
             <div className="flex-shrink-0">
-              <img src={heliImage} alt={helicopter} className="w-24 h-16 object-cover rounded-lg" />
+              <img src={heliImage} alt={helicopter} className="w-full sm:w-24 h-32 sm:h-16 object-cover rounded-lg" />
             </div>
           ) : (
             <div className="w-12 h-12 bg-gradient-to-br from-teal-600 to-teal-800 rounded-xl flex items-center justify-center text-white flex-shrink-0">
@@ -727,13 +803,13 @@ const MyRequestsView = ({ user }) => {
             </div>
           )}
 
-          <div className="flex-1">
-            <div className="flex items-start justify-between mb-3">
-              <div>
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+              <div className="min-w-0">
                 <h3 className="text-base font-semibold text-gray-800 mb-1">Helicopter Charter</h3>
-                <p className="text-sm text-gray-700 font-medium">{helicopter || 'Helicopter TBD'}</p>
+                <p className="text-sm text-gray-700 font-medium truncate">{helicopter || 'Helicopter TBD'}</p>
               </div>
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${getStatusColor(request.status)}`}>
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border self-start whitespace-nowrap ${getStatusColor(request.status)}`}>
                 {getStatusIcon(request.status)}
                 <span className="capitalize">{request.status}</span>
               </div>
@@ -1122,24 +1198,24 @@ const MyRequestsView = ({ user }) => {
     const yachtImage = yachtItem?.primaryImage || yachtItem?.image_url || data.image_url;
 
     return (
-      <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-        <div className="flex items-start gap-4">
+      <div className="bg-white/35 border border-gray-300/50 rounded-xl p-4 sm:p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+        <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
           {yachtImage ? (
             <div className="flex-shrink-0">
-              <img src={yachtImage} alt={yachtName} className="w-24 h-16 object-cover rounded-lg" />
+              <img src={yachtImage} alt={yachtName} className="w-full sm:w-24 h-32 sm:h-16 object-cover rounded-lg" />
             </div>
           ) : (
             <div className="w-12 h-12 bg-gradient-to-br from-cyan-600 to-cyan-800 rounded-xl flex items-center justify-center text-white flex-shrink-0">
               <FileText size={24} />
             </div>
           )}
-          <div className="flex-1">
-            <div className="flex items-start justify-between mb-3">
-              <div>
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+              <div className="min-w-0">
                 <h3 className="text-base font-semibold text-gray-800 mb-1">Yacht Charter</h3>
-                <p className="text-sm text-gray-700 font-medium">{yachtName}</p>
+                <p className="text-sm text-gray-700 font-medium truncate">{yachtName}</p>
               </div>
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${getStatusColor(request.status)}`}>
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border self-start whitespace-nowrap ${getStatusColor(request.status)}`}>
                 {getStatusIcon(request.status)}
                 <span className="capitalize">{request.status}</span>
               </div>
@@ -1492,24 +1568,85 @@ const MyRequestsView = ({ user }) => {
   };
 
   const renderGenericRequest = (request) => {
-    return (
-      <div className="bg-white/35 border border-gray-300/50 rounded-xl p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-gray-800 to-black rounded-xl flex items-center justify-center text-white flex-shrink-0">
-            {getTypeIcon(request.type)}
-          </div>
+    let data = request.data;
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch (e) { data = {}; }
+    }
+    data = data || {};
 
-          <div className="flex-1">
-            <div className="flex items-start justify-between mb-3">
-              <div>
+    // Try to extract meaningful info from items array or direct fields
+    const item = data.items?.[0] || {};
+    const name = data.name || item.name || item.title || data.title;
+    const price = data.total || data.price || item.price || item.estimated_price;
+    const image = item.primaryImage || item.image_url || item.image || data.image_url;
+    const route = data.route || item.route || (item.from && item.to ? `${item.from} → ${item.to}` : null);
+    const date = data.date || item.date || data.departure_date || item.departure_date;
+    const passengers = data.passengers || item.passengers || item.pax;
+
+    return (
+      <div className="bg-white/35 border border-gray-300/50 rounded-xl p-4 sm:p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+        <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+          {/* Image or Icon */}
+          {image ? (
+            <div className="flex-shrink-0">
+              <img src={image} alt={name || 'Request'} className="w-full sm:w-24 h-32 sm:h-16 object-cover rounded-lg" />
+            </div>
+          ) : (
+            <div className="w-12 h-12 bg-gradient-to-br from-gray-800 to-black rounded-xl flex items-center justify-center text-white flex-shrink-0">
+              {getTypeIcon(request.type)}
+            </div>
+          )}
+
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+              <div className="min-w-0">
                 <h3 className="text-base font-semibold text-gray-800 mb-1">{getTypeLabel(request.type)}</h3>
+                {name && <p className="text-sm text-gray-700 font-medium truncate">{name}</p>}
                 <p className="text-xs text-gray-600">Request ID: {request.id.slice(0, 8)}</p>
               </div>
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${getStatusColor(request.status)}`}>
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border self-start whitespace-nowrap ${getStatusColor(request.status)}`}>
                 {getStatusIcon(request.status)}
                 <span className="capitalize">{request.status}</span>
               </div>
             </div>
+
+            {/* Route Info */}
+            {route && (
+              <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                  <span className="text-sm text-gray-800 font-medium">{route}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Details Grid */}
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              {date && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Date</p>
+                  <p className="text-sm font-semibold text-gray-800">{new Date(date).toLocaleDateString()}</p>
+                </div>
+              )}
+              {passengers && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Passengers</p>
+                  <p className="text-sm font-semibold text-gray-800">{passengers}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Price */}
+            {price && (
+              <div className="p-3 bg-gradient-to-r from-gray-700 to-gray-900 rounded-lg mb-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-300">Total</p>
+                  <p className="text-base font-bold text-white">
+                    {typeof price === 'number' ? `€${price.toLocaleString()}` : price}
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="text-xs text-gray-500 mb-3">
               {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}

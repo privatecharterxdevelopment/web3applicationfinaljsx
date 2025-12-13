@@ -76,6 +76,7 @@ import { isNativeApp } from '../../utils/platform';
 import { AppLoginModal, AppRegisterModal } from '../auth';
 import HotelBookingView from '../Hotels/HotelBookingView';
 import HotelsView from '../Hotels/HotelsView';
+import { convertToUSD, initializeExchangeRates } from '../../services/currencyService';
 
 // Settings Page Component
 const SettingsPage = ({ user, kycStatus, setKycStatus, setActiveCategory }) => {
@@ -1254,6 +1255,9 @@ const TokenizedAssetsGlassmorphic = () => {
   const animationFrameRef = useRef(null);
   const [chatHistory, setChatHistory] = useState([]);
 
+  // Ref to store pending URL params when user needs to log in first
+  const pendingUrlParamsRef = useRef(null);
+
   // Predefined suggestions
   const chatSuggestions = [
     { icon: '✈️', text: 'Private Jet to Monaco', prompt: 'I need a private jet to Monaco for 4 passengers' },
@@ -1283,6 +1287,9 @@ const TokenizedAssetsGlassmorphic = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [jetsViewMode, setJetsViewMode] = useState('tabs'); // 'grid' or 'tabs'
   const [jetsFiltersVisible, setJetsFiltersVisible] = useState(false);
+  const [jetPassengers, setJetPassengers] = useState(1);
+  const [jetLuggage, setJetLuggage] = useState(0);
+  const [jetHasPet, setJetHasPet] = useState(false);
 
   // Helicopters state variables
   const [helicoptersData, setHelicoptersData] = useState([]);
@@ -1299,6 +1306,8 @@ const TokenizedAssetsGlassmorphic = () => {
   const [showHelicopterDetail, setShowHelicopterDetail] = useState(false);
   const [currentHelicopterImageIndex, setCurrentHelicopterImageIndex] = useState(0);
   const [helicopterPassengers, setHelicopterPassengers] = useState(1);
+  const [helicopterLuggage, setHelicopterLuggage] = useState(0);
+  const [helicopterHasPet, setHelicopterHasPet] = useState(false);
   const [helicopterDuration, setHelicopterDuration] = useState(1);
   const [helicopterSpecialRequests, setHelicopterSpecialRequests] = useState('');
   const [helicopterSubmitting, setHelicopterSubmitting] = useState(false);
@@ -1476,7 +1485,7 @@ const TokenizedAssetsGlassmorphic = () => {
         capacity: selectedHelicopter.capacity || rawData.capacity,
         location: selectedHelicopter.location || rawData.location,
         price_per_hour: rawData.price || rawData.price_per_hour,
-        currency: rawData.currency || 'EUR',
+        currency: rawData.currency || 'USD',
 
         // Route/Location details
         departure: helicopterDeparture ? {
@@ -1582,6 +1591,11 @@ const TokenizedAssetsGlassmorphic = () => {
   // AI Chat query state (for search integration)
   const [aiChatQuery, setAiChatQuery] = useState('');
   const [aiAssistantMessage, setAiAssistantMessage] = useState(''); // Prefilled assistant message
+
+  // Debug: Log when aiChatQuery changes
+  useEffect(() => {
+    console.log('🔍 aiChatQuery state changed:', aiChatQuery, 'activeCategory:', activeCategory, 'user.id:', user?.id);
+  }, [aiChatQuery, activeCategory, user?.id]);
   const [adventuresViewMode, setAdventuresViewMode] = useState('tabs');
   const [adventuresFiltersVisible, setAdventuresFiltersVisible] = useState(false);
   const [selectedAdventure, setSelectedAdventure] = useState(null);
@@ -1898,35 +1912,100 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   }, [isAuthenticated, user, activeCategory, setActiveCategory]);
 
-  // URL Sync: Initialize chat from URL on first mount ONLY
-  // This runs once when component mounts if there's a chat ID in URL
-  const urlSyncInitializedRef = useRef(false);
+  // URL Sync: Handle /dashboard/chat routes
+  // Track the last processed path to avoid re-processing the same URL
+  const lastProcessedPathRef = useRef('');
 
   useEffect(() => {
-    // Only run once on mount
-    if (urlSyncInitializedRef.current) return;
-
     const currentPath = location.pathname;
-    const isOnChatRoute = currentPath.startsWith('/dashboard/chat/');
+    const isOnChatRoute = currentPath.startsWith('/dashboard/chat');
+    const isExactChatRoute = currentPath === '/dashboard/chat' || currentPath === '/dashboard/chat/';
 
-    if (urlChatId && isOnChatRoute) {
-      urlSyncInitializedRef.current = true;
-      const targetChatId = urlChatId === 'new' ? 'new' : urlChatId;
-      setActiveChat(targetChatId);
-      setActiveCategory('chat');
-      console.log('🔗 Initial chat from URL:', urlChatId);
+    console.log('🌐 URL Sync Effect:', {
+      currentPath,
+      search: location.search,
+      isOnChatRoute,
+      isExactChatRoute,
+      lastProcessed: lastProcessedPathRef.current,
+      willSkip: lastProcessedPathRef.current === currentPath + location.search
+    });
+
+    // Skip if we've already processed this exact path
+    if (lastProcessedPathRef.current === currentPath + location.search) return;
+
+    // Handle /dashboard/chat (new chat) or /dashboard/chat/:chatId (specific chat)
+    if (isOnChatRoute) {
+      lastProcessedPathRef.current = currentPath + location.search;
+
+      // Check for query parameter on chat route
+      const params = new URLSearchParams(location.search);
+      const query = params.get('query') || '';
+      const assistantMessage = params.get('assistantMessage') || '';
+      const login = params.get('login') === 'true';
+
+      if (isExactChatRoute) {
+        // /dashboard/chat - open new chat
+        // Check if login is required
+        if (login && !isAuthenticated) {
+          // Store query and show login modal
+          pendingUrlParamsRef.current = { query, assistantMessage, tab: 'chat', newChat: true };
+          setShowLoginModal(true);
+          console.log('🔐 Chat route requires login, showing modal');
+        } else {
+          // IMPORTANT: Set query FIRST, then category to ensure AIChat receives it on first render
+          // Set query if present
+          if (query) {
+            console.log('📝 Setting aiChatQuery from URL:', query, 'user.id:', user?.id);
+            setAiChatQuery(query);
+          }
+          // Set assistant message if present (for "Beat the Price" flow)
+          if (assistantMessage) {
+            setAiAssistantMessage(decodeURIComponent(assistantMessage));
+          }
+          setActiveChat('new');
+          // Use setTimeout to ensure query state is set before switching category
+          // This prevents AIChat from rendering with empty initialQuery
+          setTimeout(() => {
+            setActiveCategory('chat');
+            console.log('🔗 Opening new chat from URL: /dashboard/chat', query ? `with query: ${query}` : '', assistantMessage ? 'with assistant message' : '');
+          }, 0);
+        }
+        // Clean up URL params but keep the path
+        // Delay cleanup to allow state to propagate before URL changes
+        // The query will be fully cleared when AIChat calls onQueryProcessed
+        if (query || assistantMessage || login) {
+          setTimeout(() => {
+            window.history.replaceState({}, '', '/dashboard/chat');
+            lastProcessedPathRef.current = '/dashboard/chat'; // Update to cleaned path
+          }, 100);
+        }
+      } else if (urlChatId) {
+        // /dashboard/chat/:chatId - open specific chat
+        const targetChatId = urlChatId === 'new' ? 'new' : urlChatId;
+        setActiveChat(targetChatId);
+        setActiveCategory('chat');
+        console.log('🔗 Opening chat from URL:', urlChatId);
+      }
     }
-  }, []); // Empty deps - only on mount
+  }, [location.pathname, location.search, isAuthenticated, urlChatId]); // Re-run when URL or auth changes
 
   // When leaving chat view, redirect to dashboard (but don't sync activeChat to URL)
+  // Only redirect if we're LEAVING chat (not arriving at chat route)
+  const previousCategoryRef = useRef(activeCategory);
+
   useEffect(() => {
     const currentPath = location.pathname;
-    const isOnChatRoute = currentPath.startsWith('/dashboard/chat/');
+    const isOnChatRoute = currentPath.startsWith('/dashboard/chat');
+    const wasInChat = previousCategoryRef.current === 'chat';
 
-    if (activeCategory !== 'chat' && isOnChatRoute) {
-      navigate('/dashboard', { replace: true });
+    // Only redirect if we were IN chat and are now leaving it
+    // Don't redirect if we're arriving at a chat route (activeCategory will be updated by URL sync)
+    if (wasInChat && activeCategory !== 'chat' && isOnChatRoute) {
+      window.history.replaceState({}, '', '/dashboard');
     }
-  }, [activeCategory, navigate]);
+
+    previousCategoryRef.current = activeCategory;
+  }, [activeCategory, navigate, location.pathname]);
 
   // Close mobile category menu when clicking outside
   useEffect(() => {
@@ -2415,13 +2494,17 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   }, []);
 
-  // Ref to store pending URL params when user needs to log in first
-  const pendingUrlParamsRef = useRef(null);
-
   // Process URL parameters using React Router's location (updates on navigation)
+  // NOTE: /dashboard/chat routes are handled by the URL Sync Effect above
   useEffect(() => {
     // Wait for auth to initialize
     if (initializing) return;
+
+    // Skip if on /dashboard/chat route - that's handled by URL Sync Effect
+    if (location.pathname.startsWith('/dashboard/chat')) {
+      console.log('🔎 URL Params Effect: Skipping - /dashboard/chat handled by URL Sync Effect');
+      return;
+    }
 
     const params = new URLSearchParams(location.search);
     const query = params.get('query') || '';
@@ -2434,6 +2517,15 @@ const TokenizedAssetsGlassmorphic = () => {
     const departureName = params.get('departureName') || '';
     const destinationCode = params.get('destination') || '';
     const destinationName = params.get('destinationName') || '';
+
+    console.log('🔎 URL Params Effect:', {
+      pathname: location.pathname,
+      search: location.search,
+      query,
+      tab,
+      isAuthenticated,
+      initializing
+    });
 
     // If there's a tab or query in the URL
     if (tab || query || assistantMessage || newChat) {
@@ -2494,7 +2586,7 @@ const TokenizedAssetsGlassmorphic = () => {
   useEffect(() => {
     if (!initializing && isAuthenticated && pendingUrlParamsRef.current) {
       let { query, tab, assistantMessage, newChat, departureCode, departureName, destinationCode, destinationName } = pendingUrlParamsRef.current;
-      console.log('✅ Post-login: Processing pending params - tab:', tab, 'query:', query, 'assistantMessage:', assistantMessage, 'newChat:', newChat);
+      console.log('✅ Post-login: Processing pending params - tab:', tab, 'query:', query, 'assistantMessage:', assistantMessage, 'newChat:', newChat, 'user.id:', user?.id);
 
       if (query) {
         setAiChatQuery(query);
@@ -2515,9 +2607,19 @@ const TokenizedAssetsGlassmorphic = () => {
       if (newChat && targetTab === 'chat') {
         setActiveChat('new');
       }
-      setActiveCategory(targetTab);
-      setShowDashboard(true);
-      pendingUrlParamsRef.current = null; // Clear after processing
+      // Use setTimeout to ensure query state is set before switching category
+      // This prevents AIChat from rendering with empty initialQuery
+      if (query && targetTab === 'chat') {
+        setTimeout(() => {
+          setActiveCategory(targetTab);
+          setShowDashboard(true);
+          pendingUrlParamsRef.current = null; // Clear after processing
+        }, 0);
+      } else {
+        setActiveCategory(targetTab);
+        setShowDashboard(true);
+        pendingUrlParamsRef.current = null; // Clear after processing
+      }
     }
   }, [isAuthenticated, initializing]);
 
@@ -3101,7 +3203,7 @@ const TokenizedAssetsGlassmorphic = () => {
               name: heli.name || 'Helicopter',
               location: heli.location || 'Global',
               category: heli.type ? heli.type.substring(0, 50) + '...' : 'Helicopter Charter',
-              totalPrice: heli.price ? `€${parseFloat(heli.price).toLocaleString()}/hr` : 'Request Quote',
+              totalPrice: heli.price ? `$${Math.round(convertToUSD(parseFloat(heli.price), 'EUR')).toLocaleString()}/hr` : 'Request Quote',
               capacity: `${heli.capacity || 'N/A'} pax`,
               availability: heli.status === 'available' ? 'On-demand' : 'Contact us',
               image: images[0] || 'https://images.unsplash.com/photo-1639089742630-ec968e4e8741?w=800',
@@ -3168,15 +3270,17 @@ const TokenizedAssetsGlassmorphic = () => {
         } else {
           const transformedData = (data || []).map(leg => ({
             id: leg.id,
-            name: `${leg.from_city || leg.from} → ${leg.to_city || leg.to}`,
+            name: `${leg.from_iata || leg.from_city?.substring(0, 3).toUpperCase() || 'DEP'} → ${leg.to_iata || leg.to_city?.substring(0, 3).toUpperCase() || 'ARR'}`,
+            subtitle: `${leg.from_city || leg.from} → ${leg.to_city || leg.to}`,
             location: `${leg.from_iata} → ${leg.to_iata}`,
-            category: leg.category || leg.aircraft_type,
-            totalPrice: `$${leg.price?.toLocaleString() || 'N/A'}`,
+            category: leg.aircraft_type || leg.category,
+            totalPrice: leg.price ? `$${Math.round(convertToUSD(leg.price, 'GBP')).toLocaleString()}` : 'N/A',
+            currency: 'USD',
             capacity: `${leg.capacity || leg.pax || 'N/A'} pax`,
             departureDate: new Date(leg.departure_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
             image: leg.image_url || 'https://images.unsplash.com/photo-1540962351504-03099e0a754b?w=800',
             isEmptyLeg: true,
-            isFreeWithNFT: leg.price && leg.price <= 1500,
+            isFreeWithNFT: leg.price && convertToUSD(leg.price, 'GBP') < 1900,
             rawPrice: leg.price,
             rawData: leg
           }));
@@ -3363,13 +3467,13 @@ const TokenizedAssetsGlassmorphic = () => {
           name: offer.title,
           location: offer.destination || offer.origin,
           category: offer.package_type || 'Adventure',
-          totalPrice: offer.price_on_request ? 'On Request' : `€${offer.price?.toLocaleString() || 'N/A'}`,
+          totalPrice: offer.price_on_request ? 'On Request' : (offer.price ? `$${Math.round(convertToUSD(offer.price, 'EUR')).toLocaleString()}` : 'N/A'),
           yield: offer.duration || 'Flexible',
           period: offer.difficulty_level || 'All levels',
           image: offer.image_url || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
           isAdventure: true,
           rawPrice: offer.price,
-          isFreeWithNFT: offer.price && offer.price <= 1500,
+          isFreeWithNFT: offer.price && convertToUSD(offer.price, 'EUR') < 1900,
           rawData: offer
         }));
         setAdventuresData(transformedData);
@@ -3439,9 +3543,9 @@ const TokenizedAssetsGlassmorphic = () => {
           name: `${car.brand ?? ''} ${car.model ?? ''}`.trim() || car.name || 'Luxury Car',
           location: car.location,
           category: car.type || 'Luxury Car',
-          totalPrice: car.price_per_day ? `€${Number(car.price_per_day).toLocaleString()}/day` : 'On Request',
-          yield: car.price_per_hour ? `€${Number(car.price_per_hour).toLocaleString()}/hr` : 'On Request',
-          period: car.price_per_week ? `€${Number(car.price_per_week).toLocaleString()}/wk` : 'TO BE DISCUSSED',
+          totalPrice: car.price_per_day ? `$${Math.round(convertToUSD(Number(car.price_per_day), 'EUR')).toLocaleString()}/day` : 'On Request',
+          yield: car.price_per_hour ? `$${Math.round(convertToUSD(Number(car.price_per_hour), 'EUR')).toLocaleString()}/hr` : 'On Request',
+          period: car.price_per_week ? `$${Math.round(convertToUSD(Number(car.price_per_week), 'EUR')).toLocaleString()}/wk` : 'TO BE DISCUSSED',
           image,
           isLuxuryCar: true,
           rawPrice: car.price_per_day ?? null,
@@ -3904,9 +4008,11 @@ const TokenizedAssetsGlassmorphic = () => {
                     setSidebarExpanded(true);
                     return;
                   }
-                  // Start a new chat - go to chat view and reset to new chat screen
+                  // Start a new chat - update state first, then URL cosmetically
                   setActiveCategory('chat');
                   setActiveChat('new'); // Reset to new chat screen directly
+                  // Update URL without triggering navigation/reload
+                  window.history.pushState({}, '', '/dashboard/chat');
                   // Close mobile menu after selection
                   if (isMobileMenuOpen) {
                     setIsMobileMenuOpen(false);
@@ -4734,7 +4840,7 @@ const TokenizedAssetsGlassmorphic = () => {
                               {(request.data?.price || request.data?.estimated_price) && (
                                 <div className="text-right flex-shrink-0">
                                   <p className="text-sm font-semibold text-gray-900">
-                                    €{(request.data.price || request.data.estimated_price).toLocaleString()}
+                                    ${(request.data.price || request.data.estimated_price).toLocaleString()}
                                   </p>
                                 </div>
                               )}
@@ -4939,6 +5045,7 @@ const TokenizedAssetsGlassmorphic = () => {
                           onClick={() => {
                             setActiveCategory('chat');
                             setActiveChat('new'); // Reset to new chat screen directly
+                            window.history.pushState({}, '', '/dashboard/chat');
                           }}
                           className="px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 transition-all inline-flex items-center gap-2"
                         >
@@ -5010,7 +5117,7 @@ const TokenizedAssetsGlassmorphic = () => {
                               {request.data?.summary?.grand_total && (
                                 <div className="text-right flex-shrink-0">
                                   <p className="text-sm font-semibold text-gray-900">
-                                    €{request.data.summary.grand_total.toLocaleString()}
+                                    ${request.data.summary.grand_total.toLocaleString()}
                                   </p>
                                 </div>
                               )}
@@ -5068,7 +5175,7 @@ const TokenizedAssetsGlassmorphic = () => {
                                     )}
                                     {request.data?.price && (
                                       <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600">
-                                        €{request.data.price.toLocaleString()}
+                                        ${request.data.price.toLocaleString()}
                                       </div>
                                     )}
                                   </div>
@@ -5093,7 +5200,7 @@ const TokenizedAssetsGlassmorphic = () => {
                                           <span className="text-sm text-gray-700">{item.name || item.model || 'Service'}</span>
                                         </div>
                                         <span className="text-sm font-medium text-gray-900">
-                                          {item.isEstimate && '~'}€{(item.price || 0).toLocaleString()}
+                                          {item.isEstimate && '~'}${(item.price || 0).toLocaleString()}
                                         </span>
                                       </div>
                                     ))}
@@ -6866,7 +6973,7 @@ const TokenizedAssetsGlassmorphic = () => {
                     <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Max Price</label>
                     <input
                       type="text"
-                      placeholder="€50,000"
+                      placeholder="$50,000"
                       value={jetsMaxPrice}
                       onChange={(e) => setJetsMaxPrice(e.target.value)}
                       className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
@@ -7233,276 +7340,179 @@ const TokenizedAssetsGlassmorphic = () => {
                 </div>
               )}
 
-              {/* Jet Detail View - Inline (not modal) */}
+              {/* Jet Detail View - Modern Monochromatic Layout (EXACTLY like Empty Legs) */}
               {showJetDetail && selectedJet && (() => {
                 const jetImages = getAllJetImages();
                 const currentImage = jetImages[currentImageIndex] || selectedJet.image;
                 return (
                   <div className="w-full">
-                    {/* Jet Header Card */}
-                    <div className="bg-white/35 rounded-lg border border-gray-300/50 mb-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                      <div className="flex h-80">
-                        {/* Left side - Aircraft Image with Gallery */}
-                        <div className="w-2/5 relative bg-gray-100/50">
-                          <img
-                            src={currentImage}
-                            alt={selectedJet.name}
-                            className="w-full h-full object-cover"
-                          />
-
-                          {jetImages.length > 1 && (
-                            <>
-                              <button
-                                onClick={handlePrevImage}
-                                className="absolute left-3 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-90 hover:bg-opacity-100 text-black w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-lg text-sm"
-                              >
-                                ←
-                              </button>
-                              <button
-                                onClick={handleNextImage}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-90 hover:bg-opacity-100 text-black w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-lg text-sm"
-                              >
-                                →
-                              </button>
-                              <div className="absolute bottom-3 right-3 bg-black bg-opacity-60 text-white px-2 py-1 rounded text-xs">
-                                {currentImageIndex + 1} / {jetImages.length}
-                              </div>
-                            </>
-                          )}
-
-                          <div className="absolute top-3 left-3 flex space-x-1.5">
-                            <div className="bg-white px-2 py-1 rounded text-xs font-medium flex items-center space-x-1">
-                              <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                              <span>Available</span>
+                    {/* Compact Header Card */}
+                    <div className="bg-white rounded-xl border border-gray-100 mb-4 overflow-hidden shadow-sm">
+                      {/* Image - Full width with gallery */}
+                      <div className="relative h-40 md:h-52 bg-gray-100">
+                        <img
+                          src={currentImage}
+                          alt={selectedJet.name}
+                          className="w-full h-full object-cover"
+                        />
+                        {/* Gallery Navigation */}
+                        {jetImages.length > 1 && (
+                          <>
+                            <button
+                              onClick={handlePrevImage}
+                              className="absolute left-3 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white text-black w-8 h-8 rounded-full flex items-center justify-center shadow-lg text-sm transition-all"
+                            >←</button>
+                            <button
+                              onClick={handleNextImage}
+                              className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white text-black w-8 h-8 rounded-full flex items-center justify-center shadow-lg text-sm transition-all"
+                            >→</button>
+                            <div className="absolute bottom-3 right-3 bg-black/60 text-white px-2 py-1 rounded text-xs">
+                              {currentImageIndex + 1} / {jetImages.length}
                             </div>
-                            <div className="bg-white px-2 py-1 rounded text-xs font-medium">✈ Private Jet</div>
+                          </>
+                        )}
+                        {/* Minimal badges */}
+                        <div className="absolute top-3 left-3 flex gap-1.5">
+                          <span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full text-[10px] font-medium border border-emerald-200">Available</span>
+                          <span className="bg-gray-900 text-white px-2 py-0.5 rounded-full text-[10px] font-medium">Private Jet</span>
+                        </div>
+                      </div>
+
+                      {/* Flight Info - Compact */}
+                      <div className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <Plane size={14} className="text-gray-600" />
+                          </div>
+                          <div className="flex-1">
+                            <h1 className="text-sm font-medium text-gray-900">{selectedJet.name}</h1>
+                            <p className="text-xs text-gray-500">{selectedJet.location} · {selectedJet.category}</p>
                           </div>
                         </div>
 
-                        {/* Right side - Jet info */}
-                        <div className="flex-1 p-5 flex flex-col">
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="bg-black text-white px-2 py-1 rounded text-xs font-semibold uppercase">PCX JETS</span>
+                        {/* Key Metrics Row */}
+                        <div className="flex items-center gap-4 pt-3 border-t border-gray-50">
+                          <div className="flex-1">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Category</p>
+                            <p className="text-sm font-medium text-gray-900">{selectedJet.category}</p>
                           </div>
-
-                          <h1 className="text-2xl font-semibold mb-4 text-gray-900">
-                            {selectedJet.name}
-                          </h1>
-                          <p className="text-sm text-gray-600 mb-4">
-                            {selectedJet.location} · {selectedJet.category}
-                          </p>
-
-                          {/* Tab Navigation */}
-                          <div className="flex space-x-6 border-b border-gray-300 mb-5">
-                            <button
-                              onClick={() => setActiveTab('details')}
-                              className={`pb-3 text-xs relative ${activeTab === 'details' ? 'text-black' : 'text-gray-600'}`}
-                            >
-                              Aircraft Details
-                              {activeTab === 'details' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"></div>}
-                            </button>
-                            <button
-                              onClick={() => setActiveTab('specs')}
-                              className={`pb-3 text-xs relative ${activeTab === 'specs' ? 'text-black' : 'text-gray-600'}`}
-                            >
-                              Specifications
-                              {activeTab === 'specs' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"></div>}
-                            </button>
-                            <button
-                              onClick={() => setActiveTab('pricing')}
-                              className={`pb-3 text-xs relative ${activeTab === 'pricing' ? 'text-black' : 'text-gray-600'}`}
-                            >
-                              Pricing
-                              {activeTab === 'pricing' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"></div>}
-                            </button>
+                          <div className="flex-1">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Capacity</p>
+                            <p className="text-sm font-medium text-gray-900">{selectedJet.capacity}</p>
                           </div>
-
-                          {/* Key metrics */}
-                          <div className="flex justify-between mt-auto mb-5">
-                            <div className="flex flex-col space-y-1">
-                              <span className="text-xs text-gray-500">Price Range</span>
-                              <span className="text-sm font-semibold text-black">{selectedJet.totalPrice}</span>
-                            </div>
-                            <div className="flex flex-col space-y-1">
-                              <span className="text-xs text-gray-500">Capacity</span>
-                              <span className="text-sm font-semibold text-black">{selectedJet.capacity}</span>
-                            </div>
-                            <div className="flex flex-col space-y-1">
-                              <span className="text-xs text-gray-500">Range</span>
-                              <span className="text-sm font-semibold text-black">{selectedJet.range}</span>
-                            </div>
+                          <div className="flex-1">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Price</p>
+                            <p className="text-sm font-semibold text-gray-900">{selectedJet.totalPrice}</p>
                           </div>
-
                         </div>
                       </div>
                     </div>
 
-                    {/* Content and Booking Section */}
-                    <div className="grid grid-cols-3 gap-6">
-                      {/* Left Column - Content */}
-                      <div className="col-span-2">
-                        <div className="bg-white/35 rounded-lg border border-gray-300/50 p-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                          {activeTab === 'details' && (
-                            <div className="space-y-6">
-                              <div>
-                                <h3 className="text-sm font-semibold text-black mb-3">Aircraft Description</h3>
-                                <p className="text-sm text-gray-700 leading-relaxed">
-                                  The {selectedJet.name} by {selectedJet.location} is a premium private jet offering exceptional comfort and performance. This {selectedJet.category} provides an outstanding flight experience with state-of-the-art amenities and technology.
-                                </p>
-                              </div>
+                    {/* Details Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {/* Aircraft Details Card */}
+                      <div className="md:col-span-2 bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+                        <h2 className="text-sm font-medium text-gray-900 mb-4">Aircraft Details</h2>
 
-                              <div className="grid grid-cols-2 gap-6 pt-6 border-t border-gray-200">
-                                <div className="flex items-start space-x-3">
-                                  <Plane className="text-gray-600 mt-0.5" size={20} />
-                                  <div>
-                                    <p className="text-xs text-gray-500 mb-1">Manufacturer</p>
-                                    <p className="text-sm font-semibold text-black">{selectedJet.location}</p>
-                                  </div>
-                                </div>
-                                <div className="flex items-start space-x-3">
-                                  <Users className="text-gray-600 mt-0.5" size={20} />
-                                  <div>
-                                    <p className="text-xs text-gray-500 mb-1">Passenger Capacity</p>
-                                    <p className="text-sm font-semibold text-black">{selectedJet.capacity}</p>
-                                  </div>
-                                </div>
-                                <div className="flex items-start space-x-3">
-                                  <MapPin className="text-gray-600 mt-0.5" size={20} />
-                                  <div>
-                                    <p className="text-xs text-gray-500 mb-1">Range</p>
-                                    <p className="text-sm font-semibold text-black">{selectedJet.range}</p>
-                                  </div>
-                                </div>
-                                <div className="flex items-start space-x-3">
-                                  <Calendar className="text-gray-600 mt-0.5" size={20} />
-                                  <div>
-                                    <p className="text-xs text-gray-500 mb-1">Category</p>
-                                    <p className="text-sm font-semibold text-black">{selectedJet.category}</p>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {activeTab === 'specs' && (
-                            <div className="space-y-4">
-                              <h3 className="text-sm font-semibold text-black mb-4">Technical Specifications</h3>
-                              <div className="grid grid-cols-2 gap-4">
-                                <div className="p-3 bg-gray-50/50 rounded">
-                                  <p className="text-xs text-gray-500 mb-1">Aircraft Model</p>
-                                  <p className="text-sm font-semibold text-black">{selectedJet.name}</p>
-                                </div>
-                                <div className="p-3 bg-gray-50/50 rounded">
-                                  <p className="text-xs text-gray-500 mb-1">Category</p>
-                                  <p className="text-sm font-semibold text-black">{selectedJet.category}</p>
-                                </div>
-                                <div className="p-3 bg-gray-50/50 rounded">
-                                  <p className="text-xs text-gray-500 mb-1">Capacity</p>
-                                  <p className="text-sm font-semibold text-black">{selectedJet.capacity}</p>
-                                </div>
-                                <div className="p-3 bg-gray-50/50 rounded">
-                                  <p className="text-xs text-gray-500 mb-1">Range</p>
-                                  <p className="text-sm font-semibold text-black">{selectedJet.range}</p>
-                                </div>
-                                <div className="p-3 bg-gray-50/50 rounded">
-                                  <p className="text-xs text-gray-500 mb-1">Manufacturer</p>
-                                  <p className="text-sm font-semibold text-black">{selectedJet.location}</p>
-                                </div>
-                                <div className="p-3 bg-gray-50/50 rounded">
-                                  <p className="text-xs text-gray-500 mb-1">Price Range</p>
-                                  <p className="text-sm font-semibold text-black">{selectedJet.totalPrice}</p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {activeTab === 'pricing' && (
-                            <div className="space-y-4">
-                              <h3 className="text-sm font-semibold text-black mb-4">Charter Pricing</h3>
-                              <div className="p-4 bg-gray-50/50 rounded-lg">
-                                <div className="flex justify-between items-center mb-3">
-                                  <span className="text-sm text-gray-600">Estimated Price Range</span>
-                                  <span className="text-lg font-bold text-black">{selectedJet.totalPrice}</span>
-                                </div>
-                                <p className="text-xs text-gray-500">
-                                  Final pricing depends on route, flight time, positioning, and additional services. Request a quote for exact pricing.
-                                </p>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Image Gallery */}
-                          {jetImages.length > 1 && (
-                            <div className="mt-6 pt-6 border-t border-gray-200">
-                              <h3 className="text-sm font-semibold text-black mb-3">Gallery</h3>
-                              <div className="grid grid-cols-3 gap-3">
-                                {jetImages.map((img, idx) => (
-                                  <img
-                                    key={idx}
-                                    src={img}
-                                    alt={`${selectedJet.name} ${idx + 1}`}
-                                    onClick={() => setCurrentImageIndex(idx)}
-                                    className={`w-full h-24 object-cover rounded cursor-pointer transition-all ${
-                                      idx === currentImageIndex ? 'ring-2 ring-black' : 'opacity-60 hover:opacity-100'
-                                    }`}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                          )}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="py-2 border-b border-gray-50">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Model</p>
+                            <p className="text-sm text-gray-900">{selectedJet.name}</p>
+                          </div>
+                          <div className="py-2 border-b border-gray-50">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Manufacturer</p>
+                            <p className="text-sm text-gray-900">{selectedJet.location}</p>
+                          </div>
+                          <div className="py-2 border-b border-gray-50">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Category</p>
+                            <p className="text-sm text-gray-900">{selectedJet.category}</p>
+                          </div>
+                          <div className="py-2 border-b border-gray-50">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Capacity</p>
+                            <p className="text-sm text-gray-900">{selectedJet.capacity}</p>
+                          </div>
+                          <div className="py-2 border-b border-gray-50">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Range</p>
+                            <p className="text-sm text-gray-900">{selectedJet.range}</p>
+                          </div>
+                          <div className="py-2 border-b border-gray-50">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Price Range</p>
+                            <p className="text-sm text-gray-900">{selectedJet.totalPrice}</p>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Right Column - Booking Widget */}
-                      <div className="col-span-1">
-                        <div className="bg-white/35 rounded-lg border border-gray-300/50 p-6 sticky top-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                          <h3 className="text-lg font-semibold text-black mb-4">Request Charter Quote</h3>
+                      {/* Right: Request Quote Sidebar - Minimal like Empty Legs */}
+                      <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+                        <h2 className="text-sm font-medium text-gray-900 mb-4">Request a Quote</h2>
 
-                          <div className="space-y-4 mb-6">
-                            <div className="p-3 bg-gray-50/50 rounded">
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-500">Aircraft</span>
-                                <span className="text-sm font-semibold text-black">{selectedJet.name}</span>
-                              </div>
-                            </div>
-                            <div className="p-3 bg-gray-50/50 rounded">
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-500">Capacity</span>
-                                <span className="text-sm font-semibold text-black">{selectedJet.capacity}</span>
-                              </div>
-                            </div>
-                            <div className="p-3 bg-gray-50/50 rounded">
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-500">Est. Price Range</span>
-                                <span className="text-sm font-semibold text-black">{selectedJet.totalPrice}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <button
-                            onClick={() => {
-                              setBookingVehicleType('private-jet');
-                              setActiveCategory('private-jet');
-                            }}
-                            className="w-full bg-black text-white py-3 rounded-xl font-semibold hover:bg-gray-800 transition-all mb-3"
-                          >
-                            Request Quote
-                          </button>
-
-                          <button
-                            onClick={checkNFTMembership}
-                            disabled={isCheckingNFT}
-                            className="w-full bg-white border-2 border-black text-black py-3 rounded-xl font-semibold hover:bg-gray-50 transition-all"
-                          >
-                            {isCheckingNFT ? 'Checking...' : 'Check NFT Membership'}
-                          </button>
-
-                          <div className="mt-6 pt-6 border-t border-gray-200">
-                            <p className="text-xs text-gray-500 leading-relaxed">
-                              Our concierge team will contact you within 24 hours with exact pricing and availability. NFT members receive priority service and exclusive discounts.
-                            </p>
+                        {/* Price Summary */}
+                        <div className="p-3 bg-gray-50 rounded-lg mb-4">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-gray-500">Price Range</span>
+                            <span className="text-lg font-semibold text-gray-900">{selectedJet.totalPrice}</span>
                           </div>
                         </div>
+
+                        {/* Booking Inputs - Compact like Empty Legs */}
+                        <div className="space-y-3 mb-4">
+                          <div className="flex items-center justify-between py-2 border-b border-gray-50">
+                            <span className="text-xs text-gray-600">Passengers</span>
+                            <div className="flex items-center gap-3">
+                              <button
+                                onClick={() => setJetPassengers(Math.max(1, jetPassengers - 1))}
+                                className="w-6 h-6 rounded-full border border-gray-200 text-gray-500 hover:border-gray-900 hover:text-gray-900 text-xs flex items-center justify-center"
+                              >−</button>
+                              <span className="text-sm font-medium text-gray-900 w-4 text-center">{jetPassengers}</span>
+                              <button
+                                onClick={() => setJetPassengers(Math.min(parseInt(selectedJet.capacity) || 14, jetPassengers + 1))}
+                                className="w-6 h-6 rounded-full border border-gray-200 text-gray-500 hover:border-gray-900 hover:text-gray-900 text-xs flex items-center justify-center"
+                              >+</button>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between py-2 border-b border-gray-50">
+                            <span className="text-xs text-gray-600">Luggage</span>
+                            <div className="flex items-center gap-3">
+                              <button
+                                onClick={() => setJetLuggage(Math.max(0, jetLuggage - 1))}
+                                className="w-6 h-6 rounded-full border border-gray-200 text-gray-500 hover:border-gray-900 hover:text-gray-900 text-xs flex items-center justify-center"
+                              >−</button>
+                              <span className="text-sm font-medium text-gray-900 w-4 text-center">{jetLuggage}</span>
+                              <button
+                                onClick={() => setJetLuggage(jetLuggage + 1)}
+                                className="w-6 h-6 rounded-full border border-gray-200 text-gray-500 hover:border-gray-900 hover:text-gray-900 text-xs flex items-center justify-center"
+                              >+</button>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between py-2">
+                            <span className="text-xs text-gray-600">Pet onboard</span>
+                            <button
+                              onClick={() => setJetHasPet(!jetHasPet)}
+                              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                                jetHasPet
+                                  ? 'bg-gray-900 text-white'
+                                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                              }`}
+                            >
+                              {jetHasPet ? 'Yes' : 'No'}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Action Button - Clean like Empty Legs */}
+                        <button
+                          onClick={() => {
+                            setBookingVehicleType('private-jet');
+                            setActiveCategory('private-jet');
+                          }}
+                          className="w-full bg-gray-900 text-white py-3 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                        >
+                          Get a Quote
+                        </button>
+
+                        <p className="text-[10px] text-gray-400 text-center mt-3">
+                          No commitment · Free quote within 2 hours
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -7636,10 +7646,10 @@ const TokenizedAssetsGlassmorphic = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Max Price (€)</label>
+                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Max Price ($)</label>
                     <input
                       type="number"
-                      placeholder="€8000"
+                      placeholder="$8000"
                       value={helicoptersMaxPrice}
                       onChange={(e) => setHelicoptersMaxPrice(e.target.value)}
                       className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
@@ -8041,247 +8051,189 @@ const TokenizedAssetsGlassmorphic = () => {
                 </div>
               )}
 
-              {/* Helicopter Detail View */}
+              {/* Helicopter Detail View - Modern Monochromatic Layout (EXACTLY like Empty Legs) */}
               {showHelicopterDetail && selectedHelicopter && (() => {
                 const rawData = selectedHelicopter.rawData || {};
+                // Get all helicopter images for gallery
+                const heliImages = [];
+                if (selectedHelicopter.image) heliImages.push(selectedHelicopter.image);
+                if (rawData.images && Array.isArray(rawData.images)) {
+                  rawData.images.forEach(img => {
+                    if (img && !heliImages.includes(img)) heliImages.push(img);
+                  });
+                }
+                if (rawData.image_url && !heliImages.includes(rawData.image_url)) heliImages.push(rawData.image_url);
+                const currentHeliImage = heliImages[currentHelicopterImageIndex] || selectedHelicopter.image;
+
                 return (
-                  <div className="w-full max-w-7xl">
-                    {/* Header with Image and Info */}
-                    <div className="bg-white/35 rounded-lg border border-gray-300/50 mb-6 overflow-hidden" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                      <div className="grid grid-cols-2 gap-0">
-                        {/* Left: Helicopter Image */}
-                        <div className="relative h-96">
-                          <img src={selectedHelicopter.image} alt={selectedHelicopter.name} className="w-full h-full object-cover" />
-                          <div className="absolute top-4 left-4 flex gap-2">
-                            <span className="bg-white px-3 py-1 rounded-full text-xs font-medium">● Available</span>
-                            <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-medium">🚁 Helicopter</span>
+                  <div className="w-full">
+                    {/* Compact Header Card */}
+                    <div className="bg-white rounded-xl border border-gray-100 mb-4 overflow-hidden shadow-sm">
+                      {/* Image - Full width with gallery */}
+                      <div className="relative h-40 md:h-52 bg-gray-100">
+                        <img
+                          src={currentHeliImage}
+                          alt={selectedHelicopter.name}
+                          className="w-full h-full object-cover"
+                        />
+                        {/* Gallery Navigation */}
+                        {heliImages.length > 1 && (
+                          <>
+                            <button
+                              onClick={() => setCurrentHelicopterImageIndex(prev => prev === 0 ? heliImages.length - 1 : prev - 1)}
+                              className="absolute left-3 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white text-black w-8 h-8 rounded-full flex items-center justify-center shadow-lg text-sm transition-all"
+                            >←</button>
+                            <button
+                              onClick={() => setCurrentHelicopterImageIndex(prev => prev === heliImages.length - 1 ? 0 : prev + 1)}
+                              className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white text-black w-8 h-8 rounded-full flex items-center justify-center shadow-lg text-sm transition-all"
+                            >→</button>
+                            <div className="absolute bottom-3 right-3 bg-black/60 text-white px-2 py-1 rounded text-xs">
+                              {currentHelicopterImageIndex + 1} / {heliImages.length}
+                            </div>
+                          </>
+                        )}
+                        {/* Minimal badges */}
+                        <div className="absolute top-3 left-3 flex gap-1.5">
+                          <span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full text-[10px] font-medium border border-emerald-200">Available</span>
+                          <span className="bg-gray-900 text-white px-2 py-0.5 rounded-full text-[10px] font-medium">Helicopter</span>
+                        </div>
+                      </div>
+
+                      {/* Helicopter Info - Compact */}
+                      <div className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-base">
+                            🚁
+                          </div>
+                          <div className="flex-1">
+                            <h1 className="text-sm font-medium text-gray-900">{selectedHelicopter.name}</h1>
+                            <p className="text-xs text-gray-500">{selectedHelicopter.location || 'Global'} · {selectedHelicopter.category}</p>
                           </div>
                         </div>
 
-                        {/* Right: Helicopter Info */}
-                        <div className="flex-1 p-5 flex flex-col">
-                          <span className="bg-black text-white px-2 py-1 rounded text-xs font-semibold uppercase w-fit">PCX HELICOPTER</span>
-                          <h1 className="text-2xl font-semibold mb-4 text-gray-900">{selectedHelicopter.name}</h1>
-
-                          {/* Tabs */}
-                          <div className="flex space-x-6 border-b border-gray-300/50 mb-4">
-                            <button className="pb-3 text-sm font-medium text-gray-800 border-b-2 border-gray-800">Details</button>
+                        {/* Key Metrics Row */}
+                        <div className="flex items-center gap-4 pt-3 border-t border-gray-50">
+                          <div className="flex-1">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Category</p>
+                            <p className="text-sm font-medium text-gray-900">{selectedHelicopter.category}</p>
                           </div>
-
-                          {/* Key Info Grid */}
-                          <div className="grid grid-cols-2 gap-4 mb-4">
-                            <div>
-                              <p className="text-xs text-gray-600 mb-1">Hourly Rate</p>
-                              <p className="text-base font-semibold text-gray-800">{selectedHelicopter.totalPrice}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-600 mb-1">Capacity</p>
-                              <p className="text-base font-semibold text-gray-800">{selectedHelicopter.capacity}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-600 mb-1">Location</p>
-                              <p className="text-base font-semibold text-gray-800">{selectedHelicopter.location || 'Global'}</p>
-                            </div>
+                          <div className="flex-1">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Capacity</p>
+                            <p className="text-sm font-medium text-gray-900">{selectedHelicopter.capacity}</p>
                           </div>
-
+                          <div className="flex-1">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Rate</p>
+                            <p className="text-sm font-semibold text-gray-900">{selectedHelicopter.totalPrice}</p>
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Bottom Section: Helicopter Details + Booking */}
-                    <div className="grid grid-cols-3 gap-6">
-                      {/* Left: Helicopter Details */}
-                      <div className="col-span-2 bg-white/35 rounded-lg border border-gray-300/50 p-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                        <h2 className="text-lg font-semibold text-gray-900 mb-6">Helicopter Details</h2>
+                    {/* Details Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {/* Helicopter Details Card */}
+                      <div className="md:col-span-2 bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+                        <h2 className="text-sm font-medium text-gray-900 mb-4">Helicopter Details</h2>
 
-                        <div className="grid grid-cols-2 gap-6 mb-6">
-                          <div>
-                            <p className="text-xs text-gray-600 mb-1">Model</p>
-                            <p className="text-sm font-semibold text-gray-800">{selectedHelicopter.name}</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="py-2 border-b border-gray-50">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Model</p>
+                            <p className="text-sm text-gray-900">{selectedHelicopter.name}</p>
                           </div>
-                          <div>
-                            <p className="text-xs text-gray-600 mb-1">Status</p>
-                            <p className="text-sm font-semibold text-gray-800">Available</p>
+                          <div className="py-2 border-b border-gray-50">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Status</p>
+                            <p className="text-sm text-gray-900">Available</p>
                           </div>
-                          <div>
-                            <p className="text-xs text-gray-600 mb-1">Base Location</p>
-                            <p className="text-sm font-semibold text-gray-800">{rawData.base_location || 'Multiple locations'}</p>
+                          <div className="py-2 border-b border-gray-50">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Base Location</p>
+                            <p className="text-sm text-gray-900">{rawData.base_location || selectedHelicopter.location || 'Multiple locations'}</p>
                           </div>
-                          <div>
-                            <p className="text-xs text-gray-600 mb-1">Passengers</p>
-                            <p className="text-sm font-semibold text-gray-800">{rawData.capacity || selectedHelicopter.capacity}</p>
+                          <div className="py-2 border-b border-gray-50">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Capacity</p>
+                            <p className="text-sm text-gray-900">{rawData.capacity || selectedHelicopter.capacity}</p>
                           </div>
-                          <div>
-                            <p className="text-xs text-gray-600 mb-1">Hourly Rate</p>
-                            <p className="text-sm font-semibold text-gray-800">{selectedHelicopter.totalPrice}</p>
+                          <div className="py-2 border-b border-gray-50">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Range</p>
+                            <p className="text-sm text-gray-900">{rawData.range || selectedHelicopter.range || 'N/A'}</p>
                           </div>
-                          <div>
-                            <p className="text-xs text-gray-600 mb-1">Range</p>
-                            <p className="text-sm font-semibold text-gray-800">{rawData.range || selectedHelicopter.range || '690 km'}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-600 mb-1">Cruise Speed</p>
-                            <p className="text-sm font-semibold text-gray-800">{rawData.cruise_speed || selectedHelicopter.speed || '220 km/h'}</p>
+                          <div className="py-2 border-b border-gray-50">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Cruise Speed</p>
+                            <p className="text-sm text-gray-900">{rawData.cruise_speed || selectedHelicopter.speed || 'N/A'}</p>
                           </div>
                         </div>
-
-                        <h3 className="text-base font-semibold text-gray-900 mb-3">Description</h3>
-                        <p className="text-sm text-gray-700 leading-relaxed">
-                          {rawData.description || 'The Bell 206 JetRanger is a versatile light helicopter offering panoramic views through large windows. It features a spacious cabin with comfortable seating, low noise levels, and smooth flight characteristics. Popular for executive transport, sightseeing tours, and charter flights, it provides an excellent introduction to helicopter travel with reliable performance and safety record.'}
-                        </p>
                       </div>
 
-                      {/* Right: Book This Helicopter */}
-                      <div className="bg-white/35 rounded-lg border border-gray-300/50 p-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                        <h2 className="text-lg font-semibold text-gray-900 mb-6">Book This Helicopter</h2>
+                      {/* Right: Request Quote Sidebar - Minimal like Empty Legs */}
+                      <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+                        <h2 className="text-sm font-medium text-gray-900 mb-4">Request a Quote</h2>
 
-                        <div className="space-y-4 mb-6">
-                          <div>
-                            <label className="block text-xs text-gray-600 mb-2">Hourly Rate:</label>
-                            <p className="text-xl font-bold text-gray-900">{selectedHelicopter.totalPrice}</p>
-                          </div>
-                          <div>
-                            <label className="block text-xs text-gray-600 mb-2">Max Capacity</label>
-                            <p className="text-base font-semibold text-gray-800">{selectedHelicopter.capacity}</p>
+                        {/* Price Summary */}
+                        <div className="p-3 bg-gray-50 rounded-lg mb-4">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-gray-500">Hourly Rate</span>
+                            <span className="text-lg font-semibold text-gray-900">{selectedHelicopter.totalPrice}</span>
                           </div>
                         </div>
 
-                        <div className="space-y-3 mb-6">
-                          <h3 className="text-sm font-semibold text-gray-900">Charter Details</h3>
-
-                          {/* Departure Location */}
-                          <div className="relative">
-                            <label className="block text-xs text-gray-600 mb-2">Departure (Airport or Address)</label>
-                            <div className="relative">
-                              <MapPin size={14} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-500" />
-                              <input
-                                type="text"
-                                value={helicopterDepartureInput}
-                                onChange={(e) => {
-                                  setHelicopterDepartureInput(e.target.value);
-                                  setHelicopterDeparture(null);
-                                  searchHelicopterDeparture(e.target.value);
-                                  setShowHelicopterDepartureDropdown(true);
-                                }}
-                                onFocus={() => {
-                                  if (helicopterDepartureInput.length >= 2) {
-                                    setShowHelicopterDepartureDropdown(true);
-                                  }
-                                }}
-                                placeholder="Search airport or enter address..."
-                                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
-                              />
-                            </div>
-                            {showHelicopterDepartureDropdown && (helicopterDepartureResults.length > 0 || isSearchingHelicopterDeparture) && (
-                              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                                {isSearchingHelicopterDeparture ? (
-                                  <div className="px-3 py-2 text-sm text-gray-500">Searching...</div>
-                                ) : (
-                                  helicopterDepartureResults.map((airport) => (
-                                    <button
-                                      key={airport.code || airport.name}
-                                      onClick={() => selectHelicopterDeparture(airport)}
-                                      className="w-full px-3 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-0"
-                                    >
-                                      <div className="text-sm font-medium text-gray-900">{airport.name}</div>
-                                      <div className="text-xs text-gray-500">
-                                        {airport.code && `${airport.code} · `}{airport.city}{airport.country ? `, ${airport.country}` : ''}
-                                      </div>
-                                    </button>
-                                  ))
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Destination Location */}
-                          <div className="relative">
-                            <label className="block text-xs text-gray-600 mb-2">Destination (Airport or Address)</label>
-                            <div className="relative">
-                              <MapPin size={14} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-red-500" />
-                              <input
-                                type="text"
-                                value={helicopterDestinationInput}
-                                onChange={(e) => {
-                                  setHelicopterDestinationInput(e.target.value);
-                                  setHelicopterDestination(null);
-                                  searchHelicopterDestination(e.target.value);
-                                  setShowHelicopterDestinationDropdown(true);
-                                }}
-                                onFocus={() => {
-                                  if (helicopterDestinationInput.length >= 2) {
-                                    setShowHelicopterDestinationDropdown(true);
-                                  }
-                                }}
-                                placeholder="Search airport or enter address..."
-                                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
-                              />
-                            </div>
-                            {showHelicopterDestinationDropdown && (helicopterDestinationResults.length > 0 || isSearchingHelicopterDestination) && (
-                              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                                {isSearchingHelicopterDestination ? (
-                                  <div className="px-3 py-2 text-sm text-gray-500">Searching...</div>
-                                ) : (
-                                  helicopterDestinationResults.map((airport) => (
-                                    <button
-                                      key={airport.code || airport.name}
-                                      onClick={() => selectHelicopterDestination(airport)}
-                                      className="w-full px-3 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-0"
-                                    >
-                                      <div className="text-sm font-medium text-gray-900">{airport.name}</div>
-                                      <div className="text-xs text-gray-500">
-                                        {airport.code && `${airport.code} · `}{airport.city}{airport.country ? `, ${airport.country}` : ''}
-                                      </div>
-                                    </button>
-                                  ))
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          <div>
-                            <label className="block text-xs text-gray-600 mb-2">Passengers</label>
-                            <div className="flex items-center justify-between border border-gray-300 rounded px-3 py-2">
+                        {/* Booking Inputs - Compact like Empty Legs */}
+                        <div className="space-y-3 mb-4">
+                          <div className="flex items-center justify-between py-2 border-b border-gray-50">
+                            <span className="text-xs text-gray-600">Passengers</span>
+                            <div className="flex items-center gap-3">
                               <button
                                 onClick={() => setHelicopterPassengers(Math.max(1, helicopterPassengers - 1))}
-                                className="text-gray-600 hover:text-gray-900"
+                                className="w-6 h-6 rounded-full border border-gray-200 text-gray-500 hover:border-gray-900 hover:text-gray-900 text-xs flex items-center justify-center"
                               >−</button>
-                              <span className="text-sm font-medium">{helicopterPassengers}</span>
+                              <span className="text-sm font-medium text-gray-900 w-4 text-center">{helicopterPassengers}</span>
                               <button
-                                onClick={() => setHelicopterPassengers(Math.min(selectedHelicopter?.capacity || 10, helicopterPassengers + 1))}
-                                className="text-gray-600 hover:text-gray-900"
+                                onClick={() => setHelicopterPassengers(Math.min(parseInt(selectedHelicopter?.capacity) || 10, helicopterPassengers + 1))}
+                                className="w-6 h-6 rounded-full border border-gray-200 text-gray-500 hover:border-gray-900 hover:text-gray-900 text-xs flex items-center justify-center"
                               >+</button>
                             </div>
                           </div>
-
-                          <div>
-                            <label className="block text-xs text-gray-600 mb-2">Special Requests (optional)</label>
-                            <textarea
-                              value={helicopterSpecialRequests}
-                              onChange={(e) => setHelicopterSpecialRequests(e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded text-sm resize-none"
-                              rows="3"
-                              placeholder="Landing site preferences, special equipment, etc."
-                            ></textarea>
+                          <div className="flex items-center justify-between py-2 border-b border-gray-50">
+                            <span className="text-xs text-gray-600">Luggage</span>
+                            <div className="flex items-center gap-3">
+                              <button
+                                onClick={() => setHelicopterLuggage(Math.max(0, helicopterLuggage - 1))}
+                                className="w-6 h-6 rounded-full border border-gray-200 text-gray-500 hover:border-gray-900 hover:text-gray-900 text-xs flex items-center justify-center"
+                              >−</button>
+                              <span className="text-sm font-medium text-gray-900 w-4 text-center">{helicopterLuggage}</span>
+                              <button
+                                onClick={() => setHelicopterLuggage(helicopterLuggage + 1)}
+                                className="w-6 h-6 rounded-full border border-gray-200 text-gray-500 hover:border-gray-900 hover:text-gray-900 text-xs flex items-center justify-center"
+                              >+</button>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between py-2">
+                            <span className="text-xs text-gray-600">Pet onboard</span>
+                            <button
+                              onClick={() => setHelicopterHasPet(!helicopterHasPet)}
+                              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                                helicopterHasPet
+                                  ? 'bg-gray-900 text-white'
+                                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                              }`}
+                            >
+                              {helicopterHasPet ? 'Yes' : 'No'}
+                            </button>
                           </div>
                         </div>
 
-                        <div className="space-y-2 mb-4 text-sm border-t border-gray-300 pt-4">
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Hourly Rate:</span>
-                            <span className="font-bold text-gray-900">{selectedHelicopter.totalPrice}</span>
-                          </div>
-                        </div>
-
+                        {/* Action Button - Clean like Empty Legs */}
                         <button
-                          onClick={requestHelicopterCharter}
-                          disabled={helicopterSubmitting || helicopterSubmitSuccess}
-                          className="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition-all mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={() => {
+                            setBookingVehicleType('helicopter');
+                            setActiveCategory('private-jet');
+                          }}
+                          className="w-full bg-gray-900 text-white py-3 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
                         >
-                          {helicopterSubmitting ? 'Submitting...' : helicopterSubmitSuccess ? 'Request Sent ✓' : 'Request Charter'}
+                          Get a Quote
                         </button>
 
-                        <p className="text-xs text-gray-500 text-center">Helicopter ID: {rawData.id || 'N/A'}</p>
+                        <p className="text-[10px] text-gray-400 text-center mt-3">
+                          No commitment · Free quote within 2 hours
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -8365,27 +8317,12 @@ const TokenizedAssetsGlassmorphic = () => {
               {/* Filters - Glassmorphic - Mobile Optimized */}
               {!showEmptyLegDetail && emptyLegsFiltersVisible && (
                 <div className="bg-gray-100/60 rounded-lg border border-gray-300/50 p-3 md:p-5 mb-4 md:mb-6 backdrop-blur-xl transition-all duration-300" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
                   <div>
-                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Region</label>
-                    <select
-                      value={emptyLegsFilter}
-                      onChange={(e) => setEmptyLegsFilter(e.target.value)}
-                      className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    >
-                      <option value="all">All Regions</option>
-                      <option value="europe">Europe</option>
-                      <option value="usa">USA</option>
-                      <option value="asia">Asia</option>
-                      <option value="africa">Africa</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Location</label>
+                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">IATA / Location</label>
                     <input
                       type="text"
-                      placeholder="e.g. LHR"
+                      placeholder="e.g. LHR, NCE, Paris"
                       value={emptyLegsLocation}
                       onChange={(e) => setEmptyLegsLocation(e.target.value)}
                       className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
@@ -8406,20 +8343,19 @@ const TokenizedAssetsGlassmorphic = () => {
                     <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Max Price</label>
                     <input
                       type="number"
-                      placeholder="€5000"
+                      placeholder="$5000"
                       value={emptyLegsMaxPrice}
                       onChange={(e) => setEmptyLegsMaxPrice(e.target.value)}
                       className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     />
                   </div>
-                  <div className="col-span-2 md:col-span-1 flex items-end">
+                  <div className="flex items-end">
                     <button
                       onClick={() => {
                         setEmptyLegsLocation('');
                         setEmptyLegsDate('');
                         setEmptyLegsMaxPrice('');
-                        setEmptyLegsFilter('all');
                       }}
                       className="w-full px-3 md:px-4 py-2 md:py-2.5 bg-white/35 hover:bg-white/40 border border-gray-300/50 text-gray-700 rounded-lg md:rounded-xl text-xs md:text-sm transition-all"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
@@ -8747,6 +8683,7 @@ const TokenizedAssetsGlassmorphic = () => {
                                 <span className="bg-green-500 text-white px-1.5 py-0.5 rounded text-[9px] font-bold animate-pulse">FREE</span>
                               )}
                             </div>
+                            <p className="text-[10px] text-gray-500 mb-0.5">{leg.subtitle}</p>
                             <p className="text-[10px] text-gray-600 mb-1">{leg.category}</p>
                             <div className="text-xs font-medium text-gray-800">{leg.totalPrice}</div>
                           </div>
@@ -8781,6 +8718,7 @@ const TokenizedAssetsGlassmorphic = () => {
                               <span className="bg-green-500 text-white px-2 py-0.5 rounded text-[10px] font-bold animate-pulse">FREE with NFT</span>
                             )}
                           </div>
+                          <p className="text-xs text-gray-500">{leg.subtitle}</p>
                           <p className="text-xs text-gray-600">{leg.category}</p>
                         </div>
 
@@ -8882,7 +8820,7 @@ const TokenizedAssetsGlassmorphic = () => {
               {showEmptyLegDetail && selectedEmptyLeg && (() => {
                 const rawData = selectedEmptyLeg.rawData || {};
                 return (
-                  <div className="w-full max-w-5xl mx-auto">
+                  <div className="w-full">
                     {/* Compact Header Card */}
                     <div className="bg-white rounded-xl border border-gray-100 mb-4 overflow-hidden shadow-sm">
                       {/* Image - Smaller on desktop */}
@@ -8954,7 +8892,7 @@ const TokenizedAssetsGlassmorphic = () => {
                           </div>
                           <div className="py-2 border-b border-gray-50">
                             <p className="text-[10px] text-gray-400 uppercase tracking-wide">Aircraft</p>
-                            <p className="text-sm text-gray-900">{rawData.category || rawData.aircraft_type || 'Private Jet'}</p>
+                            <p className="text-sm text-gray-900">{rawData.aircraft_type || rawData.category || 'Private Jet'}</p>
                           </div>
                           <div className="py-2 border-b border-gray-50">
                             <p className="text-[10px] text-gray-400 uppercase tracking-wide">Passengers</p>
@@ -9068,7 +9006,7 @@ const TokenizedAssetsGlassmorphic = () => {
                           serviceId={selectedEmptyLeg?.rawData?.id || selectedEmptyLeg?.id}
                           serviceTitle={`${selectedEmptyLeg?.from} → ${selectedEmptyLeg?.to}`}
                           serviceDescription={selectedEmptyLeg?.aircraft || 'Empty Leg Flight'}
-                          price={selectedEmptyLeg?.rawData?.price_usd || selectedEmptyLeg?.rawData?.price || parseFloat(selectedEmptyLeg?.totalPrice?.replace(/[^0-9.]/g, '') || 0)}
+                          price={selectedEmptyLeg?.rawData?.price || parseFloat(selectedEmptyLeg?.totalPrice?.replace(/[^0-9.]/g, '') || 0)}
                           currency="USD"
                           imageUrl={selectedEmptyLeg?.image}
                           origin={selectedEmptyLeg?.from}
@@ -9257,7 +9195,7 @@ const TokenizedAssetsGlassmorphic = () => {
                       <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Max Price</label>
                       <input
                         type="number"
-                        placeholder="€50000"
+                        placeholder="$50000"
                         value={adventuresMaxPrice}
                         onChange={(e) => setAdventuresMaxPrice(e.target.value)}
                         className="w-full px-2 md:px-3 py-2 md:py-2.5 border border-gray-300/50 rounded-lg bg-white/60 text-xs md:text-sm text-gray-600 focus:ring-2 focus:ring-gray-300 focus:border-transparent transition-all"
@@ -9919,11 +9857,11 @@ const TokenizedAssetsGlassmorphic = () => {
                               <>
                                 <div className="flex justify-between text-sm">
                                   <span className="text-gray-600">Base Price</span>
-                                  <span className="text-gray-900">€{(rawData.price / 1.081).toFixed(2)}</span>
+                                  <span className="text-gray-900">${(rawData.price / 1.081).toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                   <span className="text-gray-600">VAT (8.1%)</span>
-                                  <span className="text-gray-900">€{(rawData.price - (rawData.price / 1.081)).toFixed(2)}</span>
+                                  <span className="text-gray-900">${(rawData.price - (rawData.price / 1.081)).toFixed(2)}</span>
                                 </div>
 
                                 {/* PVCX Earnings Box */}
@@ -9939,7 +9877,7 @@ const TokenizedAssetsGlassmorphic = () => {
 
                                 <div className="flex justify-between text-base pt-2 border-t border-gray-300">
                                   <span className="font-semibold text-gray-900">Final Price</span>
-                                  <span className="font-semibold text-gray-900">€{rawData.price.toFixed(2)}</span>
+                                  <span className="font-semibold text-gray-900">${rawData.price.toFixed(2)}</span>
                                 </div>
                               </>
                             ) : (
@@ -9982,7 +9920,7 @@ const TokenizedAssetsGlassmorphic = () => {
                                 difficulty_level: offer.difficulty_level,
                                 package_type: offer.package_type,
                                 passengers: offer.passengers || offer.max_participants,
-                                currency: offer.currency || 'EUR',
+                                currency: offer.currency || 'USD',
                                 price: offer.price || null,
                                 price_on_request: offer.price_on_request || !offer.price,
                                 description: offer.description,
@@ -10057,7 +9995,7 @@ const TokenizedAssetsGlassmorphic = () => {
 
                             setCryptoPaymentData({
                               amount: finalPrice,
-                              currency: offer.currency || 'EUR',
+                              currency: offer.currency || 'USD',
                               title: offer.title || selectedAdventure?.name || 'Adventure Package',
                               description: `${offer.destination || selectedAdventure?.location} - ${offer.duration || 'Flexible duration'}`,
                               orderId: `ADV-${offer.id}-${Date.now()}`,
@@ -10076,7 +10014,7 @@ const TokenizedAssetsGlassmorphic = () => {
                                 difficulty_level: offer.difficulty_level,
                                 package_type: offer.package_type,
                                 passengers: offer.passengers || offer.max_participants,
-                                currency: offer.currency || 'EUR',
+                                currency: offer.currency || 'USD',
                                 price: basePrice,
                                 final_price: finalPrice,
                                 nft_discount_applied: hasNFT ? nftDiscount : 0,
@@ -10283,7 +10221,7 @@ const TokenizedAssetsGlassmorphic = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-800 mb-2">Max Price/Day (€)</label>
+                      <label className="block text-xs font-medium text-gray-800 mb-2">Max Price/Day ($)</label>
                       <input
                         type="number"
                         placeholder="e.g. 1000"
@@ -10606,9 +10544,9 @@ const TokenizedAssetsGlassmorphic = () => {
               {/* Luxury Car Detail View - Full Layout */}
               {showLuxuryCarDetail && selectedLuxuryCar && (() => {
                 const car = selectedLuxuryCar.rawData || {};
-                const priceDayLabel = car.price_per_day ? `€${car.price_per_day?.toLocaleString()}/day` : 'On Request';
-                const priceHourLabel = car.price_per_hour ? `€${car.price_per_hour?.toLocaleString()}/hr` : 'On Request';
-                const priceWeekLabel = car.price_per_week ? `€${car.price_per_week?.toLocaleString()}/wk` : 'On Request';
+                const priceDayLabel = car.price_per_day ? `$${Math.round(convertToUSD(car.price_per_day, 'EUR')).toLocaleString()}/day` : 'On Request';
+                const priceHourLabel = car.price_per_hour ? `$${Math.round(convertToUSD(car.price_per_hour, 'EUR')).toLocaleString()}/hr` : 'On Request';
+                const priceWeekLabel = car.price_per_week ? `$${Math.round(convertToUSD(car.price_per_week, 'EUR')).toLocaleString()}/wk` : 'On Request';
                 return (
                   <div className="w-full max-w-7xl">
                     {/* Header Section with Image and Main Info */}
@@ -10868,7 +10806,7 @@ const TokenizedAssetsGlassmorphic = () => {
                                 transmission: car.transmission,
                                 fuel_type: car.fuel_type,
                                 seats: car.seats,
-                                currency: 'EUR',
+                                currency: 'USD',
                                 price_per_day: car.price_per_day ?? null,
                                 price_per_hour: car.price_per_hour ?? null,
                                 price_per_week: car.price_per_week ?? null,
@@ -10955,7 +10893,10 @@ const TokenizedAssetsGlassmorphic = () => {
               userNFTs={userNFTs}
               onRequestWalletConnect={handleWalletConnect}
               initialQuery={aiChatQuery}
-              onQueryProcessed={() => setAiChatQuery('')}
+              onQueryProcessed={() => {
+                console.log('📭 onQueryProcessed called, clearing aiChatQuery');
+                setAiChatQuery('');
+              }}
               initialAssistantMessage={aiAssistantMessage}
               onAssistantMessageProcessed={() => setAiAssistantMessage('')}
               cartItems={cartItems}
@@ -10963,8 +10904,8 @@ const TokenizedAssetsGlassmorphic = () => {
               onBack={() => {
                 setActiveChat(null);
                 setActiveCategory('chat-history');
-                // Navigate to dashboard to clear chat URL and prevent URL sync from overriding
-                navigate('/dashboard', { replace: true });
+                // Update URL to dashboard to clear chat URL and prevent URL sync from overriding
+                window.history.replaceState({}, '', '/dashboard');
               }}
             />
           )}
@@ -11017,6 +10958,7 @@ const TokenizedAssetsGlassmorphic = () => {
                     onClick={() => {
                       setActiveChat('new');
                       setActiveCategory('chat');
+                      window.history.pushState({}, '', '/dashboard/chat');
                     }}
                     className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-all inline-flex items-center gap-2"
                   >
@@ -11046,6 +10988,7 @@ const TokenizedAssetsGlassmorphic = () => {
                         setActiveChat(selectedChatForView.id);
                         setActiveCategory('chat');
                         setSelectedChatForView(null);
+                        window.history.pushState({}, '', `/dashboard/chat/${selectedChatForView.id}`);
                       }}
                       className="px-4 py-2 bg-black text-white text-sm rounded-lg hover:bg-gray-800 transition-all flex items-center gap-2"
                     >
@@ -11246,6 +11189,7 @@ const TokenizedAssetsGlassmorphic = () => {
                     onClick={() => {
                       setActiveChat('new');
                       setActiveCategory('chat');
+                      window.history.pushState({}, '', '/dashboard/chat');
                     }}
                     className="px-6 py-2.5 bg-black text-white rounded-xl hover:bg-gray-800 transition-all inline-flex items-center gap-2"
                   >

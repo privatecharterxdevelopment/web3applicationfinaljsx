@@ -9,6 +9,7 @@ import { createRequest } from '../../services/requests';
 import SuccessNotification from '../SuccessNotification';
 import { useNFT } from '../../context/NFTContext';
 import NFTBenefitsModal from '../NFTBenefitsModal';
+import { convertToUSD, initializeExchangeRates } from '../../services/currencyService';
 
 const HelicopterDetail = () => {
   const { id } = useParams();
@@ -17,6 +18,7 @@ const HelicopterDetail = () => {
   const { open } = useAppKit();
   const { hasNFT, nftDiscount, isCheckingNFT, checkNFTMembership, showNFTModal, closeNFTModal, nfts, usedBenefits, incrementDiscountUsage } = useNFT();
   const [helicopter, setHelicopter] = useState(null);
+  const [hourlyRateUSD, setHourlyRateUSD] = useState(0);
   const [activeTab, setActiveTab] = useState('details');
   const [isLoading, setIsLoading] = useState(true);
   const [passengers, setPassengers] = useState(1);
@@ -36,6 +38,9 @@ const HelicopterDetail = () => {
   const fetchHelicopter = async () => {
     setIsLoading(true);
     try {
+      // Initialize exchange rates first
+      await initializeExchangeRates();
+
       const { data, error } = await supabase
         .from('helicopter_charters')
         .select('*')
@@ -44,6 +49,11 @@ const HelicopterDetail = () => {
 
       if (error) throw error;
       setHelicopter(data);
+
+      // Convert EUR price to USD
+      const priceEUR = data.price ? parseFloat(data.price) : 0;
+      const convertedPrice = convertToUSD(priceEUR, 'EUR');
+      setHourlyRateUSD(convertedPrice);
     } catch (error) {
       console.error('Error fetching helicopter:', error);
       navigate('/dashboard?tab=helicopter');
@@ -66,8 +76,8 @@ const HelicopterDetail = () => {
         return;
       }
 
-      const hourlyRate = helicopter.price ? parseFloat(helicopter.price) : 0;
-      const totalPrice = hourlyRate * flightDuration;
+      // Use USD converted price
+      const totalPrice = hourlyRateUSD * flightDuration;
       const discountedPrice = hasNFT ? totalPrice * (1 - nftDiscount / 100) : totalPrice;
 
       // Validate required fields
@@ -98,10 +108,11 @@ const HelicopterDetail = () => {
             location: helicopter.location,
             passengers,
             flight_duration: flightDuration,
-            hourly_rate: hourlyRate,
+            hourly_rate: hourlyRateUSD,
             total_price: totalPrice,
             discounted_price: discountedPrice,
             price: discountedPrice,
+            currency: 'USD',
             has_nft: hasNFT,
             nft_discount: nftDiscount,
             special_requests: specialRequests,
@@ -146,9 +157,9 @@ const HelicopterDetail = () => {
     }
   };
 
-  const hourlyRate = helicopter && helicopter.price ? parseFloat(helicopter.price) : 0;
-  const totalPrice = hourlyRate * flightDuration;
-  const finalPrice = hasNFT ? totalPrice * (1 - nftDiscount / 100) : totalPrice;
+  // Use USD converted price for display
+  const totalPriceDisplay = hourlyRateUSD * flightDuration;
+  const finalPriceDisplay = hasNFT ? totalPriceDisplay * (1 - nftDiscount / 100) : totalPriceDisplay;
 
   return (
     <div className="min-h-screen bg-gray-50 font-['DM_Sans']">
@@ -302,7 +313,7 @@ const HelicopterDetail = () => {
               <div className="flex justify-between mt-auto mb-5">
                 <div className="flex flex-col space-y-1">
                   <span className="text-xs text-gray-500">Hourly Rate</span>
-                  <span className="text-sm font-semibold text-black">€{helicopter.price ? parseFloat(helicopter.price).toLocaleString() : 'N/A'}</span>
+                  <span className="text-sm font-semibold text-black">${Math.round(hourlyRateUSD).toLocaleString() || 'N/A'}</span>
                 </div>
                 <div className="flex flex-col space-y-1">
                   <span className="text-xs text-gray-500">Capacity</span>
@@ -350,7 +361,7 @@ const HelicopterDetail = () => {
                     </div>
                     <div className="border-b border-gray-100 pb-2">
                       <div className="text-xs text-gray-500 font-medium">Hourly Rate</div>
-                      <div className="text-sm font-semibold text-black">€{helicopter.price ? parseFloat(helicopter.price).toLocaleString() : 'N/A'}</div>
+                      <div className="text-sm font-semibold text-black">${Math.round(hourlyRateUSD).toLocaleString() || 'N/A'}</div>
                     </div>
                     <div className="border-b border-gray-100 pb-2">
                       <div className="text-xs text-gray-500 font-medium">Range</div>
@@ -465,7 +476,7 @@ const HelicopterDetail = () => {
               <div className="space-y-3 mb-5">
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-500">Hourly Rate</span>
-                  <span className="text-xs font-semibold text-black">€{hourlyRate.toLocaleString()}</span>
+                  <span className="text-xs font-semibold text-black">${Math.round(hourlyRateUSD).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-500">Max Capacity</span>
@@ -607,7 +618,7 @@ const HelicopterDetail = () => {
               <div className="p-3 bg-gray-50 rounded mb-4">
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-gray-500">Hourly Rate:</span>
-                  <span className="font-semibold text-black">€{helicopter.hourly_rate?.toLocaleString()}</span>
+                  <span className="font-semibold text-black">${Math.round(hourlyRateUSD).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-gray-500">Duration:</span>
@@ -615,17 +626,17 @@ const HelicopterDetail = () => {
                 </div>
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-gray-500">Subtotal:</span>
-                  <span className="font-semibold text-black">€{totalPrice.toLocaleString()}</span>
+                  <span className="font-semibold text-black">${Math.round(totalPriceDisplay).toLocaleString()}</span>
                 </div>
                 {hasNFT && (
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-gray-600">NFT Discount ({nftDiscount}%):</span>
-                    <span className="font-semibold text-black">-€{(totalPrice * nftDiscount / 100).toLocaleString()}</span>
+                    <span className="font-semibold text-black">-${Math.round(totalPriceDisplay * nftDiscount / 100).toLocaleString()}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm font-bold border-t border-gray-200 pt-2 mt-2">
                   <span className="text-black">Total:</span>
-                  <span className="text-black">€{finalPrice.toLocaleString()}</span>
+                  <span className="text-black">${Math.round(finalPriceDisplay).toLocaleString()}</span>
                 </div>
               </div>
 

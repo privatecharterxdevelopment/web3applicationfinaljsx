@@ -217,12 +217,12 @@ export default function NotificationBell({ isOpen, setIsOpen, onNavigate, onView
 
   return (
     <>
-      {/* Dropdown Panel */}
+      {/* Dropdown Panel - Mobile Optimized */}
       {isOpen && (
-        <div ref={dropdownRef}>
-        <div className="absolute right-0 mt-2 w-96 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
+        <div ref={dropdownRef} className="fixed md:absolute inset-x-2 md:inset-x-auto md:right-0 top-16 md:top-auto md:mt-2 md:w-96 z-50">
+        <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200 overflow-hidden max-h-[calc(100vh-80px)] md:max-h-[550px] flex flex-col">
           {/* Header */}
-          <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50/50">
+          <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50/50 flex-shrink-0">
             <div className="flex items-center gap-2">
               <Bell size={16} className="text-gray-700" />
               <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
@@ -244,15 +244,15 @@ export default function NotificationBell({ isOpen, setIsOpen, onNavigate, onView
               )}
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 p-1"
               >
-                <X size={16} />
+                <X size={18} />
               </button>
             </div>
           </div>
 
           {/* Notifications List */}
-          <div className="max-h-[500px] overflow-y-auto">
+          <div className="flex-1 overflow-y-auto">
             {isLoading ? (
               <div className="p-8 text-center">
                 <div className="w-8 h-8 border-4 border-gray-200 border-t-gray-800 rounded-full animate-spin mx-auto mb-3"></div>

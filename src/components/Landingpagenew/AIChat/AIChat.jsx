@@ -224,6 +224,7 @@ const AIChat = ({
   const navigate = useNavigate();
 
   console.log('👤 User info:', { userId: user?.id, isAdmin, hasAuthContext: !!authContext });
+  console.log('📥 AIChat RENDER - initialQuery:', JSON.stringify(initialQuery), 'user.id:', user?.id);
 
   // Voice API keys (optional - voice will be skipped gracefully if missing)
   const HUME_API_KEY = (import.meta.env?.VITE_HUME_API_KEY) || '';
@@ -760,13 +761,17 @@ const AIChat = ({
 
   // Ref to track which initial queries we've already processed (prevents double-processing)
   const processedQueriesRef = useRef(new Set());
-  // Ref to store the query that's pending to be sent after chat setup
-  const pendingQueryRef = useRef(null);
-  // Ref to track the chat ID we created for the initial query
-  const initialQueryChatIdRef = useRef(null);
 
-  // Handle initial query from search - create new chat and send message
+  // Handle initial query from search - create new chat, save it, and send to AI
   useEffect(() => {
+    console.log('🔄 Initial query effect triggered:', {
+      initialQuery,
+      hasQuery: !!(initialQuery && initialQuery.trim()),
+      userId: user?.id,
+      alreadyProcessed: processedQueriesRef.current.has(initialQuery),
+      processedQueries: Array.from(processedQueriesRef.current)
+    });
+
     if (initialQuery && initialQuery.trim()) {
       // Skip if we've already processed this exact query
       if (processedQueriesRef.current.has(initialQuery)) {
@@ -774,222 +779,190 @@ const AIChat = ({
         return;
       }
 
-      console.log('📝 Initial query received:', initialQuery);
+      // Wait for user auth to be ready before creating chat
+      // This ensures the chat is saved to the database with the correct user ID
+      if (!user?.id) {
+        console.log('⏳ Waiting for user auth before processing initial query...');
+        return; // Will re-run when user?.id becomes available
+      }
 
-      // Mark this query as being processed
+      console.log('📝 Initial query received:', initialQuery, 'for user:', user.id);
+
+      // Mark this query as being processed IMMEDIATELY to prevent double-processing
       processedQueriesRef.current.add(initialQuery);
 
-      // Store the query to be sent
-      pendingQueryRef.current = initialQuery;
-
-      // Create a new chat with the initial query - include user message and loading indicator
-      const newChatId = Date.now().toString();
-      initialQueryChatIdRef.current = newChatId;
-
-      const userMessage = { role: 'user', content: initialQuery };
+      const queryToProcess = initialQuery;
+      const userMessage = { role: 'user', content: queryToProcess };
       const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
+      const title = queryToProcess.split(' ').slice(0, 5).join(' ') + '...';
 
-      const newChat = {
-        id: newChatId,
-        title: initialQuery.split(' ').slice(0, 5).join(' ') + '...',
-        date: 'Just now',
-        messages: [userMessage, loadingMsg]
-      };
+      // Create chat and immediately send to AI (all in one async flow)
+      const createChatAndSendToAI = async () => {
+        let chatId;
 
-      console.log('🆕 Creating new chat with message:', newChatId);
-
-      // Add to chat history and set as active
-      // IMPORTANT: Don't call onQueryProcessed() here - it causes a race condition
-      // The parent will clear initialQuery, but React may batch this before chatHistory updates
-      setChatHistory(prev => {
-        console.log('📚 Adding chat to history. Previous length:', prev.length);
-        return [newChat, ...prev];
-      });
-      setActiveChat(newChatId);
-
-      // Clear the initial query prop after a microtask to ensure state updates are flushed
-      // This prevents the race condition where initialQuery is cleared before chatHistory updates
-      Promise.resolve().then(() => {
-        onQueryProcessed();
-      });
-    }
-  }, [initialQuery, onQueryProcessed]);
-
-  // Process the pending query after chat is set up and active
-  useEffect(() => {
-    // Only proceed if we have a pending query and the correct chat is active
-    if (pendingQueryRef.current &&
-        initialQueryChatIdRef.current &&
-        activeChat === initialQueryChatIdRef.current) {
-
-      const query = pendingQueryRef.current;
-      const chatId = initialQueryChatIdRef.current;
-
-      // Verify the chat exists in our history
-      const chatExists = chatHistory.find(c => c.id === chatId);
-
-      if (chatExists) {
-        console.log('🚀 Processing initial query to AI:', query);
-
-        // Clear refs before sending to prevent double-send
-        pendingQueryRef.current = null;
-        initialQueryChatIdRef.current = null;
-
-        // Call Claude AI directly (message already shown in UI)
-        const processInitialQuery = async () => {
-          setIsProcessing(true);
-          try {
-            const systemPrompt = getSystemPrompt();
-            const userMessage = { role: 'user', content: query };
-
-            // Claude handles ALL searches including wines - same as empty legs, jets, etc.
-            const response = await claudeEdgeService.messages.create({
-              model: 'claude-sonnet-4-20250514',
-              max_tokens: 4096,
-              system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
-              messages: [userMessage],
-              tools: aiToolDefinitions.map((tool, index) =>
-                index === aiToolDefinitions.length - 1
-                  ? { ...tool, cache_control: { type: "ephemeral" } }
-                  : tool
-              ),
-              tool_choice: { type: "auto" }
-            });
-
-            console.log('🤖 Claude response for initial query:', response);
-
-            // Handle the response
-            if (response.stop_reason === 'tool_use') {
-              const toolUse = response.content.find(block => block.type === 'tool_use');
-              if (toolUse) {
-                console.log('🔧 Tool used:', toolUse.name, toolUse.input);
-                const toolResult = await executeTool(toolUse.name, toolUse.input);
-
-                // Get AI follow-up response
-                const followUp = await claudeEdgeService.messages.create({
-                  model: 'claude-sonnet-4-20250514',
-                  max_tokens: 1024,
-                  system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
-                  messages: [
-                    userMessage,
-                    { role: 'assistant', content: response.content },
-                    { role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUse.id, content: JSON.stringify(toolResult) }] }
-                  ]
-                });
-
-                const aiText = followUp.content.find(block => block.type === 'text')?.text || 'Here are the results!';
-                const aiMessage = { role: 'assistant', content: aiText };
-
-                // Handle results display
-                let resultsMessage = null;
-                if (toolResult.success && toolResult.results) {
-                  let tabs = [];
-                  if (toolUse.name === 'searchEmptyLegs' && toolResult.results.length > 0) {
-                    tabs.push({ id: 'emptylegs', title: 'Empty Legs', count: toolResult.results.length, items: toolResult.results });
-                  } else if (toolUse.name === 'searchPrivateJets' && toolResult.results.length > 0) {
-                    tabs.push({ id: 'jets', title: 'Private Jets', count: toolResult.results.length, items: toolResult.results });
-                  } else if (toolUse.name === 'searchHelicopters' && toolResult.results.length > 0) {
-                    tabs.push({ id: 'helicopters', title: 'Helicopters', count: toolResult.results.length, items: toolResult.results });
-                  } else if (toolUse.name === 'searchLuxuryCars' && toolResult.results.length > 0) {
-                    tabs.push({ id: 'luxury_cars', title: 'Luxury Cars', count: toolResult.results.length, items: toolResult.results });
-                  } else if (toolUse.name === 'searchWines' && toolResult.results.length > 0) {
-                    tabs.push({ id: 'wines', title: 'Wines', count: toolResult.results.length, items: toolResult.results });
-                  }
-                  if (tabs.length > 0) {
-                    resultsMessage = { role: 'results', content: JSON.stringify({ tabs }), tabs };
-                  }
-                }
-
-                // Update chat with results and AI message
-                setChatHistory(prev => {
-                  const existingChat = prev.find(c => c.id === chatId);
-                  if (!existingChat) {
-                    console.warn('⚠️ Chat not found in history during update, chatId:', chatId, '- recreating with query:', query);
-                    // Chat was lost - recreate it with the response
-                    const newChat = {
-                      id: chatId,
-                      title: query.split(' ').slice(0, 5).join(' ') + '...',
-                      date: 'Just now',
-                      messages: [
-                        { role: 'user', content: query },
-                        ...(resultsMessage ? [resultsMessage] : []),
-                        aiMessage
-                      ]
-                    };
-                    return [newChat, ...prev];
-                  }
-                  return prev.map(c =>
-                    c.id === chatId
-                      ? { ...c, messages: [
-                          ...c.messages.filter(m => !m.isLoading),
-                          ...(resultsMessage ? [resultsMessage] : []),
-                          aiMessage
-                        ]}
-                      : c
-                  );
-                });
-              }
-            } else {
-              // Regular text response
-              const textBlock = response.content.find(block => block.type === 'text');
-              const aiMessage = { role: 'assistant', content: textBlock?.text || 'How can I help you today?' };
-
-              setChatHistory(prev => {
-                const existingChat = prev.find(c => c.id === chatId);
-                if (!existingChat) {
-                  console.warn('⚠️ Chat not found in history during text update, chatId:', chatId, '- recreating with query:', query);
-                  // Chat was lost - recreate it with the response
-                  const newChat = {
-                    id: chatId,
-                    title: query.split(' ').slice(0, 5).join(' ') + '...',
-                    date: 'Just now',
-                    messages: [
-                      { role: 'user', content: query },
-                      aiMessage
-                    ]
-                  };
-                  return [newChat, ...prev];
-                }
-                return prev.map(c =>
-                  c.id === chatId
-                    ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), aiMessage] }
-                    : c
-                );
-              });
-            }
-          } catch (error) {
-            console.error('❌ Error processing initial query:', error);
-            const errorMessage = { role: 'assistant', content: 'I apologize, but I encountered an error. Please try again or rephrase your request.' };
-            setChatHistory(prev => {
-              const existingChat = prev.find(c => c.id === chatId);
-              if (!existingChat) {
-                const newChat = {
-                  id: chatId,
-                  title: query.split(' ').slice(0, 5).join(' ') + '...',
-                  date: 'Just now',
-                  messages: [
-                    { role: 'user', content: query },
-                    errorMessage
-                  ]
-                };
-                return [newChat, ...prev];
-              }
-              return prev.map(c =>
-                c.id === chatId
-                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), errorMessage] }
-                  : c
-              );
-            });
-          } finally {
-            setIsProcessing(false);
+        // Step 1: Create chat in database
+        try {
+          const { success, chat } = await chatService.createChat(user.id, title, userMessage);
+          if (success && chat) {
+            chatId = chat.id;
+            console.log('💾 Created chat in database:', chatId);
+          } else {
+            chatId = Date.now().toString();
+            console.warn('⚠️ Database chat creation failed, using temp ID:', chatId);
           }
+        } catch (error) {
+          console.error('❌ Error creating chat in database:', error);
+          chatId = Date.now().toString();
+        }
+
+        const newChat = {
+          id: chatId,
+          title,
+          date: 'Just now',
+          messages: [userMessage, loadingMsg]
         };
 
-        // Execute after a small delay
-        setTimeout(processInitialQuery, 100);
-      }
+        console.log('🆕 Creating new chat with message:', chatId);
+
+        // Step 2: Add to chat history and set as active
+        // Use a callback to ensure we set activeChat AFTER the chat is added
+        setChatHistory(prev => {
+          console.log('📚 Adding chat to history. Previous length:', prev.length, 'New chat ID:', chatId);
+          // Schedule activeChat update after this state update
+          setTimeout(() => {
+            console.log('🎯 Setting activeChat to:', chatId);
+            setActiveChat(chatId);
+            // Clear the initial query prop after activeChat is set
+            setTimeout(() => {
+              console.log('📭 Calling onQueryProcessed');
+              onQueryProcessed();
+            }, 50);
+          }, 0);
+          return [newChat, ...prev];
+        });
+
+        // Step 4: Send query to AI (don't wait for state updates)
+        console.log('🚀 Sending initial query to AI:', queryToProcess);
+        setIsProcessing(true);
+
+        try {
+          const systemPrompt = getSystemPrompt();
+          const claudeUserMessage = { role: 'user', content: queryToProcess };
+
+          const response = await claudeEdgeService.messages.create({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 4096,
+            system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
+            messages: [claudeUserMessage],
+            tools: aiToolDefinitions.map((tool, index) =>
+              index === aiToolDefinitions.length - 1
+                ? { ...tool, cache_control: { type: "ephemeral" } }
+                : tool
+            ),
+            tool_choice: { type: "auto" }
+          });
+
+          console.log('🤖 Claude response for initial query:', response);
+
+          // Handle the response
+          if (response.stop_reason === 'tool_use') {
+            const toolUse = response.content.find(block => block.type === 'tool_use');
+            if (toolUse) {
+              console.log('🔧 Tool used:', toolUse.name, toolUse.input);
+              const toolResult = await executeTool(toolUse.name, toolUse.input);
+
+              // Get AI follow-up response
+              const followUp = await claudeEdgeService.messages.create({
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 1024,
+                system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
+                messages: [
+                  claudeUserMessage,
+                  { role: 'assistant', content: response.content },
+                  { role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUse.id, content: JSON.stringify(toolResult) }] }
+                ]
+              });
+
+              const aiText = followUp.content.find(block => block.type === 'text')?.text || 'Here are the results!';
+              const aiMessage = { role: 'assistant', content: aiText };
+
+              // Handle results display
+              let resultsMessage = null;
+              if (toolResult.success && toolResult.results) {
+                let tabs = [];
+                if (toolUse.name === 'searchEmptyLegs' && toolResult.results.length > 0) {
+                  tabs.push({ id: 'emptylegs', title: 'Empty Legs', count: toolResult.results.length, items: toolResult.results });
+                } else if (toolUse.name === 'searchPrivateJets' && toolResult.results.length > 0) {
+                  tabs.push({ id: 'jets', title: 'Private Jets', count: toolResult.results.length, items: toolResult.results });
+                } else if (toolUse.name === 'searchHelicopters' && toolResult.results.length > 0) {
+                  tabs.push({ id: 'helicopters', title: 'Helicopters', count: toolResult.results.length, items: toolResult.results });
+                } else if (toolUse.name === 'searchLuxuryCars' && toolResult.results.length > 0) {
+                  tabs.push({ id: 'luxury_cars', title: 'Luxury Cars', count: toolResult.results.length, items: toolResult.results });
+                } else if (toolUse.name === 'searchWines' && toolResult.results.length > 0) {
+                  tabs.push({ id: 'wines', title: 'Wines', count: toolResult.results.length, items: toolResult.results });
+                }
+                if (tabs.length > 0) {
+                  resultsMessage = { role: 'results', content: JSON.stringify({ tabs }), tabs };
+                }
+              }
+
+              // Update chat with results
+              const finalMessages = [
+                userMessage,
+                ...(resultsMessage ? [resultsMessage] : []),
+                aiMessage
+              ];
+
+              setChatHistory(prev => prev.map(c =>
+                c.id === chatId
+                  ? { ...c, messages: finalMessages }
+                  : c
+              ));
+
+              // Save to database
+              try {
+                await chatService.updateChatMessages(chatId, finalMessages, user.id);
+                console.log('💾 Saved messages to database');
+              } catch (saveError) {
+                console.error('Error saving messages:', saveError);
+              }
+            }
+          } else {
+            // Simple text response (no tool use)
+            const aiText = response.content.find(block => block.type === 'text')?.text || "I'm here to help!";
+            const aiMessage = { role: 'assistant', content: aiText };
+            const finalMessages = [userMessage, aiMessage];
+
+            setChatHistory(prev => prev.map(c =>
+              c.id === chatId
+                ? { ...c, messages: finalMessages }
+                : c
+            ));
+
+            // Save to database
+            try {
+              await chatService.updateChatMessages(chatId, finalMessages, user.id);
+              console.log('💾 Saved messages to database');
+            } catch (saveError) {
+              console.error('Error saving messages:', saveError);
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error calling Claude:', error);
+          const errorMessage = { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' };
+          setChatHistory(prev => prev.map(c =>
+            c.id === chatId
+              ? { ...c, messages: [userMessage, errorMessage] }
+              : c
+          ));
+        } finally {
+          setIsProcessing(false);
+        }
+      };
+
+      createChatAndSendToAI();
     }
-  }, [activeChat, chatHistory]);
+  }, [initialQuery, onQueryProcessed, user?.id]);
 
   // Track if we've processed the assistant message to prevent double-processing
   const processedAssistantMessageRef = useRef(new Set());
@@ -1698,11 +1671,11 @@ Your quote has been received and will be reviewed within 12 hours.`;
     }
 
     let msg = `Request submitted!\n\nReference: ${request.id}\nTotal: $${cartTotal.toLocaleString()}\n\nOur team will respond within 2-4 hours.`;
-    
-    setChatHistory(prev => prev.map(c => 
+
+    setChatHistory(prev => prev.map(c =>
       c.id === activeChat ? { ...c, messages: [...c.messages, { role: 'assistant', content: msg }] } : c
     ));
-    
+
     setCartItems([]);
     setSelectedPaymentMethod(null);
   }, [cartItems, cartTotal, activeChat, selectedPaymentMethod, userHasNFT, usedNFTBenefitThisYear, conversationalAI, connectedWallet]);
@@ -3511,7 +3484,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
   // If we have an initialQuery prop, show loading state while useEffect processes it
   // This must come BEFORE the NEW CHAT VIEW check
   if (initialQuery && initialQuery.trim() && !processedQueriesRef.current.has(initialQuery)) {
-    console.log('🎨 Rendering: INITIAL QUERY LOADING (waiting for useEffect to process)');
+    console.log('🎨 Rendering: INITIAL QUERY LOADING (waiting for useEffect to process)', { initialQuery, userId: user?.id });
     return (
       <div className="h-full bg-transparent flex flex-col overflow-hidden">
         <div className="flex-1 flex items-center justify-center">
@@ -3527,7 +3500,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
   // NEW CHAT VIEW - Welcome message with suggestion bubbles
   // Show this view if activeChat is 'new' or null (and no query being processed)
   if (activeChat === 'new' || activeChat === null) {
-    console.log('🎨 Rendering: NEW CHAT VIEW (welcome with suggestions)');
+    console.log('🎨 Rendering: NEW CHAT VIEW (welcome with suggestions)', { activeChat, chatHistoryLength: chatHistory.length });
 
     // Quick suggestion bubbles - small, blurred, monochromatic
     const quickSuggestions = [
@@ -4177,7 +4150,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       ) : shouldType ? (
                         <TypingText
                           text={msg.content}
-                          speed={15}
+                          speed={5}
                           onComplete={() => setTypingMessageIndex(null)}
                         />
                       ) : (

@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MapPin, Navigation, Car, Clock, ChevronRight, Check, Calendar, MessageSquare, Loader2, ChevronDown, ChevronUp, Users, X } from 'lucide-react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '../../lib/supabase';
 import { createRequest } from '../../services/requests';
 import PaymentModal from './PaymentModal';
+import { convertToUSD, initializeExchangeRates } from '../../services/currencyService';
 
 // Mapbox token - privatecharterx account
 const MAPBOX_TOKEN = 'pk.eyJ1IjoicHJpdmF0ZWNoYXJ0ZXJ4IiwiYSI6ImNsdGJ2dG4zazFucGsya21tNXRldW5udjYifQ.NrWJLJuG9n6b1jhRh5AkSg';
 
 const TaxiConciergeView = ({ onRequestSubmit }) => {
+  const navigate = useNavigate();
   const mapContainer = useRef(null);
   const map = useRef(null);
   const userLocationMarker = useRef(null);
@@ -44,7 +47,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
   const [isPanelMinimized, setIsPanelMinimized] = useState(false);
   const [showDateTimeModal, setShowDateTimeModal] = useState(false);
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
-  const [selectedCurrency, setSelectedCurrency] = useState('CHF');
+  const [selectedCurrency, setSelectedCurrency] = useState('USD');
   const [detectedCountry, setDetectedCountry] = useState(null);
   const [pricePerKm, setPricePerKm] = useState(2.50);
   const [paymentMethod, setPaymentMethod] = useState(null); // 'crypto' or 'card'
@@ -58,19 +61,89 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [isModalExpanded, setIsModalExpanded] = useState(false);
 
-  // Country-based pricing configuration
+  // Country-based pricing configuration with local currencies
+  // Switzerland: CHF, Eurozone: EUR, USA: USD, Thailand: THB, Others: USD (on request)
   const countryPricing = {
-    'Bulgaria': { basePrice: 2.50, currency: 'EUR', code: 'BG' },
-    'Deutschland': { basePrice: 3.50, currency: 'EUR', code: 'DE' },
-    'Germany': { basePrice: 3.50, currency: 'EUR', code: 'DE' },
-    'Schweiz': { basePrice: 5.00, currency: 'CHF', code: 'CH' },
-    'Switzerland': { basePrice: 5.00, currency: 'CHF', code: 'CH' },
-    'Suisse': { basePrice: 5.00, currency: 'CHF', code: 'CH' },
-    'Italia': { basePrice: 2.50, currency: 'EUR', code: 'IT' },
-    'Italy': { basePrice: 2.50, currency: 'EUR', code: 'IT' },
-    'Österreich': { basePrice: 3.50, currency: 'EUR', code: 'AT' },
-    'Austria': { basePrice: 3.50, currency: 'EUR', code: 'AT' }
+    // Switzerland - CHF
+    'Schweiz': { basePrice: 5.00, currency: 'CHF', code: 'CH', bookable: true },
+    'Switzerland': { basePrice: 5.00, currency: 'CHF', code: 'CH', bookable: true },
+    'Suisse': { basePrice: 5.00, currency: 'CHF', code: 'CH', bookable: true },
+    'Svizzera': { basePrice: 5.00, currency: 'CHF', code: 'CH', bookable: true },
+    // Eurozone - EUR
+    'Deutschland': { basePrice: 3.50, currency: 'EUR', code: 'DE', bookable: true },
+    'Germany': { basePrice: 3.50, currency: 'EUR', code: 'DE', bookable: true },
+    'France': { basePrice: 3.50, currency: 'EUR', code: 'FR', bookable: true },
+    'Italia': { basePrice: 2.50, currency: 'EUR', code: 'IT', bookable: true },
+    'Italy': { basePrice: 2.50, currency: 'EUR', code: 'IT', bookable: true },
+    'Österreich': { basePrice: 3.50, currency: 'EUR', code: 'AT', bookable: true },
+    'Austria': { basePrice: 3.50, currency: 'EUR', code: 'AT', bookable: true },
+    'España': { basePrice: 2.80, currency: 'EUR', code: 'ES', bookable: true },
+    'Spain': { basePrice: 2.80, currency: 'EUR', code: 'ES', bookable: true },
+    'Portugal': { basePrice: 2.50, currency: 'EUR', code: 'PT', bookable: true },
+    'Netherlands': { basePrice: 3.20, currency: 'EUR', code: 'NL', bookable: true },
+    'Belgium': { basePrice: 3.20, currency: 'EUR', code: 'BE', bookable: true },
+    'Greece': { basePrice: 2.50, currency: 'EUR', code: 'GR', bookable: true },
+    'Ireland': { basePrice: 3.00, currency: 'EUR', code: 'IE', bookable: true },
+    'Bulgaria': { basePrice: 2.50, currency: 'EUR', code: 'BG', bookable: true },
+    // USA - USD
+    'United States': { basePrice: 4.00, currency: 'USD', code: 'US', bookable: true },
+    // Thailand - THB
+    'Thailand': { basePrice: 50.00, currency: 'THB', code: 'TH', bookable: true },
+    'ประเทศไทย': { basePrice: 50.00, currency: 'THB', code: 'TH', bookable: true },
+    // On Request countries - USD (quote only)
+    'United Arab Emirates': { basePrice: 5.00, currency: 'USD', code: 'AE', bookable: false, onRequest: true },
+    'Dubai': { basePrice: 5.00, currency: 'USD', code: 'AE', bookable: false, onRequest: true },
+    'Saudi Arabia': { basePrice: 5.00, currency: 'USD', code: 'SA', bookable: false, onRequest: true },
+    'Qatar': { basePrice: 5.00, currency: 'USD', code: 'QA', bookable: false, onRequest: true },
+    'Singapore': { basePrice: 5.00, currency: 'USD', code: 'SG', bookable: false, onRequest: true },
+    'Hong Kong': { basePrice: 5.00, currency: 'USD', code: 'HK', bookable: false, onRequest: true },
+    'Japan': { basePrice: 5.00, currency: 'USD', code: 'JP', bookable: false, onRequest: true },
+    'China': { basePrice: 5.00, currency: 'USD', code: 'CN', bookable: false, onRequest: true },
+    '中国': { basePrice: 5.00, currency: 'USD', code: 'CN', bookable: false, onRequest: true },
+    'United Kingdom': { basePrice: 4.00, currency: 'USD', code: 'GB', bookable: false, onRequest: true },
+    'Australia': { basePrice: 5.00, currency: 'USD', code: 'AU', bookable: false, onRequest: true }
   };
+
+  // Sanctioned/Restricted countries - Service NOT available
+  // Based on US OFAC, EU, and international sanctions lists
+  const sanctionedCountries = [
+    // Full sanctions
+    'Russia', 'Россия', 'Russian Federation',
+    'Iran', 'ایران', 'Islamic Republic of Iran',
+    'North Korea', '조선민주주의인민공화국', 'Democratic People\'s Republic of Korea', 'DPRK',
+    'Syria', 'سوريا', 'Syrian Arab Republic',
+    'Cuba',
+    // Partial/Regional sanctions
+    'Belarus', 'Беларусь', 'Republic of Belarus',
+    'Venezuela',
+    'Myanmar', 'Burma',
+    'Libya', 'ليبيا',
+    'Sudan', 'السودان',
+    'South Sudan',
+    'Somalia', 'Soomaaliya',
+    'Yemen', 'اليمن',
+    'Afghanistan', 'افغانستان',
+    'Zimbabwe',
+    'Eritrea',
+    // Crimea region
+    'Crimea',
+    // China removed from sanctions list - available on request
+  ];
+
+  // Check if country is sanctioned
+  const isCountrySanctioned = (countryName) => {
+    if (!countryName) return false;
+    const normalizedName = countryName.toLowerCase().trim();
+    return sanctionedCountries.some(sanctioned =>
+      normalizedName === sanctioned.toLowerCase() ||
+      normalizedName.includes(sanctioned.toLowerCase()) ||
+      sanctioned.toLowerCase().includes(normalizedName)
+    );
+  };
+
+  // Check if country is on request only
+  const [isOnRequestOnly, setIsOnRequestOnly] = useState(false);
+  const [isSanctionedCountry, setIsSanctionedCountry] = useState(false);
 
   const carTypes = [
     {
@@ -352,38 +425,22 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                   const countryName = countryContext.text;
                   console.log('Detected country:', countryName);
 
-                  // Map country to currency
-                  const currencyMap = {
-                    'Switzerland': 'CHF',
-                    'United States': 'USD',
-                    'Germany': 'EUR',
-                    'France': 'EUR',
-                    'Italy': 'EUR',
-                    'Spain': 'EUR',
-                    'Austria': 'EUR',
-                    'Netherlands': 'EUR',
-                    'Belgium': 'EUR',
-                    'Portugal': 'EUR',
-                    'Greece': 'EUR',
-                    'Ireland': 'EUR',
-                    // Add more countries as needed
-                  };
-
-                  const detectedCurrency = currencyMap[countryName] || 'EUR'; // Default to EUR
+                  // All countries now default to USD
+                  const detectedCurrency = 'USD';
                   setSelectedCurrency(detectedCurrency);
                   console.log(`Auto-selected currency: ${detectedCurrency} for ${countryName}`);
                 }
               }
             },
             (error) => {
-              console.log('Geolocation error, using default currency (CHF):', error);
-              // Keep default CHF
+              console.log('Geolocation error, using default currency (USD):', error);
+              // Keep default USD
             }
           );
         }
       } catch (error) {
         console.error('Error detecting user currency:', error);
-        // Keep default CHF
+        // Keep default USD
       }
     };
 
@@ -488,8 +545,33 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
     return hasSwitzerlandContext || hasSwitzerlandInName;
   };
 
-  // Keep old function for backward compatibility (now just calls Switzerland check)
-  const isLocationInZurich = isLocationInSwitzerland;
+  // Check if location is specifically in Zurich (for direct booking eligibility)
+  const isLocationInZurich = (feature) => {
+    if (!feature) return false;
+
+    const context = feature.context || [];
+    const placeName = feature.place_name?.toLowerCase() || '';
+    const text = feature.text?.toLowerCase() || '';
+
+    // Check context for Zurich region/place
+    const hasZurichContext = context.some(item =>
+      (item.id.includes('place') || item.id.includes('region') || item.id.includes('locality')) &&
+      (item.text?.toLowerCase().includes('zurich') ||
+       item.text?.toLowerCase().includes('zürich') ||
+       item.text?.toLowerCase().includes('zuerich'))
+    );
+
+    // Also check place name directly for Zurich
+    const hasZurichInName =
+      placeName.includes('zurich') ||
+      placeName.includes('zürich') ||
+      placeName.includes('zuerich') ||
+      text.includes('zurich') ||
+      text.includes('zürich') ||
+      text.includes('zuerich');
+
+    return hasZurichContext || hasZurichInName;
+  };
 
   // Handle "use current location" button click
   const handleUseCurrentLocation = async () => {
@@ -720,38 +802,58 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
     return null;
   };
 
-  // Check if both locations are in Switzerland and detect country
+  // Check if pickup location is in Zurich (only Zurich allows direct booking)
   const [featureA, setFeatureA] = useState(null);
   const [featureB, setFeatureB] = useState(null);
 
   useEffect(() => {
     if (featureA && featureB) {
-      const bothInSwitzerland = isLocationInSwitzerland(featureA) && isLocationInSwitzerland(featureB);
-      setIsSwissBooking(bothInSwitzerland);
-      setIsZurichBooking(bothInSwitzerland); // Keep for backward compatibility
+      // Only Zurich pickup allows direct booking - all other locations are "On Request"
+      const pickupInZurich = isLocationInZurich(featureA);
+      setIsSwissBooking(pickupInZurich); // Now means "Zurich booking" for direct booking
+      setIsZurichBooking(pickupInZurich); // Direct booking only from Zurich
 
-      // Disable "Book Now" if not in Switzerland
-      if (!bothInSwitzerland && bookNow) {
+      // Disable "Book Now" if pickup is not in Zurich
+      if (!pickupInZurich && bookNow) {
         setBookNow(false);
       }
 
-      // Detect country and set pricing
+      // Detect country and set pricing with regional currencies
       const country = detectCountryFromFeature(featureA) || detectCountryFromFeature(featureB);
+
+      // Check if country is sanctioned - block service entirely
+      if (isCountrySanctioned(country)) {
+        setIsSanctionedCountry(true);
+        setIsOnRequestOnly(false);
+        setDetectedCountry(country);
+        setPricePerKm(0);
+        setSelectedCurrency('USD');
+        console.log(`⚠️ SANCTIONED COUNTRY DETECTED: ${country} - Service not available`);
+        return;
+      }
+
+      setIsSanctionedCountry(false);
+
       if (country && countryPricing[country]) {
         const pricing = countryPricing[country];
         setPricePerKm(pricing.basePrice);
         setSelectedCurrency(pricing.currency);
         setDetectedCountry(country);
-        console.log(`Country detected: ${country}, Price: ${pricing.basePrice} ${pricing.currency}/km`);
+        setIsOnRequestOnly(pricing.onRequest || false);
+        console.log(`Country detected: ${country}, Price: ${pricing.basePrice} ${pricing.currency}/km, Bookable: ${pricing.bookable}, OnRequest: ${pricing.onRequest || false}`);
       } else {
-        // Default to Switzerland pricing
+        // Unknown country - show USD, on request only
         setPricePerKm(5.00);
-        setSelectedCurrency('CHF');
-        setDetectedCountry('Switzerland');
+        setSelectedCurrency('USD');
+        setDetectedCountry(country || 'Unknown');
+        setIsOnRequestOnly(true);
+        console.log(`Unknown country: ${country || 'Unknown'}, showing USD prices - On Request Only`);
       }
     } else {
       setIsSwissBooking(false);
       setIsZurichBooking(false);
+      setIsOnRequestOnly(false);
+      setIsSanctionedCountry(false);
     }
   }, [featureA, featureB]);
 
@@ -849,28 +951,29 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
     }
   };
 
-  // Currency conversion rates (base: CHF)
+  // Currency conversion rates (base: USD)
   const currencyRates = {
-    'CHF': 1,
-    'USD': 1.13,
-    'EUR': 1.05,
-    'USDT': 1.13,
-    'USDC': 1.13,
-    'BTC': 0.000017
+    'USD': 1,
+    'CHF': 0.88,
+    'EUR': 0.92,
+    'THB': 34.50,  // Thai Baht
+    'USDT': 1,
+    'USDC': 1,
+    'BTC': 0.000010
   };
 
   const calculatePrice = (carType) => {
     if (!distance) return { min: 0, max: 0 };
     const distanceNum = parseFloat(distance);
 
-    // Get base currency for detected country (default CHF)
+    // Get base currency for detected country (default USD)
     const baseCurrency = detectedCountry && countryPricing[detectedCountry]
       ? countryPricing[detectedCountry].currency
-      : 'CHF';
+      : 'USD';
 
     // Get country price ratio compared to Switzerland
-    // Switzerland base is 5.00 CHF/km, other countries scale from that
-    const countryRatio = pricePerKm / 5.00;
+    // Switzerland base is 5.70 USD/km, other countries scale from that
+    const countryRatio = pricePerKm / 5.70;
 
     // Calculate prices using the car's specific CHF prices scaled by country ratio
     const minPriceInBaseCurrency = distanceNum * carType.priceMinCHF * countryRatio;
@@ -1054,7 +1157,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
         setNotificationMessage('Quote request submitted! Our team will contact you within 24 hours with pricing.');
       }
 
-      // Auto-hide notification after 5 seconds
+      // Auto-hide notification after 3 seconds, then redirect to dashboard
       setTimeout(() => {
         setShowNotification(false);
         // Reset form
@@ -1066,7 +1169,9 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
         setPickupDate('');
         setPickupTime('');
         setExtraNotes('');
-      }, 5000);
+        // Redirect to dashboard overview
+        navigate('/dashboard');
+      }, 3000);
     }, 3000);
   };
 
@@ -1084,6 +1189,8 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
       setPickupDate('');
       setPickupTime('');
       setExtraNotes('');
+      // Redirect to dashboard overview
+      navigate('/dashboard');
     }, 3000);
   };
 
@@ -1161,24 +1268,8 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
       >
         <div className={`bg-white shadow-2xl rounded-2xl transition-all duration-300 w-full h-full`} style={{ overflow: bookingStep === 3 ? 'hidden' : 'visible', position: 'relative', display: 'flex', flexDirection: 'column' }}>
           <div className="flex flex-col flex-1" style={{ overflow: bookingStep === 3 ? 'hidden' : 'visible', minHeight: 0 }}>
-          {/* Minimize/Maximize Toggle Button - Show when route is calculated OR locations are set */}
-          {((eta && distance) || (coordsA && coordsB) || (serviceCategory === 'luxury-cars' && coordsA)) && bookingStep === 1 && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsPanelMinimized(!isPanelMinimized);
-              }}
-              className="absolute top-3 right-3 p-2 bg-white hover:bg-gray-100 rounded-lg transition-colors shadow-md border border-gray-200 z-50"
-              style={{ pointerEvents: 'auto' }}
-              title={isPanelMinimized ? 'Show details' : 'Hide details'}
-            >
-              {isPanelMinimized ? (
-                <ChevronDown size={18} className="text-gray-700" />
-              ) : (
-                <ChevronUp size={18} className="text-gray-700" />
-              )}
-            </button>
-          )}
+          {/* Minimize/Maximize Toggle Button - HIDDEN per user request */}
+          {/* Previously showed ChevronUp/ChevronDown in top-right corner */}
 
 
           {/* Location Inputs - Hidden when selecting car */}
@@ -1297,7 +1388,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                   type="text"
                   value={deliveryAddress}
                   onChange={(e) => setDeliveryAddress(e.target.value)}
-                  placeholder="Delivery Address (optional +€50-80 for custom delivery)"
+                  placeholder="Delivery Address (optional +$55-90 for custom delivery)"
                   className="w-full px-3 md:px-4 py-2.5 md:py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-black text-sm bg-white transition-all"
                 />
                 <input
@@ -1335,15 +1426,28 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                     </div>
                   )}
 
-                  {/* Long Distance Notice (>1 hour) - Only for taxi/concierge */}
-                  {serviceCategory !== 'luxury-cars' && eta > 60 ? (
+                  {/* Sanctioned Country Notice - Service NOT available */}
+                  {isSanctionedCountry ? (
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                      <div className="flex items-start gap-2">
+                        <Shield size={16} className="text-red-600 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-semibold text-red-900">Service Not Available</p>
+                          <p className="text-xs text-red-700 mt-1">
+                            Due to international sanctions and compliance requirements, our services are not available in {detectedCountry || 'this region'}.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : serviceCategory !== 'luxury-cars' && eta > 120 ? (
+                    /* Long Distance Notice (>2 hours) - Only for taxi/concierge */
                     <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
                       <div className="flex items-start gap-2">
                         <MessageSquare size={16} className="text-amber-600 mt-0.5" />
                         <div>
                           <p className="text-sm font-semibold text-amber-900">Long Distance Trip</p>
                           <p className="text-xs text-amber-700 mt-1">
-                            This trip is longer than 1 hour. Please contact us directly at{' '}
+                            This trip is longer than 2 hours. Please contact us directly at{' '}
                             <a href="mailto:bookings@privatecharterx.com" className="underline font-medium">
                               bookings@privatecharterx.com
                             </a>{' '}
@@ -1354,21 +1458,21 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                     </div>
                   ) : (
                     <>
-                      {/* Badge - different for luxury cars */}
+                      {/* Badge - Only Zurich allows direct booking, all others are On Request */}
                       {serviceCategory === 'luxury-cars' ? (
                         <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-medium">
                           <MessageSquare size={14} />
                           Quote Request - Interior photos sent within 24h
                         </div>
-                      ) : isSwissBooking ? (
+                      ) : isZurichBooking ? (
                         <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium">
                           <Check size={14} />
-                          Instant Booking Available in Switzerland
+                          Direct Booking Available - Zurich
                         </div>
                       ) : (
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-medium">
                           <MessageSquare size={14} />
-                          Quote Request - Available Worldwide
+                          On Request - {detectedCountry || 'Your Region'}
                         </div>
                       )}
 
@@ -1527,8 +1631,8 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                           key={car.id}
                           onClick={() => {
                             setSelectedCar(car);
-                            // For luxury cars, show quote modal instead of payment
-                            if (serviceCategory === 'luxury-cars') {
+                            // For luxury cars or "on request" countries, show quote modal instead of payment
+                            if (serviceCategory === 'luxury-cars' || isOnRequestOnly) {
                               setTimeout(() => setShowQuoteModal(true), 300);
                             } else {
                               setTimeout(() => setShowPaymentPage(true), 300);
@@ -1878,7 +1982,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
 
             {/* Currency Options in Light Grey Bubbles */}
             <div className="grid grid-cols-3 gap-3">
-              {['CHF', 'USD', 'EUR', 'USDT', 'USDC', 'BTC'].map((currency) => (
+              {['USD', 'CHF', 'EUR', 'USDT', 'USDC', 'BTC'].map((currency) => (
                 <button
                   key={currency}
                   onClick={() => {
@@ -1899,7 +2003,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
         </div>
       )}
 
-      {/* Quote Request Modal - For Luxury Cars */}
+      {/* Quote Request Modal - For Luxury Cars and On Request Countries */}
       {showQuoteModal && selectedCar && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -1907,10 +2011,20 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-800">Request Quote</h2>
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    {serviceCategory === 'luxury-cars' ? 'Request Quote' : 'Request Transfer Quote'}
+                  </h2>
                   <p className="text-sm text-gray-600 mt-1">
-                    {selectedCar.name} - from €{selectedCar.pricePerDay || '500'}/day
+                    {serviceCategory === 'luxury-cars'
+                      ? `${selectedCar.name} - from ${formatPrice(selectedCar.pricePerDay || 550)}/day`
+                      : `${selectedCar.name} - ${distance} km - Est. ${formatPrice(calculatePrice(selectedCar).min)} - ${formatPrice(calculatePrice(selectedCar).max)}`
+                    }
                   </p>
+                  {isOnRequestOnly && serviceCategory !== 'luxury-cars' && (
+                    <p className="text-xs text-amber-600 mt-1 font-medium">
+                      Service in {detectedCountry} available on request only
+                    </p>
+                  )}
                 </div>
                 <button
                   onClick={() => setShowQuoteModal(false)}
@@ -1961,57 +2075,113 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Rental Start *</label>
-                    <input
-                      type="date"
-                      min={new Date().toISOString().split('T')[0]}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
-                    />
+                {/* Date/Time Fields - Different for luxury cars vs taxi */}
+                {serviceCategory === 'luxury-cars' ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Rental Start *</label>
+                      <input
+                        type="date"
+                        min={new Date().toISOString().split('T')[0]}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Rental End *</label>
+                      <input
+                        type="date"
+                        min={new Date().toISOString().split('T')[0]}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Rental End *</label>
-                    <input
-                      type="date"
-                      min={new Date().toISOString().split('T')[0]}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Rental Location</label>
-                  <input
-                    type="text"
-                    value={locationA}
-                    readOnly
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
-                  />
-                </div>
-
-                {deliveryAddress && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Address</label>
-                    <input
-                      type="text"
-                      value={deliveryAddress}
-                      readOnly
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
-                    />
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Pickup Date *</label>
+                      <input
+                        type="date"
+                        defaultValue={pickupDate}
+                        min={new Date().toISOString().split('T')[0]}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Pickup Time *</label>
+                      <input
+                        type="time"
+                        defaultValue={pickupTime}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                      />
+                    </div>
                   </div>
                 )}
 
-                {returnAddress && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Return Address</label>
-                    <input
-                      type="text"
-                      value={returnAddress}
-                      readOnly
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
-                    />
-                  </div>
+                {/* Locations - Different for luxury cars vs taxi */}
+                {serviceCategory === 'luxury-cars' ? (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Rental Location</label>
+                      <input
+                        type="text"
+                        value={locationA}
+                        readOnly
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                      />
+                    </div>
+                    {deliveryAddress && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Address</label>
+                        <input
+                          type="text"
+                          value={deliveryAddress}
+                          readOnly
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                        />
+                      </div>
+                    )}
+                    {returnAddress && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Return Address</label>
+                        <input
+                          type="text"
+                          value={returnAddress}
+                          readOnly
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                        />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Pickup Location</label>
+                      <input
+                        type="text"
+                        value={locationA}
+                        readOnly
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Drop-off Location</label>
+                      <input
+                        type="text"
+                        value={locationB}
+                        readOnly
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Passengers</label>
+                      <input
+                        type="number"
+                        value={passengers}
+                        readOnly
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                      />
+                    </div>
+                  </>
                 )}
 
                 <div>
@@ -2026,9 +2196,20 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                 {/* Info Box */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-sm text-blue-800">
-                    <strong>Note:</strong> Interior photos and final pricing will be sent to your email within 24 hours.
-                    {deliveryAddress && !deliveryAddress.toLowerCase().includes(locationA.toLowerCase()) && (
-                      <span className="block mt-1">Custom delivery fee: +€50-80</span>
+                    {serviceCategory === 'luxury-cars' ? (
+                      <>
+                        <strong>Note:</strong> Interior photos and final pricing will be sent to your email within 24 hours.
+                        {deliveryAddress && !deliveryAddress.toLowerCase().includes(locationA.toLowerCase()) && (
+                          <span className="block mt-1">Custom delivery fee: +$55-90</span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <strong>Note:</strong> Our team will confirm availability and send you a detailed quote within 24 hours.
+                        {distance && (
+                          <span className="block mt-1">Distance: {distance} km • Est. {eta} min</span>
+                        )}
+                      </>
                     )}
                   </p>
                 </div>
@@ -2043,7 +2224,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                 }}
                 className="w-full mt-6 py-4 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors"
               >
-                Request Quote
+                {serviceCategory === 'luxury-cars' ? 'Request Quote' : 'Request Transfer Quote'}
               </button>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MapPin, Calendar, X, Search, ArrowRight, Grid, List, Check, Plane, DollarSign, Filter, Star, Sparkles, Percent, CheckCircle, CreditCard, Wallet, Leaf, Users, ChevronLeft, Info } from 'lucide-react';
+import { MapPin, Calendar, X, Search, ArrowRight, Grid, List, Check, Plane, Filter, Star, Sparkles, Percent, CheckCircle, CreditCard, Wallet, Leaf, Users, ChevronLeft, Info, DollarSign } from 'lucide-react';
+import { convertToUSD, formatUSD, initializeExchangeRates } from '../services/currencyService';
 import { useAuth } from '../context/AuthContext';
 import { useAccount } from 'wagmi';
 import { useAppKit } from '@reown/appkit/react';
@@ -57,6 +58,7 @@ export interface EmptyLegOffer {
   arrival_time: string;
   registration: string;
   image_url: string;
+  price_gbp: number;
   price_usd: number;
   co2_emissions_kg: number;
   co2_offset_cost_eur: number;
@@ -221,7 +223,9 @@ const FlightModal: React.FC<FlightModalProps> = ({
   });
 
   const NFT_CONTRACT_ADDRESS = '0xDF86Cf55BD2E58aaaC09160AaD0ed8673382B339';
-  const isNFTFreeEligible = emptyLeg.price_usd < 1500;
+  // NFT free flight eligibility: price < $1900 USD (approximately £1500 GBP)
+  const priceUSD = convertToUSD(emptyLeg.price_gbp || 0, 'GBP');
+  const isNFTFreeEligible = priceUSD < 1900;
 
   // Fetch user profile data including phone number
   useEffect(() => {
@@ -248,7 +252,7 @@ const FlightModal: React.FC<FlightModalProps> = ({
 
     fetchUserProfile();
   }, [user?.id]);
-  const nftDiscountPrice = Math.round(emptyLeg.price_usd * 0.9);
+  const nftDiscountPrice = Math.round(priceUSD * 0.9);
 
   // Helper to check if on Base network
   const isOnBaseNetwork = chain?.id === 8453;
@@ -477,7 +481,7 @@ const FlightModal: React.FC<FlightModalProps> = ({
 
     try {
       let signature = '';
-      let finalPrice = emptyLeg.price_usd;
+      let finalPrice = priceUSD;
       let requestType = 'empty_leg';
 
       if (bookingType === 'nft-discount' || bookingType === 'nft-free') {
@@ -487,7 +491,7 @@ const FlightModal: React.FC<FlightModalProps> = ({
         const message = `I confirm using my PrivateCharterX NFT for ${bookingType === 'nft-free' ? 'FREE' : '10% discount'} on:
 Flight: ${emptyLeg.from_iata || emptyLeg.from} → ${emptyLeg.to_iata || emptyLeg.to}
 Date: ${formatDate(emptyLeg.departure_date)}
-Original Price: USD ${emptyLeg.price_usd.toLocaleString()}
+Original Price: USD ${priceUSD.toLocaleString()}
 Final Price: USD ${finalPrice.toLocaleString()}
 ${bookingType === 'nft-free' ? 'This will mark my NFT as USED for free flight benefit.' : 'This will use my NFT 10% discount benefit.'}
 Timestamp: ${Date.now()}
@@ -521,7 +525,7 @@ Wallet: ${address}`;
         arrival_time: emptyLeg.arrival_time,
         aircraft_type: emptyLeg.aircraft_type,
         aircraft_registration: emptyLeg.registration,
-        original_price: emptyLeg.price_usd,
+        original_price: priceUSD,
         final_price: finalPrice,
         currency: 'USD',
         capacity: emptyLeg.capacity,
@@ -844,7 +848,7 @@ Wallet: ${address}`;
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-base font-light">${emptyLeg.price_usd?.toLocaleString()}</div>
+                      <div className="text-base font-light">${convertToUSD(emptyLeg.price_gbp || 0, 'GBP').toLocaleString()}</div>
                     </div>
                   </div>
                 </button>
@@ -1081,7 +1085,7 @@ Wallet: ${address}`;
   );
 };
 
-// Price Filter Component
+// Price Filter Component - USD
 interface PriceFilterProps {
   priceRange: [number, number];
   onPriceChange: (range: [number, number]) => void;
@@ -1118,9 +1122,9 @@ const PriceFilter: React.FC<PriceFilterProps> = ({
   };
 
   const formatPrice = (price: number) => {
-    if (price >= 1000000) return `${(price / 1000000).toFixed(1)}M`;
-    if (price >= 1000) return `${(price / 1000).toFixed(0)}K`;
-    return `${price.toLocaleString()}`;
+    if (price >= 1000000) return `$${(price / 1000000).toFixed(1)}M`;
+    if (price >= 1000) return `$${(price / 1000).toFixed(0)}K`;
+    return `$${price.toLocaleString()}`;
   };
 
   const isFiltered = priceRange[0] !== 0 || priceRange[1] !== maxPrice;
@@ -1207,6 +1211,9 @@ const PriceFilter: React.FC<PriceFilterProps> = ({
 const fetchEmptyLegs = async () => {
   console.log('🔍 Fetching all empty legs from database');
   try {
+    // Initialize exchange rates first
+    await initializeExchangeRates();
+
     let query = supabase
       .from('EmptyLegs_')
       .select('*');
@@ -1221,7 +1228,16 @@ const fetchEmptyLegs = async () => {
       throw error;
     }
     console.log(`✅ Query successful: ${data?.length || 0} results`);
-    return data || [];
+    // Map database price (GBP) to price_gbp and convert to USD
+    return (data || []).map(leg => {
+      const priceGBP = leg.price || 0;
+      const priceUSD = convertToUSD(priceGBP, 'GBP');
+      return {
+        ...leg,
+        price_gbp: priceGBP,  // Keep original GBP price
+        price_usd: priceUSD   // Converted USD price for display
+      };
+    });
   } catch (error) {
     console.error('❌ Error fetching empty legs:', error);
     throw error;
@@ -1336,7 +1352,7 @@ const EmptyLegOffers: React.FC = () => {
       );
     }
 
-    // Apply price filter (only if it's different from the full price range)
+    // Apply price filter (only if it's different from the full price range) - using USD prices
     if (priceFilter[0] !== currentPriceExtents[0] || priceFilter[1] !== currentPriceExtents[1]) {
       console.log(`💰 Filtering by price: $${priceFilter[0]} - $${priceFilter[1]}`);
       filtered = filtered.filter((emptyLeg) =>
@@ -1445,7 +1461,7 @@ const EmptyLegOffers: React.FC = () => {
 
       setAllEmptyLegs(emptyLegsWithCO2);
 
-      // Set price extents based on all data
+      // Set price extents based on all data (using USD prices)
       if (emptyLegsWithCO2.length > 0) {
         const prices = emptyLegsWithCO2.map(item => item.price_usd).filter(price => price && price > 0);
         if (prices.length > 0) {
@@ -1622,9 +1638,9 @@ const EmptyLegOffers: React.FC = () => {
     return 'https://images.unsplash.com/photo-1540962351504-03099e0a754b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2574&q=80';
   };
 
-  // NFT Free eligibility check
+  // NFT Free eligibility check (price < $1900 USD)
   const isNFTFreeEligible = (emptyLeg: EmptyLegOffer) => {
-    return emptyLeg.price_usd < 1500;
+    return (emptyLeg.price_usd || 0) < 1900;
   };
 
   const totalPages = Math.ceil(totalOffers / itemsPerPage);
@@ -1872,12 +1888,12 @@ const EmptyLegOffers: React.FC = () => {
                         <div className="space-y-1 md:space-y-2 mb-4 md:mb-6">
                           <div className="flex items-center justify-between">
                             <span className="text-xs md:text-sm text-gray-500 line-through">
-                              Regular: USD {(emptyLeg.price_usd * 3).toLocaleString()}
+                              Regular: ${((emptyLeg.price_usd * 3) || 0).toLocaleString()}
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span className={`text-base md:text-lg font-bold ${isNFTFreeEligible(emptyLeg) ? 'text-green-600' : 'text-gray-900'}`}>
-                              {isNFTFreeEligible(emptyLeg) ? 'FREE for NFT holders' : `USD ${emptyLeg.price_usd?.toLocaleString()}`}
+                              {isNFTFreeEligible(emptyLeg) ? 'FREE for NFT holders' : `$${(emptyLeg.price_usd || 0).toLocaleString()}`}
                             </span>
                           </div>
                         </div>
@@ -1943,10 +1959,10 @@ const EmptyLegOffers: React.FC = () => {
                             </div>
                             <div className="text-right ml-4 flex-shrink-0">
                               <div className="text-sm text-gray-500 line-through mb-1">
-                                USD {(emptyLeg.price_usd * 3).toLocaleString()}
+                                ${((emptyLeg.price_usd * 3) || 0).toLocaleString()}
                               </div>
                               <div className={`text-xl font-bold ${isNFTFreeEligible(emptyLeg) ? 'text-green-600' : 'text-gray-900'}`}>
-                                {isNFTFreeEligible(emptyLeg) ? 'FREE*' : `USD ${emptyLeg.price_usd?.toLocaleString()}`}
+                                {isNFTFreeEligible(emptyLeg) ? 'FREE*' : `$${(emptyLeg.price_usd || 0).toLocaleString()}`}
                               </div>
                             </div>
                           </div>

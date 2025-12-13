@@ -10,6 +10,7 @@ import { createRequest } from '../../services/requests';
 import SuccessNotification from '../SuccessNotification';
 import { useNFT } from '../../context/NFTContext';
 import NFTBenefitsModal from '../NFTBenefitsModal';
+import { convertToUSD, initializeExchangeRates } from '../../services/currencyService';
 
 const LuxuryCarDetail = () => {
   const { id } = useParams();
@@ -20,6 +21,7 @@ const LuxuryCarDetail = () => {
   const { hasNFT, nftDiscount, isCheckingNFT, checkNFTMembership, showNFTModal, closeNFTModal, nfts, usedBenefits, incrementDiscountUsage } = useNFT();
 
   const [car, setCar] = useState(null);
+  const [pricesUSD, setPricesUSD] = useState({ perHour: 0, perDay: 0, perWeek: 0 });
   const [activeTab, setActiveTab] = useState('details');
   const [isLoading, setIsLoading] = useState(true);
   const [rentalDuration, setRentalDuration] = useState('day');
@@ -39,6 +41,9 @@ const LuxuryCarDetail = () => {
     setIsLoading(true);
     console.log('🚗 Fetching luxury car with ID:', id);
     try {
+      // Initialize exchange rates first
+      await initializeExchangeRates();
+
       const { data, error } = await supabase
         .from('luxury_cars')
         .select('*')
@@ -60,6 +65,13 @@ const LuxuryCarDetail = () => {
       console.log('🎨 Features:', data.features);
       setCar(data);
 
+      // Convert EUR prices to USD
+      setPricesUSD({
+        perHour: convertToUSD(data.price_per_hour || 0, 'EUR'),
+        perDay: convertToUSD(data.price_per_day || 0, 'EUR'),
+        perWeek: data.price_per_week ? convertToUSD(data.price_per_week, 'EUR') : 0
+      });
+
     } catch (error) {
       console.error('💥 Error fetching car:', error);
       alert(`Error loading car: ${error.message}. Redirecting to marketplace...`);
@@ -78,14 +90,15 @@ const LuxuryCarDetail = () => {
 
     try {
       // Check if weekly rental is available
-      if (rentalDuration === 'week' && !car.price_per_week) {
+      if (rentalDuration === 'week' && !pricesUSD.perWeek) {
         alert('⚠️ Weekly rental pricing is not available for this car.\n\nPlease contact our concierge team to discuss weekly rental options.');
         return;
       }
 
-      const price = rentalDuration === 'hour' ? car.price_per_hour * rentalDays :
-                    rentalDuration === 'day' ? car.price_per_day * rentalDays :
-                    car.price_per_week * rentalDays;
+      // Use USD converted prices
+      const price = rentalDuration === 'hour' ? pricesUSD.perHour * rentalDays :
+                    rentalDuration === 'day' ? pricesUSD.perDay * rentalDays :
+                    pricesUSD.perWeek * rentalDays;
 
       const discountedPrice = hasNFT ? price * (1 - nftDiscount / 100) : price;
 
@@ -116,7 +129,7 @@ const LuxuryCarDetail = () => {
             dropoff_location: car.location,
             original_price: price,
             discounted_price: discountedPrice,
-            currency: 'EUR',
+            currency: 'USD',
             wallet_address: isConnected && address ? address : null,
             has_nft: hasNFT,
             nft_discount: nftDiscount,
@@ -162,11 +175,12 @@ const LuxuryCarDetail = () => {
   const calculateTotalPrice = () => {
     if (!car) return 0;
     // If weekly rental and no price, return 0 to show "TO BE DISCUSSED"
-    if (rentalDuration === 'week' && !car.price_per_week) return 0;
+    if (rentalDuration === 'week' && !pricesUSD.perWeek) return 0;
 
-    const basePrice = rentalDuration === 'hour' ? car.price_per_hour * rentalDays :
-                      rentalDuration === 'day' ? car.price_per_day * rentalDays :
-                      car.price_per_week * rentalDays;
+    // Use USD converted prices
+    const basePrice = rentalDuration === 'hour' ? pricesUSD.perHour * rentalDays :
+                      rentalDuration === 'day' ? pricesUSD.perDay * rentalDays :
+                      pricesUSD.perWeek * rentalDays;
     return hasNFT ? basePrice * (1 - nftDiscount / 100) : basePrice;
   };
 
@@ -380,16 +394,16 @@ const LuxuryCarDetail = () => {
               <div className="flex justify-between mt-auto mb-5">
                 <div className="flex flex-col space-y-1">
                   <span className="text-xs text-gray-500">Per Hour</span>
-                  <span className="text-sm font-semibold text-black">€{car.price_per_hour?.toLocaleString()}</span>
+                  <span className="text-sm font-semibold text-black">${Math.round(pricesUSD.perHour).toLocaleString()}</span>
                 </div>
                 <div className="flex flex-col space-y-1">
                   <span className="text-xs text-gray-500">Per Day</span>
-                  <span className="text-sm font-semibold text-black">€{car.price_per_day?.toLocaleString()}</span>
+                  <span className="text-sm font-semibold text-black">${Math.round(pricesUSD.perDay).toLocaleString()}</span>
                 </div>
                 <div className="flex flex-col space-y-1">
                   <span className="text-xs text-gray-500">Per Week</span>
                   <span className="text-sm font-semibold text-black">
-                    {car.price_per_week ? `€${car.price_per_week?.toLocaleString()}` : 'TO BE DISCUSSED'}
+                    {pricesUSD.perWeek ? `$${Math.round(pricesUSD.perWeek).toLocaleString()}` : 'TO BE DISCUSSED'}
                   </span>
                 </div>
               </div>
@@ -513,7 +527,7 @@ const LuxuryCarDetail = () => {
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-500">Base Rate</span>
                   <span className="text-xs font-semibold text-black">
-                    €{car.price_per_day?.toLocaleString()}/day
+                    ${Math.round(pricesUSD.perDay).toLocaleString()}/day
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -607,11 +621,11 @@ const LuxuryCarDetail = () => {
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-gray-500">Rate ({rentalDuration}):</span>
                   <span className="font-semibold text-black">
-                    {rentalDuration === 'week' && !car.price_per_week ?
+                    {rentalDuration === 'week' && !pricesUSD.perWeek ?
                       'TO BE DISCUSSED' :
-                      `€${(rentalDuration === 'hour' ? car.price_per_hour :
-                         rentalDuration === 'day' ? car.price_per_day :
-                         car.price_per_week)?.toLocaleString()}`
+                      `$${Math.round(rentalDuration === 'hour' ? pricesUSD.perHour :
+                         rentalDuration === 'day' ? pricesUSD.perDay :
+                         pricesUSD.perWeek).toLocaleString()}`
                     }
                   </span>
                 </div>
@@ -623,16 +637,16 @@ const LuxuryCarDetail = () => {
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-gray-600">NFT Discount ({nftDiscount}%):</span>
                     <span className="font-semibold text-green-600">
-                      -€{(calculateTotalPrice() / (1 - nftDiscount / 100) - calculateTotalPrice()).toFixed(0)}
+                      -${Math.round(calculateTotalPrice() / (1 - nftDiscount / 100) - calculateTotalPrice()).toLocaleString()}
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm font-bold border-t border-gray-200 pt-2 mt-2">
                   <span className="text-black">Total:</span>
                   <span className="text-black">
-                    {rentalDuration === 'week' && !car.price_per_week ?
+                    {rentalDuration === 'week' && !pricesUSD.perWeek ?
                       'TO BE DISCUSSED' :
-                      `€${Math.round(calculateTotalPrice()).toLocaleString()}`
+                      `$${Math.round(calculateTotalPrice()).toLocaleString()}`
                     }
                   </span>
                 </div>

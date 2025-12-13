@@ -100,23 +100,16 @@ serve(async (req) => {
           throw new Error(`Empty leg not found: ${serviceId}`);
         }
 
-        // Get price and currency from database - CoinGate handles conversion
+        // Get price from database - converted to USD on frontend
+        // Note: Frontend converts GBP prices to USD before payment
         let price: number;
-        let currency: string;
+        let currency: string = 'USD'; // All prices now in USD
 
-        if (emptyLeg.price_usd) {
-          price = parseFloat(emptyLeg.price_usd);
-          currency = 'USD';
-        } else if (emptyLeg.price_eur) {
-          price = parseFloat(emptyLeg.price_eur);
-          currency = 'EUR';
-        } else {
-          // Legacy data - use original currency
-          price = parseFloat(emptyLeg.price || emptyLeg.discounted_price || 0);
-          currency = emptyLeg.currency || 'GBP';
-        }
+        // Price comes from database in GBP, but frontend converts to USD
+        // Use the raw GBP price here - it will be converted by frontend or we use it directly for CoinGate
+        price = parseFloat(emptyLeg.price || emptyLeg.discounted_price || 0);
 
-        console.log(`EmptyLeg price: ${price} ${currency}`);
+        console.log(`EmptyLeg raw price from DB: ${price} (will be sent as ${currency})`);
 
         serviceDetails = {
           id: emptyLeg.id,
@@ -124,7 +117,7 @@ serve(async (req) => {
           description: emptyLeg.description || `Empty leg flight on ${emptyLeg.aircraft_type}`,
           image_url: emptyLeg.image_url || emptyLeg.aircraft_image,
           price: price,
-          currency: currency,
+          currency: 'USD', // All prices now in USD
           origin: emptyLeg.departure_airport || emptyLeg.from_iata,
           destination: emptyLeg.arrival_airport || emptyLeg.to_iata,
           departure_date: emptyLeg.departure_date,
@@ -150,7 +143,7 @@ serve(async (req) => {
           description: adventure.description,
           image_url: adventure.image_url || adventure.cover_image,
           price: parseFloat(adventure.price || adventure.base_price),
-          currency: adventure.currency || 'EUR',
+          currency: 'USD', // All prices now in USD
           origin: adventure.departure_location || adventure.origin,
           destination: adventure.destination,
           departure_date: adventure.start_date,
@@ -177,7 +170,7 @@ serve(async (req) => {
           description: co2.description || `Carbon offset certificate`,
           image_url: co2.image_url,
           price: parseFloat(co2.price || co2.amount),
-          currency: co2.currency || 'EUR',
+          currency: 'USD', // All prices now in USD
           co2_tons: parseFloat(co2.tons || co2.co2_tons),
           certification_type: co2.certification_type || co2.type
         };
@@ -256,6 +249,15 @@ serve(async (req) => {
     const coingateFee = Math.round(basePrice * COINGATE_FEE_PERCENT * 100) / 100;
     const totalAmount = Math.round((basePrice + platformFee + vatAmount + coingateFee) * 100) / 100;
 
+    console.log('=== PRICE CALCULATION DEBUG ===');
+    console.log(`Service: ${serviceType}, ID: ${serviceId}`);
+    console.log(`Base Price: ${basePrice} ${serviceDetails.currency}`);
+    console.log(`Platform Fee (2.5%): ${platformFee}`);
+    console.log(`VAT (8.1%): ${vatAmount}`);
+    console.log(`CoinGate Fee (1%): ${coingateFee}`);
+    console.log(`Total Amount: ${totalAmount} ${serviceDetails.currency}`);
+    console.log('================================');
+
     let booking: any;
 
     // For hotel bookings, we already created the record in hotel_bookings table
@@ -277,6 +279,7 @@ serve(async (req) => {
         .eq('id', serviceDetails.id);
     } else {
       // Create booking record in user_bookings for non-hotel services
+      // Note: vat_amount is stored in processing_fee field (table doesn't have vat_amount column)
       const { data: userBooking, error: bookingError } = await supabaseAdmin
         .from('user_bookings')
         .insert({
@@ -297,7 +300,7 @@ serve(async (req) => {
           certification_type: serviceDetails.certification_type,
           base_price: basePrice,
           platform_fee: platformFee,
-          vat_amount: vatAmount,
+          processing_fee: vatAmount,  // Store VAT in processing_fee field
           coingate_fee: coingateFee,
           total_amount: totalAmount,
           currency: serviceDetails.currency,
@@ -311,7 +314,9 @@ serve(async (req) => {
           special_requests: specialRequests,
           metadata: {
             source_table: tableName,
-            created_via: 'coingate_payment'
+            created_via: 'coingate_payment',
+            vat_rate: VAT_RATE,
+            vat_amount: vatAmount
           }
         })
         .select()

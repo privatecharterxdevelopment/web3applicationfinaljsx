@@ -365,6 +365,9 @@ function AppContent() {
               {/* Dashboard Route - Glassmorphic Dashboard with Empty Legs & RWS */}
               <Route path="/dashboard" element={<TokenizedAssetsGlassmorphic />} />
 
+              {/* Dashboard AI Chat - new chat session */}
+              <Route path="/dashboard/chat" element={<TokenizedAssetsGlassmorphic />} />
+
               {/* Dashboard with specific chat session - allows direct linking to chats */}
               <Route path="/dashboard/chat/:chatId" element={<TokenizedAssetsGlassmorphic />} />
 
@@ -377,8 +380,8 @@ function AppContent() {
               {/* Legacy redirect - /glas now redirects to /dashboard */}
               <Route path="/glas" element={<Navigate to="/dashboard" replace />} />
 
-              {/* AI Chat direct route - redirect to dashboard */}
-              <Route path="/chat" element={<Navigate to="/dashboard?tab=ai-chat" replace />} />
+              {/* AI Chat direct route - redirect to /dashboard/chat */}
+              <Route path="/chat" element={<Navigate to="/dashboard/chat" replace />} />
 
               {/* AI Chat with specific conversation ID - redirect to dashboard */}
               <Route path="/chat/:chatId" element={<ChatRedirect />} />

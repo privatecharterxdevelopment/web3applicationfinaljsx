@@ -13,6 +13,7 @@ import { createRequest } from '../../services/requests';
 import SuccessNotification from '../SuccessNotification';
 import NFTBenefitsModal from '../NFTBenefitsModal';
 import CryptoPaymentModal from '../Payment/CryptoPaymentModal';
+import { convertToUSD, formatUSD, initializeExchangeRates } from '../../services/currencyService';
 
 const EmptyLegDetail = () => {
   const { id } = useParams();
@@ -22,6 +23,7 @@ const EmptyLegDetail = () => {
   const { user } = useAuth();
   const { hasNFT, nftDiscount, isCheckingNFT, checkNFTMembership, showNFTModal, closeNFTModal, nfts, usedBenefits, markFreeFlightUsed, incrementDiscountUsage } = useNFT();
   const [emptyLeg, setEmptyLeg] = useState(null);
+  const [priceUSD, setPriceUSD] = useState(0);
   const [activeTab, setActiveTab] = useState('details');
   const [isLoading, setIsLoading] = useState(true);
   const [originCoords, setOriginCoords] = useState(null);
@@ -87,6 +89,9 @@ const EmptyLegDetail = () => {
   const fetchEmptyLeg = async () => {
     setIsLoading(true);
     try {
+      // Initialize exchange rates first
+      await initializeExchangeRates();
+
       const { data, error } = await supabase
         .from('EmptyLegs_')
         .select('*')
@@ -97,11 +102,20 @@ const EmptyLegDetail = () => {
 
       setEmptyLeg(data);
 
-      console.log('Empty Leg Data:', {
-        from_iata: data.from_iata,
-        to_iata: data.to_iata,
-        from_city: data.from_city,
-        to_city: data.to_city
+      // Convert GBP price to USD
+      const priceGBP = data.price || 0;
+      const convertedPrice = convertToUSD(priceGBP, 'GBP');
+      setPriceUSD(convertedPrice);
+
+      console.log('Empty Leg Data - FULL:', data);
+      console.log('Empty Leg Data - Aircraft fields:', {
+        aircraft_type: data.aircraft_type,
+        aircraft_type_original: data.aircraft_type_original,
+        aircraft_model: data.aircraft_model,
+        aircraft: data.aircraft,
+        category: data.category,
+        aircraft_category: data.aircraft_category,
+        all_keys: Object.keys(data)
       });
 
       // Get airport coordinates from Supabase airports table (supports ALL airports)
@@ -200,8 +214,9 @@ const EmptyLegDetail = () => {
     }
 
     try {
-      const isFree = hasNFT && emptyLeg.price <= 1500;
-      const discountedPrice = hasNFT ? emptyLeg.price * (1 - nftDiscount / 100) : emptyLeg.price;
+      // NFT free flight eligibility: price < $1900 USD (approximately £1500 GBP)
+      const isFree = hasNFT && priceUSD < 1900;
+      const discountedPrice = hasNFT ? priceUSD * (1 - nftDiscount / 100) : priceUSD;
       const finalPrice = isFree ? 0 : discountedPrice;
 
       const requestType = isFree ? 'nft_free_flight' : hasNFT ? 'nft_discount_empty_leg' : 'empty_leg';
@@ -232,10 +247,10 @@ const EmptyLegDetail = () => {
             arrival_time: emptyLeg.arrival_time,
             aircraft_type: emptyLeg.category,
             capacity: emptyLeg.capacity,
-            original_price: emptyLeg.price,
+            original_price: priceUSD,
             discounted_price: finalPrice,
             final_price: finalPrice,
-            currency: 'EUR',
+            currency: 'USD',
             passengers: passengers,
             passenger_count: passengers,
             luggage: luggage,
@@ -281,7 +296,7 @@ const EmptyLegDetail = () => {
 
   const departureDate = emptyLeg ? new Date(emptyLeg.departure_date) : null;
   const arrivalDate = emptyLeg?.arrival_date ? new Date(emptyLeg.arrival_date) : null;
-  const finalPrice = hasNFT && emptyLeg ? emptyLeg.price * 0.85 : (emptyLeg?.price || 0);
+  const calculatedFinalPrice = hasNFT && emptyLeg ? priceUSD * 0.85 : priceUSD;
 
   return (
     <div className="min-h-screen bg-gray-50 font-['DM_Sans']">
@@ -422,9 +437,15 @@ const EmptyLegDetail = () => {
               <h1 className="text-xl font-semibold mb-1">
                 {emptyLeg.from_iata || emptyLeg.from?.substring(0, 3).toUpperCase()} → {emptyLeg.to_iata || emptyLeg.to?.substring(0, 3).toUpperCase()}
               </h1>
-              <p className="text-xs text-gray-600 mb-3">
+              <p className="text-xs text-gray-600 mb-1">
                 {emptyLeg.from_city || emptyLeg.from} to {emptyLeg.to_city || emptyLeg.to}
               </p>
+              {/* Aircraft Type - prominently displayed */}
+              {emptyLeg.aircraft_type && (
+                <p className="text-xs font-medium text-gray-800 mb-3">
+                  ✈ {emptyLeg.aircraft_type}
+                </p>
+              )}
 
               {/* Mobile Key Metrics - Grid */}
               <div className="grid grid-cols-3 gap-2 mb-4">
@@ -438,7 +459,7 @@ const EmptyLegDetail = () => {
                 </div>
                 <div className="bg-gray-50 rounded-lg p-2 text-center">
                   <span className="text-[10px] text-gray-500 block">Price</span>
-                  <span className="text-xs font-semibold text-black">€{emptyLeg.price?.toLocaleString() || 'N/A'}</span>
+                  <span className="text-xs font-semibold text-black">${Math.round(priceUSD).toLocaleString() || 'N/A'}</span>
                 </div>
               </div>
 
@@ -530,12 +551,18 @@ const EmptyLegDetail = () => {
                 </div>
               </div>
 
-              <h1 className="text-2xl font-semibold mb-4">
+              <h1 className="text-2xl font-semibold mb-2">
                 {emptyLeg.from_iata || emptyLeg.from?.substring(0, 3).toUpperCase()} → {emptyLeg.to_iata || emptyLeg.to?.substring(0, 3).toUpperCase()}
               </h1>
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-600 mb-1">
                 {emptyLeg.from_city || emptyLeg.from} to {emptyLeg.to_city || emptyLeg.to}
               </p>
+              {/* Aircraft Type - prominently displayed */}
+              {emptyLeg.aircraft_type && (
+                <p className="text-sm font-medium text-gray-800 mb-4">
+                  ✈ {emptyLeg.aircraft_type}
+                </p>
+              )}
 
               {/* Tab Navigation */}
               <div className="flex space-x-6 border-b border-gray-300 mb-5">
@@ -582,7 +609,7 @@ const EmptyLegDetail = () => {
                 </div>
                 <div className="flex flex-col space-y-1">
                   <span className="text-xs text-gray-500">Price</span>
-                  <span className="text-sm font-semibold text-black">€{emptyLeg.price?.toLocaleString() || 'N/A'}</span>
+                  <span className="text-sm font-semibold text-black">${Math.round(priceUSD).toLocaleString() || 'N/A'}</span>
                 </div>
               </div>
 
@@ -639,6 +666,10 @@ const EmptyLegDetail = () => {
                     <div className="border-b border-gray-100 pb-2">
                       <div className="text-xs text-gray-500 font-medium">Distance</div>
                       <div className="text-sm font-semibold text-black">{co2Data.distance > 0 ? `${co2Data.distance} km` : (emptyLeg.distance || 'N/A')}</div>
+                    </div>
+                    <div className="border-b border-gray-100 pb-2">
+                      <div className="text-xs text-gray-500 font-medium">Aircraft</div>
+                      <div className="text-sm font-semibold text-black">{emptyLeg.aircraft_type || 'N/A'}</div>
                     </div>
                     <div className="border-b border-gray-100 pb-2">
                       <div className="text-xs text-gray-500 font-medium">Passengers</div>
@@ -802,7 +833,7 @@ const EmptyLegDetail = () => {
               <div className="space-y-3 mb-5">
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-500">Base Price</span>
-                  <span className="text-xs font-semibold text-black">€{emptyLeg.price?.toLocaleString()}</span>
+                  <span className="text-xs font-semibold text-black">${Math.round(priceUSD).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-500">Departure</span>
@@ -885,7 +916,7 @@ const EmptyLegDetail = () => {
                     </div>
                     <p className="text-xs text-gray-700">
                       {nftDiscount}% discount on all flights
-                      {emptyLeg.price <= 1500 && <span className="block mt-1 font-semibold text-black">This flight is FREE!</span>}
+                      {priceUSD < 1900 && <span className="block mt-1 font-semibold text-black">This flight is FREE!</span>}
                     </p>
                   </div>
                 </div>
@@ -895,18 +926,18 @@ const EmptyLegDetail = () => {
               <div className="p-3 bg-gray-50 rounded mb-4">
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-gray-500">Base Price:</span>
-                  <span className="font-semibold text-black">€{emptyLeg.price?.toLocaleString()}</span>
+                  <span className="font-semibold text-black">${Math.round(priceUSD).toLocaleString()}</span>
                 </div>
                 {hasNFT && (
                   <>
                     <div className="flex justify-between text-xs mb-1">
                       <span className="text-gray-600">NFT Discount ({nftDiscount}%):</span>
-                      <span className="font-semibold text-black">-€{(emptyLeg.price * nftDiscount / 100).toLocaleString()}</span>
+                      <span className="font-semibold text-black">-${Math.round(priceUSD * nftDiscount / 100).toLocaleString()}</span>
                     </div>
-                    {emptyLeg.price <= 1500 && (
+                    {priceUSD < 1900 && (
                       <div className="flex justify-between text-xs mb-1">
                         <span className="text-gray-600">Free Flight Bonus:</span>
-                        <span className="font-semibold text-black">-€{(emptyLeg.price * (1 - nftDiscount / 100)).toLocaleString()}</span>
+                        <span className="font-semibold text-black">-${Math.round(priceUSD * (1 - nftDiscount / 100)).toLocaleString()}</span>
                       </div>
                     )}
                   </>
@@ -914,7 +945,7 @@ const EmptyLegDetail = () => {
                 <div className="flex justify-between text-sm font-bold border-t border-gray-200 pt-2 mt-2">
                   <span className="text-black">Total:</span>
                   <span className="text-black">
-                    {hasNFT && emptyLeg.price <= 1500 ? 'FREE' : `€${(hasNFT ? emptyLeg.price * (1 - nftDiscount / 100) : emptyLeg.price).toLocaleString()}`}
+                    {hasNFT && priceUSD < 1900 ? 'FREE' : `$${Math.round(hasNFT ? priceUSD * (1 - nftDiscount / 100) : priceUSD).toLocaleString()}`}
                   </span>
                 </div>
               </div>
@@ -924,7 +955,7 @@ const EmptyLegDetail = () => {
                 onClick={requestFlight}
                 className="w-full bg-black text-white py-3 px-4 rounded text-sm font-semibold hover:bg-gray-800 transition-colors"
               >
-                {hasNFT && emptyLeg.price <= 1500 ? 'Get Flight FREE' : 'Request Flight'}
+                {hasNFT && priceUSD < 1900 ? 'Get Flight FREE' : 'Request Flight'}
               </button>
 
               {/* Pay with Crypto Button - Only show when price is available */}
@@ -1082,9 +1113,9 @@ const EmptyLegDetail = () => {
           service={{
             id: emptyLeg.id,
             title: `${emptyLeg.from_iata} → ${emptyLeg.to_iata}`,
-            price: hasNFT && emptyLeg.price <= 1500 ? 0 : (hasNFT ? emptyLeg.price * (1 - nftDiscount / 100) : emptyLeg.price),
-            originalPrice: emptyLeg.price,
-            currency: 'EUR',
+            price: hasNFT && priceUSD < 1900 ? 0 : (hasNFT ? priceUSD * (1 - nftDiscount / 100) : priceUSD),
+            originalPrice: priceUSD,
+            currency: 'USD',
             departure: emptyLeg.from_city || emptyLeg.from_iata,
             destination: emptyLeg.to_city || emptyLeg.to_iata,
             departureDate: emptyLeg.departure_date,

@@ -109,7 +109,7 @@ export const fetchEmptyLegs = async (params: FetchEmptyLegsParams = {}) => {
       origin: leg.from || '',
       destination: leg.to || '',
       price: leg.price || 0,
-      currency: leg.currency || '€',
+      currency: leg.currency || 'GBP',
       departure_date: leg.departure_date || new Date().toISOString(),
       image_url: leg.image_url || 'https://images.unsplash.com/photo-1540962351504-03099e0a754b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2574&q=80',
       aircraft_type: leg.aircraft_type || 'Private Jet',
