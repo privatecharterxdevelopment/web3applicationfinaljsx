@@ -46,7 +46,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
   const [isZurichBooking, setIsZurichBooking] = useState(false); // Keep for backward compatibility
   const [isPanelMinimized, setIsPanelMinimized] = useState(false);
   const [showDateTimeModal, setShowDateTimeModal] = useState(false);
-  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
+  // Currency is auto-set based on pickup location country
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
   const [detectedCountry, setDetectedCountry] = useState(null);
   const [pricePerKm, setPricePerKm] = useState(2.50);
@@ -1255,15 +1255,15 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
       />
 
 
-      {/* Bottom Booking Panel - Floating modal with proper spacing */}
+      {/* Bottom Booking Panel - Floating modal with proper iOS-safe spacing */}
       <div
         className={`absolute ${serviceCategory === 'luxury-cars' ? 'left-4 md:left-6' : 'left-1/2 -translate-x-1/2'} pointer-events-auto z-10 transition-all duration-300`}
         style={{
           maxWidth: serviceCategory === 'luxury-cars' ? '480px' : '650px',
           width: serviceCategory === 'luxury-cars' ? 'calc(100% - 2rem)' : 'calc(100% - 2rem)',
-          bottom: '16px',
-          top: bookingStep === 3 && isModalExpanded ? '16px' : 'auto',
-          maxHeight: bookingStep === 3 ? (isModalExpanded ? 'calc(100vh - 32px)' : '70vh') : 'auto'
+          bottom: 'max(16px, env(safe-area-inset-bottom))',
+          top: bookingStep === 3 && isModalExpanded ? 'max(70px, calc(env(safe-area-inset-top) + 54px))' : 'auto',
+          maxHeight: bookingStep === 3 ? (isModalExpanded ? 'calc(100dvh - max(86px, calc(env(safe-area-inset-top) + 70px)))' : '70vh') : 'auto'
         }}
       >
         <div className={`bg-white shadow-2xl rounded-2xl transition-all duration-300 w-full h-full`} style={{ overflow: bookingStep === 3 ? 'hidden' : 'visible', position: 'relative', display: 'flex', flexDirection: 'column' }}>
@@ -1547,9 +1547,9 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                 </div>
               )}
 
-              {/* Step 3: Car Selection with Images */}
+              {/* Step 3: Car Selection with Images - Mobile optimized */}
               {bookingStep === 3 && (
-                <div className="flex flex-col h-full min-h-0" style={{ maxHeight: isModalExpanded ? 'calc(100dvh - 40px)' : 'min(55vh, 400px)' }}>
+                <div className="flex flex-col h-full min-h-0" style={{ maxHeight: isModalExpanded ? 'calc(100dvh - max(100px, calc(env(safe-area-inset-top) + 86px)))' : 'min(55vh, 400px)' }}>
                   {/* Expand/Collapse Button - Centered at top of car list */}
                   <div className="flex justify-center py-3 border-b border-gray-100 flex-shrink-0">
                     <button
@@ -1677,14 +1677,8 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                                 </span>
                               </div>
 
-                              {/* Price - Clickable to change currency */}
-                              <div
-                                className="cursor-pointer hover:opacity-70 transition-opacity text-right"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setShowCurrencyPicker(true);
-                                }}
-                              >
+                              {/* Price - Currency auto-set by country */}
+                              <div className="text-right">
                                 {serviceCategory === 'luxury-cars' && car.pricePerDay ? (
                                   <>
                                     <div className="text-sm md:text-base font-bold text-gray-800 animate-fadeInUp">
@@ -1966,42 +1960,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
         </div>
       )}
 
-      {/* Currency Picker Modal */}
-      {showCurrencyPicker && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">Select Currency</h3>
-              <button
-                onClick={() => setShowCurrencyPicker(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X size={20} className="text-gray-600" />
-              </button>
-            </div>
-
-            {/* Currency Options in Light Grey Bubbles */}
-            <div className="grid grid-cols-3 gap-3">
-              {['USD', 'CHF', 'EUR', 'USDT', 'USDC', 'BTC'].map((currency) => (
-                <button
-                  key={currency}
-                  onClick={() => {
-                    setSelectedCurrency(currency);
-                    setShowCurrencyPicker(false);
-                  }}
-                  className={`px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                    selectedCurrency === currency
-                      ? 'bg-gray-800 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {currency}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Currency is now auto-set based on pickup country - no manual picker needed */}
 
       {/* Quote Request Modal - For Luxury Cars and On Request Countries */}
       {showQuoteModal && selectedCar && (
