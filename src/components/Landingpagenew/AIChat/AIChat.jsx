@@ -22,6 +22,7 @@ import { chatService } from '../../../services/chatService';
 import { subscriptionService } from '../../../services/subscriptionService';
 import { useAuth } from '../../../context/AuthContext';
 import { createRequest } from '../../../services/requests';
+import { convertToUSD, initializeExchangeRates } from '../../../services/currencyService';
 import {
   aiToolDefinitions,
   executeTool,
@@ -620,6 +621,9 @@ const AIChat = ({
     setUserHasNFT(nftStatus);
     setUsedNFTBenefitThisYear(nftUsed);
 
+    // Initialize exchange rates for USD conversion
+    initializeExchangeRates();
+
     // Load user subscription profile
     if (user?.id) {
       loadUserProfile();
@@ -1051,29 +1055,35 @@ const AIChat = ({
     let cartItem = {
       ...item,
       cartId: Date.now(),
-      addedAt: new Date().toISOString()
+      addedAt: new Date().toISOString(),
+      currency: 'USD' // All prices now in USD
     };
 
     // For jets and helicopters: calculate estimated price based on flight distance/time
     const isJet = item.type === 'jets' || item.type === 'jet';
     const isHelicopter = item.type === 'helicopters' || item.type === 'helicopter';
 
+    // Convert hourly rate from EUR to USD
+    const hourlyRateUSD = item.hourly_rate_eur ? Math.round(convertToUSD(item.hourly_rate_eur, 'EUR')) : 0;
+
     if ((isJet || isHelicopter) && item.hourly_rate_eur) {
       // FIRST: Check if item already has estimatedPrice from search results (pre-calculated)
       if (item.estimatedPrice && item.estimatedPrice > 0) {
-        // Use pre-calculated values from search
+        // Convert pre-calculated price from EUR to USD
+        const estimatedPriceUSD = Math.round(convertToUSD(item.estimatedPrice, 'EUR'));
         cartItem = {
           ...cartItem,
           flightDistanceNm: item.flightDistance,
           flightTimeHours: item.flightHours || item.billedHours,
           estimatedDuration: item.estimatedDuration,
           billedHours: item.billedHours || item.flightHours,
-          estimatedPrice: item.estimatedPrice,
-          price: item.estimatedPrice,
-          basePrice: item.estimatedPrice,
-          totalWithFee: item.estimatedPrice,
+          estimatedPrice: estimatedPriceUSD,
+          price: estimatedPriceUSD,
+          basePrice: estimatedPriceUSD,
+          totalWithFee: estimatedPriceUSD,
+          hourly_rate_usd: hourlyRateUSD,
           isEstimate: true,
-          priceCalculation: item.priceCalculation || `${item.estimatedDuration} × €${item.hourly_rate_eur.toLocaleString()}/hr`,
+          priceCalculation: item.priceCalculation ? item.priceCalculation.replace(/€/g, '$') : `${item.estimatedDuration} × $${hourlyRateUSD.toLocaleString()}/hr`,
           route: item.route || `${item.from} → ${item.to}`
         };
       } else if (item.flightDistance && item.estimatedDuration) {
@@ -1084,8 +1094,8 @@ const AIChat = ({
           flightTimeHours = parseInt(durationMatch[1]) + (parseInt(durationMatch[2] || 0) / 60);
         }
 
-        // Calculate estimated price using ACTUAL flight time (not rounded)
-        const estimatedPrice = Math.round(flightTimeHours * item.hourly_rate_eur);
+        // Calculate estimated price in USD
+        const estimatedPriceUSD = Math.round(flightTimeHours * hourlyRateUSD);
 
         // Add calculated fields to cart item
         cartItem = {
@@ -1094,12 +1104,13 @@ const AIChat = ({
           flightTimeHours: flightTimeHours,
           estimatedDuration: item.estimatedDuration,
           billedHours: flightTimeHours,
-          estimatedPrice: estimatedPrice,
-          price: estimatedPrice,
-          basePrice: estimatedPrice,
-          totalWithFee: estimatedPrice,
+          estimatedPrice: estimatedPriceUSD,
+          price: estimatedPriceUSD,
+          basePrice: estimatedPriceUSD,
+          totalWithFee: estimatedPriceUSD,
+          hourly_rate_usd: hourlyRateUSD,
           isEstimate: true,
-          priceCalculation: `${item.estimatedDuration} × €${item.hourly_rate_eur.toLocaleString()}/hr`,
+          priceCalculation: `${item.estimatedDuration} × $${hourlyRateUSD.toLocaleString()}/hr`,
           route: item.route || `${item.flightDistance.toLocaleString()} nm flight`
         };
       } else {
@@ -1118,8 +1129,8 @@ const AIChat = ({
             // Calculate flight time in hours
             const flightTimeHours = distanceNm / cruiseSpeedKts;
 
-            // Calculate estimated price using ACTUAL flight time (not rounded)
-            const estimatedPrice = Math.round(flightTimeHours * item.hourly_rate_eur);
+            // Calculate estimated price in USD
+            const estimatedPriceUSD = Math.round(flightTimeHours * hourlyRateUSD);
 
             // Format duration string
             const hours = Math.floor(flightTimeHours);
@@ -1133,12 +1144,13 @@ const AIChat = ({
               flightTimeHours: flightTimeHours,
               estimatedDuration: durationStr,
               billedHours: flightTimeHours,
-              estimatedPrice: estimatedPrice,
-              price: estimatedPrice,
-              basePrice: estimatedPrice,
-              totalWithFee: estimatedPrice,
+              estimatedPrice: estimatedPriceUSD,
+              price: estimatedPriceUSD,
+              basePrice: estimatedPriceUSD,
+              totalWithFee: estimatedPriceUSD,
+              hourly_rate_usd: hourlyRateUSD,
               isEstimate: true,
-              priceCalculation: `${durationStr} × €${item.hourly_rate_eur.toLocaleString()}/hr`,
+              priceCalculation: `${durationStr} × $${hourlyRateUSD.toLocaleString()}/hr`,
               route: `${origin} → ${destination}`
             };
           } else if (item.estimatedDuration) {
@@ -1148,25 +1160,26 @@ const AIChat = ({
             if (durationMatch) {
               flightTimeHours = parseInt(durationMatch[1]) + (parseInt(durationMatch[2] || 0) / 60);
             }
-            const estimatedPrice = Math.round(flightTimeHours * item.hourly_rate_eur);
+            const estimatedPriceUSD = Math.round(flightTimeHours * hourlyRateUSD);
 
             cartItem = {
               ...cartItem,
               flightTimeHours: flightTimeHours,
               estimatedDuration: item.estimatedDuration,
               billedHours: flightTimeHours,
-              estimatedPrice: estimatedPrice,
-              price: estimatedPrice,
-              basePrice: estimatedPrice,
-              totalWithFee: estimatedPrice,
+              estimatedPrice: estimatedPriceUSD,
+              price: estimatedPriceUSD,
+              basePrice: estimatedPriceUSD,
+              totalWithFee: estimatedPriceUSD,
+              hourly_rate_usd: hourlyRateUSD,
               isEstimate: true,
-              priceCalculation: `${item.estimatedDuration} × €${item.hourly_rate_eur.toLocaleString()}/hr`,
+              priceCalculation: `${item.estimatedDuration} × $${hourlyRateUSD.toLocaleString()}/hr`,
               route: `${origin} → ${destination}`
             };
           } else {
             // Last resort: use minimum 1 hour billing
             const minHours = isHelicopter ? 0.5 : 1; // 30 min for heli, 1h for jets
-            const estimatedPrice = Math.round(minHours * item.hourly_rate_eur);
+            const estimatedPriceUSD = Math.round(minHours * hourlyRateUSD);
             const durationStr = isHelicopter ? '30m' : '1h';
 
             cartItem = {
@@ -1174,12 +1187,13 @@ const AIChat = ({
               flightTimeHours: minHours,
               estimatedDuration: `${durationStr} (minimum)`,
               billedHours: minHours,
-              estimatedPrice: estimatedPrice,
-              price: estimatedPrice,
-              basePrice: estimatedPrice,
-              totalWithFee: estimatedPrice,
+              estimatedPrice: estimatedPriceUSD,
+              price: estimatedPriceUSD,
+              basePrice: estimatedPriceUSD,
+              totalWithFee: estimatedPriceUSD,
+              hourly_rate_usd: hourlyRateUSD,
               isEstimate: true,
-              priceCalculation: `${durationStr} min × €${item.hourly_rate_eur.toLocaleString()}/hr`,
+              priceCalculation: `${durationStr} min × $${hourlyRateUSD.toLocaleString()}/hr`,
               route: `${origin} → ${destination}`
             };
           }
@@ -1193,7 +1207,7 @@ const AIChat = ({
 
     // Show minimalistic toast notification
     const itemName = item.name || item.title || 'Item';
-    const priceInfo = cartItem.estimatedPrice ? ` (~€${cartItem.estimatedPrice.toLocaleString()})` : '';
+    const priceInfo = cartItem.estimatedPrice ? ` (~$${cartItem.estimatedPrice.toLocaleString()})` : '';
     setToast({
       message: isFree ? `${itemName} added (FREE with NFT)` : `${itemName}${priceInfo} added to cart`,
       type: 'cart'
@@ -1205,7 +1219,7 @@ const AIChat = ({
     if (cartItem.estimatedPrice && cartItem.priceCalculation) {
       msg += `\n\n📍 Route: ${cartItem.route}`;
       msg += `\n⏱️ Est. flight time: ${cartItem.estimatedDuration}`;
-      msg += `\n💰 Est. price: ${cartItem.priceCalculation} = ~€${cartItem.estimatedPrice.toLocaleString()}`;
+      msg += `\n💰 Est. price: ${cartItem.priceCalculation} = ~$${cartItem.estimatedPrice.toLocaleString()}`;
     }
     msg += `\n\nContinue browsing or say "send request" when ready.`;
 
@@ -4721,8 +4735,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     const isCustomExtra = item.type === 'custom_extra';
                     const canDirectCheckout = isEmptyLeg || isAdventure || isWine;
                     const hasAirportFee = item.airportPickupFee && item.airportPickupFee > 0;
-                    // Currency: Empty legs are USD, everything else is EUR
-                    const currencySymbol = item.currency === 'USD' || isEmptyLeg ? '$' : '€';
+                    // Currency: All prices now in USD
+                    const currencySymbol = '$';
 
                     // Custom Extra - Special horizontal layout
                     if (isCustomExtra) {
@@ -4937,10 +4951,10 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                       <span>{item.speed_kts} kts</span>
                                     </div>
                                   )}
-                                  {item.hourly_rate_eur && (
+                                  {(item.hourly_rate_usd || item.hourly_rate_eur) && (
                                     <div className="flex items-center gap-1.5">
                                       <span className="text-gray-400">💰</span>
-                                      <span>${item.hourly_rate_eur.toLocaleString()}/hr</span>
+                                      <span>${(item.hourly_rate_usd || Math.round(convertToUSD(item.hourly_rate_eur, 'EUR'))).toLocaleString()}/hr</span>
                                     </div>
                                   )}
                                 </div>
@@ -5006,10 +5020,10 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                       <span>{item.crew} crew</span>
                                     </div>
                                   )}
-                                  {item.daily_rate_eur && (
+                                  {(item.daily_rate_usd || item.daily_rate_eur) && (
                                     <div className="flex items-center gap-1.5 col-span-2">
                                       <span className="text-gray-400">💰</span>
-                                      <span>${item.daily_rate_eur.toLocaleString()}/day</span>
+                                      <span>${(item.daily_rate_usd || Math.round(convertToUSD(item.daily_rate_eur, 'EUR'))).toLocaleString()}/day</span>
                                     </div>
                                   )}
                                 </div>
@@ -5044,10 +5058,10 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                       <span>{item.transmission}</span>
                                     </div>
                                   )}
-                                  {item.daily_rate_eur && (
+                                  {(item.daily_rate_usd || item.daily_rate_eur) && (
                                     <div className="flex items-center gap-1.5">
                                       <span className="text-gray-400">💰</span>
-                                      <span>${item.daily_rate_eur.toLocaleString()}/day</span>
+                                      <span>${(item.daily_rate_usd || Math.round(convertToUSD(item.daily_rate_eur, 'EUR'))).toLocaleString()}/day</span>
                                     </div>
                                   )}
                                 </div>
@@ -5059,9 +5073,10 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                       <button
                                         onClick={() => {
                                           const days = Math.max(1, (item.rentalDays || 1) - 1);
+                                          const dailyRate = item.daily_rate_usd || Math.round(convertToUSD(item.daily_rate_eur || item.price, 'EUR'));
                                           setCartItems(prev => prev.map((ci, i) =>
                                             (ci.cartId === item.cartId || i === idx)
-                                              ? { ...ci, rentalDays: days, price: (ci.daily_rate_eur || ci.price) * days }
+                                              ? { ...ci, rentalDays: days, price: dailyRate * days }
                                               : ci
                                           ));
                                         }}
@@ -5073,9 +5088,10 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                       <button
                                         onClick={() => {
                                           const days = (item.rentalDays || 1) + 1;
+                                          const dailyRate = item.daily_rate_usd || Math.round(convertToUSD(item.daily_rate_eur || item.price, 'EUR'));
                                           setCartItems(prev => prev.map((ci, i) =>
                                             (ci.cartId === item.cartId || i === idx)
-                                              ? { ...ci, rentalDays: days, price: (ci.daily_rate_eur || ci.price) * days }
+                                              ? { ...ci, rentalDays: days, price: dailyRate * days }
                                               : ci
                                           ));
                                         }}
@@ -5256,23 +5272,17 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     const mainServices = cartItems.filter(item => item.type !== 'custom_extra');
                     const customExtras = cartItems.filter(item => item.type === 'custom_extra');
 
-                    // Separate by currency - Empty legs are USD, everything else is EUR
-                    const usdItems = cartItems.filter(item => item.currency === 'USD' || item.type === 'empty_legs' || item.type === 'emptyleg');
-                    const eurItems = cartItems.filter(item => item.currency !== 'USD' && item.type !== 'empty_legs' && item.type !== 'emptyleg');
-
-                    const usdSubtotal = usdItems.reduce((sum, item) => sum + (item.basePrice || item.price_usd || item.price || 0), 0);
-                    const eurSubtotal = eurItems.reduce((sum, item) => sum + (item.basePrice || item.price || 0), 0);
-
+                    // All prices now in USD
+                    const subtotal = cartItems.reduce((sum, item) => sum + (item.basePrice || item.price_usd || item.price || 0), 0);
                     const extrasSubtotal = customExtras.reduce((sum, item) => sum + (item.basePrice || item.price_usd || item.price || 0), 0);
                     const airportFees = cartItems.reduce((sum, item) => sum + (item.airportPickupFee || 0), 0);
                     const cateringTotal = cartItems.reduce((sum, item) => sum + (item.cateringPrice || 0), 0);
 
-                    const hasMixedCurrencies = usdItems.length > 0 && eurItems.length > 0;
-                    const primaryCurrency = usdItems.length > eurItems.length ? '$' : '€';
-
-                    // For mixed currencies, show separate totals
                     const hasEstimates = cartItems.some(item => item.isEstimate);
                     const hasCustomExtras = customExtras.length > 0;
+
+                    // Calculate grand total
+                    const grandTotal = subtotal + airportFees + cateringTotal;
 
                     return (
                       <div className="space-y-2 mb-3">
@@ -5293,74 +5303,51 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           </div>
                         )}
 
-                        {/* Show EUR items if any */}
-                        {eurSubtotal > 0 && (
+                        {/* Show services subtotal */}
+                        {subtotal > 0 && (
                           <div className="flex justify-between items-center text-sm">
-                            <span className="text-gray-500">Services (EUR)</span>
-                            <span className="text-gray-700">{hasEstimates ? '~' : ''}€{eurSubtotal.toLocaleString()}</span>
-                          </div>
-                        )}
-
-                        {/* Show USD items if any */}
-                        {usdSubtotal > 0 && (
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="text-gray-500">Services (USD)</span>
-                            <span className="text-gray-700">{hasEstimates ? '~' : ''}${usdSubtotal.toLocaleString()}</span>
+                            <span className="text-gray-500">Services</span>
+                            <span className="text-gray-700">{hasEstimates ? '~' : ''}${subtotal.toLocaleString()}</span>
                           </div>
                         )}
 
                         {extrasSubtotal > 0 && (
                           <div className="flex justify-between items-center text-sm">
                             <span className="text-gray-600">Custom extras</span>
-                            <span className="text-gray-600">~€{extrasSubtotal.toLocaleString()}</span>
+                            <span className="text-gray-600">~${extrasSubtotal.toLocaleString()}</span>
                           </div>
                         )}
                         {cateringTotal > 0 && (
                           <div className="flex justify-between items-center text-sm">
                             <span className="text-gray-500">Catering upgrades</span>
-                            <span className="text-gray-600">+€{cateringTotal.toLocaleString()}</span>
+                            <span className="text-gray-600">+${cateringTotal.toLocaleString()}</span>
                           </div>
                         )}
                         {airportFees > 0 && (
                           <div className="flex justify-between items-center text-sm">
                             <span className="text-gray-500">Airfield pickup fees</span>
-                            <span className="text-gray-600">+€{airportFees.toLocaleString()}</span>
-                          </div>
-                        )}
-
-                        {/* VAT note for EUR items */}
-                        {eurSubtotal > 0 && (
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="text-gray-500">VAT (8.1% on EUR)</span>
-                            <span className="text-gray-600">{hasEstimates ? '~' : ''}+€{(eurSubtotal * 0.081).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            <span className="text-gray-600">+${airportFees.toLocaleString()}</span>
                           </div>
                         )}
 
                         <div className="flex justify-between items-center pt-2 border-t border-gray-200">
                           <span className="text-sm font-semibold text-gray-700">{hasEstimates ? 'Est. Total' : 'Total'}</span>
                           <div className="text-right">
-                            {hasMixedCurrencies ? (
-                              <>
-                                {eurSubtotal > 0 && <span className="text-lg font-bold text-gray-900 block">€{(eurSubtotal * 1.081).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>}
-                                {usdSubtotal > 0 && <span className="text-lg font-bold text-gray-900 block">${usdSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>}
-                              </>
-                            ) : (
-                              <span className="text-lg font-bold text-gray-900">
-                                {hasEstimates ? '~' : ''}{eurSubtotal > 0 ? '€' : '$'}{((eurSubtotal > 0 ? eurSubtotal * 1.081 : 0) + usdSubtotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </span>
-                            )}
+                            <span className="text-lg font-bold text-gray-900">
+                              {hasEstimates ? '~' : ''}${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
                           </div>
                         </div>
 
-                        {/* PVCX Rewards Estimate - based on EUR equivalent */}
-                        {(eurSubtotal > 0 || usdSubtotal > 0) && (
+                        {/* PVCX Rewards Estimate */}
+                        {grandTotal > 0 && (
                           <div className="flex justify-between items-center pt-2 mt-2 border-t border-dashed border-gray-200 bg-gray-100 -mx-4 px-4 py-2 -mb-3 rounded-b-lg">
                             <span className="text-xs text-gray-700 flex items-center gap-1.5">
                               <span className="text-sm">✨</span>
                               PVCX Reward (1.5%)
                             </span>
                             <span className="text-sm font-bold text-gray-800">
-                              +{((eurSubtotal * 1.081 + usdSubtotal * 0.92) * 0.015).toFixed(2)} PVCX
+                              +{(grandTotal * 0.015).toFixed(2)} PVCX
                             </span>
                           </div>
                         )}
@@ -6221,7 +6208,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Price:</span>
                   <span className="font-semibold text-black">
-                    ${item.price_eur?.toLocaleString() || item.hourly_rate_eur?.toLocaleString() || item.daily_rate_eur?.toLocaleString() || 'TBD'}
+                    ${item.price?.toLocaleString() || item.basePrice?.toLocaleString() || item.price_usd?.toLocaleString() || 'TBD'}
                   </span>
                 </div>
 

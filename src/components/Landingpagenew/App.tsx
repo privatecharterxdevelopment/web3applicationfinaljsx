@@ -371,6 +371,9 @@ function AppContent() {
               {/* Dashboard with specific chat session - allows direct linking to chats */}
               <Route path="/dashboard/chat/:chatId" element={<TokenizedAssetsGlassmorphic />} />
 
+              {/* Ground Transport / Transfer booking */}
+              <Route path="/dashboard/transfer" element={<Navigate to="/dashboard?tab=ground-transport" replace />} />
+
               {/* User Overview Dashboard (old) */}
               <Route path="/user-overview" element={<Dashboard />} />
 
