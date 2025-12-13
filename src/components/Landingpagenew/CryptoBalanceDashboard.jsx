@@ -168,6 +168,43 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
     return () => clearInterval(interval);
   }, [isConnected, address]);
 
+  // Real-time subscription for PVCX balance updates
+  useEffect(() => {
+    if (!user?.id) return;
+
+    // Subscribe to real-time changes on pvcx_balance table
+    const channel = supabase
+      .channel('pvcx-balance-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'pvcx_balance',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('🪙 PVCX balance updated in real-time:', payload);
+          if (payload.new) {
+            setPvcxData({
+              balance: parseFloat(payload.new.balance) || 0,
+              earned_from_bookings: parseFloat(payload.new.earned_from_bookings) || 0,
+              earned_from_co2: parseFloat(payload.new.earned_from_co2) || 0
+            });
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('🔔 PVCX subscription status:', status);
+      });
+
+    // Cleanup subscription on unmount
+    return () => {
+      console.log('🔕 Unsubscribing from PVCX balance updates');
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
   // Function to manually refetch all balances
   const refetchAllBalances = async () => {
     console.log('🔄 Refetching all balances...');
@@ -1276,30 +1313,6 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                       : user?.name || user?.email?.split('@')[0] || 'User'}
                   </h3>
                   <p className="text-xs text-gray-500">{user?.email || 'No email'}</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between opacity-40">
-                  <div className="flex items-center gap-2">
-                    <MessageCircle className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm text-gray-400">Email Notifications</span>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-not-allowed">
-                    <input type="checkbox" className="sr-only peer" disabled />
-                    <div className="w-9 h-5 bg-gray-200 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-200 after:border after:rounded-full after:h-4 after:w-4"></div>
-                  </label>
-                </div>
-
-                <div className="flex items-center justify-between opacity-40">
-                  <div className="flex items-center gap-2">
-                    <History className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm text-gray-400">Trade Notifications</span>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-not-allowed">
-                    <input type="checkbox" className="sr-only peer" disabled />
-                    <div className="w-9 h-5 bg-gray-200 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-200 after:border after:rounded-full after:h-4 after:w-4"></div>
-                  </label>
                 </div>
               </div>
 

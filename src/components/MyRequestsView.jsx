@@ -470,7 +470,7 @@ const MyRequestsView = ({ user }) => {
               <div className="p-3 bg-gradient-to-r from-amber-600 to-amber-800 rounded-lg mb-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-amber-100">Total Price</p>
-                  <p className="text-base font-bold text-white">{typeof price === 'number' ? `€${price.toLocaleString()}` : price}</p>
+                  <p className="text-base font-bold text-white">{typeof price === 'number' ? `$${price.toLocaleString()}` : price}</p>
                 </div>
               </div>
             )}
@@ -603,7 +603,7 @@ const MyRequestsView = ({ user }) => {
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-gray-300">Total Price</p>
                   <p className="text-base font-bold text-white">
-                    {typeof price === 'number' ? `€${price.toLocaleString()}` : price}
+                    {typeof price === 'number' ? `$${price.toLocaleString()}` : price}
                   </p>
                 </div>
               </div>
@@ -710,7 +710,7 @@ const MyRequestsView = ({ user }) => {
               {hourlyRate && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Hourly Rate</p>
-                  <p className="text-sm font-semibold text-gray-800">€{hourlyRate.toLocaleString()}/hr</p>
+                  <p className="text-sm font-semibold text-gray-800">${hourlyRate.toLocaleString()}/hr</p>
                 </div>
               )}
               {data.range && (
@@ -742,7 +742,7 @@ const MyRequestsView = ({ user }) => {
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-blue-100">Estimated Price</p>
                   <p className="text-base font-bold text-white">
-                    {typeof price === 'number' ? `€${price.toLocaleString()}` : price}
+                    {typeof price === 'number' ? `$${price.toLocaleString()}` : price}
                   </p>
                 </div>
               </div>
@@ -842,7 +842,7 @@ const MyRequestsView = ({ user }) => {
               {hourlyRate && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Hourly Rate</p>
-                  <p className="text-sm font-semibold text-gray-800">€{typeof hourlyRate === 'number' ? hourlyRate.toLocaleString() : hourlyRate}/hr</p>
+                  <p className="text-sm font-semibold text-gray-800">${typeof hourlyRate === 'number' ? hourlyRate.toLocaleString() : hourlyRate}/hr</p>
                 </div>
               )}
               {data.payment_method && (
@@ -876,7 +876,7 @@ const MyRequestsView = ({ user }) => {
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-teal-100">Estimated Price</p>
                   <p className="text-base font-bold text-white">
-                    {typeof price === 'number' ? `€${price.toLocaleString()}` : price}
+                    {typeof price === 'number' ? `$${price.toLocaleString()}` : price}
                   </p>
                 </div>
               </div>
@@ -1169,7 +1169,7 @@ const MyRequestsView = ({ user }) => {
               <div className="p-3 bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-lg mb-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-indigo-100">Total Price</p>
-                  <p className="text-base font-bold text-white">{typeof price === 'number' ? `€${price.toLocaleString()}` : price}</p>
+                  <p className="text-base font-bold text-white">{typeof price === 'number' ? `$${price.toLocaleString()}` : price}</p>
                 </div>
               </div>
             )}
@@ -1233,7 +1233,7 @@ const MyRequestsView = ({ user }) => {
               <div className="p-3 bg-gradient-to-r from-cyan-600 to-cyan-800 rounded-lg mb-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-cyan-100">Total Price</p>
-                  <p className="text-base font-bold text-white">{typeof price === 'number' ? `€${price.toLocaleString()}` : price}</p>
+                  <p className="text-base font-bold text-white">{typeof price === 'number' ? `$${price.toLocaleString()}` : price}</p>
                 </div>
               </div>
             )}
@@ -1285,7 +1285,7 @@ const MyRequestsView = ({ user }) => {
                     <p className="text-xs text-gray-500 capitalize">{item.type?.replace(/_/g, ' ')}</p>
                   </div>
                   {(item.estimatedPrice || item.price) && (
-                    <p className="text-sm font-semibold text-gray-800">€{(item.estimatedPrice || item.price).toLocaleString()}</p>
+                    <p className="text-sm font-semibold text-gray-800">${(item.estimatedPrice || item.price).toLocaleString()}</p>
                   )}
                 </div>
               ))}
@@ -1301,7 +1301,7 @@ const MyRequestsView = ({ user }) => {
               <div className="p-3 bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg mb-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-purple-100">Total</p>
-                  <p className="text-base font-bold text-white">€{total.toLocaleString()}</p>
+                  <p className="text-base font-bold text-white">${total.toLocaleString()}</p>
                 </div>
               </div>
             )}
@@ -1409,7 +1409,7 @@ const MyRequestsView = ({ user }) => {
                           </div>
                           {itemPrice > 0 && (
                             <p className="text-sm font-bold text-gray-900 whitespace-nowrap">
-                              €{itemPrice.toLocaleString()}
+                              ${itemPrice.toLocaleString()}
                             </p>
                           )}
                         </div>
@@ -1500,24 +1500,24 @@ const MyRequestsView = ({ user }) => {
               <div className="space-y-1 mb-3 text-xs">
                 <div className="flex justify-between text-gray-600">
                   <span>Services ({summary.services_count || items.length})</span>
-                  <span>€{(summary.services_subtotal || 0).toLocaleString()}</span>
+                  <span>${(summary.services_subtotal || 0).toLocaleString()}</span>
                 </div>
                 {summary.extras_subtotal > 0 && (
                   <div className="flex justify-between text-gray-600">
                     <span>Custom extras ({summary.extras_count})</span>
-                    <span>€{summary.extras_subtotal.toLocaleString()}</span>
+                    <span>${summary.extras_subtotal.toLocaleString()}</span>
                   </div>
                 )}
                 {summary.catering_total > 0 && (
                   <div className="flex justify-between text-gray-600">
                     <span>Catering upgrades</span>
-                    <span>€{summary.catering_total.toLocaleString()}</span>
+                    <span>${summary.catering_total.toLocaleString()}</span>
                   </div>
                 )}
                 {summary.vat_amount > 0 && (
                   <div className="flex justify-between text-gray-600">
                     <span>VAT (8.1%)</span>
-                    <span>€{summary.vat_amount.toLocaleString()}</span>
+                    <span>${summary.vat_amount.toLocaleString()}</span>
                   </div>
                 )}
               </div>
@@ -1536,7 +1536,7 @@ const MyRequestsView = ({ user }) => {
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-purple-100">{summary.has_estimates ? 'Est. Total' : 'Total'}</p>
                   <p className="text-base font-bold text-white">
-                    {summary.has_estimates ? '~' : ''}€{grandTotal.toLocaleString()}
+                    {summary.has_estimates ? '~' : ''}${grandTotal.toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -1642,7 +1642,7 @@ const MyRequestsView = ({ user }) => {
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-gray-300">Total</p>
                   <p className="text-base font-bold text-white">
-                    {typeof price === 'number' ? `€${price.toLocaleString()}` : price}
+                    {typeof price === 'number' ? `$${price.toLocaleString()}` : price}
                   </p>
                 </div>
               </div>

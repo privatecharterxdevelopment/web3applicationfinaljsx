@@ -2379,6 +2379,34 @@ const TokenizedAssetsGlassmorphic = () => {
     fetchPVCXBalance();
   }, [user]);
 
+  // Real-time subscription for PVCX balance updates
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('pvcx-balance-dashboard')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pvcx_balance',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('🪙 PVCX balance updated (dashboard):', payload);
+          if (payload.new) {
+            setPvcxBalance(parseFloat(payload.new.balance) || 0);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
   // Countdown timer for ongoing booking
   useEffect(() => {
     if (!ongoingBooking) {
@@ -3268,22 +3296,27 @@ const TokenizedAssetsGlassmorphic = () => {
         if (error) {
           setEmptyLegsData([]);
         } else {
-          const transformedData = (data || []).map(leg => ({
-            id: leg.id,
-            name: `${leg.from_iata || leg.from_city?.substring(0, 3).toUpperCase() || 'DEP'} → ${leg.to_iata || leg.to_city?.substring(0, 3).toUpperCase() || 'ARR'}`,
-            subtitle: `${leg.from_city || leg.from} → ${leg.to_city || leg.to}`,
-            location: `${leg.from_iata} → ${leg.to_iata}`,
-            category: leg.aircraft_type || leg.category,
-            totalPrice: leg.price ? `$${Math.round(convertToUSD(leg.price, 'GBP')).toLocaleString()}` : 'N/A',
-            currency: 'USD',
-            capacity: `${leg.capacity || leg.pax || 'N/A'} pax`,
-            departureDate: new Date(leg.departure_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-            image: leg.image_url || 'https://images.unsplash.com/photo-1540962351504-03099e0a754b?w=800',
-            isEmptyLeg: true,
-            isFreeWithNFT: leg.price && convertToUSD(leg.price, 'GBP') < 1900,
-            rawPrice: leg.price,
-            rawData: leg
-          }));
+          const transformedData = (data || []).map(leg => {
+            // Convert GBP price to USD
+            const priceUSD = leg.price ? Math.round(convertToUSD(leg.price, 'GBP')) : 0;
+            return {
+              id: leg.id,
+              name: `${leg.from_iata || leg.from_city?.substring(0, 3).toUpperCase() || 'DEP'} → ${leg.to_iata || leg.to_city?.substring(0, 3).toUpperCase() || 'ARR'}`,
+              subtitle: `${leg.from_city || leg.from} → ${leg.to_city || leg.to}`,
+              location: `${leg.from_iata} → ${leg.to_iata}`,
+              category: leg.aircraft_type || leg.category,
+              totalPrice: priceUSD ? `$${priceUSD.toLocaleString()}` : 'N/A',
+              priceUSD: priceUSD, // USD price for calculations
+              currency: 'USD',
+              capacity: `${leg.capacity || leg.pax || 'N/A'} pax`,
+              departureDate: new Date(leg.departure_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+              image: leg.image_url || 'https://images.unsplash.com/photo-1540962351504-03099e0a754b?w=800',
+              isEmptyLeg: true,
+              isFreeWithNFT: priceUSD && priceUSD < 1900,
+              rawPrice: leg.price, // Original GBP price
+              rawData: leg
+            };
+          });
           setEmptyLegsData(transformedData);
         }
       } catch (error) {
@@ -3462,20 +3495,25 @@ const TokenizedAssetsGlassmorphic = () => {
         console.error('Error fetching adventures:', error);
         setAdventuresData([]);
       } else {
-        const transformedData = (data || []).map(offer => ({
-          id: offer.id,
-          name: offer.title,
-          location: offer.destination || offer.origin,
-          category: offer.package_type || 'Adventure',
-          totalPrice: offer.price_on_request ? 'On Request' : (offer.price ? `$${Math.round(convertToUSD(offer.price, 'EUR')).toLocaleString()}` : 'N/A'),
-          yield: offer.duration || 'Flexible',
-          period: offer.difficulty_level || 'All levels',
-          image: offer.image_url || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
-          isAdventure: true,
-          rawPrice: offer.price,
-          isFreeWithNFT: offer.price && convertToUSD(offer.price, 'EUR') < 1900,
-          rawData: offer
-        }));
+        const transformedData = (data || []).map(offer => {
+          // Convert EUR price to USD
+          const priceUSD = offer.price ? Math.round(convertToUSD(offer.price, 'EUR')) : 0;
+          return {
+            id: offer.id,
+            name: offer.title,
+            location: offer.destination || offer.origin,
+            category: offer.package_type || 'Adventure',
+            totalPrice: offer.price_on_request ? 'On Request' : (priceUSD ? `$${priceUSD.toLocaleString()}` : 'N/A'),
+            priceUSD: priceUSD, // USD price for calculations
+            yield: offer.duration || 'Flexible',
+            period: offer.difficulty_level || 'All levels',
+            image: offer.image_url || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
+            isAdventure: true,
+            rawPrice: offer.price, // Original EUR price
+            isFreeWithNFT: priceUSD && priceUSD < 1900,
+            rawData: offer
+          };
+        });
         setAdventuresData(transformedData);
       }
     } catch (error) {
@@ -6137,15 +6175,15 @@ const TokenizedAssetsGlassmorphic = () => {
                         </p>
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-medium text-gray-900">
-                            0 $PVCX
+                            {loadingPvcxBalance ? '...' : `${pvcxBalance.toFixed(3)} $PVCX`}
                           </span>
                         </div>
                       </button>
 
-                      {/* Card #11 - Notifications */}
+                      {/* Card #11 - Notifications - Hidden on mobile since bell is in header */}
                       <button
                         onClick={() => setShowNotifications(true)}
-                        className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
+                        className="hidden md:block border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
                         style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                       >
                         <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-900 truncate">
@@ -8970,35 +9008,43 @@ const TokenizedAssetsGlassmorphic = () => {
                         </div>
 
                         {/* Price Breakdown - Minimal */}
-                        <div className="space-y-2 mb-4 pt-3 border-t border-gray-100">
-                          {rawData.price ? (
-                            <>
-                              <div className="flex justify-between text-xs">
-                                <span className="text-gray-500">Subtotal</span>
-                                <span className="text-gray-900">${(rawData.price / 1.081).toFixed(0)}</span>
-                              </div>
-                              <div className="flex justify-between text-xs">
-                                <span className="text-gray-500">VAT</span>
-                                <span className="text-gray-900">${(rawData.price - (rawData.price / 1.081)).toFixed(0)}</span>
-                              </div>
-                              <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
-                                <span className="font-medium text-gray-900">Total</span>
-                                <span className="font-semibold text-gray-900">${rawData.price.toFixed(0)}</span>
-                              </div>
-                            </>
-                          ) : (
-                              <>
-                                <div className="flex justify-between text-xs">
-                                  <span className="text-gray-500">Price</span>
-                                  <span className="text-gray-900">{selectedEmptyLeg.totalPrice}</span>
-                                </div>
-                                <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
-                                  <span className="font-medium text-gray-900">Total</span>
-                                  <span className="font-semibold text-gray-900">{selectedEmptyLeg.totalPrice}</span>
-                                </div>
-                              </>
-                            )}
-                        </div>
+                        {/* Use priceUSD (converted from GBP) for display */}
+                        {(() => {
+                          const priceUSD = selectedEmptyLeg?.priceUSD || 0;
+                          const vatAmount = Math.round(priceUSD * 0.081); // 8.1% Swiss VAT
+                          const totalWithVAT = priceUSD + vatAmount;
+                          return (
+                            <div className="space-y-2 mb-4 pt-3 border-t border-gray-100">
+                              {priceUSD > 0 ? (
+                                <>
+                                  <div className="flex justify-between text-xs">
+                                    <span className="text-gray-500">Subtotal</span>
+                                    <span className="text-gray-900">${priceUSD.toLocaleString()}</span>
+                                  </div>
+                                  <div className="flex justify-between text-xs">
+                                    <span className="text-gray-500">VAT (8.1%)</span>
+                                    <span className="text-gray-900">${vatAmount.toLocaleString()}</span>
+                                  </div>
+                                  <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
+                                    <span className="font-medium text-gray-900">Total</span>
+                                    <span className="font-semibold text-gray-900">${totalWithVAT.toLocaleString()}</span>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="flex justify-between text-xs">
+                                    <span className="text-gray-500">Price</span>
+                                    <span className="text-gray-900">{selectedEmptyLeg.totalPrice}</span>
+                                  </div>
+                                  <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
+                                    <span className="font-medium text-gray-900">Total</span>
+                                    <span className="font-semibold text-gray-900">{selectedEmptyLeg.totalPrice}</span>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })()}
 
                         {/* Action Buttons - Clean */}
                         <BuyWithCryptoButton
@@ -9006,7 +9052,7 @@ const TokenizedAssetsGlassmorphic = () => {
                           serviceId={selectedEmptyLeg?.rawData?.id || selectedEmptyLeg?.id}
                           serviceTitle={`${selectedEmptyLeg?.from} → ${selectedEmptyLeg?.to}`}
                           serviceDescription={selectedEmptyLeg?.aircraft || 'Empty Leg Flight'}
-                          price={selectedEmptyLeg?.rawData?.price || parseFloat(selectedEmptyLeg?.totalPrice?.replace(/[^0-9.]/g, '') || 0)}
+                          price={selectedEmptyLeg?.priceUSD || 0}
                           currency="USD"
                           imageUrl={selectedEmptyLeg?.image}
                           origin={selectedEmptyLeg?.from}
@@ -9852,47 +9898,56 @@ const TokenizedAssetsGlassmorphic = () => {
                             </div>
                           </div>
 
-                          <div className="space-y-2.5 mb-4">
-                            {rawData.price && !rawData.price_on_request ? (
-                              <>
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-gray-600">Base Price</span>
-                                  <span className="text-gray-900">${(rawData.price / 1.081).toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-gray-600">VAT (8.1%)</span>
-                                  <span className="text-gray-900">${(rawData.price - (rawData.price / 1.081)).toFixed(2)}</span>
-                                </div>
-
-                                {/* PVCX Earnings Box */}
-                                <div className="border border-gray-300 rounded-lg p-3 bg-blue-50/30 mt-3 mb-3">
-                                  <div className="flex justify-between items-center">
-                                    <div className="flex items-center gap-2">
-                                      <Coins size={16} className="text-blue-600" />
-                                      <span className="text-sm text-gray-700">Earnings $PVCX</span>
+                          {/* Price Breakdown - Use priceUSD (converted from EUR) */}
+                          {(() => {
+                            const priceUSD = selectedAdventure?.priceUSD || 0;
+                            const vatAmount = Math.round(priceUSD * 0.081); // 8.1% Swiss VAT
+                            const totalWithVAT = priceUSD + vatAmount;
+                            const pvcxEarnings = Math.round(priceUSD * 1.5);
+                            return (
+                              <div className="space-y-2.5 mb-4">
+                                {priceUSD > 0 && !rawData.price_on_request ? (
+                                  <>
+                                    <div className="flex justify-between text-sm">
+                                      <span className="text-gray-600">Base Price</span>
+                                      <span className="text-gray-900">${priceUSD.toLocaleString()}</span>
                                     </div>
-                                    <span className="text-sm font-medium text-blue-900">{(rawData.price * 1.5).toFixed(0)} $PVCX</span>
-                                  </div>
-                                </div>
+                                    <div className="flex justify-between text-sm">
+                                      <span className="text-gray-600">VAT (8.1%)</span>
+                                      <span className="text-gray-900">${vatAmount.toLocaleString()}</span>
+                                    </div>
 
-                                <div className="flex justify-between text-base pt-2 border-t border-gray-300">
-                                  <span className="font-semibold text-gray-900">Final Price</span>
-                                  <span className="font-semibold text-gray-900">${rawData.price.toFixed(2)}</span>
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-gray-600">Price</span>
-                                  <span className="text-gray-900">{priceLabel}</span>
-                                </div>
-                                <div className="flex justify-between text-base pt-2 border-t border-gray-300">
-                                  <span className="font-semibold text-gray-900">Final Price</span>
-                                  <span className="font-semibold text-gray-900">{priceLabel}</span>
-                                </div>
-                              </>
-                            )}
-                          </div>
+                                    {/* PVCX Earnings Box */}
+                                    <div className="border border-gray-300 rounded-lg p-3 bg-blue-50/30 mt-3 mb-3">
+                                      <div className="flex justify-between items-center">
+                                        <div className="flex items-center gap-2">
+                                          <Coins size={16} className="text-blue-600" />
+                                          <span className="text-sm text-gray-700">Earnings $PVCX</span>
+                                        </div>
+                                        <span className="text-sm font-medium text-blue-900">{pvcxEarnings.toLocaleString()} $PVCX</span>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex justify-between text-base pt-2 border-t border-gray-300">
+                                      <span className="font-semibold text-gray-900">Final Price</span>
+                                      <span className="font-semibold text-gray-900">${totalWithVAT.toLocaleString()}</span>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="flex justify-between text-sm">
+                                      <span className="text-gray-600">Price</span>
+                                      <span className="text-gray-900">{priceLabel}</span>
+                                    </div>
+                                    <div className="flex justify-between text-base pt-2 border-t border-gray-300">
+                                      <span className="font-semibold text-gray-900">Final Price</span>
+                                      <span className="font-semibold text-gray-900">{priceLabel}</span>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         <button

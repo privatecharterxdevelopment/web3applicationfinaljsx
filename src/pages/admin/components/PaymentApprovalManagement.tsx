@@ -237,7 +237,7 @@ export default function PaymentApprovalManagement() {
           <div className="bg-white px-4 py-2 rounded-lg border border-gray-200">
             <span className="text-xs text-gray-500">Total Held:</span>
             <span className="ml-2 text-sm font-semibold text-gray-900">
-              €{bookings
+              ${bookings
                 .filter(b => b.payment_status === 'held_escrow')
                 .reduce((sum, b) => sum + b.total_amount, 0)
                 .toFixed(2)}

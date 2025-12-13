@@ -5399,7 +5399,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           base_amount: item.price_usd || item.price || item.basePrice || 0,
                           vat_amount: (item.price_usd || item.price || item.basePrice || 0) * 0.081,
                           total_amount: (item.price_usd || item.price || item.basePrice || 0) * 1.081,
-                          currency: item.currency || 'EUR',
+                          currency: 'USD',  // All prices now in USD
                           payment_status: status,
                           service_details: item,
                           conversation_id: activeChat
@@ -5441,7 +5441,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                               base_price: item.price_usd || item.price || item.basePrice || 0,
                               vat_8_1_percent: (item.price_usd || item.price || item.basePrice || 0) * 0.081,
                               total_with_vat: (item.price_usd || item.price || item.basePrice || 0) * 1.081,
-                              currency: item.currency || 'EUR',
+                              currency: 'USD',  // All prices now in USD
                               conversation_id: activeChat,
                               awaiting_payment: true
                             }

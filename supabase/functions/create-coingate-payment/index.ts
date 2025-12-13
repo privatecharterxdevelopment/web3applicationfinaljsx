@@ -6,6 +6,41 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 };
 
+// Fallback exchange rates if API fails (updated Dec 2024)
+const FALLBACK_RATES = {
+  GBP: 0.79,  // 1 USD = 0.79 GBP
+  EUR: 0.92,  // 1 USD = 0.92 EUR
+};
+
+// Fetch current exchange rates from ExchangeRate-API
+async function getExchangeRate(fromCurrency: string): Promise<number> {
+  const API_KEY = Deno.env.get('EXCHANGERATE_API_KEY') || 'f51793adf9d3c8de77732b07';
+
+  try {
+    const response = await fetch(`https://v6.exchangerate-api.com/v6/${API_KEY}/latest/USD`);
+    const data = await response.json();
+
+    if (data.result === 'success' && data.conversion_rates) {
+      const rate = data.conversion_rates[fromCurrency.toUpperCase()];
+      if (rate) {
+        console.log(`Exchange rate fetched: 1 USD = ${rate} ${fromCurrency}`);
+        return rate;
+      }
+    }
+    throw new Error('Invalid API response');
+  } catch (error) {
+    console.error('Error fetching exchange rate, using fallback:', error);
+    return FALLBACK_RATES[fromCurrency.toUpperCase() as keyof typeof FALLBACK_RATES] || 1;
+  }
+}
+
+// Convert amount from source currency to USD
+function convertToUSD(amount: number, fromCurrency: string, rate: number): number {
+  if (fromCurrency.toUpperCase() === 'USD') return amount;
+  // Rate is USD→fromCurrency, so to get fromCurrency→USD we divide
+  return amount / rate;
+}
+
 interface PaymentRequest {
   serviceType: 'empty_leg' | 'adventure_package' | 'co2_certificate' | 'hotel_booking';
   serviceId: string;
@@ -100,24 +135,23 @@ serve(async (req) => {
           throw new Error(`Empty leg not found: ${serviceId}`);
         }
 
-        // Get price from database - converted to USD on frontend
-        // Note: Frontend converts GBP prices to USD before payment
-        let price: number;
-        let currency: string = 'USD'; // All prices now in USD
+        // Empty Legs prices are stored in GBP in the database
+        // We need to convert to USD for CoinGate payment
+        const priceGBP = parseFloat(emptyLeg.price || emptyLeg.discounted_price || 0);
 
-        // Price comes from database in GBP, but frontend converts to USD
-        // Use the raw GBP price here - it will be converted by frontend or we use it directly for CoinGate
-        price = parseFloat(emptyLeg.price || emptyLeg.discounted_price || 0);
+        // Fetch current GBP→USD exchange rate
+        const gbpRate = await getExchangeRate('GBP');
+        const priceUSD = convertToUSD(priceGBP, 'GBP', gbpRate);
 
-        console.log(`EmptyLeg raw price from DB: ${price} (will be sent as ${currency})`);
+        console.log(`EmptyLeg price conversion: £${priceGBP} GBP → $${priceUSD.toFixed(2)} USD (rate: ${gbpRate})`);
 
         serviceDetails = {
           id: emptyLeg.id,
           title: `${emptyLeg.departure_airport || emptyLeg.from_iata} → ${emptyLeg.arrival_airport || emptyLeg.to_iata}`,
           description: emptyLeg.description || `Empty leg flight on ${emptyLeg.aircraft_type}`,
           image_url: emptyLeg.image_url || emptyLeg.aircraft_image,
-          price: price,
-          currency: 'USD', // All prices now in USD
+          price: Math.round(priceUSD), // Rounded USD price
+          currency: 'USD',
           origin: emptyLeg.departure_airport || emptyLeg.from_iata,
           destination: emptyLeg.arrival_airport || emptyLeg.to_iata,
           departure_date: emptyLeg.departure_date,
@@ -137,13 +171,21 @@ serve(async (req) => {
           throw new Error(`Adventure package not found: ${serviceId}`);
         }
 
+        // Adventure packages prices are stored in EUR in the database
+        // Convert to USD for CoinGate payment
+        const adventurePriceEUR = parseFloat(adventure.price || adventure.base_price || 0);
+        const eurRate = await getExchangeRate('EUR');
+        const adventurePriceUSD = convertToUSD(adventurePriceEUR, 'EUR', eurRate);
+
+        console.log(`Adventure price conversion: €${adventurePriceEUR} EUR → $${adventurePriceUSD.toFixed(2)} USD (rate: ${eurRate})`);
+
         serviceDetails = {
           id: adventure.id,
           title: adventure.title || adventure.name,
           description: adventure.description,
           image_url: adventure.image_url || adventure.cover_image,
-          price: parseFloat(adventure.price || adventure.base_price),
-          currency: 'USD', // All prices now in USD
+          price: Math.round(adventurePriceUSD), // Rounded USD price
+          currency: 'USD',
           origin: adventure.departure_location || adventure.origin,
           destination: adventure.destination,
           departure_date: adventure.start_date,
