@@ -1262,8 +1262,8 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
           maxWidth: serviceCategory === 'luxury-cars' ? '480px' : '650px',
           width: serviceCategory === 'luxury-cars' ? 'calc(100% - 2rem)' : 'calc(100% - 2rem)',
           bottom: 'max(16px, env(safe-area-inset-bottom))',
-          top: bookingStep === 3 && isModalExpanded ? 'max(70px, calc(env(safe-area-inset-top) + 54px))' : 'auto',
-          maxHeight: bookingStep === 3 ? (isModalExpanded ? 'calc(100dvh - max(86px, calc(env(safe-area-inset-top) + 70px)))' : '70vh') : 'auto'
+          top: 'auto',
+          maxHeight: bookingStep === 3 ? '65vh' : 'auto'
         }}
       >
         <div className={`bg-white shadow-2xl rounded-2xl transition-all duration-300 w-full h-full`} style={{ overflow: bookingStep === 3 ? 'hidden' : 'visible', position: 'relative', display: 'flex', flexDirection: 'column' }}>
@@ -1714,19 +1714,13 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
         </div>
       </div>
 
-      {/* Loading Overlay with Skip Option */}
+      {/* Loading Overlay - Monochromatic Style */}
       {isSubmitting && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 text-center">
-            <Loader2 className="w-16 h-16 text-blue-500 animate-spin mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Processing Your Request</h3>
-            <p className="text-sm text-gray-600 mb-6">Searching for available drivers...</p>
-            <button
-              onClick={skipLoader}
-              className="text-xs text-gray-600 hover:text-gray-800 underline font-medium"
-            >
-              Skip and continue
-            </button>
+        <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="text-center">
+            {/* Thin black spinner */}
+            <div className="w-10 h-10 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-sm text-gray-600">Processing request...</p>
           </div>
         </div>
       )}
@@ -2211,13 +2205,15 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
         />
       )}
 
-      {/* Success Notification */}
+      {/* Success Notification - Monochromatic Style */}
       {showNotification && (
-        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-slideIn">
-          <Check className="w-6 h-6" />
+        <div className="fixed top-4 right-4 z-50 bg-gray-900 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-slideIn border border-gray-700">
+          <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center flex-shrink-0">
+            <Check className="w-4 h-4 text-gray-900" />
+          </div>
           <div>
-            <h4 className="font-semibold">Request Submitted!</h4>
-            <p className="text-sm opacity-90">{notificationMessage}</p>
+            <h4 className="font-semibold text-white">Request Submitted!</h4>
+            <p className="text-sm text-gray-300">{notificationMessage}</p>
           </div>
         </div>
       )}
