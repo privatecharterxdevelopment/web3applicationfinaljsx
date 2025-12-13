@@ -1386,7 +1386,8 @@ const TokenizedAssetsGlassmorphic = () => {
             departure_time: rawData.departure_time,
             aircraft_type: rawData.category || rawData.aircraft_type,
             capacity: rawData.capacity || rawData.pax,
-            original_price: rawData.price || rawData.price_usd,
+            original_price: selectedEmptyLeg.priceUSD || Math.round(convertToUSD(rawData.price || 0, 'GBP')),
+            original_price_gbp: rawData.price, // Store original GBP for reference
             currency: 'USD',
             passengers: emptyLegPassengers,
             luggage: emptyLegLuggage,
@@ -9975,8 +9976,9 @@ const TokenizedAssetsGlassmorphic = () => {
                                 difficulty_level: offer.difficulty_level,
                                 package_type: offer.package_type,
                                 passengers: offer.passengers || offer.max_participants,
-                                currency: offer.currency || 'USD',
-                                price: offer.price || null,
+                                currency: 'USD',
+                                price: selectedAdventure?.priceUSD || (offer.price ? Math.round(convertToUSD(offer.price, 'EUR')) : null),
+                                original_price_eur: offer.price, // Store original EUR for reference
                                 price_on_request: offer.price_on_request || !offer.price,
                                 description: offer.description,
 
