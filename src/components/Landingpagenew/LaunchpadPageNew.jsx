@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Rocket, TrendingUp, Users, Clock, ArrowRight, Loader2, Search,
   Wallet, DollarSign, BarChart3, Shield, Zap, Star, ChevronDown, ChevronLeft, ChevronRight, Coins, Building2,
-  Filter, Grid, List, X, Activity, Plane, Ship, Briefcase, TrendingDown
+  Activity
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAccount } from 'wagmi';
@@ -14,10 +14,7 @@ export default function LaunchpadPageNew() {
   const [launches, setLaunches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedLaunch, setSelectedLaunch] = useState(null);
-  const [filter, setFilter] = useState('all'); // all, active, upcoming, completed
-  const [projectTypeFilter, setProjectTypeFilter] = useState('all'); // all, crypto, uto, sto
   const [searchQuery, setSearchQuery] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState('tabs'); // grid or tabs
   const [searchFocused, setSearchFocused] = useState(false);
   const { address, isConnected } = useAccount();
@@ -47,11 +44,9 @@ export default function LaunchpadPageNew() {
   };
 
   const filteredLaunches = launches.filter(launch => {
-    const matchesFilter = filter === 'all' || launch.status === filter;
-    const matchesProjectType = projectTypeFilter === 'all' || launch.project_type === projectTypeFilter;
     const matchesSearch = launch.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          launch.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesFilter && matchesProjectType && matchesSearch;
+    return matchesSearch;
   });
 
   // If a launch is selected, show detail page
@@ -69,16 +64,22 @@ export default function LaunchpadPageNew() {
     <div className="w-full min-h-screen bg-transparent" style={{ fontFamily: "'DM Sans', sans-serif" }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        {/* Top Bar - Mobile Optimized */}
-        <div className="flex flex-col gap-4 mb-6">
-          {/* Search Row */}
+        {/* Header Section */}
+        <div className="mb-6">
+          {/* Title and Description */}
+          <div className="mb-4">
+            <h1 className="text-xl sm:text-2xl font-medium text-gray-900 mb-1">Security Token Offerings</h1>
+            <p className="text-xs sm:text-sm text-gray-500">SEC-regulated investments via our licensed U.S. partner (Reg D, Reg C, Reg CF)</p>
+          </div>
+
+          {/* Search and View Toggle */}
           <div className="flex items-center gap-3">
-            {/* Search - Full width on mobile */}
+            {/* Search */}
             <div className={`relative flex-1 transition-all duration-200 ${searchFocused ? 'sm:flex-none sm:w-64' : 'sm:flex-none sm:w-48'}`}>
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search..."
+                placeholder="Search offerings..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setSearchFocused(true)}
@@ -88,27 +89,13 @@ export default function LaunchpadPageNew() {
               />
             </div>
 
-            {/* Filter Toggle Button */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
-                showFilters
-                  ? 'bg-gray-800 text-white border-gray-800'
-                  : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
-              }`}
-              style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-            >
-              <Filter size={14} />
-              <span className="hidden sm:inline">Filters</span>
-            </button>
-
-            {/* View Mode Switcher - Desktop only */}
+            {/* View Mode Switcher */}
             <div className="hidden sm:flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl flex-shrink-0" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
               <button
                 onClick={() => setViewMode('grid')}
                 className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
                   viewMode === 'grid'
-                    ? 'bg-gray-800 text-white shadow-sm'
+                    ? 'bg-black text-white shadow-sm'
                     : 'text-gray-700 hover:text-gray-900'
                 }`}
               >
@@ -118,128 +105,15 @@ export default function LaunchpadPageNew() {
                 onClick={() => setViewMode('tabs')}
                 className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
                   viewMode === 'tabs'
-                    ? 'bg-gray-800 text-white shadow-sm'
+                    ? 'bg-black text-white shadow-sm'
                     : 'text-gray-700 hover:text-gray-900'
                 }`}
               >
-                Tabs
+                List
               </button>
             </div>
           </div>
-
-          {/* Category Quick Filters - Horizontal scroll on mobile */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
-            <button
-              onClick={() => setProjectTypeFilter('all')}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
-                projectTypeFilter === 'all'
-                  ? 'bg-gray-800 text-white border-gray-800'
-                  : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
-              }`}
-              style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setProjectTypeFilter('sto')}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
-                projectTypeFilter === 'sto'
-                  ? 'bg-gray-800 text-white border-gray-800'
-                  : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
-              }`}
-              style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-            >
-              STO
-            </button>
-            <button
-              onClick={() => setProjectTypeFilter('uto')}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
-                projectTypeFilter === 'uto'
-                  ? 'bg-gray-800 text-white border-gray-800'
-                  : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
-              }`}
-              style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-            >
-              UTO
-            </button>
-            <button
-              onClick={() => setProjectTypeFilter('crypto')}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
-                projectTypeFilter === 'crypto'
-                  ? 'bg-gray-800 text-white border-gray-800'
-                  : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
-              }`}
-              style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-            >
-              Raising
-            </button>
-            <button
-              onClick={() => setProjectTypeFilter('dao')}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
-                projectTypeFilter === 'dao'
-                  ? 'bg-gray-800 text-white border-gray-800'
-                  : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
-              }`}
-              style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-            >
-              DAOs
-            </button>
-          </div>
         </div>
-
-        {/* Filters Panel */}
-        {showFilters && (
-          <div className="mb-6 p-4 bg-white/35 backdrop-blur-xl border border-gray-300/50 rounded-xl" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Status Filter */}
-              <div>
-                <label className="block text-xs font-medium text-gray-800 mb-2">Status</label>
-                <select
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-white/35 border border-gray-300/50 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
-                  style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                >
-                  <option value="all">All Status</option>
-                  <option value="active">Live</option>
-                  <option value="upcoming">Upcoming</option>
-                  <option value="completed">Closed</option>
-                </select>
-              </div>
-
-              {/* Project Type Filter */}
-              <div>
-                <label className="block text-xs font-medium text-gray-800 mb-2">Project Type</label>
-                <select
-                  value={projectTypeFilter}
-                  onChange={(e) => setProjectTypeFilter(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-white/35 border border-gray-300/50 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
-                  style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                >
-                  <option value="all">All Types</option>
-                  <option value="crypto">Fundraising</option>
-                  <option value="uto">Utility Token</option>
-                  <option value="sto">Security Token</option>
-                </select>
-              </div>
-
-              {/* Clear Filters */}
-              <div className="flex items-end">
-                <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setFilter('all');
-                    setProjectTypeFilter('all');
-                  }}
-                  className="w-full px-4 py-2.5 bg-white/35 hover:bg-white/40 border border-gray-300/50 text-gray-700 rounded-xl text-sm transition-all"
-                  style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                >
-                  Clear Filters
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Launches Grid/List */}
         {loading ? (
@@ -315,28 +189,13 @@ function LaunchCard({ launch, onClick }) {
 
   const getStatusBadge = (status) => {
     const badges = {
-      active: { label: 'Live' },
-      upcoming: { label: 'Soon' },
-      completed: { label: 'Closed' }
+      active: { label: 'Live', bg: 'bg-black' },
+      upcoming: { label: 'Coming Soon', bg: 'bg-gray-700' },
+      completed: { label: 'Closed', bg: 'bg-gray-400' }
     };
     const badge = badges[status] || badges.upcoming;
     return (
-      <span className="px-2.5 py-1 bg-black text-white text-xs font-medium rounded">
-        {badge.label}
-      </span>
-    );
-  };
-
-  const getProjectTypeBadge = (projectType) => {
-    const badges = {
-      crypto: { label: 'Crypto' },
-      uto: { label: 'UTO' },
-      sto: { label: 'STO' }
-    };
-    const badge = badges[projectType];
-    if (!badge) return null;
-    return (
-      <span className="px-2.5 py-1 bg-gray-100 text-gray-900 text-xs font-medium rounded">
+      <span className={`px-2.5 py-1 ${badge.bg} text-white text-xs font-medium rounded`}>
         {badge.label}
       </span>
     );
@@ -396,10 +255,9 @@ function LaunchCard({ launch, onClick }) {
           </>
         )}
 
-        {/* Badges with backdrop blur */}
-        <div className="absolute top-3 left-3 flex gap-2">
+        {/* Status Badge */}
+        <div className="absolute top-3 left-3">
           {getStatusBadge(launch.status)}
-          {launch.project_type && getProjectTypeBadge(launch.project_type)}
         </div>
       </div>
 
@@ -636,23 +494,6 @@ function LaunchTabItem({ launch, onClick, address, isConnected, open, user }) {
     return `$${amount}`;
   };
 
-  const getTypeIcon = (type) => {
-    switch(type) {
-      case 'crypto': return <Rocket size={16} className="text-gray-600" />;
-      case 'uto': return <Zap size={16} className="text-gray-600" />;
-      case 'sto': return <Shield size={16} className="text-gray-600" />;
-      default: return <Coins size={16} className="text-gray-600" />;
-    }
-  };
-
-  const getTypeLabel = (type) => {
-    switch(type) {
-      case 'crypto': return 'Fundraising';
-      case 'uto': return 'Utility Token';
-      case 'sto': return 'Security Token';
-      default: return 'Token';
-    }
-  };
 
   // Generate simple chart data points based on progress
   const chartPoints = Array.from({ length: 8 }, (_, i) => {
@@ -679,9 +520,9 @@ function LaunchTabItem({ launch, onClick, address, isConnected, open, user }) {
             <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">
               {launch.name}
             </h3>
-            <div className="hidden sm:flex items-center gap-2 px-2 py-1 bg-gray-100 rounded-lg text-xs text-gray-600">
-              {getTypeIcon(launch.project_type)}
-              <span className="font-medium">{getTypeLabel(launch.project_type)}</span>
+            <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-gray-100 rounded-lg text-xs text-gray-600">
+              <Shield size={12} className="text-gray-600" />
+              <span className="font-medium">STO</span>
             </div>
           </div>
 
