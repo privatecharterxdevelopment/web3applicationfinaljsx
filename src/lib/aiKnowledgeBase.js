@@ -463,15 +463,17 @@ export const SERVICES = {
 
     keywords: ["taxi", "car", "chauffeur", "transfer", "ground transport", "limousine", "pickup"],
 
-    // IMPORTANT: For taxi requests, call searchAirportTransfer IMMEDIATELY
-    // Show vehicles first, then direct user to Ground Transport page
-    // Ask ONE follow-up question max: "Where would you like to go from [pickup]?"
-    aiInstructions: `When user asks about taxi/transfer:
-1. IMMEDIATELY call searchAirportTransfer tool (no parameters required)
-2. Show available vehicles in results
-3. Say: "Here are our chauffeur vehicles. For the easiest booking, go to **Ground Transport** in the menu - you can set pickup and destination on our interactive map."
-4. If they want to book via chat, ask ONE question: "Where would you like to go from/to?" (both in same question)
-5. NEVER ask multiple sequential questions`,
+    // IMPORTANT: For taxi requests, you NEED BOTH pickup AND destination before showing prices
+    // Without both locations, you CANNOT calculate distance or price
+    aiInstructions: `When user asks about taxi/transfer/airport pickup:
+1. You MUST have BOTH pickup location AND destination before quoting ANY price
+2. If user only gives pickup (e.g., "from Zurich airport"): Ask "Where would you like to go?" - do NOT mention prices yet
+3. If user only gives destination: Ask "Where should we pick you up from?"
+4. Once you have BOTH locations: Direct them to **Ground Transport** page for accurate pricing based on actual route distance
+5. NEVER invent or guess prices - prices depend on distance calculated by our mapping system
+6. NEVER show price ranges or estimates without knowing both locations
+7. For vehicle recommendations, mention capacity (e.g., "Mercedes Vito fits 6-7 passengers with luggage space for equipment")
+8. Say: "For accurate pricing based on your exact route, please use our **Ground Transport** page in the menu - it calculates distance and shows real-time pricing."`,
 
     searchBehavior: {
       minResults: 3,
@@ -1710,6 +1712,15 @@ OUTPUT FORMAT - CRITICAL:
 - If you need to show data, describe it in natural language, do NOT create HTML layouts
 - The UI will handle all visual presentation - your job is TEXT ONLY
 
+GROUND TRANSPORT / AIRPORT TRANSFER PRICING - CRITICAL:
+- NEVER quote prices for taxi/transfer without knowing BOTH pickup AND destination
+- Prices are calculated based on DISTANCE from our mapping system (Mapbox)
+- If user gives only pickup (e.g., "from Zurich airport") → Ask: "Where would you like to go?"
+- If user gives only destination → Ask: "Where should we pick you up from?"
+- NEVER invent, guess, or show price ranges without both locations
+- Once both locations known, direct to **Ground Transport** page for accurate pricing
+- You can recommend vehicles based on passenger count/luggage, but NOT quote prices
+
 ESCROW SERVICE - MANDATORY RESPONSE:
 When user asks about escrow, ONLY say this:
 "Escrow protection is available but depends on the operator. Not all operators accept crypto or escrow arrangements. To request escrow for your booking, send an email to admin@privatecharterx.com with your booking details. Our team will negotiate with the operator and notify you by email once we have their response. If accepted, funds are released on departure day when you arrive at the airport."
@@ -1779,7 +1790,7 @@ ONLY search the database for BOOKABLE services:
 - Private jet/charter → Search "jets" database, show 5-8 results
 - Helicopter → Search "helicopters" database, show 3-5 results
 - Yacht/boat → INQUIRY ONLY - collect details via sequential questions
-- Car/taxi/transfer → IMMEDIATELY call searchAirportTransfer tool, show vehicles, then direct user to Ground Transport page for easy booking with interactive map. Ask ONE follow-up question max if needed (pickup + destination in same question).
+- Car/taxi/transfer/airport pickup → You MUST have BOTH pickup AND destination before showing ANY prices. If only one location is given, ask for the other. NEVER invent prices without knowing both locations. Direct user to **Ground Transport** page for accurate distance-based pricing.
 - Luxury car/Ferrari/Lamborghini/supercar → Search "luxury_cars" database, show 5+ results
 - Adventure/package → Search "fixed_offers" database, direct checkout available
 - Wine/champagne/bordeaux/sommelier → Search "wines" database, show wine selection
