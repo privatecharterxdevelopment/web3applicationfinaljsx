@@ -69,11 +69,12 @@ export default function LaunchpadPageNew() {
     <div className="w-full min-h-screen bg-transparent" style={{ fontFamily: "'DM Sans', sans-serif" }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        {/* Top Bar - RWS Style */}
-        <div className="flex items-center justify-end mb-6">
+        {/* Top Bar - Mobile Optimized */}
+        <div className="flex flex-col gap-4 mb-6">
+          {/* Search Row */}
           <div className="flex items-center gap-3">
-            {/* Compact Search - Expands on focus */}
-            <div className={`relative transition-all duration-200 ${searchFocused ? 'w-64' : 'w-48'}`}>
+            {/* Search - Full width on mobile */}
+            <div className={`relative flex-1 transition-all duration-200 ${searchFocused ? 'sm:flex-none sm:w-64' : 'sm:flex-none sm:w-48'}`}>
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
@@ -90,7 +91,7 @@ export default function LaunchpadPageNew() {
             {/* Filter Toggle Button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
+              className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
                 showFilters
                   ? 'bg-gray-800 text-white border-gray-800'
                   : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
@@ -98,68 +99,11 @@ export default function LaunchpadPageNew() {
               style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
             >
               <Filter size={14} />
-              Filters
+              <span className="hidden sm:inline">Filters</span>
             </button>
 
-            {/* Category Quick Filters */}
-            <button
-              onClick={() => setProjectTypeFilter('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
-                projectTypeFilter === 'all'
-                  ? 'bg-gray-800 text-white border-gray-800'
-                  : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
-              }`}
-              style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setProjectTypeFilter('sto')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
-                projectTypeFilter === 'sto'
-                  ? 'bg-gray-800 text-white border-gray-800'
-                  : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
-              }`}
-              style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-            >
-              STO
-            </button>
-            <button
-              onClick={() => setProjectTypeFilter('uto')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
-                projectTypeFilter === 'uto'
-                  ? 'bg-gray-800 text-white border-gray-800'
-                  : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
-              }`}
-              style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-            >
-              UTO
-            </button>
-            <button
-              onClick={() => setProjectTypeFilter('crypto')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
-                projectTypeFilter === 'crypto'
-                  ? 'bg-gray-800 text-white border-gray-800'
-                  : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
-              }`}
-              style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-            >
-              Raising
-            </button>
-            <button
-              onClick={() => setProjectTypeFilter('dao')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
-                projectTypeFilter === 'dao'
-                  ? 'bg-gray-800 text-white border-gray-800'
-                  : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
-              }`}
-              style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-            >
-              DAOs
-            </button>
-
-            {/* View Mode Switcher */}
-            <div className="flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+            {/* View Mode Switcher - Desktop only */}
+            <div className="hidden sm:flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl flex-shrink-0" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
               <button
                 onClick={() => setViewMode('grid')}
                 className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
@@ -181,6 +125,65 @@ export default function LaunchpadPageNew() {
                 Tabs
               </button>
             </div>
+          </div>
+
+          {/* Category Quick Filters - Horizontal scroll on mobile */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+            <button
+              onClick={() => setProjectTypeFilter('all')}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
+                projectTypeFilter === 'all'
+                  ? 'bg-gray-800 text-white border-gray-800'
+                  : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
+              }`}
+              style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setProjectTypeFilter('sto')}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
+                projectTypeFilter === 'sto'
+                  ? 'bg-gray-800 text-white border-gray-800'
+                  : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
+              }`}
+              style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+            >
+              STO
+            </button>
+            <button
+              onClick={() => setProjectTypeFilter('uto')}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
+                projectTypeFilter === 'uto'
+                  ? 'bg-gray-800 text-white border-gray-800'
+                  : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
+              }`}
+              style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+            >
+              UTO
+            </button>
+            <button
+              onClick={() => setProjectTypeFilter('crypto')}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
+                projectTypeFilter === 'crypto'
+                  ? 'bg-gray-800 text-white border-gray-800'
+                  : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
+              }`}
+              style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+            >
+              Raising
+            </button>
+            <button
+              onClick={() => setProjectTypeFilter('dao')}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all backdrop-blur-xl border ${
+                projectTypeFilter === 'dao'
+                  ? 'bg-gray-800 text-white border-gray-800'
+                  : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
+              }`}
+              style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+            >
+              DAOs
+            </button>
           </div>
         </div>
 
@@ -664,41 +667,41 @@ function LaunchTabItem({ launch, onClick, address, isConnected, open, user }) {
       className="bg-white/35 backdrop-blur-xl border border-gray-300/50 rounded-lg hover:border-gray-800 transition-all cursor-pointer group"
       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
     >
-      <div className="p-4 flex items-center gap-6">
+      <div className="p-3 sm:p-4 flex items-center gap-3 sm:gap-6">
         {/* Token Icon */}
-        <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-gray-800 to-gray-600 rounded-xl flex items-center justify-center">
-          <span className="text-white text-sm font-bold">{launch.token_symbol?.slice(0, 3) || 'TKN'}</span>
+        <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-gray-800 to-gray-600 rounded-xl flex items-center justify-center">
+          <span className="text-white text-xs sm:text-sm font-bold">{launch.token_symbol?.slice(0, 3) || 'TKN'}</span>
         </div>
 
         {/* Main Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 mb-2">
-            <h3 className="text-base font-semibold text-gray-900 truncate">
+          <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+            <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">
               {launch.name}
             </h3>
-            <div className="flex items-center gap-2 px-2 py-1 bg-gray-100 rounded-lg text-xs text-gray-600">
+            <div className="hidden sm:flex items-center gap-2 px-2 py-1 bg-gray-100 rounded-lg text-xs text-gray-600">
               {getTypeIcon(launch.project_type)}
               <span className="font-medium">{getTypeLabel(launch.project_type)}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 text-xs">
+          <div className="flex items-center gap-2 sm:gap-3 text-xs overflow-x-auto scrollbar-hide">
             {/* Token Price Bubble */}
-            <div className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 rounded-lg">
+            <div className="flex-shrink-0 flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 bg-gray-100 rounded-lg">
               <DollarSign size={12} className="text-gray-600" />
               <span className="font-medium text-gray-900">${tokenPrice.toFixed(2)}</span>
             </div>
 
-            {/* APY Bubble */}
-            <div className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 rounded-lg">
+            {/* APY Bubble - Hidden on very small screens */}
+            <div className="hidden xs:flex flex-shrink-0 items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 bg-gray-100 rounded-lg">
               <TrendingUp size={12} className="text-gray-600" />
               <span className="font-medium text-gray-900">{expectedAPY}</span>
             </div>
 
             {/* Funding Bubble */}
-            <div className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 rounded-lg">
+            <div className="flex-shrink-0 flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 bg-gray-100 rounded-lg">
               <Activity size={12} className="text-gray-600" />
-              <span className="font-medium text-gray-900">{progressPercentage.toFixed(0)}% funded</span>
+              <span className="font-medium text-gray-900">{progressPercentage.toFixed(0)}%</span>
             </div>
           </div>
         </div>
@@ -768,25 +771,25 @@ function LaunchTabItem({ launch, onClick, address, isConnected, open, user }) {
         {/* Actions */}
         <div className="flex items-center gap-2 flex-shrink-0">
           {onWaitlist ? (
-            <div className="px-3 py-1.5 bg-gray-100 border border-gray-300/50 text-gray-600 rounded-lg text-xs font-medium flex items-center gap-1.5">
+            <div className="hidden sm:flex px-3 py-1.5 bg-gray-100 border border-gray-300/50 text-gray-600 rounded-lg text-xs font-medium items-center gap-1.5">
               <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-              On Waitlist
+              <span className="hidden md:inline">On Waitlist</span>
             </div>
           ) : (
             <button
               onClick={handleJoinWaitlist}
               disabled={joiningWaitlist}
-              className="px-3 py-1.5 bg-white/40 hover:bg-white/60 border border-gray-300/50 text-gray-800 rounded-lg text-xs font-medium transition-all disabled:opacity-50 flex items-center gap-1.5"
+              className="hidden sm:flex px-3 py-1.5 bg-white/40 hover:bg-white/60 border border-gray-300/50 text-gray-800 rounded-lg text-xs font-medium transition-all disabled:opacity-50 items-center gap-1.5"
             >
               {joiningWaitlist ? (
                 <>
                   <Loader2 size={12} className="animate-spin" />
-                  Joining...
+                  <span className="hidden md:inline">Joining...</span>
                 </>
               ) : (
                 <>
                   <Wallet size={12} />
-                  Join Waitlist
+                  <span className="hidden md:inline">Join Waitlist</span>
                 </>
               )}
             </button>
@@ -796,9 +799,9 @@ function LaunchTabItem({ launch, onClick, address, isConnected, open, user }) {
               e.stopPropagation();
               onClick();
             }}
-            className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-xs font-medium transition-all flex items-center gap-1.5"
+            className="px-2 sm:px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-xs font-medium transition-all flex items-center gap-1.5"
           >
-            View Details
+            <span className="hidden sm:inline">View</span>
             <ArrowRight size={12} />
           </button>
         </div>

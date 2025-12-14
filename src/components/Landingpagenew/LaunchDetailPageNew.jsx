@@ -105,118 +105,118 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
   };
 
   return (
-    <div className="w-full min-h-screen bg-transparent" style={{ fontFamily: "'Inter', sans-serif" }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="w-full min-h-screen bg-transparent" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
 
         {/* Back Button */}
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors"
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 sm:mb-6 transition-colors group"
         >
-          <ArrowLeft size={20} />
-          <span className="font-light">Back to Launchpad</span>
+          <ArrowLeft size={18} className="group-hover:-translate-x-0.5 transition-transform" />
+          <span className="text-sm">Back to Launchpad</span>
         </button>
 
         {/* Project Header with Switcher */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-14 h-14 bg-gradient-to-br from-gray-800 to-gray-600 rounded-2xl flex items-center justify-center">
-              <span className="text-white text-xl font-medium">
-                {launch.token_symbol?.slice(0, 1) || 'y'}
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-black rounded-xl flex items-center justify-center">
+              <span className="text-white text-base sm:text-lg font-semibold">
+                {launch.token_symbol?.slice(0, 1) || 'T'}
               </span>
             </div>
             <div>
-              <h1 className="text-2xl font-light text-gray-900">{(launch.token_symbol || 'USYC').slice(0, 4)}</h1>
-              <p className="text-gray-600 text-sm font-light">{launch.name}</p>
+              <h1 className="text-lg sm:text-xl font-medium text-gray-900">{(launch.token_symbol || 'USYC').slice(0, 4)}</h1>
+              <p className="text-gray-500 text-xs truncate max-w-[180px] sm:max-w-none">{launch.name}</p>
             </div>
           </div>
 
-          {/* Compact Rounded Switcher */}
-          <div className="flex items-center gap-1 bg-transparent backdrop-blur-xl rounded-full border border-gray-200 p-1" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+          {/* Compact Tab Switcher - Horizontal scroll on mobile */}
+          <div className="flex items-center gap-1 bg-white/30 backdrop-blur-xl rounded-lg border border-gray-200/50 p-1 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-1">
             {[
-              { id: 'overview', icon: <TrendingUp size={14} />, label: 'Overview' },
-              { id: 'details', icon: <Building2 size={14} />, label: 'Details' },
-              { id: 'tokenomics', icon: <Info size={14} />, label: 'Economics' },
-              { id: 'legal', icon: <Shield size={14} />, label: 'Legal' },
-              { id: 'documents', icon: <FileText size={14} />, label: 'Docs' }
+              { id: 'overview', icon: <TrendingUp size={12} />, label: 'Overview' },
+              { id: 'details', icon: <Building2 size={12} />, label: 'Details' },
+              { id: 'tokenomics', icon: <Info size={12} />, label: 'Economics' },
+              { id: 'legal', icon: <Shield size={12} />, label: 'Legal' },
+              { id: 'documents', icon: <FileText size={12} />, label: 'Docs' }
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveSubTab(tab.id)}
-                className={`p-2 rounded-full transition-all ${
+                className={`flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-all ${
                   activeSubTab === tab.id
-                    ? 'bg-gray-900 text-white'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/40'
+                    ? 'bg-black text-white'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/60'
                 }`}
-                title={tab.label}
               >
                 {tab.icon}
+                <span className="hidden sm:inline">{tab.label}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Two Column Layout - Investment card first on mobile */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
           {/* LEFT CARD - Project Stats & Chart */}
-          <div className="lg:col-span-2 bg-transparent backdrop-blur-xl rounded-2xl border border-gray-200 p-6 space-y-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+          <div className="lg:col-span-2 order-2 lg:order-1 bg-white/30 backdrop-blur-xl rounded-xl border border-gray-200/50 p-4 sm:p-5 space-y-4">
 
             {activeSubTab === 'overview' && (
               <>
                 {/* Header Stats */}
-                <div className="space-y-4">
-                  <div className="flex items-baseline justify-between mb-2">
-                    <h2 className="text-sm text-gray-600 font-light">{launch.name}</h2>
-                    <p className="text-4xl font-light text-gray-900">{formatLargeNumber(totalValue)}</p>
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 mb-2">
+                    <h2 className="text-xs text-gray-500">{launch.name}</h2>
+                    <p className="text-2xl sm:text-3xl font-medium text-gray-900">{formatLargeNumber(totalValue)}</p>
                   </div>
 
                   {/* Stat Row 1 */}
-                  <div className="flex items-center justify-between py-3.5 border-b border-gray-200">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600 font-light">Instant Redemption Capacity</span>
-                      <div className="flex items-center gap-1 px-2 py-0.5 bg-gray-100/60 rounded-md">
-                        <div className="w-3 h-3 bg-gray-800 rounded-full flex items-center justify-center">
-                          <span className="text-[8px] text-white font-medium">P</span>
+                  <div className="flex items-center justify-between py-2.5 border-b border-gray-200/50">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs text-gray-600">Redemption Capacity</span>
+                      <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-100/60 rounded">
+                        <div className="w-2.5 h-2.5 bg-black rounded-full flex items-center justify-center">
+                          <span className="text-[6px] text-white font-medium">P</span>
                         </div>
-                        <span className="text-xs text-gray-700 font-light">PYUSD</span>
+                        <span className="text-[10px] text-gray-700">PYUSD</span>
                       </div>
                     </div>
-                    <p className="text-base font-light text-gray-900 tabular-nums">${pyusdCapacity.toLocaleString()}</p>
+                    <p className="text-sm font-medium text-gray-900 tabular-nums">${pyusdCapacity.toLocaleString()}</p>
                   </div>
 
                   {/* Stat Row 2 */}
-                  <div className="flex items-center justify-between py-3.5 border-b border-gray-200">
+                  <div className="flex items-center justify-between py-2.5 border-b border-gray-200/50">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600 font-light">Est. Yield (Net of Fees)</span>
-                      <Info size={14} className="text-gray-500" />
+                      <span className="text-xs text-gray-600">Est. Yield (Net)</span>
+                      <Info size={12} className="text-gray-400" />
                     </div>
-                    <p className="text-base font-light text-gray-900 tabular-nums">{estYield.toFixed(3)}%</p>
+                    <p className="text-sm font-medium text-gray-900 tabular-nums">{estYield.toFixed(3)}%</p>
                   </div>
 
                   {/* Stat Row 3 */}
-                  <div className="flex items-center justify-between py-3.5 border-b border-gray-200">
-                    <span className="text-sm text-gray-600 font-light">{launch.token_symbol || 'USYC'} Price</span>
-                    <p className="text-base font-light text-gray-900 tabular-nums">${tokenPrice.toFixed(6)}</p>
+                  <div className="flex items-center justify-between py-2.5 border-b border-gray-200/50">
+                    <span className="text-xs text-gray-600">{launch.token_symbol || 'USYC'} Price</span>
+                    <p className="text-sm font-medium text-gray-900 tabular-nums">${tokenPrice.toFixed(6)}</p>
                   </div>
 
                   {/* Stat Row 4 */}
-                  <div className="flex items-center justify-between py-3.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600 font-light">Instant Redemption Capacity</span>
-                      <div className="flex items-center gap-1 px-2 py-0.5 bg-gray-100/60 rounded-md">
-                        <div className="w-3 h-3 bg-gray-800 rounded-full flex items-center justify-center">
-                          <span className="text-[8px] text-white font-medium">U</span>
+                  <div className="flex items-center justify-between py-2.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs text-gray-600">Redemption Capacity</span>
+                      <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-100/60 rounded">
+                        <div className="w-2.5 h-2.5 bg-black rounded-full flex items-center justify-center">
+                          <span className="text-[6px] text-white font-medium">U</span>
                         </div>
-                        <span className="text-xs text-gray-700 font-light">USDC</span>
+                        <span className="text-[10px] text-gray-700">USDC</span>
                       </div>
                     </div>
-                    <p className="text-base font-light text-gray-900 tabular-nums">{formatLargeNumber(usdcCapacity)}</p>
+                    <p className="text-sm font-medium text-gray-900 tabular-nums">{formatLargeNumber(usdcCapacity)}</p>
                   </div>
                 </div>
 
                 {/* Token Price Chart */}
-                <div className="pt-6 border-t border-gray-200">
+                <div className="pt-4 border-t border-gray-200/50">
                   <TokenPriceChart
                     chartData={chartData}
                     tokenPrice={tokenPrice}
@@ -229,42 +229,42 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
             )}
 
             {activeSubTab === 'details' && (
-              <div className="space-y-6">
-                <h3 className="text-2xl font-light text-gray-900">Asset Details</h3>
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900">Asset Details</h3>
 
                 {/* Asset Information Grid */}
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <p className="text-xs text-gray-500 font-light uppercase tracking-wide">Asset Type</p>
-                    <p className="text-base font-light text-gray-900">{launch.project_type === 'sto' ? 'Security Token' : 'Utility Token'}</p>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  <div className="p-3 bg-white/20 rounded-lg border border-gray-200/50">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Asset Type</p>
+                    <p className="text-sm font-medium text-gray-900">{launch.project_type === 'sto' ? 'Security Token' : 'Utility Token'}</p>
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-xs text-gray-500 font-light uppercase tracking-wide">Token Standard</p>
-                    <p className="text-base font-light text-gray-900">ERC-20</p>
+                  <div className="p-3 bg-white/20 rounded-lg border border-gray-200/50">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Token Standard</p>
+                    <p className="text-sm font-medium text-gray-900">ERC-20</p>
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-xs text-gray-500 font-light uppercase tracking-wide">Total Supply</p>
-                    <p className="text-base font-light text-gray-900 tabular-nums">{(launch.target_amount / tokenPrice).toLocaleString()} Tokens</p>
+                  <div className="p-3 bg-white/20 rounded-lg border border-gray-200/50">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Total Supply</p>
+                    <p className="text-sm font-medium text-gray-900 tabular-nums">{(launch.target_amount / tokenPrice).toLocaleString()}</p>
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-xs text-gray-500 font-light uppercase tracking-wide">Minimum Investment</p>
-                    <p className="text-base font-light text-gray-900 tabular-nums">$1,000</p>
+                  <div className="p-3 bg-white/20 rounded-lg border border-gray-200/50">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Min. Investment</p>
+                    <p className="text-sm font-medium text-gray-900 tabular-nums">$1,000</p>
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-gray-200">
-                  <p className="text-xs text-gray-500 font-light uppercase tracking-wide mb-3">Description</p>
-                  <p className="text-sm font-light text-gray-700 leading-relaxed">
+                <div className="pt-4 border-t border-gray-200/50">
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-2">Description</p>
+                  <p className="text-xs text-gray-700 leading-relaxed">
                     {launch.description || 'This is a tokenized real-world asset offering providing investors with fractional ownership and passive income opportunities through blockchain technology.'}
                   </p>
                 </div>
 
                 {launch.smart_contract_address && (
-                  <div className="pt-6 border-t border-gray-200">
-                    <p className="text-xs text-gray-500 font-light uppercase tracking-wide mb-3">Smart Contract</p>
-                    <div className="flex items-center gap-3 p-3 bg-gray-100/60 rounded-lg">
-                      <Shield size={16} className="text-gray-600" />
-                      <code className="text-sm font-mono text-gray-900 font-light">{launch.smart_contract_address}</code>
+                  <div className="pt-4 border-t border-gray-200/50">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-2">Smart Contract</p>
+                    <div className="flex items-center gap-2 p-2.5 bg-gray-100/60 rounded-lg overflow-x-auto">
+                      <Shield size={14} className="text-gray-600 flex-shrink-0" />
+                      <code className="text-xs font-mono text-gray-900 truncate">{launch.smart_contract_address}</code>
                     </div>
                   </div>
                 )}
@@ -272,43 +272,43 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
             )}
 
             {activeSubTab === 'tokenomics' && (
-              <div className="space-y-6">
-                <h3 className="text-2xl font-light text-gray-900">Token Economics</h3>
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900">Token Economics</h3>
 
                 {/* Tokenomics Stats */}
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="p-4 bg-transparent rounded-lg border border-gray-200">
+                <div className="grid grid-cols-1 gap-2">
+                  <div className="p-3 bg-white/20 rounded-lg border border-gray-200/50">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 font-light">Token Price</span>
-                      <p className="text-xl font-light text-gray-900 tabular-nums">${tokenPrice.toFixed(6)}</p>
+                      <span className="text-xs text-gray-600">Token Price</span>
+                      <p className="text-sm font-medium text-gray-900 tabular-nums">${tokenPrice.toFixed(6)}</p>
                     </div>
                   </div>
 
-                  <div className="p-4 bg-transparent rounded-lg border border-gray-200">
+                  <div className="p-3 bg-white/20 rounded-lg border border-gray-200/50">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 font-light">Total Value Locked</span>
-                      <p className="text-xl font-light text-gray-900 tabular-nums">{formatLargeNumber(totalValue)}</p>
+                      <span className="text-xs text-gray-600">Total Value Locked</span>
+                      <p className="text-sm font-medium text-gray-900 tabular-nums">{formatLargeNumber(totalValue)}</p>
                     </div>
                   </div>
 
-                  <div className="p-4 bg-transparent rounded-lg border border-gray-200">
+                  <div className="p-3 bg-white/20 rounded-lg border border-gray-200/50">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 font-light">Expected APY</span>
-                      <p className="text-xl font-light text-gray-900 tabular-nums">{estYield.toFixed(2)}%</p>
+                      <span className="text-xs text-gray-600">Expected APY</span>
+                      <p className="text-sm font-medium text-gray-900 tabular-nums">{estYield.toFixed(2)}%</p>
                     </div>
                   </div>
 
-                  <div className="p-4 bg-transparent rounded-lg border border-gray-200">
+                  <div className="p-3 bg-white/20 rounded-lg border border-gray-200/50">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 font-light">Revenue Distribution</span>
-                      <p className="text-xl font-light text-gray-900">Quarterly</p>
+                      <span className="text-xs text-gray-600">Revenue Distribution</span>
+                      <p className="text-sm font-medium text-gray-900">Quarterly</p>
                     </div>
                   </div>
 
-                  <div className="p-4 bg-transparent rounded-lg border border-gray-200">
+                  <div className="p-3 bg-white/20 rounded-lg border border-gray-200/50">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 font-light">Lock-up Period</span>
-                      <p className="text-xl font-light text-gray-900 tabular-nums">12 Months</p>
+                      <span className="text-xs text-gray-600">Lock-up Period</span>
+                      <p className="text-sm font-medium text-gray-900 tabular-nums">12 Months</p>
                     </div>
                   </div>
                 </div>
@@ -316,35 +316,35 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
             )}
 
             {activeSubTab === 'legal' && (
-              <div className="space-y-6">
-                <h3 className="text-2xl font-light text-gray-900">Legal & Compliance</h3>
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900">Legal & Compliance</h3>
 
-                <div className="space-y-4">
-                  <div className="p-4 bg-transparent rounded-lg border border-gray-200">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Shield size={18} className="text-gray-600" />
-                      <h4 className="text-base font-light text-gray-900">Regulatory Status</h4>
+                <div className="space-y-2">
+                  <div className="p-3 bg-white/20 rounded-lg border border-gray-200/50">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Shield size={14} className="text-gray-600" />
+                      <h4 className="text-sm font-medium text-gray-900">Regulatory Status</h4>
                     </div>
-                    <p className="text-sm font-light text-gray-700">
-                      This offering is compliant with applicable securities regulations and has been reviewed by legal counsel.
+                    <p className="text-xs text-gray-600">
+                      Compliant with applicable securities regulations.
                     </p>
                   </div>
 
-                  <div className="p-4 bg-transparent rounded-lg border border-gray-200">
-                    <div className="flex items-center gap-3 mb-2">
-                      <FileText size={18} className="text-gray-600" />
-                      <h4 className="text-base font-light text-gray-900">Jurisdiction</h4>
+                  <div className="p-3 bg-white/20 rounded-lg border border-gray-200/50">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <FileText size={14} className="text-gray-600" />
+                      <h4 className="text-sm font-medium text-gray-900">Jurisdiction</h4>
                     </div>
-                    <p className="text-sm font-light text-gray-700">United States - Regulation D 506(c)</p>
+                    <p className="text-xs text-gray-600">United States - Regulation D 506(c)</p>
                   </div>
 
-                  <div className="p-4 bg-transparent rounded-lg border border-gray-200">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Info size={18} className="text-gray-600" />
-                      <h4 className="text-base font-light text-gray-900">Investor Requirements</h4>
+                  <div className="p-3 bg-white/20 rounded-lg border border-gray-200/50">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Info size={14} className="text-gray-600" />
+                      <h4 className="text-sm font-medium text-gray-900">Investor Requirements</h4>
                     </div>
-                    <p className="text-sm font-light text-gray-700">
-                      Accredited investors only. Minimum investment: $1,000
+                    <p className="text-xs text-gray-600">
+                      Accredited investors only. Min: $1,000
                     </p>
                   </div>
                 </div>
@@ -352,31 +352,31 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
             )}
 
             {activeSubTab === 'documents' && (
-              <div className="space-y-6">
-                <h3 className="text-2xl font-light text-gray-900">Documents</h3>
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900">Documents</h3>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {[
-                    { name: 'Prospectus', size: '2.4 MB', date: 'Updated Jan 15, 2025' },
-                    { name: 'Legal Opinion', size: '1.8 MB', date: 'Updated Jan 10, 2025' },
-                    { name: 'Asset Valuation Report', size: '3.1 MB', date: 'Updated Jan 5, 2025' },
-                    { name: 'Audit Report', size: '1.2 MB', date: 'Updated Dec 20, 2024' }
+                    { name: 'Prospectus', size: '2.4 MB', date: 'Jan 15, 2025' },
+                    { name: 'Legal Opinion', size: '1.8 MB', date: 'Jan 10, 2025' },
+                    { name: 'Valuation Report', size: '3.1 MB', date: 'Jan 5, 2025' },
+                    { name: 'Audit Report', size: '1.2 MB', date: 'Dec 20, 2024' }
                   ].map((doc, index) => (
                     <button
                       key={index}
-                      className="w-full p-4 bg-transparent hover:bg-gray-100/20 rounded-lg border border-gray-200 transition-all text-left group"
+                      className="w-full p-3 bg-white/20 hover:bg-white/30 rounded-lg border border-gray-200/50 transition-all text-left group"
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-gray-100 rounded-lg group-hover:bg-gray-200 transition-colors">
-                            <FileText size={20} className="text-gray-700" />
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-1.5 bg-gray-100/60 rounded-lg group-hover:bg-gray-200/60 transition-colors">
+                            <FileText size={16} className="text-gray-700" />
                           </div>
                           <div>
-                            <p className="text-sm font-light text-gray-900">{doc.name}</p>
-                            <p className="text-xs font-light text-gray-500">{doc.size} · {doc.date}</p>
+                            <p className="text-sm font-medium text-gray-900">{doc.name}</p>
+                            <p className="text-[10px] text-gray-500">{doc.size} · {doc.date}</p>
                           </div>
                         </div>
-                        <ChevronDown size={16} className="text-gray-400 rotate-[-90deg]" />
+                        <ChevronDown size={14} className="text-gray-400 -rotate-90" />
                       </div>
                     </button>
                   ))}
@@ -386,37 +386,39 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
           </div>
 
           {/* RIGHT CARD - Investment Interface */}
-          <div className="lg:col-span-1 bg-transparent backdrop-blur-xl rounded-2xl border border-gray-200 p-6" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+          <div className="lg:col-span-1 order-1 lg:order-2 bg-white/30 backdrop-blur-xl rounded-xl border border-gray-200/50 p-4">
 
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-light text-gray-900">Invest in {launch.token_symbol || 'USYC'}</h2>
+            <div className="flex flex-col gap-3 mb-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-medium text-gray-900">Invest in {launch.token_symbol || 'USYC'}</h2>
+              </div>
               <button
                 onClick={handleConnectWallet}
-                className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-sm font-light transition-colors"
+                className="w-full px-3 py-2 bg-black hover:bg-gray-800 text-white rounded-lg text-xs font-medium transition-colors"
               >
                 {isConnected ? `${address?.slice(0, 6)}...${address?.slice(-4)}` : 'Connect Wallet'}
               </button>
             </div>
 
             {/* Tab Switcher */}
-            <div className="flex gap-2 mb-6">
+            <div className="flex gap-1 mb-4 p-1 bg-gray-100/60 rounded-lg">
               <button
                 onClick={() => setActiveTab('fund')}
-                className={`flex-1 px-4 py-2 rounded-lg text-sm font-light transition-colors ${
+                className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                   activeTab === 'fund'
-                    ? 'bg-gray-900 text-white'
-                    : 'text-gray-600 hover:text-gray-900 bg-white/40'
+                    ? 'bg-black text-white'
+                    : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 Fund
               </button>
               <button
                 onClick={() => setActiveTab('redeem')}
-                className={`flex-1 px-4 py-2 rounded-lg text-sm font-light transition-colors ${
+                className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                   activeTab === 'redeem'
-                    ? 'bg-gray-900 text-white'
-                    : 'text-gray-600 hover:text-gray-900 bg-white/40'
+                    ? 'bg-black text-white'
+                    : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 Redeem
@@ -424,32 +426,32 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
             </div>
 
             {/* Input Section 1 - Payment Token */}
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-gray-600 font-light">Balance</span>
+            <div className="mb-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] text-gray-500">You Pay</span>
                 <button
                   onClick={handleMaxPayment}
-                  className="text-xs text-gray-600 hover:text-gray-900 transition-colors font-light"
+                  className="text-[10px] text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Max
                 </button>
               </div>
-              <div className="bg-transparent rounded-lg p-4 border border-gray-200">
-                <div className="flex items-center justify-between mb-3">
+              <div className="bg-white/20 rounded-lg p-3 border border-gray-200/50">
+                <div className="flex items-center justify-between mb-2">
                   <div className="relative">
                     <button
                       onClick={() => setShowPaymentDropdown(!showPaymentDropdown)}
-                      className="flex items-center gap-2 px-3 py-2 bg-gray-100/40 hover:bg-gray-100/60 rounded-lg transition-colors border border-gray-200"
+                      className="flex items-center gap-1.5 px-2 py-1.5 bg-gray-100/60 hover:bg-gray-100 rounded-lg transition-colors"
                     >
-                      <div className="w-5 h-5 bg-gray-800 rounded-full flex items-center justify-center">
-                        <span className="text-[10px] text-white font-medium">P</span>
+                      <div className="w-4 h-4 bg-black rounded-full flex items-center justify-center">
+                        <span className="text-[8px] text-white font-medium">P</span>
                       </div>
-                      <span className="text-sm font-light text-gray-900">{selectedPaymentToken}</span>
-                      <ChevronDown size={14} className="text-gray-600" />
+                      <span className="text-xs font-medium text-gray-900">{selectedPaymentToken}</span>
+                      <ChevronDown size={12} className="text-gray-500" />
                     </button>
 
                     {showPaymentDropdown && (
-                      <div className="absolute top-full left-0 mt-2 bg-white/90 backdrop-blur-xl border border-gray-200 rounded-lg shadow-xl z-10 min-w-[120px]">
+                      <div className="absolute top-full left-0 mt-1 bg-white/95 backdrop-blur-xl border border-gray-200/50 rounded-lg shadow-xl z-10 min-w-[100px]">
                         {['PYUSD', 'USDC', 'USDT'].map((token) => (
                           <button
                             key={token}
@@ -457,9 +459,9 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
                               setSelectedPaymentToken(token);
                               setShowPaymentDropdown(false);
                             }}
-                            className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-100 text-gray-900 text-sm font-light transition-colors first:rounded-t-lg last:rounded-b-lg"
+                            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-100 text-gray-900 text-xs font-medium transition-colors first:rounded-t-lg last:rounded-b-lg"
                           >
-                            <div className="w-4 h-4 bg-gray-800 rounded-full"></div>
+                            <div className="w-3 h-3 bg-black rounded-full"></div>
                             {token}
                           </button>
                         ))}
@@ -471,53 +473,53 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
                     value={paymentAmount}
                     onChange={(e) => setPaymentAmount(e.target.value)}
                     placeholder="0.00"
-                    className="bg-transparent text-right text-2xl font-light text-gray-900 outline-none w-32"
+                    className="bg-transparent text-right text-xl font-medium text-gray-900 outline-none w-24"
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500 font-light">Balance</span>
-                  <span className="text-sm text-gray-900 font-light">0</span>
+                  <span className="text-[10px] text-gray-400">Balance</span>
+                  <span className="text-xs text-gray-600">0</span>
                 </div>
               </div>
             </div>
 
             {/* Swap Button */}
-            <div className="flex justify-center -my-2 relative z-10">
+            <div className="flex justify-center -my-1.5 relative z-10">
               <button
                 onClick={handleSwapTokens}
-                className="w-10 h-10 bg-gray-100/40 hover:bg-gray-100/60 border-2 border-gray-200 rounded-full flex items-center justify-center transition-colors"
+                className="w-8 h-8 bg-white/60 hover:bg-white border border-gray-200/50 rounded-full flex items-center justify-center transition-colors shadow-sm"
               >
-                <ArrowUpDown size={16} className="text-gray-600" />
+                <ArrowUpDown size={14} className="text-gray-600" />
               </button>
             </div>
 
             {/* Input Section 2 - Receive Token */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-gray-600 font-light">Balance</span>
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] text-gray-500">You Receive</span>
                 <button
                   onClick={handleMaxReceive}
-                  className="text-xs text-gray-600 hover:text-gray-900 transition-colors font-light"
+                  className="text-[10px] text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Max
                 </button>
               </div>
-              <div className="bg-transparent rounded-lg p-4 border border-gray-200">
-                <div className="flex items-center justify-between mb-3">
+              <div className="bg-white/20 rounded-lg p-3 border border-gray-200/50">
+                <div className="flex items-center justify-between mb-2">
                   <div className="relative">
                     <button
                       onClick={() => setShowReceiveDropdown(!showReceiveDropdown)}
-                      className="flex items-center gap-2 px-3 py-2 bg-gray-100/40 hover:bg-gray-100/60 rounded-lg transition-colors border border-gray-200"
+                      className="flex items-center gap-1.5 px-2 py-1.5 bg-gray-100/60 hover:bg-gray-100 rounded-lg transition-colors"
                     >
-                      <div className="w-5 h-5 bg-gray-800 rounded-full flex items-center justify-center">
-                        <span className="text-[10px] text-white font-medium">y</span>
+                      <div className="w-4 h-4 bg-black rounded-full flex items-center justify-center">
+                        <span className="text-[8px] text-white font-medium">y</span>
                       </div>
-                      <span className="text-sm font-light text-gray-900">{selectedReceiveToken}</span>
-                      <ChevronDown size={14} className="text-gray-600" />
+                      <span className="text-xs font-medium text-gray-900">{selectedReceiveToken}</span>
+                      <ChevronDown size={12} className="text-gray-500" />
                     </button>
 
                     {showReceiveDropdown && (
-                      <div className="absolute top-full left-0 mt-2 bg-white/90 backdrop-blur-xl border border-gray-200 rounded-lg shadow-xl z-10 min-w-[120px]">
+                      <div className="absolute top-full left-0 mt-1 bg-white/95 backdrop-blur-xl border border-gray-200/50 rounded-lg shadow-xl z-10 min-w-[100px]">
                         {['USYC', 'USDC', 'USDT'].map((token) => (
                           <button
                             key={token}
@@ -525,9 +527,9 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
                               setSelectedReceiveToken(token);
                               setShowReceiveDropdown(false);
                             }}
-                            className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-100 text-gray-900 text-sm font-light transition-colors first:rounded-t-lg last:rounded-b-lg"
+                            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-100 text-gray-900 text-xs font-medium transition-colors first:rounded-t-lg last:rounded-b-lg"
                           >
-                            <div className="w-4 h-4 bg-gray-800 rounded-full"></div>
+                            <div className="w-3 h-3 bg-black rounded-full"></div>
                             {token}
                           </button>
                         ))}
@@ -539,41 +541,41 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
                     value={receiveAmount}
                     readOnly
                     placeholder="0.00"
-                    className="bg-transparent text-right text-2xl font-light text-gray-900 outline-none w-32"
+                    className="bg-transparent text-right text-xl font-medium text-gray-900 outline-none w-24"
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500 font-light">Balance</span>
-                  <span className="text-sm text-gray-900 font-light">0</span>
+                  <span className="text-[10px] text-gray-400">Balance</span>
+                  <span className="text-xs text-gray-600">0</span>
                 </div>
               </div>
             </div>
 
             {/* Exchange Rate */}
-            <div className="mb-6 p-3 bg-transparent rounded-lg border border-gray-200">
+            <div className="mb-4 p-2.5 bg-white/20 rounded-lg border border-gray-200/50">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-gray-700 font-light">
-                  <span className="text-gray-900">⚡</span>
-                  <span>1 {selectedPaymentToken} = {exchangeRate.toFixed(6)} {selectedReceiveToken}</span>
+                <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                  <span>⚡</span>
+                  <span>1 {selectedPaymentToken} = {exchangeRate.toFixed(4)} {selectedReceiveToken}</span>
                 </div>
-                <button className="text-gray-600 hover:text-gray-900 transition-colors">
-                  <RefreshCw size={14} />
+                <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <RefreshCw size={12} />
                 </button>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <button
                 onClick={handleConnectWallet}
                 disabled={isConnected}
-                className="w-full px-6 py-4 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-base font-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 bg-black hover:bg-gray-800 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isConnected ? 'Wallet Connected' : 'Connect Your Wallet'}
+                {isConnected ? 'Wallet Connected' : 'Connect Wallet'}
               </button>
 
-              <button className="w-full px-6 py-4 bg-transparent border border-gray-200 hover:border-gray-300 text-gray-700 rounded-lg text-base font-light transition-colors">
-                Contact us to get access
+              <button className="w-full px-4 py-2.5 bg-white/30 border border-gray-200/50 hover:bg-white/50 text-gray-700 rounded-lg text-xs transition-colors">
+                Contact for Access
               </button>
             </div>
 

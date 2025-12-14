@@ -3711,8 +3711,8 @@ const TokenizedAssetsGlassmorphic = () => {
     // { id: 'swap', label: 'Swap', icon: ArrowLeft, category: 'swap' }, // Hidden - not needed for now
     // { id: 'dao', label: 'DAOs', icon: Users, category: 'dao' }, // Hidden for MVP
     { id: 'escrow', label: 'Escrow', icon: Shield, category: 'escrow' },
-    { id: 'nft-marketplace', label: 'NFT Marketplace', icon: Shield, category: 'nft-marketplace' }
-    // { id: 'launchpad', label: 'Launchpad', icon: Zap, category: 'launchpad' } // Hidden - will be re-enabled when projects are available from admin backend
+    { id: 'nft-marketplace', label: 'NFT Marketplace', icon: Shield, category: 'nft-marketplace' },
+    { id: 'launchpad', label: 'Launchpad', icon: Zap, category: 'launchpad' }
   ];
 
   // Active category menu based on webMode
