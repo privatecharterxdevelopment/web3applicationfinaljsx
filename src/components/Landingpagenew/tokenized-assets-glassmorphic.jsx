@@ -4877,6 +4877,8 @@ const TokenizedAssetsGlassmorphic = () => {
                         const range = d.range;
                         const hourlyRate = d.hourly_rate || d.price_per_hour;
                         const location = d.location;
+                        const preferredPayment = d.preferred_payment;
+                        const specialRequests = d.special_requests;
 
                         const requestTitle = request.type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Request';
                         const getTypeIcon = (type) => {
@@ -5022,11 +5024,11 @@ const TokenizedAssetsGlassmorphic = () => {
                                 </div>
 
                                 {/* Addons/Extras */}
-                                {(luggage || hasPet || hasNFT || nftDiscount) && (
+                                {(luggage || hasPet || hasNFT || nftDiscount || preferredPayment) && (
                                   <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                                    <p className="text-[10px] text-gray-400 uppercase mb-2">Extras & Addons</p>
+                                    <p className="text-[10px] text-gray-400 uppercase mb-2">Extras & Preferences</p>
                                     <div className="flex flex-wrap gap-2">
-                                      {luggage && (
+                                      {luggage > 0 && (
                                         <span className="px-2 py-1 bg-white border border-gray-200 rounded text-xs text-gray-700">
                                           🧳 {luggage} luggage
                                         </span>
@@ -5046,7 +5048,20 @@ const TokenizedAssetsGlassmorphic = () => {
                                           -{nftDiscount}% NFT Discount
                                         </span>
                                       )}
+                                      {preferredPayment && (
+                                        <span className="px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+                                          💳 {preferredPayment === 'crypto' ? 'Crypto' : preferredPayment === 'bank_transfer' ? 'Bank Transfer' : preferredPayment === 'credit_card' ? 'Credit Card' : preferredPayment}
+                                        </span>
+                                      )}
                                     </div>
+                                  </div>
+                                )}
+
+                                {/* Special Requests */}
+                                {specialRequests && (
+                                  <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                                    <p className="text-[10px] text-gray-400 uppercase mb-1">Special Requests</p>
+                                    <p className="text-xs text-gray-700">{specialRequests}</p>
                                   </div>
                                 )}
 

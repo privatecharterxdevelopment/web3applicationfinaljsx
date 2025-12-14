@@ -24,6 +24,16 @@ const JetDetail = () => {
   const [showSuccessNotification, setShowSuccessNotification] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
+  // Booking form state
+  const [departureLocation, setDepartureLocation] = useState('');
+  const [arrivalLocation, setArrivalLocation] = useState('');
+  const [departureDate, setDepartureDate] = useState('');
+  const [passengers, setPassengers] = useState(1);
+  const [luggage, setLuggage] = useState(0);
+  const [hasPet, setHasPet] = useState(false);
+  const [preferredPayment, setPreferredPayment] = useState('crypto');
+  const [specialRequests, setSpecialRequests] = useState('');
+
   useEffect(() => {
     fetchJet();
   }, [id]);
@@ -83,14 +93,25 @@ const JetDetail = () => {
           data: {
             wallet_address: address,
             jet_id: jet.id,
+            // Aircraft details
             aircraft_model: jet.aircraft_model,
             aircraft: jet.aircraft_model,
             manufacturer: jet.manufacturer,
             passenger_capacity: jet.passenger_capacity,
             capacity: jet.passenger_capacity,
             range: jet.range,
-            category: jet.category,
+            category: jet.category || jet.aircraft_category,
             image_url: jet.image_url,
+            // Route details
+            from_city: departureLocation || null,
+            to_city: arrivalLocation || null,
+            departure_date: departureDate || null,
+            // Booking details
+            passengers: passengers,
+            luggage: luggage,
+            has_pet: hasPet,
+            preferred_payment: preferredPayment,
+            special_requests: specialRequests || null,
             // Full price breakdown
             hourly_rate: hourlyRate,
             estimated_hours: estimatedHours,
@@ -481,24 +502,131 @@ const JetDetail = () => {
                 </div>
               )}
 
-              <div className="space-y-4 mb-6">
-                <div className="p-3 bg-gray-50 rounded">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-500">Aircraft</span>
-                    <span className="text-sm font-semibold text-black">{jet.aircraft_model}</span>
+              {/* Aircraft Info */}
+              <div className="p-3 bg-gray-50 rounded mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs text-gray-500">Aircraft</span>
+                  <span className="text-sm font-semibold text-black">{jet.aircraft_model}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500">Category</span>
+                  <span className="text-xs text-gray-600">{jet.aircraft_category}</span>
+                </div>
+              </div>
+
+              {/* Booking Form */}
+              <div className="space-y-3 mb-4">
+                {/* Departure Location */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Departure Location</label>
+                  <input
+                    type="text"
+                    value={departureLocation}
+                    onChange={(e) => setDepartureLocation(e.target.value)}
+                    placeholder="e.g., Zurich, LSZH"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-black"
+                  />
+                </div>
+
+                {/* Arrival Location */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Arrival Location</label>
+                  <input
+                    type="text"
+                    value={arrivalLocation}
+                    onChange={(e) => setArrivalLocation(e.target.value)}
+                    placeholder="e.g., London, EGLF"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-black"
+                  />
+                </div>
+
+                {/* Date */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Preferred Date</label>
+                  <input
+                    type="date"
+                    value={departureDate}
+                    onChange={(e) => setDepartureDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-black"
+                  />
+                </div>
+
+                {/* Passengers & Luggage Row */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Passengers</label>
+                    <div className="flex items-center border border-gray-200 rounded-lg">
+                      <button
+                        onClick={() => setPassengers(Math.max(1, passengers - 1))}
+                        className="px-3 py-2 text-gray-500 hover:text-black"
+                      >−</button>
+                      <span className="flex-1 text-center text-sm font-medium">{passengers}</span>
+                      <button
+                        onClick={() => setPassengers(Math.min(jet.capacity || 14, passengers + 1))}
+                        className="px-3 py-2 text-gray-500 hover:text-black"
+                      >+</button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Luggage</label>
+                    <div className="flex items-center border border-gray-200 rounded-lg">
+                      <button
+                        onClick={() => setLuggage(Math.max(0, luggage - 1))}
+                        className="px-3 py-2 text-gray-500 hover:text-black"
+                      >−</button>
+                      <span className="flex-1 text-center text-sm font-medium">{luggage}</span>
+                      <button
+                        onClick={() => setLuggage(luggage + 1)}
+                        className="px-3 py-2 text-gray-500 hover:text-black"
+                      >+</button>
+                    </div>
                   </div>
                 </div>
-                <div className="p-3 bg-gray-50 rounded">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-500">Capacity</span>
-                    <span className="text-sm font-semibold text-black">{jet.capacity} pax</span>
-                  </div>
+
+                {/* Pet Toggle */}
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-xs text-gray-600">Pet onboard</span>
+                  <button
+                    onClick={() => setHasPet(!hasPet)}
+                    className={`w-10 h-5 rounded-full transition-colors ${hasPet ? 'bg-black' : 'bg-gray-200'}`}
+                  >
+                    <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${hasPet ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                  </button>
                 </div>
-                <div className="p-3 bg-gray-50 rounded">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-500">Est. Price Range</span>
-                    <span className="text-sm font-semibold text-black">{jet.price_range}</span>
-                  </div>
+
+                {/* Preferred Payment */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Preferred Payment</label>
+                  <select
+                    value={preferredPayment}
+                    onChange={(e) => setPreferredPayment(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-black bg-white"
+                  >
+                    <option value="crypto">Crypto (USDT/USDC)</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="credit_card">Credit Card</option>
+                  </select>
+                </div>
+
+                {/* Special Requests */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Special Requests (optional)</label>
+                  <textarea
+                    value={specialRequests}
+                    onChange={(e) => setSpecialRequests(e.target.value)}
+                    placeholder="Catering, ground transport, etc."
+                    rows={2}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-black resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* Price Summary */}
+              <div className="p-3 bg-gray-50 rounded mb-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500">Est. Price Range</span>
+                  <span className="text-sm font-semibold text-black">{jet.price_range}</span>
                 </div>
               </div>
 
@@ -517,7 +645,7 @@ const JetDetail = () => {
                 {isCheckingNFT ? 'Checking...' : hasNFT ? '✅ NFT Member' : 'Check NFT Membership'}
               </button>
 
-              <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="mt-4 pt-4 border-t border-gray-200">
                 <p className="text-xs text-gray-500 leading-relaxed">
                   Our concierge team will contact you within 24 hours with exact pricing and availability. NFT members receive priority service and exclusive discounts.
                 </p>
