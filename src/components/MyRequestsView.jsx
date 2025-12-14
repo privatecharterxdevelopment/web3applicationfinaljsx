@@ -350,7 +350,10 @@ const MyRequestsView = ({ user }) => {
               {departureDate && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Departure</p>
-                  <p className="text-sm font-semibold text-gray-800">{new Date(departureDate).toLocaleDateString()}</p>
+                  <p className="text-sm font-semibold text-gray-800">
+                    {new Date(departureDate).toLocaleDateString()}
+                    {(data.departure_time || emptyLegItem.departure_time) && ` at ${data.departure_time || emptyLegItem.departure_time}`}
+                  </p>
                 </div>
               )}
               {passengers && (
@@ -363,6 +366,12 @@ const MyRequestsView = ({ user }) => {
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Luggage</p>
                   <p className="text-sm font-semibold text-gray-800">{data.luggage || emptyLegItem.luggage}</p>
+                </div>
+              )}
+              {(data.has_pet || emptyLegItem.has_pet) && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Pet</p>
+                  <p className="text-sm font-semibold text-gray-800">🐕 Yes</p>
                 </div>
               )}
             </div>
@@ -407,17 +416,22 @@ const MyRequestsView = ({ user }) => {
     data = data || {};
 
     // Handle AI Chat cart submissions - extract adventure item from items array
-    const adventureItem = data.items?.find(i => i.type === 'adventures' || i.type === 'adventure') || data.items?.[0] || {};
+    const adventureItem = data.items?.find(i => i.type === 'adventures' || i.type === 'adventure' || i.type === 'fixed_offer') || data.items?.[0] || {};
 
-    // Merge data from different sources
-    const adventureName = data.adventure_name || adventureItem.name || adventureItem.title || 'Adventure Package';
-    const destination = data.destination || adventureItem.destination || adventureItem.location;
+    // Merge data from different sources (AdventureDetail saves with adventure_title, offer_title)
+    const adventureName = data.adventure_title || data.offer_title || data.adventure_name || adventureItem.name || adventureItem.title || 'Adventure Package';
+    const destination = data.destination || data.destination_city || adventureItem.destination || adventureItem.location;
+    const origin = data.origin || data.origin_city || adventureItem.origin;
     const duration = data.duration || adventureItem.duration;
-    const guests = data.guests || data.participants || adventureItem.guests || adventureItem.passengers;
-    const startDate = data.start_date || adventureItem.date || adventureItem.departure_date;
-    const price = data.price || data.total || adventureItem.price || adventureItem.estimated_price || adventureItem.price_eur;
+    const guests = data.participants || data.passengers || data.guests || adventureItem.guests || adventureItem.passengers;
+    const startDate = data.preferred_date || data.departure_date || data.start_date || adventureItem.date || adventureItem.departure_date;
+    // Price: check discounted_price first (what user actually pays), then original_price
+    const price = data.discounted_price || data.converted_price || data.original_price || data.price || data.total || adventureItem.price || adventureItem.estimated_price || adventureItem.price_eur;
     const adventureImage = adventureItem.primaryImage || adventureItem.image_url || adventureItem.image || data.image_url;
-    const activities = data.activities || adventureItem.activities;
+    const activities = data.activities || adventureItem.activities || data.inclusions;
+    const packageType = data.package_type || adventureItem.package_type;
+    const isFree = data.is_free;
+    const hasNFT = data.has_nft;
 
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-4 sm:p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
@@ -445,12 +459,30 @@ const MyRequestsView = ({ user }) => {
               </div>
             </div>
 
+            {/* Route Info */}
+            {(origin || destination) && (
+              <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                {origin && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 rounded-full bg-black"></div>
+                    <span className="text-sm text-gray-800 font-medium">{origin}</span>
+                  </div>
+                )}
+                {destination && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                    <span className="text-sm text-gray-800 font-medium">{destination}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Details Grid */}
             <div className="grid grid-cols-2 gap-3 mb-3">
-              {destination && (
+              {packageType && (
                 <div>
-                  <p className="text-xs text-gray-600 mb-1">Destination</p>
-                  <p className="text-sm font-semibold text-gray-800">{destination}</p>
+                  <p className="text-xs text-gray-600 mb-1">Package Type</p>
+                  <p className="text-sm font-semibold text-gray-800">{packageType}</p>
                 </div>
               )}
               {duration && (
@@ -484,6 +516,22 @@ const MyRequestsView = ({ user }) => {
                 </div>
               )}
             </div>
+
+            {/* NFT/Free Badge */}
+            {(hasNFT || isFree) && (
+              <div className="mb-3">
+                {isFree ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                    <Check size={12} />
+                    NFT Free Flight Benefit
+                  </span>
+                ) : hasNFT ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
+                    🎫 NFT Discount Applied
+                  </span>
+                ) : null}
+              </div>
+            )}
 
             {/* Activities */}
             {activities && Array.isArray(activities) && activities.length > 0 && (
@@ -673,17 +721,21 @@ const MyRequestsView = ({ user }) => {
     data = data || {};
 
     // Handle AI Chat cart submissions - extract first jet item
-    const jetItem = data.items?.find(i => i.type === 'jets' || i.type === 'aircraft') || data.items?.[0];
+    const jetItem = data.items?.find(i => i.type === 'jets' || i.type === 'aircraft') || data.items?.[0] || {};
 
-    // Merge data from different sources
+    // Merge data from different sources (JetDetail saves aircraft_model, passenger_capacity, category, range)
     const aircraft = data.aircraft_model || data.aircraft || jetItem?.aircraft_model || jetItem?.model || jetItem?.name || data.manufacturer;
+    const manufacturer = data.manufacturer || jetItem?.manufacturer;
     const passengers = data.passenger_capacity || data.capacity || data.passengers || jetItem?.max_passengers || jetItem?.passenger_capacity;
     const route = data.route || jetItem?.route || (data.from && data.to ? `${data.from} → ${data.to}` : null) || (jetItem?.from && jetItem?.to ? `${jetItem.from} → ${jetItem.to}` : null);
-    const price = data.total || data.estimatedPrice || data.price || jetItem?.estimatedPrice || jetItem?.price;
+    const price = data.price || data.total || data.estimatedPrice || jetItem?.estimatedPrice || jetItem?.price;
     const flightDuration = data.estimatedDuration || jetItem?.estimatedDuration;
     const hourlyRate = data.hourly_rate_eur || jetItem?.hourly_rate_eur;
     const category = data.category || jetItem?.category;
+    const range = data.range || jetItem?.range;
     const jetImage = jetItem?.primaryImage || jetItem?.image_url || data.image_url;
+    const hasNFT = data.has_nft;
+    const nftDiscount = data.nft_discount;
 
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-4 sm:p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
@@ -747,10 +799,10 @@ const MyRequestsView = ({ user }) => {
                   <p className="text-sm font-semibold text-gray-800">${hourlyRate.toLocaleString()}/hr</p>
                 </div>
               )}
-              {data.range && (
+              {range && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Range</p>
-                  <p className="text-sm font-semibold text-gray-800">{data.range}</p>
+                  <p className="text-sm font-semibold text-gray-800">{range} nm</p>
                 </div>
               )}
               {data.payment_method && (
@@ -812,16 +864,24 @@ const MyRequestsView = ({ user }) => {
     data = data || {};
 
     // Handle AI Chat cart submissions - extract helicopter item
-    const heliItem = data.items?.find(i => i.type === 'helicopters') || data.items?.[0];
+    const heliItem = data.items?.find(i => i.type === 'helicopters') || data.items?.[0] || {};
+    // Extract search_criteria for HelicopterDetail bookings
+    const searchCriteria = data.search_criteria || {};
 
-    // Merge data from different sources
-    const helicopter = data.helicopter_name || data.name || heliItem?.name || heliItem?.helicopter_name || data.manufacturer;
-    const passengers = data.passengers || data.max_passengers || heliItem?.max_passengers || heliItem?.passengers;
-    const route = data.route || heliItem?.route || (data.from && data.to ? `${data.from} → ${data.to}` : null) || (heliItem?.from && heliItem?.to ? `${heliItem.from} → ${heliItem.to}` : null);
-    const price = data.total || data.estimatedPrice || data.discounted_price || data.total_price || heliItem?.estimatedPrice || heliItem?.price;
-    const flightDuration = data.flight_duration || data.estimatedDuration || heliItem?.estimatedDuration;
+    // Merge data from different sources (HelicopterDetail saves in search_criteria)
+    const helicopter = data.helicopter_name || data.name || heliItem?.name || heliItem?.helicopter_name || data.manufacturer || data.helicopter_type;
+    const passengers = data.passengers || searchCriteria.passengers || data.max_passengers || heliItem?.max_passengers || heliItem?.passengers || data.capacity;
+    // Route: check search_criteria first (HelicopterDetail), then other sources
+    const departure = searchCriteria.departure || data.departure || data.from || heliItem?.from;
+    const arrival = searchCriteria.arrival || data.arrival || data.to || heliItem?.to;
+    const route = data.route || heliItem?.route || (departure && arrival ? `${departure} → ${arrival}` : null);
+    const price = data.price || data.discounted_price || data.total_price || data.total || data.estimatedPrice || heliItem?.estimatedPrice || heliItem?.price;
+    const flightDuration = data.flight_duration || searchCriteria.duration || data.estimatedDuration || heliItem?.estimatedDuration;
     const hourlyRate = data.hourly_rate || data.hourly_rate_eur || heliItem?.hourly_rate_eur;
     const heliImage = heliItem?.primaryImage || heliItem?.image_url || data.image_url;
+    const flightDate = searchCriteria.date || data.flight_date || data.date;
+    const flightTime = searchCriteria.time || data.flight_time || data.time;
+    const location = data.location || heliItem?.location;
 
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-4 sm:p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
@@ -871,6 +931,18 @@ const MyRequestsView = ({ user }) => {
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Duration</p>
                   <p className="text-sm font-semibold text-gray-800">{typeof flightDuration === 'number' ? `${flightDuration} hours` : flightDuration}</p>
+                </div>
+              )}
+              {flightDate && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Flight Date</p>
+                  <p className="text-sm font-semibold text-gray-800">{new Date(flightDate).toLocaleDateString()} {flightTime || ''}</p>
+                </div>
+              )}
+              {location && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Base Location</p>
+                  <p className="text-sm font-semibold text-gray-800">{location}</p>
                 </div>
               )}
               {hourlyRate && (
