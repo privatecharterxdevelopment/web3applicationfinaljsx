@@ -8424,8 +8424,8 @@ const TokenizedAssetsGlassmorphic = () => {
                 </div>
               )}
 
-              {/* Grid View - Mobile Optimized with Vertical Cards */}
-              {!isLoadingEmptyLegs && !showEmptyLegDetail && (emptyLegsViewMode === 'grid' || window.innerWidth < 768) && (
+              {/* Grid View - Mobile always uses grid, Desktop respects viewMode */}
+              {!isLoadingEmptyLegs && !showEmptyLegDetail && (emptyLegsViewMode === 'grid' || (typeof window !== 'undefined' && window.innerWidth < 768)) && (
                 <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5">
                   {emptyLegsData
@@ -8470,25 +8470,6 @@ const TokenizedAssetsGlassmorphic = () => {
                               </div>
                             )}
                           </div>
-                          <FavouriteButton
-                            item={{
-                              id: leg.id,
-                              type: 'emptyleg',
-                              name: leg.name,
-                              location: leg.location,
-                              image: leg.image,
-                              category: leg.category,
-                              price: leg.totalPrice,
-                              metadata: {
-                                capacity: leg.capacity,
-                                range: leg.range,
-                                isFreeWithNFT: leg.isFreeWithNFT,
-                                manufacturer: leg.rawData?.manufacturer
-                              }
-                            }}
-                            variant="floating"
-                            size={16}
-                          />
                         </div>
                         {/* Content below */}
                         <div className="p-3">
@@ -8536,25 +8517,6 @@ const TokenizedAssetsGlassmorphic = () => {
                               )}
                             </div>
                           </div>
-                          <FavouriteButton
-                            item={{
-                              id: leg.id,
-                              type: 'emptyleg',
-                              name: leg.name,
-                              location: leg.location,
-                              image: leg.image,
-                              category: leg.category,
-                              price: leg.totalPrice,
-                              metadata: {
-                                capacity: leg.capacity,
-                                range: leg.range,
-                                isFreeWithNFT: leg.isFreeWithNFT,
-                                manufacturer: leg.rawData?.manufacturer
-                              }
-                            }}
-                            variant="floating"
-                            size={18}
-                          />
                         </div>
                         <div className="flex-1 p-5 flex flex-col">
                           <div className="flex items-center justify-between mb-3">
@@ -8680,8 +8642,8 @@ const TokenizedAssetsGlassmorphic = () => {
                 </>
               )}
 
-              {/* Tabs View - List Format */}
-              {!isLoadingEmptyLegs && !showEmptyLegDetail && emptyLegsViewMode === 'tabs' && (
+              {/* Tabs View - List Format (Desktop only - mobile always uses grid) */}
+              {!isLoadingEmptyLegs && !showEmptyLegDetail && emptyLegsViewMode === 'tabs' && (typeof window !== 'undefined' && window.innerWidth >= 768) && (
                 <div className="w-full space-y-2">
                   {emptyLegsData
                     .slice((currentEmptyLegsPage - 1) * emptyLegsPerPage, currentEmptyLegsPage * emptyLegsPerPage)
@@ -9008,27 +8970,36 @@ const TokenizedAssetsGlassmorphic = () => {
                           </div>
                         </div>
 
-                        {/* Price Breakdown - Minimal */}
-                        {/* Use priceUSD (converted from GBP) for display */}
+                        {/* Price Breakdown - Show all fees that CoinGate will charge */}
                         {(() => {
                           const priceUSD = selectedEmptyLeg?.priceUSD || 0;
+                          const platformFee = Math.round(priceUSD * 0.025); // 2.5% platform fee
                           const vatAmount = Math.round(priceUSD * 0.081); // 8.1% Swiss VAT
-                          const totalWithVAT = priceUSD + vatAmount;
+                          const coingateFee = Math.round(priceUSD * 0.01); // 1% CoinGate fee
+                          const totalWithFees = priceUSD + platformFee + vatAmount + coingateFee;
                           return (
                             <div className="space-y-2 mb-4 pt-3 border-t border-gray-100">
                               {priceUSD > 0 ? (
                                 <>
                                   <div className="flex justify-between text-xs">
-                                    <span className="text-gray-500">Subtotal</span>
+                                    <span className="text-gray-500">Base Price</span>
                                     <span className="text-gray-900">${priceUSD.toLocaleString()}</span>
+                                  </div>
+                                  <div className="flex justify-between text-xs">
+                                    <span className="text-gray-500">Platform Fee (2.5%)</span>
+                                    <span className="text-gray-900">${platformFee.toLocaleString()}</span>
                                   </div>
                                   <div className="flex justify-between text-xs">
                                     <span className="text-gray-500">VAT (8.1%)</span>
                                     <span className="text-gray-900">${vatAmount.toLocaleString()}</span>
                                   </div>
+                                  <div className="flex justify-between text-xs">
+                                    <span className="text-gray-500">Processing Fee (1%)</span>
+                                    <span className="text-gray-900">${coingateFee.toLocaleString()}</span>
+                                  </div>
                                   <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
                                     <span className="font-medium text-gray-900">Total</span>
-                                    <span className="font-semibold text-gray-900">${totalWithVAT.toLocaleString()}</span>
+                                    <span className="font-semibold text-gray-900">${totalWithFees.toLocaleString()}</span>
                                   </div>
                                 </>
                               ) : (
