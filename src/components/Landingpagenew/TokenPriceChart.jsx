@@ -1,4 +1,5 @@
 import React from 'react';
+import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
 
 const TokenPriceChart = ({
   chartData,
@@ -7,88 +8,72 @@ const TokenPriceChart = ({
   chartPeriod,
   onPeriodChange
 }) => {
+  // Convert SVG chartData to Recharts format
+  const rechartsData = chartData.map((point, index) => ({
+    name: point.month || index,
+    value: 100 - point.y, // Invert y since SVG y was inverted
+  }));
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Chart Header - Token Price */}
-      <div>
-        <div className="flex items-baseline gap-3 mb-1">
-          <h2 className="text-4xl font-light text-gray-900">
-            ${tokenPrice.toFixed(6)}
-          </h2>
-          <span className="text-sm font-light text-green-600">
-            +{priceChange}%
-          </span>
+      <div className="flex justify-between items-start">
+        <div>
+          <div className="flex items-baseline gap-2 mb-0.5">
+            <h2 className="text-2xl sm:text-3xl font-medium text-gray-900">
+              ${tokenPrice.toFixed(6)}
+            </h2>
+            <span className={`text-xs font-medium ${priceChange >= 0 ? 'text-gray-600' : 'text-gray-500'}`}>
+              {priceChange >= 0 ? '+' : ''}{priceChange}%
+            </span>
+          </div>
+          <p className="text-xs text-gray-500">Token Price (USD)</p>
         </div>
-        <p className="text-sm font-light text-gray-600">Token Price (USD)</p>
+      </div>
+
+      {/* Recharts Line Chart - matching CryptoBalanceDashboard style */}
+      <div className="h-24 -mx-2">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={rechartsData}>
+            <YAxis hide domain={['dataMin - 5', 'dataMax + 5']} />
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke="#000000"
+              strokeWidth={2}
+              dot={false}
+              animationDuration={1000}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* X-axis time labels */}
+      <div className="flex justify-between text-[10px] text-gray-400 px-2">
+        {chartData.length > 0 && (
+          <>
+            <span>{chartData[0]?.month || 'Start'}</span>
+            <span>{chartData[Math.floor(chartData.length / 2)]?.month || ''}</span>
+            <span>Now</span>
+          </>
+        )}
       </div>
 
       {/* Time Period Selector */}
-      <div className="flex gap-2">
+      <div className="flex gap-1 pt-2 border-t border-gray-200/50">
         {['1D', '1W', '1M', '3M', '1Y', 'ALL'].map((period) => (
           <button
             key={period}
             onClick={() => onPeriodChange(period)}
-            className={`px-3 py-1 rounded-lg text-xs font-light transition-colors ${
+            className={`flex-1 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all ${
               chartPeriod === period
-                ? 'bg-gray-900 text-white'
-                : 'text-gray-600 hover:text-gray-900 bg-white/40'
+                ? 'bg-black text-white'
+                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100/60'
             }`}
           >
             {period}
           </button>
         ))}
-      </div>
-
-      {/* Chart */}
-      <div className="h-48 relative">
-        <svg
-          width="100%"
-          height="100%"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          className="overflow-visible"
-        >
-          {/* Grid lines */}
-          <line x1="0" y1="25" x2="100" y2="25" stroke="#f3f4f6" strokeWidth="0.5" />
-          <line x1="0" y1="50" x2="100" y2="50" stroke="#f3f4f6" strokeWidth="0.5" />
-          <line x1="0" y1="75" x2="100" y2="75" stroke="#f3f4f6" strokeWidth="0.5" />
-
-          {/* Gradient fill */}
-          <defs>
-            <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#1f2937" stopOpacity="0.15" />
-              <stop offset="100%" stopColor="#1f2937" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-
-          {/* Area fill */}
-          <path
-            d={`M 0,${chartData[0].y} ${chartData.map((d) => `L ${d.x},${d.y}`).join(' ')} L 100,100 L 0,100 Z`}
-            fill="url(#chartGradient)"
-          />
-
-          {/* Line */}
-          <path
-            d={`M 0,${chartData[0].y} ${chartData.map((d) => `L ${d.x},${d.y}`).join(' ')}`}
-            fill="none"
-            stroke="#1f2937"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-
-        {/* X-axis labels (months) */}
-        <div className="flex justify-between mt-2 px-1">
-          {chartData.map((point, index) => (
-            <span
-              key={index}
-              className="text-xs font-light text-gray-500"
-            >
-              {point.month}
-            </span>
-          ))}
-        </div>
       </div>
     </div>
   );

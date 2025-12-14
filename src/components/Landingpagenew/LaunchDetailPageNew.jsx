@@ -132,7 +132,7 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
           </div>
 
           {/* Compact Tab Switcher - Horizontal scroll on mobile */}
-          <div className="flex items-center gap-1 bg-white/30 backdrop-blur-xl rounded-lg border border-gray-200/50 p-1 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-1">
+          <div className="flex items-center gap-1 bg-white/15 backdrop-blur-xl rounded-xl border border-gray-300/50 p-1 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-1">
             {[
               { id: 'overview', icon: <TrendingUp size={12} />, label: 'Overview' },
               { id: 'details', icon: <Building2 size={12} />, label: 'Details' },
@@ -160,7 +160,7 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
           {/* LEFT CARD - Project Stats & Chart */}
-          <div className="lg:col-span-2 order-2 lg:order-1 bg-white/30 backdrop-blur-xl rounded-xl border border-gray-200/50 p-4 sm:p-5 space-y-4">
+          <div className="lg:col-span-2 order-2 lg:order-1 bg-white/20 backdrop-blur-xl rounded-2xl border border-gray-300/50 p-4 sm:p-6 space-y-4">
 
             {activeSubTab === 'overview' && (
               <>
@@ -172,43 +172,43 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
                   </div>
 
                   {/* Stat Row 1 */}
-                  <div className="flex items-center justify-between py-2.5 border-b border-gray-200/50">
+                  <div className="flex items-center justify-between py-3 border-b border-gray-200">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-gray-600">Redemption Capacity</span>
-                      <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-100/60 rounded">
+                      <span className="text-xs text-gray-500">Redemption Capacity</span>
+                      <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 rounded">
                         <div className="w-2.5 h-2.5 bg-black rounded-full flex items-center justify-center">
                           <span className="text-[6px] text-white font-medium">P</span>
                         </div>
-                        <span className="text-[10px] text-gray-700">PYUSD</span>
+                        <span className="text-[10px] text-gray-600">PYUSD</span>
                       </div>
                     </div>
                     <p className="text-sm font-medium text-gray-900 tabular-nums">${pyusdCapacity.toLocaleString()}</p>
                   </div>
 
                   {/* Stat Row 2 */}
-                  <div className="flex items-center justify-between py-2.5 border-b border-gray-200/50">
+                  <div className="flex items-center justify-between py-3 border-b border-gray-200">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-600">Est. Yield (Net)</span>
+                      <span className="text-xs text-gray-500">Est. Yield (Net)</span>
                       <Info size={12} className="text-gray-400" />
                     </div>
                     <p className="text-sm font-medium text-gray-900 tabular-nums">{estYield.toFixed(3)}%</p>
                   </div>
 
                   {/* Stat Row 3 */}
-                  <div className="flex items-center justify-between py-2.5 border-b border-gray-200/50">
-                    <span className="text-xs text-gray-600">{launch.token_symbol || 'USYC'} Price</span>
+                  <div className="flex items-center justify-between py-3 border-b border-gray-200">
+                    <span className="text-xs text-gray-500">{launch.token_symbol || 'USYC'} Price</span>
                     <p className="text-sm font-medium text-gray-900 tabular-nums">${tokenPrice.toFixed(6)}</p>
                   </div>
 
                   {/* Stat Row 4 */}
-                  <div className="flex items-center justify-between py-2.5">
+                  <div className="flex items-center justify-between py-3">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-gray-600">Redemption Capacity</span>
-                      <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-100/60 rounded">
+                      <span className="text-xs text-gray-500">Redemption Capacity</span>
+                      <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 rounded">
                         <div className="w-2.5 h-2.5 bg-black rounded-full flex items-center justify-center">
                           <span className="text-[6px] text-white font-medium">U</span>
                         </div>
-                        <span className="text-[10px] text-gray-700">USDC</span>
+                        <span className="text-[10px] text-gray-600">USDC</span>
                       </div>
                     </div>
                     <p className="text-sm font-medium text-gray-900 tabular-nums">{formatLargeNumber(usdcCapacity)}</p>
@@ -216,7 +216,7 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
                 </div>
 
                 {/* Token Price Chart */}
-                <div className="pt-4 border-t border-gray-200/50">
+                <div className="pt-4 border-t border-gray-200">
                   <TokenPriceChart
                     chartData={chartData}
                     tokenPrice={tokenPrice}
@@ -386,7 +386,7 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
           </div>
 
           {/* RIGHT CARD - Investment Interface */}
-          <div className="lg:col-span-1 order-1 lg:order-2 bg-white/30 backdrop-blur-xl rounded-xl border border-gray-200/50 p-4">
+          <div className="lg:col-span-1 order-1 lg:order-2 bg-white/20 backdrop-blur-xl rounded-2xl border border-gray-300/50 p-4 sm:p-6">
 
             {/* Header */}
             <div className="flex flex-col gap-3 mb-4">
@@ -402,7 +402,7 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
             </div>
 
             {/* Tab Switcher */}
-            <div className="flex gap-1 mb-4 p-1 bg-gray-100/60 rounded-lg">
+            <div className="flex gap-1 mb-4 p-1 bg-gray-100 rounded-xl border border-gray-200">
               <button
                 onClick={() => setActiveTab('fund')}
                 className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
@@ -436,12 +436,12 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
                   Max
                 </button>
               </div>
-              <div className="bg-white/20 rounded-lg p-3 border border-gray-200/50">
+              <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 border border-gray-300/50">
                 <div className="flex items-center justify-between mb-2">
                   <div className="relative">
                     <button
                       onClick={() => setShowPaymentDropdown(!showPaymentDropdown)}
-                      className="flex items-center gap-1.5 px-2 py-1.5 bg-gray-100/60 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="flex items-center gap-1.5 px-2 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                     >
                       <div className="w-4 h-4 bg-black rounded-full flex items-center justify-center">
                         <span className="text-[8px] text-white font-medium">P</span>
@@ -504,12 +504,12 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
                   Max
                 </button>
               </div>
-              <div className="bg-white/20 rounded-lg p-3 border border-gray-200/50">
+              <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 border border-gray-300/50">
                 <div className="flex items-center justify-between mb-2">
                   <div className="relative">
                     <button
                       onClick={() => setShowReceiveDropdown(!showReceiveDropdown)}
-                      className="flex items-center gap-1.5 px-2 py-1.5 bg-gray-100/60 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="flex items-center gap-1.5 px-2 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                     >
                       <div className="w-4 h-4 bg-black rounded-full flex items-center justify-center">
                         <span className="text-[8px] text-white font-medium">y</span>
@@ -552,7 +552,7 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
             </div>
 
             {/* Exchange Rate */}
-            <div className="mb-4 p-2.5 bg-white/20 rounded-lg border border-gray-200/50">
+            <div className="mb-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-xs text-gray-600">
                   <span>⚡</span>
@@ -565,16 +565,16 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
             </div>
 
             {/* Action Buttons */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <button
                 onClick={handleConnectWallet}
                 disabled={isConnected}
-                className="w-full px-4 py-3 bg-black hover:bg-gray-800 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 bg-black hover:bg-gray-800 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isConnected ? 'Wallet Connected' : 'Connect Wallet'}
               </button>
 
-              <button className="w-full px-4 py-2.5 bg-white/30 border border-gray-200/50 hover:bg-white/50 text-gray-700 rounded-lg text-xs transition-colors">
+              <button className="w-full px-4 py-2.5 bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-700 rounded-xl text-xs font-medium transition-colors">
                 Contact for Access
               </button>
             </div>
