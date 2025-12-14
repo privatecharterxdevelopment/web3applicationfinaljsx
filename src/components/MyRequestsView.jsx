@@ -95,13 +95,36 @@ const MyRequestsView = ({ user }) => {
       try { data = JSON.parse(data); } catch (e) { data = {}; }
     }
     data = data || {};
+
+    // Handle AI Chat cart submissions - extract taxi/transfer item from items array
+    const taxiItem = data.items?.find(i =>
+      i.type === 'taxi_cars' || i.type === 'taxi' || i.type === 'transfer' || i.type === 'ground_transport'
+    ) || data.items?.[0] || {};
+
+    // Merge data from different sources (direct fields vs items array)
+    const carName = data.carName || taxiItem.carName || taxiItem.name || taxiItem.title || 'Ground Transport';
+    const carSeats = data.carSeats || taxiItem.carSeats || taxiItem.seats || taxiItem.capacity;
+    const carImage = data.carImage || taxiItem.carImage || taxiItem.image || taxiItem.image_url;
+    const from = data.from || taxiItem.from || taxiItem.pickupLocation || taxiItem.pickup;
+    const to = data.to || taxiItem.to || taxiItem.dropoffLocation || taxiItem.dropoff;
+    const distance = data.distance || taxiItem.distance;
+    const eta = data.eta || taxiItem.eta || taxiItem.duration;
+    const pickupDate = data.pickupDate || taxiItem.pickupDate || taxiItem.date;
+    const pickupTime = data.pickupTime || taxiItem.pickupTime || taxiItem.time;
+    const passengers = data.passengers || taxiItem.passengers || taxiItem.pax;
+    const currency = data.currency || taxiItem.currency || 'USD';
+    const detectedCountry = data.detectedCountry || taxiItem.detectedCountry || taxiItem.country;
+    const extraNotes = data.extraNotes || taxiItem.extraNotes || taxiItem.notes;
+    const isSwissBooking = data.isSwissBooking || taxiItem.isSwissBooking;
+    const priceRange = data.priceRange || taxiItem.priceRange || (taxiItem.price ? `$${taxiItem.price}` : (data.total ? `$${data.total}` : null));
+
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-4 sm:p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
         <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
           {/* Car Image */}
-          {data.carImage && (
+          {carImage && (
             <div className="flex-shrink-0">
-              <img src={data.carImage} alt={data.carName} className="w-full sm:w-24 h-32 sm:h-16 object-contain rounded-lg bg-white p-2" />
+              <img src={carImage} alt={carName} className="w-full sm:w-24 h-32 sm:h-16 object-contain rounded-lg bg-white p-2" />
             </div>
           )}
 
@@ -111,9 +134,9 @@ const MyRequestsView = ({ user }) => {
               <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <Car size={18} className="text-gray-700 flex-shrink-0" />
-                  <h3 className="text-base font-semibold text-gray-800 truncate">{data.carName}</h3>
+                  <h3 className="text-base font-semibold text-gray-800 truncate">{carName}</h3>
                 </div>
-                <p className="text-xs text-gray-600">{data.carSeats} seats</p>
+                {carSeats && <p className="text-xs text-gray-600">{carSeats} seats</p>}
               </div>
               <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border self-start whitespace-nowrap ${getStatusColor(request.status)}`}>
                 {getStatusIcon(request.status)}
@@ -122,65 +145,73 @@ const MyRequestsView = ({ user }) => {
             </div>
 
             {/* Route Info */}
-            <div className="mb-3 p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-3 h-3 rounded-full bg-black"></div>
-                <span className="text-sm text-gray-800 font-medium">{data.from}</span>
+            {(from || to) && (
+              <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                {from && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 rounded-full bg-black"></div>
+                    <span className="text-sm text-gray-800 font-medium">{from}</span>
+                  </div>
+                )}
+                {to && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                    <span className="text-sm text-gray-800 font-medium">{to}</span>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                <span className="text-sm text-gray-800 font-medium">{data.to}</span>
-              </div>
-            </div>
+            )}
 
             {/* Details Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 sm:gap-3 mb-3">
-              {data.distance && (
+              {distance && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Distance</p>
-                  <p className="text-sm font-semibold text-gray-800">{data.distance} km</p>
+                  <p className="text-sm font-semibold text-gray-800">{distance} km</p>
                 </div>
               )}
-              {data.eta && (
+              {eta && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">ETA</p>
-                  <p className="text-sm font-semibold text-gray-800">{data.eta} min</p>
+                  <p className="text-sm font-semibold text-gray-800">{eta} min</p>
                 </div>
               )}
-              <div>
-                <p className="text-xs text-gray-600 mb-1">Pickup Time</p>
-                <p className="text-sm font-semibold text-gray-800">{data.pickupDate === 'Now' ? 'Now' : `${data.pickupDate} ${data.pickupTime}`}</p>
-              </div>
-              {data.passengers && (
+              {(pickupDate || pickupTime) && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Pickup Time</p>
+                  <p className="text-sm font-semibold text-gray-800">{pickupDate === 'Now' ? 'Now' : `${pickupDate || ''} ${pickupTime || ''}`.trim()}</p>
+                </div>
+              )}
+              {passengers && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Passengers</p>
-                  <p className="text-sm font-semibold text-gray-800">{data.passengers}</p>
+                  <p className="text-sm font-semibold text-gray-800">{passengers}</p>
                 </div>
               )}
-              {data.currency && (
+              {currency && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Currency</p>
-                  <p className="text-sm font-semibold text-gray-800">{data.currency}</p>
+                  <p className="text-sm font-semibold text-gray-800">{currency}</p>
                 </div>
               )}
-              {data.detectedCountry && (
+              {detectedCountry && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Region</p>
-                  <p className="text-sm font-semibold text-gray-800">{data.detectedCountry}</p>
+                  <p className="text-sm font-semibold text-gray-800">{detectedCountry}</p>
                 </div>
               )}
             </div>
 
             {/* Extra Notes */}
-            {data.extraNotes && (
+            {extraNotes && (
               <div className="mb-3 p-3 bg-blue-50 rounded-lg">
                 <p className="text-xs font-medium text-blue-900 mb-1">Notes:</p>
-                <p className="text-xs text-blue-800">{data.extraNotes}</p>
+                <p className="text-xs text-blue-800">{extraNotes}</p>
               </div>
             )}
 
             {/* Swiss Booking Badge */}
-            {data.isSwissBooking && (
+            {isSwissBooking && (
               <div className="mb-3">
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
                   <Check size={12} />
@@ -190,12 +221,14 @@ const MyRequestsView = ({ user }) => {
             )}
 
             {/* Price */}
-            <div className="p-3 bg-gradient-to-r from-gray-800 to-black rounded-lg">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-300">Estimated Price</p>
-                <p className="text-base font-bold text-white">{data.priceRange}</p>
+            {priceRange && (
+              <div className="p-3 bg-gradient-to-r from-gray-800 to-black rounded-lg">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-300">Estimated Price</p>
+                  <p className="text-base font-bold text-white">{priceRange}</p>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Timestamp */}
             <div className="mt-3 flex items-center justify-between">
@@ -253,11 +286,12 @@ const MyRequestsView = ({ user }) => {
     const fromCity = data.from_city || emptyLegItem.from_city || emptyLegItem.from || data.from_iata || emptyLegItem.from_iata;
     const toCity = data.to_city || emptyLegItem.to_city || emptyLegItem.to || data.to_iata || emptyLegItem.to_iata;
     const flightRoute = data.flight_route || (fromCity && toCity ? `${fromCity} → ${toCity}` : null) || emptyLegItem.title;
-    const aircraftType = data.aircraft_type || emptyLegItem.aircraft_type || emptyLegItem.model;
+    const aircraftType = data.aircraft_type || emptyLegItem.aircraft_type || emptyLegItem.model || emptyLegItem.category;
     const departureDate = data.departure_date || emptyLegItem.departure_date || emptyLegItem.date;
     const passengers = data.passengers || data.capacity || emptyLegItem.passengers || emptyLegItem.capacity || emptyLegItem.available_seats;
-    const price = data.price || data.total || emptyLegItem.price || emptyLegItem.price_usd || emptyLegItem.estimated_price;
-    const legImage = emptyLegItem.primaryImage || emptyLegItem.image_url || emptyLegItem.image;
+    // Price field: check original_price (from glassmorphic), price, price_usd, etc.
+    const price = data.original_price || data.price || data.total || emptyLegItem.price || emptyLegItem.price_usd || emptyLegItem.estimated_price;
+    const legImage = emptyLegItem.primaryImage || emptyLegItem.image_url || emptyLegItem.image || data.image_url;
 
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-4 sm:p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
