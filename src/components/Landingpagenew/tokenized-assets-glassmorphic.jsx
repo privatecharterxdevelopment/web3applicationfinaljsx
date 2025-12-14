@@ -8311,11 +8311,11 @@ const TokenizedAssetsGlassmorphic = () => {
                     <span>Filters</span>
                   </button>
 
-                  {/* View Mode Switcher - Hidden on mobile, force grid on mobile */}
-                  <div className="hidden md:flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                  {/* View Mode Switcher - Compact on mobile */}
+                  <div className="flex items-center gap-0.5 md:gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-0.5 md:p-1 backdrop-blur-xl" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
                     <button
                       onClick={() => setEmptyLegsViewMode('grid')}
-                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                      className={`px-2 md:px-3 py-1 md:py-1.5 rounded text-[10px] md:text-xs font-medium transition-all ${
                         emptyLegsViewMode === 'grid'
                           ? 'bg-gray-800 text-white shadow-sm'
                           : 'text-gray-600 hover:text-gray-900'
@@ -8325,13 +8325,13 @@ const TokenizedAssetsGlassmorphic = () => {
                     </button>
                     <button
                       onClick={() => setEmptyLegsViewMode('tabs')}
-                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                      className={`px-2 md:px-3 py-1 md:py-1.5 rounded text-[10px] md:text-xs font-medium transition-all ${
                         emptyLegsViewMode === 'tabs'
                           ? 'bg-gray-800 text-white shadow-sm'
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
-                      Tabs
+                      List
                     </button>
                   </div>
                 </div>
@@ -8424,8 +8424,8 @@ const TokenizedAssetsGlassmorphic = () => {
                 </div>
               )}
 
-              {/* Grid View - Mobile always uses grid, Desktop respects viewMode */}
-              {!isLoadingEmptyLegs && !showEmptyLegDetail && (emptyLegsViewMode === 'grid' || (typeof window !== 'undefined' && window.innerWidth < 768)) && (
+              {/* Grid View - Respects viewMode on all devices */}
+              {!isLoadingEmptyLegs && !showEmptyLegDetail && emptyLegsViewMode === 'grid' && (
                 <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5">
                   {emptyLegsData
@@ -8642,8 +8642,8 @@ const TokenizedAssetsGlassmorphic = () => {
                 </>
               )}
 
-              {/* Tabs View - List Format (Desktop only - mobile always uses grid) */}
-              {!isLoadingEmptyLegs && !showEmptyLegDetail && emptyLegsViewMode === 'tabs' && (typeof window !== 'undefined' && window.innerWidth >= 768) && (
+              {/* Tabs/List View - Respects viewMode on all devices */}
+              {!isLoadingEmptyLegs && !showEmptyLegDetail && emptyLegsViewMode === 'tabs' && (
                 <div className="w-full space-y-2">
                   {emptyLegsData
                     .slice((currentEmptyLegsPage - 1) * emptyLegsPerPage, currentEmptyLegsPage * emptyLegsPerPage)
