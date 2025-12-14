@@ -910,22 +910,31 @@ const AIChat = ({
                 }
               }
 
-              // Update chat with results
-              const finalMessages = [
-                userMessage,
-                ...(resultsMessage ? [resultsMessage] : []),
-                aiMessage
-              ];
-
+              // Update chat with results - filter out loading messages first
               setChatHistory(prev => prev.map(c =>
                 c.id === chatId
-                  ? { ...c, messages: finalMessages }
+                  ? {
+                      ...c,
+                      messages: [
+                        ...c.messages.filter(m => !m.isLoading),
+                        ...(resultsMessage ? [resultsMessage] : []),
+                        aiMessage
+                      ].filter((msg, index, self) =>
+                        // Remove duplicate user messages
+                        msg.role !== 'user' || index === self.findIndex(m => m.role === 'user' && m.content === msg.content)
+                      )
+                    }
                   : c
               ));
 
               // Save to database
               try {
-                await chatService.updateChatMessages(chatId, finalMessages, user.id);
+                const messagesToSave = [
+                  userMessage,
+                  ...(resultsMessage ? [resultsMessage] : []),
+                  aiMessage
+                ];
+                await chatService.updateChatMessages(chatId, messagesToSave, user.id);
                 console.log('💾 Saved messages to database');
               } catch (saveError) {
                 console.error('Error saving messages:', saveError);
@@ -935,17 +944,26 @@ const AIChat = ({
             // Simple text response (no tool use)
             const aiText = response.content.find(block => block.type === 'text')?.text || "I'm here to help!";
             const aiMessage = { role: 'assistant', content: aiText };
-            const finalMessages = [userMessage, aiMessage];
 
+            // Update chat - filter out loading messages first
             setChatHistory(prev => prev.map(c =>
               c.id === chatId
-                ? { ...c, messages: finalMessages }
+                ? {
+                    ...c,
+                    messages: [
+                      ...c.messages.filter(m => !m.isLoading),
+                      aiMessage
+                    ].filter((msg, index, self) =>
+                      // Remove duplicate user messages
+                      msg.role !== 'user' || index === self.findIndex(m => m.role === 'user' && m.content === msg.content)
+                    )
+                  }
                 : c
             ));
 
             // Save to database
             try {
-              await chatService.updateChatMessages(chatId, finalMessages, user.id);
+              await chatService.updateChatMessages(chatId, [userMessage, aiMessage], user.id);
               console.log('💾 Saved messages to database');
             } catch (saveError) {
               console.error('Error saving messages:', saveError);
@@ -956,7 +974,15 @@ const AIChat = ({
           const errorMessage = { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' };
           setChatHistory(prev => prev.map(c =>
             c.id === chatId
-              ? { ...c, messages: [userMessage, errorMessage] }
+              ? {
+                  ...c,
+                  messages: [
+                    ...c.messages.filter(m => !m.isLoading),
+                    errorMessage
+                  ].filter((msg, index, self) =>
+                    msg.role !== 'user' || index === self.findIndex(m => m.role === 'user' && m.content === msg.content)
+                  )
+                }
               : c
           ));
         } finally {

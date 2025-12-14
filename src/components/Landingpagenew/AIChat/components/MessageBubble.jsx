@@ -4,6 +4,29 @@
 import React, { memo, useState, useEffect, useRef } from 'react';
 import { ANIMATION_DURATIONS } from '../utils/constants';
 
+// Sanitize content to remove any HTML tags and URLs that shouldn't be exposed
+const sanitizeContent = (text) => {
+  if (!text || typeof text !== 'string') return text;
+
+  // Remove HTML tags completely
+  let sanitized = text.replace(/<[^>]*>/g, '');
+
+  // Remove inline styles that might have leaked
+  sanitized = sanitized.replace(/style\s*=\s*['"][^'"]*['"]/gi, '');
+
+  // Remove Supabase storage URLs (internal database URLs)
+  sanitized = sanitized.replace(/https?:\/\/[a-zA-Z0-9.-]*supabase[a-zA-Z0-9.-]*\/storage\/[^\s)'"]+/gi, '[image]');
+
+  // Remove any other suspicious URLs that look like internal/storage URLs
+  sanitized = sanitized.replace(/src\s*=\s*['"][^'"]*['"]/gi, '');
+
+  // Clean up multiple spaces/newlines that may result from stripping
+  sanitized = sanitized.replace(/\n\s*\n\s*\n/g, '\n\n');
+  sanitized = sanitized.replace(/  +/g, ' ');
+
+  return sanitized.trim();
+};
+
 const MessageBubble = memo(function MessageBubble({
   message,
   isTyping = false,
@@ -63,7 +86,9 @@ const MessageBubble = memo(function MessageBubble({
 
   const isUser = message.role === 'user';
   const isResults = message.role === 'results';
-  const content = isTyping && !isTypingComplete ? displayedContent : (message.content || '');
+  // Sanitize content to prevent HTML/URL leakage from AI responses
+  const rawContent = isTyping && !isTypingComplete ? displayedContent : (message.content || '');
+  const content = isUser ? rawContent : sanitizeContent(rawContent);
 
   // User message
   if (isUser) {
