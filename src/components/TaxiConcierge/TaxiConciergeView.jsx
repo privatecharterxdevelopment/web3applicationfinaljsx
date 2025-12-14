@@ -1078,12 +1078,20 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
         if (user) {
           console.log('Attempting to save ground transportation request for user:', user.id);
 
+          // Calculate price breakdown
+          const basePrice = priceRange.min || 0;
+          const platformFeePercent = 2.5;
+          const platformFee = Math.round(basePrice * (platformFeePercent / 100));
+          const vatPercent = 8.1; // Swiss VAT
+          const vatAmount = Math.round(basePrice * (vatPercent / 100));
+          const totalPrice = basePrice + platformFee + vatAmount;
+
           // Create request in user_requests table - DIRECT INSERT
           const { data: insertedData, error: dbError } = await supabase
             .from('user_requests')
             .insert([{
               user_id: user.id,
-              type: serviceCategory === 'luxury-cars' ? 'luxury_car_rental' : 'taxi_concierge',
+              type: serviceCategory === 'luxury-cars' ? 'luxury_car_rental' : 'ground_transport',
               status: 'pending',
               data: {
                 ...requestData,
@@ -1100,7 +1108,13 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                 // Route details
                 distance: distance,
                 eta: eta,
-                // Pricing
+                // Full price breakdown
+                base_price: basePrice,
+                platform_fee: platformFee,
+                platform_fee_percent: platformFeePercent,
+                vat_amount: vatAmount,
+                vat_percent: vatPercent,
+                total_price: totalPrice,
                 priceRange: `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`,
                 priceMin: priceRange.min,
                 priceMax: priceRange.max,

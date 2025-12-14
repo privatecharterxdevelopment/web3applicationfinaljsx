@@ -1359,13 +1359,22 @@ const TokenizedAssetsGlassmorphic = () => {
     try {
       const rawData = selectedEmptyLeg.rawData || selectedEmptyLeg;
 
+      // Calculate price breakdown
+      const basePrice = selectedEmptyLeg.priceUSD || Math.round(convertToUSD(rawData.price || 0, 'GBP'));
+      const platformFeePercent = 2.5;
+      const platformFee = Math.round(basePrice * (platformFeePercent / 100));
+      const vatPercent = 8.1; // Swiss VAT
+      const vatAmount = Math.round(basePrice * (vatPercent / 100));
+      const totalPrice = basePrice + platformFee + vatAmount;
+
       console.log('🔥 SAVING EMPTY LEG REQUEST:', {
         userId: user.id,
         userEmail: user.email,
         type: 'empty_leg',
         passengers: emptyLegPassengers,
         luggage: emptyLegLuggage,
-        hasPet: emptyLegHasPet
+        hasPet: emptyLegHasPet,
+        priceBreakdown: { basePrice, platformFee, vatAmount, totalPrice }
       });
 
       // DIRECT INSERT - matching working EmptyLegModal.tsx pattern
@@ -1386,9 +1395,16 @@ const TokenizedAssetsGlassmorphic = () => {
             departure_time: rawData.departure_time,
             aircraft_type: rawData.category || rawData.aircraft_type,
             capacity: rawData.capacity || rawData.pax,
-            original_price: selectedEmptyLeg.priceUSD || Math.round(convertToUSD(rawData.price || 0, 'GBP')),
+            // Full price breakdown
+            base_price: basePrice,
+            platform_fee: platformFee,
+            platform_fee_percent: platformFeePercent,
+            vat_amount: vatAmount,
+            vat_percent: vatPercent,
+            total_price: totalPrice,
             original_price_gbp: rawData.price, // Store original GBP for reference
             currency: 'USD',
+            // Booking details
             passengers: emptyLegPassengers,
             luggage: emptyLegLuggage,
             has_pet: emptyLegHasPet,
@@ -1479,13 +1495,22 @@ const TokenizedAssetsGlassmorphic = () => {
     try {
       const rawData = selectedHelicopter.rawData || {};
 
+      // Calculate price breakdown
+      const pricePerHour = rawData.price || rawData.price_per_hour || 0;
+      const basePrice = Math.round(pricePerHour * helicopterDuration);
+      const platformFeePercent = 2.5;
+      const platformFee = Math.round(basePrice * (platformFeePercent / 100));
+      const vatPercent = 8.1; // Swiss VAT
+      const vatAmount = Math.round(basePrice * (vatPercent / 100));
+      const totalPrice = basePrice + platformFee + vatAmount;
+
       const payload = {
         helicopter_id: rawData.id,
         helicopter_name: selectedHelicopter.name || rawData.name,
         helicopter_type: selectedHelicopter.type || rawData.type || rawData.category,
         capacity: selectedHelicopter.capacity || rawData.capacity,
         location: selectedHelicopter.location || rawData.location,
-        price_per_hour: rawData.price || rawData.price_per_hour,
+        price_per_hour: pricePerHour,
         currency: rawData.currency || 'USD',
 
         // Route/Location details
@@ -1513,8 +1538,14 @@ const TokenizedAssetsGlassmorphic = () => {
         duration_hours: helicopterDuration,
         special_requests: helicopterSpecialRequests,
 
-        // Calculated total
-        estimated_total: (rawData.price || 0) * helicopterDuration,
+        // Full price breakdown
+        base_price: basePrice,
+        platform_fee: platformFee,
+        platform_fee_percent: platformFeePercent,
+        vat_amount: vatAmount,
+        vat_percent: vatPercent,
+        total_price: totalPrice,
+        estimated_total: totalPrice, // Keep for backwards compatibility
 
         // Client info
         client_info: {
@@ -4817,14 +4848,27 @@ const TokenizedAssetsGlassmorphic = () => {
 
                       {paginatedRequests.map((request) => {
                         const isExpanded = expandedRequestId === request.id;
+                        const d = request.data || {};
+
+                        // Extract normalized data from various field names
+                        const fromLocation = d.from || d.from_city || d.pickupLocation || d.departure_display || d.origin || (d.departure?.name);
+                        const toLocation = d.to || d.to_city || d.dropoffLocation || d.destination_display || d.destination || (d.destination?.name);
+                        const flightRoute = d.flight_route || (fromLocation && toLocation ? `${fromLocation} → ${toLocation}` : null);
+                        const aircraft = d.aircraft || d.aircraft_model || d.aircraft_type || d.helicopter_name || d.carName;
+                        const departureDate = d.departure_date || d.pickupDate || d.date || d.start_date || d.preferred_date;
+                        const departureTime = d.departure_time || d.pickupTime;
+                        const passengers = d.passengers || d.capacity || d.guests || d.duration_hours;
+                        const totalPrice = d.total_price || d.price || d.base_price || d.estimated_price || d.estimated_total || d.priceMin;
+
                         const requestTitle = request.type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Request';
                         const getTypeIcon = (type) => {
                           if (type?.includes('jet') || type?.includes('aircraft')) return '✈️';
                           if (type?.includes('helicopter')) return '🚁';
                           if (type?.includes('yacht')) return '🛥️';
-                          if (type?.includes('car') || type?.includes('vehicle')) return '🚗';
-                          if (type?.includes('transfer')) return '🚐';
-                          if (type?.includes('empty') && type?.includes('leg')) return '🛩️';
+                          if (type?.includes('car') || type?.includes('vehicle') || type?.includes('luxury_car')) return '🚗';
+                          if (type?.includes('taxi') || type?.includes('transfer') || type?.includes('ground')) return '🚐';
+                          if (type?.includes('empty') || type?.includes('leg')) return '🛩️';
+                          if (type?.includes('adventure')) return '🏔️';
                           return '📋';
                         };
 
@@ -4866,20 +4910,20 @@ const TokenizedAssetsGlassmorphic = () => {
                                       year: 'numeric'
                                     })}
                                   </span>
-                                  {request.data?.from && request.data?.to && (
+                                  {flightRoute && (
                                     <>
                                       <span>•</span>
-                                      <span className="truncate">{request.data.from} → {request.data.to}</span>
+                                      <span className="truncate">{flightRoute}</span>
                                     </>
                                   )}
                                 </div>
                               </div>
 
                               {/* Price if available */}
-                              {(request.data?.price || request.data?.estimated_price) && (
+                              {totalPrice && (
                                 <div className="text-right flex-shrink-0">
                                   <p className="text-sm font-semibold text-gray-900">
-                                    ${(request.data.price || request.data.estimated_price).toLocaleString()}
+                                    ${typeof totalPrice === 'number' ? totalPrice.toLocaleString() : totalPrice}
                                   </p>
                                 </div>
                               )}
@@ -4896,51 +4940,85 @@ const TokenizedAssetsGlassmorphic = () => {
                               <div className="px-4 pb-4 pt-2 border-t border-gray-50">
                                 {/* Quick Info Badges */}
                                 <div className="flex flex-wrap gap-2 mb-4">
-                                  {request.data?.from && (
+                                  {fromLocation && (
                                     <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600 flex items-center gap-1">
                                       <MapPin size={10} className="text-gray-400" />
-                                      From: {request.data.from}
+                                      From: {fromLocation}
                                     </div>
                                   )}
-                                  {request.data?.to && (
+                                  {toLocation && (
                                     <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600 flex items-center gap-1">
                                       <MapPin size={10} className="text-gray-400" />
-                                      To: {request.data.to}
+                                      To: {toLocation}
                                     </div>
                                   )}
-                                  {request.data?.date && (
+                                  {departureDate && (
                                     <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600 flex items-center gap-1">
                                       <Calendar size={10} className="text-gray-400" />
-                                      {request.data.date}
+                                      {departureDate === 'Now' ? 'Now' : new Date(departureDate).toLocaleDateString()}
+                                      {departureTime && departureTime !== 'Now' && ` ${departureTime}`}
                                     </div>
                                   )}
-                                  {request.data?.passengers && (
+                                  {passengers && (
                                     <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600 flex items-center gap-1">
                                       <Users size={10} className="text-gray-400" />
-                                      {request.data.passengers} pax
+                                      {passengers} {request.type?.includes('helicopter') ? 'hours' : 'pax'}
                                     </div>
                                   )}
-                                  {request.data?.aircraft && (
+                                  {aircraft && (
                                     <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600 flex items-center gap-1">
                                       <Plane size={10} className="text-gray-400" />
-                                      {request.data.aircraft}
+                                      {aircraft}
                                     </div>
                                   )}
                                 </div>
 
+                                {/* Price Breakdown */}
+                                {(d.base_price || d.platform_fee || d.vat_amount) && (
+                                  <div className="bg-gray-900 rounded-lg p-3 mb-4">
+                                    <p className="text-[10px] text-gray-400 uppercase mb-2">Price Breakdown</p>
+                                    <div className="space-y-1 text-xs">
+                                      {d.base_price > 0 && (
+                                        <div className="flex justify-between">
+                                          <span className="text-gray-400">Base Price</span>
+                                          <span className="text-white">${d.base_price.toLocaleString()}</span>
+                                        </div>
+                                      )}
+                                      {d.platform_fee > 0 && (
+                                        <div className="flex justify-between">
+                                          <span className="text-gray-400">Platform Fee ({d.platform_fee_percent || 2.5}%)</span>
+                                          <span className="text-white">+${d.platform_fee.toLocaleString()}</span>
+                                        </div>
+                                      )}
+                                      {d.vat_amount > 0 && (
+                                        <div className="flex justify-between">
+                                          <span className="text-gray-400">VAT ({d.vat_percent || 8.1}% CH)</span>
+                                          <span className="text-white">+${d.vat_amount.toLocaleString()}</span>
+                                        </div>
+                                      )}
+                                      {d.total_price > 0 && (
+                                        <div className="flex justify-between pt-2 border-t border-gray-700">
+                                          <span className="text-white font-medium">Total</span>
+                                          <span className="text-white font-bold">${d.total_price.toLocaleString()}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+
                                 {/* Notes/Details */}
-                                {request.data?.notes && (
+                                {(d.notes || d.extraNotes || d.special_requests) && (
                                   <div className="bg-gray-50 rounded-lg p-3 mb-4">
                                     <p className="text-[10px] text-gray-400 uppercase mb-1">Notes</p>
-                                    <p className="text-xs text-gray-700">{request.data.notes}</p>
+                                    <p className="text-xs text-gray-700">{d.notes || d.extraNotes || d.special_requests}</p>
                                   </div>
                                 )}
 
                                 {/* Admin Notes */}
                                 {request.admin_notes && (
-                                  <div className="bg-gray-900 rounded-lg p-3 mb-4">
-                                    <p className="text-[10px] text-gray-400 uppercase mb-1">Response</p>
-                                    <p className="text-xs text-white">{request.admin_notes}</p>
+                                  <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4">
+                                    <p className="text-[10px] text-blue-600 uppercase mb-1">Admin Response</p>
+                                    <p className="text-xs text-blue-800">{request.admin_notes}</p>
                                   </div>
                                 )}
 
@@ -9935,6 +10013,14 @@ const TokenizedAssetsGlassmorphic = () => {
                               setAdventureSubmitting(true);
                               const offer = selectedAdventure?.rawData || {};
 
+                              // Calculate price breakdown
+                              const basePrice = selectedAdventure?.priceUSD || (offer.price ? Math.round(convertToUSD(offer.price, 'EUR')) : 0);
+                              const platformFeePercent = 2.5;
+                              const platformFee = Math.round(basePrice * (platformFeePercent / 100));
+                              const vatPercent = 8.1; // Swiss VAT
+                              const vatAmount = Math.round(basePrice * (vatPercent / 100));
+                              const totalPrice = basePrice + platformFee + vatAmount;
+
                               const payload = {
                                 // Core
                                 offer_id: offer.id,
@@ -9948,7 +10034,14 @@ const TokenizedAssetsGlassmorphic = () => {
                                 package_type: offer.package_type,
                                 passengers: offer.passengers || offer.max_participants,
                                 currency: 'USD',
-                                price: selectedAdventure?.priceUSD || (offer.price ? Math.round(convertToUSD(offer.price, 'EUR')) : null),
+                                // Full price breakdown
+                                base_price: basePrice,
+                                platform_fee: platformFee,
+                                platform_fee_percent: platformFeePercent,
+                                vat_amount: vatAmount,
+                                vat_percent: vatPercent,
+                                total_price: totalPrice,
+                                price: basePrice, // Keep for backwards compatibility
                                 original_price_eur: offer.price, // Store original EUR for reference
                                 price_on_request: offer.price_on_request || !offer.price,
                                 description: offer.description,
@@ -10824,6 +10917,15 @@ const TokenizedAssetsGlassmorphic = () => {
 
                             try {
                               setLuxuryCarSubmitting(true);
+
+                              // Calculate price breakdown (use daily rate as base)
+                              const basePrice = car.price_per_day || car.price_per_hour || 0;
+                              const platformFeePercent = 2.5;
+                              const platformFee = Math.round(basePrice * (platformFeePercent / 100));
+                              const vatPercent = 8.1; // Swiss VAT
+                              const vatAmount = Math.round(basePrice * (vatPercent / 100));
+                              const totalPrice = basePrice + platformFee + vatAmount;
+
                               const payload = {
                                 car_id: car.id,
                                 brand: car.brand,
@@ -10838,6 +10940,13 @@ const TokenizedAssetsGlassmorphic = () => {
                                 price_per_day: car.price_per_day ?? null,
                                 price_per_hour: car.price_per_hour ?? null,
                                 price_per_week: car.price_per_week ?? null,
+                                // Full price breakdown
+                                base_price: basePrice,
+                                platform_fee: platformFee,
+                                platform_fee_percent: platformFeePercent,
+                                vat_amount: vatAmount,
+                                vat_percent: vatPercent,
+                                total_price: totalPrice,
                                 image_url: car.image_url || selectedLuxuryCar.image,
                                 description: car.description,
                                 client_info: {

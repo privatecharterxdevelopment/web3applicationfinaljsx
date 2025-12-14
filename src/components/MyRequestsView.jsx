@@ -4,6 +4,66 @@ import { getUserRequests } from '../services/requests';
 import { formatDistanceToNow } from 'date-fns';
 import ReviewDisputeModal from './modals/ReviewDisputeModal';
 
+// Helper component to render price breakdown
+const PriceBreakdown = ({ data, colorClass = 'from-gray-800 to-black', textClass = 'text-gray-300' }) => {
+  const basePrice = data.base_price;
+  const platformFee = data.platform_fee;
+  const platformFeePercent = data.platform_fee_percent || 2.5;
+  const vatAmount = data.vat_amount;
+  const vatPercent = data.vat_percent || 8.1;
+  const totalPrice = data.total_price;
+  const currency = data.currency || 'USD';
+
+  // If no breakdown available, show simple price
+  if (!basePrice && !totalPrice) {
+    const simplePrice = data.price || data.priceRange || data.estimated_total;
+    if (!simplePrice) return null;
+    return (
+      <div className={`p-3 bg-gradient-to-r ${colorClass} rounded-lg mb-3`}>
+        <div className="flex items-center justify-between">
+          <p className={`text-xs ${textClass}`}>Price</p>
+          <p className="text-base font-bold text-white">
+            {typeof simplePrice === 'number' ? `$${simplePrice.toLocaleString()}` : simplePrice}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`p-3 bg-gradient-to-r ${colorClass} rounded-lg mb-3`}>
+      {/* Base Price */}
+      {basePrice > 0 && (
+        <div className="flex items-center justify-between mb-1">
+          <p className={`text-xs ${textClass}`}>Base Price</p>
+          <p className="text-sm text-white">${basePrice.toLocaleString()}</p>
+        </div>
+      )}
+      {/* Platform Fee */}
+      {platformFee > 0 && (
+        <div className="flex items-center justify-between mb-1">
+          <p className={`text-xs ${textClass}`}>Platform Fee ({platformFeePercent}%)</p>
+          <p className="text-sm text-white">+${platformFee.toLocaleString()}</p>
+        </div>
+      )}
+      {/* VAT */}
+      {vatAmount > 0 && (
+        <div className="flex items-center justify-between mb-1">
+          <p className={`text-xs ${textClass}`}>VAT ({vatPercent}% CH)</p>
+          <p className="text-sm text-white">+${vatAmount.toLocaleString()}</p>
+        </div>
+      )}
+      {/* Total */}
+      {totalPrice > 0 && (
+        <div className="flex items-center justify-between pt-2 border-t border-white/20">
+          <p className="text-xs font-medium text-white">Total</p>
+          <p className="text-base font-bold text-white">${totalPrice.toLocaleString()}</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const MyRequestsView = ({ user }) => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -220,15 +280,8 @@ const MyRequestsView = ({ user }) => {
               </div>
             )}
 
-            {/* Price */}
-            {priceRange && (
-              <div className="p-3 bg-gradient-to-r from-gray-800 to-black rounded-lg">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-gray-300">Estimated Price</p>
-                  <p className="text-base font-bold text-white">{priceRange}</p>
-                </div>
-              </div>
-            )}
+            {/* Price Breakdown */}
+            <PriceBreakdown data={data} colorClass="from-gray-800 to-black" textClass="text-gray-300" />
 
             {/* Timestamp */}
             <div className="mt-3 flex items-center justify-between">
@@ -283,15 +336,25 @@ const MyRequestsView = ({ user }) => {
     const emptyLegItem = data.items?.find(i => i.type === 'empty_legs' || i.type === 'emptyleg') || data.items?.[0] || {};
 
     // Merge data from different sources (direct fields vs items array)
-    const fromCity = data.from_city || emptyLegItem.from_city || emptyLegItem.from || data.from_iata || emptyLegItem.from_iata;
-    const toCity = data.to_city || emptyLegItem.to_city || emptyLegItem.to || data.to_iata || emptyLegItem.to_iata;
+    const fromCity = data.from_city || emptyLegItem.from_city || emptyLegItem.from;
+    const toCity = data.to_city || emptyLegItem.to_city || emptyLegItem.to;
+    const fromIata = data.from_iata || emptyLegItem.from_iata;
+    const toIata = data.to_iata || emptyLegItem.to_iata;
     const flightRoute = data.flight_route || (fromCity && toCity ? `${fromCity} → ${toCity}` : null) || emptyLegItem.title;
     const aircraftType = data.aircraft_type || emptyLegItem.aircraft_type || emptyLegItem.model || emptyLegItem.category;
     const departureDate = data.departure_date || emptyLegItem.departure_date || emptyLegItem.date;
-    const passengers = data.passengers || data.capacity || emptyLegItem.passengers || emptyLegItem.capacity || emptyLegItem.available_seats;
+    const departureTime = data.departure_time || emptyLegItem.departure_time;
+    const passengers = data.passengers || emptyLegItem.passengers;
+    const capacity = data.capacity || emptyLegItem.capacity || emptyLegItem.available_seats;
     // Price field: check original_price (from glassmorphic), price, price_usd, etc.
     const price = data.original_price || data.price || data.total || emptyLegItem.price || emptyLegItem.price_usd || emptyLegItem.estimated_price;
+    const originalPriceGbp = data.original_price_gbp;
+    const currency = data.currency || emptyLegItem.currency || 'USD';
     const legImage = emptyLegItem.primaryImage || emptyLegItem.image_url || emptyLegItem.image || data.image_url;
+    const luggage = data.luggage || emptyLegItem.luggage;
+    const hasPet = data.has_pet || emptyLegItem.has_pet;
+    const walletAddress = data.wallet_address;
+    const emptyLegId = data.empty_leg_id || emptyLegItem.id;
 
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-4 sm:p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
@@ -328,19 +391,21 @@ const MyRequestsView = ({ user }) => {
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-3 h-3 rounded-full bg-black"></div>
                     <span className="text-sm text-gray-800 font-medium">{fromCity}</span>
+                    {fromIata && <span className="text-xs text-gray-500">({fromIata})</span>}
                   </div>
                 )}
                 {toCity && (
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-pink-500"></div>
                     <span className="text-sm text-gray-800 font-medium">{toCity}</span>
+                    {toIata && <span className="text-xs text-gray-500">({toIata})</span>}
                   </div>
                 )}
               </div>
             )}
 
-            {/* Details Grid */}
-            <div className="grid grid-cols-2 gap-3 mb-3">
+            {/* Details Grid - ALL saved fields */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
               {aircraftType && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Aircraft</p>
@@ -349,11 +414,22 @@ const MyRequestsView = ({ user }) => {
               )}
               {departureDate && (
                 <div>
-                  <p className="text-xs text-gray-600 mb-1">Departure</p>
+                  <p className="text-xs text-gray-600 mb-1">Departure Date</p>
                   <p className="text-sm font-semibold text-gray-800">
                     {new Date(departureDate).toLocaleDateString()}
-                    {(data.departure_time || emptyLegItem.departure_time) && ` at ${data.departure_time || emptyLegItem.departure_time}`}
                   </p>
+                </div>
+              )}
+              {departureTime && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Departure Time</p>
+                  <p className="text-sm font-semibold text-gray-800">{departureTime}</p>
+                </div>
+              )}
+              {capacity && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Capacity</p>
+                  <p className="text-sm font-semibold text-gray-800">{capacity} pax</p>
                 </div>
               )}
               {passengers && (
@@ -362,13 +438,13 @@ const MyRequestsView = ({ user }) => {
                   <p className="text-sm font-semibold text-gray-800">{passengers}</p>
                 </div>
               )}
-              {(data.luggage || emptyLegItem.luggage) && (
+              {luggage !== undefined && luggage !== null && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Luggage</p>
-                  <p className="text-sm font-semibold text-gray-800">{data.luggage || emptyLegItem.luggage}</p>
+                  <p className="text-sm font-semibold text-gray-800">{luggage} bags</p>
                 </div>
               )}
-              {(data.has_pet || emptyLegItem.has_pet) && (
+              {hasPet && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Pet</p>
                   <p className="text-sm font-semibold text-gray-800">🐕 Yes</p>
@@ -376,15 +452,15 @@ const MyRequestsView = ({ user }) => {
               )}
             </div>
 
-            {/* Price */}
-            {price && (
-              <div className="p-3 bg-gradient-to-r from-pink-600 to-pink-800 rounded-lg mb-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-pink-100">Price</p>
-                  <p className="text-base font-bold text-white">{typeof price === 'number' ? `$${price.toLocaleString()}` : price}</p>
-                </div>
+            {/* Wallet Address */}
+            {walletAddress && (
+              <div className="mb-3 p-2 bg-gray-100 rounded-lg">
+                <p className="text-xs text-gray-600">Wallet: <span className="font-mono">{walletAddress.slice(0,6)}...{walletAddress.slice(-4)}</span></p>
               </div>
             )}
+
+            {/* Price Breakdown */}
+            <PriceBreakdown data={data} colorClass="from-pink-600 to-pink-800" textClass="text-pink-100" />
 
             {/* Timestamp */}
             <div className="flex items-center justify-between">
@@ -427,11 +503,30 @@ const MyRequestsView = ({ user }) => {
     const startDate = data.preferred_date || data.departure_date || data.start_date || adventureItem.date || adventureItem.departure_date;
     // Price: check discounted_price first (what user actually pays), then original_price
     const price = data.discounted_price || data.converted_price || data.original_price || data.price || data.total || adventureItem.price || adventureItem.estimated_price || adventureItem.price_eur;
+    const originalPrice = data.original_price;
+    const discountedPrice = data.discounted_price;
     const adventureImage = adventureItem.primaryImage || adventureItem.image_url || adventureItem.image || data.image_url;
-    const activities = data.activities || adventureItem.activities || data.inclusions;
+    const activities = data.activities || adventureItem.activities;
+    const inclusions = data.inclusions || adventureItem.inclusions;
     const packageType = data.package_type || adventureItem.package_type;
     const isFree = data.is_free;
     const hasNFT = data.has_nft;
+    const nftDiscount = data.nft_discount;
+    const currency = data.currency || data.selected_currency || 'EUR';
+    const walletAddress = data.wallet_address;
+    const adventureId = data.adventure_id || adventureItem.id;
+    // CO2 data
+    const co2Emissions = data.co2_emissions;
+    const co2OffsetCost = data.co2_offset_cost;
+    // Inclusions flags
+    const includesHelicopter = data.includes_helicopter;
+    const includesYacht = data.includes_yacht;
+    const includesSafari = data.includes_safari;
+    const includesGroundTransport = data.includes_ground_transport;
+    const includesAccommodation = data.includes_accommodation;
+    const guideIncluded = data.guide_included;
+    const equipmentProvided = data.equipment_provided;
+    const insuranceIncluded = data.insurance_included;
 
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-4 sm:p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
@@ -477,8 +572,8 @@ const MyRequestsView = ({ user }) => {
               </div>
             )}
 
-            {/* Details Grid */}
-            <div className="grid grid-cols-2 gap-3 mb-3">
+            {/* Details Grid - ALL saved fields */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
               {packageType && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Package Type</p>
@@ -509,6 +604,12 @@ const MyRequestsView = ({ user }) => {
                   <p className="text-sm font-semibold text-gray-800">{new Date(data.end_date).toLocaleDateString()}</p>
                 </div>
               )}
+              {currency && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Currency</p>
+                  <p className="text-sm font-semibold text-gray-800">{currency}</p>
+                </div>
+              )}
               {data.payment_method === 'crypto' && data.crypto_currency && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Payment Method</p>
@@ -516,6 +617,23 @@ const MyRequestsView = ({ user }) => {
                 </div>
               )}
             </div>
+
+            {/* Included Services */}
+            {(includesHelicopter || includesYacht || includesSafari || includesGroundTransport || includesAccommodation || guideIncluded || equipmentProvided || insuranceIncluded) && (
+              <div className="mb-3 p-3 bg-green-50 rounded-lg">
+                <p className="text-xs font-medium text-green-900 mb-2">Included:</p>
+                <div className="flex flex-wrap gap-1">
+                  {includesHelicopter && <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">🚁 Helicopter</span>}
+                  {includesYacht && <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">🛥️ Yacht</span>}
+                  {includesSafari && <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">🦁 Safari</span>}
+                  {includesGroundTransport && <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">🚗 Ground Transport</span>}
+                  {includesAccommodation && <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">🏨 Accommodation</span>}
+                  {guideIncluded && <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">👨‍✈️ Guide</span>}
+                  {equipmentProvided && <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">⛳ Equipment</span>}
+                  {insuranceIncluded && <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">🛡️ Insurance</span>}
+                </div>
+              </div>
+            )}
 
             {/* NFT/Free Badge */}
             {(hasNFT || isFree) && (
@@ -527,9 +645,24 @@ const MyRequestsView = ({ user }) => {
                   </span>
                 ) : hasNFT ? (
                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
-                    🎫 NFT Discount Applied
+                    🎫 NFT Member{nftDiscount ? ` - ${nftDiscount}% Discount` : ''}
                   </span>
                 ) : null}
+              </div>
+            )}
+
+            {/* CO2 Certificate Info */}
+            {co2Emissions && (
+              <div className="mb-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                <p className="text-xs font-medium text-emerald-900 mb-1">🌱 CO₂ Certificate Included</p>
+                <p className="text-xs text-emerald-800">{co2Emissions} tons offset{co2OffsetCost ? ` (€${co2OffsetCost} value)` : ''}</p>
+              </div>
+            )}
+
+            {/* Wallet Address */}
+            {walletAddress && (
+              <div className="mb-3 p-2 bg-gray-100 rounded-lg">
+                <p className="text-xs text-gray-600">Wallet: <span className="font-mono">{walletAddress.slice(0,6)}...{walletAddress.slice(-4)}</span></p>
               </div>
             )}
 
@@ -547,14 +680,30 @@ const MyRequestsView = ({ user }) => {
               </div>
             )}
 
-            {/* Price */}
-            {price && (
-              <div className="p-3 bg-gradient-to-r from-amber-600 to-amber-800 rounded-lg mb-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-amber-100">Total Price</p>
-                  <p className="text-base font-bold text-white">{typeof price === 'number' ? `$${price.toLocaleString()}` : price}</p>
+            {/* Inclusions List */}
+            {inclusions && Array.isArray(inclusions) && inclusions.length > 0 && (
+              <div className="mb-3 p-3 bg-blue-50 rounded-lg">
+                <p className="text-xs font-medium text-blue-900 mb-2">Package Inclusions:</p>
+                <div className="flex flex-wrap gap-1">
+                  {inclusions.map((item, idx) => (
+                    <span key={idx} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                      {item}
+                    </span>
+                  ))}
                 </div>
               </div>
+            )}
+
+            {/* Price Breakdown */}
+            {isFree ? (
+              <div className="p-3 bg-gradient-to-r from-green-600 to-green-800 rounded-lg mb-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-green-100">NFT Benefit</p>
+                  <p className="text-base font-bold text-white">FREE</p>
+                </div>
+              </div>
+            ) : (
+              <PriceBreakdown data={data} colorClass="from-amber-600 to-amber-800" textClass="text-amber-100" />
             )}
 
             {/* Timestamp */}
@@ -591,13 +740,24 @@ const MyRequestsView = ({ user }) => {
 
     // Merge data from different sources
     const carName = data.car_name || carItem.name || carItem.title || (carItem.brand && carItem.model ? `${carItem.brand} ${carItem.model}` : null) || (data.brand && data.model ? `${data.brand} ${data.model}` : 'Luxury Car');
-    const category = data.category || carItem.category || 'Luxury Car Rental';
+    const brand = data.brand || carItem.brand;
+    const model = data.model || carItem.model;
+    const category = data.category || data.type || carItem.category || carItem.type || 'Luxury Car Rental';
     const year = data.year || carItem.year;
     const location = data.location || carItem.location;
     const rentalDays = data.rental_days || carItem.rental_days || carItem.rentalDays;
     const pickupDate = data.pickup_date || carItem.date || carItem.departure_date;
     const price = data.total_price || data.estimated_price || data.total || carItem.price || carItem.estimated_price || carItem.price_per_day;
+    const pricePerDay = data.price_per_day || carItem.price_per_day;
+    const pricePerHour = data.price_per_hour || carItem.price_per_hour;
+    const pricePerWeek = data.price_per_week || carItem.price_per_week;
     const carImage = carItem.primaryImage || carItem.image_url || carItem.image || data.image_url;
+    const transmission = data.transmission || carItem.transmission;
+    const fuelType = data.fuel_type || carItem.fuel_type;
+    const seats = data.seats || carItem.seats;
+    const description = data.description || carItem.description;
+    const currency = data.currency || carItem.currency || 'USD';
+    const carId = data.car_id || carItem.id;
 
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-4 sm:p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
@@ -625,12 +785,30 @@ const MyRequestsView = ({ user }) => {
               </div>
             </div>
 
-            {/* Details Grid */}
-            <div className="grid grid-cols-2 gap-3 mb-3">
+            {/* Details Grid - ALL saved fields */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
               {year && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Year</p>
                   <p className="text-sm font-semibold text-gray-800">{year}</p>
+                </div>
+              )}
+              {seats && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Seats</p>
+                  <p className="text-sm font-semibold text-gray-800">{seats}</p>
+                </div>
+              )}
+              {transmission && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Transmission</p>
+                  <p className="text-sm font-semibold text-gray-800">{transmission}</p>
+                </div>
+              )}
+              {fuelType && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Fuel Type</p>
+                  <p className="text-sm font-semibold text-gray-800">{fuelType}</p>
                 </div>
               )}
               {(rentalDays || data.rental_duration_type) && (
@@ -650,7 +828,7 @@ const MyRequestsView = ({ user }) => {
               {data.dropoff_date && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Dropoff</p>
-                  <p className="text-sm font-semibold text-gray-800">{new Date(data.dropoff_date).toLocaleDateString()} {data.dropoff_time}</p>
+                  <p className="text-sm font-semibold text-gray-800">{new Date(data.dropoff_date).toLocaleDateString()} {data.dropoff_time || ''}</p>
                 </div>
               )}
               {location && (
@@ -660,6 +838,18 @@ const MyRequestsView = ({ user }) => {
                 </div>
               )}
             </div>
+
+            {/* Pricing Details */}
+            {(pricePerDay || pricePerHour || pricePerWeek) && (
+              <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                <p className="text-xs font-medium text-gray-900 mb-2">Rental Rates:</p>
+                <div className="flex flex-wrap gap-3">
+                  {pricePerHour && <span className="text-xs text-gray-700">${pricePerHour}/hour</span>}
+                  {pricePerDay && <span className="text-xs text-gray-700">${pricePerDay}/day</span>}
+                  {pricePerWeek && <span className="text-xs text-gray-700">${pricePerWeek}/week</span>}
+                </div>
+              </div>
+            )}
 
             {/* Location Info */}
             {(data.pickup_location || data.dropoff_location) && (
@@ -679,17 +869,16 @@ const MyRequestsView = ({ user }) => {
               </div>
             )}
 
-            {/* Price */}
-            {price && (
-              <div className="p-3 bg-gradient-to-r from-gray-700 to-gray-900 rounded-lg mb-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-gray-300">Total Price</p>
-                  <p className="text-base font-bold text-white">
-                    {typeof price === 'number' ? `$${price.toLocaleString()}` : price}
-                  </p>
-                </div>
+            {/* Description */}
+            {description && (
+              <div className="mb-3 p-3 bg-blue-50 rounded-lg">
+                <p className="text-xs font-medium text-blue-900 mb-1">Description:</p>
+                <p className="text-xs text-blue-800 line-clamp-2">{description}</p>
               </div>
             )}
+
+            {/* Price Breakdown */}
+            <PriceBreakdown data={data} colorClass="from-gray-700 to-gray-900" textClass="text-gray-300" />
 
             {/* Timestamp */}
             <div className="flex items-center justify-between">
@@ -724,18 +913,21 @@ const MyRequestsView = ({ user }) => {
     const jetItem = data.items?.find(i => i.type === 'jets' || i.type === 'aircraft') || data.items?.[0] || {};
 
     // Merge data from different sources (JetDetail saves aircraft_model, passenger_capacity, category, range)
-    const aircraft = data.aircraft_model || data.aircraft || jetItem?.aircraft_model || jetItem?.model || jetItem?.name || data.manufacturer;
+    const aircraft = data.aircraft_model || data.aircraft || jetItem?.aircraft_model || jetItem?.model || jetItem?.name;
     const manufacturer = data.manufacturer || jetItem?.manufacturer;
     const passengers = data.passenger_capacity || data.capacity || data.passengers || jetItem?.max_passengers || jetItem?.passenger_capacity;
     const route = data.route || jetItem?.route || (data.from && data.to ? `${data.from} → ${data.to}` : null) || (jetItem?.from && jetItem?.to ? `${jetItem.from} → ${jetItem.to}` : null);
     const price = data.price || data.total || data.estimatedPrice || jetItem?.estimatedPrice || jetItem?.price;
     const flightDuration = data.estimatedDuration || jetItem?.estimatedDuration;
     const hourlyRate = data.hourly_rate_eur || jetItem?.hourly_rate_eur;
-    const category = data.category || jetItem?.category;
+    const category = data.category || jetItem?.category || data.aircraft_category;
     const range = data.range || jetItem?.range;
     const jetImage = jetItem?.primaryImage || jetItem?.image_url || data.image_url;
     const hasNFT = data.has_nft;
     const nftDiscount = data.nft_discount;
+    const requestDate = data.request_date;
+    const jetId = data.jet_id || jetItem?.id;
+    const walletAddress = data.wallet_address;
 
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-4 sm:p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
@@ -756,6 +948,7 @@ const MyRequestsView = ({ user }) => {
               <div className="min-w-0">
                 <h3 className="text-base font-semibold text-gray-800 mb-1">Private Jet Charter</h3>
                 <p className="text-sm text-gray-700 font-medium truncate">{aircraft || 'Aircraft TBD'}</p>
+                {manufacturer && <p className="text-xs text-gray-500">by {manufacturer}</p>}
               </div>
               <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border self-start whitespace-nowrap ${getStatusColor(request.status)}`}>
                 {getStatusIcon(request.status)}
@@ -773,12 +966,24 @@ const MyRequestsView = ({ user }) => {
               </div>
             )}
 
-            {/* Details Grid */}
-            <div className="grid grid-cols-2 gap-3 mb-3">
+            {/* Details Grid - ALL saved fields */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
+              {category && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Category</p>
+                  <p className="text-sm font-semibold text-gray-800">{category}</p>
+                </div>
+              )}
               {passengers && (
                 <div>
-                  <p className="text-xs text-gray-600 mb-1">Passengers</p>
-                  <p className="text-sm font-semibold text-gray-800">{passengers}</p>
+                  <p className="text-xs text-gray-600 mb-1">Capacity</p>
+                  <p className="text-sm font-semibold text-gray-800">{passengers} pax</p>
+                </div>
+              )}
+              {range && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Range</p>
+                  <p className="text-sm font-semibold text-gray-800">{range}</p>
                 </div>
               )}
               {flightDuration && (
@@ -787,22 +992,16 @@ const MyRequestsView = ({ user }) => {
                   <p className="text-sm font-semibold text-gray-800">{flightDuration}</p>
                 </div>
               )}
-              {category && (
-                <div>
-                  <p className="text-xs text-gray-600 mb-1">Category</p>
-                  <p className="text-sm font-semibold text-gray-800">{category}</p>
-                </div>
-              )}
               {hourlyRate && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Hourly Rate</p>
-                  <p className="text-sm font-semibold text-gray-800">${hourlyRate.toLocaleString()}/hr</p>
+                  <p className="text-sm font-semibold text-gray-800">${typeof hourlyRate === 'number' ? hourlyRate.toLocaleString() : hourlyRate}/hr</p>
                 </div>
               )}
-              {range && (
+              {requestDate && (
                 <div>
-                  <p className="text-xs text-gray-600 mb-1">Range</p>
-                  <p className="text-sm font-semibold text-gray-800">{range} nm</p>
+                  <p className="text-xs text-gray-600 mb-1">Request Date</p>
+                  <p className="text-sm font-semibold text-gray-800">{new Date(requestDate).toLocaleDateString()}</p>
                 </div>
               )}
               {data.payment_method && (
@@ -814,25 +1013,23 @@ const MyRequestsView = ({ user }) => {
             </div>
 
             {/* NFT Discount */}
-            {data.has_nft && (
+            {hasNFT && (
               <div className="mb-3">
                 <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg">
-                  <span className="text-sm text-purple-800">🎫 NFT Discount Applied: {data.nft_discount}</span>
+                  <span className="text-sm text-purple-800">🎫 NFT Member{nftDiscount ? ` - ${nftDiscount}% Discount` : ''}</span>
                 </div>
               </div>
             )}
 
-            {/* Price */}
-            {price && (
-              <div className="p-3 bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg mb-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-blue-100">Estimated Price</p>
-                  <p className="text-base font-bold text-white">
-                    {typeof price === 'number' ? `$${price.toLocaleString()}` : price}
-                  </p>
-                </div>
+            {/* Wallet Address */}
+            {walletAddress && (
+              <div className="mb-3 p-2 bg-gray-100 rounded-lg">
+                <p className="text-xs text-gray-600">Wallet: <span className="font-mono">{walletAddress.slice(0,6)}...{walletAddress.slice(-4)}</span></p>
               </div>
             )}
+
+            {/* Price Breakdown */}
+            <PriceBreakdown data={data} colorClass="from-blue-600 to-blue-800" textClass="text-blue-100" />
 
             {/* Timestamp */}
             <div className="flex items-center justify-between">
@@ -869,19 +1066,30 @@ const MyRequestsView = ({ user }) => {
     const searchCriteria = data.search_criteria || {};
 
     // Merge data from different sources (HelicopterDetail saves in search_criteria)
-    const helicopter = data.helicopter_name || data.name || heliItem?.name || heliItem?.helicopter_name || data.manufacturer || data.helicopter_type;
-    const passengers = data.passengers || searchCriteria.passengers || data.max_passengers || heliItem?.max_passengers || heliItem?.passengers || data.capacity;
+    const helicopter = data.helicopter_name || data.name || heliItem?.name || heliItem?.helicopter_name || data.helicopter_type;
+    const helicopterType = data.helicopter_type || heliItem?.helicopter_type || heliItem?.type;
+    const manufacturer = data.manufacturer || heliItem?.manufacturer;
+    const passengers = data.passengers || searchCriteria.passengers || data.max_passengers || heliItem?.max_passengers || heliItem?.passengers;
+    const capacity = data.capacity || heliItem?.capacity;
     // Route: check search_criteria first (HelicopterDetail), then other sources
     const departure = searchCriteria.departure || data.departure || data.from || heliItem?.from;
     const arrival = searchCriteria.arrival || data.arrival || data.to || heliItem?.to;
     const route = data.route || heliItem?.route || (departure && arrival ? `${departure} → ${arrival}` : null);
     const price = data.price || data.discounted_price || data.total_price || data.total || data.estimatedPrice || heliItem?.estimatedPrice || heliItem?.price;
+    const totalPrice = data.total_price;
+    const discountedPrice = data.discounted_price;
     const flightDuration = data.flight_duration || searchCriteria.duration || data.estimatedDuration || heliItem?.estimatedDuration;
     const hourlyRate = data.hourly_rate || data.hourly_rate_eur || heliItem?.hourly_rate_eur;
     const heliImage = heliItem?.primaryImage || heliItem?.image_url || data.image_url;
     const flightDate = searchCriteria.date || data.flight_date || data.date;
     const flightTime = searchCriteria.time || data.flight_time || data.time;
     const location = data.location || heliItem?.location;
+    const hasNFT = data.has_nft;
+    const nftDiscount = data.nft_discount;
+    const currency = data.currency || 'USD';
+    const requestDate = data.request_date;
+    const walletAddress = data.wallet_address;
+    const helicopterId = data.helicopter_id;
 
     return (
       <div className="bg-white/35 border border-gray-300/50 rounded-xl p-4 sm:p-5 hover:bg-white/40 transition-all" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
@@ -902,6 +1110,8 @@ const MyRequestsView = ({ user }) => {
               <div className="min-w-0">
                 <h3 className="text-base font-semibold text-gray-800 mb-1">Helicopter Charter</h3>
                 <p className="text-sm text-gray-700 font-medium truncate">{helicopter || 'Helicopter TBD'}</p>
+                {manufacturer && <p className="text-xs text-gray-500">by {manufacturer}</p>}
+                {helicopterType && !helicopter?.includes(helicopterType) && <p className="text-xs text-gray-500">{helicopterType}</p>}
               </div>
               <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border self-start whitespace-nowrap ${getStatusColor(request.status)}`}>
                 {getStatusIcon(request.status)}
@@ -919,8 +1129,14 @@ const MyRequestsView = ({ user }) => {
               </div>
             )}
 
-            {/* Details Grid */}
-            <div className="grid grid-cols-2 gap-3 mb-3">
+            {/* Details Grid - ALL saved fields */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
+              {capacity && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Capacity</p>
+                  <p className="text-sm font-semibold text-gray-800">{capacity} pax</p>
+                </div>
+              )}
               {passengers && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Passengers</p>
@@ -936,7 +1152,13 @@ const MyRequestsView = ({ user }) => {
               {flightDate && (
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Flight Date</p>
-                  <p className="text-sm font-semibold text-gray-800">{new Date(flightDate).toLocaleDateString()} {flightTime || ''}</p>
+                  <p className="text-sm font-semibold text-gray-800">{new Date(flightDate).toLocaleDateString()}</p>
+                </div>
+              )}
+              {flightTime && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Flight Time</p>
+                  <p className="text-sm font-semibold text-gray-800">{flightTime}</p>
                 </div>
               )}
               {location && (
@@ -949,6 +1171,12 @@ const MyRequestsView = ({ user }) => {
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Hourly Rate</p>
                   <p className="text-sm font-semibold text-gray-800">${typeof hourlyRate === 'number' ? hourlyRate.toLocaleString() : hourlyRate}/hr</p>
+                </div>
+              )}
+              {currency && currency !== 'USD' && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Currency</p>
+                  <p className="text-sm font-semibold text-gray-800">{currency}</p>
                 </div>
               )}
               {data.payment_method && (
@@ -968,25 +1196,23 @@ const MyRequestsView = ({ user }) => {
             )}
 
             {/* NFT Discount */}
-            {data.has_nft && data.nft_discount && (
+            {hasNFT && (
               <div className="mb-3">
                 <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg">
-                  <span className="text-sm text-purple-800">🎫 NFT Discount: {data.nft_discount}</span>
+                  <span className="text-sm text-purple-800">🎫 NFT Member{nftDiscount ? ` - ${nftDiscount}% Discount` : ''}</span>
                 </div>
               </div>
             )}
 
-            {/* Price */}
-            {price && (
-              <div className="p-3 bg-gradient-to-r from-teal-600 to-teal-800 rounded-lg mb-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-teal-100">Estimated Price</p>
-                  <p className="text-base font-bold text-white">
-                    {typeof price === 'number' ? `$${price.toLocaleString()}` : price}
-                  </p>
-                </div>
+            {/* Wallet Address */}
+            {walletAddress && (
+              <div className="mb-3 p-2 bg-gray-100 rounded-lg">
+                <p className="text-xs text-gray-600">Wallet: <span className="font-mono">{walletAddress.slice(0,6)}...{walletAddress.slice(-4)}</span></p>
               </div>
             )}
+
+            {/* Price Breakdown */}
+            <PriceBreakdown data={data} colorClass="from-teal-600 to-teal-800" textClass="text-teal-100" />
 
             {/* Timestamp */}
             <div className="flex items-center justify-between">

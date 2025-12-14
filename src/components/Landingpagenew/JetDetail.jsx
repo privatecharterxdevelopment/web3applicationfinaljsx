@@ -62,6 +62,16 @@ const JetDetail = () => {
         return;
       }
 
+      // Calculate price breakdown (use hourly rate as estimate for quote)
+      const hourlyRate = jet.hourly_rate_eur || jet.hourly_rate || 0;
+      const estimatedHours = 2; // Default estimate for quote request
+      const basePrice = Math.round(hourlyRate * estimatedHours);
+      const platformFeePercent = 2.5;
+      const platformFee = Math.round(basePrice * (platformFeePercent / 100));
+      const vatPercent = 8.1; // Swiss VAT
+      const vatAmount = Math.round(basePrice * (vatPercent / 100));
+      const totalPrice = basePrice + platformFee + vatAmount;
+
       // Create request - DIRECT INSERT with client_email for notifications
       const { data: insertedData, error: dbError } = await supabase
         .from('user_requests')
@@ -80,6 +90,18 @@ const JetDetail = () => {
             capacity: jet.passenger_capacity,
             range: jet.range,
             category: jet.category,
+            image_url: jet.image_url,
+            // Full price breakdown
+            hourly_rate: hourlyRate,
+            estimated_hours: estimatedHours,
+            base_price: basePrice,
+            platform_fee: platformFee,
+            platform_fee_percent: platformFeePercent,
+            vat_amount: vatAmount,
+            vat_percent: vatPercent,
+            total_price: totalPrice,
+            currency: 'USD',
+            // NFT benefits
             has_nft: hasNFT,
             nft_discount: nftDiscount,
             request_date: new Date().toISOString(),
