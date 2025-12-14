@@ -4,7 +4,7 @@ import {
   Search, Shield, Bell, Heart, Home, Layers, FolderOpen, Plus,
   Plane, Zap, Mountain, Car, MapPin, Sparkles, Rocket,
   Leaf, Award, Settings, User, ChevronRight, ChevronDown, ChevronUp, ChevronLeft, X, LogOut, MessageSquare, MessageCircle,
-  Users, Calendar, Package, Compass, ArrowLeft, Wallet, History, Crown, Gift, LayoutDashboard,
+  Users, Calendar, Package, Compass, ArrowLeft, Wallet, History, Crown, Gift, LayoutDashboard, Clock,
   Mail, Phone, Globe, FileText, Edit3, Check, Loader2, Building2, Coins, Share2, Menu, ExternalLink, SlidersHorizontal, Info, CreditCard,
   ShoppingCart, Send, AlertCircle
 } from 'lucide-react';
@@ -4853,12 +4853,25 @@ const TokenizedAssetsGlassmorphic = () => {
                         // Extract normalized data from various field names
                         const fromLocation = d.from || d.from_city || d.pickupLocation || d.departure_display || d.origin || (d.departure?.name);
                         const toLocation = d.to || d.to_city || d.dropoffLocation || d.destination_display || d.destination || (d.destination?.name);
+                        const fromIata = d.from_iata || d.departure?.code;
+                        const toIata = d.to_iata || d.destination?.code;
                         const flightRoute = d.flight_route || (fromLocation && toLocation ? `${fromLocation} → ${toLocation}` : null);
-                        const aircraft = d.aircraft || d.aircraft_model || d.aircraft_type || d.helicopter_name || d.carName;
+                        const aircraft = d.aircraft || d.aircraft_model || d.aircraft_type || d.helicopter_name || d.helicopter_type || d.carName;
+                        const manufacturer = d.manufacturer;
+                        const category = d.category || d.type || d.package_type;
                         const departureDate = d.departure_date || d.pickupDate || d.date || d.start_date || d.preferred_date;
                         const departureTime = d.departure_time || d.pickupTime;
-                        const passengers = d.passengers || d.capacity || d.guests || d.duration_hours;
+                        const passengers = d.passengers || d.capacity || d.guests;
+                        const durationHours = d.duration_hours || d.flight_duration || d.duration;
                         const totalPrice = d.total_price || d.price || d.base_price || d.estimated_price || d.estimated_total || d.priceMin;
+                        // Extras/Addons
+                        const luggage = d.luggage;
+                        const hasPet = d.has_pet;
+                        const hasNFT = d.has_nft;
+                        const nftDiscount = d.nft_discount;
+                        const range = d.range;
+                        const hourlyRate = d.hourly_rate || d.price_per_hour;
+                        const location = d.location;
 
                         const requestTitle = request.type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Request';
                         const getTypeIcon = (type) => {
@@ -4938,20 +4951,44 @@ const TokenizedAssetsGlassmorphic = () => {
                             {/* Expanded Details */}
                             {isExpanded && (
                               <div className="px-4 pb-4 pt-2 border-t border-gray-50">
+                                {/* Route Display - Full Locations with IATA */}
+                                {(fromLocation || toLocation) && (
+                                  <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex-1">
+                                        <p className="text-[10px] text-gray-400 uppercase mb-0.5">Departure</p>
+                                        <p className="text-sm font-medium text-gray-900">{fromLocation || 'N/A'}</p>
+                                        {fromIata && <p className="text-xs text-gray-500">{fromIata}</p>}
+                                      </div>
+                                      <div className="px-3">
+                                        <div className="w-8 h-[1px] bg-gray-300 relative">
+                                          <Plane size={12} className="absolute -top-[6px] left-1/2 -translate-x-1/2 text-gray-400" />
+                                        </div>
+                                      </div>
+                                      <div className="flex-1 text-right">
+                                        <p className="text-[10px] text-gray-400 uppercase mb-0.5">Arrival</p>
+                                        <p className="text-sm font-medium text-gray-900">{toLocation || 'N/A'}</p>
+                                        {toIata && <p className="text-xs text-gray-500">{toIata}</p>}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Aircraft/Vehicle Info */}
+                                {(aircraft || manufacturer || category) && (
+                                  <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                                    <p className="text-[10px] text-gray-400 uppercase mb-1">Aircraft / Vehicle</p>
+                                    <p className="text-sm font-medium text-gray-900">
+                                      {manufacturer && `${manufacturer} `}{aircraft || 'N/A'}
+                                    </p>
+                                    {category && <p className="text-xs text-gray-500">{category}</p>}
+                                    {range && <p className="text-xs text-gray-500">Range: {range}</p>}
+                                    {hourlyRate && <p className="text-xs text-gray-500">Rate: ${hourlyRate.toLocaleString()}/hr</p>}
+                                  </div>
+                                )}
+
                                 {/* Quick Info Badges */}
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                  {fromLocation && (
-                                    <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600 flex items-center gap-1">
-                                      <MapPin size={10} className="text-gray-400" />
-                                      From: {fromLocation}
-                                    </div>
-                                  )}
-                                  {toLocation && (
-                                    <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600 flex items-center gap-1">
-                                      <MapPin size={10} className="text-gray-400" />
-                                      To: {toLocation}
-                                    </div>
-                                  )}
+                                <div className="flex flex-wrap gap-2 mb-3">
                                   {departureDate && (
                                     <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600 flex items-center gap-1">
                                       <Calendar size={10} className="text-gray-400" />
@@ -4965,41 +5002,76 @@ const TokenizedAssetsGlassmorphic = () => {
                                       {passengers} {request.type?.includes('helicopter') ? 'hours' : 'pax'}
                                     </div>
                                   )}
-                                  {aircraft && (
+                                  {durationHours && (
                                     <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600 flex items-center gap-1">
-                                      <Plane size={10} className="text-gray-400" />
-                                      {aircraft}
+                                      <Clock size={10} className="text-gray-400" />
+                                      {durationHours} hours
+                                    </div>
+                                  )}
+                                  {location && (
+                                    <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600 flex items-center gap-1">
+                                      <MapPin size={10} className="text-gray-400" />
+                                      {location}
                                     </div>
                                   )}
                                 </div>
 
-                                {/* Price Breakdown */}
+                                {/* Addons/Extras */}
+                                {(luggage || hasPet || hasNFT || nftDiscount) && (
+                                  <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                                    <p className="text-[10px] text-gray-400 uppercase mb-2">Extras & Addons</p>
+                                    <div className="flex flex-wrap gap-2">
+                                      {luggage && (
+                                        <span className="px-2 py-1 bg-white border border-gray-200 rounded text-xs text-gray-700">
+                                          🧳 {luggage} luggage
+                                        </span>
+                                      )}
+                                      {hasPet && (
+                                        <span className="px-2 py-1 bg-white border border-gray-200 rounded text-xs text-gray-700">
+                                          🐾 Pet included
+                                        </span>
+                                      )}
+                                      {hasNFT && (
+                                        <span className="px-2 py-1 bg-white border border-gray-200 rounded text-xs text-gray-700">
+                                          💎 NFT Holder
+                                        </span>
+                                      )}
+                                      {nftDiscount > 0 && (
+                                        <span className="px-2 py-1 bg-emerald-50 border border-emerald-200 rounded text-xs text-emerald-700">
+                                          -{nftDiscount}% NFT Discount
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Price Breakdown - Light Grey Monochromatic */}
                                 {(d.base_price || d.platform_fee || d.vat_amount) && (
-                                  <div className="bg-gray-900 rounded-lg p-3 mb-4">
-                                    <p className="text-[10px] text-gray-400 uppercase mb-2">Price Breakdown</p>
+                                  <div className="bg-gray-100 rounded-lg p-3 mb-3">
+                                    <p className="text-[10px] text-gray-500 uppercase mb-2">Price Breakdown</p>
                                     <div className="space-y-1 text-xs">
                                       {d.base_price > 0 && (
                                         <div className="flex justify-between">
-                                          <span className="text-gray-400">Base Price</span>
-                                          <span className="text-white">${d.base_price.toLocaleString()}</span>
+                                          <span className="text-gray-500">Base Price</span>
+                                          <span className="text-gray-800">${d.base_price.toLocaleString()}</span>
                                         </div>
                                       )}
                                       {d.platform_fee > 0 && (
                                         <div className="flex justify-between">
-                                          <span className="text-gray-400">Platform Fee ({d.platform_fee_percent || 2.5}%)</span>
-                                          <span className="text-white">+${d.platform_fee.toLocaleString()}</span>
+                                          <span className="text-gray-500">Platform Fee ({d.platform_fee_percent || 2.5}%)</span>
+                                          <span className="text-gray-800">+${d.platform_fee.toLocaleString()}</span>
                                         </div>
                                       )}
                                       {d.vat_amount > 0 && (
                                         <div className="flex justify-between">
-                                          <span className="text-gray-400">VAT ({d.vat_percent || 8.1}% CH)</span>
-                                          <span className="text-white">+${d.vat_amount.toLocaleString()}</span>
+                                          <span className="text-gray-500">VAT ({d.vat_percent || 8.1}% CH)</span>
+                                          <span className="text-gray-800">+${d.vat_amount.toLocaleString()}</span>
                                         </div>
                                       )}
                                       {d.total_price > 0 && (
-                                        <div className="flex justify-between pt-2 border-t border-gray-700">
-                                          <span className="text-white font-medium">Total</span>
-                                          <span className="text-white font-bold">${d.total_price.toLocaleString()}</span>
+                                        <div className="flex justify-between pt-2 border-t border-gray-300">
+                                          <span className="text-gray-700 font-medium">Total</span>
+                                          <span className="text-gray-900 font-bold">${d.total_price.toLocaleString()}</span>
                                         </div>
                                       )}
                                     </div>
