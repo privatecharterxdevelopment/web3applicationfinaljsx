@@ -1393,7 +1393,10 @@ const TokenizedAssetsGlassmorphic = () => {
             to_iata: rawData.to_iata,
             departure_date: rawData.departure_date,
             departure_time: rawData.departure_time,
+            aircraft_model: rawData.aircraft_model,
             aircraft_type: rawData.category || rawData.aircraft_type,
+            aircraft: rawData.aircraft_model || rawData.category || rawData.aircraft_type,
+            category: rawData.category,
             capacity: rawData.capacity || rawData.pax,
             // Full price breakdown
             base_price: basePrice,
@@ -1508,6 +1511,8 @@ const TokenizedAssetsGlassmorphic = () => {
         helicopter_id: rawData.id,
         helicopter_name: selectedHelicopter.name || rawData.name,
         helicopter_type: selectedHelicopter.type || rawData.type || rawData.category,
+        aircraft: selectedHelicopter.name || rawData.name, // For unified extraction
+        category: selectedHelicopter.type || rawData.type || rawData.category,
         capacity: selectedHelicopter.capacity || rawData.capacity,
         location: selectedHelicopter.location || rawData.location,
         price_per_hour: pricePerHour,
@@ -9043,7 +9048,10 @@ const TokenizedAssetsGlassmorphic = () => {
                           </div>
                           <div className="py-2 border-b border-gray-50">
                             <p className="text-[10px] text-gray-400 uppercase tracking-wide">Aircraft</p>
-                            <p className="text-sm text-gray-900">{rawData.aircraft_type || rawData.category || 'Private Jet'}</p>
+                            <p className="text-sm text-gray-900">{rawData.aircraft_model || rawData.aircraft_type || rawData.category || 'Private Jet'}</p>
+                            {rawData.aircraft_model && rawData.category && (
+                              <p className="text-xs text-gray-500">{rawData.category}</p>
+                            )}
                           </div>
                           <div className="py-2 border-b border-gray-50">
                             <p className="text-[10px] text-gray-400 uppercase tracking-wide">Passengers</p>
@@ -10098,6 +10106,8 @@ const TokenizedAssetsGlassmorphic = () => {
                                 offer_id: offer.id,
                                 offer_title: offer.title || selectedAdventure?.name,
                                 offer_type: offer.package_type || 'Adventure',
+                                aircraft: offer.title || selectedAdventure?.name, // For unified extraction
+                                category: offer.package_type || 'Adventure',
                                 origin: offer.origin,
                                 destination: offer.destination || selectedAdventure?.location,
                                 image_url: offer.image_url || selectedAdventure?.image,
@@ -11002,6 +11012,10 @@ const TokenizedAssetsGlassmorphic = () => {
                                 car_id: car.id,
                                 brand: car.brand,
                                 model: car.model,
+                                carName: car.brand && car.model ? `${car.brand} ${car.model}` : (car.brand || car.model || 'Luxury Car'),
+                                aircraft: car.brand && car.model ? `${car.brand} ${car.model}` : (car.brand || car.model || 'Luxury Car'), // For unified extraction
+                                manufacturer: car.brand,
+                                category: car.type || selectedLuxuryCar.category || 'Luxury Car',
                                 type: car.type || selectedLuxuryCar.category || 'Luxury Car',
                                 location: car.location || selectedLuxuryCar.location,
                                 year: car.year,
