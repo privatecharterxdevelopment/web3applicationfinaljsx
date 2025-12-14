@@ -147,44 +147,49 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
 
   const carTypes = [
     {
-      id: 'bmw-7er-2015',
-      name: 'BMW 7er 2015',
+      id: 'economy',
+      name: 'Economy',
       seats: 4,
-      priceMinCHF: 4.00,
-      priceMaxCHF: 7.50,
-      image: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/uber%20imgs/sl_251110158_bmw-7-2015-seitenansicht_4x.png'
+      priceMinCHF: 3.50,
+      priceMaxCHF: 6.00,
+      image: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/uber%20imgs/sl_251110158_bmw-7-2015-seitenansicht_4x.png',
+      description: 'Comfortable sedan'
     },
     {
-      id: 'mercedes-s-2018',
-      name: 'Mercedes Benz S-Class 2018',
-      seats: 5,
+      id: 'business',
+      name: 'Business',
+      seats: 4,
       priceMinCHF: 4.50,
       priceMaxCHF: 7.50,
-      image: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/uber%20imgs/sl_253116175_mercedes-benz-s-2018-seitenansicht_4x.png'
+      image: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/uber%20imgs/sl_253116175_mercedes-benz-s-2018-seitenansicht_4x.png',
+      description: 'Premium sedan'
     },
     {
-      id: 'mercedes-s-2020',
-      name: 'Mercedes S-Class 2020',
-      seats: 5,
-      priceMinCHF: 5.00,
-      priceMaxCHF: 8.00,
-      image: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/uber%20imgs/sl_253111171_mercedes-benz-s-2020-seitenansicht_4x.png'
+      id: 'first-class',
+      name: 'First Class',
+      seats: 4,
+      priceMinCHF: 6.00,
+      priceMaxCHF: 9.00,
+      image: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/uber%20imgs/sl_253111171_mercedes-benz-s-2020-seitenansicht_4x.png',
+      description: 'Luxury sedan'
     },
     {
-      id: 'mercedes-vito',
-      name: 'Mercedes Vito',
+      id: 'van',
+      name: 'Van',
       seats: 7,
       priceMinCHF: 6.50,
       priceMaxCHF: 9.00,
-      image: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/uber%20imgs/vito.jpg'
+      image: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/uber%20imgs/vito.jpg',
+      description: 'Spacious van for groups'
     },
     {
-      id: 'mercedes-maybach',
-      name: 'Mercedes Benz S-Class Maybach',
-      seats: 5,
+      id: 'vip',
+      name: 'VIP',
+      seats: 4,
       priceMinCHF: 8.00,
       priceMaxCHF: 12.00,
-      image: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/uber%20imgs/sl_255110169_mercedes-benz-s-2020-seitenansicht_4x.png'
+      image: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/uber%20imgs/sl_255110169_mercedes-benz-s-2020-seitenansicht_4x.png',
+      description: 'Ultra-luxury experience'
     }
   ];
 

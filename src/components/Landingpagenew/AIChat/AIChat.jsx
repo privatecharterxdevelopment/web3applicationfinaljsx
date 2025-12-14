@@ -2032,32 +2032,37 @@ As their luxury travel consultant:
         });
       }
 
-      if (filteredResults.luxuryCars?.length > 0) {
+      // Use static category-based ground transport options (consistent with TaxiConciergeView)
+      const groundTransportCategories = [
+        { id: 'economy', name: 'Economy', seats: 4, priceMinCHF: 3.50, priceMaxCHF: 6.00, description: 'Comfortable sedan', image: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/uber%20imgs/sl_251110158_bmw-7-2015-seitenansicht_4x.png' },
+        { id: 'business', name: 'Business', seats: 4, priceMinCHF: 4.50, priceMaxCHF: 7.50, description: 'Premium sedan', image: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/uber%20imgs/sl_253116175_mercedes-benz-s-2018-seitenansicht_4x.png' },
+        { id: 'first-class', name: 'First Class', seats: 4, priceMinCHF: 6.00, priceMaxCHF: 9.00, description: 'Luxury sedan', image: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/uber%20imgs/sl_253111171_mercedes-benz-s-2020-seitenansicht_4x.png' },
+        { id: 'van', name: 'Van', seats: 7, priceMinCHF: 6.50, priceMaxCHF: 9.00, description: 'Spacious van for groups', image: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/uber%20imgs/vito.jpg' },
+        { id: 'vip', name: 'VIP', seats: 4, priceMinCHF: 8.00, priceMaxCHF: 12.00, description: 'Ultra-luxury experience', image: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/uber%20imgs/sl_255110169_mercedes-benz-s-2020-seitenansicht_4x.png' }
+      ];
+
+      // Show ground transport categories if user asked for cars/taxi/transfer
+      if (filteredResults.luxuryCars?.length > 0 || serviceType === 'luxuryCars') {
         formattedTabs.push({
           id: 'taxi_cars',
-          title: 'Taxi & Chauffeur Service',
-          count: filteredResults.luxuryCars.length,
-          items: filteredResults.luxuryCars.map(car => ({
-            ...car,
+          title: 'Ground Transport',
+          count: groundTransportCategories.length,
+          items: groundTransportCategories.map(cat => ({
+            ...cat,
             type: 'taxi_cars',
-            name: car.name || `${car.brand} ${car.model}`,
-            title: car.name,
-            subtitle: `${car.seats} seats • ${car.category}`,
-            price_range: `CHF ${car.price_min_chf} - ${car.price_max_chf} per km`,
-            price_min: car.price_min_chf,
-            price_max: car.price_max_chf,
-            description: car.description || `Professional chauffeur service with ${car.name}`,
-            images: car.image_url ? [car.image_url] : [],
-            primaryImage: car.image_url,
+            title: cat.name,
+            subtitle: `${cat.seats} seats • ${cat.description}`,
+            price_range: `CHF ${cat.priceMinCHF.toFixed(2)} - ${cat.priceMaxCHF.toFixed(2)} per km`,
+            price_min: cat.priceMinCHF,
+            price_max: cat.priceMaxCHF,
+            images: cat.image ? [cat.image] : [],
+            primaryImage: cat.image,
             details: {
-              'Vehicle': car.name,
-              'Brand': car.brand,
-              'Model': car.model,
-              'Year': car.year || 'Current',
-              'Seats': car.seats,
-              'Category': car.category,
-              'Price per km': `CHF ${car.price_min_chf} - ${car.price_max_chf}`,
-              'Availability': car.available ? 'Available' : 'Not Available'
+              'Category': cat.name,
+              'Seats': cat.seats,
+              'Description': cat.description,
+              'Price per km': `CHF ${cat.priceMinCHF.toFixed(2)} - ${cat.priceMaxCHF.toFixed(2)}`,
+              'Availability': 'Available'
             }
           }))
         });
