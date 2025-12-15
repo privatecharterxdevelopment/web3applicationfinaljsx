@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Calendar, MapPin, Users, DollarSign, Package, Clock, CheckCircle, XCircle, AlertCircle, CalendarPlus, FileText, Loader2 } from 'lucide-react';
+import { Calendar, MapPin, Users, DollarSign, Package, Clock, CheckCircle, XCircle, AlertCircle, CalendarPlus, FileText, Loader2, Download } from 'lucide-react';
 import CreateEventModal from './Calendar/CreateEventModal';
 import { generateRequestConfirmationPDF, downloadPDF } from '../services/pdfGeneratorService';
 
@@ -348,14 +348,14 @@ const ChatRequestsView = ({ userId, user }) => {
                   <button
                     onClick={(e) => handleDownloadPDF(request, e)}
                     disabled={generatingPDF === request.id}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors flex items-center gap-2 disabled:opacity-50"
+                    className="px-4 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center gap-2 disabled:opacity-50"
                   >
                     {generatingPDF === request.id ? (
                       <Loader2 size={16} className="animate-spin" />
                     ) : (
-                      <FileText size={16} />
+                      <Download size={16} />
                     )}
-                    PDF
+                    {generatingPDF === request.id ? 'Generating...' : 'Download PDF'}
                   </button>
                   <button
                     onClick={() => {
