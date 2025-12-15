@@ -5004,6 +5004,188 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                         </div>
                       )}
                     </div>
+
+                      {/* Add to Cart Button - Show when AI mentions specific luxury items (cigars, wine, champagne, etc.) */}
+                      {msg.role === 'assistant' && !msg.isLoading && !msg.action && (() => {
+                        const content = msg.content || '';
+                        const contentLower = content.toLowerCase();
+
+                        // Skip if this message already has action buttons (confirm_booking, etc.)
+                        if (msg.bookingData) return null;
+
+                        // Luxury item detection patterns with quantity extraction
+                        const luxuryItemPatterns = [
+                          // Cigars - specific brands with quantity
+                          { pattern: /(\d+)\s*(?:x\s*)?(?:boxes?\s*(?:of\s*)?)?(?:padron\s*1926(?:\s*serie)?|padron)/i, category: 'cigars', name: 'Padron 1926 Serie', basePrice: 850 },
+                          { pattern: /(\d+)\s*(?:x\s*)?(?:boxes?\s*(?:of\s*)?)?cohiba\s*(?:behike|esplendidos?|siglo)?/i, category: 'cigars', name: 'Cohiba Behike', basePrice: 1200 },
+                          { pattern: /(\d+)\s*(?:x\s*)?(?:boxes?\s*(?:of\s*)?)?montecristo(?:\s*no\.?\s*\d)?/i, category: 'cigars', name: 'Montecristo No. 2', basePrice: 600 },
+                          { pattern: /(\d+)\s*(?:x\s*)?(?:boxes?\s*(?:of\s*)?)?davidoff/i, category: 'cigars', name: 'Davidoff', basePrice: 800 },
+                          { pattern: /(\d+)\s*(?:x\s*)?(?:boxes?\s*(?:of\s*)?)?arturo\s*fuente/i, category: 'cigars', name: 'Arturo Fuente', basePrice: 500 },
+                          { pattern: /(\d+)\s*(?:x\s*)?(?:boxes?\s*(?:of\s*)?)?romeo\s*y\s*julieta/i, category: 'cigars', name: 'Romeo y Julieta', basePrice: 400 },
+                          { pattern: /(\d+)\s*(?:x\s*)?(?:boxes?\s*(?:of\s*)?)?partagas/i, category: 'cigars', name: 'Partagas', basePrice: 500 },
+                          // Generic cigar mentions
+                          { pattern: /(\d+)\s*(?:premium\s*)?cigars?/i, category: 'cigars', name: 'Premium Cigars', basePrice: 500 },
+
+                          // Champagne
+                          { pattern: /(\d+)\s*(?:bottles?\s*(?:of\s*)?)?dom\s*p[eé]rignon/i, category: 'champagne', name: 'Dom Pérignon', basePrice: 300 },
+                          { pattern: /(\d+)\s*(?:bottles?\s*(?:of\s*)?)?krug(?:\s*grande\s*cuv[eé]e)?/i, category: 'champagne', name: 'Krug Grande Cuvée', basePrice: 280 },
+                          { pattern: /(\d+)\s*(?:bottles?\s*(?:of\s*)?)?cristal(?:\s*louis\s*roederer)?/i, category: 'champagne', name: 'Louis Roederer Cristal', basePrice: 350 },
+                          { pattern: /(\d+)\s*(?:bottles?\s*(?:of\s*)?)?veuve\s*clicquot/i, category: 'champagne', name: 'Veuve Clicquot', basePrice: 80 },
+                          { pattern: /(\d+)\s*(?:bottles?\s*(?:of\s*)?)?mo[eë]t(?:\s*&\s*chandon)?/i, category: 'champagne', name: 'Moët & Chandon', basePrice: 70 },
+
+                          // Wine
+                          { pattern: /(\d+)\s*(?:bottles?\s*(?:of\s*)?)?(?:chateau\s*)?petrus/i, category: 'wine', name: 'Château Pétrus', basePrice: 3500 },
+                          { pattern: /(\d+)\s*(?:bottles?\s*(?:of\s*)?)?(?:chateau\s*)?margaux/i, category: 'wine', name: 'Château Margaux', basePrice: 800 },
+                          { pattern: /(\d+)\s*(?:bottles?\s*(?:of\s*)?)?(?:chateau\s*)?lafite/i, category: 'wine', name: 'Château Lafite Rothschild', basePrice: 1200 },
+                          { pattern: /(\d+)\s*(?:bottles?\s*(?:of\s*)?)?opus\s*one/i, category: 'wine', name: 'Opus One', basePrice: 450 },
+                          { pattern: /(\d+)\s*(?:bottles?\s*(?:of\s*)?)?screaming\s*eagle/i, category: 'wine', name: 'Screaming Eagle', basePrice: 4000 },
+
+                          // Caviar
+                          { pattern: /(\d+)\s*(?:g(?:rams?)?\s*(?:of\s*)?|tins?\s*(?:of\s*)?)?beluga\s*caviar/i, category: 'caviar', name: 'Beluga Caviar', basePrice: 500 },
+                          { pattern: /(\d+)\s*(?:g(?:rams?)?\s*(?:of\s*)?|tins?\s*(?:of\s*)?)?oscietra\s*caviar/i, category: 'caviar', name: 'Oscietra Caviar', basePrice: 350 },
+                          { pattern: /(\d+)\s*(?:g(?:rams?)?\s*(?:of\s*)?|tins?\s*(?:of\s*)?)?sevruga\s*caviar/i, category: 'caviar', name: 'Sevruga Caviar', basePrice: 280 },
+
+                          // Flowers
+                          { pattern: /(\d+)\s*(?:bouquets?\s*(?:of\s*)?)?(?:red\s*)?roses?/i, category: 'flowers', name: 'Premium Rose Bouquet', basePrice: 200 },
+                          { pattern: /(\d+)\s*(?:arrangements?\s*(?:of\s*)?)?(?:luxury\s*)?(?:floral\s*)?flowers?/i, category: 'flowers', name: 'Luxury Floral Arrangement', basePrice: 300 },
+                        ];
+
+                        // Find matching luxury item
+                        let matchedItem = null;
+                        for (const itemDef of luxuryItemPatterns) {
+                          const match = content.match(itemDef.pattern);
+                          if (match) {
+                            const quantity = parseInt(match[1]) || 1;
+                            matchedItem = {
+                              ...itemDef,
+                              quantity,
+                              totalPrice: itemDef.basePrice * quantity
+                            };
+                            break;
+                          }
+                        }
+
+                        // Also check for generic luxury item keywords without quantity
+                        if (!matchedItem) {
+                          const genericPatterns = [
+                            { keywords: ['cohiba', 'behike'], category: 'cigars', name: 'Cohiba Behike', basePrice: 1200 },
+                            { keywords: ['montecristo'], category: 'cigars', name: 'Montecristo No. 2', basePrice: 600 },
+                            { keywords: ['padron', '1926'], category: 'cigars', name: 'Padron 1926 Serie', basePrice: 850 },
+                            { keywords: ['dom perignon', 'dom pérignon'], category: 'champagne', name: 'Dom Pérignon', basePrice: 300 },
+                            { keywords: ['krug'], category: 'champagne', name: 'Krug Grande Cuvée', basePrice: 280 },
+                            { keywords: ['cristal'], category: 'champagne', name: 'Louis Roederer Cristal', basePrice: 350 },
+                            { keywords: ['beluga caviar'], category: 'caviar', name: 'Beluga Caviar', basePrice: 500 },
+                          ];
+
+                          for (const gp of genericPatterns) {
+                            const hasKeyword = gp.keywords.some(kw => contentLower.includes(kw));
+                            if (hasKeyword) {
+                              matchedItem = {
+                                ...gp,
+                                quantity: 1,
+                                totalPrice: gp.basePrice
+                              };
+                              break;
+                            }
+                          }
+                        }
+
+                        if (!matchedItem) return null;
+
+                        // Get emoji for category
+                        const categoryEmoji = {
+                          cigars: '🚬',
+                          champagne: '🍾',
+                          wine: '🍷',
+                          caviar: '🥄',
+                          flowers: '💐',
+                          spirits: '🥃'
+                        };
+
+                        return (
+                          <div className="mt-3 pt-3 border-t border-gray-200/50">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-lg">{categoryEmoji[matchedItem.category] || '✨'}</span>
+                              <span className="text-xs text-gray-500">
+                                {matchedItem.quantity > 1 ? `${matchedItem.quantity}x ` : ''}{matchedItem.name}
+                                {matchedItem.category === 'cigars' && <span className="text-orange-500 ml-1">(+$2,000 cleaning)</span>}
+                              </span>
+                              <span className="text-xs font-medium text-gray-700">
+                                ~${matchedItem.totalPrice.toLocaleString()}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                const cartItem = {
+                                  id: `extra-${Date.now()}`,
+                                  cartId: Date.now(),
+                                  type: 'custom_extra',
+                                  name: matchedItem.name,
+                                  category: matchedItem.category,
+                                  quantity: matchedItem.quantity,
+                                  unitPrice: matchedItem.basePrice,
+                                  price: matchedItem.totalPrice,
+                                  basePrice: matchedItem.totalPrice,
+                                  totalWithFee: matchedItem.category === 'cigars'
+                                    ? matchedItem.totalPrice + 2000
+                                    : matchedItem.totalPrice,
+                                  isEstimate: true,
+                                  isCustomRequest: true,
+                                  requiresConfirmation: true,
+                                  addedAt: new Date().toISOString(),
+                                  notes: `${matchedItem.category} - availability to be confirmed`
+                                };
+
+                                // Add cleaning fee for cigars
+                                if (matchedItem.category === 'cigars') {
+                                  // Check if cleaning fee already in cart
+                                  const hasCleaningFee = cartItems.some(item =>
+                                    item.type === 'service_fee' && item.linkedTo === 'cigars'
+                                  );
+
+                                  if (!hasCleaningFee) {
+                                    const cleaningFee = {
+                                      id: `cleaning-${Date.now()}`,
+                                      cartId: Date.now() + 1,
+                                      type: 'service_fee',
+                                      name: 'Aircraft Cleaning Fee',
+                                      description: 'Required deep cleaning for aircraft after cigar/smoking use',
+                                      price: 2000,
+                                      basePrice: 2000,
+                                      totalWithFee: 2000,
+                                      linkedTo: 'cigars',
+                                      addedAt: new Date().toISOString()
+                                    };
+                                    setCartItems(prev => [...prev, cartItem, cleaningFee]);
+                                  } else {
+                                    setCartItems(prev => [...prev, cartItem]);
+                                  }
+                                } else {
+                                  setCartItems(prev => [...prev, cartItem]);
+                                }
+
+                                setToast({ message: `Added ${matchedItem.name} to cart`, type: 'success' });
+                                setChatHistory(prev => prev.map(c =>
+                                  c.id === activeChat
+                                    ? {
+                                        ...c,
+                                        messages: [...c.messages, {
+                                          role: 'assistant',
+                                          content: `✓ Added ${matchedItem.quantity > 1 ? matchedItem.quantity + 'x ' : ''}${matchedItem.name} to your cart${matchedItem.category === 'cigars' ? ' (including $2,000 aircraft cleaning fee)' : ''}. You can review it in your cart before checkout.`
+                                        }]
+                                      }
+                                    : c
+                                ));
+                              }}
+                              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-xl transition-all duration-200 flex items-center gap-2 border border-gray-200"
+                            >
+                              <ShoppingCart size={14} />
+                              Add to Cart
+                            </button>
+                          </div>
+                        );
+                      })()}
+
                     {/* Action Buttons for Booking Confirmation */}
                     {msg.action === 'send_charter_request' && (
                       <button
