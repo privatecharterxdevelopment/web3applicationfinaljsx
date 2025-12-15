@@ -1106,11 +1106,21 @@ const AIChat = ({
   }, []);
 
   const addToCart = useCallback((item) => {
+    // Preserve original database ID for items from winery/delicacies tables
+    const originalDbId = item.id;
+    const itemType = item.type?.toLowerCase() || '';
+    const isFromDatabase = itemType === 'wines' || itemType === 'wine' ||
+                          itemType === 'delicatesse' || itemType === 'delicacies' ||
+                          itemType === 'cigars';
+
     let cartItem = {
       ...item,
       cartId: Date.now(),
       addedAt: new Date().toISOString(),
-      currency: 'USD' // All prices now in USD
+      currency: 'USD', // All prices now in USD
+      // Preserve original database ID for payment processing
+      original_id: originalDbId,
+      db_id: isFromDatabase ? originalDbId : undefined
     };
 
     // For jets and helicopters: calculate estimated price based on flight distance/time
@@ -6850,13 +6860,23 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                     await saveToAIRequests(item);
                                   }
 
-                                  // Determine primary service type for CoinGate
-                                  const hasEmptyLeg = payableItems.some(i => i.type === 'empty_legs' || i.type === 'emptyleg');
-                                  const serviceType = hasEmptyLeg ? 'empty_leg' : 'adventure_package';
-
-                                  // Use first item's ID or create combined ID
+                                  // Determine primary service type for CoinGate based on actual item types
                                   const primaryItem = payableItems[0];
-                                  const serviceId = primaryItem.original_id || primaryItem.id || `cart-${Date.now()}`;
+                                  const getServiceType = (item) => {
+                                    const itemType = item.type?.toLowerCase() || '';
+                                    if (itemType === 'empty_legs' || itemType === 'emptyleg') return 'empty_leg';
+                                    if (itemType === 'wine' || itemType === 'wines') return 'wine';
+                                    if (itemType === 'delicatesse' || itemType === 'delicacies') return 'delicatesse';
+                                    if (itemType === 'cigars' || item.category === 'cigars') return 'cigars';
+                                    if (itemType === 'custom_extra') return 'custom_extra';
+                                    if (itemType === 'service_fee') return 'service_fee';
+                                    if (itemType === 'adventure' || itemType === 'fixed_offer') return 'adventure_package';
+                                    return 'custom_extra'; // Default for unknown types
+                                  };
+                                  const serviceType = getServiceType(primaryItem);
+
+                                  // Use proper ID based on item type - database IDs for known items, generated for custom
+                                  const serviceId = primaryItem.original_id || primaryItem.db_id || primaryItem.id || `custom-${Date.now()}`;
 
                                   // Call CoinGate edge function with total cart amount
                                   const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-coingate-payment`, {
@@ -6872,6 +6892,10 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                       priceUSD: Math.round(cartTotal * 100) / 100,
                                       email: user.email,
                                       contactName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Customer',
+                                      // Include service details for custom extras
+                                      serviceTitle: primaryItem.name || primaryItem.title || itemDescriptions,
+                                      serviceDescription: primaryItem.description || primaryItem.notes || `${primaryItem.category || primaryItem.type || 'Service'}`,
+                                      serviceImageUrl: primaryItem.image_url || primaryItem.image,
                                       orderDescription: `PrivateCharterX Cart: ${itemDescriptions}`,
                                       cartItems: payableItems.map(item => ({
                                         id: item.id,

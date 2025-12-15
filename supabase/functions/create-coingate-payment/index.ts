@@ -42,7 +42,7 @@ function convertToUSD(amount: number, fromCurrency: string, rate: number): numbe
 }
 
 interface PaymentRequest {
-  serviceType: 'empty_leg' | 'adventure_package' | 'co2_certificate' | 'hotel_booking';
+  serviceType: 'empty_leg' | 'adventure_package' | 'co2_certificate' | 'hotel_booking' | 'custom_extra' | 'wine' | 'delicatesse' | 'cigars' | 'service_fee';
   serviceId: string;
   userId: string;
   walletAddress?: string;
@@ -289,6 +289,100 @@ serve(async (req) => {
 
         // Use hotel booking ID as the service ID for the rest of the flow
         serviceDetails.id = hotelBooking.id;
+        break;
+
+      case 'wine':
+        tableName = 'winery';
+        const { data: wine, error: wineError } = await supabaseAdmin
+          .from('winery')
+          .select('*')
+          .eq('id', serviceId)
+          .single();
+
+        if (wineError || !wine) {
+          // If not found in database, use frontend-provided data
+          if (priceUSD && serviceTitle) {
+            console.log(`Wine not in DB, using frontend data: ${serviceTitle} - $${priceUSD}`);
+            serviceDetails = {
+              id: serviceId,
+              title: serviceTitle || 'Wine Selection',
+              description: serviceDescription || 'Premium wine from curated collection',
+              image_url: serviceImageUrl,
+              price: priceUSD,
+              currency: 'USD'
+            };
+          } else {
+            throw new Error(`Wine not found: ${serviceId}`);
+          }
+        } else {
+          const winePriceUSD = parseFloat(wine.price_usd || wine.price || priceUSD || 0);
+          serviceDetails = {
+            id: wine.id,
+            title: wine.name || wine.title || serviceTitle,
+            description: wine.description || `${wine.region || ''} ${wine.vintage || ''}`.trim(),
+            image_url: wine.image_url || serviceImageUrl,
+            price: winePriceUSD,
+            currency: 'USD'
+          };
+        }
+        break;
+
+      case 'delicatesse':
+      case 'cigars':
+        tableName = 'delicacies';
+        const { data: delicacy, error: delicacyError } = await supabaseAdmin
+          .from('delicacies')
+          .select('*')
+          .eq('id', serviceId)
+          .single();
+
+        if (delicacyError || !delicacy) {
+          // If not found in database, use frontend-provided data (custom extra)
+          if (priceUSD && serviceTitle) {
+            console.log(`Delicacy not in DB, using frontend data: ${serviceTitle} - $${priceUSD}`);
+            serviceDetails = {
+              id: serviceId,
+              title: serviceTitle || 'Premium Item',
+              description: serviceDescription || 'Luxury delicacy item',
+              image_url: serviceImageUrl,
+              price: priceUSD,
+              currency: 'USD'
+            };
+          } else {
+            throw new Error(`Delicacy/cigar not found: ${serviceId}`);
+          }
+        } else {
+          const delicacyPriceUSD = parseFloat(delicacy.price_usd || delicacy.price || priceUSD || 0);
+          serviceDetails = {
+            id: delicacy.id,
+            title: delicacy.name || delicacy.title || serviceTitle,
+            description: delicacy.description || `${delicacy.category || ''} - ${delicacy.brand || ''}`.trim(),
+            image_url: delicacy.image_url || serviceImageUrl,
+            price: delicacyPriceUSD,
+            currency: 'USD'
+          };
+        }
+        break;
+
+      case 'custom_extra':
+      case 'service_fee':
+        // Custom extras and service fees don't have a database table
+        // They're created dynamically from AI Chat
+        tableName = 'custom_extras';
+
+        if (!priceUSD || !serviceTitle) {
+          throw new Error(`Custom extra requires price and title: ${serviceId}`);
+        }
+
+        console.log(`Processing custom extra: ${serviceTitle} - $${priceUSD}`);
+        serviceDetails = {
+          id: serviceId,
+          title: serviceTitle,
+          description: serviceDescription || 'Custom service or extra',
+          image_url: serviceImageUrl,
+          price: priceUSD,
+          currency: 'USD'
+        };
         break;
 
       default:
