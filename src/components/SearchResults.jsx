@@ -5,7 +5,7 @@ import BookableServiceCard from './BookableServiceCard';
 /**
  * SearchResults component displays search results in expandable tabs/cards
  */
-const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAddToCart, onRequestChanges, onPayCrypto }) => {
+const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAddToCart, onRequestChanges, onPayCrypto, onBuildJourney }) => {
   // Debug: Log tabs data on mount
   React.useEffect(() => {
     console.log('📋 SearchResults tabs:', tabs);
@@ -116,6 +116,8 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                     />
                   ) : item.type === 'wines' ? (
                     <Wine size={14} className="text-gray-500" />
+                  ) : item.type === 'delicatesse' || item.type === 'cigars' ? (
+                    <span className="text-sm">🎁</span>
                   ) : (
                     <Plane size={14} />
                   )}
@@ -129,6 +131,8 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                         ? `${item.from_iata || item.from_city || '?'} → ${item.to_iata || item.to_city || '?'}`
                         : item.type === 'wines'
                         ? (item.displayTitle || item.name || 'Wine')
+                        : item.type === 'delicatesse' || item.type === 'cigars'
+                        ? (item.displayTitle || item.name || 'Luxury Extra')
                         : (item.name || item.model || item.title || 'Unnamed Service')}
                     </p>
                     {/* Category Badge - subtle */}
@@ -262,6 +266,38 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                         )}
                       </>
                     )}
+
+                    {/* Delicatesse */}
+                    {item.type === 'delicatesse' && (
+                      <>
+                        {item.category && <span className="capitalize">{item.category}</span>}
+                        {item.preparationTime && (
+                          <>
+                            <span>•</span>
+                            <span>{item.preparationTime}</span>
+                          </>
+                        )}
+                      </>
+                    )}
+
+                    {/* Premium Cigars */}
+                    {item.type === 'cigars' && (
+                      <>
+                        {item.brand && <span>{item.brand}</span>}
+                        {item.origin && (
+                          <>
+                            <span>•</span>
+                            <span>{item.origin}</span>
+                          </>
+                        )}
+                        {item.strength && (
+                          <>
+                            <span>•</span>
+                            <span>{item.strength}</span>
+                          </>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -280,12 +316,17 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                     {(item.type === 'ground_transport' || item.type === 'transfer' || item.type === 'taxi') && item.price && `€${item.price.toLocaleString()}`}
                     {item.type === 'adventures' && (item.price_eur || item.price) && `€${(item.price_eur || item.price).toLocaleString()}`}
                     {item.type === 'wines' && (item.priceRange || (item.typicalPrice || item.typical_price_eur || item.price ? `€${(item.typicalPrice || item.typical_price_eur || item.price).toLocaleString()}` : 'Price on request'))}
+                    {item.type === 'delicatesse' && (item.priceDisplay || (item.price ? `$${item.price.toLocaleString()}` : 'Price on request'))}
+                    {item.type === 'cigars' && (item.priceDisplay || (item.price ? `$${item.price}/stick` : 'Price on request'))}
                   </p>
                   {item.type === 'empty_legs' && (
                     <p className="text-[10px] text-emerald-600">Save up to 70%</p>
                   )}
                   {item.type === 'wines' && item.vintage && (
                     <p className="text-[10px] text-gray-500">{item.vintage}</p>
+                  )}
+                  {item.type === 'cigars' && (
+                    <p className="text-[10px] text-amber-600">+$2K cleaning fee</p>
                   )}
                 </div>
 
@@ -408,7 +449,7 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                           {/* Action Buttons for Private Jets */}
                           <div className="col-span-2 md:col-span-4 mt-4 pt-4 border-t border-gray-200">
                             <div className="flex flex-col sm:flex-row gap-2">
-                              {/* Add to Cart */}
+                              {/* Add to Cart - Direct Flight */}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -417,7 +458,19 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-medium transition-colors text-sm border border-gray-200"
                               >
                                 <ShoppingCart size={16} />
-                                Add to Cart
+                                Add Direct Flight
+                              </button>
+
+                              {/* Build Multi-Stop Journey */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onBuildJourney && onBuildJourney(item);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg font-medium transition-colors text-sm border border-blue-200"
+                              >
+                                <MapPin size={16} />
+                                Build Multi-Stop
                               </button>
 
                               {/* Send Request */}
@@ -495,10 +548,10 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                             </div>
                           )}
 
-                          {/* Action Buttons for Empty Legs - Directly Bookable */}
+                          {/* Action Buttons for Empty Legs - Add to Cart only */}
                           <div className="col-span-2 md:col-span-4 mt-4 pt-4 border-t border-gray-200">
                             <div className="flex flex-col sm:flex-row gap-2">
-                              {/* Add to Cart */}
+                              {/* Add to Cart - Only button for empty legs */}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -508,34 +561,6 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                               >
                                 <ShoppingCart size={16} />
                                 Add to Cart
-                              </button>
-
-                              {/* Pay with Crypto - Only show when price is available */}
-                              {(item.price_usd || item.price) && (item.price_usd > 0 || item.price > 0) ? (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onPayCrypto && onPayCrypto(item);
-                                  }}
-                                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white/50 hover:bg-white/70 text-gray-700 rounded-lg font-medium transition-all text-sm border border-gray-200/50 hover:border-gray-300/50"
-                                  style={{ backdropFilter: 'blur(8px)' }}
-                                >
-                                  <Wallet size={16} />
-                                  Pay with Crypto
-                                </button>
-                              ) : null}
-
-                              {/* Send Request */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onBookNow && onBookNow(item);
-                                }}
-                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white/50 hover:bg-white/70 text-gray-700 rounded-lg font-medium transition-colors text-sm border border-gray-200/50 hover:border-gray-300/50"
-                                style={{ backdropFilter: 'blur(8px)' }}
-                              >
-                                <CreditCard size={16} />
-                                Send Request
                               </button>
                             </div>
                           </div>
@@ -634,18 +659,6 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
 
                       {item.type === 'luxury_cars' && (
                         <>
-                          {/* Large image */}
-                          {(item.primaryImage || item.image_url || item.image_url_1) && (
-                            <div className="col-span-2 md:col-span-4 mb-3">
-                              <img
-                                src={item.primaryImage || item.image_url || item.image_url_1}
-                                alt={`${item.brand} ${item.model}`}
-                                className="w-full h-48 object-cover rounded-lg"
-                                onError={(e) => { e.target.style.display = 'none'; }}
-                              />
-                            </div>
-                          )}
-
                           {/* Vehicle specs */}
                           <div>
                             <p className="text-xs text-gray-500">Make & Model</p>
@@ -1036,6 +1049,115 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                               <p className="text-[10px] text-gray-400">Price per bottle</p>
                               <p className="text-sm font-semibold text-gray-900">
                                 {item.priceRange || (item.typicalPrice || item.typical_price_eur || item.price ? `€${(item.typicalPrice || item.typical_price_eur || item.price).toLocaleString()}` : 'On request')}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAddToCart && onAddToCart(item);
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-colors border border-gray-200"
+                              >
+                                <ShoppingCart size={12} />
+                                Add
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onBookNow && onBookNow(item);
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-xs font-medium transition-colors"
+                              >
+                                <CreditCard size={12} />
+                                Request
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {/* DELICATESSE - Expanded Details */}
+                      {item.type === 'delicatesse' && (
+                        <>
+                          {/* Compact delicatesse info grid */}
+                          <div className="col-span-2 md:col-span-4">
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-gray-600">
+                              {item.category && <span><span className="text-gray-400">Category:</span> <span className="capitalize">{item.category}</span></span>}
+                              {item.preparationTime && <span><span className="text-gray-400">Lead time:</span> {item.preparationTime}</span>}
+                            </div>
+                            {item.description && (
+                              <p className="mt-2 text-[11px] text-gray-600 leading-relaxed">{item.description}</p>
+                            )}
+                            {item.notes && (
+                              <p className="mt-1 text-[10px] text-gray-500 italic">{item.notes}</p>
+                            )}
+                          </div>
+
+                          {/* Price & Actions */}
+                          <div className="col-span-2 md:col-span-4 mt-3 flex items-center justify-between gap-4">
+                            <div>
+                              <p className="text-[10px] text-gray-400">Price</p>
+                              <p className="text-sm font-semibold text-gray-900">
+                                {item.priceDisplay || (item.price ? `$${item.price.toLocaleString()}` : 'On request')}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAddToCart && onAddToCart(item);
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-colors border border-gray-200"
+                              >
+                                <ShoppingCart size={12} />
+                                Add
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onBookNow && onBookNow(item);
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-xs font-medium transition-colors"
+                              >
+                                <CreditCard size={12} />
+                                Request
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {/* CIGARS - Expanded Details */}
+                      {item.type === 'cigars' && (
+                        <>
+                          {/* Compact cigar info grid */}
+                          <div className="col-span-2 md:col-span-4">
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-gray-600">
+                              {item.brand && <span><span className="text-gray-400">Brand:</span> {item.brand}</span>}
+                              {item.origin && <span><span className="text-gray-400">Origin:</span> {item.origin}</span>}
+                              {item.strength && <span><span className="text-gray-400">Strength:</span> {item.strength}</span>}
+                              {item.ring_gauge && <span><span className="text-gray-400">Ring:</span> {item.ring_gauge}</span>}
+                              {item.length && <span><span className="text-gray-400">Length:</span> {item.length}</span>}
+                            </div>
+                            {item.flavor_profile && (
+                              <p className="mt-2 text-[11px] text-gray-600"><span className="text-gray-400">Flavor:</span> {item.flavor_profile}</p>
+                            )}
+                            {item.description && (
+                              <p className="mt-1 text-[11px] text-gray-600 leading-relaxed">{item.description}</p>
+                            )}
+                            {/* Cleaning fee warning */}
+                            <div className="mt-2 px-2 py-1.5 bg-amber-50 border border-amber-200 rounded text-[10px] text-amber-700">
+                              ⚠️ $2,000 aircraft cleaning fee applies for cigar smoking
+                            </div>
+                          </div>
+
+                          {/* Price & Actions */}
+                          <div className="col-span-2 md:col-span-4 mt-3 flex items-center justify-between gap-4">
+                            <div>
+                              <p className="text-[10px] text-gray-400">Price per stick</p>
+                              <p className="text-sm font-semibold text-gray-900">
+                                {item.priceDisplay || (item.price ? `$${item.price}` : 'On request')}
                               </p>
                             </div>
                             <div className="flex gap-2">

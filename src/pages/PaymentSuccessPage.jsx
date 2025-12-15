@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
-import { Check, Sparkles, ArrowRight, Download, Home, CreditCard, Loader2 } from 'lucide-react';
+import { Check, Sparkles, ArrowRight, Download, Home, CreditCard, Loader2, FileText } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import confetti from 'canvas-confetti';
+import { generateBookingConfirmationPDF, downloadPDF, savePDFToStorage } from '../services/pdfGeneratorService';
 
 const PaymentSuccessPage = () => {
   const [searchParams] = useSearchParams();
@@ -10,6 +11,10 @@ const PaymentSuccessPage = () => {
   const bookingId = searchParams.get('booking_id');
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pdfGenerated, setPdfGenerated] = useState(false);
+  const [pdfBlob, setPdfBlob] = useState(null);
+  const [pdfFilename, setPdfFilename] = useState(null);
+  const [generatingPDF, setGeneratingPDF] = useState(false);
 
   useEffect(() => {
     // Trigger confetti animation
@@ -62,11 +67,46 @@ const PaymentSuccessPage = () => {
 
       if (!error && data) {
         setBooking(data);
+        // Auto-generate PDF confirmation
+        generateAndSavePDF(data);
       }
     } catch (error) {
       console.error('Error loading booking:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Generate PDF and save to storage
+  const generateAndSavePDF = async (bookingData) => {
+    if (pdfGenerated || !bookingData) return;
+
+    setGeneratingPDF(true);
+    try {
+      const { blob, filename } = await generateBookingConfirmationPDF(bookingData);
+      setPdfBlob(blob);
+      setPdfFilename(filename);
+      setPdfGenerated(true);
+
+      // Save to Supabase storage
+      try {
+        await savePDFToStorage(blob, filename, 'booking', bookingData.id);
+        console.log('PDF saved to storage successfully');
+      } catch (storageError) {
+        console.warn('Could not save PDF to storage:', storageError);
+        // PDF still available for download even if storage fails
+      }
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    } finally {
+      setGeneratingPDF(false);
+    }
+  };
+
+  // Handle PDF download
+  const handleDownloadPDF = () => {
+    if (pdfBlob && pdfFilename) {
+      downloadPDF(pdfBlob, pdfFilename);
     }
   };
 
@@ -163,6 +203,22 @@ const PaymentSuccessPage = () => {
 
             {/* Action Buttons */}
             <div className="space-y-3">
+              {/* Download PDF Button */}
+              {pdfGenerated && pdfBlob ? (
+                <button
+                  onClick={handleDownloadPDF}
+                  className="w-full py-3 px-6 bg-gradient-to-r from-gray-700 to-gray-800 text-white font-semibold rounded-xl flex items-center justify-center gap-2 hover:from-gray-600 hover:to-gray-700 transition-all border border-gray-600"
+                >
+                  <FileText className="w-5 h-5" />
+                  Download Confirmation PDF
+                </button>
+              ) : generatingPDF ? (
+                <div className="w-full py-3 px-6 bg-gray-700/50 text-white/60 font-semibold rounded-xl flex items-center justify-center gap-2 border border-gray-600/50">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Generating PDF...
+                </div>
+              ) : null}
+
               <Link
                 to="/?category=bookings"
                 className="w-full py-3 px-6 bg-white text-gray-900 font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors"

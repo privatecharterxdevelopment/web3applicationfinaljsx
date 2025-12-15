@@ -393,6 +393,60 @@ export const aiToolDefinitions = [
     }
   },
   {
+    name: "searchDelicatesse",
+    description: "MANDATORY: Search delicatesse database for luxury in-flight extras. You MUST use this tool when user says: 'delicacies', 'delicatesse', 'extras', 'caviar', 'cigars', 'flowers', 'cake', 'decorations', 'photography', 'in-flight extras', 'special treats', or any luxury item. Database contains: Caviar (Sevruga, Oscietra, Beluga), Premium Cigars (Cohiba, Montecristo, Davidoff, Padron, Arturo Fuente), Flowers, Cakes & Desserts, Event Decorations, Photography & Video, Aircraft Services.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "The item name to search. ALWAYS extract and pass this when user mentions a specific item. User says 'Beluga caviar' → query='Beluga'. User says 'Cohiba cigars' → query='Cohiba'."
+        },
+        category: {
+          type: "string",
+          enum: ["Caviar", "Premium Cigars", "Flowers", "Cakes & Desserts", "Event Decorations", "Photography & Video", "Special Services", "Aircraft Services"],
+          description: "Category filter. Use when user asks for a category: 'caviar' → category='Caviar', 'cigars' → category='Premium Cigars', 'flowers' → category='Flowers', 'cake' → category='Cakes & Desserts', 'decorations' → category='Event Decorations', 'photography' → category='Photography & Video'."
+        },
+        priceMin: {
+          type: "number",
+          description: "Minimum price in USD"
+        },
+        priceMax: {
+          type: "number",
+          description: "Maximum price in USD"
+        }
+      },
+      required: []
+    }
+  },
+  {
+    name: "searchCigars",
+    description: "Search premium cigars database specifically. Use when user mentions cigars, Cohiba, Montecristo, Davidoff, Padron, Arturo Fuente, Romeo y Julieta, Partagas. ALWAYS mention the $2,000 aircraft cleaning fee when showing cigar results.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "The cigar brand or name to search. User says 'Cohiba' → query='Cohiba'."
+        },
+        brand: {
+          type: "string",
+          enum: ["Cohiba", "Montecristo", "Padron", "Davidoff", "Arturo Fuente", "Romeo y Julieta", "Partagas"],
+          description: "Filter by brand name"
+        },
+        priceMin: {
+          type: "number",
+          description: "Minimum price in USD"
+        },
+        priceMax: {
+          type: "number",
+          description: "Maximum price in USD"
+        }
+      },
+      required: []
+    }
+  },
+  {
     name: "searchWineGlobal",
     description: "ONLY use AFTER searchWines returns 0 results AND user confirms they want global sourcing. Do NOT use this tool without first trying searchWines. Searches wine merchants globally.",
     input_schema: {
@@ -622,6 +676,12 @@ export async function executeTool(toolName, input) {
       case 'searchWines':
         return await searchWines(input);
 
+      case 'searchDelicatesse':
+        return await searchDelicatesse(input);
+
+      case 'searchCigars':
+        return await searchCigars(input);
+
       case 'searchWineGlobal':
         return await searchWineGlobal(input);
 
@@ -709,6 +769,21 @@ function checkSanctionedLocation(location) {
  */
 export async function searchEmptyLegs(params) {
   console.log('🔍 searchEmptyLegs called with:', params);
+
+  // IMPORTANT: Require at least one location filter to prevent fetching all 890+ empty legs
+  const hasLocationFilter = params.from || params.to || params.location || params.country;
+
+  if (!hasLocationFilter) {
+    console.log('⚠️ No location filter provided - asking user for route');
+    return {
+      success: true,
+      results: [],
+      total: 0,
+      params,
+      needsRoute: true,
+      message: "Empty leg flights offer 30-85% savings! To find the best options, please tell me your departure city and destination. For example: 'Empty legs from London to Nice' or 'Zurich to Milan'"
+    };
+  }
 
   // Check for sanctioned/limited locations
   const fromCheck = checkSanctionedLocation(params.from);
@@ -840,11 +915,19 @@ export async function searchEmptyLegs(params) {
     };
   }
 
+  // Limit results to max 15 to avoid overwhelming the UI
+  const limitedResults = emptyLegs.slice(0, 15);
+
   return {
     success: true,
-    results: emptyLegs,
+    results: limitedResults,
     total: emptyLegs.length,
-    params
+    showing: limitedResults.length,
+    params,
+    hasMore: emptyLegs.length > 15,
+    message: emptyLegs.length > 15
+      ? `Found ${emptyLegs.length} empty legs matching your criteria. Showing the top ${limitedResults.length} options.`
+      : undefined
   };
 }
 
@@ -3246,6 +3329,250 @@ export async function searchWines(params) {
 
   } catch (error) {
     console.error('Wine search error:', error);
+    return {
+      success: false,
+      error: error.message,
+      results: []
+    };
+  }
+}
+
+// ============================================
+// DELICATESSE & EXTRAS SEARCH
+// ============================================
+
+/**
+ * Search for delicatesse items (luxury in-flight extras)
+ * Tables: delicatesse, premium_cigars
+ * @param {Object} params - Search parameters
+ * @returns {Promise<Object>} - Delicatesse search results
+ */
+export async function searchDelicatesse(params) {
+  console.log('🍾🍾🍾 searchDelicatesse CALLED with params:', JSON.stringify(params));
+
+  const {
+    query,           // Item name search (e.g., "Beluga", "Cohiba")
+    category,        // Caviar, Premium Cigars, Flowers, etc.
+    priceMin,
+    priceMax
+  } = params;
+
+  try {
+    // Build Supabase query for delicatesse table
+    let supabaseQuery = supabase
+      .from('delicatesse')
+      .select('*')
+      .eq('is_active', true);
+
+    // QUERY - search by item name
+    if (query) {
+      supabaseQuery = supabaseQuery.ilike('name', `%${query}%`);
+    }
+
+    // CATEGORY filter
+    if (category) {
+      supabaseQuery = supabaseQuery.ilike('category', `%${category}%`);
+    }
+
+    // PRICE filters
+    if (priceMin) {
+      supabaseQuery = supabaseQuery.gte('price_usd', priceMin);
+    }
+    if (priceMax) {
+      supabaseQuery = supabaseQuery.lte('price_usd', priceMax);
+    }
+
+    // Execute query
+    const { data: items, error } = await supabaseQuery
+      .order('sort_order', { ascending: true })
+      .order('price_usd', { ascending: true })
+      .limit(20);
+
+    if (error) {
+      console.error('Delicatesse search error:', error);
+      return {
+        success: false,
+        error: 'Failed to search delicatesse: ' + error.message,
+        results: []
+      };
+    }
+
+    // Format results for display
+    const formattedItems = (items || []).map(item => ({
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      type: 'delicatesse', // For SearchResults to recognize
+      category: item.category,
+      // Price display
+      price: item.price_usd || 0,
+      unitPrice: item.price_usd || 0,
+      basePrice: item.price_usd || 0,
+      cartPrice: item.price_usd,
+      priceDisplay: item.price_usd ? `$${item.price_usd.toLocaleString()}` : 'Price on request',
+      currency: 'USD',
+      // Image
+      image: item.image_url,
+      image_url: item.image_url,
+      // Additional details
+      preparationTime: item.preparation_time,
+      notes: item.notes,
+      // Format for display
+      displayTitle: item.name,
+      displaySubtitle: item.description
+    }));
+
+    console.log(`🍾 Found ${formattedItems.length} delicatesse items`);
+
+    // Get category counts for summary
+    const categoryCounts = {};
+    formattedItems.forEach(item => {
+      categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1;
+    });
+
+    return {
+      success: true,
+      results: formattedItems,
+      total: formattedItems.length,
+      params,
+      categorySummary: categoryCounts,
+      displayType: 'delicatesse',
+      message: formattedItems.length > 0
+        ? `Found ${formattedItems.length} luxury extras for your flight`
+        : 'No items found matching your criteria.',
+      orderingNote: 'Most items require 24-48 hours advance notice for aircraft delivery.',
+      cartIntegration: {
+        type: 'custom_extra',
+        category: 'delicatesse',
+        priceField: 'price_usd'
+      }
+    };
+
+  } catch (error) {
+    console.error('Delicatesse search error:', error);
+    return {
+      success: false,
+      error: error.message,
+      results: []
+    };
+  }
+}
+
+/**
+ * Search for premium cigars specifically
+ * Table: premium_cigars
+ * @param {Object} params - Search parameters
+ * @returns {Promise<Object>} - Cigars search results
+ */
+export async function searchCigars(params) {
+  console.log('🚬🚬🚬 searchCigars CALLED with params:', JSON.stringify(params));
+
+  const {
+    query,           // Cigar name search
+    brand,           // Cohiba, Montecristo, etc.
+    priceMin,
+    priceMax
+  } = params;
+
+  try {
+    // Build Supabase query for premium_cigars table
+    let supabaseQuery = supabase
+      .from('premium_cigars')
+      .select('*')
+      .eq('is_active', true);
+
+    // QUERY - search by cigar name
+    if (query) {
+      supabaseQuery = supabaseQuery.or(`name.ilike.%${query}%,brand.ilike.%${query}%`);
+    }
+
+    // BRAND filter
+    if (brand) {
+      supabaseQuery = supabaseQuery.ilike('brand', `%${brand}%`);
+    }
+
+    // PRICE filters
+    if (priceMin) {
+      supabaseQuery = supabaseQuery.gte('price_per_stick_usd', priceMin);
+    }
+    if (priceMax) {
+      supabaseQuery = supabaseQuery.lte('price_per_stick_usd', priceMax);
+    }
+
+    // Execute query
+    const { data: cigars, error } = await supabaseQuery
+      .order('brand', { ascending: true })
+      .order('price_per_stick_usd', { ascending: true })
+      .limit(20);
+
+    if (error) {
+      console.error('Cigars search error:', error);
+      return {
+        success: false,
+        error: 'Failed to search cigars: ' + error.message,
+        results: []
+      };
+    }
+
+    // Format results for display
+    const formattedCigars = (cigars || []).map(cigar => ({
+      id: cigar.id,
+      name: cigar.name,
+      brand: cigar.brand,
+      description: cigar.description,
+      type: 'cigars', // For SearchResults to recognize
+      category: 'Premium Cigars',
+      // Price display
+      price: cigar.price_per_stick_usd || 0,
+      unitPrice: cigar.price_per_stick_usd || 0,
+      basePrice: cigar.price_per_stick_usd || 0,
+      cartPrice: cigar.price_per_stick_usd,
+      priceDisplay: cigar.price_per_stick_usd ? `$${cigar.price_per_stick_usd}/stick` : 'Price on request',
+      currency: 'USD',
+      // Image
+      image: cigar.image_url,
+      image_url: cigar.image_url,
+      // Additional details
+      origin: cigar.origin,
+      strength: cigar.strength,
+      flavor_profile: cigar.flavor_profile,
+      ring_gauge: cigar.ring_gauge,
+      length: cigar.length,
+      // Format for display
+      displayTitle: `${cigar.brand} ${cigar.name}`,
+      displaySubtitle: `${cigar.origin || ''} · ${cigar.strength || ''} · ${cigar.flavor_profile || ''}`.replace(/^\s*·\s*|\s*·\s*$/g, '').replace(/·\s*·/g, '·')
+    }));
+
+    console.log(`🚬 Found ${formattedCigars.length} cigars`);
+
+    // Get brand counts for summary
+    const brandCounts = {};
+    formattedCigars.forEach(cigar => {
+      brandCounts[cigar.brand] = (brandCounts[cigar.brand] || 0) + 1;
+    });
+
+    return {
+      success: true,
+      results: formattedCigars,
+      total: formattedCigars.length,
+      params,
+      brandSummary: brandCounts,
+      displayType: 'cigars',
+      message: formattedCigars.length > 0
+        ? `Found ${formattedCigars.length} premium cigars`
+        : 'No cigars found matching your criteria.',
+      // CRITICAL: Always show this warning
+      cleaningFeeWarning: '⚠️ A $2,000 aircraft cleaning fee applies for cigar smoking on board.',
+      orderingNote: 'All cigars maintained at optimal 65-70% humidity. Order 24 hours before flight.',
+      cartIntegration: {
+        type: 'custom_extra',
+        category: 'cigars',
+        priceField: 'price_per_stick_usd'
+      }
+    };
+
+  } catch (error) {
+    console.error('Cigars search error:', error);
     return {
       success: false,
       error: error.message,

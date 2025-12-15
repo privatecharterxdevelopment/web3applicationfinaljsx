@@ -105,7 +105,7 @@ const CryptoPaymentModal = ({ isOpen, onClose, service, serviceType, onSuccess }
   };
 
   const getServicePrice = () => {
-    // Use price_with_vat (total) if available, otherwise calculate from base price
+    // Get the final price (with VAT) - this is what will be charged
     if (service?.price_with_vat && service.price_with_vat > 0) {
       return service.price_with_vat;
     }
@@ -115,13 +115,32 @@ const CryptoPaymentModal = ({ isOpen, onClose, service, serviceType, onSuccess }
     if (service?.total_price && service.total_price > 0) {
       return service.total_price;
     }
-    // Fallback to base price + calculated fees
+    // Fallback to base price + VAT only (no platform fee)
     const basePrice = service?.price || service?.price_usd || service?.discounted_price || service?.base_price || 0;
-    // Add platform fee (2.5%) and VAT (8.1%) if not already included
-    if (service?.price_with_vat || service?.totalWithFee) {
-      return basePrice; // Already has fees
+    return Math.round(basePrice * 1.081); // Add VAT only (no platform fee)
+  };
+
+  // Get the base price (before VAT) for display
+  const getBasePrice = () => {
+    // If we have explicit base price, use it
+    if (service?.base_price && service.base_price > 0) {
+      return service.base_price;
     }
-    return Math.round(basePrice * 1.106); // Add platform fee + VAT
+    if (service?.price_usd && service.price_usd > 0) {
+      return service.price_usd;
+    }
+    if (service?.price && service.price > 0) {
+      return service.price;
+    }
+    // Otherwise calculate from total by reversing VAT
+    const totalPrice = getServicePrice();
+    return Math.round(totalPrice / 1.081);
+  };
+
+  // Calculate VAT amount (8.1%)
+  const getVatAmount = () => {
+    const basePrice = getBasePrice();
+    return Math.round(basePrice * 0.081);
   };
 
   const getServiceCurrency = () => {
@@ -197,6 +216,18 @@ const CryptoPaymentModal = ({ isOpen, onClose, service, serviceType, onSuccess }
         throw new Error('Missing Supabase configuration. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local');
       }
 
+      // Calculate the final price to send - use pre-calculated totalWithFee if available
+      // VAT only (8.1%), no platform fee
+      const finalPriceUSD = service?.totalWithFee || service?.price_with_vat || service?.total_price ||
+        Math.round((service?.price_usd || service?.price || 0) * 1.081);
+
+      console.log('=== SENDING TO COINGATE ===');
+      console.log('service.totalWithFee:', service?.totalWithFee);
+      console.log('service.price_usd:', service?.price_usd);
+      console.log('service.price:', service?.price);
+      console.log('Final price to send (USD):', finalPriceUSD);
+      console.log('===========================');
+
       const response = await fetch(
         `${supabaseUrl}/functions/v1/create-coingate-payment`,
         {
@@ -211,7 +242,18 @@ const CryptoPaymentModal = ({ isOpen, onClose, service, serviceType, onSuccess }
             userId: user?.id,
             email: paymentEmail,
             walletAddress,
-            contactName: user?.first_name ? `${user.first_name} ${user.last_name || ''}` : null
+            contactName: user?.first_name ? `${user.first_name} ${user.last_name || ''}` : null,
+            // Pass the pre-calculated USD price with fees
+            priceUSD: finalPriceUSD,
+            currency: 'USD',
+            // Pass service details for the booking record - build title from route data
+            serviceTitle: service?.title || service?.name || (() => {
+              const from = service?.from_iata || service?.from_city || service?.origin || service?.departure_airport || service?.from;
+              const to = service?.to_iata || service?.to_city || service?.destination || service?.arrival_airport || service?.to;
+              return (from && to) ? `${from} → ${to}` : 'Private Charter';
+            })(),
+            serviceDescription: service?.description || `${service?.aircraft_type || service?.aircraft || 'Private'} flight`,
+            serviceImageUrl: service?.imageUrl || service?.image_url
           })
         }
       );
@@ -299,10 +341,23 @@ const CryptoPaymentModal = ({ isOpen, onClose, service, serviceType, onSuccess }
                 </div>
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">Opening CoinGate...</h3>
-              <p className="text-gray-500 text-sm">Preparing your crypto payment</p>
-              <p className="text-xl font-bold text-black mt-4">
-                {formatPrice(displayPrice, displayCurrency)}
-              </p>
+              <p className="text-gray-500 text-sm mb-4">Preparing your crypto payment</p>
+
+              {/* Price Breakdown */}
+              <div className="bg-gray-50 rounded-xl p-4 text-left space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Base Price</span>
+                  <span className="text-gray-900 font-medium">{formatPrice(getBasePrice(), displayCurrency)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">VAT (8.1%)</span>
+                  <span className="text-gray-900 font-medium">{formatPrice(getVatAmount(), displayCurrency)}</span>
+                </div>
+                <div className="border-t border-gray-200 pt-2 flex justify-between">
+                  <span className="text-gray-900 font-semibold">Total</span>
+                  <span className="text-black font-bold">{formatPrice(displayPrice, displayCurrency)}</span>
+                </div>
+              </div>
             </div>
           )}
 

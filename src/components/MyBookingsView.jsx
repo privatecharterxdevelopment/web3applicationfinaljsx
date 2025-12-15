@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import {
   Plane, Mountain, Leaf, Clock, Check, X, ChevronRight, Search,
   Wallet, ExternalLink, Copy, CheckCircle, Calendar, Users, MapPin,
-  Receipt, Bitcoin, Sparkles, ArrowLeft, ChevronDown, Building2, Star, Bed
+  Receipt, Bitcoin, Sparkles, ArrowLeft, ChevronDown, Building2, Star, Bed,
+  FileText, Download, Loader2
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { formatDistanceToNow, format } from 'date-fns';
+import { generateBookingConfirmationPDF, downloadPDF } from '../services/pdfGeneratorService';
 
 const MyBookingsView = ({ user, onBack }) => {
   const [bookings, setBookings] = useState([]);
@@ -14,6 +16,21 @@ const MyBookingsView = ({ user, onBack }) => {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [copiedHash, setCopiedHash] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
+  const [generatingPDF, setGeneratingPDF] = useState(null); // Track which booking's PDF is generating
+
+  // Handle PDF download for a booking
+  const handleDownloadPDF = async (booking, e) => {
+    if (e) e.stopPropagation();
+    setGeneratingPDF(booking.id);
+    try {
+      const { blob, filename } = await generateBookingConfirmationPDF(booking);
+      downloadPDF(blob, filename);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    } finally {
+      setGeneratingPDF(null);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -518,6 +535,19 @@ const MyBookingsView = ({ user, onBack }) => {
                             </a>
                           )
                         )}
+                        {/* Download PDF Button */}
+                        <button
+                          onClick={(e) => handleDownloadPDF(booking, e)}
+                          disabled={generatingPDF === booking.id}
+                          className="px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                        >
+                          {generatingPDF === booking.id ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <FileText size={12} />
+                          )}
+                          PDF
+                        </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -776,6 +806,20 @@ const MyBookingsView = ({ user, onBack }) => {
                   </a>
                 )
               )}
+
+              {/* Download PDF Button */}
+              <button
+                onClick={() => handleDownloadPDF(selectedBooking)}
+                disabled={generatingPDF === selectedBooking?.id}
+                className="w-full py-3 bg-gray-100 text-gray-700 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors disabled:opacity-50"
+              >
+                {generatingPDF === selectedBooking?.id ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <FileText size={16} />
+                )}
+                Download Confirmation PDF
+              </button>
 
               {/* Timestamp */}
               <p className="text-[10px] text-gray-400 text-center pt-2">

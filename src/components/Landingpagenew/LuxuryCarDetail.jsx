@@ -11,6 +11,7 @@ import SuccessNotification from '../SuccessNotification';
 import { useNFT } from '../../context/NFTContext';
 import NFTBenefitsModal from '../NFTBenefitsModal';
 import { convertToUSD, initializeExchangeRates } from '../../services/currencyService';
+import { generateRequestConfirmationPDF, downloadPDF, savePDFToStorage } from '../../services/pdfGeneratorService';
 
 const LuxuryCarDetail = () => {
   const { id } = useParams();
@@ -150,13 +151,71 @@ const LuxuryCarDetail = () => {
 
       if (dbError) throw dbError;
 
-      // Trigger email notification via edge function
+      // Generate PDF confirmation
       try {
-        await supabase.functions.invoke('user-request-notifications', {
-          body: { record: { id: insertedData.id } }
-        });
-      } catch (emailError) {
-        console.error('Email notification error (non-blocking):', emailError);
+        const pdfRequest = {
+          id: insertedData.id,
+          type: 'luxury_car',
+          created_at: insertedData.created_at,
+          status: 'pending',
+          user: {
+            name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Valued Client',
+            email: user.email
+          },
+          details: {
+            from: car.location,
+            to: car.location,
+            date: pickupDate,
+            time: pickupTime,
+            service_type: `${car.brand} ${car.model} Luxury Car Rental`,
+            notes: `${rentalDays} ${rentalDuration}(s) rental`,
+            price: discountedPrice,
+            currency: 'USD',
+            duration: `${rentalDays} ${rentalDuration}(s)`,
+            vehicle: `${car.brand} ${car.model}`,
+            category: car.category,
+            pickup_date: pickupDate,
+            pickup_time: pickupTime,
+            dropoff_date: dropoffDate,
+            dropoff_time: dropoffTime
+          }
+        };
+
+        const { blob, filename, base64 } = await generateRequestConfirmationPDF(pdfRequest);
+
+        // Save PDF to storage
+        await savePDFToStorage(blob, filename, 'luxury_car', insertedData.id);
+
+        // Download PDF for user
+        downloadPDF(blob, filename);
+
+        // Send email with PDF attachment
+        try {
+          await supabase.functions.invoke('send-request-email', {
+            body: {
+              to: user.email,
+              requestData: pdfRequest,
+              pdfBase64: base64,
+              pdfFilename: filename
+            }
+          });
+        } catch (emailError) {
+          console.error('Email with PDF error, trying fallback:', emailError);
+          // Fallback to basic notification
+          await supabase.functions.invoke('user-request-notifications', {
+            body: { record: { id: insertedData.id } }
+          });
+        }
+      } catch (pdfError) {
+        console.error('PDF generation error (non-blocking):', pdfError);
+        // Fallback to basic notification
+        try {
+          await supabase.functions.invoke('user-request-notifications', {
+            body: { record: { id: insertedData.id } }
+          });
+        } catch (emailError) {
+          console.error('Email notification error (non-blocking):', emailError);
+        }
       }
 
       // Track benefit usage

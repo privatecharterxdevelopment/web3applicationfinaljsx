@@ -1,23 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { Car, Plane, FileText, Clock, Check, X, ChevronRight, Search, Filter, AlertTriangle } from 'lucide-react';
+import { Car, Plane, FileText, Clock, Check, X, ChevronRight, Search, Filter, AlertTriangle, Download, Loader2 } from 'lucide-react';
 import { getUserRequests } from '../services/requests';
 import { formatDistanceToNow } from 'date-fns';
 import ReviewDisputeModal from './modals/ReviewDisputeModal';
+import { generateRequestConfirmationPDF, downloadPDF } from '../services/pdfGeneratorService';
 
 // Helper component to render price breakdown
 const PriceBreakdown = ({ data, colorClass = 'from-gray-800 to-black', textClass = 'text-gray-300' }) => {
-  const basePrice = data.base_price;
-  const platformFee = data.platform_fee;
+  // Get base price from various possible fields
+  const basePrice = Number(data.base_price) || Number(data.price) || 0;
+  const platformFee = Number(data.platform_fee) || 0;
   const platformFeePercent = data.platform_fee_percent || 2.5;
-  const vatAmount = data.vat_amount;
+  const vatAmount = Number(data.vat_amount) || 0;
   const vatPercent = data.vat_percent || 8.1;
-  const totalPrice = data.total_price;
+  const totalPrice = Number(data.total_price) || Number(data.total) || 0;
   const currency = data.currency || 'USD';
 
-  // If no breakdown available, show simple price
-  if (!basePrice && !totalPrice) {
+  // Check if all values are invalid/NaN
+  const hasValidPrice = !isNaN(basePrice) && basePrice > 0;
+  const hasValidTotal = !isNaN(totalPrice) && totalPrice > 0;
+
+  // If no breakdown available, show simple price or "Quote Pending"
+  if (!hasValidPrice && !hasValidTotal) {
     const simplePrice = data.price || data.priceRange || data.estimated_total;
-    if (!simplePrice) return null;
+    // If priceRange is a string like "$NaN" or invalid, don't show it
+    const isValidPrice = simplePrice && (
+      (typeof simplePrice === 'number' && !isNaN(simplePrice) && simplePrice > 0) ||
+      (typeof simplePrice === 'string' && !simplePrice.includes('NaN') && !simplePrice.includes('undefined') && !simplePrice.includes('null'))
+    );
+
+    if (!isValidPrice) {
+      // Show "Quote Pending" for requests without prices
+      return (
+        <div className={`p-3 bg-gradient-to-r ${colorClass} rounded-lg mb-3`}>
+          <div className="flex items-center justify-between">
+            <p className={`text-xs ${textClass}`}>Price</p>
+            <p className="text-base font-medium text-white/80">Quote Pending</p>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className={`p-3 bg-gradient-to-r ${colorClass} rounded-lg mb-3`}>
         <div className="flex items-center justify-between">
@@ -33,28 +55,28 @@ const PriceBreakdown = ({ data, colorClass = 'from-gray-800 to-black', textClass
   return (
     <div className={`p-3 bg-gradient-to-r ${colorClass} rounded-lg mb-3`}>
       {/* Base Price */}
-      {basePrice > 0 && (
+      {hasValidPrice && (
         <div className="flex items-center justify-between mb-1">
           <p className={`text-xs ${textClass}`}>Base Price</p>
           <p className="text-sm text-white">${basePrice.toLocaleString()}</p>
         </div>
       )}
       {/* Platform Fee */}
-      {platformFee > 0 && (
+      {platformFee > 0 && !isNaN(platformFee) && (
         <div className="flex items-center justify-between mb-1">
           <p className={`text-xs ${textClass}`}>Platform Fee ({platformFeePercent}%)</p>
           <p className="text-sm text-white">+${platformFee.toLocaleString()}</p>
         </div>
       )}
       {/* VAT */}
-      {vatAmount > 0 && (
+      {vatAmount > 0 && !isNaN(vatAmount) && (
         <div className="flex items-center justify-between mb-1">
           <p className={`text-xs ${textClass}`}>VAT ({vatPercent}% CH)</p>
           <p className="text-sm text-white">+${vatAmount.toLocaleString()}</p>
         </div>
       )}
       {/* Total */}
-      {totalPrice > 0 && (
+      {hasValidTotal && (
         <div className="flex items-center justify-between pt-2 border-t border-white/20">
           <p className="text-xs font-medium text-white">Total</p>
           <p className="text-base font-bold text-white">${totalPrice.toLocaleString()}</p>
@@ -71,6 +93,46 @@ const MyRequestsView = ({ user }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [generatingPDF, setGeneratingPDF] = useState(null);
+
+  // Handle PDF download for a request
+  const handleDownloadPDF = async (request, e) => {
+    if (e) e.stopPropagation();
+    setGeneratingPDF(request.id);
+    try {
+      // Parse data if needed
+      let data = request.data;
+      if (typeof data === 'string') {
+        try { data = JSON.parse(data); } catch (e) { data = {}; }
+      }
+      data = data || {};
+
+      // Format request data for PDF generator
+      const pdfRequest = {
+        id: request.id,
+        type: request.type,
+        service_type: request.type,
+        created_at: request.created_at,
+        client_email: user?.email,
+        data: {
+          ...data,
+          name: data.name || data.title || data.items?.[0]?.name,
+          from: data.from_city || data.from || data.origin || data.items?.[0]?.from,
+          to: data.to_city || data.to || data.destination || data.items?.[0]?.to,
+          date: data.departure_date || data.date || data.items?.[0]?.date,
+          passengers: data.passengers || data.pax || data.items?.[0]?.passengers,
+          total: data.total || data.price || data.total_price || data.items?.[0]?.price,
+          cart_items: data.items || data.cart_items
+        }
+      };
+      const { blob, filename } = await generateRequestConfirmationPDF(pdfRequest);
+      downloadPDF(blob, filename);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    } finally {
+      setGeneratingPDF(null);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -164,9 +226,10 @@ const MyRequestsView = ({ user }) => {
     // Merge data from different sources (direct fields vs items array)
     const carName = data.carName || taxiItem.carName || taxiItem.name || taxiItem.title || 'Ground Transport';
     const carSeats = data.carSeats || taxiItem.carSeats || taxiItem.seats || taxiItem.capacity;
-    const carImage = data.carImage || taxiItem.carImage || taxiItem.image || taxiItem.image_url;
-    const from = data.from || taxiItem.from || taxiItem.pickupLocation || taxiItem.pickup;
-    const to = data.to || taxiItem.to || taxiItem.dropoffLocation || taxiItem.dropoff;
+    const carImage = data.carImage || taxiItem.carImage || taxiItem.image || taxiItem.image_url || taxiItem.primaryImage;
+    const from = data.from || taxiItem.from || taxiItem.pickup_location || taxiItem.pickupLocation || taxiItem.pickup || taxiItem.from_city;
+    const to = data.to || taxiItem.to || taxiItem.dropoff_location || taxiItem.dropoffLocation || taxiItem.dropoff || taxiItem.to_city;
+    const serviceType = data.service_type || taxiItem.service_type || taxiItem.category || data.category;
     const distance = data.distance || taxiItem.distance;
     const eta = data.eta || taxiItem.eta || taxiItem.duration;
     const pickupDate = data.pickupDate || taxiItem.pickupDate || taxiItem.date;
@@ -197,6 +260,7 @@ const MyRequestsView = ({ user }) => {
                   <h3 className="text-base font-semibold text-gray-800 truncate">{carName}</h3>
                 </div>
                 {carSeats && <p className="text-xs text-gray-600">{carSeats} seats</p>}
+                {serviceType && <p className="text-xs text-gray-500">{serviceType} category</p>}
               </div>
               <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border self-start whitespace-nowrap ${getStatusColor(request.status)}`}>
                 {getStatusIcon(request.status)}
@@ -293,9 +357,23 @@ const MyRequestsView = ({ user }) => {
               )}
             </div>
 
+            {/* Download PDF Button */}
+            <button
+              onClick={(e) => handleDownloadPDF(request, e)}
+              disabled={generatingPDF === request.id}
+              className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium disabled:opacity-50"
+            >
+              {generatingPDF === request.id ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Download size={16} />
+              )}
+              {generatingPDF === request.id ? 'Generating PDF...' : 'Download PDF'}
+            </button>
+
             {/* Dispute Button - Only show for completed rides */}
             {request.status === 'completed' && (
-              <div className="mt-4">
+              <div className="mt-3">
                 {!request.disputed ? (
                   <button
                     onClick={() => {
@@ -478,6 +556,20 @@ const MyRequestsView = ({ user }) => {
                 <p className="text-xs text-blue-800">{request.admin_notes}</p>
               </div>
             )}
+
+            {/* Download PDF Button */}
+            <button
+              onClick={(e) => handleDownloadPDF(request, e)}
+              disabled={generatingPDF === request.id}
+              className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium disabled:opacity-50"
+            >
+              {generatingPDF === request.id ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Download size={16} />
+              )}
+              {generatingPDF === request.id ? 'Generating PDF...' : 'Download PDF'}
+            </button>
           </div>
         </div>
       </div>
@@ -1893,6 +1985,20 @@ const MyRequestsView = ({ user }) => {
                 <p className="text-xs text-blue-800">{request.admin_notes}</p>
               </div>
             )}
+
+            {/* Download PDF Button */}
+            <button
+              onClick={(e) => handleDownloadPDF(request, e)}
+              disabled={generatingPDF === request.id}
+              className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium disabled:opacity-50"
+            >
+              {generatingPDF === request.id ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Download size={16} />
+              )}
+              {generatingPDF === request.id ? 'Generating PDF...' : 'Download PDF'}
+            </button>
           </div>
         </div>
       </div>
@@ -1990,6 +2096,20 @@ const MyRequestsView = ({ user }) => {
                 <p className="text-xs text-blue-800">{request.admin_notes}</p>
               </div>
             )}
+
+            {/* Download PDF Button */}
+            <button
+              onClick={(e) => handleDownloadPDF(request, e)}
+              disabled={generatingPDF === request.id}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium disabled:opacity-50"
+            >
+              {generatingPDF === request.id ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Download size={16} />
+              )}
+              {generatingPDF === request.id ? 'Generating PDF...' : 'Download PDF'}
+            </button>
           </div>
         </div>
       </div>

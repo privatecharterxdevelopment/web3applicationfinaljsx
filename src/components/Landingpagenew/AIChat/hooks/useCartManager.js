@@ -27,6 +27,36 @@ export function useCartManager({ userHasNFT, usedNFTBenefitThisYear, nftBenefitC
     });
   }, [state.cartItems, userHasNFT, usedNFTBenefitThisYear, nftBenefitChecker]);
 
+  // Check if item is cigar/smoking related
+  const isCigarOrSmokingItem = useCallback((item) => {
+    if (!item) return false;
+    const type = (item.type || '').toLowerCase();
+    const category = (item.category || '').toLowerCase();
+    const name = (item.name || '').toLowerCase();
+
+    return (
+      type === 'cigars' ||
+      category.includes('cigar') ||
+      category.includes('smoking') ||
+      name.includes('cigar') ||
+      name.includes('cohiba') ||
+      name.includes('montecristo') ||
+      name.includes('davidoff') ||
+      name.includes('partagas') ||
+      name.includes('romeo y julieta') ||
+      name.includes('padron') ||
+      name.includes('arturo fuente')
+    );
+  }, []);
+
+  // Check if cleaning fee already in cart
+  const hasCleaningFeeInCart = useCallback(() => {
+    return state.cartItems.some(item =>
+      item.isCleaningFee === true ||
+      item.id === 'aircraft-cleaning-fee-smoking'
+    );
+  }, [state.cartItems]);
+
   // Add item to cart
   const addItem = useCallback((item) => {
     if (!item) return;
@@ -56,8 +86,37 @@ export function useCartManager({ userHasNFT, usedNFTBenefitThisYear, nftBenefitC
 
       dispatch(cartActions.addItem(newItem));
       onToast?.({ message: `Added ${item.name || item.title || 'item'} to cart`, type: 'cart' });
+
+      // AUTO-ADD CLEANING FEE for cigars/smoking items
+      if (isCigarOrSmokingItem(item) && !hasCleaningFeeInCart()) {
+        const cleaningFeeItem = {
+          id: 'aircraft-cleaning-fee-smoking',
+          name: 'Aircraft Cleaning Fee (Smoking)',
+          description: 'Required deep cleaning for aircraft after cigar/smoking use',
+          type: 'service_fee',
+          category: 'Aircraft Services',
+          price: 2000,
+          basePrice: 2000,
+          unitPrice: 2000,
+          currency: 'USD',
+          quantity: 1,
+          isCleaningFee: true,
+          isRequired: true,
+          linkedTo: 'cigars',
+          cartId: `cart-cleaning-${Date.now()}`,
+          addedAt: new Date().toISOString(),
+          image_url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400',
+          note: 'Automatically added for cigar orders'
+        };
+
+        // Add cleaning fee after a short delay so toast messages don't overlap
+        setTimeout(() => {
+          dispatch(cartActions.addItem(cleaningFeeItem));
+          onToast?.({ message: 'Aircraft cleaning fee ($2,000) added for cigar order', type: 'info' });
+        }, 500);
+      }
     }
-  }, [state.cartItems, onToast]);
+  }, [state.cartItems, onToast, isCigarOrSmokingItem, hasCleaningFeeInCart]);
 
   // Remove item from cart
   const removeItem = useCallback((cartId) => {

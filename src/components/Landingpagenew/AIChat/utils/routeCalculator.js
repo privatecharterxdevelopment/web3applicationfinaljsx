@@ -214,3 +214,137 @@ export function kmToNm(km) {
 export function nmToKm(nm) {
   return nm * 1.852;
 }
+
+/**
+ * Overnight stay threshold in minutes (8 hours)
+ */
+export const OVERNIGHT_THRESHOLD = 480;
+
+/**
+ * Detect overnight stays in stops
+ * @param {Array} stops - Array of stops with stopDuration
+ * @param {number} threshold - Threshold in minutes (default 480 = 8 hours)
+ * @returns {Array} Array of stop indices that are overnight
+ */
+export function detectOvernightStays(stops, threshold = OVERNIGHT_THRESHOLD) {
+  if (!stops || !Array.isArray(stops)) return [];
+
+  return stops
+    .map((stop, index) => ({ ...stop, index }))
+    .filter(stop => (stop.stopDuration || 0) >= threshold)
+    .map(stop => stop.index);
+}
+
+/**
+ * Check if a journey has any overnight stays
+ * @param {Array} stops - Array of stops with stopDuration
+ * @param {number} threshold - Threshold in minutes
+ * @returns {boolean} True if journey has overnight stays
+ */
+export function hasOvernightStays(stops, threshold = OVERNIGHT_THRESHOLD) {
+  return detectOvernightStays(stops, threshold).length > 0;
+}
+
+/**
+ * Calculate leg arrival/departure times
+ * @param {Array} legs - Array of leg objects
+ * @param {Array} stops - Array of stops with durations
+ * @param {string} departureTime - Initial departure time (HH:MM format)
+ * @returns {Array} Legs with calculated times
+ */
+export function calculateLegTimes(legs, stops = [], departureTime = '09:00') {
+  if (!legs || legs.length === 0) return legs;
+
+  const [hours, minutes] = departureTime.split(':').map(Number);
+  let currentTime = new Date(2000, 0, 1, hours, minutes);
+
+  return legs.map((leg, index) => {
+    const departTime = new Date(currentTime);
+    const flightTimeMs = (leg.flightTime || 0) * 60 * 60 * 1000;
+    const arrivalTime = new Date(currentTime.getTime() + flightTimeMs);
+
+    const formattedDeparture = departTime.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+
+    const formattedArrival = arrivalTime.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+
+    // Get stop duration for this leg's destination (if not last leg)
+    const stop = stops[index];
+    const stopDuration = stop?.stopDuration || 0;
+
+    // Update current time for next leg (arrival + stop duration)
+    currentTime = new Date(arrivalTime.getTime() + stopDuration * 60 * 1000);
+
+    return {
+      ...leg,
+      departureTime: formattedDeparture,
+      arrivalTime: formattedArrival
+    };
+  });
+}
+
+/**
+ * Validate if a jet can complete all legs within its range
+ * @param {Object} jet - Jet object with range_km or range_nm
+ * @param {Array} legs - Array of legs with distance
+ * @param {number} safetyBuffer - Safety buffer multiplier (default 1.2 = 20% reserve)
+ * @returns {Object} { valid: boolean, invalidLegs: Array }
+ */
+export function validateJetRange(jet, legs, safetyBuffer = 1.2) {
+  if (!jet || !legs) return { valid: true, invalidLegs: [] };
+
+  // Get jet range in km (convert from nm if needed)
+  const rangeKm = jet.range_km || (jet.range_nm ? jet.range_nm * 1.852 : 5000);
+  const safeRangeKm = rangeKm / safetyBuffer;
+
+  const invalidLegs = legs
+    .map((leg, index) => ({
+      index,
+      distance: leg.distance,
+      exceeds: leg.distance > safeRangeKm
+    }))
+    .filter(leg => leg.exceeds);
+
+  return {
+    valid: invalidLegs.length === 0,
+    invalidLegs,
+    jetRangeKm: rangeKm,
+    safeRangeKm
+  };
+}
+
+/**
+ * Get suggested transfers for overnight stops
+ * @param {Array} legs - Array of legs
+ * @param {Array} stops - Array of stops
+ * @returns {Array} Array of transfer suggestions
+ */
+export function getSuggestedTransfers(legs, stops = []) {
+  if (!legs || legs.length === 0) return [];
+
+  const transfers = [];
+
+  // For each leg arrival, check if there's an overnight stop
+  legs.forEach((leg, index) => {
+    const stop = stops[index];
+    const isOvernight = stop && stop.stopDuration >= OVERNIGHT_THRESHOLD;
+
+    transfers.push({
+      airport: leg.toCode || leg.to,
+      city: leg.to,
+      isOvernight,
+      stopDuration: stop?.stopDuration || 0,
+      legIndex: index,
+      type: isOvernight ? 'overnight' : 'arrival'
+    });
+  });
+
+  return transfers;
+}

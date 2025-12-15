@@ -77,6 +77,7 @@ import { AppLoginModal, AppRegisterModal } from '../auth';
 import HotelBookingView from '../Hotels/HotelBookingView';
 import HotelsView from '../Hotels/HotelsView';
 import { convertToUSD, initializeExchangeRates } from '../../services/currencyService';
+import { generateSubscriptionConfirmationPDF, downloadPDF } from '../../services/pdfGeneratorService';
 
 // Settings Page Component
 const SettingsPage = ({ user, kycStatus, setKycStatus, setActiveCategory }) => {
@@ -1359,13 +1360,12 @@ const TokenizedAssetsGlassmorphic = () => {
     try {
       const rawData = selectedEmptyLeg.rawData || selectedEmptyLeg;
 
-      // Calculate price breakdown
-      const basePrice = selectedEmptyLeg.priceUSD || Math.round(convertToUSD(rawData.price || 0, 'GBP'));
-      const platformFeePercent = 2.5;
-      const platformFee = Math.round(basePrice * (platformFeePercent / 100));
+      // Calculate price breakdown - use price_usd directly from database
+      // VAT only (8.1%), no platform fee
+      const basePrice = selectedEmptyLeg.priceUSD || rawData.price_in_usd || rawData.price_usd || 0;
       const vatPercent = 8.1; // Swiss VAT
       const vatAmount = Math.round(basePrice * (vatPercent / 100));
-      const totalPrice = basePrice + platformFee + vatAmount;
+      const totalPrice = basePrice + vatAmount;
 
       console.log('🔥 SAVING EMPTY LEG REQUEST:', {
         userId: user.id,
@@ -1374,44 +1374,67 @@ const TokenizedAssetsGlassmorphic = () => {
         passengers: emptyLegPassengers,
         luggage: emptyLegLuggage,
         hasPet: emptyLegHasPet,
-        priceBreakdown: { basePrice, platformFee, vatAmount, totalPrice }
+        priceBreakdown: { basePrice, vatAmount, totalPrice }
       });
 
       // DIRECT INSERT - matching working EmptyLegModal.tsx pattern
+      // INCLUDES ALL FIELDS needed for MyRequestsView display
       const { error: dbError } = await supabase
         .from('user_requests')
         .insert([{
           user_id: user.id,
           type: 'empty_leg',
           status: 'pending',
+          client_email: user.email,
           data: {
+            source: 'empty_leg_checkout',
             empty_leg_id: rawData.id,
+            // Route info
             flight_route: `${rawData.from_city || rawData.from_iata} → ${rawData.to_city || rawData.to_iata}`,
             from_city: rawData.from_city,
             to_city: rawData.to_city,
+            from: rawData.from_city || rawData.from_iata,
+            to: rawData.to_city || rawData.to_iata,
             from_iata: rawData.from_iata,
             to_iata: rawData.to_iata,
+            // Date/Time
             departure_date: rawData.departure_date,
             departure_time: rawData.departure_time,
+            date: rawData.departure_date,
+            time: rawData.departure_time,
+            // Aircraft info
             aircraft_model: rawData.aircraft_model,
             aircraft_type: rawData.category || rawData.aircraft_type,
             aircraft: rawData.aircraft_model || rawData.category || rawData.aircraft_type,
             category: rawData.category,
             capacity: rawData.capacity || rawData.pax,
-            // Full price breakdown
+            available_seats: rawData.capacity || rawData.pax,
+            // Title/name for display
+            name: selectedEmptyLeg.name || `${rawData.from_city || rawData.from_iata} → ${rawData.to_city || rawData.to_iata}`,
+            title: `Empty Leg: ${rawData.from_city || rawData.from_iata} → ${rawData.to_city || rawData.to_iata}`,
+            // Price breakdown - VAT only, no platform fee
             base_price: basePrice,
-            platform_fee: platformFee,
-            platform_fee_percent: platformFeePercent,
+            price: basePrice,
+            price_usd: basePrice,
             vat_amount: vatAmount,
             vat_percent: vatPercent,
             total_price: totalPrice,
+            total: totalPrice,
             original_price_gbp: rawData.price, // Store original GBP for reference
+            original_price: basePrice,
             currency: 'USD',
+            priceRange: `$${totalPrice.toLocaleString()}`,
             // Booking details
             passengers: emptyLegPassengers,
+            pax: emptyLegPassengers,
             luggage: emptyLegLuggage,
             has_pet: emptyLegHasPet,
-            wallet_address: address && isConnected ? address : null
+            // Image for display in My Requests
+            image_url: rawData.image_url || rawData.aircraft_image || selectedEmptyLeg.primaryImage || selectedEmptyLeg.image,
+            primaryImage: rawData.image_url || rawData.aircraft_image || selectedEmptyLeg.primaryImage,
+            // Wallet info
+            wallet_address: address && isConnected ? address : null,
+            awaiting_payment: true
           }
         }]);
 
@@ -2507,6 +2530,8 @@ const TokenizedAssetsGlassmorphic = () => {
 
   // Subscription success state (for subpage)
   const [successSubscriptionTier, setSuccessSubscriptionTier] = useState('');
+  const [subscriptionPdfSent, setSubscriptionPdfSent] = useState(false);
+  const [subscriptionPdfGenerating, setSubscriptionPdfGenerating] = useState(false);
 
   // Check for dashboard tab from user menu navigation
   useEffect(() => {
@@ -2558,6 +2583,88 @@ const TokenizedAssetsGlassmorphic = () => {
       window.history.replaceState({}, document.title, cleanUrl);
     }
   }, []);
+
+  // Generate and send subscription PDF when success page is shown
+  useEffect(() => {
+    const generateAndSendSubscriptionPdf = async () => {
+      if (!successSubscriptionTier || !user?.id || subscriptionPdfSent || subscriptionPdfGenerating) return;
+
+      setSubscriptionPdfGenerating(true);
+
+      try {
+        // Get plan details
+        const planDetails = {
+          starter: { name: 'Starter', price: 20, features: ['5 AI Conversations/month', '50 messages per conversation', 'Break the Price feature', 'Email Support'] },
+          pro: { name: 'Professional', price: 40, features: ['20 AI Conversations/month', '100 messages per conversation', 'Break the Price feature', 'Priority Support', 'Dedicated Manager'] },
+          elite: { name: 'Elite', price: 130, features: ['Unlimited AI Conversations', 'Unlimited messages per chat', 'Unlimited Break the Price', '24/7 Concierge Service'] }
+        };
+
+        const plan = planDetails[successSubscriptionTier] || planDetails.starter;
+
+        // Create subscription data
+        const subscriptionData = {
+          id: `SUB-${Date.now()}`,
+          tier: successSubscriptionTier,
+          plan_name: plan.name,
+          price: plan.price,
+          currency: 'USD',
+          billing_period: 'monthly',
+          status: 'active',
+          start_date: new Date().toISOString(),
+          features: plan.features,
+          user: {
+            name: user?.name || user?.first_name || user?.email?.split('@')[0] || 'Valued Member',
+            email: user?.email
+          },
+          payment_method: 'card' // Stripe payments are always card
+        };
+
+        // Generate PDF
+        const pdfBlob = generateSubscriptionConfirmationPDF(subscriptionData);
+        const filename = `PrivateCharterX_Subscription_${subscriptionData.tier.toUpperCase()}_${new Date().toISOString().split('T')[0]}.pdf`;
+
+        // Auto-download PDF
+        downloadPDF(pdfBlob, filename);
+
+        // Send PDF via email using edge function
+        if (user?.email) {
+          try {
+            // Convert blob to base64
+            const reader = new FileReader();
+            reader.readAsDataURL(pdfBlob);
+            reader.onloadend = async () => {
+              const base64data = reader.result.split(',')[1];
+
+              await supabase.functions.invoke('send-subscription-email', {
+                body: {
+                  to: user.email,
+                  subject: `Welcome to PrivateCharterX ${plan.name} - Subscription Confirmation`,
+                  subscriptionData,
+                  pdfBase64: base64data,
+                  pdfFilename: filename
+                }
+              });
+
+              console.log('📧 Subscription confirmation email sent');
+            };
+          } catch (emailError) {
+            console.error('Failed to send subscription email:', emailError);
+          }
+        }
+
+        setSubscriptionPdfSent(true);
+        showToast('success', 'Subscription confirmation PDF downloaded');
+      } catch (error) {
+        console.error('Error generating subscription PDF:', error);
+      } finally {
+        setSubscriptionPdfGenerating(false);
+      }
+    };
+
+    if (activeCategory === 'subscription-success' && successSubscriptionTier && user?.id) {
+      generateAndSendSubscriptionPdf();
+    }
+  }, [activeCategory, successSubscriptionTier, user?.id, subscriptionPdfSent, subscriptionPdfGenerating]);
 
   // Process URL parameters using React Router's location (updates on navigation)
   // NOTE: /dashboard/chat routes are handled by the URL Sync Effect above
@@ -3334,8 +3441,8 @@ const TokenizedAssetsGlassmorphic = () => {
           setEmptyLegsData([]);
         } else {
           const transformedData = (data || []).map(leg => {
-            // Convert GBP price to USD
-            const priceUSD = leg.price ? Math.round(convertToUSD(leg.price, 'GBP')) : 0;
+            // Use price_usd directly from database (no conversion needed)
+            const priceUSD = leg.price_usd || leg.price_in_usd || leg.price || 0;
             return {
               id: leg.id,
               name: `${leg.from_iata || leg.from_city?.substring(0, 3).toUpperCase() || 'DEP'} → ${leg.to_iata || leg.to_city?.substring(0, 3).toUpperCase() || 'ARR'}`,
@@ -3746,7 +3853,7 @@ const TokenizedAssetsGlassmorphic = () => {
     // { id: 'p2p-trading', label: 'P2P', icon: Share2, category: 'p2p-trading' }, // Hidden for MVP
     // { id: 'swap', label: 'Swap', icon: ArrowLeft, category: 'swap' }, // Hidden - not needed for now
     // { id: 'dao', label: 'DAOs', icon: Users, category: 'dao' }, // Hidden for MVP
-    { id: 'escrow', label: 'Escrow', icon: Shield, category: 'escrow' },
+    // { id: 'escrow', label: 'Escrow', icon: Shield, category: 'escrow' }, // Coming Soon
     { id: 'nft-marketplace', label: 'NFT Marketplace', icon: Shield, category: 'nft-marketplace' },
     { id: 'launchpad', label: 'Launchpad', icon: Zap, category: 'launchpad' }
   ];
@@ -4879,6 +4986,8 @@ const TokenizedAssetsGlassmorphic = () => {
                         const location = d.location;
                         const preferredPayment = d.preferred_payment;
                         const specialRequests = d.special_requests;
+                        // NFT Free Flight check
+                        const isNFTFreeFlight = request.type === 'nft_free_flight' || d.is_free === true;
 
                         const requestTitle = request.type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Request';
                         const getTypeIcon = (type) => {
@@ -4895,24 +5004,42 @@ const TokenizedAssetsGlassmorphic = () => {
                         return (
                           <div
                             key={request.id}
-                            className="bg-white border border-gray-100 rounded-xl overflow-hidden hover:border-gray-200 transition-all"
+                            className={`rounded-xl overflow-hidden transition-all ${
+                              isNFTFreeFlight
+                                ? 'bg-green-50 border-2 border-green-400 ring-2 ring-green-100'
+                                : 'bg-white border border-gray-100 hover:border-gray-200'
+                            }`}
                           >
+                            {/* NFT Free Flight Badge */}
+                            {isNFTFreeFlight && (
+                              <div className="bg-green-500 text-white px-3 py-1 text-xs font-semibold flex items-center gap-1.5">
+                                <span>🎁</span>
+                                <span>NFT Free Flight Redemption</span>
+                              </div>
+                            )}
                             {/* Main Row */}
                             <div
                               className="px-4 py-3 flex items-center gap-4 cursor-pointer"
                               onClick={() => setExpandedRequestId(isExpanded ? null : request.id)}
                             >
                               {/* Icon */}
-                              <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center text-lg flex-shrink-0">
-                                {getTypeIcon(request.type)}
+                              <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0 ${
+                                isNFTFreeFlight ? 'bg-green-200' : 'bg-gray-100'
+                              }`}>
+                                {isNFTFreeFlight ? '🎁' : getTypeIcon(request.type)}
                               </div>
 
                               {/* Title & Info */}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <p className="text-sm font-medium text-gray-900 truncate">
-                                    {requestTitle}
+                                  <p className={`text-sm font-medium truncate ${isNFTFreeFlight ? 'text-green-800' : 'text-gray-900'}`}>
+                                    {isNFTFreeFlight ? 'Free Empty Leg' : requestTitle}
                                   </p>
+                                  {isNFTFreeFlight && (
+                                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-green-600 text-white">
+                                      FREE
+                                    </span>
+                                  )}
                                   <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${
                                     request.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
                                     request.status === 'in_progress' ? 'bg-blue-50 text-blue-600' :
@@ -4940,11 +5067,15 @@ const TokenizedAssetsGlassmorphic = () => {
                               </div>
 
                               {/* Price if available */}
-                              {totalPrice && (
+                              {(totalPrice || isNFTFreeFlight) && (
                                 <div className="text-right flex-shrink-0">
-                                  <p className="text-sm font-semibold text-gray-900">
-                                    ${typeof totalPrice === 'number' ? totalPrice.toLocaleString() : totalPrice}
-                                  </p>
+                                  {isNFTFreeFlight ? (
+                                    <p className="text-sm font-bold text-green-600">FREE</p>
+                                  ) : (
+                                    <p className="text-sm font-semibold text-gray-900">
+                                      ${typeof totalPrice === 'number' ? totalPrice.toLocaleString() : totalPrice}
+                                    </p>
+                                  )}
                                 </div>
                               )}
 
@@ -5656,6 +5787,62 @@ const TokenizedAssetsGlassmorphic = () => {
                         </div>
                       </li>
                     </ul>
+                  </div>
+
+                  {/* PDF Confirmation Notice */}
+                  <div className="bg-gray-100/80 rounded-xl p-4 mb-6 text-left border border-gray-200/50">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center flex-shrink-0">
+                        <FileText size={16} className="text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900 text-sm">Confirmation PDF</div>
+                        <div className="text-xs text-gray-500">
+                          {subscriptionPdfGenerating
+                            ? 'Generating your confirmation...'
+                            : subscriptionPdfSent
+                            ? 'Downloaded & sent to your email'
+                            : 'Your confirmation is being prepared'}
+                        </div>
+                      </div>
+                      {subscriptionPdfSent && (
+                        <button
+                          onClick={() => {
+                            const planDetails = {
+                              starter: { name: 'Starter', price: 20, features: ['5 AI Conversations/month', '50 messages per conversation', 'Break the Price feature', 'Email Support'] },
+                              pro: { name: 'Professional', price: 40, features: ['20 AI Conversations/month', '100 messages per conversation', 'Break the Price feature', 'Priority Support', 'Dedicated Manager'] },
+                              elite: { name: 'Elite', price: 130, features: ['Unlimited AI Conversations', 'Unlimited messages per chat', 'Unlimited Break the Price', '24/7 Concierge Service'] }
+                            };
+                            const plan = planDetails[successSubscriptionTier] || planDetails.starter;
+                            const subscriptionData = {
+                              id: `SUB-${Date.now()}`,
+                              tier: successSubscriptionTier,
+                              plan_name: plan.name,
+                              price: plan.price,
+                              currency: 'USD',
+                              billing_period: 'monthly',
+                              status: 'active',
+                              start_date: new Date().toISOString(),
+                              features: plan.features,
+                              user: {
+                                name: user?.name || user?.first_name || user?.email?.split('@')[0] || 'Valued Member',
+                                email: user?.email
+                              },
+                              payment_method: 'card'
+                            };
+                            const pdfBlob = generateSubscriptionConfirmationPDF(subscriptionData);
+                            const filename = `PrivateCharterX_Subscription_${successSubscriptionTier.toUpperCase()}_${new Date().toISOString().split('T')[0]}.pdf`;
+                            downloadPDF(pdfBlob, filename);
+                          }}
+                          className="px-3 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+                        >
+                          Download Again
+                        </button>
+                      )}
+                      {subscriptionPdfGenerating && (
+                        <Loader2 size={18} className="text-gray-600 animate-spin" />
+                      )}
+                    </div>
                   </div>
 
                   {/* Action Buttons */}
@@ -9143,13 +9330,11 @@ const TokenizedAssetsGlassmorphic = () => {
                           </div>
                         </div>
 
-                        {/* Price Breakdown - Show all fees that CoinGate will charge */}
+                        {/* Price Breakdown - Base + VAT only */}
                         {(() => {
                           const priceUSD = selectedEmptyLeg?.priceUSD || 0;
-                          const platformFee = Math.round(priceUSD * 0.025); // 2.5% platform fee
                           const vatAmount = Math.round(priceUSD * 0.081); // 8.1% Swiss VAT
-                          const coingateFee = Math.round(priceUSD * 0.01); // 1% CoinGate fee
-                          const totalWithFees = priceUSD + platformFee + vatAmount + coingateFee;
+                          const totalWithVAT = priceUSD + vatAmount;
                           return (
                             <div className="space-y-2 mb-4 pt-3 border-t border-gray-100">
                               {priceUSD > 0 ? (
@@ -9159,20 +9344,12 @@ const TokenizedAssetsGlassmorphic = () => {
                                     <span className="text-gray-900">${priceUSD.toLocaleString()}</span>
                                   </div>
                                   <div className="flex justify-between text-xs">
-                                    <span className="text-gray-500">Platform Fee (2.5%)</span>
-                                    <span className="text-gray-900">${platformFee.toLocaleString()}</span>
-                                  </div>
-                                  <div className="flex justify-between text-xs">
                                     <span className="text-gray-500">VAT (8.1%)</span>
                                     <span className="text-gray-900">${vatAmount.toLocaleString()}</span>
                                   </div>
-                                  <div className="flex justify-between text-xs">
-                                    <span className="text-gray-500">Processing Fee (1%)</span>
-                                    <span className="text-gray-900">${coingateFee.toLocaleString()}</span>
-                                  </div>
                                   <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
                                     <span className="font-medium text-gray-900">Total</span>
-                                    <span className="font-semibold text-gray-900">${totalWithFees.toLocaleString()}</span>
+                                    <span className="font-semibold text-gray-900">${totalWithVAT.toLocaleString()}</span>
                                   </div>
                                 </>
                               ) : (
@@ -9195,17 +9372,22 @@ const TokenizedAssetsGlassmorphic = () => {
                         <BuyWithCryptoButton
                           serviceType="empty_leg"
                           serviceId={selectedEmptyLeg?.rawData?.id || selectedEmptyLeg?.id}
-                          serviceTitle={`${selectedEmptyLeg?.from} → ${selectedEmptyLeg?.to}`}
-                          serviceDescription={selectedEmptyLeg?.aircraft || 'Empty Leg Flight'}
+                          serviceTitle={selectedEmptyLeg?.name || `${selectedEmptyLeg?.rawData?.from_iata || selectedEmptyLeg?.rawData?.from_city || 'DEP'} → ${selectedEmptyLeg?.rawData?.to_iata || selectedEmptyLeg?.rawData?.to_city || 'ARR'}`}
+                          serviceDescription={selectedEmptyLeg?.category || selectedEmptyLeg?.rawData?.aircraft_type || 'Empty Leg Flight'}
                           price={selectedEmptyLeg?.priceUSD || 0}
                           currency="USD"
                           imageUrl={selectedEmptyLeg?.image}
-                          origin={selectedEmptyLeg?.from}
-                          destination={selectedEmptyLeg?.to}
-                          aircraft={selectedEmptyLeg?.aircraft}
+                          origin={selectedEmptyLeg?.rawData?.from_iata || selectedEmptyLeg?.rawData?.from_city}
+                          destination={selectedEmptyLeg?.rawData?.to_iata || selectedEmptyLeg?.rawData?.to_city}
+                          aircraft={selectedEmptyLeg?.category || selectedEmptyLeg?.rawData?.aircraft_type}
                           departureDate={selectedEmptyLeg?.rawData?.departure_date}
-                          passengers={selectedEmptyLeg?.rawData?.max_passengers || selectedEmptyLeg?.pax}
-                          rawData={selectedEmptyLeg?.rawData}
+                          passengers={selectedEmptyLeg?.rawData?.max_passengers || selectedEmptyLeg?.rawData?.capacity}
+                          rawData={{
+                            ...selectedEmptyLeg?.rawData,
+                            // Pre-calculate total with VAT for consistency
+                            price_usd: selectedEmptyLeg?.priceUSD || 0,
+                            totalWithFee: Math.round((selectedEmptyLeg?.priceUSD || 0) * 1.081)
+                          }}
                           user={user}
                           variant="gradient"
                           className="mb-3"

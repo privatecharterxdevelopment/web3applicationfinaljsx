@@ -10,6 +10,7 @@ import SuccessNotification from '../SuccessNotification';
 import { useNFT } from '../../context/NFTContext';
 import NFTBenefitsModal from '../NFTBenefitsModal';
 import { convertToUSD, initializeExchangeRates } from '../../services/currencyService';
+import { generateRequestConfirmationPDF, downloadPDF, savePDFToStorage } from '../../services/pdfGeneratorService';
 
 const HelicopterDetail = () => {
   const { id } = useParams();
@@ -134,13 +135,69 @@ const HelicopterDetail = () => {
 
       if (dbError) throw dbError;
 
-      // Trigger email notification via edge function
+      // Generate PDF confirmation
       try {
-        await supabase.functions.invoke('user-request-notifications', {
-          body: { record: { id: insertedData.id } }
-        });
-      } catch (emailError) {
-        console.error('Email notification error (non-blocking):', emailError);
+        const pdfRequest = {
+          id: insertedData.id,
+          type: 'helicopter_charter',
+          created_at: insertedData.created_at,
+          status: 'pending',
+          user: {
+            name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Valued Client',
+            email: user.email
+          },
+          details: {
+            from: departure,
+            to: arrival,
+            date: flightDate,
+            time: flightTime || 'Flexible',
+            passengers: passengers,
+            service_type: `${helicopter.name} Helicopter Charter`,
+            notes: specialRequests,
+            price: discountedPrice,
+            currency: 'USD',
+            duration: `${flightDuration} hours`,
+            aircraft: helicopter.name,
+            manufacturer: helicopter.manufacturer,
+            location: helicopter.location
+          }
+        };
+
+        const { blob, filename, base64 } = await generateRequestConfirmationPDF(pdfRequest);
+
+        // Save PDF to storage
+        await savePDFToStorage(blob, filename, 'helicopter_charter', insertedData.id);
+
+        // Download PDF for user
+        downloadPDF(blob, filename);
+
+        // Send email with PDF attachment
+        try {
+          await supabase.functions.invoke('send-request-email', {
+            body: {
+              to: user.email,
+              requestData: pdfRequest,
+              pdfBase64: base64,
+              pdfFilename: filename
+            }
+          });
+        } catch (emailError) {
+          console.error('Email with PDF error, trying fallback:', emailError);
+          // Fallback to basic notification
+          await supabase.functions.invoke('user-request-notifications', {
+            body: { record: { id: insertedData.id } }
+          });
+        }
+      } catch (pdfError) {
+        console.error('PDF generation error (non-blocking):', pdfError);
+        // Fallback to basic notification
+        try {
+          await supabase.functions.invoke('user-request-notifications', {
+            body: { record: { id: insertedData.id } }
+          });
+        } catch (emailError) {
+          console.error('Email notification error (non-blocking):', emailError);
+        }
       }
 
       // Track benefit usage
@@ -149,7 +206,7 @@ const HelicopterDetail = () => {
       }
 
       // Show success notification
-      setSuccessMessage(`Your ${helicopter.name} charter request has been submitted. We'll contact you within 24 hours with availability and pricing.`);
+      setSuccessMessage(`Your ${helicopter.name} charter request has been submitted! A confirmation email with PDF has been sent to ${user.email}. We'll contact you within 24 hours with availability and pricing.`);
       setShowSuccessNotification(true);
     } catch (error) {
       console.error('Request failed:', error);

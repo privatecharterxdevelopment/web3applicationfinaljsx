@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Calendar, MapPin, Users, DollarSign, Package, Clock, CheckCircle, XCircle, AlertCircle, CalendarPlus } from 'lucide-react';
+import { Calendar, MapPin, Users, DollarSign, Package, Clock, CheckCircle, XCircle, AlertCircle, CalendarPlus, FileText, Loader2 } from 'lucide-react';
 import CreateEventModal from './Calendar/CreateEventModal';
+import { generateRequestConfirmationPDF, downloadPDF } from '../services/pdfGeneratorService';
 
 /**
  * ChatRequestsView - Shows user's saved chat requests from AI Chat
@@ -12,6 +13,37 @@ const ChatRequestsView = ({ userId, user }) => {
   const [filter, setFilter] = useState('all'); // all, pending, in_progress, completed, cancelled
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [generatingPDF, setGeneratingPDF] = useState(null);
+
+  // Handle PDF download for a request
+  const handleDownloadPDF = async (request, e) => {
+    if (e) e.stopPropagation();
+    setGeneratingPDF(request.id);
+    try {
+      // Format request data for PDF generator
+      const pdfRequest = {
+        id: request.id,
+        type: request.service_type || 'chat_request',
+        service_type: request.service_type,
+        created_at: request.created_at,
+        client_email: user?.email,
+        data: {
+          query: request.query,
+          from: request.from_location,
+          to: request.to_location,
+          date: request.date_start,
+          passengers: request.passengers,
+          budget: request.budget
+        }
+      };
+      const { blob, filename } = await generateRequestConfirmationPDF(pdfRequest);
+      downloadPDF(blob, filename);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    } finally {
+      setGeneratingPDF(null);
+    }
+  };
 
   useEffect(() => {
     if (userId) {
@@ -312,6 +344,19 @@ const ChatRequestsView = ({ userId, user }) => {
 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-3 pt-3 border-t border-gray-200">
+                  {/* Download PDF Button */}
+                  <button
+                    onClick={(e) => handleDownloadPDF(request, e)}
+                    disabled={generatingPDF === request.id}
+                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {generatingPDF === request.id ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <FileText size={16} />
+                    )}
+                    PDF
+                  </button>
                   <button
                     onClick={() => {
                       setSelectedRequest(request);

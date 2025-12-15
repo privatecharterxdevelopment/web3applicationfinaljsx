@@ -38,7 +38,7 @@ class ClaudeService {
       });
 
       if (!response || !response.content || !response.content[0] || !response.content[0].text) {
-        throw new Error('Invalid response from Claude API');
+        throw new Error('Invalid AI response');
       }
 
       return response.content[0].text;

@@ -51,6 +51,12 @@ interface PaymentRequest {
   contactPhone?: string;
   passengers?: number;
   specialRequests?: string;
+  // Pre-calculated price from frontend (already in USD with fees)
+  priceUSD?: number;
+  currency?: string;
+  serviceTitle?: string;
+  serviceDescription?: string;
+  serviceImageUrl?: string;
   // Hotel-specific fields
   hotelData?: {
     hotelId: string;
@@ -86,9 +92,8 @@ interface ServiceDetails {
   certification_type?: string;
 }
 
-// Fee structure
-const PLATFORM_FEE_PERCENT = 0.025; // 2.5%
-const COINGATE_FEE_PERCENT = 0.01;  // 1%
+// Fee structure - NO platform fee, NO processing fee - VAT only
+// CoinGate processing fees are handled by CoinGate themselves, not added by us
 
 // No manual currency conversion - CoinGate handles all conversions automatically
 
@@ -105,7 +110,13 @@ serve(async (req) => {
     );
 
     const paymentData: PaymentRequest = await req.json();
-    const { serviceType, serviceId, userId, walletAddress, email, contactName, contactPhone, passengers, specialRequests, hotelData } = paymentData;
+    const { serviceType, serviceId, userId, walletAddress, email, contactName, contactPhone, passengers, specialRequests, hotelData, priceUSD, currency, serviceTitle, serviceDescription, serviceImageUrl } = paymentData;
+
+    console.log('=== PAYMENT REQUEST RECEIVED ===');
+    console.log('priceUSD from frontend:', priceUSD);
+    console.log('currency:', currency);
+    console.log('serviceTitle:', serviceTitle);
+    console.log('================================');
 
     // Validate required fields
     if (!serviceType || !serviceId || !userId || !email) {
@@ -135,22 +146,27 @@ serve(async (req) => {
           throw new Error(`Empty leg not found: ${serviceId}`);
         }
 
-        // Empty Legs prices are stored in GBP in the database
-        // We need to convert to USD for CoinGate payment
-        const priceGBP = parseFloat(emptyLeg.price || emptyLeg.discounted_price || 0);
+        // USE THE PRE-CALCULATED USD PRICE FROM FRONTEND OR price_usd FROM DB
+        let finalPrice: number;
 
-        // Fetch current GBP→USD exchange rate
-        const gbpRate = await getExchangeRate('GBP');
-        const priceUSD = convertToUSD(priceGBP, 'GBP', gbpRate);
-
-        console.log(`EmptyLeg price conversion: £${priceGBP} GBP → $${priceUSD.toFixed(2)} USD (rate: ${gbpRate})`);
+        if (priceUSD && priceUSD > 0) {
+          // Use the price passed from frontend (already in USD with fees included)
+          finalPrice = priceUSD;
+          console.log(`Using frontend price: $${finalPrice} USD (pre-calculated with fees)`);
+        } else {
+          // Fallback: use price_usd directly from database (no conversion needed)
+          const dbPriceUSD = parseFloat(emptyLeg.price_usd || emptyLeg.price_in_usd || emptyLeg.price || 0);
+          // Add fees (platform 2.5% + VAT 8.1% + coingate 1%)
+          finalPrice = Math.round(dbPriceUSD * 1.116);
+          console.log(`Using DB price_usd: $${dbPriceUSD} → $${finalPrice} USD (with fees)`);
+        }
 
         serviceDetails = {
           id: emptyLeg.id,
-          title: `${emptyLeg.departure_airport || emptyLeg.from_iata} → ${emptyLeg.arrival_airport || emptyLeg.to_iata}`,
-          description: emptyLeg.description || `Empty leg flight on ${emptyLeg.aircraft_type}`,
-          image_url: emptyLeg.image_url || emptyLeg.aircraft_image,
-          price: Math.round(priceUSD), // Rounded USD price
+          title: serviceTitle || `${emptyLeg.departure_airport || emptyLeg.from_iata} → ${emptyLeg.arrival_airport || emptyLeg.to_iata}`,
+          description: serviceDescription || emptyLeg.description || `Empty leg flight on ${emptyLeg.aircraft_type}`,
+          image_url: serviceImageUrl || emptyLeg.image_url || emptyLeg.aircraft_image,
+          price: finalPrice, // USE THE FRONTEND PRICE - NO MORE CONVERSION!
           currency: 'USD',
           origin: emptyLeg.departure_airport || emptyLeg.from_iata,
           destination: emptyLeg.arrival_airport || emptyLeg.to_iata,
@@ -283,22 +299,42 @@ serve(async (req) => {
       throw new Error('Failed to load service details');
     }
 
-    // Calculate fees including Swiss VAT 8.1%
+    // IMPORTANT: If priceUSD was passed from frontend, it ALREADY INCLUDES VAT
+    // NO additional fees are added - the frontend price IS the final price
     const VAT_RATE = 0.081; // 8.1% Swiss VAT
-    const basePrice = serviceDetails.price;
-    const platformFee = Math.round(basePrice * PLATFORM_FEE_PERCENT * 100) / 100;
-    const vatAmount = Math.round(basePrice * VAT_RATE * 100) / 100;
-    const coingateFee = Math.round(basePrice * COINGATE_FEE_PERCENT * 100) / 100;
-    const totalAmount = Math.round((basePrice + platformFee + vatAmount + coingateFee) * 100) / 100;
+    const priceFromFrontend = serviceDetails.price;
 
-    console.log('=== PRICE CALCULATION DEBUG ===');
-    console.log(`Service: ${serviceType}, ID: ${serviceId}`);
-    console.log(`Base Price: ${basePrice} ${serviceDetails.currency}`);
-    console.log(`Platform Fee (2.5%): ${platformFee}`);
-    console.log(`VAT (8.1%): ${vatAmount}`);
-    console.log(`CoinGate Fee (1%): ${coingateFee}`);
-    console.log(`Total Amount: ${totalAmount} ${serviceDetails.currency}`);
-    console.log('================================');
+    let basePrice: number;
+    let vatAmount: number;
+    let totalAmount: number;
+
+    if (priceUSD && priceUSD > 0) {
+      // Frontend sent totalWithFee - VAT is ALREADY INCLUDED
+      // priceUSD = basePrice * 1.081 (8.1% VAT only, no platform fee)
+      // We need to back-calculate for the booking record
+      basePrice = Math.round(priceFromFrontend / 1.081);
+      vatAmount = Math.round(basePrice * VAT_RATE * 100) / 100;
+      // Total = EXACTLY what frontend sent - no additional fees
+      totalAmount = priceFromFrontend;
+
+      console.log('=== USING FRONTEND PRICE (VAT included) ===');
+      console.log(`Frontend totalWithFee: $${priceFromFrontend}`);
+      console.log(`Back-calculated base: $${basePrice}`);
+      console.log(`VAT (8.1%): $${vatAmount}`);
+      console.log(`Final Total to charge: $${totalAmount}`);
+      console.log('=============================================');
+    } else {
+      // No frontend price - calculate VAT only
+      basePrice = priceFromFrontend;
+      vatAmount = Math.round(basePrice * VAT_RATE * 100) / 100;
+      totalAmount = Math.round((basePrice + vatAmount) * 100) / 100;
+
+      console.log('=== PRICE CALCULATION (no frontend price) ===');
+      console.log(`Base Price: $${basePrice}`);
+      console.log(`VAT (8.1%): $${vatAmount}`);
+      console.log(`Total Amount: $${totalAmount}`);
+      console.log('==============================================');
+    }
 
     let booking: any;
 
@@ -309,13 +345,12 @@ serve(async (req) => {
       // serviceDetails.id contains the hotel booking ID
       booking = { id: serviceDetails.id };
 
-      // Update the hotel booking with fee information
+      // Update the hotel booking with fee information (VAT only)
       await supabaseAdmin
         .from('hotel_bookings')
         .update({
-          platform_fee: platformFee,
+          platform_fee: 0,
           vat_amount: vatAmount,
-          coingate_fee: coingateFee,
           total_with_fees: totalAmount
         })
         .eq('id', serviceDetails.id);
@@ -341,9 +376,8 @@ serve(async (req) => {
           co2_tons_offset: serviceDetails.co2_tons,
           certification_type: serviceDetails.certification_type,
           base_price: basePrice,
-          platform_fee: platformFee,
+          platform_fee: 0,  // No platform fee
           processing_fee: vatAmount,  // Store VAT in processing_fee field
-          coingate_fee: coingateFee,
           total_amount: totalAmount,
           currency: serviceDetails.currency,
           payment_method: 'crypto',
@@ -472,9 +506,7 @@ serve(async (req) => {
       expiresAt: coingateResult.expire_at,
       priceBreakdown: {
         basePrice,
-        platformFee,
         vatAmount,
-        coingateFee,
         totalAmount,
         currency: serviceDetails.currency
       }

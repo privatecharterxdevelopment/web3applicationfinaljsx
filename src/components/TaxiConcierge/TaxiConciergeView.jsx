@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabase';
 import { createRequest } from '../../services/requests';
 import PaymentModal from './PaymentModal';
 import { convertToUSD, initializeExchangeRates } from '../../services/currencyService';
+import { generateRequestConfirmationPDF, downloadPDF, savePDFToStorage } from '../../services/pdfGeneratorService';
 
 // Mapbox token - privatecharterx account
 const MAPBOX_TOKEN = 'pk.eyJ1IjoicHJpdmF0ZWNoYXJ0ZXJ4IiwiYSI6ImNsdGJ2dG4zazFucGsya21tNXRldW5udjYifQ.NrWJLJuG9n6b1jhRh5AkSg';
@@ -1142,6 +1143,79 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
 
           console.log('Ground transportation request saved successfully:', insertedData);
 
+          // Generate PDF and send email with attachment
+          if (insertedData && insertedData[0]) {
+            const savedRequest = insertedData[0];
+            try {
+              const pdfRequest = {
+                id: savedRequest.id,
+                type: 'ground_transport',
+                service_type: 'ground_transport',
+                created_at: new Date().toISOString(),
+                client_email: user?.email,
+                data: {
+                  from: locationA,
+                  to: locationB,
+                  pickupDate: bookNow ? 'Now' : pickupDate,
+                  pickupTime: bookNow ? 'Now' : pickupTime,
+                  passengers: passengers,
+                  carName: carToUse.name,
+                  total: totalPrice,
+                  currency: selectedCurrency
+                }
+              };
+
+              const { blob, filename, base64 } = await generateRequestConfirmationPDF(pdfRequest);
+
+              // Save PDF to storage
+              try {
+                await savePDFToStorage(blob, filename, 'request', savedRequest.id);
+                console.log('Ground transport PDF saved to storage');
+              } catch (storageErr) {
+                console.warn('Could not save PDF:', storageErr);
+              }
+
+              // Download PDF for user
+              downloadPDF(blob, filename);
+
+              // Send email with PDF attachment
+              try {
+                await supabase.functions.invoke('send-request-email', {
+                  body: {
+                    to: user?.email,
+                    requestData: {
+                      id: savedRequest.id,
+                      type: 'ground_transport',
+                      created_at: new Date().toISOString(),
+                      status: 'pending',
+                      user: {
+                        name: user?.user_metadata?.name || user?.email?.split('@')[0] || 'Valued Client',
+                        email: user?.email
+                      },
+                      details: {
+                        from: locationA,
+                        to: locationB,
+                        date: bookNow ? 'Now' : pickupDate,
+                        time: bookNow ? 'Now' : pickupTime,
+                        passengers: passengers,
+                        service_type: 'Ground Transport',
+                        price: totalPrice,
+                        currency: selectedCurrency
+                      }
+                    },
+                    pdfBase64: base64,
+                    pdfFilename: filename
+                  }
+                });
+                console.log('Email with PDF sent for ground transport request');
+              } catch (emailErr) {
+                console.error('Failed to send email:', emailErr);
+              }
+            } catch (pdfErr) {
+              console.error('Failed to generate PDF:', pdfErr);
+            }
+          }
+
           // Create notification
           const notificationData = {
             user_id: user.id,
@@ -1427,7 +1501,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
             <div className="border-t border-gray-100">
               {/* Step 1: Route Summary & Continue Button (hide distance/eta for luxury cars) */}
               {bookingStep === 1 && (
-                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
                   {/* Only show distance/time for taxi/concierge */}
                   {serviceCategory !== 'luxury-cars' && (
                     <div className="flex items-center justify-between">
@@ -1509,7 +1583,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
 
               {/* Step 2: Shows DateTime summary - different for luxury cars */}
               {bookingStep === 2 && (
-                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
                   <div className="p-4 bg-gray-50 rounded-xl space-y-2">
                     {serviceCategory === 'luxury-cars' ? (
                       <>
@@ -1589,7 +1663,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                     </button>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto px-5 pt-4 pb-6" style={{ scrollbarWidth: 'thin', scrollbarColor: '#d1d5db transparent', minHeight: 0 }}>
+                  <div className="flex-1 overflow-y-auto px-6 py-6" style={{ scrollbarWidth: 'thin', scrollbarColor: '#d1d5db transparent', minHeight: 0 }}>
                     {/* Search & Filter - Only for Luxury Cars */}
                     {serviceCategory === 'luxury-cars' && (
                     <div className="mb-4 space-y-3">

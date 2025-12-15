@@ -9,6 +9,7 @@ import { createRequest } from '../../services/requests';
 import SuccessNotification from '../SuccessNotification';
 import { useNFT } from '../../context/NFTContext';
 import NFTBenefitsModal from '../NFTBenefitsModal';
+import { generateRequestConfirmationPDF, downloadPDF, savePDFToStorage } from '../../services/pdfGeneratorService';
 
 const JetDetail = () => {
   const { id } = useParams();
@@ -134,13 +135,66 @@ const JetDetail = () => {
 
       if (dbError) throw dbError;
 
-      // Trigger email notification via edge function
+      // Generate PDF and send email with attachment
       try {
-        await supabase.functions.invoke('user-request-notifications', {
-          body: { record: { id: insertedData.id } }
+        const pdfRequest = {
+          id: insertedData.id,
+          type: 'private_jet_charter',
+          service_type: 'private_jet_charter',
+          created_at: new Date().toISOString(),
+          client_email: user?.email,
+          data: {
+            from: departureLocation,
+            to: arrivalLocation,
+            date: departureDate,
+            passengers: passengers,
+            total: totalPrice,
+            currency: 'USD'
+          }
+        };
+
+        const { blob, filename, base64 } = await generateRequestConfirmationPDF(pdfRequest);
+
+        // Save PDF to storage
+        try {
+          await savePDFToStorage(blob, filename, 'request', insertedData.id);
+        } catch (storageErr) {
+          console.warn('Could not save PDF:', storageErr);
+        }
+
+        // Download PDF
+        downloadPDF(blob, filename);
+
+        // Send email with PDF attachment
+        await supabase.functions.invoke('send-request-email', {
+          body: {
+            to: user?.email,
+            requestData: {
+              id: insertedData.id,
+              type: 'private_jet_charter',
+              created_at: new Date().toISOString(),
+              status: 'pending',
+              user: {
+                name: user?.user_metadata?.name || user?.email?.split('@')[0] || 'Valued Client',
+                email: user?.email
+              },
+              details: {
+                from: departureLocation,
+                to: arrivalLocation,
+                date: departureDate,
+                passengers: passengers,
+                service_type: 'Private Jet Charter',
+                price: totalPrice,
+                currency: 'USD'
+              }
+            },
+            pdfBase64: base64,
+            pdfFilename: filename
+          }
         });
-      } catch (emailError) {
-        console.error('Email notification error (non-blocking):', emailError);
+        console.log('Email with PDF sent for jet charter request');
+      } catch (pdfEmailErr) {
+        console.error('PDF/Email error (non-blocking):', pdfEmailErr);
       }
 
       // Track benefit usage
@@ -149,7 +203,7 @@ const JetDetail = () => {
       }
 
       // Show success notification
-      setSuccessMessage(`Your ${jet.aircraft_model} charter quote request has been submitted. We'll contact you within 24 hours.`);
+      setSuccessMessage(`Your ${jet.aircraft_model} charter quote request has been submitted. We'll contact you within 24 hours. A confirmation email with PDF has been sent.`);
       setShowSuccessNotification(true);
     } catch (error) {
       console.error('Error submitting quote request:', error);

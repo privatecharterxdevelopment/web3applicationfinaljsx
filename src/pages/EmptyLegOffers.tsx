@@ -223,9 +223,9 @@ const FlightModal: React.FC<FlightModalProps> = ({
   });
 
   const NFT_CONTRACT_ADDRESS = '0xDF86Cf55BD2E58aaaC09160AaD0ed8673382B339';
-  // NFT free flight eligibility: price < $1900 USD (approximately £1500 GBP)
-  const priceUSD = convertToUSD(emptyLeg.price_gbp || 0, 'GBP');
-  const isNFTFreeEligible = priceUSD < 1900;
+  // NFT free flight eligibility: price < $1500 USD
+  const priceUSD = emptyLeg.price_usd || emptyLeg.price_in_usd || 0;
+  const isNFTFreeEligible = priceUSD < 1500;
 
   // Fetch user profile data including phone number
   useEffect(() => {
@@ -848,7 +848,7 @@ Wallet: ${address}`;
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-base font-light">${convertToUSD(emptyLeg.price_gbp || 0, 'GBP').toLocaleString()}</div>
+                      <div className="text-base font-light">${(emptyLeg.price_usd || emptyLeg.price_in_usd || 0).toLocaleString()}</div>
                     </div>
                   </div>
                 </button>
@@ -1228,14 +1228,13 @@ const fetchEmptyLegs = async () => {
       throw error;
     }
     console.log(`✅ Query successful: ${data?.length || 0} results`);
-    // Map database price (GBP) to price_gbp and convert to USD
+    // Use price_usd directly from database (no conversion needed)
     return (data || []).map(leg => {
-      const priceGBP = leg.price || 0;
-      const priceUSD = convertToUSD(priceGBP, 'GBP');
+      const priceUSD = leg.price_usd || leg.price_in_usd || leg.price || 0;
       return {
         ...leg,
-        price_gbp: priceGBP,  // Keep original GBP price
-        price_usd: priceUSD   // Converted USD price for display
+        price_gbp: leg.price || 0,  // Keep original price for reference
+        price_usd: priceUSD   // USD price directly from database
       };
     });
   } catch (error) {

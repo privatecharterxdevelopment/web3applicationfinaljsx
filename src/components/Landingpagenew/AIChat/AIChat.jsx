@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Mic, Send, X, Volume2, VolumeX, Edit2, Shield, Wallet, ShoppingCart, MessageSquare, Plus, Crown, AlertCircle, Calendar, Trash2, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Plane, Clock, Upload, FileText, DollarSign, Users, MapPin, Anchor, Mountain, Car, Minus
+  ArrowLeft, ArrowRight, Mic, Send, X, Volume2, VolumeX, Edit2, Shield, Wallet, ShoppingCart, MessageSquare, Plus, Crown, AlertCircle, Calendar, Trash2, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Plane, Clock, Upload, FileText, DollarSign, Users, MapPin, Anchor, Mountain, Car, Minus, Route, Coins, Loader2
 } from 'lucide-react';
 import { calculateDistance, estimateDuration, estimateCost } from '../../../utils/distanceCalculator';
 // Secure Claude API via Edge Function - API key stays server-side
@@ -47,6 +47,11 @@ import CryptoPaymentModal from '../../Payment/CryptoPaymentModal';
 import PlaceCard from '../../PlaceCard';
 import HotelCard from '../../HotelCard';
 import AdventureCard from '../../AdventureCard';
+import { JourneyBuilder, AirportTransferOffer } from './components/MultiStopJourney';
+import CartJourneyDisplay from './components/CartJourneyDisplay';
+
+// PDF Generator
+import { generateRequestConfirmationPDF, downloadPDF, savePDFToStorage } from '../../../services/pdfGeneratorService';
 
 // Web3
 import { useAccount, useDisconnect, useSignMessage } from 'wagmi';
@@ -299,6 +304,25 @@ const AIChat = ({
   const [showCryptoPayment, setShowCryptoPayment] = useState(false);
   const [selectedPaymentItem, setSelectedPaymentItem] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  // Multi-Stop Journey Builder
+  const [showJourneyBuilder, setShowJourneyBuilder] = useState(false);
+  const [journeyBuilderJet, setJourneyBuilderJet] = useState(null);
+  const [showTransferOffer, setShowTransferOffer] = useState(false);
+  const [lastAddedJourney, setLastAddedJourney] = useState(null);
+  const [multiLegRouteInfo, setMultiLegRouteInfo] = useState(null);
+  const [multiLegChatMode, setMultiLegChatMode] = useState(false);
+  const [multiLegChatData, setMultiLegChatData] = useState({
+    legs: [],
+    currentLegIndex: 0,
+    passengers: null,
+    pets: false,
+    luggage: null,
+    specialRequests: ''
+  });
+  const [multiLegRoute, setMultiLegRoute] = useState([]); // Array of stops: [{city, code, date, time, stopDuration}]
+  const [pendingLegData, setPendingLegData] = useState(null); // Leg awaiting "Add to Route" confirmation
 
   // Break the Price feature
   const [showBreakThePrice, setShowBreakThePrice] = useState(false);
@@ -904,6 +928,10 @@ const AIChat = ({
                   tabs.push({ id: 'luxury_cars', title: 'Luxury Cars', count: toolResult.results.length, items: toolResult.results });
                 } else if (toolUse.name === 'searchWines' && toolResult.results.length > 0) {
                   tabs.push({ id: 'wines', title: 'Wines', count: toolResult.results.length, items: toolResult.results });
+                } else if (toolUse.name === 'searchDelicatesse' && toolResult.results.length > 0) {
+                  tabs.push({ id: 'delicatesse', title: 'Delicacies', count: toolResult.results.length, items: toolResult.results });
+                } else if (toolUse.name === 'searchCigars' && toolResult.results.length > 0) {
+                  tabs.push({ id: 'cigars', title: 'Premium Cigars', count: toolResult.results.length, items: toolResult.results });
                 }
                 if (tabs.length > 0) {
                   resultsMessage = { role: 'results', content: JSON.stringify({ tabs }), tabs };
@@ -1262,6 +1290,363 @@ const AIChat = ({
     setItemToAdjust(item);
     setShowAdjustModal(true);
   };
+
+  // Multi-Stop Journey Builder handlers
+  const handleBuildJourney = useCallback((jet) => {
+    // Only for private jets (not empty legs or helicopters)
+    if (jet.type !== 'jets' && jet.type !== 'jet') {
+      setToast({ message: 'Multi-stop journeys are only available for private jets', type: 'warning' });
+      return;
+    }
+    setJourneyBuilderJet(jet);
+    setShowJourneyBuilder(true);
+  }, []);
+
+  const handleJourneyComplete = useCallback((journeyItem) => {
+    // Add the multi-stop journey to cart
+    const cartItem = {
+      ...journeyItem,
+      cartId: Date.now(),
+      addedAt: new Date().toISOString(),
+      currency: 'USD'
+    };
+
+    setCartItems(prev => [...prev, cartItem]);
+    setShowJourneyBuilder(false);
+    setJourneyBuilderJet(null);
+
+    // Show toast
+    const stopCount = journeyItem.stops?.length || 0;
+    setToast({
+      message: `${journeyItem.name} journey (${stopCount} stop${stopCount !== 1 ? 's' : ''}) added to cart`,
+      type: 'cart'
+    });
+
+    // Check if journey has overnight stays - offer transfers
+    if (journeyItem.hasOvernightStays && journeyItem.suggestedTransfers?.length > 0) {
+      setLastAddedJourney(cartItem);
+      setTimeout(() => {
+        setShowTransferOffer(true);
+      }, 500);
+    }
+
+    // Add message to chat with journey summary
+    let msg = `✈️ **Multi-stop journey added to cart!**\n\n`;
+    msg += `📍 **Route:** ${journeyItem.route}\n`;
+    msg += `✈️ **Aircraft:** ${journeyItem.name}\n`;
+    msg += `📏 **Total distance:** ${Math.round(journeyItem.totalDistance * 0.539957).toLocaleString()} nm\n`;
+    msg += `⏱️ **Total flight time:** ${Math.round(journeyItem.totalFlightTime * 10) / 10}h\n`;
+    msg += `💰 **Estimated price:** ~$${journeyItem.estimatedPrice?.toLocaleString()}\n\n`;
+
+    if (journeyItem.hasOvernightStays) {
+      msg += `🌙 This journey includes overnight stays.\n\n`;
+    }
+
+    msg += `Say "send request" when you're ready to get a coordinator quote.`;
+
+    // Add the journey confirmation message
+    setChatHistory(prev => prev.map(c =>
+      c.id === activeChat ? { ...c, messages: [...c.messages, { role: 'assistant', content: msg }] } : c
+    ));
+
+    // Add cross-sell suggestions after a short delay
+    setTimeout(() => {
+      const crossSellServices = [];
+
+      // Always suggest airport transfers
+      crossSellServices.push({
+        icon: '🚗',
+        name: 'Airport Transfers',
+        description: 'Luxury ground transport at each destination'
+      });
+
+      // Suggest hotels if overnight stays
+      if (journeyItem.hasOvernightStays) {
+        crossSellServices.push({
+          icon: '🏨',
+          name: 'Hotel Accommodations',
+          description: 'Premium hotels near your overnight stops'
+        });
+      }
+
+      // Always offer concierge
+      crossSellServices.push({
+        icon: '🍾',
+        name: 'In-Flight Catering',
+        description: 'Gourmet meals & beverages for your journey'
+      });
+
+      crossSellServices.push({
+        icon: '📋',
+        name: 'Concierge Services',
+        description: 'Restaurant reservations, events, experiences'
+      });
+
+      let crossSellMsg = `\n**Enhance your journey with these services:**\n\n`;
+      crossSellServices.forEach(service => {
+        crossSellMsg += `${service.icon} **${service.name}** - ${service.description}\n`;
+      });
+      crossSellMsg += `\nJust ask if you'd like me to add any of these to your request!`;
+
+      setChatHistory(prev => prev.map(c =>
+        c.id === activeChat
+          ? { ...c, messages: [...c.messages, { role: 'assistant', content: crossSellMsg, isCrossSell: true }] }
+          : c
+      ));
+    }, 1500);
+  }, [activeChat]);
+
+  const handleAddTransfers = useCallback((transfers) => {
+    // Add selected transfers as linked cart items
+    transfers.forEach(transfer => {
+      const transferItem = {
+        ...transfer,
+        cartId: Date.now() + Math.random(),
+        addedAt: new Date().toISOString(),
+        currency: 'USD',
+        type: 'ground_transport',
+        linkedJourneyId: lastAddedJourney?.cartId,
+        name: `Airport Transfer - ${transfer.city}`,
+        isTransfer: true
+      };
+      setCartItems(prev => [...prev, transferItem]);
+    });
+
+    setShowTransferOffer(false);
+    setLastAddedJourney(null);
+
+    setToast({
+      message: `${transfers.length} airport transfer${transfers.length !== 1 ? 's' : ''} added`,
+      type: 'cart'
+    });
+  }, [lastAddedJourney]);
+
+  // Multi-Leg Inline Button handlers
+  const handleSelectFormBuilder = useCallback(() => {
+    // Add loading message first
+    const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
+    setChatHistory(prev => prev.map(c =>
+      c.id === activeChat
+        ? { ...c, messages: [...c.messages, loadingMsg] }
+        : c
+    ));
+
+    // After brief delay, show form and add confirmation message
+    setTimeout(() => {
+      // Check if we have jet results to use
+      const jetsTab = searchResults?.tabs?.find(tab => tab.id === 'jets');
+      const firstJet = jetsTab?.items?.[0];
+
+      if (firstJet) {
+        handleBuildJourney(firstJet);
+      } else {
+        // No jets yet - open journey builder with placeholder
+        setShowJourneyBuilder(true);
+        setJourneyBuilderJet({
+          name: 'Aircraft TBD',
+          type: 'jets',
+          hourly_rate_eur: 5000,
+          range_km: 5000,
+          cruising_speed_kmh: 800,
+          placeholder: true
+        });
+      }
+
+      // Replace loading with confirmation message
+      const confirmMessage = `Opening the Journey Builder form. Use the visual builder to:
+
+• Add stops along your route
+• Set departure dates and times for each leg
+• Specify stop durations
+• View total distance and estimated costs
+
+Each stop you add will appear in the route: **A → B → C → D**
+
+Click **"Add to Cart"** when your journey is complete.`;
+
+      setChatHistory(prev => prev.map(c =>
+        c.id === activeChat
+          ? {
+              ...c,
+              messages: c.messages.map((msg, idx) =>
+                idx === c.messages.length - 1 && msg.isLoading
+                  ? { role: 'assistant', content: confirmMessage }
+                  : msg
+              )
+            }
+          : c
+      ));
+    }, 600);
+  }, [searchResults, handleBuildJourney, activeChat]);
+
+  const handleSelectChatBuilder = useCallback(() => {
+    setMultiLegChatMode(true);
+    setMultiLegChatData({
+      legs: [],
+      currentLegIndex: 0,
+      passengers: null,
+      pets: false,
+      luggage: null,
+      specialRequests: ''
+    });
+
+    // Add loading message first
+    const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
+    setChatHistory(prev => prev.map(c =>
+      c.id === activeChat
+        ? { ...c, messages: [...c.messages, loadingMsg] }
+        : c
+    ));
+
+    // After a brief delay, replace with the actual message
+    setTimeout(() => {
+      const routeInfo = multiLegRouteInfo || 'your multi-leg journey';
+      const startMessage = `Perfect! Let's build ${routeInfo} step by step via chat.
+
+I'll help you add each leg of your journey. For each stop, tell me:
+• **Destination** (city or airport)
+• **Date** of departure
+• **Time** of departure
+• **How long** you'll stay at each stop
+
+Once you provide these details, I'll show you an **"Add to Route"** button to confirm each leg.
+
+Let's start with your **first leg**. Where are you departing from, and what's your first destination?`;
+
+      setChatHistory(prev => prev.map(c =>
+        c.id === activeChat
+          ? {
+              ...c,
+              messages: c.messages.map((msg, idx) =>
+                idx === c.messages.length - 1 && msg.isLoading
+                  ? { role: 'assistant', content: startMessage, isMultiLegChat: true }
+                  : msg
+              )
+            }
+          : c
+      ));
+    }, 800);
+  }, [activeChat, multiLegRouteInfo]);
+
+  // Add leg to multi-leg route (when user clicks "Add to Route")
+  const handleAddLegToRoute = useCallback((legData) => {
+    // Add the leg to the route
+    setMultiLegRoute(prev => [...prev, legData]);
+    setPendingLegData(null);
+
+    // Calculate route string for display
+    const updatedRoute = [...multiLegRoute, legData];
+    const routeString = updatedRoute.map(leg => leg.code || leg.city?.substring(0, 3).toUpperCase()).join(' → ');
+
+    // Add confirmation message to chat
+    const confirmMessage = `**${legData.city} (${legData.code})** added to your route.
+
+**Current route:** ${routeString}
+
+${updatedRoute.length >= 2
+  ? `Would you like to add another stop, or are you ready to **add this journey to your cart**?`
+  : `Great start! Now tell me about your **next destination**.`
+}`;
+
+    // Show loading then message
+    const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
+    setChatHistory(prev => prev.map(c =>
+      c.id === activeChat
+        ? { ...c, messages: [...c.messages, loadingMsg] }
+        : c
+    ));
+
+    setTimeout(() => {
+      setChatHistory(prev => prev.map(c =>
+        c.id === activeChat
+          ? {
+              ...c,
+              messages: c.messages.map((msg, idx) =>
+                idx === c.messages.length - 1 && msg.isLoading
+                  ? { role: 'assistant', content: confirmMessage, isMultiLegChat: true, currentRoute: updatedRoute }
+                  : msg
+              )
+            }
+          : c
+      ));
+    }, 500);
+  }, [activeChat, multiLegRoute]);
+
+  // Finalize multi-leg route and add to cart
+  const handleAddRouteToCart = useCallback(() => {
+    if (multiLegRoute.length < 2) return;
+
+    // Create a multi-stop cart item
+    const routeString = multiLegRoute.map(leg => leg.code || leg.city?.substring(0, 3).toUpperCase()).join(' → ');
+
+    const multiStopItem = {
+      id: `multi-leg-${Date.now()}`,
+      type: 'jets',
+      name: 'Multi-Leg Charter (Aircraft TBD)',
+      isMultiStop: true,
+      route: routeString,
+      stops: multiLegRoute,
+      from: multiLegRoute[0]?.city,
+      from_iata: multiLegRoute[0]?.code,
+      to: multiLegRoute[multiLegRoute.length - 1]?.city,
+      to_iata: multiLegRoute[multiLegRoute.length - 1]?.code,
+      departure_date: multiLegRoute[0]?.date,
+      departure_time: multiLegRoute[0]?.time,
+      passengers: multiLegChatData.passengers || 1,
+      requiresQuote: true,
+      placeholder: true
+    };
+
+    // Add to cart using setCartItems
+    setCartItems(prev => [...prev, multiStopItem]);
+
+    // Show confirmation message
+    const confirmMessage = `Your multi-leg journey has been added to the cart:
+
+**Route:** ${routeString}
+**Stops:** ${multiLegRoute.length}
+
+Our coordinators will find the best aircraft for your route and provide you with a detailed quote.
+
+Would you like to add any additional services like **airport transfers** or **catering**?`;
+
+    const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
+    setChatHistory(prev => prev.map(c =>
+      c.id === activeChat
+        ? { ...c, messages: [...c.messages, loadingMsg] }
+        : c
+    ));
+
+    setTimeout(() => {
+      setChatHistory(prev => prev.map(c =>
+        c.id === activeChat
+          ? {
+              ...c,
+              messages: c.messages.map((msg, idx) =>
+                idx === c.messages.length - 1 && msg.isLoading
+                  ? { role: 'assistant', content: confirmMessage }
+                  : msg
+              )
+            }
+          : c
+      ));
+
+      // Show cart sidebar
+      setShowCartSidebar(true);
+    }, 600);
+
+    // Reset multi-leg state
+    setMultiLegChatMode(false);
+    setMultiLegRoute([]);
+    setMultiLegChatData({
+      legs: [],
+      currentLegIndex: 0,
+      passengers: null,
+      pets: false,
+      luggage: null,
+      specialRequests: ''
+    });
+  }, [activeChat, multiLegRoute, multiLegChatData]);
 
   // Break the Price - check if user has access
   const canUseBreakThePrice = useCallback(() => {
@@ -1649,7 +2034,10 @@ Your quote has been received and will be reviewed within 12 hours.`;
     try {
       // Determine request type from items
       const types = new Set(cartItems.map(i => i.type));
+      const hasMultiStop = cartItems.some(i => i.isMultiStop);
       const toType = () => {
+        // Check for multi-stop charter first
+        if (hasMultiStop) return 'multi_stop_charter';
         if (types.size > 1) return 'booking';
         const only = Array.from(types)[0];
         if (only === 'empty_legs') return 'empty_leg';
@@ -1696,13 +2084,15 @@ Your quote has been received and will be reviewed within 12 hours.`;
           category: item.category,
           manufacturer: item.manufacturer,
           capacity: item.capacity || item.max_passengers || item.pax,
-          // Pricing - ALL IN USD
+          // Ground Transport specific fields
+          pickup_location: item.pickup_location || item.from,
+          dropoff_location: item.dropoff_location || item.to,
+          service_type: item.service_type || item.category,
+          // Pricing - ALL IN USD (Base + VAT only)
           base_price: item.price_usd || item.price || item.basePrice || 0,
-          platform_fee: item.platform_fee || Math.round((item.price_usd || item.price || item.basePrice || 0) * 0.025),
-          platform_fee_percent: 2.5,
           vat_amount: item.vat_amount || Math.round((item.price_usd || item.price || item.basePrice || 0) * 0.081),
           vat_percent: 8.1,
-          total_price: item.totalWithFee || Math.round((item.price_usd || item.price || item.basePrice || 0) * 1.106),
+          total_price: item.totalWithFee || Math.round((item.price_usd || item.price || item.basePrice || 0) * 1.081),
           currency: 'USD',
           // Original price reference
           original_price: item.original_price,
@@ -1716,8 +2106,22 @@ Your quote has been received and will be reviewed within 12 hours.`;
           has_nft: item.has_nft,
           nft_discount: item.nft_discount,
           // Metadata
-          image_url: item.imageUrl || item.image_url,
-          addedAt: item.addedAt
+          image_url: item.imageUrl || item.image_url || item.primaryImage,
+          addedAt: item.addedAt,
+          // Multi-stop journey data
+          isMultiStop: item.isMultiStop || false,
+          stops: item.stops || [],
+          legs: item.legs || [],
+          totalDistance: item.totalDistance,
+          totalFlightTime: item.totalFlightTime,
+          billedHours: item.billedHours,
+          hasOvernightStays: item.hasOvernightStays || false,
+          overnightStopIndices: item.overnightStopIndices || [],
+          suggestedTransfers: item.suggestedTransfers || [],
+          fuelIncluded: item.fuelIncluded !== false, // Default true
+          priceCalculation: item.priceCalculation,
+          // Linked items (for transfers linked to journeys)
+          linkedJourneyId: item.linkedJourneyId
         }));
 
         // Calculate grand total from detailed items
@@ -1732,9 +2136,8 @@ Your quote has been received and will be reviewed within 12 hours.`;
             source: 'ai_chat',
             // Full service items with all details
             items: detailedItems,
-            // Summary totals
+            // Summary totals (Base + VAT only)
             subtotal: detailedItems.reduce((sum, item) => sum + (item.base_price || 0), 0),
-            total_platform_fee: detailedItems.reduce((sum, item) => sum + (item.platform_fee || 0), 0),
             total_vat: detailedItems.reduce((sum, item) => sum + (item.vat_amount || 0), 0),
             total: grandTotal,
             currency: 'USD',
@@ -1766,6 +2169,39 @@ Your quote has been received and will be reviewed within 12 hours.`;
             console.error('Failed to send email notification:', emailErr);
             // Don't block the flow if email fails
           }
+
+          // Generate PDF confirmation for the request
+          try {
+            const pdfRequest = {
+              id: insertedRequest.id,
+              type: payload.type,
+              service_type: payload.type,
+              created_at: request.timestamp,
+              client_email: userInfo?.user?.email,
+              data: {
+                ...payload.data,
+                cart_items: detailedItems,
+                estimated_total: grandTotal
+              }
+            };
+
+            const { blob, filename } = await generateRequestConfirmationPDF(pdfRequest);
+
+            // Save PDF to storage
+            try {
+              await savePDFToStorage(blob, filename, 'request', insertedRequest.id);
+              console.log('Request PDF saved to storage');
+            } catch (storageErr) {
+              console.warn('Could not save request PDF to storage:', storageErr);
+            }
+
+            // Auto-download PDF for user
+            downloadPDF(blob, filename);
+            console.log('Request confirmation PDF generated and downloaded');
+          } catch (pdfErr) {
+            console.error('Failed to generate request PDF:', pdfErr);
+            // Don't block the flow if PDF generation fails
+          }
         }
       } else {
         console.warn('Not logged in; skipping user_requests insert');
@@ -1774,7 +2210,7 @@ Your quote has been received and will be reviewed within 12 hours.`;
       console.error('Error saving to user_requests:', e);
     }
 
-    let msg = `Request submitted!\n\nReference: ${request.id}\nTotal: $${cartTotal.toLocaleString()}\n\nOur team will respond within 2-4 hours.`;
+    let msg = `Request submitted!\n\nReference: ${request.id}\nTotal: $${cartTotal.toLocaleString()}\n\nOur team will respond within 2-4 hours.\n\n📄 A PDF confirmation has been downloaded for your records.`;
 
     setChatHistory(prev => prev.map(c =>
       c.id === activeChat ? { ...c, messages: [...c.messages, { role: 'assistant', content: msg }] } : c
@@ -1978,28 +2414,31 @@ As their luxury travel consultant:
             const opText = leg.operator ? ` • ${leg.operator}` : '';
             const subtitle = `${whenText}${opText}`.trim();
 
-            // Convert ALL prices to USD for consistency
-            // Empty legs are stored in GBP in the database
+            // Use price_usd directly from database (no conversion needed)
             let priceUSD = 0;
             let originalPrice = 0;
-            let originalCurrency = 'GBP';
+            let originalCurrency = 'USD';
 
             if (leg.price_usd && leg.price_usd > 0) {
-              // Already in USD
+              // Use price_usd from database
               priceUSD = parseFloat(leg.price_usd);
               originalPrice = priceUSD;
               originalCurrency = 'USD';
-            } else if (leg.price || leg.discounted_price) {
-              // Price is in GBP - convert to USD
-              originalPrice = parseFloat(leg.price || leg.discounted_price);
-              originalCurrency = leg.currency || 'GBP';
-              priceUSD = Math.round(convertToUSD(originalPrice, originalCurrency));
+            } else if (leg.price_in_usd && leg.price_in_usd > 0) {
+              // Fallback to price_in_usd
+              priceUSD = parseFloat(leg.price_in_usd);
+              originalPrice = priceUSD;
+              originalCurrency = 'USD';
+            } else if (leg.price && leg.price > 0) {
+              // Final fallback to price field
+              priceUSD = parseFloat(leg.price);
+              originalPrice = priceUSD;
+              originalCurrency = 'USD';
             }
 
-            // Add platform fee (2.5%) and VAT (8.1%) for display
-            const platformFee = Math.round(priceUSD * 0.025);
+            // Add VAT (8.1%) for total price calculation
             const vatAmount = Math.round(priceUSD * 0.081);
-            const totalWithFees = priceUSD + platformFee + vatAmount;
+            const totalWithFees = priceUSD + vatAmount;
 
             const imageUrl = leg.image_url || leg.image_url_1 || leg.image_url_2 || leg.image_url_3 || leg.image_url_4 || leg.image_url_5 || (leg.aircraft?.images ? ImageUtils.getPrimaryImage(leg.aircraft.images) : null);
 
@@ -2035,13 +2474,12 @@ As their luxury travel consultant:
               title: routeTitle,
               subtitle,
               currency: 'USD',
-              // Price fields - all in USD
+              // Price fields - all in USD (Base + VAT only)
               price: priceUSD,              // Base price in USD
               price_usd: priceUSD,          // Explicit USD field
               basePrice: priceUSD,          // For cart calculations
-              platform_fee: platformFee,
               vat_amount: vatAmount,
-              totalWithFee: totalWithFees,  // Total with all fees
+              totalWithFee: totalWithFees,  // Total with VAT
               // Original price info for reference
               original_price: originalPrice,
               original_currency: originalCurrency,
@@ -2085,33 +2523,33 @@ As their luxury travel consultant:
         });
       }
 
-      // Add fixed offers / adventures (from fixed_offers table with is_empty_leg = false)
-      const adventures = filteredResults.adventures || [];
-      if (adventures.length > 0) {
-        formattedTabs.push({
-          id: 'adventures',
-          title: 'Fixed Offers & Adventures',
-          count: adventures.length,
-          items: adventures.map(adv => ({
-            ...adv,
-            type: 'adventures',
-            name: adv.title || adv.name,
-            title: adv.title || adv.name,
-            subtitle: `${adv.origin || ''} → ${adv.destination || ''}`.trim() || adv.description,
-            price: adv.price_eur || adv.price,
-            description: adv.description,
-            images: ImageUtils.getAllImageUrls(adv.images || adv.image_url, 'adventure-images'),
-            primaryImage: ImageUtils.getPrimaryImage(adv.images || adv.image_url),
-            details: {
-              'Package': adv.title || adv.name,
-              'Route': `${adv.origin || 'TBD'} → ${adv.destination || 'TBD'}`,
-              'Duration': adv.duration || '—',
-              'Price': adv.price_eur ? `$${adv.price_eur.toLocaleString()}` : '—',
-              'Description': adv.description || '—'
-            }
-          }))
-        });
-      }
+      // HIDDEN: Adventure packages - not shown in AI Chat
+      // const adventures = filteredResults.adventures || [];
+      // if (adventures.length > 0) {
+      //   formattedTabs.push({
+      //     id: 'adventures',
+      //     title: 'Fixed Offers & Adventures',
+      //     count: adventures.length,
+      //     items: adventures.map(adv => ({
+      //       ...adv,
+      //       type: 'adventures',
+      //       name: adv.title || adv.name,
+      //       title: adv.title || adv.name,
+      //       subtitle: `${adv.origin || ''} → ${adv.destination || ''}`.trim() || adv.description,
+      //       price: adv.price_eur || adv.price,
+      //       description: adv.description,
+      //       images: ImageUtils.getAllImageUrls(adv.images || adv.image_url, 'adventure-images'),
+      //       primaryImage: ImageUtils.getPrimaryImage(adv.images || adv.image_url),
+      //       details: {
+      //         'Package': adv.title || adv.name,
+      //         'Route': `${adv.origin || 'TBD'} → ${adv.destination || 'TBD'}`,
+      //         'Duration': adv.duration || '—',
+      //         'Price': adv.price_eur ? `$${adv.price_eur.toLocaleString()}` : '—',
+      //         'Description': adv.description || '—'
+      //       }
+      //     }))
+      //   });
+      // }
 
       // Use static category-based ground transport options (consistent with TaxiConciergeView)
       const groundTransportCategories = [
@@ -2138,12 +2576,22 @@ As their luxury travel consultant:
             price_max: cat.priceMaxCHF,
             images: cat.image ? [cat.image] : [],
             primaryImage: cat.image,
+            // IMPORTANT: Include route info for ground transport requests
+            pickup_location: fromLocation || '',
+            dropoff_location: location || '',
+            from: fromLocation || '',
+            to: location || '',
+            service_type: cat.name,
+            category: cat.name,
+            route: fromLocation && location ? `${fromLocation} → ${location}` : '',
             details: {
               'Category': cat.name,
               'Seats': cat.seats,
               'Description': cat.description,
               'Price per km': `CHF ${cat.priceMinCHF.toFixed(2)} - ${cat.priceMaxCHF.toFixed(2)}`,
-              'Availability': 'Available'
+              'Availability': 'Available',
+              'Pickup': fromLocation || 'To be confirmed',
+              'Dropoff': location || 'To be confirmed'
             }
           }))
         });
@@ -2397,10 +2845,11 @@ As their luxury travel consultant, provide an enthusiastic response that:
 
       console.log('✅ Active chat switched to:', chatId);
     } else {
-      // Regular message in existing chat
+      // Regular message in existing chat - add loading message for AI response
+      const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
       setChatHistory(prev => prev.map(c =>
         c.id === activeChat
-          ? { ...c, messages: [...c.messages, userMessage] }
+          ? { ...c, messages: [...c.messages, userMessage, loadingMsg] }
           : c
       ));
 
@@ -2446,6 +2895,76 @@ As their luxury travel consultant, provide an enthusiastic response that:
       return;
     }
 
+    // Handle Multi-Leg Chat Mode - Parse leg details from user message
+    if (multiLegChatMode) {
+      // Try to parse city/airport, date, and time from user message
+      const cityPattern = /(?:from\s+)?(\w+(?:\s+\w+)?)\s*(?:to|→|->)\s*(\w+(?:\s+\w+)?)|(?:to\s+)?(\w+(?:\s+\w+)?)/i;
+      const datePattern = /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]?\d{0,4}|\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*(?:\s+\d{2,4})?)/i;
+      const timePattern = /(\d{1,2}[:\.]?\d{0,2}\s*(?:am|pm)?|\d{2}:\d{2})/i;
+
+      const cityMatch = message.match(cityPattern);
+      const dateMatch = message.match(datePattern);
+      const timeMatch = message.match(timePattern);
+
+      // If we have at least a city mention, show parsing feedback
+      if (cityMatch) {
+        const parsedCity = cityMatch[2] || cityMatch[3] || cityMatch[1];
+        const parsedDate = dateMatch ? dateMatch[1] : null;
+        const parsedTime = timeMatch ? timeMatch[1] : null;
+
+        // Add loading message
+        const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
+        setChatHistory(prev => prev.map(c =>
+          c.id === workingChatId
+            ? { ...c, messages: [...c.messages, loadingMsg] }
+            : c
+        ));
+
+        setTimeout(() => {
+          // Create a leg data object
+          const newLegData = {
+            city: parsedCity?.trim(),
+            code: parsedCity?.substring(0, 3).toUpperCase(),
+            date: parsedDate || 'TBD',
+            time: parsedTime || 'TBD',
+            stopDuration: 0
+          };
+
+          // Store pending leg data
+          setPendingLegData(newLegData);
+
+          // Create response message asking to confirm
+          const confirmContent = `Got it! Here's what I understood:
+
+**Destination:** ${newLegData.city} (${newLegData.code})
+**Date:** ${newLegData.date}
+**Time:** ${newLegData.time}
+
+Click **"Add to Route"** to confirm this stop, or provide corrections.`;
+
+          const responseMsg = {
+            role: 'assistant',
+            content: confirmContent,
+            isMultiLegChat: true,
+            pendingLeg: newLegData
+          };
+
+          setChatHistory(prev => prev.map(c =>
+            c.id === workingChatId
+              ? {
+                  ...c,
+                  messages: c.messages.map((m, i) =>
+                    i === c.messages.length - 1 && m.isLoading ? responseMsg : m
+                  )
+                }
+              : c
+          ));
+          setIsProcessing(false);
+        }, 600);
+        return;
+      }
+    }
+
     // Build conversation history - handle new chat creation case
     let conversationHistory;
 
@@ -2468,22 +2987,16 @@ As their luxury travel consultant, provide an enthusiastic response that:
 
     console.log('📝 Conversation history being sent to Claude:', conversationHistory);
 
-    // Add a loading message (only if not just created a new chat with loading already added)
-    if (workingChatId === activeChat) {
-      const loadingMessage = { role: 'assistant', content: '...', isLoading: true };
-      setChatHistory(prev => prev.map(c =>
-        c.id === workingChatId
-          ? { ...c, messages: [...c.messages, loadingMessage] }
-          : c
-      ));
-    }
+    // Loading message is already added when user message was added (both for new and existing chats)
 
     try {
       const systemPrompt = getSystemPrompt();
 
-      // Filter out 'results' messages - they're UI-only, not part of Claude conversation
+      // Filter out UI-only messages - only user/assistant are valid Claude roles
+      // place, hotels, adventures, confirm_booking, results, loading are UI-only
+      const uiOnlyRoles = ['results', 'place', 'hotels', 'adventures', 'confirm_booking', 'loading'];
       const claudeMessages = conversationHistory
-        .filter(msg => msg.role !== 'results')
+        .filter(msg => !uiOnlyRoles.includes(msg.role) && !msg.isLoading)
         .map(msg => ({
           role: msg.role,
           content: msg.content
@@ -2583,14 +3096,15 @@ As their luxury travel consultant, provide an enthusiastic response that:
                   items: toolResult.results.yachts
                 });
               }
-              if (toolResult.results.adventures && toolResult.results.adventures.length > 0) {
-                tabs.push({
-                  id: 'adventures',
-                  title: 'Adventures',
-                  count: toolResult.results.adventures.length,
-                  items: toolResult.results.adventures
-                });
-              }
+              // HIDDEN: Adventures not shown in AI Chat
+              // if (toolResult.results.adventures && toolResult.results.adventures.length > 0) {
+              //   tabs.push({
+              //     id: 'adventures',
+              //     title: 'Adventures',
+              //     count: toolResult.results.adventures.length,
+              //     items: toolResult.results.adventures
+              //   });
+              // }
             } else if (toolUse.name === 'searchLuxuryCars' && toolResult.results && toolResult.results.length > 0) {
               tabs.push({
                 id: 'luxury_cars',
@@ -2602,6 +3116,20 @@ As their luxury travel consultant, provide an enthusiastic response that:
               tabs.push({
                 id: 'wines',
                 title: 'Wines',
+                count: toolResult.results.length,
+                items: toolResult.results
+              });
+            } else if (toolUse.name === 'searchDelicatesse' && toolResult.results && toolResult.results.length > 0) {
+              tabs.push({
+                id: 'delicatesse',
+                title: 'Delicacies',
+                count: toolResult.results.length,
+                items: toolResult.results
+              });
+            } else if (toolUse.name === 'searchCigars' && toolResult.results && toolResult.results.length > 0) {
+              tabs.push({
+                id: 'cigars',
+                title: 'Premium Cigars',
                 count: toolResult.results.length,
                 items: toolResult.results
               });
@@ -2789,27 +3317,28 @@ As their luxury travel consultant, provide an enthusiastic response that:
 
               setIsProcessing(false);
               return; // Exit early - hotels handled
-            } else if (toolUse.name === 'searchYachtsAndAdventures' && toolResult.results?.adventures?.length > 0) {
-              // Show adventure package results as cards
-              const adventureCount = toolResult.results.adventures.length;
-              const adventureMessage = {
-                role: 'adventures',
-                content: `Found ${adventureCount} adventure package${adventureCount > 1 ? 's' : ''} for you! Browse the options below - click on any card to see details, add to cart, or request a booking. Would you like me to tell you more about any of these packages?`,
-                adventures: toolResult.results.adventures,
-                params: toolResult.params
-              };
+            // HIDDEN: Adventures not shown in AI Chat - Sommelier handles wine consultations
+            // } else if (toolUse.name === 'searchYachtsAndAdventures' && toolResult.results?.adventures?.length > 0) {
+            //   // Show adventure package results as cards
+            //   const adventureCount = toolResult.results.adventures.length;
+            //   const adventureMessage = {
+            //     role: 'adventures',
+            //     content: `Found ${adventureCount} adventure package${adventureCount > 1 ? 's' : ''} for you! Browse the options below - click on any card to see details, add to cart, or request a booking. Would you like me to tell you more about any of these packages?`,
+            //     adventures: toolResult.results.adventures,
+            //     params: toolResult.params
+            //   };
 
-              setChatHistory(prev => prev.map(c =>
-                c.id === workingChatId
-                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), adventureMessage] }
-                  : c
-              ));
+            //   setChatHistory(prev => prev.map(c =>
+            //     c.id === workingChatId
+            //       ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), adventureMessage] }
+            //       : c
+            //   ));
 
-              // No automatic AI follow-up - just show the cards and let user explore
-              // User can ask for more details if interested
+            //   // No automatic AI follow-up - just show the cards and let user explore
+            //   // User can ask for more details if interested
 
-              setIsProcessing(false);
-              return; // Exit early - adventures handled
+            //   setIsProcessing(false);
+            //   return; // Exit early - adventures handled
             } else if (toolUse.name === 'addHotelToCart' && toolResult.success) {
               // Handle hotel added to cart
               if (toolResult.cartItem) {
@@ -2926,15 +3455,14 @@ As their luxury travel consultant, provide an enthusiastic response that:
         await chatService.updateChatMessages(workingChatId, [...conversationHistory, aiMessage], user.id);
       }
     } catch (error) {
-      console.error('❌ Claude API error:', error);
+      console.error('❌ AI service error:', error);
       console.error('❌ Error details:', {
         message: error.message,
         status: error.status,
         type: error.type,
         error: error
       });
-      const errorMsg = error.message || error.error?.message || 'Failed to get AI response';
-      setToast({ message: `AI Error: ${errorMsg}`, type: 'error' });
+      setToast({ message: 'Error - please open a new chat or contact support', type: 'error' });
     } finally {
       setIsProcessing(false);
     }
@@ -3355,10 +3883,14 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       claudeService.setSystemPrompt(systemPrompt);
 
       // Prepare conversation history for AI consultation
-      const conversationHistory = updatedMessages.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }));
+      // Filter out UI-only messages - only user/assistant are valid Claude roles
+      const uiOnlyRoles = ['results', 'place', 'hotels', 'adventures', 'confirm_booking', 'loading'];
+      const conversationHistory = updatedMessages
+        .filter(msg => !uiOnlyRoles.includes(msg.role) && !msg.isLoading)
+        .map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
 
       // Add context about search results if any exist
       let contextMessage = message;
@@ -3594,8 +4126,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         name: error.name
       });
 
-      // Show actual error to user for debugging
-      const errorResponse = `⚠️ AI Error: ${error.message}\n\nPlease check console for details. (This is a debug message - Claude API might be failing)`;
+      // Show user-friendly error message
+      const errorResponse = `Something went wrong. Please try starting a new chat or contact support if the issue persists.`;
 
       setChatHistory(prev => prev.map(c =>
         c.id === workingChatId
@@ -3631,10 +4163,10 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
     // Quick suggestion bubbles - small, blurred, monochromatic
     const quickSuggestions = [
       { id: 'jets', label: 'Private Jets', prompt: 'I need to book a private jet' },
-      { id: 'adventures', label: 'Adventures', prompt: 'Show me adventure packages' },
+      { id: 'sommelier', label: 'Sommelier', prompt: 'I would like wine recommendations' },
       { id: 'restaurants', label: 'Restaurants', prompt: 'Find me a luxury restaurant' },
       { id: 'transfer', label: 'Airport Transfer', prompt: 'I need an airport transfer' },
-      { id: 'emptylegs', label: 'Empty Legs', prompt: 'Show me available empty leg flights' },
+      { id: 'emptylegs', label: 'Empty Legs', prompt: 'I want to find empty leg flights', isRouteQuery: true },
       { id: 'yachts', label: 'Yachts', prompt: 'I want to charter a yacht' },
     ];
 
@@ -3673,9 +4205,12 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     <button
                       key={suggestion.id}
                       onClick={() => {
-                        // Create new chat and send the prompt
+                        // Create new chat
                         const chatId = `chat-${Date.now()}`;
                         const userMessage = { role: 'user', content: suggestion.prompt };
+
+                        // For all suggestions (including empty legs), show loading animation
+                        // Claude AI will naturally ask for route details for empty legs based on knowledge base
                         const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
 
                         const newChat = {
@@ -4049,6 +4584,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       tabs={msg.tabs}
                       onAddToCart={addToCart}
                       onBookNow={addToCart}
+                      onBuildJourney={handleBuildJourney}
                     />
                   </div>
                 );
@@ -4282,6 +4818,191 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       ) : (
                         <p className="text-sm leading-relaxed whitespace-pre-line">{msg.content}</p>
                       )}
+
+                      {/* Multi-Leg Route Button - Show when AI detects multi-stop journey FOR JETS/HELIS ONLY */}
+                      {msg.role === 'assistant' && !msg.isLoading && (() => {
+                        const content = (msg.content || '').toLowerCase();
+
+                        // EXCLUSIONS: These categories should NEVER show multi-leg journey buttons
+                        const isExcludedCategory = content.match(/delicac|delicatesse|caviar|cigar|flower|cake|decoration|photography|wine|champagne|sommelier|extras|luxury\s*extra|in-flight\s*extra|special\s*treat|beluga|oscietra|sevruga|cohiba|montecristo|davidoff|proposal\s*setup|celebration|birthday|anniversary/i);
+
+                        // If it's about delicatesse/wine/extras, never show multi-leg buttons
+                        if (isExcludedCategory) {
+                          return null;
+                        }
+
+                        // Check if this is about ground transport - if so, DON'T show Build with Form / Continue by Chat
+                        const isGroundTransport = content.match(/ground\s*transport|taxi|transfer|chauffeur|airport\s*pickup|limousine|sedan|economy\s*category|business\s*category|first\s*class\s*category|vip\s*category|van\s*category/i);
+
+                        // Only show for jets/helicopters - detect aviation context
+                        const isAviation = content.match(/private\s*jet|jet\s*charter|charter\s*flight|helicopter|heli|aircraft|fly\s*to|flight|aviation|turboprop|citation|gulfstream|bombardier|cessna|pilatus|embraer/i);
+
+                        // If it's ground transport, never show these buttons
+                        if (isGroundTransport && !isAviation) {
+                          return null;
+                        }
+
+                        // Detect route patterns like "A to B to C" or "A → B → C"
+                        const multiRoutePattern = /(\w+)\s*(to|→|->)\s*(\w+)\s*(to|→|->)\s*(\w+)/i;
+                        const hasRoutePattern = multiRoutePattern.test(content);
+
+                        // Keywords that indicate multi-leg journey context (AVIATION ONLY)
+                        const multiLegKeywords = [
+                          'multi-leg', 'multi leg', 'multiple legs', 'two legs',
+                          'multi-stop', 'multi stop', 'multiple stops', 'two flights',
+                          'second leg', 'first leg', 'connecting flight',
+                          'then fly to', 'then travel to', 'then continue to',
+                          'two-leg', 'round trip with stop', 'multiple destinations',
+                          'book both legs', 'bespoke proposal', 'multi-leg request',
+                          'coordinating two flights', 'entire journey', 'caribbean adventure',
+                          'this route', 'this multi-leg', 'this journey'
+                        ];
+                        const hasMultiLegKeyword = multiLegKeywords.some(kw => content.includes(kw));
+
+                        // Show button ONLY if: (route pattern OR multi-leg keyword) AND it's about aviation (not ground transport)
+                        const shouldShowButton = (hasRoutePattern || hasMultiLegKeyword) && isAviation;
+
+                        // Extract route info from content for display
+                        const routeMatch = content.match(/(\w+[\w\s]*)\s*(to|→|->)\s*(\w+[\w\s]*)\s*(to|→|->)\s*(\w+[\w\s]*)/i);
+                        const routeDisplay = routeMatch
+                          ? `${routeMatch[1].trim()} → ${routeMatch[3].trim()} → ${routeMatch[5].trim()}`
+                          : null;
+
+                        if (shouldShowButton) {
+                          return (
+                            <div className="mt-3 space-y-2">
+                              {/* Label */}
+                              <p className="text-xs text-gray-500 px-1">Start Multi-Leg Journey</p>
+
+                              {/* Two option buttons - same style as welcome message suggestions */}
+                              <div className="flex flex-wrap gap-2">
+                                {/* Build with Form Button */}
+                                <button
+                                  onClick={() => {
+                                    setMultiLegRouteInfo(routeDisplay);
+                                    handleSelectFormBuilder();
+                                  }}
+                                  className="group"
+                                >
+                                  <div className="px-3 py-1.5 bg-white/40 backdrop-blur-sm border border-gray-200/60 rounded-full hover:bg-white/70 hover:border-gray-300 transition-all duration-200 hover:shadow-sm flex items-center gap-1.5">
+                                    <FileText size={12} className="text-gray-500 group-hover:text-gray-700" />
+                                    <span className="text-xs font-medium text-gray-500 group-hover:text-gray-700 transition-colors">
+                                      Build with Form
+                                    </span>
+                                  </div>
+                                </button>
+
+                                {/* Continue by Chat Button */}
+                                <button
+                                  onClick={() => {
+                                    setMultiLegRouteInfo(routeDisplay);
+                                    handleSelectChatBuilder();
+                                  }}
+                                  className="group"
+                                >
+                                  <div className="px-3 py-1.5 bg-white/40 backdrop-blur-sm border border-gray-200/60 rounded-full hover:bg-white/70 hover:border-gray-300 transition-all duration-200 hover:shadow-sm flex items-center gap-1.5">
+                                    <MessageSquare size={12} className="text-gray-500 group-hover:text-gray-700" />
+                                    <span className="text-xs font-medium text-gray-500 group-hover:text-gray-700 transition-colors">
+                                      Continue by Chat
+                                    </span>
+                                  </div>
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+
+                      {/* Multi-Leg Chat Mode Buttons - Show "Add to Route" and "Add Journey to Cart" */}
+                      {msg.role === 'assistant' && msg.isMultiLegChat && multiLegChatMode && !msg.isLoading && (
+                        <div className="mt-3 space-y-2">
+                          {/* Current Route Display */}
+                          {multiLegRoute.length > 0 && (
+                            <div className="px-3 py-2 bg-gray-100/80 rounded-lg border border-gray-200">
+                              <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Current Route</p>
+                              <p className="text-sm font-medium text-gray-800">
+                                {multiLegRoute.map(leg => leg.code || leg.city?.substring(0, 3).toUpperCase()).join(' → ')}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Action Buttons */}
+                          <div className="flex flex-wrap gap-2">
+                            {/* Add to Route Button - Show when there's a pending leg */}
+                            {msg.pendingLeg && (
+                              <button
+                                onClick={() => handleAddLegToRoute(msg.pendingLeg)}
+                                className="group"
+                              >
+                                <div className="px-3 py-1.5 bg-blue-500 border border-blue-500 rounded-full hover:bg-blue-600 transition-all duration-200 hover:shadow-sm flex items-center gap-1.5">
+                                  <Plus size={12} className="text-white" />
+                                  <span className="text-xs font-medium text-white transition-colors">
+                                    Add to Route
+                                  </span>
+                                </div>
+                              </button>
+                            )}
+
+                            {/* Add Next Stop Button - Show when no pending leg */}
+                            {!msg.pendingLeg && (
+                              <button
+                                onClick={() => {
+                                  // Prompt user for next destination
+                                  const promptMessage = multiLegRoute.length === 0
+                                    ? "Please tell me your **departure city** and **first destination** with the date and time."
+                                    : `Great! What's your **next destination** after ${multiLegRoute[multiLegRoute.length - 1]?.city || 'your last stop'}? Include the date and time.`;
+
+                                  const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
+                                  setChatHistory(prev => prev.map(c =>
+                                    c.id === activeChat
+                                      ? { ...c, messages: [...c.messages, loadingMsg] }
+                                      : c
+                                  ));
+
+                                  setTimeout(() => {
+                                    setChatHistory(prev => prev.map(c =>
+                                      c.id === activeChat
+                                        ? {
+                                            ...c,
+                                            messages: c.messages.map((m, i) =>
+                                              i === c.messages.length - 1 && m.isLoading
+                                                ? { role: 'assistant', content: promptMessage, isMultiLegChat: true }
+                                                : m
+                                            )
+                                          }
+                                        : c
+                                    ));
+                                  }, 400);
+                                }}
+                                className="group"
+                              >
+                                <div className="px-3 py-1.5 bg-white/40 backdrop-blur-sm border border-gray-200/60 rounded-full hover:bg-white/70 hover:border-gray-300 transition-all duration-200 hover:shadow-sm flex items-center gap-1.5">
+                                  <Plus size={12} className="text-gray-500 group-hover:text-gray-700" />
+                                  <span className="text-xs font-medium text-gray-500 group-hover:text-gray-700 transition-colors">
+                                    Add {multiLegRoute.length === 0 ? 'First Stop' : 'Next Stop'}
+                                  </span>
+                                </div>
+                              </button>
+                            )}
+
+                            {/* Add Journey to Cart Button - Only show when we have at least 2 stops */}
+                            {multiLegRoute.length >= 2 && (
+                              <button
+                                onClick={handleAddRouteToCart}
+                                className="group"
+                              >
+                                <div className="px-3 py-1.5 bg-gray-900 border border-gray-900 rounded-full hover:bg-gray-800 transition-all duration-200 hover:shadow-sm flex items-center gap-1.5">
+                                  <ShoppingCart size={12} className="text-white" />
+                                  <span className="text-xs font-medium text-white transition-colors">
+                                    Add Journey to Cart
+                                  </span>
+                                </div>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     {/* Action Buttons for Booking Confirmation */}
                     {msg.action === 'send_charter_request' && (
@@ -4397,91 +5118,10 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       </div>
                     )}
 
-                    {/* Break the Price - Confirm & Send Request */}
-                    {msg.action === 'price_break_confirm' && msg.extractedData && (
-                      <div className="mt-4 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
-                        <div className="flex items-center gap-2 mb-3">
-                          <DollarSign size={18} className="text-gray-700" />
-                          <span className="font-medium text-gray-900">Would you like me to break the price?</span>
-                          <span className="text-[10px] px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">FREE</span>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-4">
-                          If the extracted information is correct, click below and our team will find you a better price within 12 hours.
-                        </p>
-                        <div className="flex flex-col gap-2">
-                          <button
-                            onClick={async () => {
-                              try {
-                                // Update the price break request status to 'confirmed'
-                                if (msg.requestRef) {
-                                  await supabase
-                                    .from('price_break_requests')
-                                    .update({ status: 'confirmed' })
-                                    .eq('metadata->>reference', msg.requestRef);
-                                }
-
-                                // Create a custom request
-                                const requestData = {
-                                  type: 'break_the_price',
-                                  source: 'ai_chat',
-                                  reference: msg.requestRef,
-                                  extractedData: msg.extractedData,
-                                  conversation_id: activeChat,
-                                  submitted_at: new Date().toISOString()
-                                };
-
-                                const result = await createRequest(
-                                  'break_the_price',
-                                  requestData,
-                                  user?.id
-                                );
-
-                                if (result.success) {
-                                  setToast({ message: 'Request sent! We\'ll get back to you within 12 hours.', type: 'success' });
-                                  setChatHistory(prev => prev.map(c =>
-                                    c.id === activeChat
-                                      ? {
-                                          ...c,
-                                          messages: [...c.messages, {
-                                            role: 'assistant',
-                                            content: `Your Break the Price request has been confirmed and sent to our team.\n\n**Reference:** #${msg.requestRef}\n\nWe'll analyze your quote and get back to you with a better price within 12 hours. You can track this request in your AI Requests.`
-                                          }]
-                                        }
-                                      : c
-                                  ));
-                                }
-                              } catch (error) {
-                                console.error('Error confirming break the price:', error);
-                                setToast({ message: 'Failed to send request. Please try again.', type: 'error' });
-                              }
-                            }}
-                            className="w-full px-5 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2"
-                          >
-                            <Send size={18} />
-                            Send Request
-                          </button>
-                          <button
-                            onClick={() => {
-                              setChatHistory(prev => prev.map(c =>
-                                c.id === activeChat
-                                  ? {
-                                      ...c,
-                                      messages: [...c.messages, {
-                                        role: 'assistant',
-                                        content: `No problem! Please tell me what needs to be corrected in the extracted data, and I'll update it before sending the request.`
-                                      }]
-                                    }
-                                  : c
-                              ));
-                            }}
-                            className="w-full px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
-                          >
-                            <Edit2 size={16} />
-                            Something's not right - Let me correct it
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                    {/* Break the Price - Confirm & Send Request - HIDDEN (feature disabled) */}
+                    {/* {msg.action === 'price_break_confirm' && msg.extractedData && (
+                      ...hidden...
+                    )} */}
                   </div>
                 </div>
               );
@@ -4540,6 +5180,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   setSelectedPaymentItem(item);
                   setShowPaymentModal(true);
                 }}
+                onBuildJourney={handleBuildJourney}
               />
             )}
 
@@ -4613,8 +5254,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
           ) : (
             /* Normal Input */
             <div className="flex items-center gap-3 bg-gray-50 border border-gray-300 rounded-xl px-4 py-3">
-              {/* Break the Price Button - Left side of input */}
-              <button
+              {/* Break the Price Button - HIDDEN (feature disabled) */}
+              {/* <button
                 onClick={() => setShowBreakThePrice(true)}
                 disabled={!canUseBreakThePrice() || isSearching}
                 className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
@@ -4625,7 +5266,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 title={canUseBreakThePrice() ? 'Break the Price - Upload competitor quote' : 'Upgrade to unlock Break the Price'}
               >
                 <Upload size={18} />
-              </button>
+              </button> */}
 
               <input
                 type="text"
@@ -4697,24 +5338,20 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
             {/* Inline Extras Form - shown inside cart dropdown */}
             {showInlineExtras && (
-              <div className="border-b border-gray-200 bg-gray-50 p-3 flex-shrink-0 max-h-[40vh] overflow-y-auto">
+              <div className="border-b border-gray-200 bg-gray-50 p-3 flex-shrink-0 max-h-[50vh] overflow-y-auto">
                 {!selectedExtraCategory ? (
                   <>
                     <p className="text-xs text-gray-500 mb-2">Select a category</p>
                     <div className="grid grid-cols-3 gap-1.5">
                       {[
-                        { id: 'wine', icon: '🍷', label: 'Wine' },
-                        { id: 'champagne', icon: '🍾', label: 'Champagne' },
-                        { id: 'cigars', icon: '🚬', label: 'Cigars' },
                         { id: 'caviar', icon: '🥄', label: 'Caviar' },
+                        { id: 'cigars', icon: '🚬', label: 'Cigars' },
                         { id: 'flowers', icon: '💐', label: 'Flowers' },
-                        { id: 'cake', icon: '🎂', label: 'Cakes' },
+                        { id: 'cakes', icon: '🎂', label: 'Cakes' },
                         { id: 'decorations', icon: '🎈', label: 'Decor' },
-                        { id: 'music', icon: '🎵', label: 'Music' },
                         { id: 'photography', icon: '📸', label: 'Photo' },
-                        { id: 'catering', icon: '🍽️', label: 'Catering' },
-                        { id: 'spirits', icon: '🥃', label: 'Spirits' },
-                        { id: 'other', icon: '✨', label: 'Other' }
+                        { id: 'special', icon: '⭐', label: 'Special' },
+                        { id: 'smoking', icon: '✈️', label: 'Aircraft' }
                       ].map(cat => (
                         <button
                           key={cat.id}
@@ -4737,90 +5374,222 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
                     >
                       <ChevronLeft size={14} />
-                      Back
+                      Back to categories
                     </button>
-                    {/* Quick suggestions */}
-                    <div className="flex flex-wrap gap-1">
-                      {(selectedExtraCategory === 'wine' ? ['Dom Pérignon', 'Château Margaux', 'Opus One'] :
-                        selectedExtraCategory === 'champagne' ? ['Moët', 'Veuve Clicquot', 'Krug'] :
-                        selectedExtraCategory === 'cigars' ? ['Cohiba Behike', 'Montecristo', 'Davidoff'] :
-                        selectedExtraCategory === 'caviar' ? ['Beluga', 'Oscietra', 'Sevruga'] :
-                        selectedExtraCategory === 'flowers' ? ['Red Roses', 'Orchids', 'Mixed'] :
-                        selectedExtraCategory === 'catering' ? ['Vegan', 'Halal', 'Kosher'] :
-                        ['Custom Request']
-                      ).map(item => (
+
+                    {/* LUXURY SERVICES CATALOG */}
+                    {(() => {
+                      // Luxury Services Data
+                      const luxuryServices = {
+                        caviar: [
+                          { product: 'Sevruga Caviar 50g', price_usd: 185, unit: 'per 50g' },
+                          { product: 'Sevruga Caviar 100g', price_usd: 370, unit: 'per 100g' },
+                          { product: 'Sevruga Caviar 200g', price_usd: 740, unit: 'per 200g' },
+                          { product: 'Sevruga Caviar 250g', price_usd: 925, unit: 'per 250g' },
+                          { product: 'Sevruga Caviar 500g', price_usd: 1850, unit: 'per 500g' },
+                          { product: 'Oscietra Caviar 30g', price_usd: 210, unit: 'per 30g' },
+                          { product: 'Oscietra Caviar 50g', price_usd: 350, unit: 'per 50g' },
+                          { product: 'Oscietra Caviar 200g', price_usd: 1395, unit: 'per 200g' },
+                          { product: 'Beluga Siberian 30g', price_usd: 160, unit: 'per 30g' },
+                          { product: 'Beluga Siberian 50g', price_usd: 265, unit: 'per 50g' },
+                          { product: 'Beluga Siberian 100g', price_usd: 530, unit: 'per 100g' }
+                        ],
+                        cigars: [
+                          { product: 'Cohiba Behike 52', price_usd: 120, unit: 'Robusto • Medium-Full' },
+                          { product: 'Cohiba Behike 54', price_usd: 140, unit: 'Toro • Medium-Full' },
+                          { product: 'Cohiba Behike 56', price_usd: 160, unit: 'Gran Robusto • Medium-Full' },
+                          { product: 'Cohiba Esplendido', price_usd: 85, unit: 'Churchill • Medium' },
+                          { product: 'Cohiba Siglo VI', price_usd: 70, unit: 'Toro • Medium' },
+                          { product: 'Cohiba Lancero', price_usd: 65, unit: 'Lonsdale • Medium' },
+                          { product: 'Cohiba Robusto', price_usd: 55, unit: 'Robusto • Medium' },
+                          { product: 'Montecristo No. 2', price_usd: 45, unit: 'Torpedo • Medium' },
+                          { product: 'Montecristo No. 4', price_usd: 35, unit: 'Petit Corona • Medium' },
+                          { product: 'Montecristo Edmundo', price_usd: 40, unit: 'Robusto • Medium' },
+                          { product: 'Padron 1964 Anniversary Maduro', price_usd: 35, unit: 'Robusto • Full' },
+                          { product: 'Padron 1926 Serie No. 9', price_usd: 40, unit: 'Torpedo • Full' },
+                          { product: 'Davidoff Millennium Robusto', price_usd: 45, unit: 'Robusto • Medium' },
+                          { product: 'Davidoff Winston Churchill', price_usd: 50, unit: 'Toro • Medium' },
+                          { product: 'Davidoff Year of the Dragon', price_usd: 180, unit: 'Toro • Medium' },
+                          { product: 'Arturo Fuente Opus X Perfecxion No. 4', price_usd: 35, unit: 'Robusto • Full' },
+                          { product: 'Arturo Fuente Opus X Double Corona', price_usd: 55, unit: 'Double Corona • Full' },
+                          { product: 'Romeo y Julieta Churchill', price_usd: 30, unit: 'Churchill • Medium' },
+                          { product: 'Partagas Serie D No. 4', price_usd: 30, unit: 'Robusto • Full' },
+                          { product: 'Partagas Lusitania', price_usd: 40, unit: 'Double Corona • Full' }
+                        ],
+                        flowers: [
+                          { product: '12 Premium Red Roses', price_usd: 80, unit: 'per bouquet' },
+                          { product: '24 Premium Red Roses', price_usd: 150, unit: 'per bouquet' },
+                          { product: 'Luxury Orchid Arrangement', price_usd: 200, unit: 'per arrangement' },
+                          { product: 'Mixed Designer Bouquet', price_usd: 250, unit: 'per bouquet' },
+                          { product: 'Premium Event Installation', price_usd: 500, unit: 'per installation' }
+                        ],
+                        cakes: [
+                          { product: 'Custom Birthday Cake (2-Tier)', price_usd: 250, unit: 'per cake' },
+                          { product: 'Designer Celebration Cake', price_usd: 350, unit: 'per cake' },
+                          { product: 'Macaron Tower (100 pieces)', price_usd: 300, unit: 'per tower' },
+                          { product: 'Luxury Dessert Platter', price_usd: 200, unit: 'per platter' }
+                        ],
+                        decorations: [
+                          { product: 'Birthday Package', price_usd: 350, unit: 'per setup' },
+                          { product: 'Anniversary Romantic Setup', price_usd: 450, unit: 'per setup' },
+                          { product: 'Proposal Premium Setup', price_usd: 800, unit: 'per setup' },
+                          { product: 'Corporate Branding Package', price_usd: 550, unit: 'per setup' }
+                        ],
+                        photography: [
+                          { product: 'Photographer (3 hours)', price_usd: 1000, unit: 'per session' },
+                          { product: 'Videographer (Event)', price_usd: 1500, unit: 'per event' },
+                          { product: 'Drone Footage', price_usd: 750, unit: 'per session' },
+                          { product: 'Photo + Video Package', price_usd: 2800, unit: 'per package' }
+                        ],
+                        special: [
+                          { product: 'Pet Transport (Cabin-Safe)', price_usd: 250, unit: 'per transport' },
+                          { product: 'Security Personnel', price_usd: 700, unit: 'per day' },
+                          { product: 'Interpreter', price_usd: 200, unit: 'per hour' },
+                          { product: 'Butler Service', price_usd: 900, unit: 'per day' }
+                        ],
+                        smoking: [
+                          { product: 'Aircraft Deep Cleaning Fee (Smoking)', price_usd: 2000, unit: 'Required for smoking onboard' }
+                        ]
+                      };
+
+                      const items = luxuryServices[selectedExtraCategory] || [];
+                      const categoryLabels = {
+                        caviar: 'Premium Caviar',
+                        cigars: 'Premium Cigars',
+                        flowers: 'Floral Arrangements',
+                        cakes: 'Cakes & Desserts',
+                        decorations: 'Event Decorations',
+                        photography: 'Photo & Video',
+                        special: 'Special Services',
+                        smoking: 'Aircraft Services'
+                      };
+
+                      return (
+                        <div className="space-y-1.5">
+                          <p className="text-xs font-medium text-gray-700 mb-2">{categoryLabels[selectedExtraCategory]}</p>
+                          {items.map((item, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between p-2 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
+                            >
+                              <div className="flex-1 min-w-0 pr-2">
+                                <p className="text-xs font-medium text-gray-900 truncate">{item.product}</p>
+                                <p className="text-[10px] text-gray-500">{item.unit}</p>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <span className="text-xs font-semibold text-gray-900">${item.price_usd.toLocaleString()}</span>
+                                <button
+                                  onClick={() => {
+                                    const newExtra = {
+                                      id: `extra-${Date.now()}`,
+                                      cartId: `extra-${Date.now()}`,
+                                      type: 'custom_extra',
+                                      name: item.product,
+                                      title: item.product,
+                                      category: selectedExtraCategory,
+                                      quantity: 1,
+                                      unitPrice: item.price_usd,
+                                      price: item.price_usd,
+                                      price_usd: item.price_usd,
+                                      basePrice: item.price_usd,
+                                      totalWithFee: item.price_usd,
+                                      unit: item.unit,
+                                      isEstimate: false,
+                                      addedAt: new Date().toISOString()
+                                    };
+
+                                    // Check if this is a cigar item and if cleaning fee already exists
+                                    const isCigarItem = selectedExtraCategory === 'cigars';
+                                    const hasCleaningFee = cartItems.some(i =>
+                                      i.isCleaningFee === true ||
+                                      i.id === 'aircraft-cleaning-fee-smoking' ||
+                                      (i.name && i.name.toLowerCase().includes('cleaning fee') && i.name.toLowerCase().includes('smoking'))
+                                    );
+
+                                    if (isCigarItem && !hasCleaningFee) {
+                                      // Add cleaning fee automatically
+                                      const cleaningFeeItem = {
+                                        id: 'aircraft-cleaning-fee-smoking',
+                                        cartId: `cleaning-${Date.now()}`,
+                                        type: 'service_fee',
+                                        name: 'Aircraft Cleaning Fee (Smoking)',
+                                        title: 'Aircraft Cleaning Fee (Smoking)',
+                                        description: 'Required deep cleaning for aircraft after cigar/smoking use',
+                                        category: 'Aircraft Services',
+                                        quantity: 1,
+                                        unitPrice: 2000,
+                                        price: 2000,
+                                        price_usd: 2000,
+                                        basePrice: 2000,
+                                        totalWithFee: 2000,
+                                        unit: 'Required for smoking onboard',
+                                        isEstimate: false,
+                                        isCleaningFee: true,
+                                        isRequired: true,
+                                        linkedTo: 'cigars',
+                                        addedAt: new Date().toISOString()
+                                      };
+                                      setCartItems(prev => [...prev, newExtra, cleaningFeeItem]);
+                                      setToast({ message: `${item.product} + cleaning fee added`, type: 'cart' });
+                                    } else {
+                                      setCartItems(prev => [...prev, newExtra]);
+                                      setToast({ message: `${item.product} added`, type: 'cart' });
+                                    }
+                                  }}
+                                  className="px-2 py-1 bg-gray-900 text-white text-[10px] font-medium rounded hover:bg-gray-800 transition-colors"
+                                >
+                                  Add
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Custom Request Option */}
+                    <div className="pt-2 border-t border-gray-200 mt-3">
+                      <p className="text-[10px] text-gray-500 mb-1.5">Or add a custom request:</p>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={customExtraForm.name}
+                          onChange={(e) => setCustomExtraForm(prev => ({ ...prev, name: e.target.value }))}
+                          placeholder="Custom item name..."
+                          className="flex-1 px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs focus:ring-1 focus:ring-gray-900 focus:border-transparent"
+                        />
                         <button
-                          key={item}
-                          onClick={() => setCustomExtraForm(prev => ({ ...prev, name: item }))}
-                          className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
-                            customExtraForm.name === item
-                              ? 'bg-gray-900 text-white'
-                              : 'bg-white text-gray-600 hover:bg-gray-200 border border-gray-200'
-                          }`}
-                        >
-                          {item}
-                        </button>
-                      ))}
-                    </div>
-                    {/* Name input */}
-                    <input
-                      type="text"
-                      value={customExtraForm.name}
-                      onChange={(e) => setCustomExtraForm(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder={`Enter ${selectedExtraCategory} name...`}
-                      className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs focus:ring-1 focus:ring-gray-900 focus:border-transparent"
-                    />
-                    {/* Quantity & Add */}
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => setCustomExtraForm(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
-                          className="w-6 h-6 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded text-gray-700 text-xs"
-                        >
-                          <Minus size={12} />
-                        </button>
-                        <span className="text-xs font-medium w-5 text-center">{customExtraForm.quantity}</span>
-                        <button
-                          onClick={() => setCustomExtraForm(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
-                          className="w-6 h-6 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded text-gray-700 text-xs"
+                          onClick={() => {
+                            if (!customExtraForm.name.trim()) return;
+                            const newExtra = {
+                              id: `extra-${Date.now()}`,
+                              cartId: `extra-${Date.now()}`,
+                              type: 'custom_extra',
+                              name: customExtraForm.name,
+                              title: customExtraForm.name,
+                              category: selectedExtraCategory,
+                              quantity: 1,
+                              price: 0,
+                              basePrice: 0,
+                              totalWithFee: 0,
+                              isEstimate: true,
+                              isCustomRequest: true,
+                              addedAt: new Date().toISOString()
+                            };
+                            setCartItems(prev => [...prev, newExtra]);
+                            setShowInlineExtras(false);
+                            setSelectedExtraCategory(null);
+                            setCustomExtraForm({ name: '', category: '', quantity: 1, notes: '' });
+                            setToast({ message: `Custom request added`, type: 'cart' });
+                          }}
+                          disabled={!customExtraForm.name.trim()}
+                          className="px-3 py-1.5 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1"
                         >
                           <Plus size={12} />
+                          Add
                         </button>
                       </div>
-                      <button
-                        onClick={() => {
-                          if (!customExtraForm.name.trim()) return;
-                          const defaultPrices = { wine: 150, champagne: 120, spirits: 200, caviar: 300, cigars: 500, flowers: 150, cake: 200, decorations: 300, music: 500, photography: 800, catering: 100, other: 100 };
-                          const unitPrice = defaultPrices[selectedExtraCategory] || 100;
-                          const totalPrice = unitPrice * customExtraForm.quantity;
-                          const newExtra = {
-                            id: `extra-${Date.now()}`,
-                            cartId: `extra-${Date.now()}`,
-                            type: 'custom_extra',
-                            name: customExtraForm.name,
-                            title: customExtraForm.name,
-                            category: selectedExtraCategory,
-                            quantity: customExtraForm.quantity,
-                            unitPrice,
-                            price: totalPrice,
-                            basePrice: totalPrice,
-                            totalWithFee: totalPrice,
-                            isEstimate: true,
-                            isCustomRequest: true,
-                            addedAt: new Date().toISOString()
-                          };
-                          setCartItems(prev => [...prev, newExtra]);
-                          setShowInlineExtras(false);
-                          setSelectedExtraCategory(null);
-                          setCustomExtraForm({ name: '', category: '', quantity: 1, notes: '' });
-                          setToast({ message: `Added ${customExtraForm.name} to cart`, type: 'cart' });
-                        }}
-                        disabled={!customExtraForm.name.trim()}
-                        className="flex-1 py-1.5 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 text-white text-xs font-medium rounded-lg transition-colors flex items-center justify-center gap-1"
-                      >
-                        <Plus size={12} />
-                        Add (~${(({ wine: 150, champagne: 120, spirits: 200, caviar: 300, cigars: 500, flowers: 150, cake: 200, decorations: 300, music: 500, photography: 800, catering: 100, other: 100 }[selectedExtraCategory] || 100) * customExtraForm.quantity).toLocaleString()})
-                      </button>
+                      <p className="text-[9px] text-gray-400 mt-1">Price on request</p>
                     </div>
                   </div>
                 )}
@@ -4990,11 +5759,12 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                               }`}>
                                 {isPaidItem ? 'PAID' : isJet ? 'CHARTER' : isHelicopter ? 'HELI' : isYacht ? 'YACHT' : isLuxuryCar ? 'SUPERCAR' : isEmptyLeg ? 'EMPTY LEG' : isTransfer ? 'TRANSFER' : isAdventure ? 'EXPERIENCE' : isWine ? 'WINE' : 'SERVICE'}
                               </span>
-                              {!isPaidItem && isEmptyLeg && (
-                                <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-gray-200 text-gray-700">CRYPTO PAY</span>
-                              )}
-                              {!isPaidItem && (isJet || isHelicopter) && !isEmptyLeg && (
+{/* CRYPTO PAY badge hidden - now shown only in final submit popup and My Requests */}
+                              {!isPaidItem && (isJet || isHelicopter) && !isEmptyLeg && !item.isMultiStop && (
                                 <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-gray-200 text-gray-600">AI REQUEST</span>
+                              )}
+                              {!isPaidItem && item.isMultiStop && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-blue-100 text-blue-700">MULTI-STOP</span>
                               )}
                             </div>
                             <p className="text-sm font-semibold text-gray-900 truncate">
@@ -5041,8 +5811,34 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                               </button>
                             </div>
 
+                            {/* Multi-Stop Journey Details */}
+                            {item.isMultiStop && item.stops && (
+                              <div className="p-3 space-y-2">
+                                <p className="text-[10px] text-gray-500 uppercase tracking-wide">Journey Stops</p>
+                                <div className="space-y-1">
+                                  {item.stops.map((stop, stopIdx) => (
+                                    <div key={stopIdx} className="flex items-center gap-2 text-xs">
+                                      <div className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <span className="text-[9px] font-bold text-gray-600">{stopIdx + 1}</span>
+                                      </div>
+                                      <span className="font-medium text-gray-900">{stop.city} ({stop.code})</span>
+                                      {stop.date && stop.date !== 'TBD' && (
+                                        <span className="text-gray-500">{stop.date}</span>
+                                      )}
+                                      {stop.time && stop.time !== 'TBD' && (
+                                        <span className="text-gray-400">{stop.time}</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                                <p className="text-[10px] text-gray-400 italic pt-2">
+                                  Our coordinators will recommend the best aircraft for this route.
+                                </p>
+                              </div>
+                            )}
+
                             {/* Jet/Heli Details */}
-                            {(isJet || isHelicopter) && (
+                            {(isJet || isHelicopter) && !item.isMultiStop && (
                               <div className="p-3 space-y-2 text-xs text-gray-600">
                                 <div className="grid grid-cols-2 gap-2">
                                   {item.max_passengers && (
@@ -5467,41 +6263,57 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     );
                   })()}
 
-                  {/* Smart checkout: Two simple buttons */}
+                  {/* Smart checkout: Direct crypto pay for payable items OR Send Request */}
                   {(() => {
-                    const payableTypes = ['empty_legs', 'emptyleg', 'adventure', 'fixed_offer'];
+                    // PAYABLE TYPES: Can checkout directly with crypto
+                    // - Empty legs (fixed prices)
+                    // - Wines (fixed prices)
+                    // - Delicacies/extras (cigars, caviar, flowers, etc.)
+                    // - Service fees (cleaning fee)
+                    const payableTypes = ['empty_legs', 'emptyleg', 'adventure', 'fixed_offer', 'wines', 'wine', 'custom_extra', 'service_fee', 'cigars', 'delicatesse'];
+
+                    // REQUEST-ONLY TYPES: Need coordinator quote
+                    const requestOnlyTypes = ['jets', 'jet', 'helicopters', 'helicopter', 'yachts', 'yacht', 'luxury_cars', 'luxury_car', 'taxi', 'transfer', 'ground_transport', 'taxi_cars'];
+
                     // Exclude already paid items from calculations
                     const unpaidItems = cartItems.filter(item => !item.isPaid && item.paymentStatus !== 'pending_confirmation');
-                    // Only consider items payable if they have a valid price > 0
-                    const payableItems = unpaidItems.filter(item =>
-                      payableTypes.includes(item.type) &&
-                      (item.price_usd || item.price || item.basePrice) > 0
-                    );
-                    const requestOnlyItems = unpaidItems.filter(item =>
-                      !payableTypes.includes(item.type) ||
-                      !(item.price_usd || item.price || item.basePrice) ||
-                      (item.price_usd || item.price || item.basePrice) <= 0
-                    );
+
+                    // Check if cart contains ANY request-only items
+                    const hasRequestOnlyService = unpaidItems.some(item => requestOnlyTypes.includes(item.type));
+
+                    // Payable items: items that CAN be paid directly (not request-only)
+                    const payableItems = unpaidItems.filter(item => {
+                      // Check if it's a payable type
+                      const isPayableType = payableTypes.includes(item.type) ||
+                        item.isCleaningFee ||
+                        (item.category && ['cigars', 'caviar', 'flowers', 'cakes', 'decorations', 'photography', 'special', 'smoking', 'Caviar', 'Premium Cigars', 'Flowers', 'Cakes & Desserts', 'Event Decorations', 'Photography & Video', 'Aircraft Services'].includes(item.category));
+                      // Must have valid price > 0
+                      const hasValidPrice = (item.price_usd || item.price || item.basePrice) > 0;
+                      return isPayableType && hasValidPrice;
+                    });
+
+                    const requestOnlyItems = unpaidItems.filter(item => requestOnlyTypes.includes(item.type));
                     const paidItems = cartItems.filter(item => item.isPaid || item.paymentStatus === 'pending_confirmation');
                     const hasPayableItems = payableItems.length > 0;
                     const hasRequestOnlyItems = requestOnlyItems.length > 0;
                     const onlyPaidItems = unpaidItems.length === 0 && paidItems.length > 0;
 
-                    // Calculate totals for payable items - use pre-calculated totalWithFee if available
+                    // NEW: Check if cart contains ONLY payable items (can do direct checkout)
+                    const canDoDirectCheckout = hasPayableItems && !hasRequestOnlyService && unpaidItems.length > 0;
+
+                    // Calculate totals for payable items - Base + VAT only
                     const payableSubtotal = payableItems.reduce((sum, item) => sum + (item.price_usd || item.price || item.basePrice || 0), 0);
-                    const payablePlatformFee = payableItems.reduce((sum, item) => sum + (item.platform_fee || Math.round((item.price_usd || item.price || item.basePrice || 0) * 0.025)), 0);
                     const payableVAT = payableItems.reduce((sum, item) => sum + (item.vat_amount || Math.round((item.price_usd || item.price || item.basePrice || 0) * 0.081)), 0);
-                    const payableTotal = payableItems.reduce((sum, item) => sum + (item.totalWithFee || ((item.price_usd || item.price || item.basePrice || 0) * 1.106)), 0);
+                    const payableTotal = payableItems.reduce((sum, item) => sum + (item.totalWithFee || ((item.price_usd || item.price || item.basePrice || 0) * 1.081)), 0);
 
                     // Helper function to save booking to database (for tracking purposes)
                     const saveBookingToDatabase = async (item, status = 'pending') => {
                       if (!user?.id) return null;
                       try {
-                        // Calculate proper USD prices
+                        // Calculate proper USD prices - Base + VAT only
                         const basePrice = item.price_usd || item.price || item.basePrice || 0;
-                        const platformFee = item.platform_fee || Math.round(basePrice * 0.025);
                         const vatAmount = item.vat_amount || Math.round(basePrice * 0.081);
-                        const totalPrice = item.totalWithFee || (basePrice + platformFee + vatAmount);
+                        const totalPrice = item.totalWithFee || (basePrice + vatAmount);
 
                         const bookingData = {
                           user_id: user.id,
@@ -5515,9 +6327,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           destination: item.to_city || item.destination || item.to || item.arrival_airport,
                           departure_date: item.departure_date || item.date,
                           passengers: item.passengers || item.pax || item.max_passengers,
-                          // Full price breakdown - ALL IN USD
+                          // Full price breakdown - ALL IN USD (Base + VAT only)
                           base_amount: basePrice,
-                          platform_fee: platformFee,
                           vat_amount: vatAmount,
                           total_amount: totalPrice,
                           currency: 'USD',
@@ -5534,10 +6345,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                             aircraft_type: item.aircraft_type,
                             aircraft_model: item.aircraft_model,
                             category: item.category,
-                            // Price breakdown
+                            // Price breakdown - VAT only
                             base_price: basePrice,
-                            platform_fee: platformFee,
-                            platform_fee_percent: 2.5,
                             vat_amount: vatAmount,
                             vat_percent: 8.1,
                             total_price: totalPrice,
@@ -5563,62 +6372,160 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     };
 
                     // Helper function to save to user_requests for AI Requests tracking
+                    // IMPORTANT: This saves ALL relevant fields so MyRequestsView displays correctly
                     const saveToAIRequests = async (item) => {
                       if (!user?.id) return null;
                       try {
-                        // Calculate proper USD prices
+                        // Calculate proper USD prices - Base + VAT only
                         const basePrice = item.price_usd || item.price || item.basePrice || 0;
-                        const platformFee = item.platform_fee || Math.round(basePrice * 0.025);
                         const vatAmount = item.vat_amount || Math.round(basePrice * 0.081);
-                        const totalPrice = item.totalWithFee || (basePrice + platformFee + vatAmount);
+                        const totalPrice = item.totalWithFee || (basePrice + vatAmount);
+
+                        // Determine request type
+                        const isEmptyLeg = item.type === 'empty_legs' || item.type === 'emptyleg';
+                        const isAdventure = item.type === 'adventure' || item.type === 'fixed_offer' || item.type === 'adventures';
+                        const isJet = item.type === 'jets' || item.type === 'jet' || item.type === 'helicopter';
+                        const isTaxi = item.type === 'taxi_cars' || item.type === 'taxi' || item.type === 'transfer' || item.type === 'ground_transport';
+                        const isYacht = item.type === 'yachts' || item.type === 'yacht';
+                        const isLuxuryCar = item.type === 'luxury_cars' || item.type === 'luxury_car';
+
+                        const requestType = isEmptyLeg ? 'empty_leg' :
+                                           isAdventure ? 'fixed_offer' :
+                                           isTaxi ? 'ground_transport' :
+                                           isJet ? 'private_jet_charter' :
+                                           isYacht ? 'yacht_charter' :
+                                           isLuxuryCar ? 'luxury_car' : 'booking';
 
                         const { data, error } = await supabase
                           .from('user_requests')
                           .insert([{
                             user_id: user.id,
-                            type: item.type === 'empty_legs' || item.type === 'emptyleg' ? 'empty_leg' :
-                                  item.type === 'adventure' || item.type === 'fixed_offer' ? 'fixed_offer' : 'booking',
+                            type: requestType,
                             status: 'pending',
                             client_email: user.email,
                             data: {
                               source: 'ai_chat_checkout',
                               item_type: item.type,
+
                               // Service details
-                              name: item.name || item.title,
-                              title: item.title || item.name,
-                              // Route info
+                              name: item.name || item.title || item.aircraft_type || item.model,
+                              title: item.title || item.name || item.aircraft_type,
+
+                              // Route info - COMPREHENSIVE
+                              from: item.from || item.from_city || item.origin || item.pickup_location,
+                              to: item.to || item.to_city || item.destination || item.dropoff_location,
                               from_city: item.from_city || item.from || item.origin,
                               to_city: item.to_city || item.to || item.destination,
-                              from_iata: item.from_iata,
-                              to_iata: item.to_iata,
+                              from_iata: item.from_iata || item.originIata,
+                              to_iata: item.to_iata || item.destinationIata,
                               route: `${item.from_city || item.from || item.origin || ''} → ${item.to_city || item.to || item.destination || ''}`,
                               flight_route: `${item.from_iata || item.from_city || ''} → ${item.to_iata || item.to_city || ''}`,
-                              // Date/Time
-                              departure_date: item.departure_date || item.date,
-                              departure_time: item.departure_time,
+
+                              // Date/Time - ALL RELEVANT FIELDS
+                              departure_date: item.departure_date || item.date || item.selectedDate,
+                              departure_time: item.departure_time || item.time || item.selectedTime,
+                              date: item.date || item.departure_date,
+                              time: item.time || item.departure_time,
+                              return_date: item.return_date || item.returnDate,
+                              pickupDate: item.pickupDate || item.date,
+                              pickupTime: item.pickupTime || item.time,
+
                               // Aircraft info
                               aircraft: item.aircraft || item.aircraft_type || item.aircraft_model,
-                              aircraft_type: item.aircraft_type,
-                              aircraft_model: item.aircraft_model,
+                              aircraft_type: item.aircraft_type || item.model,
+                              aircraft_model: item.aircraft_model || item.model,
                               category: item.category,
-                              capacity: item.capacity || item.max_passengers || item.pax,
+                              capacity: item.capacity || item.max_passengers || item.pax || item.available_seats,
+                              available_seats: item.available_seats || item.capacity,
+                              range_km: item.range_km,
+                              speed_kts: item.speed_kts,
+                              hourly_rate_eur: item.hourly_rate_eur,
+                              estimated_flight_time: item.estimated_flight_time || item.flightTime,
+                              distance_km: item.distance_km || item.distanceKm,
+
                               // Booking details
                               passengers: item.passengers || item.pax,
-                              // Full price breakdown - ALL IN USD
+                              pax: item.pax || item.passengers,
+                              luggage: item.luggage,
+                              has_pet: item.hasPet || item.has_pet,
+
+                              // For luxury cars
+                              brand: item.brand,
+                              model: item.model,
+                              year: item.year,
+                              location: item.location,
+                              rental_days: item.rentalDays || item.rental_days,
+                              transmission: item.transmission,
+                              seats: item.seats,
+                              horsepower: item.horsepower,
+                              price_per_day: item.price_per_day || item.pricePerDay,
+
+                              // For yachts
+                              length_m: item.length_m,
+                              cabins: item.cabins,
+                              crew: item.crew,
+                              price_per_week: item.price_per_week,
+
+                              // For taxi/transfers
+                              carName: item.carName || item.name,
+                              carSeats: item.carSeats || item.seats,
+                              carImage: item.carImage || item.image_url,
+                              distance: item.distance || item.distanceKm,
+                              eta: item.eta || item.duration,
+                              duration: item.duration || item.eta,
+                              vehicles_needed: item.vehiclesNeeded || item.vehicles_needed,
+                              pickup_location: item.pickup_location || item.from,
+                              dropoff_location: item.dropoff_location || item.to,
+                              service_type: item.service_type || item.category,
+                              extraNotes: item.extraNotes || item.notes,
+                              isSwissBooking: item.isSwissBooking,
+                              detectedCountry: item.detectedCountry,
+
+                              // For adventures/fixed offers
+                              destination: item.destination || item.to_city,
+                              adventure_title: item.adventure_title || item.title,
+                              offer_title: item.offer_title || item.title,
+                              description: item.description,
+                              duration_days: item.duration_days || item.duration,
+
+                              // Full price breakdown - ALL IN USD (Base + VAT only)
                               base_price: basePrice,
-                              platform_fee: platformFee,
-                              platform_fee_percent: 2.5,
+                              price: basePrice,
+                              price_usd: basePrice,
                               vat_amount: vatAmount,
                               vat_percent: 8.1,
                               total_price: totalPrice,
+                              total: totalPrice,
                               currency: 'USD',
-                              // Original price reference
-                              original_price: item.original_price,
-                              original_currency: item.original_currency,
+                              priceRange: `$${totalPrice.toLocaleString()}`,
+
+                              // Original price reference (for GBP empty legs converted to USD)
+                              original_price: item.original_price || basePrice,
+                              original_currency: item.original_currency || 'USD',
+                              original_price_gbp: item.original_price_gbp,
+
+                              // Catering and extras
+                              cateringOption: item.catering || item.cateringOption || 'standard',
+                              cateringPrice: item.cateringPrice || 0,
+                              airportPickupFee: item.airportPickupFee || 0,
+
+                              // Images - ALL POSSIBLE FIELDS
+                              image_url: item.image_url || item.imageUrl || item.image || item.primaryImage || item.aircraft_image,
+                              primaryImage: item.primaryImage || item.image_url || item.image,
+
+                              // IDs for tracking
+                              empty_leg_id: item.id || item.empty_leg_id,
+                              item_id: item.id || item.cartId,
+
+                              // Wallet info
+                              wallet_address: item.wallet_address || item.walletAddress,
+
                               // Metadata
                               conversation_id: activeChat,
                               awaiting_payment: true,
-                              image_url: item.imageUrl || item.image_url
+                              isEstimate: item.isEstimate,
+                              requiresConfirmation: item.requiresConfirmation,
+                              notes: item.notes || item.extraNotes
                             }
                           }])
                           .select()
@@ -5654,40 +6561,230 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       );
                     }
 
-                    // Two simple buttons: Pay with Crypto (if payable items exist) OR Send Request
+                    // DIRECT CHECKOUT: If cart contains ONLY payable items (empty legs, wines, delicacies)
+                    if (canDoDirectCheckout) {
+                      return (
+                        <div className="space-y-2">
+                          {/* Two equal buttons: Send Request OR Pay with Crypto */}
+                          <div className="flex gap-2">
+                            {/* Send Request */}
+                            <button
+                              onClick={() => {
+                                setShowCartSidebar(false);
+                                setShowRequestForm(true);
+                              }}
+                              className="flex-1 px-3 py-2.5 bg-white/50 hover:bg-white/70 text-gray-800 text-xs font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-200/50 hover:border-gray-300/50"
+                              style={{ backdropFilter: 'blur(8px)' }}
+                            >
+                              <Send size={14} />
+                              Send Request
+                            </button>
+
+                            {/* Pay with Crypto - Monochromatic */}
+                            <button
+                              onClick={async () => {
+                                if (!user?.id) {
+                                  setToast({ message: 'Please log in to checkout', type: 'warning' });
+                                  return;
+                                }
+
+                                setIsProcessingPayment(true);
+                                try {
+                                  // Calculate cart total with VAT
+                                  const cartTotal = payableItems.reduce((sum, item) => {
+                                    const basePrice = item.price_usd || item.price || item.basePrice || 0;
+                                    const withVAT = item.totalWithFee || (basePrice * 1.081);
+                                    return sum + withVAT;
+                                  }, 0);
+
+                                  // Create combined order description
+                                  const itemDescriptions = payableItems.map(item =>
+                                    item.name || item.title || `${item.from || item.origin || ''} → ${item.to || item.destination || ''}`.trim() || 'Item'
+                                  ).join(', ');
+
+                                  // SAVE ALL CART ITEMS TO USER_BOOKINGS
+                                  // This creates a single booking with all items listed
+                                  const bookingData = {
+                                    user_id: user.id,
+                                    service_type: 'cart_checkout',
+                                    booking_type: 'cart_checkout',
+                                    service_title: `Cart Order: ${payableItems.length} item${payableItems.length > 1 ? 's' : ''}`,
+                                    // Route info from first empty leg if any
+                                    origin: payableItems.find(i => i.type === 'empty_legs' || i.type === 'emptyleg')?.from_city ||
+                                            payableItems.find(i => i.type === 'empty_legs' || i.type === 'emptyleg')?.from || null,
+                                    destination: payableItems.find(i => i.type === 'empty_legs' || i.type === 'emptyleg')?.to_city ||
+                                                 payableItems.find(i => i.type === 'empty_legs' || i.type === 'emptyleg')?.to || null,
+                                    departure_date: payableItems.find(i => i.departure_date)?.departure_date || null,
+                                    // Total price with VAT
+                                    base_amount: payableItems.reduce((sum, i) => sum + (i.price_usd || i.price || i.basePrice || 0), 0),
+                                    vat_amount: Math.round(payableItems.reduce((sum, i) => sum + (i.price_usd || i.price || i.basePrice || 0), 0) * 0.081),
+                                    total_amount: cartTotal,
+                                    currency: 'USD',
+                                    payment_status: 'pending',
+                                    // ALL CART ITEMS stored in service_details
+                                    service_details: {
+                                      cart_items: payableItems.map(item => ({
+                                        id: item.id,
+                                        cartId: item.cartId,
+                                        type: item.type,
+                                        name: item.name || item.title,
+                                        category: item.category,
+                                        // Route for empty legs
+                                        from: item.from || item.from_city || item.origin,
+                                        to: item.to || item.to_city || item.destination,
+                                        from_iata: item.from_iata,
+                                        to_iata: item.to_iata,
+                                        // Price
+                                        price: item.price_usd || item.price || item.basePrice,
+                                        quantity: item.quantity || 1,
+                                        // Images
+                                        image_url: item.image_url || item.image,
+                                        // Extra details
+                                        departure_date: item.departure_date,
+                                        aircraft: item.aircraft || item.aircraft_type,
+                                        description: item.description,
+                                        unit: item.unit,
+                                        isCleaningFee: item.isCleaningFee
+                                      })),
+                                      item_count: payableItems.length,
+                                      order_description: itemDescriptions,
+                                      checkout_type: 'direct_crypto'
+                                    },
+                                    conversation_id: activeChat
+                                  };
+
+                                  const { data: savedBooking, error: bookingError } = await supabase
+                                    .from('user_bookings')
+                                    .insert([bookingData])
+                                    .select()
+                                    .single();
+
+                                  if (bookingError) {
+                                    console.error('Error saving booking:', bookingError);
+                                  }
+
+                                  // Also save to user_requests for AI Requests tracking
+                                  for (const item of payableItems) {
+                                    await saveToAIRequests(item);
+                                  }
+
+                                  // Determine primary service type for CoinGate
+                                  const hasEmptyLeg = payableItems.some(i => i.type === 'empty_legs' || i.type === 'emptyleg');
+                                  const serviceType = hasEmptyLeg ? 'empty_leg' : 'adventure_package';
+
+                                  // Use first item's ID or create combined ID
+                                  const primaryItem = payableItems[0];
+                                  const serviceId = primaryItem.original_id || primaryItem.id || `cart-${Date.now()}`;
+
+                                  // Call CoinGate edge function with total cart amount
+                                  const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-coingate-payment`, {
+                                    method: 'POST',
+                                    headers: {
+                                      'Content-Type': 'application/json',
+                                      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+                                    },
+                                    body: JSON.stringify({
+                                      userId: user.id,
+                                      serviceType: serviceType,
+                                      serviceId: serviceId,
+                                      priceUSD: Math.round(cartTotal * 100) / 100,
+                                      email: user.email,
+                                      contactName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Customer',
+                                      orderDescription: `PrivateCharterX Cart: ${itemDescriptions}`,
+                                      cartItems: payableItems.map(item => ({
+                                        id: item.id,
+                                        name: item.name || item.title,
+                                        type: item.type,
+                                        price: item.price_usd || item.price || item.basePrice,
+                                        quantity: item.quantity || 1
+                                      })),
+                                      // Link to our saved booking
+                                      bookingReference: savedBooking?.id
+                                    })
+                                  });
+
+                                  const result = await response.json();
+
+                                  if (result.success && result.paymentUrl) {
+                                    // Update saved booking with CoinGate order ID
+                                    if (savedBooking?.id) {
+                                      await supabase
+                                        .from('user_bookings')
+                                        .update({
+                                          payment_reference: result.coingateOrderId,
+                                          payment_status: 'pending'
+                                        })
+                                        .eq('id', savedBooking.id);
+                                    }
+
+                                    // Mark items as pending payment
+                                    setCartItems(prev => prev.map(item => {
+                                      const isPaying = payableItems.some(p => p.cartId === item.cartId);
+                                      if (isPaying) {
+                                        return {
+                                          ...item,
+                                          paymentStatus: 'pending_confirmation',
+                                          coingateOrderId: result.coingateOrderId,
+                                          bookingId: savedBooking?.id || result.bookingId
+                                        };
+                                      }
+                                      return item;
+                                    }));
+
+                                    // Open CoinGate payment page
+                                    window.open(result.paymentUrl, '_blank');
+
+                                    setToast({
+                                      message: 'Payment page opened. Complete your crypto payment.',
+                                      type: 'success'
+                                    });
+                                  } else {
+                                    throw new Error(result.error || 'Failed to create payment');
+                                  }
+                                } catch (error) {
+                                  console.error('Checkout error:', error);
+                                  setToast({
+                                    message: error.message || 'Failed to process checkout',
+                                    type: 'error'
+                                  });
+                                } finally {
+                                  setIsProcessingPayment(false);
+                                }
+                              }}
+                              disabled={isProcessingPayment}
+                              className="flex-1 px-3 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                            >
+                              {isProcessingPayment ? (
+                                <>
+                                  <Loader2 size={14} className="animate-spin" />
+                                  Processing...
+                                </>
+                              ) : (
+                                <>
+                                  <Coins size={14} />
+                                  Pay with Crypto
+                                </>
+                              )}
+                            </button>
+                          </div>
+
+                          <p className="text-[10px] text-gray-500 text-center">
+                            Total: ${payableTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (incl. VAT)
+                          </p>
+                        </div>
+                      );
+                    }
+
+                    // REQUEST-ONLY: Cart contains jets/helis/yachts/transfers - need coordinator quote
                     return (
                       <div className="flex gap-2">
-                        {/* Pay with Crypto button - only show if there are payable items */}
-                        {hasPayableItems && (
-                          <button
-                            onClick={async () => {
-                              const firstPayableItem = payableItems[0];
-                              await saveBookingToDatabase(firstPayableItem, 'pending');
-                              await saveToAIRequests(firstPayableItem);
-                              setShowCartSidebar(false);
-                              setSelectedPaymentItem({
-                                ...firstPayableItem,
-                                price: payableSubtotal,
-                                price_with_vat: payableTotal,
-                                vat_amount: payableVAT
-                              });
-                              setShowCryptoPayment(true);
-                            }}
-                            className="flex-1 px-3 py-2.5 bg-white/50 hover:bg-white/70 text-gray-800 text-xs font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-200/50 hover:border-gray-300/50"
-                            style={{ backdropFilter: 'blur(8px)' }}
-                          >
-                            <Wallet size={14} />
-                            Pay with Crypto
-                          </button>
-                        )}
-
-                        {/* Send Request button - always show */}
+                        {/* Send Request button */}
                         <button
                           onClick={() => {
                             setShowCartSidebar(false);
                             setShowRequestForm(true);
                           }}
-                          className={`${hasPayableItems ? 'flex-1' : 'w-full'} px-3 py-2.5 bg-white/50 hover:bg-white/70 text-gray-800 text-xs font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-200/50 hover:border-gray-300/50`}
+                          className="w-full px-3 py-2.5 bg-white/50 hover:bg-white/70 text-gray-800 text-xs font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-200/50 hover:border-gray-300/50"
                           style={{ backdropFilter: 'blur(8px)' }}
                         >
                           <Send size={14} />
@@ -5704,32 +6801,123 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       )}
 
       {/* Request Form Modal */}
-      {showRequestForm && (
+      {showRequestForm && (() => {
+        const hasEmptyLeg = cartItems.some(item => item.type === 'empty_legs' || item.type === 'emptyleg');
+        const emptyLegItems = cartItems.filter(item => item.type === 'empty_legs' || item.type === 'emptyleg');
+        const otherItems = cartItems.filter(item => item.type !== 'empty_legs' && item.type !== 'emptyleg');
+        const grandTotal = cartItems.reduce((sum, item) => sum + (item.totalWithFee || item.price_usd || item.price || 0) + (item.cateringPrice || 0), 0);
+
+        return (
         <>
           <div className="fixed inset-0 bg-black/50 z-40 animate-fade-in" onClick={() => setShowRequestForm(false)} />
           <div className="fixed inset-0 flex items-center justify-center z-50 p-4 animate-fade-in">
-            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 animate-scale-in">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Send Booking Request</h3>
+            <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-hidden animate-scale-in flex flex-col">
+              <div className="flex justify-between items-center p-6 pb-4 border-b border-gray-100">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Confirm Your Request</h3>
+                  <p className="text-sm text-gray-500 mt-0.5">{cartItems.length} service{cartItems.length > 1 ? 's' : ''} in your cart</p>
+                </div>
                 <button onClick={() => setShowRequestForm(false)} className="p-2 hover:bg-gray-100 rounded-lg">
-                  <X size={18} />
+                  <X size={18} className="text-gray-500" />
                 </button>
               </div>
 
-              <div className="space-y-4">
-                <p className="text-sm text-gray-600">
-                  You're about to send a booking request for {cartItems.length} item(s). Our team will contact you within 2-4 hours.
-                </p>
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {/* Services List */}
+                <div className="space-y-3">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Services</p>
+                  {cartItems.map((item, idx) => {
+                    const isEmptyLeg = item.type === 'empty_legs' || item.type === 'emptyleg';
+                    const isJet = item.type === 'jets' || item.type === 'jet';
+                    const isTransfer = item.type === 'taxi' || item.type === 'transfer' || item.type === 'ground_transport';
+                    const isYacht = item.type === 'yachts' || item.type === 'yacht';
+                    const isAdventure = item.type === 'adventure' || item.type === 'fixed_offer';
+                    const isExtra = item.type === 'custom_extra';
 
-                <div className="border-t border-b border-gray-200 py-4">
-                  {cartItems.map((item, idx) => (
-                    <div key={idx} className="flex justify-between text-sm mb-2">
-                      <span>{item.name || item.title || item.aircraft_type}</span>
-                      <span className="font-medium">${item.price?.toLocaleString()}</span>
-                    </div>
-                  ))}
+                    return (
+                      <div key={idx} className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
+                                isEmptyLeg ? 'bg-emerald-100 text-emerald-700' :
+                                isJet ? 'bg-gray-800 text-white' :
+                                isTransfer ? 'bg-gray-400 text-white' :
+                                isYacht ? 'bg-blue-100 text-blue-700' :
+                                isAdventure ? 'bg-purple-100 text-purple-700' :
+                                isExtra ? 'bg-gray-200 text-gray-700' :
+                                'bg-gray-200 text-gray-600'
+                              }`}>
+                                {isEmptyLeg ? 'EMPTY LEG' : isJet ? 'CHARTER' : isTransfer ? 'TRANSFER' : isYacht ? 'YACHT' : isAdventure ? 'EXPERIENCE' : isExtra ? 'EXTRA' : 'SERVICE'}
+                              </span>
+                              {item.isMultiStop && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-blue-100 text-blue-700">MULTI-STOP</span>
+                              )}
+                            </div>
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {item.name || item.title || item.aircraft_type || item.model}
+                            </p>
+                            {(item.route || item.from) && (
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                {item.route || `${item.from_iata || item.from || ''} → ${item.to_iata || item.to || ''}`}
+                              </p>
+                            )}
+                            {item.departure_date && (
+                              <p className="text-xs text-gray-400 mt-0.5">
+                                {item.departure_date} {item.departure_time && `at ${item.departure_time}`}
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-sm font-semibold text-gray-900">
+                              ${(item.totalWithFee || item.price || item.basePrice || 0).toLocaleString()}
+                            </p>
+                            {item.isEstimate && (
+                              <p className="text-[9px] text-gray-400">estimate</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
+                {/* Total */}
+                <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                  <span className="text-sm font-medium text-gray-700">Estimated Total</span>
+                  <span className="text-lg font-bold text-gray-900">${grandTotal.toLocaleString()}</span>
+                </div>
+
+                {/* Empty Leg Crypto Notice */}
+                {hasEmptyLeg && (
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                    <div className="flex items-start gap-2">
+                      <Wallet size={16} className="text-emerald-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-emerald-800">Pay Empty Legs by Crypto</p>
+                        <p className="text-xs text-emerald-700 mt-0.5">
+                          You can pay {emptyLegItems.length > 1 ? 'your empty legs' : 'the empty leg'} directly from <strong>"My Requests"</strong> and secure your booking within 2 minutes.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Info notice */}
+                <p className="text-xs text-gray-500 text-center">
+                  Our team will contact you within 2-4 hours to confirm availability and details.
+                </p>
+              </div>
+
+              {/* Footer */}
+              <div className="p-6 pt-4 border-t border-gray-100 bg-gray-50 space-y-3">
+                {/* Terms & Policy Agreement */}
+                <p className="text-[10px] text-gray-400 text-center leading-relaxed">
+                  By submitting this request you agree to our{' '}
+                  <a href="/terms" target="_blank" className="text-gray-600 underline hover:text-gray-800">Terms of Service</a>
+                  {' '}and{' '}
+                  <a href="/privacy" target="_blank" className="text-gray-600 underline hover:text-gray-800">Privacy Policy</a>
+                </p>
                 <button
                   onClick={async () => {
                     try {
@@ -5850,22 +7038,109 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                         throw new Error(requestError);
                       }
 
-                      // Trigger email notification via Supabase Edge Function
+                      // Generate PDF and send email with attachment
                       if (request?.id) {
+                        // Generate PDF confirmation first
+                        let pdfBase64 = null;
+                        let pdfFilename = null;
                         try {
-                          await supabase.functions.invoke('user-request-notifications', {
-                            body: { record: { id: request.id } }
+                          const pdfRequest = {
+                            id: request.id,
+                            type: 'ai_chat_bulk',
+                            service_type: 'ai_chat_bulk',
+                            created_at: new Date().toISOString(),
+                            client_email: user?.email,
+                            data: {
+                              ...bulkRequestData,
+                              cart_items: cartItems.map(item => ({
+                                name: item.name || item.title,
+                                type: item.type,
+                                price: item.price_usd || item.price || item.basePrice || 0,
+                                quantity: item.quantity || 1
+                              })),
+                              estimated_total: grandTotal
+                            }
+                          };
+
+                          const { blob, filename, base64 } = await generateRequestConfirmationPDF(pdfRequest);
+                          pdfFilename = filename;
+                          pdfBase64 = base64;
+
+                          // Save PDF to storage
+                          try {
+                            await savePDFToStorage(blob, filename, 'request', request.id);
+                            console.log('Bulk request PDF saved to storage');
+                          } catch (storageErr) {
+                            console.warn('Could not save bulk request PDF:', storageErr);
+                          }
+
+                          // Auto-download PDF for user
+                          downloadPDF(blob, filename);
+                          console.log('Bulk request PDF generated and downloaded');
+                        } catch (pdfErr) {
+                          console.error('Failed to generate bulk request PDF:', pdfErr);
+                        }
+
+                        // Send email with PDF attachment
+                        try {
+                          await supabase.functions.invoke('send-request-email', {
+                            body: {
+                              to: user?.email,
+                              requestData: {
+                                id: request.id,
+                                type: 'ai_chat_bulk',
+                                created_at: new Date().toISOString(),
+                                status: 'pending',
+                                user: {
+                                  name: user?.user_metadata?.name || user?.email?.split('@')[0] || 'Valued Client',
+                                  email: user?.email
+                                },
+                                details: {
+                                  service_type: 'AI Concierge Request',
+                                  price: grandTotal,
+                                  currency: 'USD',
+                                  notes: `${mainServices.length} service(s)${customExtras.length > 0 ? `, ${customExtras.length} custom extra(s)` : ''}`
+                                },
+                                // Include full cart items for detailed email listing
+                                data: {
+                                  items: cartItems.map(item => ({
+                                    name: item.name || item.title || item.aircraft_type || item.model,
+                                    type: item.type,
+                                    price: item.totalWithFee || item.price_usd || item.price || item.basePrice || 0,
+                                    from: item.from || item.from_city || item.origin || item.pickup_location,
+                                    to: item.to || item.to_city || item.destination || item.dropoff_location,
+                                    date: item.date || item.departure_date || item.selectedDate,
+                                    quantity: item.quantity || 1
+                                  })),
+                                  summary: {
+                                    services_count: mainServices.length,
+                                    extras_count: customExtras.length,
+                                    grand_total: grandTotal
+                                  }
+                                }
+                              },
+                              pdfBase64: pdfBase64,
+                              pdfFilename: pdfFilename
+                            }
                           });
-                          console.log('Email notification triggered for request:', request.id);
+                          console.log('Email with PDF sent for request:', request.id);
                         } catch (emailErr) {
-                          console.error('Failed to send email notification:', emailErr);
-                          // Don't block the flow if email fails
+                          console.error('Failed to send email with PDF:', emailErr);
+                          // Fallback to basic notification
+                          try {
+                            await supabase.functions.invoke('user-request-notifications', {
+                              body: { record: { id: request.id } }
+                            });
+                            console.log('Fallback email notification sent for request:', request.id);
+                          } catch (fallbackErr) {
+                            console.error('Fallback email also failed:', fallbackErr);
+                          }
                         }
                       }
 
                       const confirmMsg = {
                         role: 'assistant',
-                        content: `✅ **Booking Request Sent!**\n\nWe've received your request containing:\n• ${mainServices.length} service(s)${customExtras.length > 0 ? `\n• ${customExtras.length} custom extra(s) (availability TBC)` : ''}\n\n**Estimated Total:** ~$${grandTotal.toLocaleString()}\n\nOur team will review and contact you within 2-4 hours to confirm details and availability.`
+                        content: `✅ **Booking Request Sent!**\n\nWe've received your request containing:\n• ${mainServices.length} service(s)${customExtras.length > 0 ? `\n• ${customExtras.length} custom extra(s) (availability TBC)` : ''}\n\n**Estimated Total:** ~$${grandTotal.toLocaleString()}\n\nOur team will review and contact you within 2-4 hours to confirm details and availability.\n\n📧 A confirmation email with PDF has been sent to ${user?.email}\n📄 PDF also downloaded to your device`
                       };
 
                       setChatHistory(prev => prev.map(c =>
@@ -5893,7 +7168,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             </div>
           </div>
         </>
-      )}
+        );
+      })()}
 
       {showCalendarModal && selectedItemForCalendar && (
         <CreateEventModal
@@ -5983,159 +7259,12 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         currentTier={userProfile?.subscription_tier || 'explorer'}
       />
 
-      {/* Break the Price Modal */}
-      {showBreakThePrice && (
+      {/* Break the Price Modal - HIDDEN (feature disabled) */}
+      {/* {showBreakThePrice && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-xl">
-            <div className="p-6">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                    <DollarSign className="text-gray-700" size={24} />
-                    Break the Price
-                  </h2>
-                  <p className="text-sm text-gray-500 mt-1">Upload a competitor quote and we'll beat it</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowBreakThePrice(false);
-                    setBreakThePriceFile(null);
-                  }}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <X size={20} className="text-gray-400" />
-                </button>
-              </div>
-
-              {/* Info Box */}
-              <div className="bg-gray-100 border border-gray-200 rounded-lg p-4 mb-6">
-                <h3 className="text-sm font-medium text-gray-800 mb-2">How it works:</h3>
-                <ul className="text-sm text-gray-700 space-y-1">
-                  <li className="flex items-start gap-2">
-                    <span className="text-gray-500">1.</span>
-                    Upload a quote from another provider (PDF or image)
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-gray-500">2.</span>
-                    Our team reviews and verifies the quote
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-gray-500">3.</span>
-                    We respond within 12 hours with a better price
-                  </li>
-                </ul>
-                {userSubscriptionLimits?.tier !== 'elite' && (
-                  <p className="text-xs text-gray-600 mt-3 pt-3 border-t border-gray-200">
-                    Note: Using Break the Price costs 1 chat from your monthly allowance.
-                  </p>
-                )}
-              </div>
-
-              {/* File Upload Area */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Upload Competitor Quote
-                </label>
-                <div
-                  className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${
-                    breakThePriceFile
-                      ? 'border-gray-400 bg-gray-100'
-                      : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                  }`}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.currentTarget.classList.add('border-gray-500', 'bg-gray-100');
-                  }}
-                  onDragLeave={(e) => {
-                    e.preventDefault();
-                    e.currentTarget.classList.remove('border-gray-500', 'bg-gray-100');
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.currentTarget.classList.remove('border-gray-500', 'bg-gray-100');
-                    const file = e.dataTransfer.files[0];
-                    if (file) setBreakThePriceFile(file);
-                  }}
-                >
-                  {breakThePriceFile ? (
-                    <div className="flex items-center justify-center gap-3">
-                      <FileText className="text-gray-700" size={24} />
-                      <div className="text-left">
-                        <p className="text-sm font-medium text-gray-900">{breakThePriceFile.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {(breakThePriceFile.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => setBreakThePriceFile(null)}
-                        className="p-1 hover:bg-gray-200 rounded-full"
-                      >
-                        <X size={16} className="text-gray-500" />
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <Upload className="mx-auto text-gray-400 mb-3" size={32} />
-                      <p className="text-sm text-gray-600 mb-2">
-                        Drag and drop your quote here, or
-                      </p>
-                      <label className="inline-block">
-                        <input
-                          type="file"
-                          accept=".pdf,.jpg,.jpeg,.png,.webp"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) setBreakThePriceFile(file);
-                          }}
-                        />
-                        <span className="text-sm text-gray-600 hover:text-gray-800 font-medium cursor-pointer">
-                          browse to upload
-                        </span>
-                      </label>
-                      <p className="text-xs text-gray-400 mt-2">
-                        Supports PDF, JPG, PNG, WebP (max 10MB)
-                      </p>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setShowBreakThePrice(false);
-                    setBreakThePriceFile(null);
-                  }}
-                  className="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-                  disabled={isUploadingQuote}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleBreakThePriceUpload(breakThePriceFile)}
-                  disabled={!breakThePriceFile || isUploadingQuote}
-                  className="flex-1 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isUploadingQuote ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <Upload size={18} />
-                      Submit Quote
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
+          ...modal content hidden...
         </div>
-      )}
+      )} */}
 
       {/* Report Issue Modal */}
       {showReportIssueModal && (
@@ -6276,8 +7405,11 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
           }}
           service={{
             ...selectedPaymentItem,
-            // Ensure price field is set correctly
+            // Ensure price fields are set correctly - use totalWithFee for final price
             price: selectedPaymentItem.price_usd || selectedPaymentItem.price || selectedPaymentItem.discounted_price || 0,
+            price_usd: selectedPaymentItem.price_usd || selectedPaymentItem.price || 0,
+            totalWithFee: selectedPaymentItem.totalWithFee || selectedPaymentItem.price_with_vat || Math.round((selectedPaymentItem.price_usd || selectedPaymentItem.price || 0) * 1.106),
+            currency: selectedPaymentItem.currency || 'USD',
             // Use original EmptyLegs_ id if available
             id: selectedPaymentItem.original_id || selectedPaymentItem.id
           }}
@@ -6464,12 +7596,12 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 <div className="p-4 space-y-2 max-h-[60vh] overflow-y-auto">
                   <p className="text-sm text-gray-500 mb-3">Select a category to add extras to your booking</p>
 
-                  {/* Category Grid */}
+                  {/* Category Grid - Wine hidden (available via AI Sommelier) */}
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { id: 'wine', icon: '🍷', label: 'Wine & Winery', price: '$150+' },
+                      // Wine & Winery hidden - available via AI Sommelier chat
                       { id: 'champagne', icon: '🍾', label: 'Champagne', price: '$120+' },
-                      { id: 'cigars', icon: '🚬', label: 'Cigars & Smoking', price: '$500+' },
+                      { id: 'cigars', icon: '🚬', label: 'Cigars & Smoking', price: '$500+', note: '+$2000 cleaning' },
                       { id: 'caviar', icon: '🥄', label: 'Caviar', price: '$300+' },
                       { id: 'flowers', icon: '💐', label: 'Flowers', price: '$150+' },
                       { id: 'cake', icon: '🎂', label: 'Cakes & Desserts', price: '$200+' },
@@ -6491,6 +7623,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                         <span className="text-2xl">{cat.icon}</span>
                         <span className="text-xs font-medium text-gray-900">{cat.label}</span>
                         <span className="text-[10px] text-gray-500">{cat.price}</span>
+                        {cat.note && <span className="text-[9px] text-amber-600 font-medium">{cat.note}</span>}
                       </button>
                     ))}
                   </div>
@@ -6506,23 +7639,21 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     Back to categories
                   </button>
 
+                  {/* Cigars cleaning fee notice */}
+                  {selectedExtraCategory === 'cigars' && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg mb-3">
+                      <p className="text-xs font-medium text-amber-800">Aircraft Cleaning Fee</p>
+                      <p className="text-[11px] text-amber-700 mt-0.5">
+                        Smoking on private jets requires a <strong>$2,000 aircraft cleaning fee</strong> (non-smoking to smoking conversion). This will be automatically added to your request.
+                      </p>
+                    </div>
+                  )}
+
                   {/* Quick Suggestions based on category */}
                   <div>
                     <p className="text-xs font-medium text-gray-500 mb-2">Popular choices</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {selectedExtraCategory === 'wine' && ['Dom Pérignon', 'Château Margaux', 'Opus One', 'Sassicaia', 'Winery Visit'].map(item => (
-                        <button
-                          key={item}
-                          onClick={() => setCustomExtraForm(prev => ({ ...prev, name: item }))}
-                          className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
-                            customExtraForm.name === item
-                              ? 'bg-gray-900 text-white'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                        >
-                          {item}
-                        </button>
-                      ))}
+                      {/* Wine removed - available via AI Sommelier */}
                       {selectedExtraCategory === 'champagne' && ['Moët & Chandon', 'Veuve Clicquot', 'Krug', 'Louis Roederer Cristal', 'Dom Pérignon Rosé'].map(item => (
                         <button
                           key={item}
@@ -6802,6 +7933,49 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
           </div>
         </>
       )}
+
+      {/* Multi-Stop Journey Builder Modal */}
+      {showJourneyBuilder && journeyBuilderJet && (
+        <JourneyBuilder
+          isOpen={showJourneyBuilder}
+          onClose={() => {
+            setShowJourneyBuilder(false);
+            setJourneyBuilderJet(null);
+          }}
+          jet={journeyBuilderJet}
+          origin={journeyBuilderJet.from || journeyBuilderJet.from_city || journeyBuilderJet.origin}
+          originCode={journeyBuilderJet.from_iata || journeyBuilderJet.originIata || ''}
+          originLat={journeyBuilderJet.originLat || journeyBuilderJet.from_lat}
+          originLng={journeyBuilderJet.originLng || journeyBuilderJet.from_lng}
+          destination={journeyBuilderJet.to || journeyBuilderJet.to_city || journeyBuilderJet.destination}
+          destinationCode={journeyBuilderJet.to_iata || journeyBuilderJet.destinationIata || ''}
+          destinationLat={journeyBuilderJet.destLat || journeyBuilderJet.to_lat}
+          destinationLng={journeyBuilderJet.destLng || journeyBuilderJet.to_lng}
+          departureDate={journeyBuilderJet.departure_date}
+          departureTime={journeyBuilderJet.departure_time || '09:00'}
+          onComplete={handleJourneyComplete}
+        />
+      )}
+
+      {/* Airport Transfer Offer Modal - after journey is added */}
+      {showTransferOffer && lastAddedJourney && (
+        <AirportTransferOffer
+          isOpen={showTransferOffer}
+          onClose={() => {
+            setShowTransferOffer(false);
+            setLastAddedJourney(null);
+          }}
+          journey={lastAddedJourney}
+          suggestedTransfers={lastAddedJourney.suggestedTransfers || []}
+          onAddTransfers={handleAddTransfers}
+          onSkip={() => {
+            setShowTransferOffer(false);
+            setLastAddedJourney(null);
+          }}
+        />
+      )}
+
+      {/* Multi-Leg Options - Now inline buttons below AI message, modal removed */}
     </div>
   );
 };

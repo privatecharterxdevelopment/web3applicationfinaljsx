@@ -112,7 +112,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               first_name: session.user.user_metadata?.first_name,
               last_name: session.user.user_metadata?.last_name,
               email_verified: session.user.email_confirmed_at !== null,
-              user_role: session.user.user_metadata?.role || 'user'
+              user_role: session.user.user_metadata?.role || 'user',
+              created_at: session.user.created_at
             });
           } else if (profile) {
             console.log('✅ Profile loaded successfully');
@@ -151,7 +152,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               first_name: session.user.user_metadata?.first_name,
               last_name: session.user.user_metadata?.last_name,
               email_verified: session.user.email_confirmed_at !== null,
-              user_role: session.user.user_metadata?.role || 'user'
+              user_role: session.user.user_metadata?.role || 'user',
+              created_at: session.user.created_at
             });
           }
 

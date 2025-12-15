@@ -14,6 +14,7 @@ import SuccessNotification from '../SuccessNotification';
 import NFTBenefitsModal from '../NFTBenefitsModal';
 import CryptoPaymentModal from '../Payment/CryptoPaymentModal';
 import { convertToUSD, formatUSD, initializeExchangeRates } from '../../services/currencyService';
+import { generateRequestConfirmationPDF, downloadPDF, savePDFToStorage } from '../../services/pdfGeneratorService';
 
 const EmptyLegDetail = () => {
   const { id } = useParams();
@@ -102,11 +103,16 @@ const EmptyLegDetail = () => {
 
       setEmptyLeg(data);
 
-      // Convert GBP price to USD
-      const priceGBP = data.price || 0;
-      const convertedPrice = convertToUSD(priceGBP, 'GBP');
-      setPriceUSD(convertedPrice);
+      // Use price_usd directly from database (no conversion needed)
+      const usdPrice = data.price_usd || data.price_in_usd || data.price || 0;
+      setPriceUSD(usdPrice);
 
+      console.log('Empty Leg Price Debug:', {
+        price_usd: data.price_usd,
+        price_in_usd: data.price_in_usd,
+        price: data.price,
+        final_usdPrice: usdPrice
+      });
       console.log('Empty Leg Data - FULL:', data);
       console.log('Empty Leg Data - Aircraft fields:', {
         aircraft_type: data.aircraft_type,
@@ -214,8 +220,8 @@ const EmptyLegDetail = () => {
     }
 
     try {
-      // NFT free flight eligibility: price < $1900 USD (approximately £1500 GBP)
-      const isFree = hasNFT && priceUSD < 1900;
+      // NFT free flight eligibility: price < $1500 USD
+      const isFree = hasNFT && !usedBenefits.freeFlightUsed && priceUSD < 1500;
       const discountedPrice = hasNFT ? priceUSD * (1 - nftDiscount / 100) : priceUSD;
       const finalPrice = isFree ? 0 : discountedPrice;
 
@@ -270,13 +276,66 @@ const EmptyLegDetail = () => {
 
       if (dbError) throw dbError;
 
-      // Trigger email notification via edge function
+      // Generate PDF and send email with attachment
       try {
-        await supabase.functions.invoke('user-request-notifications', {
-          body: { record: { id: insertedData.id } }
+        const pdfRequest = {
+          id: insertedData.id,
+          type: 'empty_leg',
+          service_type: 'empty_leg',
+          created_at: new Date().toISOString(),
+          client_email: user?.email,
+          data: {
+            from: emptyLeg.from_city || emptyLeg.from_iata,
+            to: emptyLeg.to_city || emptyLeg.to_iata,
+            date: emptyLeg.departure_date,
+            passengers: passengers,
+            total: finalPrice,
+            currency: 'USD'
+          }
+        };
+
+        const { blob, filename, base64 } = await generateRequestConfirmationPDF(pdfRequest);
+
+        // Save PDF to storage
+        try {
+          await savePDFToStorage(blob, filename, 'request', insertedData.id);
+        } catch (storageErr) {
+          console.warn('Could not save PDF:', storageErr);
+        }
+
+        // Download PDF
+        downloadPDF(blob, filename);
+
+        // Send email with PDF attachment
+        await supabase.functions.invoke('send-request-email', {
+          body: {
+            to: user?.email,
+            requestData: {
+              id: insertedData.id,
+              type: 'empty_leg',
+              created_at: new Date().toISOString(),
+              status: 'pending',
+              user: {
+                name: user?.user_metadata?.name || user?.email?.split('@')[0] || 'Valued Client',
+                email: user?.email
+              },
+              details: {
+                from: emptyLeg.from_city || emptyLeg.from_iata,
+                to: emptyLeg.to_city || emptyLeg.to_iata,
+                date: emptyLeg.departure_date,
+                passengers: passengers,
+                service_type: 'Empty Leg Flight',
+                price: finalPrice,
+                currency: 'USD'
+              }
+            },
+            pdfBase64: base64,
+            pdfFilename: filename
+          }
         });
-      } catch (emailError) {
-        console.error('Email notification error (non-blocking):', emailError);
+        console.log('Email with PDF sent for empty leg request');
+      } catch (pdfEmailErr) {
+        console.error('PDF/Email error (non-blocking):', pdfEmailErr);
       }
 
       // Track benefit usage
@@ -910,42 +969,48 @@ const EmptyLegDetail = () => {
               {/* NFT Membership Status */}
               {hasNFT && (
                 <div className="border-t border-gray-100 pt-4 mb-4">
-                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className={`p-3 rounded-lg border ${priceUSD < 1500 && !usedBenefits.freeFlightUsed ? 'bg-green-50 border-green-300' : 'bg-gray-50 border-gray-200'}`}>
                     <div className="flex items-center space-x-2 mb-2">
-                      <span className="text-black font-semibold text-sm">NFT Member</span>
+                      <span className="text-black font-semibold text-sm">✓ NFT Member</span>
                     </div>
                     <p className="text-xs text-gray-700">
                       {nftDiscount}% discount on all flights
-                      {priceUSD < 1900 && <span className="block mt-1 font-semibold text-black">This flight is FREE!</span>}
+                      {priceUSD < 1500 && !usedBenefits.freeFlightUsed && (
+                        <span className="block mt-1 font-semibold text-green-700">🎁 This flight qualifies for FREE redemption!</span>
+                      )}
+                      {usedBenefits.freeFlightUsed && (
+                        <span className="block mt-1 text-gray-500">Free flight benefit already used this year</span>
+                      )}
                     </p>
                   </div>
                 </div>
               )}
 
               {/* Total Price */}
-              <div className="p-3 bg-gray-50 rounded mb-4">
+              <div className={`p-3 rounded mb-4 ${hasNFT && priceUSD < 1500 && !usedBenefits.freeFlightUsed ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}`}>
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-gray-500">Base Price:</span>
-                  <span className="font-semibold text-black">${Math.round(priceUSD).toLocaleString()}</span>
+                  <span className={`font-semibold ${hasNFT && priceUSD < 1500 && !usedBenefits.freeFlightUsed ? 'line-through text-gray-400' : 'text-black'}`}>${Math.round(priceUSD).toLocaleString()}</span>
                 </div>
                 {hasNFT && (
                   <>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-600">NFT Discount ({nftDiscount}%):</span>
-                      <span className="font-semibold text-black">-${Math.round(priceUSD * nftDiscount / 100).toLocaleString()}</span>
-                    </div>
-                    {priceUSD < 1900 && (
+                    {priceUSD < 1500 && !usedBenefits.freeFlightUsed ? (
                       <div className="flex justify-between text-xs mb-1">
-                        <span className="text-gray-600">Free Flight Bonus:</span>
-                        <span className="font-semibold text-black">-${Math.round(priceUSD * (1 - nftDiscount / 100)).toLocaleString()}</span>
+                        <span className="text-green-600 font-medium">🎁 NFT Free Flight:</span>
+                        <span className="font-semibold text-green-600">-${Math.round(priceUSD).toLocaleString()}</span>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-gray-600">NFT Discount ({nftDiscount}%):</span>
+                        <span className="font-semibold text-black">-${Math.round(priceUSD * nftDiscount / 100).toLocaleString()}</span>
                       </div>
                     )}
                   </>
                 )}
                 <div className="flex justify-between text-sm font-bold border-t border-gray-200 pt-2 mt-2">
                   <span className="text-black">Total:</span>
-                  <span className="text-black">
-                    {hasNFT && priceUSD < 1900 ? 'FREE' : `$${Math.round(hasNFT ? priceUSD * (1 - nftDiscount / 100) : priceUSD).toLocaleString()}`}
+                  <span className={hasNFT && priceUSD < 1500 && !usedBenefits.freeFlightUsed ? 'text-green-600' : 'text-black'}>
+                    {hasNFT && priceUSD < 1500 && !usedBenefits.freeFlightUsed ? 'FREE' : `$${Math.round(hasNFT ? priceUSD * (1 - nftDiscount / 100) : priceUSD).toLocaleString()}`}
                   </span>
                 </div>
               </div>
@@ -953,9 +1018,13 @@ const EmptyLegDetail = () => {
               {/* Request Flight Button */}
               <button
                 onClick={requestFlight}
-                className="w-full bg-black text-white py-3 px-4 rounded text-sm font-semibold hover:bg-gray-800 transition-colors"
+                className={`w-full py-3 px-4 rounded text-sm font-semibold transition-colors ${
+                  hasNFT && priceUSD < 1500 && !usedBenefits.freeFlightUsed
+                    ? 'bg-green-600 text-white hover:bg-green-700'
+                    : 'bg-black text-white hover:bg-gray-800'
+                }`}
               >
-                {hasNFT && priceUSD < 1900 ? 'Get Flight FREE' : 'Request Flight'}
+                {hasNFT && priceUSD < 1500 && !usedBenefits.freeFlightUsed ? '🎁 Redeem FREE Flight' : 'Request Flight'}
               </button>
 
               {/* Pay with Crypto Button - Only show when price is available */}

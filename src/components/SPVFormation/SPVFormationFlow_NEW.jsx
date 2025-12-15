@@ -5,16 +5,17 @@ import {
   X,
   Loader2,
   Briefcase,
-  DollarSign,
+  Globe,
   Clock,
   CheckCircle2,
   Check,
   Users,
-  MapPin
+  MapPin,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
-import { convertToUSD } from '../../services/currencyService';
 
 const SPVFormationFlow = ({ onBack, onSuccess }) => {
   const { user } = useAuth();
@@ -62,79 +63,63 @@ const SPVFormationFlow = ({ onBack, onSuccess }) => {
     { id: 'review', label: 'Review' }
   ];
 
+  // Jurisdictions - NO PRICING shown to users, pricing provided after legal review
   const jurisdictions = {
     premium: [
-      { name: 'Switzerland', formation: 8500, annual: 4500, tax: '11.9% - 21%', duration: '10-14 days', description: 'AG/GmbH Formation, Registered Office, Nominee Director, Bank Account Intro' },
-      { name: 'Singapore', formation: 6500, annual: 3500, tax: '17%', duration: '3-5 days', description: 'Private Limited Company, Local Director, Registered Office' },
-      { name: 'Luxembourg', formation: 7500, annual: 4000, tax: '24.94%', duration: '5-7 days', description: 'SARL/SA Formation, Registered Office, Domiciliation' },
-      { name: 'Liechtenstein', formation: 8000, annual: 4000, tax: '12.5%', duration: '7-10 days', description: 'AG/Anstalt/Stiftung, Registered Office Vaduz' },
-      { name: 'Isle of Man', formation: 6500, annual: 3000, tax: '0%', duration: '3-5 days', description: 'Limited Company, Aircraft/Yacht friendly' },
-      { name: 'Jersey', formation: 6000, annual: 3000, tax: '0%', duration: '3-5 days', description: 'Limited Company, Trust Services available' },
-      { name: 'Guernsey', formation: 6000, annual: 3000, tax: '0%', duration: '3-5 days', description: 'Limited Company, Protected Cell Company possible' }
+      { name: 'Switzerland', tax: '11.9% - 21%', duration: '10-14 days', description: 'AG/GmbH Formation, Registered Office, Nominee Director, Bank Account Intro' },
+      { name: 'Singapore', tax: '17%', duration: '3-5 days', description: 'Private Limited Company, Local Director, Registered Office' },
+      { name: 'Luxembourg', tax: '24.94%', duration: '5-7 days', description: 'SARL/SA Formation, Registered Office, Domiciliation' },
+      { name: 'Liechtenstein', tax: '12.5%', duration: '7-10 days', description: 'AG/Anstalt/Stiftung, Registered Office Vaduz' },
+      { name: 'Isle of Man', tax: '0%', duration: '3-5 days', description: 'Limited Company, Aircraft/Yacht friendly' },
+      { name: 'Jersey', tax: '0%', duration: '3-5 days', description: 'Limited Company, Trust Services available' },
+      { name: 'Guernsey', tax: '0%', duration: '3-5 days', description: 'Limited Company, Protected Cell Company possible' }
     ],
     standard: [
-      { name: 'Cayman Islands', formation: 5500, annual: 2800, tax: '0%', duration: '3-5 days', description: 'Exempted Company, Optional Nominees' },
-      { name: 'Bermuda', formation: 6000, annual: 3200, tax: '0%', duration: '5-7 days', description: 'Exempted Company, Compliance Services' },
-      { name: 'British Virgin Islands', formation: 4500, annual: 2200, tax: '0%', duration: '1-3 days', description: 'Business Company, Optional Nominees' },
-      { name: 'Hong Kong', formation: 4000, annual: 2000, tax: '16.5%', duration: '4-7 days', description: 'Private Limited Company' },
-      { name: 'Cyprus', formation: 4500, annual: 2500, tax: '12.5%', duration: '7-10 days', description: 'Limited Company, VAT Registration' },
-      { name: 'Malta', formation: 5000, annual: 2800, tax: '35%', duration: '5-7 days', description: 'Limited Company, Tax refundable to 5%' },
-      { name: 'Gibraltar', formation: 4800, annual: 2400, tax: '10%', duration: '5-7 days', description: 'Limited Company' },
-      { name: 'Dubai (UAE)', formation: 5500, annual: 2800, tax: '0% - 9%', duration: '7-14 days', description: 'Free Zone Company, Residence Visa' },
-      { name: 'Panama', formation: 4000, annual: 1800, tax: '0%', duration: '3-5 days', description: 'Sociedad Anonima' }
+      { name: 'Cayman Islands', tax: '0%', duration: '3-5 days', description: 'Exempted Company, Optional Nominees' },
+      { name: 'Bermuda', tax: '0%', duration: '5-7 days', description: 'Exempted Company, Compliance Services' },
+      { name: 'British Virgin Islands', tax: '0%', duration: '1-3 days', description: 'Business Company, Optional Nominees' },
+      { name: 'Hong Kong', tax: '16.5%', duration: '4-7 days', description: 'Private Limited Company' },
+      { name: 'Cyprus', tax: '12.5%', duration: '7-10 days', description: 'Limited Company, VAT Registration' },
+      { name: 'Malta', tax: '35%', duration: '5-7 days', description: 'Limited Company, Tax refundable to 5%' },
+      { name: 'Gibraltar', tax: '10%', duration: '5-7 days', description: 'Limited Company' },
+      { name: 'Dubai (UAE)', tax: '0% - 9%', duration: '7-14 days', description: 'Free Zone Company, Residence Visa' },
+      { name: 'Panama', tax: '0%', duration: '3-5 days', description: 'Sociedad Anonima' }
     ],
     budget: [
-      { name: 'Seychelles', formation: 3500, annual: 1400, tax: '0%', duration: '1-2 days', description: 'IBC, Optional Nominees' },
-      { name: 'Belize', formation: 3800, annual: 1500, tax: '0%', duration: '1-3 days', description: 'IBC, Registered Agent' },
-      { name: 'Marshall Islands', formation: 3800, annual: 1600, tax: '0%', duration: '2-5 days', description: 'IBC/LLC' },
-      { name: 'St. Vincent', formation: 3000, annual: 1200, tax: '0%', duration: '1-3 days', description: 'IBC' },
-      { name: 'Mauritius', formation: 4200, annual: 2000, tax: '15%', duration: '5-7 days', description: 'GBC' },
-      { name: 'Labuan', formation: 4000, annual: 2000, tax: '3%', duration: '7-10 days', description: 'Trading/Holding Company' },
-      { name: 'St. Kitts & Nevis', formation: 3500, annual: 1500, tax: '0%', duration: '2-5 days', description: 'LLC/IBC' },
-      { name: 'Anguilla', formation: 3200, annual: 1300, tax: '0%', duration: '2-4 days', description: 'IBC' },
-      { name: 'Vanuatu', formation: 3000, annual: 1200, tax: '0%', duration: '1-2 days', description: 'IBC' }
+      { name: 'Seychelles', tax: '0%', duration: '1-2 days', description: 'IBC, Optional Nominees' },
+      { name: 'Belize', tax: '0%', duration: '1-3 days', description: 'IBC, Registered Agent' },
+      { name: 'Marshall Islands', tax: '0%', duration: '2-5 days', description: 'IBC/LLC' },
+      { name: 'St. Vincent', tax: '0%', duration: '1-3 days', description: 'IBC' },
+      { name: 'Mauritius', tax: '15%', duration: '5-7 days', description: 'GBC' },
+      { name: 'Labuan', tax: '3%', duration: '7-10 days', description: 'Trading/Holding Company' },
+      { name: 'St. Kitts & Nevis', tax: '0%', duration: '2-5 days', description: 'LLC/IBC' },
+      { name: 'Anguilla', tax: '0%', duration: '2-4 days', description: 'IBC' },
+      { name: 'Vanuatu', tax: '0%', duration: '1-2 days', description: 'IBC' }
     ],
     usa: [
-      { name: 'Delaware', formation: 3500, annual: 1500, tax: '8.7% + Federal', duration: '1-3 days', description: 'LLC/Corporation, EIN Number' },
-      { name: 'Wyoming', formation: 3200, annual: 1300, tax: '0% + Federal', duration: '1-3 days', description: 'LLC, Anonymity Protection' },
-      { name: 'Nevada', formation: 3500, annual: 1600, tax: '0% + Federal', duration: '1-3 days', description: 'LLC/Corporation, No State Tax' }
+      { name: 'Delaware', tax: '8.7% + Federal', duration: '1-3 days', description: 'LLC/Corporation, EIN Number' },
+      { name: 'Wyoming', tax: '0% + Federal', duration: '1-3 days', description: 'LLC, Anonymity Protection' },
+      { name: 'Nevada', tax: '0% + Federal', duration: '1-3 days', description: 'LLC/Corporation, No State Tax' }
     ]
   };
 
   const tiers = [
-    { id: 'premium', label: 'Premium', flag: '🇨🇭', price: '$6,500 - $9,200', tax: 'Low tax (8-17%)' },
-    { id: 'standard', label: 'Standard', flag: '🇰🇾', price: '$4,300 - $6,500', tax: '0% corporate tax', popular: true },
-    { id: 'budget', label: 'Budget', flag: '🇸🇨', price: '$3,300 - $4,600', tax: '0% tax' },
-    { id: 'usa', label: 'USA', flag: '🇺🇸', price: '$3,500 - $3,800', tax: 'US market access' }
+    { id: 'premium', label: 'Premium', flag: '🇨🇭', tax: 'Low tax (8-17%)' },
+    { id: 'standard', label: 'Standard', flag: '🇰🇾', tax: '0% corporate tax', popular: true },
+    { id: 'budget', label: 'Budget', flag: '🇸🇨', tax: '0% tax' },
+    { id: 'usa', label: 'USA', flag: '🇺🇸', tax: 'US market access' }
   ];
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const calculateTotalCost = () => {
-    if (!formData.jurisdictionDetails) return { formation: 0, annual: 0 };
-
-    let formation = formData.jurisdictionDetails.formation;
-    let annual = formData.jurisdictionDetails.annual;
-
-    if (formData.needsNomineeDirector) annual += 1800;
-    if (formData.needsNomineeShareholder) annual += 1500;
-    if (formData.needsBankAccountGuarantee) formation += 2500;
-    if (formData.needsAccounting) annual += 2000;
-    if (formData.needsSubstancePackage) annual += 5000;
-    if (formData.needsVATRegistration) formation += 1500;
-    if (formData.needsExpressService) formation = Math.round(formation * 1.5);
-
-    return { formation, annual };
-  };
 
   const handleSubmit = async () => {
     if (!user?.id) return;
 
     setIsSubmitting(true);
     try {
-      const costs = calculateTotalCost();
       const requestData = {
         tier: formData.selectedTier,
         jurisdiction: formData.jurisdiction,
@@ -159,8 +144,6 @@ const SPVFormationFlow = ({ onBack, onSuccess }) => {
         },
         contactEmail: formData.contactEmail,
         contactPhone: formData.contactPhone,
-        totalFormationCost: costs.formation,
-        totalAnnualCost: costs.annual,
         submittedAt: new Date().toISOString()
       };
 
@@ -191,6 +174,32 @@ const SPVFormationFlow = ({ onBack, onSuccess }) => {
       case 'review': return formData.contactEmail;
       default: return true;
     }
+  };
+
+  // Check if a specific step is completed (for step-by-step flow)
+  const isStepCompleted = (tabId) => {
+    switch (tabId) {
+      case 'tier': return formData.jurisdictionDetails !== null;
+      case 'company': return formData.companyName && formData.businessActivity;
+      case 'people': return formData.directors[0]?.fullName && formData.shareholders[0]?.fullName;
+      case 'services': return true; // Services tab is always considered complete (optional selections)
+      case 'review': return false; // Review is never "completed" until submission
+      default: return false;
+    }
+  };
+
+  // Check if user can access a specific tab (must complete all previous steps)
+  const canAccessTab = (tabId) => {
+    const tabIndex = tabs.findIndex(t => t.id === tabId);
+    if (tabIndex === 0) return true; // First tab always accessible
+
+    // Check all previous tabs are completed
+    for (let i = 0; i < tabIndex; i++) {
+      if (!isStepCompleted(tabs[i].id)) {
+        return false;
+      }
+    }
+    return true;
   };
 
   const goToNextTab = () => {
@@ -258,8 +267,7 @@ const SPVFormationFlow = ({ onBack, onSuccess }) => {
         </div>
 
         {/* Selected Tier Info */}
-        <div className="bg-gray-50 rounded-lg p-3 flex items-center justify-between text-xs">
-          <span className="text-gray-500">{tiers.find(t => t.id === selectedTierTab)?.price}</span>
+        <div className="bg-gray-50 rounded-lg p-3 flex items-center justify-center text-xs">
           <span className="text-gray-500">{tiers.find(t => t.id === selectedTierTab)?.tax}</span>
         </div>
 
@@ -280,12 +288,11 @@ const SPVFormationFlow = ({ onBack, onSuccess }) => {
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-medium text-gray-900">{j.name}</span>
-                <span className="text-xs font-semibold text-gray-900">${Math.round(convertToUSD(j.formation, 'EUR')).toLocaleString()}</span>
               </div>
               <p className="text-[10px] text-gray-500 mb-1.5 line-clamp-1">{j.description}</p>
               <div className="flex items-center gap-3 text-[10px] text-gray-400">
                 <span><Clock size={9} className="inline mr-0.5" />{j.duration}</span>
-                <span><DollarSign size={9} className="inline mr-0.5" />{j.tax}</span>
+                <span><Globe size={9} className="inline mr-0.5" />{j.tax}</span>
               </div>
             </div>
           ))}
@@ -394,86 +401,175 @@ const SPVFormationFlow = ({ onBack, onSuccess }) => {
     </div>
   );
 
+  // Helper functions for dynamic directors/shareholders
+  const addDirector = () => {
+    const newDirectors = [...formData.directors, { fullName: '', nationality: '', residency: '', email: '', phone: '', passportNumber: '' }];
+    updateFormData('directors', newDirectors);
+    updateFormData('numberOfDirectors', String(newDirectors.length));
+  };
+
+  const removeDirector = (index) => {
+    if (formData.directors.length > 1) {
+      const newDirectors = formData.directors.filter((_, i) => i !== index);
+      updateFormData('directors', newDirectors);
+      updateFormData('numberOfDirectors', String(newDirectors.length));
+    }
+  };
+
+  const updateDirector = (index, field, value) => {
+    const newDirectors = [...formData.directors];
+    newDirectors[index] = { ...newDirectors[index], [field]: value };
+    updateFormData('directors', newDirectors);
+  };
+
+  const addShareholder = () => {
+    const newShareholders = [...formData.shareholders, { fullName: '', nationality: '', ownership: '', email: '', phone: '', passportNumber: '' }];
+    updateFormData('shareholders', newShareholders);
+    updateFormData('numberOfShareholders', String(newShareholders.length));
+  };
+
+  const removeShareholder = (index) => {
+    if (formData.shareholders.length > 1) {
+      const newShareholders = formData.shareholders.filter((_, i) => i !== index);
+      updateFormData('shareholders', newShareholders);
+      updateFormData('numberOfShareholders', String(newShareholders.length));
+    }
+  };
+
+  const updateShareholder = (index, field, value) => {
+    const newShareholders = [...formData.shareholders];
+    newShareholders[index] = { ...newShareholders[index], [field]: value };
+    updateFormData('shareholders', newShareholders);
+  };
+
   // Tab 3: Directors & Shareholders
   const renderPeopleTab = () => (
     <div className="space-y-4">
-      {/* Director */}
-      <div className="border border-gray-100 rounded-xl p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Users size={14} className="text-gray-400" />
-          <span className="text-sm font-medium text-gray-900">Director #1</span>
+      {/* Directors Section */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-900">Directors</span>
+          <button
+            onClick={addDirector}
+            className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <Plus size={14} /> Add Director
+          </button>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <input
-            type="text"
-            value={formData.directors[0]?.fullName || ''}
-            onChange={(e) => updateFormData('directors', [{ ...formData.directors[0], fullName: e.target.value }])}
-            placeholder="Full Name *"
-            className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
-          />
-          <input
-            type="text"
-            value={formData.directors[0]?.nationality || ''}
-            onChange={(e) => updateFormData('directors', [{ ...formData.directors[0], nationality: e.target.value }])}
-            placeholder="Nationality *"
-            className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
-          />
-          <input
-            type="text"
-            value={formData.directors[0]?.residency || ''}
-            onChange={(e) => updateFormData('directors', [{ ...formData.directors[0], residency: e.target.value }])}
-            placeholder="Country of Residence"
-            className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
-          />
-          <input
-            type="email"
-            value={formData.directors[0]?.email || ''}
-            onChange={(e) => updateFormData('directors', [{ ...formData.directors[0], email: e.target.value }])}
-            placeholder="Email"
-            className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
-          />
-        </div>
+
+        {formData.directors.map((director, index) => (
+          <div key={index} className="border border-gray-100 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Users size={14} className="text-gray-400" />
+                <span className="text-sm font-medium text-gray-900">Director #{index + 1}</span>
+              </div>
+              {formData.directors.length > 1 && (
+                <button
+                  onClick={() => removeDirector(index)}
+                  className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="text"
+                value={director.fullName || ''}
+                onChange={(e) => updateDirector(index, 'fullName', e.target.value)}
+                placeholder="Full Name *"
+                className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+              />
+              <input
+                type="text"
+                value={director.nationality || ''}
+                onChange={(e) => updateDirector(index, 'nationality', e.target.value)}
+                placeholder="Nationality *"
+                className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+              />
+              <input
+                type="text"
+                value={director.residency || ''}
+                onChange={(e) => updateDirector(index, 'residency', e.target.value)}
+                placeholder="Country of Residence"
+                className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+              />
+              <input
+                type="email"
+                value={director.email || ''}
+                onChange={(e) => updateDirector(index, 'email', e.target.value)}
+                placeholder="Email"
+                className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+              />
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Shareholder */}
-      <div className="border border-gray-100 rounded-xl p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Briefcase size={14} className="text-gray-400" />
-          <span className="text-sm font-medium text-gray-900">Shareholder #1</span>
+      {/* Shareholders Section */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-900">Shareholders</span>
+          <button
+            onClick={addShareholder}
+            className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <Plus size={14} /> Add Shareholder
+          </button>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <input
-            type="text"
-            value={formData.shareholders[0]?.fullName || ''}
-            onChange={(e) => updateFormData('shareholders', [{ ...formData.shareholders[0], fullName: e.target.value }])}
-            placeholder="Full Name *"
-            className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
-          />
-          <input
-            type="number"
-            value={formData.shareholders[0]?.ownership || '100'}
-            onChange={(e) => updateFormData('shareholders', [{ ...formData.shareholders[0], ownership: e.target.value }])}
-            placeholder="Ownership %"
-            className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
-          />
-          <input
-            type="text"
-            value={formData.shareholders[0]?.nationality || ''}
-            onChange={(e) => updateFormData('shareholders', [{ ...formData.shareholders[0], nationality: e.target.value }])}
-            placeholder="Nationality"
-            className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
-          />
-          <input
-            type="email"
-            value={formData.shareholders[0]?.email || ''}
-            onChange={(e) => updateFormData('shareholders', [{ ...formData.shareholders[0], email: e.target.value }])}
-            placeholder="Email"
-            className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
-          />
-        </div>
+
+        {formData.shareholders.map((shareholder, index) => (
+          <div key={index} className="border border-gray-100 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Briefcase size={14} className="text-gray-400" />
+                <span className="text-sm font-medium text-gray-900">Shareholder #{index + 1}</span>
+              </div>
+              {formData.shareholders.length > 1 && (
+                <button
+                  onClick={() => removeShareholder(index)}
+                  className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="text"
+                value={shareholder.fullName || ''}
+                onChange={(e) => updateShareholder(index, 'fullName', e.target.value)}
+                placeholder="Full Name *"
+                className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+              />
+              <input
+                type="number"
+                value={shareholder.ownership || ''}
+                onChange={(e) => updateShareholder(index, 'ownership', e.target.value)}
+                placeholder="Ownership %"
+                className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+              />
+              <input
+                type="text"
+                value={shareholder.nationality || ''}
+                onChange={(e) => updateShareholder(index, 'nationality', e.target.value)}
+                placeholder="Nationality"
+                className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+              />
+              <input
+                type="email"
+                value={shareholder.email || ''}
+                onChange={(e) => updateShareholder(index, 'email', e.target.value)}
+                placeholder="Email"
+                className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+              />
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="bg-blue-50 rounded-lg p-3 text-xs text-blue-700">
+      <div className="bg-gray-100 rounded-lg p-3 text-xs text-gray-700">
         Additional KYC documents (passport copies, proof of address) will be requested after initial review.
       </div>
     </div>
@@ -481,15 +577,14 @@ const SPVFormationFlow = ({ onBack, onSuccess }) => {
 
   // Tab 4: Additional Services
   const renderServicesTab = () => {
-    const costs = calculateTotalCost();
     const services = [
-      { key: 'needsNomineeDirector', label: 'Nominee Director', price: '$2,000/year', desc: 'Professional nominee for privacy' },
-      { key: 'needsNomineeShareholder', label: 'Nominee Shareholder', price: '$1,650/year', desc: 'Confidential ownership' },
-      { key: 'needsBankAccountGuarantee', label: 'Bank Account Guarantee', price: '$2,700', desc: 'Guaranteed opening within 30 days' },
-      { key: 'needsAccounting', label: 'Accounting & Bookkeeping', price: '$2,200/year', desc: 'Full financial statements' },
-      { key: 'needsSubstancePackage', label: 'Substance Package', price: '$5,400/year', desc: 'Physical office, local employees' },
-      { key: 'needsVATRegistration', label: 'VAT/GST Registration', price: '$1,650', desc: 'For eligible jurisdictions' },
-      { key: 'needsExpressService', label: 'Express Service (24-48h)', price: '+50%', desc: 'Priority processing' }
+      { key: 'needsNomineeDirector', label: 'Nominee Director', desc: 'Professional nominee for privacy' },
+      { key: 'needsNomineeShareholder', label: 'Nominee Shareholder', desc: 'Confidential ownership' },
+      { key: 'needsBankAccountGuarantee', label: 'Bank Account Guarantee', desc: 'Guaranteed opening within 30 days' },
+      { key: 'needsAccounting', label: 'Accounting & Bookkeeping', desc: 'Full financial statements' },
+      { key: 'needsSubstancePackage', label: 'Substance Package', desc: 'Physical office, local employees' },
+      { key: 'needsVATRegistration', label: 'VAT/GST Registration', desc: 'For eligible jurisdictions' },
+      { key: 'needsExpressService', label: 'Express Service (24-48h)', desc: 'Priority processing' }
     ];
 
     return (
@@ -503,29 +598,15 @@ const SPVFormationFlow = ({ onBack, onSuccess }) => {
               className="w-4 h-4 rounded border-gray-300"
             />
             <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900">{s.label}</span>
-                <span className="text-xs font-semibold text-gray-700">{s.price}</span>
-              </div>
+              <span className="text-sm font-medium text-gray-900">{s.label}</span>
               <p className="text-[10px] text-gray-500">{s.desc}</p>
             </div>
           </label>
         ))}
 
-        {/* Running Total */}
-        <div className="bg-gray-900 text-white rounded-xl p-4 mt-4">
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-gray-400">Formation</span>
-            <span>${Math.round(convertToUSD(costs.formation, 'EUR')).toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-gray-400">Annual (Year 1)</span>
-            <span>${Math.round(convertToUSD(costs.annual, 'EUR')).toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between text-base font-semibold pt-2 border-t border-gray-700">
-            <span>Total</span>
-            <span>${Math.round(convertToUSD(costs.formation + costs.annual, 'EUR')).toLocaleString()}</span>
-          </div>
+        {/* Info Notice */}
+        <div className="bg-gray-100 rounded-lg p-3 text-xs text-gray-600 mt-4">
+          Pricing for all services will be provided after review by our legal team.
         </div>
       </div>
     );
@@ -533,16 +614,14 @@ const SPVFormationFlow = ({ onBack, onSuccess }) => {
 
   // Tab 5: Review & Submit
   const renderReviewTab = () => {
-    const costs = calculateTotalCost();
-
     if (submitSuccess) {
       return (
         <div className="text-center py-12">
-          <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Check size={32} className="text-emerald-600" />
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Check size={32} className="text-gray-700" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Application Submitted!</h3>
-          <p className="text-sm text-gray-500 mb-6">Our team will review your submission and contact you within 24 hours.</p>
+          <p className="text-sm text-gray-500 mb-6">Our team will review your submission and contact you within 24 hours with pricing details.</p>
           <button
             onClick={() => onBack?.()}
             className="px-6 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
@@ -581,13 +660,13 @@ const SPVFormationFlow = ({ onBack, onSuccess }) => {
           <div className="border border-gray-100 rounded-lg p-3">
             <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2">Additional Services</p>
             <div className="space-y-1">
-              {formData.needsNomineeDirector && <div className="flex items-center gap-2 text-xs text-gray-700"><CheckCircle2 size={12} className="text-emerald-500" /> Nominee Director</div>}
-              {formData.needsNomineeShareholder && <div className="flex items-center gap-2 text-xs text-gray-700"><CheckCircle2 size={12} className="text-emerald-500" /> Nominee Shareholder</div>}
-              {formData.needsBankAccountGuarantee && <div className="flex items-center gap-2 text-xs text-gray-700"><CheckCircle2 size={12} className="text-emerald-500" /> Bank Account Guarantee</div>}
-              {formData.needsAccounting && <div className="flex items-center gap-2 text-xs text-gray-700"><CheckCircle2 size={12} className="text-emerald-500" /> Accounting</div>}
-              {formData.needsSubstancePackage && <div className="flex items-center gap-2 text-xs text-gray-700"><CheckCircle2 size={12} className="text-emerald-500" /> Substance Package</div>}
-              {formData.needsVATRegistration && <div className="flex items-center gap-2 text-xs text-gray-700"><CheckCircle2 size={12} className="text-emerald-500" /> VAT Registration</div>}
-              {formData.needsExpressService && <div className="flex items-center gap-2 text-xs text-gray-700"><CheckCircle2 size={12} className="text-emerald-500" /> Express Service</div>}
+              {formData.needsNomineeDirector && <div className="flex items-center gap-2 text-xs text-gray-700"><CheckCircle2 size={12} className="text-gray-500" /> Nominee Director</div>}
+              {formData.needsNomineeShareholder && <div className="flex items-center gap-2 text-xs text-gray-700"><CheckCircle2 size={12} className="text-gray-500" /> Nominee Shareholder</div>}
+              {formData.needsBankAccountGuarantee && <div className="flex items-center gap-2 text-xs text-gray-700"><CheckCircle2 size={12} className="text-gray-500" /> Bank Account Guarantee</div>}
+              {formData.needsAccounting && <div className="flex items-center gap-2 text-xs text-gray-700"><CheckCircle2 size={12} className="text-gray-500" /> Accounting</div>}
+              {formData.needsSubstancePackage && <div className="flex items-center gap-2 text-xs text-gray-700"><CheckCircle2 size={12} className="text-gray-500" /> Substance Package</div>}
+              {formData.needsVATRegistration && <div className="flex items-center gap-2 text-xs text-gray-700"><CheckCircle2 size={12} className="text-gray-500" /> VAT Registration</div>}
+              {formData.needsExpressService && <div className="flex items-center gap-2 text-xs text-gray-700"><CheckCircle2 size={12} className="text-gray-500" /> Express Service</div>}
             </div>
           </div>
         )}
@@ -610,20 +689,9 @@ const SPVFormationFlow = ({ onBack, onSuccess }) => {
           />
         </div>
 
-        {/* Total */}
-        <div className="bg-gray-900 text-white rounded-xl p-4">
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-gray-400">Formation</span>
-            <span>${Math.round(convertToUSD(costs.formation, 'EUR')).toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-gray-400">Annual</span>
-            <span>${Math.round(convertToUSD(costs.annual, 'EUR')).toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between text-lg font-semibold pt-2 border-t border-gray-700">
-            <span>Total</span>
-            <span>${Math.round(convertToUSD(costs.formation + costs.annual, 'EUR')).toLocaleString()}</span>
-          </div>
+        {/* Info Notice */}
+        <div className="bg-gray-100 rounded-lg p-3 text-xs text-gray-600">
+          Pricing will be provided by our legal team after reviewing your application requirements.
         </div>
 
         {/* Submit Button */}
@@ -663,7 +731,7 @@ const SPVFormationFlow = ({ onBack, onSuccess }) => {
         {formData.jurisdictionDetails && (
           <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
             <span>{formData.jurisdiction}</span>
-            <span>${Math.round(convertToUSD(formData.jurisdictionDetails.formation, 'EUR')).toLocaleString()} formation</span>
+            <span>{formData.jurisdictionDetails.duration}</span>
           </div>
         )}
       </div>
@@ -673,20 +741,38 @@ const SPVFormationFlow = ({ onBack, onSuccess }) => {
         <div className="flex items-center gap-1">
           {tabs.map((tab, idx) => {
             const isActive = activeTab === tab.id;
-            const isPast = tabs.findIndex(t => t.id === activeTab) > idx;
+            const isCompleted = isStepCompleted(tab.id);
+            const isAccessible = canAccessTab(tab.id);
+            const currentIdx = tabs.findIndex(t => t.id === activeTab);
+            const isPast = idx < currentIdx;
+
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => isAccessible && setActiveTab(tab.id)}
+                disabled={!isAccessible}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                   isActive
                     ? 'bg-gray-900 text-white'
-                    : isPast
-                      ? 'bg-gray-100 text-gray-700'
-                      : 'text-gray-400 hover:text-gray-600'
+                    : isPast && isCompleted
+                      ? 'bg-gray-100 text-gray-700 cursor-pointer'
+                      : isAccessible
+                        ? 'text-gray-500 hover:text-gray-700 cursor-pointer'
+                        : 'text-gray-300 cursor-not-allowed'
                 }`}
               >
-                {tab.label}
+                <span className="flex items-center gap-1.5">
+                  <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
+                    isActive
+                      ? 'bg-white text-gray-900'
+                      : isCompleted
+                        ? 'bg-gray-700 text-white'
+                        : 'bg-gray-200 text-gray-500'
+                  }`}>
+                    {isCompleted && !isActive ? <Check size={10} /> : idx + 1}
+                  </span>
+                  {tab.label}
+                </span>
               </button>
             );
           })}

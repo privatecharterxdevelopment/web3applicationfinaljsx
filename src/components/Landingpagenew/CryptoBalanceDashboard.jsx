@@ -760,14 +760,76 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
 
   const getRequestTypeLabel = (type) => {
     const labels = {
-      'private_jet_charter': 'Private Jet',
-      'helicopter_charter': 'Helicopter',
+      'taxi_concierge': 'Airport Transfer',
+      'ground_transport': 'Airport Transfer',
+      'private_jet_charter': 'Private Jet Charter',
+      'helicopter_charter': 'Helicopter Charter',
       'empty_leg': 'Empty Leg',
       'luxury_car': 'Luxury Car',
-      'adventure_package': 'Adventure',
+      'luxury_car_rental': 'Luxury Car Rental',
+      'adventure_package': 'Adventure Package',
       'co2_certificate': 'CO2 Certificate',
+      'fixed_offer': 'Fixed Offer',
+      'yacht_charter': 'Yacht Charter',
+      'booking': 'Multi-Service Booking',
+      'ai_chat_bulk': 'AI Concierge Request',
+      'spv_formation': 'SPV Formation',
+      'tokenization': 'Asset Tokenization'
     };
-    return labels[type] || type;
+    return labels[type] || type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Request';
+  };
+
+  // Helper to extract request details from data
+  const getRequestDetails = (request) => {
+    let data = request.data;
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch (e) { data = {}; }
+    }
+    data = data || {};
+
+    // Extract items from AI Chat cart submissions
+    const items = data.items || [];
+    const firstItem = items[0] || {};
+
+    // Common fields extraction
+    const route = data.route || firstItem.route ||
+      (data.from && data.to ? `${data.from} → ${data.to}` : null) ||
+      (firstItem.from && firstItem.to ? `${firstItem.from} → ${firstItem.to}` : null) ||
+      (data.departure_airport && data.arrival_airport ? `${data.departure_airport} → ${data.arrival_airport}` : null);
+
+    const price = data.total_price || data.total || data.price || data.estimatedPrice ||
+      firstItem.total_price || firstItem.price || firstItem.estimatedPrice;
+
+    const aircraft = data.aircraft_model || data.aircraft || firstItem.aircraft_model ||
+      firstItem.model || firstItem.name;
+
+    const passengers = data.passenger_capacity || data.passengers || data.pax ||
+      firstItem.max_passengers || firstItem.passengers;
+
+    const date = data.departure_date || data.date || data.pickupDate ||
+      firstItem.departure_date || firstItem.date;
+
+    const carName = data.carName || firstItem.carName || firstItem.name;
+    const carSeats = data.carSeats || firstItem.carSeats || firstItem.seats;
+
+    return {
+      route,
+      price,
+      aircraft,
+      passengers,
+      date,
+      carName,
+      carSeats,
+      itemCount: items.length
+    };
+  };
+
+  // Generate unique client number from user ID
+  const generateClientNumber = (userId) => {
+    if (!userId) return null;
+    // Take last 8 chars of UUID and convert to uppercase
+    const shortId = userId.replace(/-/g, '').slice(-8).toUpperCase();
+    return `PCX-${shortId}`;
   };
 
   const formatDate = (dateString) => {
@@ -1035,41 +1097,92 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                 </div>
                 <Plus className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${activeSection === 'requests' ? 'rotate-45' : ''}`} />
               </button>
-              <div className={`transition-all duration-300 ease-in-out overflow-hidden ${activeSection === 'requests' ? 'max-h-[500px] overflow-y-auto' : 'max-h-0'}`}>
+              <div className={`transition-all duration-300 ease-in-out overflow-hidden ${activeSection === 'requests' ? 'max-h-[600px] overflow-y-auto' : 'max-h-0'}`}>
                 <div className="p-4 bg-white/10 space-y-3">
                   {userRequests.length > 0 ? (
                     <>
-                      {userRequests.slice(0, 5).map((request) => (
-                        <div key={request.id} className="py-3 px-3 bg-white/5 rounded-lg border border-gray-200/30">
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-900">
-                                {getRequestTypeLabel(request.request_type || request.type)}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-0.5">
-                                {request.departure_airport || request.from_location} → {request.arrival_airport || request.to_location}
-                              </p>
+                      {userRequests.slice(0, 5).map((request) => {
+                        const details = getRequestDetails(request);
+                        const requestType = request.request_type || request.type;
+
+                        return (
+                          <div key={request.id} className="py-3 px-3 bg-white/5 rounded-lg border border-gray-200/30">
+                            {/* Header with Type and Status */}
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-900">
+                                  {getRequestTypeLabel(requestType)}
+                                </p>
+                                {/* Show aircraft/car name if available */}
+                                {details.aircraft && (
+                                  <p className="text-xs text-gray-600 font-medium mt-0.5">{details.aircraft}</p>
+                                )}
+                                {details.carName && !details.aircraft && (
+                                  <p className="text-xs text-gray-600 font-medium mt-0.5">{details.carName}</p>
+                                )}
+                              </div>
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                request.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                                request.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                request.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                request.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                                'bg-gray-100 text-gray-700'
+                              }`}>
+                                {request.status}
+                              </span>
                             </div>
-                            <span className={`px-2 py-0.5 rounded-full text-xs ${
-                              request.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                              request.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                              request.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                              'bg-gray-100 text-gray-700'
-                            }`}>
-                              {request.status}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center text-xs text-gray-400">
-                            <span>{formatDate(request.created_at)}</span>
-                            {request.departure_date && (
-                              <span>Travel: {formatDate(request.departure_date)}</span>
+
+                            {/* Route Info */}
+                            {details.route && (
+                              <div className="mb-2 py-2 px-2.5 bg-gray-100/50 rounded-lg">
+                                <p className="text-xs text-gray-700 font-medium">{details.route}</p>
+                              </div>
                             )}
+
+                            {/* Details Grid */}
+                            <div className="grid grid-cols-2 gap-2 mb-2">
+                              {details.passengers && (
+                                <div>
+                                  <p className="text-[10px] text-gray-400">Passengers</p>
+                                  <p className="text-xs font-medium text-gray-700">{details.passengers} pax</p>
+                                </div>
+                              )}
+                              {details.carSeats && !details.passengers && (
+                                <div>
+                                  <p className="text-[10px] text-gray-400">Seats</p>
+                                  <p className="text-xs font-medium text-gray-700">{details.carSeats}</p>
+                                </div>
+                              )}
+                              {details.date && (
+                                <div>
+                                  <p className="text-[10px] text-gray-400">Travel Date</p>
+                                  <p className="text-xs font-medium text-gray-700">{formatDate(details.date)}</p>
+                                </div>
+                              )}
+                              {details.price && (
+                                <div>
+                                  <p className="text-[10px] text-gray-400">Price</p>
+                                  <p className="text-xs font-medium text-gray-700">
+                                    {typeof details.price === 'number' ? `$${details.price.toLocaleString()}` : details.price}
+                                  </p>
+                                </div>
+                              )}
+                              {details.itemCount > 1 && (
+                                <div>
+                                  <p className="text-[10px] text-gray-400">Items</p>
+                                  <p className="text-xs font-medium text-gray-700">{details.itemCount} services</p>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Footer with dates */}
+                            <div className="flex justify-between items-center text-[10px] text-gray-400 pt-2 border-t border-gray-200/30">
+                              <span>Requested: {formatDate(request.created_at)}</span>
+                              <span className="font-mono text-gray-500">#{request.id?.slice(0, 8)}</span>
+                            </div>
                           </div>
-                          {request.passengers && (
-                            <p className="text-xs text-gray-400 mt-1">{request.passengers} passenger{request.passengers > 1 ? 's' : ''}</p>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                       {userRequests.length > 5 && (
                         <button
                           onClick={() => setActiveCategory && setActiveCategory('requests')}
@@ -1265,9 +1378,9 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                   </div>
                 )}
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500">Verified Date</span>
+                  <span className="text-xs text-gray-500">Registered Date</span>
                   <span className="text-xs text-gray-900">
-                    {formatDate(kycData?.kyc_verified_at)}
+                    {formatDate(userProfile?.created_at || user?.created_at)}
                   </span>
                 </div>
               </div>
@@ -1275,6 +1388,18 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
 
             {/* Profile Settings Card */}
             <div className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl p-4">
+              {/* Client Number Badge */}
+              {user?.id && (
+                <div className="mb-3 p-2.5 bg-gray-100 border border-gray-200 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wide">Client Number</span>
+                    <span className="text-sm font-mono font-medium text-gray-900 tracking-wider">
+                      {generateClientNumber(user.id)}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100">
                 {/* Clickable Avatar with Camera Overlay */}
                 <div className="relative group">

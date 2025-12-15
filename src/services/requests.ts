@@ -1,6 +1,9 @@
 import { supabase } from '../lib/supabase';
 import { logger } from '../utils/logger';
 
+// Edge function URL for sending request emails
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://txwgcbfpfkxjjxnqjmlq.supabase.co';
+
 // All supported request types for the user_requests table
 // The 'type' column in Supabase is TEXT, so any string is accepted
 // This list covers all service types in the platform
@@ -141,4 +144,121 @@ export const getRequestHistory = async (userId: string, type?: string) => {
     logger.error('Error fetching request history:', error);
     return { history: null, error: 'Failed to fetch request history' };
   }
+};
+
+// Send request confirmation email with PDF attachment
+interface SendRequestEmailOptions {
+  to: string;
+  requestData: {
+    id: string;
+    type: string;
+    created_at: string;
+    status?: string;
+    user: {
+      name: string;
+      email: string;
+    };
+    details: {
+      from?: string;
+      to?: string;
+      date?: string;
+      time?: string;
+      passengers?: number;
+      service_type?: string;
+      notes?: string;
+      price?: number;
+      currency?: string;
+    };
+  };
+  pdfBase64?: string;
+  pdfFilename?: string;
+}
+
+export const sendRequestConfirmationEmail = async (options: SendRequestEmailOptions) => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/send-request-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token || ''}`,
+      },
+      body: JSON.stringify({
+        to: options.to,
+        requestData: options.requestData,
+        pdfBase64: options.pdfBase64,
+        pdfFilename: options.pdfFilename,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to send email');
+    }
+
+    const result = await response.json();
+    logger.info('Request confirmation email sent:', result.messageId);
+    return { success: true, messageId: result.messageId, error: null };
+  } catch (error) {
+    logger.error('Error sending request confirmation email:', error);
+    return { success: false, messageId: null, error: 'Failed to send confirmation email' };
+  }
+};
+
+// Create request and send confirmation email
+interface CreateRequestWithEmailOptions extends CreateRequestOptions {
+  userEmail: string;
+  userName: string;
+  sendEmail?: boolean;
+  pdfBase64?: string;
+  pdfFilename?: string;
+}
+
+export const createRequestWithEmail = async (options: CreateRequestWithEmailOptions) => {
+  const { userId, type, data, userEmail, userName, sendEmail = true, pdfBase64, pdfFilename } = options;
+
+  // Create the request first
+  const { request, error } = await createRequest({ userId, type, data });
+
+  if (error || !request) {
+    return { request: null, error: error || 'Failed to create request' };
+  }
+
+  // Send confirmation email if enabled
+  if (sendEmail && userEmail) {
+    try {
+      await sendRequestConfirmationEmail({
+        to: userEmail,
+        requestData: {
+          id: request.id,
+          type: request.type,
+          created_at: request.created_at,
+          status: request.status,
+          user: {
+            name: userName || 'Valued Client',
+            email: userEmail,
+          },
+          details: {
+            from: data.from || data.from_city || data.pickup_location || data.origin,
+            to: data.to || data.to_city || data.dropoff_location || data.destination,
+            date: data.date || data.pickupDate || data.departure_date,
+            time: data.time || data.pickupTime,
+            passengers: data.passengers || data.pax,
+            service_type: data.service_type || data.category,
+            notes: data.notes || data.extraNotes || data.special_requirements,
+            price: data.price || data.total || data.estimated_total,
+            currency: data.currency || 'USD',
+          },
+        },
+        pdfBase64,
+        pdfFilename,
+      });
+    } catch (emailError) {
+      // Log but don't fail the request creation if email fails
+      logger.warn('Failed to send confirmation email, but request was created:', emailError);
+    }
+  }
+
+  return { request, error: null };
 };
