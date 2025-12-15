@@ -1669,15 +1669,79 @@ Your quote has been received and will be reviewed within 12 hours.`;
       const userId = userInfo?.user?.id || null;
 
       if (userId) {
+        // Build detailed items array with full service info
+        const detailedItems = cartItems.map(item => ({
+          // Core identifiers
+          id: item.id,
+          original_id: item.original_id,
+          cartId: item.cartId,
+          type: item.type,
+          // Service details
+          name: item.name || item.title,
+          title: item.title || item.name,
+          description: item.description,
+          // Route info
+          from_city: item.from_city || item.from || item.origin || item.departure_airport,
+          to_city: item.to_city || item.to || item.destination || item.arrival_airport,
+          from_iata: item.from_iata,
+          to_iata: item.to_iata,
+          route: item.route || `${item.from_city || item.from || ''} → ${item.to_city || item.to || ''}`,
+          // Date/Time
+          departure_date: item.departure_date || item.date,
+          departure_time: item.departure_time,
+          // Aircraft/Vehicle info
+          aircraft: item.aircraft || item.aircraft_type || item.aircraft_model,
+          aircraft_type: item.aircraft_type,
+          aircraft_model: item.aircraft_model,
+          category: item.category,
+          manufacturer: item.manufacturer,
+          capacity: item.capacity || item.max_passengers || item.pax,
+          // Pricing - ALL IN USD
+          base_price: item.price_usd || item.price || item.basePrice || 0,
+          platform_fee: item.platform_fee || Math.round((item.price_usd || item.price || item.basePrice || 0) * 0.025),
+          platform_fee_percent: 2.5,
+          vat_amount: item.vat_amount || Math.round((item.price_usd || item.price || item.basePrice || 0) * 0.081),
+          vat_percent: 8.1,
+          total_price: item.totalWithFee || Math.round((item.price_usd || item.price || item.basePrice || 0) * 1.106),
+          currency: 'USD',
+          // Original price reference
+          original_price: item.original_price,
+          original_currency: item.original_currency,
+          // Extras
+          passengers: item.passengers,
+          luggage: item.luggage,
+          has_pet: item.has_pet,
+          special_requests: item.special_requests,
+          // NFT benefits
+          has_nft: item.has_nft,
+          nft_discount: item.nft_discount,
+          // Metadata
+          image_url: item.imageUrl || item.image_url,
+          addedAt: item.addedAt
+        }));
+
+        // Calculate grand total from detailed items
+        const grandTotal = detailedItems.reduce((sum, item) => sum + (item.total_price || 0), 0);
+
         const payload = {
           user_id: userId,
           type: toType(),
+          client_email: userInfo?.user?.email,
           data: {
             request_id: request.id,
-            items: cartItems,
-            total: cartTotal,
+            source: 'ai_chat',
+            // Full service items with all details
+            items: detailedItems,
+            // Summary totals
+            subtotal: detailedItems.reduce((sum, item) => sum + (item.base_price || 0), 0),
+            total_platform_fee: detailedItems.reduce((sum, item) => sum + (item.platform_fee || 0), 0),
+            total_vat: detailedItems.reduce((sum, item) => sum + (item.vat_amount || 0), 0),
+            total: grandTotal,
+            currency: 'USD',
+            // Payment info
             payment_method: selectedPaymentMethod,
             wallet_address: connectedWallet,
+            // Conversation for context
             conversation: currentChat?.messages || [],
             created_at: request.timestamp
           },
@@ -1914,21 +1978,28 @@ As their luxury travel consultant:
             const opText = leg.operator ? ` • ${leg.operator}` : '';
             const subtitle = `${whenText}${opText}`.trim();
 
-            // Use original price from database - CoinGate handles currency conversion
-            let price = null;
-            let currency = 'USD';
+            // Convert ALL prices to USD for consistency
+            // Empty legs are stored in GBP in the database
+            let priceUSD = 0;
+            let originalPrice = 0;
+            let originalCurrency = 'GBP';
 
-            if (leg.price_usd) {
-              price = parseFloat(leg.price_usd);
-              currency = 'USD';
-            } else if (leg.price_eur) {
-              price = parseFloat(leg.price_eur);
-              currency = 'EUR';
+            if (leg.price_usd && leg.price_usd > 0) {
+              // Already in USD
+              priceUSD = parseFloat(leg.price_usd);
+              originalPrice = priceUSD;
+              originalCurrency = 'USD';
             } else if (leg.price || leg.discounted_price) {
-              // Legacy data - use original currency from DB
-              price = parseFloat(leg.price || leg.discounted_price);
-              currency = leg.currency || 'GBP';
+              // Price is in GBP - convert to USD
+              originalPrice = parseFloat(leg.price || leg.discounted_price);
+              originalCurrency = leg.currency || 'GBP';
+              priceUSD = Math.round(convertToUSD(originalPrice, originalCurrency));
             }
+
+            // Add platform fee (2.5%) and VAT (8.1%) for display
+            const platformFee = Math.round(priceUSD * 0.025);
+            const vatAmount = Math.round(priceUSD * 0.081);
+            const totalWithFees = priceUSD + platformFee + vatAmount;
 
             const imageUrl = leg.image_url || leg.image_url_1 || leg.image_url_2 || leg.image_url_3 || leg.image_url_4 || leg.image_url_5 || (leg.aircraft?.images ? ImageUtils.getPrimaryImage(leg.aircraft.images) : null);
 
@@ -1947,7 +2018,7 @@ As their luxury travel consultant:
               'To IATA': leg.to_iata || '—',
               'Arrival Time': leg.arrival_time || '—',
               'Departure Date': leg.departure_date || '—',
-              'Currency': currency,
+              'Currency': 'USD',
               'Booking Link': leg.booking_link || '—'
             };
 
@@ -1963,8 +2034,18 @@ As their luxury travel consultant:
               type: 'empty_legs',
               title: routeTitle,
               subtitle,
-              currency,
-              price,
+              currency: 'USD',
+              // Price fields - all in USD
+              price: priceUSD,              // Base price in USD
+              price_usd: priceUSD,          // Explicit USD field
+              basePrice: priceUSD,          // For cart calculations
+              platform_fee: platformFee,
+              vat_amount: vatAmount,
+              totalWithFee: totalWithFees,  // Total with all fees
+              // Original price info for reference
+              original_price: originalPrice,
+              original_currency: originalCurrency,
+              // Display fields
               priceUnit: undefined,
               imageUrl,
               details,
@@ -5406,15 +5487,22 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     const hasRequestOnlyItems = requestOnlyItems.length > 0;
                     const onlyPaidItems = unpaidItems.length === 0 && paidItems.length > 0;
 
-                    // Calculate totals for payable items
+                    // Calculate totals for payable items - use pre-calculated totalWithFee if available
                     const payableSubtotal = payableItems.reduce((sum, item) => sum + (item.price_usd || item.price || item.basePrice || 0), 0);
-                    const payableVAT = payableSubtotal * 0.081;
-                    const payableTotal = payableSubtotal + payableVAT;
+                    const payablePlatformFee = payableItems.reduce((sum, item) => sum + (item.platform_fee || Math.round((item.price_usd || item.price || item.basePrice || 0) * 0.025)), 0);
+                    const payableVAT = payableItems.reduce((sum, item) => sum + (item.vat_amount || Math.round((item.price_usd || item.price || item.basePrice || 0) * 0.081)), 0);
+                    const payableTotal = payableItems.reduce((sum, item) => sum + (item.totalWithFee || ((item.price_usd || item.price || item.basePrice || 0) * 1.106)), 0);
 
                     // Helper function to save booking to database (for tracking purposes)
                     const saveBookingToDatabase = async (item, status = 'pending') => {
                       if (!user?.id) return null;
                       try {
+                        // Calculate proper USD prices
+                        const basePrice = item.price_usd || item.price || item.basePrice || 0;
+                        const platformFee = item.platform_fee || Math.round(basePrice * 0.025);
+                        const vatAmount = item.vat_amount || Math.round(basePrice * 0.081);
+                        const totalPrice = item.totalWithFee || (basePrice + platformFee + vatAmount);
+
                         const bookingData = {
                           user_id: user.id,
                           service_id: item.original_id || item.id,
@@ -5423,16 +5511,40 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           booking_type: item.type === 'empty_legs' || item.type === 'emptyleg' ? 'empty_leg' :
                                         item.type === 'adventure' || item.type === 'fixed_offer' ? 'adventure_package' : 'charter',
                           service_title: item.name || item.title || `${item.origin || item.from} → ${item.destination || item.to}`,
-                          origin: item.origin || item.from || item.departure_airport,
-                          destination: item.destination || item.to || item.arrival_airport,
+                          origin: item.from_city || item.origin || item.from || item.departure_airport,
+                          destination: item.to_city || item.destination || item.to || item.arrival_airport,
                           departure_date: item.departure_date || item.date,
                           passengers: item.passengers || item.pax || item.max_passengers,
-                          base_amount: item.price_usd || item.price || item.basePrice || 0,
-                          vat_amount: (item.price_usd || item.price || item.basePrice || 0) * 0.081,
-                          total_amount: (item.price_usd || item.price || item.basePrice || 0) * 1.081,
-                          currency: 'USD',  // All prices now in USD
+                          // Full price breakdown - ALL IN USD
+                          base_amount: basePrice,
+                          platform_fee: platformFee,
+                          vat_amount: vatAmount,
+                          total_amount: totalPrice,
+                          currency: 'USD',
                           payment_status: status,
-                          service_details: item,
+                          // Full service details for My Bookings display
+                          service_details: {
+                            ...item,
+                            // Ensure key fields are present
+                            from_city: item.from_city || item.from || item.origin,
+                            to_city: item.to_city || item.to || item.destination,
+                            from_iata: item.from_iata,
+                            to_iata: item.to_iata,
+                            aircraft: item.aircraft || item.aircraft_type || item.aircraft_model,
+                            aircraft_type: item.aircraft_type,
+                            aircraft_model: item.aircraft_model,
+                            category: item.category,
+                            // Price breakdown
+                            base_price: basePrice,
+                            platform_fee: platformFee,
+                            platform_fee_percent: 2.5,
+                            vat_amount: vatAmount,
+                            vat_percent: 8.1,
+                            total_price: totalPrice,
+                            currency: 'USD',
+                            original_price: item.original_price,
+                            original_currency: item.original_currency
+                          },
                           conversation_id: activeChat
                         };
 
@@ -5454,6 +5566,12 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     const saveToAIRequests = async (item) => {
                       if (!user?.id) return null;
                       try {
+                        // Calculate proper USD prices
+                        const basePrice = item.price_usd || item.price || item.basePrice || 0;
+                        const platformFee = item.platform_fee || Math.round(basePrice * 0.025);
+                        const vatAmount = item.vat_amount || Math.round(basePrice * 0.081);
+                        const totalPrice = item.totalWithFee || (basePrice + platformFee + vatAmount);
+
                         const { data, error } = await supabase
                           .from('user_requests')
                           .insert([{
@@ -5465,16 +5583,42 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                             data: {
                               source: 'ai_chat_checkout',
                               item_type: item.type,
+                              // Service details
                               name: item.name || item.title,
-                              route: `${item.origin || item.from || ''} → ${item.destination || item.to || ''}`,
-                              date: item.departure_date || item.date,
+                              title: item.title || item.name,
+                              // Route info
+                              from_city: item.from_city || item.from || item.origin,
+                              to_city: item.to_city || item.to || item.destination,
+                              from_iata: item.from_iata,
+                              to_iata: item.to_iata,
+                              route: `${item.from_city || item.from || item.origin || ''} → ${item.to_city || item.to || item.destination || ''}`,
+                              flight_route: `${item.from_iata || item.from_city || ''} → ${item.to_iata || item.to_city || ''}`,
+                              // Date/Time
+                              departure_date: item.departure_date || item.date,
+                              departure_time: item.departure_time,
+                              // Aircraft info
+                              aircraft: item.aircraft || item.aircraft_type || item.aircraft_model,
+                              aircraft_type: item.aircraft_type,
+                              aircraft_model: item.aircraft_model,
+                              category: item.category,
+                              capacity: item.capacity || item.max_passengers || item.pax,
+                              // Booking details
                               passengers: item.passengers || item.pax,
-                              base_price: item.price_usd || item.price || item.basePrice || 0,
-                              vat_8_1_percent: (item.price_usd || item.price || item.basePrice || 0) * 0.081,
-                              total_with_vat: (item.price_usd || item.price || item.basePrice || 0) * 1.081,
-                              currency: 'USD',  // All prices now in USD
+                              // Full price breakdown - ALL IN USD
+                              base_price: basePrice,
+                              platform_fee: platformFee,
+                              platform_fee_percent: 2.5,
+                              vat_amount: vatAmount,
+                              vat_percent: 8.1,
+                              total_price: totalPrice,
+                              currency: 'USD',
+                              // Original price reference
+                              original_price: item.original_price,
+                              original_currency: item.original_currency,
+                              // Metadata
                               conversation_id: activeChat,
-                              awaiting_payment: true
+                              awaiting_payment: true,
+                              image_url: item.imageUrl || item.image_url
                             }
                           }])
                           .select()

@@ -105,7 +105,23 @@ const CryptoPaymentModal = ({ isOpen, onClose, service, serviceType, onSuccess }
   };
 
   const getServicePrice = () => {
-    return service?.price || service?.price_usd || service?.discounted_price || service?.base_price || 0;
+    // Use price_with_vat (total) if available, otherwise calculate from base price
+    if (service?.price_with_vat && service.price_with_vat > 0) {
+      return service.price_with_vat;
+    }
+    if (service?.totalWithFee && service.totalWithFee > 0) {
+      return service.totalWithFee;
+    }
+    if (service?.total_price && service.total_price > 0) {
+      return service.total_price;
+    }
+    // Fallback to base price + calculated fees
+    const basePrice = service?.price || service?.price_usd || service?.discounted_price || service?.base_price || 0;
+    // Add platform fee (2.5%) and VAT (8.1%) if not already included
+    if (service?.price_with_vat || service?.totalWithFee) {
+      return basePrice; // Already has fees
+    }
+    return Math.round(basePrice * 1.106); // Add platform fee + VAT
   };
 
   const getServiceCurrency = () => {
