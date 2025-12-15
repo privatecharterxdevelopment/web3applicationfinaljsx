@@ -374,7 +374,8 @@ export async function generateRequestConfirmationPDF(request, options = {}) {
   addText('REQUEST DETAILS', margin, yPos, { fontSize: 10, fontStyle: 'bold', color: COLORS.gray });
   yPos += 10;
 
-  const requestData = request.data || {};
+  // Support both request.data and request.details for flexibility
+  const requestData = request.data || request.details || {};
 
   if (requestType.includes('jet') || requestType.includes('helicopter') || requestType.includes('charter')) {
     drawRoundedRect(margin, yPos, pageWidth - (margin * 2), 45, 3, COLORS.almostWhite);
@@ -472,7 +473,7 @@ export async function generateRequestConfirmationPDF(request, options = {}) {
   }
 
   // ============ ESTIMATED PRICING ============
-  const total = Number(requestData.estimated_total) || Number(requestData.total_amount) || Number(requestData.total) || Number(requestData.total_price) || 0;
+  const total = Number(requestData.estimated_total) || Number(requestData.total_amount) || Number(requestData.total) || Number(requestData.total_price) || Number(requestData.price) || 0;
   const hasValidTotal = !isNaN(total) && total > 0;
 
   yPos += 5;

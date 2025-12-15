@@ -238,7 +238,7 @@ const SPVFormationFlow = ({ onBack }) => {
             name: user.user_metadata?.full_name || formData.contactEmail?.split('@')[0] || 'Valued Client',
             email: user.email
           },
-          details: {
+          data: {
             service_type: 'SPV Formation',
             from: formData.jurisdiction,
             to: formData.companyName || 'New Company',

@@ -162,7 +162,7 @@ const LuxuryCarDetail = () => {
             name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Valued Client',
             email: user.email
           },
-          details: {
+          data: {
             from: car.location,
             to: car.location,
             date: pickupDate,

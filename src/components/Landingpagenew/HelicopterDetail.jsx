@@ -146,7 +146,7 @@ const HelicopterDetail = () => {
             name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Valued Client',
             email: user.email
           },
-          details: {
+          data: {
             from: departure,
             to: arrival,
             date: flightDate,
