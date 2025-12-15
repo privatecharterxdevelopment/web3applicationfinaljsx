@@ -220,9 +220,9 @@ export default function FloatingSearchModal() {
     }
   };
 
-  // Handle Beat the Price - navigates to AI chat with prefilled message
-  const handleBeatThePrice = () => {
-    const prefilledMessage = encodeURIComponent('To beat the price kindly upload your recent Offer / quote as PDF or image and we try to beat the price within 12hrs.');
+  // Handle Sommelier Talk - navigates to AI chat for personalized luxury travel recommendations
+  const handleSommelierTalk = () => {
+    const prefilledMessage = encodeURIComponent('I would like personalized travel recommendations. Please help me find the perfect private aviation experience tailored to my preferences.');
     if (isAuthenticated) {
       navigate(`/dashboard/chat?assistantMessage=${prefilledMessage}`);
     } else {
@@ -411,15 +411,15 @@ export default function FloatingSearchModal() {
             <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide whitespace-nowrap">charter a jet</span>
           </div>
 
-          {/* Beat the Price Button */}
+          {/* Sommelier Talk Button */}
           <div
-            onClick={handleBeatThePrice}
+            onClick={handleSommelierTalk}
             className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-100 hover:border-gray-300/40 hover:bg-white/10 active:scale-95 flex-shrink-0"
           >
             <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-gray-900 text-base sm:text-xl font-light">
               +
             </div>
-            <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide whitespace-nowrap">beat the price</span>
+            <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide whitespace-nowrap">sommelier talk</span>
           </div>
 
           {/* Spacer to push sphera to the right */}
