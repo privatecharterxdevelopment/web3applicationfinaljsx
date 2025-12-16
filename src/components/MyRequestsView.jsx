@@ -23,10 +23,16 @@ const PriceBreakdown = ({ data, colorClass = 'from-gray-800 to-black', textClass
   // If no breakdown available, show simple price or "Quote Pending"
   if (!hasValidPrice && !hasValidTotal) {
     const simplePrice = data.price || data.priceRange || data.estimated_total;
-    // If priceRange is a string like "$NaN" or invalid, don't show it
+    // If priceRange is a string like "$NaN", "$NaNNaNNaN", or invalid, don't show it
     const isValidPrice = simplePrice && (
       (typeof simplePrice === 'number' && !isNaN(simplePrice) && simplePrice > 0) ||
-      (typeof simplePrice === 'string' && !simplePrice.includes('NaN') && !simplePrice.includes('undefined') && !simplePrice.includes('null'))
+      (typeof simplePrice === 'string' &&
+       !simplePrice.includes('NaN') &&
+       !simplePrice.includes('undefined') &&
+       !simplePrice.includes('null') &&
+       simplePrice !== '$0' &&
+       simplePrice !== '$' &&
+       !/^\$0(\.0+)?$/.test(simplePrice))
     );
 
     if (!isValidPrice) {

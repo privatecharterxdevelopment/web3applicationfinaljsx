@@ -6372,17 +6372,18 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     const mainServices = cartItems.filter(item => item.type !== 'custom_extra');
                     const customExtras = cartItems.filter(item => item.type === 'custom_extra');
 
-                    // All prices now in USD
-                    const subtotal = cartItems.reduce((sum, item) => sum + (item.basePrice || item.price_usd || item.price || 0), 0);
-                    const extrasSubtotal = customExtras.reduce((sum, item) => sum + (item.basePrice || item.price_usd || item.price || 0), 0);
-                    const airportFees = cartItems.reduce((sum, item) => sum + (item.airportPickupFee || 0), 0);
-                    const cateringTotal = cartItems.reduce((sum, item) => sum + (item.cateringPrice || 0), 0);
+                    // All prices now in USD - with NaN protection
+                    const safeNumber = (val) => (typeof val === 'number' && !isNaN(val)) ? val : 0;
+                    const subtotal = cartItems.reduce((sum, item) => sum + safeNumber(item.basePrice || item.price_usd || item.price || 0), 0);
+                    const extrasSubtotal = customExtras.reduce((sum, item) => sum + safeNumber(item.basePrice || item.price_usd || item.price || 0), 0);
+                    const airportFees = cartItems.reduce((sum, item) => sum + safeNumber(item.airportPickupFee || 0), 0);
+                    const cateringTotal = cartItems.reduce((sum, item) => sum + safeNumber(item.cateringPrice || 0), 0);
 
                     const hasEstimates = cartItems.some(item => item.isEstimate);
                     const hasCustomExtras = customExtras.length > 0;
 
-                    // Calculate grand total
-                    const grandTotal = subtotal + airportFees + cateringTotal;
+                    // Calculate grand total - with NaN protection
+                    const grandTotal = safeNumber(subtotal + airportFees + cateringTotal);
 
                     return (
                       <div className="space-y-2 mb-3">
@@ -6503,9 +6504,13 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       if (!user?.id) return null;
                       try {
                         // Calculate proper USD prices - Base + VAT only
-                        const basePrice = item.price_usd || item.price || item.basePrice || 0;
-                        const vatAmount = item.vat_amount || Math.round(basePrice * 0.081);
-                        const totalPrice = item.totalWithFee || (basePrice + vatAmount);
+                        // IMPORTANT: Sanitize to avoid NaN values
+                        const rawBasePrice = item.price_usd || item.price || item.basePrice || 0;
+                        const basePrice = (typeof rawBasePrice === 'number' && !isNaN(rawBasePrice)) ? rawBasePrice : 0;
+                        const rawVatAmount = item.vat_amount || Math.round(basePrice * 0.081);
+                        const vatAmount = (typeof rawVatAmount === 'number' && !isNaN(rawVatAmount)) ? rawVatAmount : 0;
+                        const rawTotalPrice = item.totalWithFee || (basePrice + vatAmount);
+                        const totalPrice = (typeof rawTotalPrice === 'number' && !isNaN(rawTotalPrice)) ? rawTotalPrice : 0;
 
                         const bookingData = {
                           user_id: user.id,
@@ -6569,9 +6574,13 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       if (!user?.id) return null;
                       try {
                         // Calculate proper USD prices - Base + VAT only
-                        const basePrice = item.price_usd || item.price || item.basePrice || 0;
-                        const vatAmount = item.vat_amount || Math.round(basePrice * 0.081);
-                        const totalPrice = item.totalWithFee || (basePrice + vatAmount);
+                        // IMPORTANT: Sanitize to avoid NaN values
+                        const rawBasePrice = item.price_usd || item.price || item.basePrice || 0;
+                        const basePrice = (typeof rawBasePrice === 'number' && !isNaN(rawBasePrice)) ? rawBasePrice : 0;
+                        const rawVatAmount = item.vat_amount || Math.round(basePrice * 0.081);
+                        const vatAmount = (typeof rawVatAmount === 'number' && !isNaN(rawVatAmount)) ? rawVatAmount : 0;
+                        const rawTotalPrice = item.totalWithFee || (basePrice + vatAmount);
+                        const totalPrice = (typeof rawTotalPrice === 'number' && !isNaN(rawTotalPrice)) ? rawTotalPrice : 0;
 
                         // Determine request type
                         const isEmptyLeg = item.type === 'empty_legs' || item.type === 'emptyleg';
@@ -6681,15 +6690,16 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                               duration_days: item.duration_days || item.duration,
 
                               // Full price breakdown - ALL IN USD (Base + VAT only)
-                              base_price: basePrice,
-                              price: basePrice,
-                              price_usd: basePrice,
-                              vat_amount: vatAmount,
+                              // Only include price fields if valid (non-zero, non-NaN)
+                              base_price: basePrice > 0 ? basePrice : null,
+                              price: basePrice > 0 ? basePrice : null,
+                              price_usd: basePrice > 0 ? basePrice : null,
+                              vat_amount: vatAmount > 0 ? vatAmount : null,
                               vat_percent: 8.1,
-                              total_price: totalPrice,
-                              total: totalPrice,
+                              total_price: totalPrice > 0 ? totalPrice : null,
+                              total: totalPrice > 0 ? totalPrice : null,
                               currency: 'USD',
-                              priceRange: `$${totalPrice.toLocaleString()}`,
+                              priceRange: totalPrice > 0 ? `$${totalPrice.toLocaleString()}` : null,
 
                               // Original price reference (for GBP empty legs converted to USD)
                               original_price: item.original_price || basePrice,
@@ -7011,7 +7021,9 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         const hasEmptyLeg = cartItems.some(item => item.type === 'empty_legs' || item.type === 'emptyleg');
         const emptyLegItems = cartItems.filter(item => item.type === 'empty_legs' || item.type === 'emptyleg');
         const otherItems = cartItems.filter(item => item.type !== 'empty_legs' && item.type !== 'emptyleg');
-        const grandTotal = cartItems.reduce((sum, item) => sum + (item.totalWithFee || item.price_usd || item.price || 0) + (item.cateringPrice || 0), 0);
+        // NaN protection for grand total
+        const safeNum = (val) => (typeof val === 'number' && !isNaN(val)) ? val : 0;
+        const grandTotal = cartItems.reduce((sum, item) => sum + safeNum(item.totalWithFee || item.price_usd || item.price || 0) + safeNum(item.cateringPrice || 0), 0);
 
         return (
         <>
@@ -7132,12 +7144,14 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       // Calculate totals
                       const mainServices = cartItems.filter(item => item.type !== 'custom_extra');
                       const customExtras = cartItems.filter(item => item.type === 'custom_extra');
-                      const servicesSubtotal = mainServices.reduce((sum, item) => sum + (item.basePrice || item.price_usd || item.price || 0), 0);
-                      const extrasSubtotal = customExtras.reduce((sum, item) => sum + (item.basePrice || item.price || 0), 0);
-                      const cateringTotal = cartItems.reduce((sum, item) => sum + (item.cateringPrice || 0), 0);
-                      const airportFees = cartItems.reduce((sum, item) => sum + (item.airportPickupFee || 0), 0);
-                      const vatAmount = cartItems.reduce((sum, item) => sum + (item.vat || 0), 0);
-                      const grandTotal = cartItems.reduce((sum, item) => sum + (item.totalWithFee || item.price_usd || item.price || 0) + (item.cateringPrice || 0), 0);
+                      // NaN protection helper
+                      const safeN = (val) => (typeof val === 'number' && !isNaN(val)) ? val : 0;
+                      const servicesSubtotal = mainServices.reduce((sum, item) => sum + safeN(item.basePrice || item.price_usd || item.price || 0), 0);
+                      const extrasSubtotal = customExtras.reduce((sum, item) => sum + safeN(item.basePrice || item.price || 0), 0);
+                      const cateringTotal = cartItems.reduce((sum, item) => sum + safeN(item.cateringPrice || 0), 0);
+                      const airportFees = cartItems.reduce((sum, item) => sum + safeN(item.airportPickupFee || 0), 0);
+                      const vatAmount = cartItems.reduce((sum, item) => sum + safeN(item.vat || 0), 0);
+                      const grandTotal = cartItems.reduce((sum, item) => sum + safeN(item.totalWithFee || item.price_usd || item.price || 0) + safeN(item.cateringPrice || 0), 0);
 
                       // Create ONE bulk request with all cart items
                       const bulkRequestData = {
