@@ -5506,7 +5506,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       {showCartSidebar && (
         <>
           <div className="fixed inset-0 bg-black/50 z-40 animate-fade-in" onClick={() => setShowCartSidebar(false)} />
-          <div className="fixed right-0 top-0 h-full w-full sm:w-96 bg-white border-l border-gray-200 shadow-xl z-50 animate-fade-in-right flex flex-col max-h-screen overflow-hidden">
+          <div className="fixed right-0 top-0 h-full w-full sm:w-96 bg-white border-l border-gray-200 shadow-xl z-50 animate-fade-in-right flex flex-col max-h-screen">
             <div className="p-4 border-b border-gray-200 flex-shrink-0">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-900">Cart ({cartItems.length})</h3>
@@ -5795,7 +5795,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               </div>
             ) : cartItems.length === 0 ? null : (
               <>
-                <div className="flex-1 p-4 space-y-2 overflow-y-auto">
+                <div className="flex-1 min-h-0 p-4 space-y-2 overflow-y-auto overflow-x-hidden">
                   {cartItems.map((item, idx) => {
                     const isEmptyLeg = item.type === 'empty_legs' || item.type === 'emptyleg';
                     const isAdventure = item.type === 'adventure' || item.type === 'fixed_offer';
@@ -6366,7 +6366,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 </div>
 
                 {/* Cart Total & Actions */}
-                <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 p-4 bg-white">
+                <div className="flex-shrink-0 border-t border-gray-200 p-4 bg-white max-h-[45vh] overflow-y-auto">
                   {/* Subtotal breakdown */}
                   {(() => {
                     const mainServices = cartItems.filter(item => item.type !== 'custom_extra');
@@ -6406,16 +6406,16 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
                         {/* Show services subtotal */}
                         {subtotal > 0 && (
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="text-gray-500">Services</span>
-                            <span className="text-gray-700">{hasEstimates ? '~' : ''}${subtotal.toLocaleString()}</span>
+                          <div className="flex justify-between items-start gap-2 text-sm">
+                            <span className="text-gray-500 flex-shrink-0">Services</span>
+                            <span className="text-gray-700 text-right break-words">{hasEstimates ? '~' : ''}${subtotal.toLocaleString()}</span>
                           </div>
                         )}
 
                         {extrasSubtotal > 0 && (
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="text-gray-600">Custom extras</span>
-                            <span className="text-gray-600">~${extrasSubtotal.toLocaleString()}</span>
+                          <div className="flex justify-between items-start gap-2 text-sm">
+                            <span className="text-gray-600 flex-shrink-0">Custom extras</span>
+                            <span className="text-gray-600 text-right break-words">~${extrasSubtotal.toLocaleString()}</span>
                           </div>
                         )}
                         {cateringTotal > 0 && (

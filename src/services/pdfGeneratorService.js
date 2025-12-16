@@ -9,13 +9,42 @@ import { supabase } from '../lib/supabase';
 
 // Company Information
 const COMPANY = {
-  name: 'PRIVATECHARTERX',
+  name: 'PrivateCharterX LLC',
+  shortName: 'PRIVATECHARTERX',
   tagline: 'Luxury Travel Concierge',
-  address: '1000 Brickell Ave, Ste 715',
-  city: 'Miami, FL 33131',
-  country: 'United States of America',
+  address: '1000 Brickell Ave.',
+  city: '33131 Miami, Florida',
   email: 'bookings@privatecharterx.com',
+  website: 'www.privatecharterx.com',
   logoUrl: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_Logo_written-removebg-preview.png'
+};
+
+// Service-specific thank you messages
+const SERVICE_MESSAGES = {
+  jets: {
+    thankYou: 'Thank you for choosing PrivateCharterX for your private aviation needs. We are committed to delivering an exceptional travel experience tailored to your preferences.',
+    carbonNote: 'As part of our commitment to sustainability, you will receive a CO2 offset certificate via PDF or directly to your registered crypto wallet.'
+  },
+  helicopters: {
+    thankYou: 'Thank you for choosing PrivateCharterX for your helicopter charter. Our team is dedicated to ensuring a seamless and luxurious flight experience.',
+    carbonNote: 'As part of our commitment to sustainability, you will receive a CO2 offset certificate via PDF or directly to your registered crypto wallet.'
+  },
+  empty_legs: {
+    thankYou: 'Thank you for choosing PrivateCharterX for this exclusive empty leg opportunity. Enjoy premium private aviation at exceptional value.',
+    carbonNote: 'As part of our commitment to sustainability, you will receive a CO2 offset certificate via PDF or directly to your registered crypto wallet.'
+  },
+  yachts: {
+    thankYou: 'Thank you for choosing PrivateCharterX for your yacht charter. We look forward to creating an unforgettable maritime experience for you.',
+    carbonNote: null
+  },
+  cars: {
+    thankYou: 'Thank you for choosing PrivateCharterX for your luxury car rental. Experience the finest in automotive excellence.',
+    carbonNote: null
+  },
+  default: {
+    thankYou: 'Thank you for choosing PrivateCharterX. We are dedicated to exceeding your expectations with personalized luxury services.',
+    carbonNote: null
+  }
 };
 
 // Cache for logo image data
@@ -91,8 +120,31 @@ const formatShortDate = (dateString) => {
 };
 
 /**
+ * Get service message based on service type
+ */
+function getServiceMessage(serviceType) {
+  const type = (serviceType || '').toLowerCase();
+  if (type.includes('jet') || type.includes('private-jet') || type.includes('charter')) {
+    return SERVICE_MESSAGES.jets;
+  }
+  if (type.includes('helicopter') || type.includes('heli')) {
+    return SERVICE_MESSAGES.helicopters;
+  }
+  if (type.includes('empty') || type.includes('leg')) {
+    return SERVICE_MESSAGES.empty_legs;
+  }
+  if (type.includes('yacht') || type.includes('boat')) {
+    return SERVICE_MESSAGES.yachts;
+  }
+  if (type.includes('car') || type.includes('luxury_car')) {
+    return SERVICE_MESSAGES.cars;
+  }
+  return SERVICE_MESSAGES.default;
+}
+
+/**
  * Create base PDF document with common helper functions
- * @param {Object} userInfo - Optional user info {name, email, phone}
+ * @param {Object} userInfo - Optional user info {name, email, phone, paymentPreference}
  */
 function createBasePDF(userInfo = {}) {
   const doc = new jsPDF({
@@ -104,12 +156,23 @@ function createBasePDF(userInfo = {}) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 20;
+  const centerX = pageWidth / 2;
 
-  // Helper function to add text
+  // Helper function to add text - using lighter font weight for elegance
   const addText = (text, x, y, options = {}) => {
     const { fontSize = 10, fontStyle = 'normal', color = COLORS.darkGray, align = 'left' } = options;
     doc.setFontSize(fontSize);
+    // Use lighter font weight for titles (normal instead of bold for elegance)
     doc.setFont('helvetica', fontStyle);
+    doc.setTextColor(color);
+    doc.text(String(text || ''), x, y, { align });
+  };
+
+  // Helper for elegant thin titles
+  const addElegantTitle = (text, x, y, options = {}) => {
+    const { fontSize = 10, color = COLORS.gray, align = 'left' } = options;
+    doc.setFontSize(fontSize);
+    doc.setFont('helvetica', 'normal'); // Thin/normal weight for elegance
     doc.setTextColor(color);
     doc.text(String(text || ''), x, y, { align });
   };
@@ -127,12 +190,12 @@ function createBasePDF(userInfo = {}) {
     doc.roundedRect(x, y, w, h, r, r, 'F');
   };
 
-  // Draw header with logo and company info
+  // Draw header with logo and full company info
   const drawHeader = (confirmNumber, type = 'Confirmation', logoImage = null) => {
     let yPos = margin;
 
-    // Light gray header background
-    drawRoundedRect(margin, yPos, pageWidth - (margin * 2), 40, 3, COLORS.almostWhite);
+    // Light gray header background - taller to fit company info
+    drawRoundedRect(margin, yPos, pageWidth - (margin * 2), 52, 3, COLORS.almostWhite);
 
     yPos += 8;
 
@@ -140,59 +203,113 @@ function createBasePDF(userInfo = {}) {
     if (logoImage) {
       try {
         doc.addImage(logoImage, 'PNG', margin + 8, yPos, 50, 12);
-        yPos += 16;
+        yPos += 14;
       } catch (error) {
         console.error('Error adding logo to PDF:', error);
-        addText(COMPANY.name, margin + 10, yPos + 4, { fontSize: 20, fontStyle: 'bold', color: COLORS.black });
+        addText(COMPANY.name, margin + 10, yPos + 4, { fontSize: 18, fontStyle: 'normal', color: COLORS.black });
         yPos += 10;
       }
     } else {
-      addText(COMPANY.name, margin + 10, yPos + 4, { fontSize: 20, fontStyle: 'bold', color: COLORS.black });
+      addText(COMPANY.name, margin + 10, yPos + 4, { fontSize: 18, fontStyle: 'normal', color: COLORS.black });
       yPos += 10;
     }
 
-    addText(COMPANY.tagline, margin + 10, yPos, { fontSize: 9, color: COLORS.gray });
+    // Company address and contact - elegant thin font
+    addText(COMPANY.address, margin + 10, yPos, { fontSize: 8, color: COLORS.gray });
+    yPos += 4;
+    addText(COMPANY.city, margin + 10, yPos, { fontSize: 8, color: COLORS.gray });
+    yPos += 6;
+    addText(COMPANY.email, margin + 10, yPos, { fontSize: 8, color: COLORS.mediumGray });
+    yPos += 4;
+    addText(COMPANY.website, margin + 10, yPos, { fontSize: 8, color: COLORS.mediumGray });
 
-    // Confirmation number on right
-    addText(`${type} #`, pageWidth - margin - 10, yPos - 6, { fontSize: 8, color: COLORS.gray, align: 'right' });
-    addText(confirmNumber, pageWidth - margin - 10, yPos + 1, { fontSize: 12, fontStyle: 'bold', color: COLORS.black, align: 'right' });
+    // Confirmation number on right side
+    const rightYBase = margin + 20;
+    addText(`${type} #`, pageWidth - margin - 10, rightYBase, { fontSize: 8, color: COLORS.gray, align: 'right' });
+    addText(confirmNumber, pageWidth - margin - 10, rightYBase + 6, { fontSize: 12, fontStyle: 'bold', color: COLORS.black, align: 'right' });
 
-    return yPos + 26;
+    return yPos + 16;
   };
 
-  // Draw user info section
+  // Draw user info section with payment preference
   const drawUserInfo = (yPos) => {
     const userName = userInfo.name || userInfo.username || '';
     const userEmail = userInfo.email || '';
     const userPhone = userInfo.phone || '';
+    const paymentPref = userInfo.paymentPreference || userInfo.payment_preference || '';
 
-    if (!userName && !userEmail && !userPhone) return yPos;
+    if (!userName && !userEmail && !userPhone && !paymentPref) return yPos;
 
     drawLine(yPos);
     yPos += 10;
 
-    addText('CLIENT INFORMATION', margin, yPos, { fontSize: 10, fontStyle: 'bold', color: COLORS.gray });
+    addElegantTitle('CLIENT INFORMATION', margin, yPos, { fontSize: 9, color: COLORS.gray });
     yPos += 8;
 
     if (userName) {
       addText('Name', margin, yPos, { fontSize: 8, color: COLORS.gray });
-      addText(userName, margin + 25, yPos, { fontSize: 10, color: COLORS.darkGray });
+      addText(userName, margin + 30, yPos, { fontSize: 10, color: COLORS.darkGray });
       yPos += 7;
     }
 
     if (userEmail) {
       addText('Email', margin, yPos, { fontSize: 8, color: COLORS.gray });
-      addText(userEmail, margin + 25, yPos, { fontSize: 10, color: COLORS.darkGray });
+      addText(userEmail, margin + 30, yPos, { fontSize: 10, color: COLORS.darkGray });
       yPos += 7;
     }
 
     if (userPhone) {
       addText('Phone', margin, yPos, { fontSize: 8, color: COLORS.gray });
-      addText(userPhone, margin + 25, yPos, { fontSize: 10, color: COLORS.darkGray });
+      addText(userPhone, margin + 30, yPos, { fontSize: 10, color: COLORS.darkGray });
+      yPos += 7;
+    }
+
+    if (paymentPref) {
+      addText('Payment', margin, yPos, { fontSize: 8, color: COLORS.gray });
+      const paymentLabel = paymentPref.toLowerCase() === 'crypto' ? 'Cryptocurrency' :
+                          paymentPref.toLowerCase() === 'bank' ? 'Bank Transfer' : paymentPref;
+      addText(paymentLabel, margin + 30, yPos, { fontSize: 10, color: COLORS.darkGray });
       yPos += 7;
     }
 
     return yPos + 5;
+  };
+
+  // Draw thank you message and carbon note based on service type
+  const drawServiceMessage = (yPos, serviceType) => {
+    const message = getServiceMessage(serviceType);
+
+    drawLine(yPos);
+    yPos += 10;
+
+    // Thank you message
+    addElegantTitle('THANK YOU', margin, yPos, { fontSize: 9, color: COLORS.gray });
+    yPos += 7;
+
+    // Split long text into multiple lines
+    const thankYouLines = doc.splitTextToSize(message.thankYou, pageWidth - (margin * 2));
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(COLORS.mediumGray);
+    doc.text(thankYouLines, margin, yPos);
+    yPos += thankYouLines.length * 4 + 5;
+
+    // Carbon certificate note for aviation services
+    if (message.carbonNote) {
+      yPos += 3;
+      drawRoundedRect(margin, yPos, pageWidth - (margin * 2), 16, 2, COLORS.almostWhite);
+      yPos += 6;
+      addText('🌿 Carbon Offset', margin + 5, yPos, { fontSize: 8, fontStyle: 'bold', color: COLORS.mediumGray });
+      yPos += 5;
+      const carbonLines = doc.splitTextToSize(message.carbonNote, pageWidth - (margin * 2) - 10);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(COLORS.gray);
+      doc.text(carbonLines, margin + 5, yPos);
+      yPos += carbonLines.length * 3 + 8;
+    }
+
+    return yPos;
   };
 
   // Draw "What's Next" section - separate from footer
@@ -200,7 +317,7 @@ function createBasePDF(userInfo = {}) {
     drawLine(yPos);
     yPos += 10;
 
-    addText('WHAT HAPPENS NEXT', margin, yPos, { fontSize: 10, fontStyle: 'bold', color: COLORS.gray });
+    addElegantTitle('WHAT HAPPENS NEXT', margin, yPos, { fontSize: 9, color: COLORS.gray });
     yPos += 10;
 
     const steps = [
@@ -218,25 +335,25 @@ function createBasePDF(userInfo = {}) {
     return yPos + 5;
   };
 
-  // Draw footer with company address - clean and separate
+  // Draw footer with company info - centered and clean
   const drawFooter = () => {
-    let yPos = pageHeight - 25;
+    let yPos = pageHeight - 30;
     drawLine(yPos);
-    yPos += 6;
+    yPos += 8;
 
-    // Contact info on left
-    addText('Questions? Contact us:', margin, yPos, { fontSize: 8, fontStyle: 'bold', color: COLORS.darkGray });
-    addText(COMPANY.email, margin + 40, yPos, { fontSize: 8, color: COLORS.gray });
-
-    yPos += 6;
-    // Company address on one line
-    addText(`${COMPANY.name} | ${COMPANY.address}, ${COMPANY.city}, ${COMPANY.country}`, margin, yPos, { fontSize: 7, color: COLORS.lightGray });
-
+    // Centered company info
+    addText(COMPANY.name, centerX, yPos, { fontSize: 8, fontStyle: 'normal', color: COLORS.mediumGray, align: 'center' });
+    yPos += 4;
+    addText(COMPANY.address, centerX, yPos, { fontSize: 7, color: COLORS.lightGray, align: 'center' });
+    yPos += 3;
+    addText(COMPANY.city, centerX, yPos, { fontSize: 7, color: COLORS.lightGray, align: 'center' });
     yPos += 5;
-    addText(`Generated: ${formatShortDate(new Date())}`, pageWidth - margin, yPos, { fontSize: 7, color: COLORS.lightGray, align: 'right' });
+    addText(`${COMPANY.email}  |  ${COMPANY.website}`, centerX, yPos, { fontSize: 7, color: COLORS.gray, align: 'center' });
+    yPos += 5;
+    addText(`Generated: ${formatShortDate(new Date())}`, centerX, yPos, { fontSize: 6, color: COLORS.lightGray, align: 'center' });
   };
 
-  return { doc, pageWidth, pageHeight, margin, addText, drawLine, drawRoundedRect, drawHeader, drawFooter, drawUserInfo, drawWhatsNext };
+  return { doc, pageWidth, pageHeight, margin, addText, addElegantTitle, drawLine, drawRoundedRect, drawHeader, drawFooter, drawUserInfo, drawWhatsNext, drawServiceMessage };
 }
 
 /**
@@ -247,10 +364,11 @@ export async function generateBookingConfirmationPDF(booking, options = {}) {
   const userInfo = {
     name: options.userName || booking.contact_name || booking.user_name || '',
     email: options.userEmail || booking.contact_email || booking.user_email || '',
-    phone: options.userPhone || booking.contact_phone || booking.user_phone || ''
+    phone: options.userPhone || booking.contact_phone || booking.user_phone || '',
+    paymentPreference: options.paymentPreference || booking.payment_preference || booking.payment_method || ''
   };
 
-  const { doc, pageWidth, pageHeight, margin, addText, drawLine, drawRoundedRect, drawHeader, drawFooter, drawUserInfo } = createBasePDF(userInfo);
+  const { doc, pageWidth, pageHeight, margin, addText, addElegantTitle, drawLine, drawRoundedRect, drawHeader, drawFooter, drawUserInfo, drawServiceMessage } = createBasePDF(userInfo);
 
   // Load logo image
   const logoImage = await loadLogoImage();
@@ -459,10 +577,11 @@ export async function generateRequestConfirmationPDF(request, options = {}) {
   const userInfo = {
     name: options.userName || request.client_name || requestData.name || requestData.contact_name || '',
     email: options.userEmail || request.client_email || requestData.email || requestData.contact_email || '',
-    phone: options.userPhone || request.client_phone || requestData.phone || requestData.contact_phone || ''
+    phone: options.userPhone || request.client_phone || requestData.phone || requestData.contact_phone || '',
+    paymentPreference: options.paymentPreference || request.payment_preference || requestData.payment_preference || requestData.paymentMethod || ''
   };
 
-  const { doc, pageWidth, pageHeight, margin, addText, drawLine, drawRoundedRect, drawHeader, drawFooter, drawUserInfo, drawWhatsNext } = createBasePDF(userInfo);
+  const { doc, pageWidth, pageHeight, margin, addText, addElegantTitle, drawLine, drawRoundedRect, drawHeader, drawFooter, drawUserInfo, drawWhatsNext, drawServiceMessage } = createBasePDF(userInfo);
 
   // Load logo image
   const logoImage = await loadLogoImage();
@@ -617,6 +736,9 @@ export async function generateRequestConfirmationPDF(request, options = {}) {
   // ============ CLIENT INFORMATION ============
   yPos += 10;
   yPos = drawUserInfo(yPos);
+
+  // ============ THANK YOU & SERVICE MESSAGE ============
+  yPos = drawServiceMessage(yPos, requestType);
 
   // ============ NEXT STEPS ============
   yPos = drawWhatsNext(yPos);
