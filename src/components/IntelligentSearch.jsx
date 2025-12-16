@@ -24,68 +24,74 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
     "Show me empty legs to Dubai",
     "Book a helicopter transfer to Monaco",
     "I need a concierge in Zurich",
-    "Find luxury cars in Paris",
+    "Find yacht charters in Monaco",
     "I want to tokenize my yacht",
-    "I need a hotel in Bangkok which accepts crypto",
+    "Show me premium cigars for my flight",
+    "I need CO2 offset for my trip",
   ];
 
   // Natural language query patterns (Perplexity style)
   const queryPatterns = [
     // "I need..." patterns
     { pattern: /^i\s*ne/i, suggestions: [
-      { label: 'I need a private jet from Zurich to Dubai', icon: '✈️', category: 'Complete this...', action: 'jets', query: 'I need a private jet from Zurich to Dubai' },
-      { label: 'I need a private jet for next week', icon: '✈️', category: 'Complete this...', action: 'jets', query: 'I need a private jet for next week' },
-      { label: 'I need a helicopter transfer', icon: '🚁', category: 'Complete this...', action: 'helicopter', query: 'I need a helicopter transfer' },
-      { label: 'I need a luxury car', icon: '🚗', category: 'Complete this...', action: 'luxury-cars', query: 'I need a luxury car' },
+      { label: 'I need a private jet from Zurich to Dubai', icon: '✈️', category: 'Complete this...', action: 'ai-chat', query: 'I need a private jet from Zurich to Dubai' },
+      { label: 'I need a private jet for next week', icon: '✈️', category: 'Complete this...', action: 'ai-chat', query: 'I need a private jet for next week' },
+      { label: 'I need a helicopter transfer', icon: '🚁', category: 'Complete this...', action: 'ai-chat', query: 'I need a helicopter transfer' },
+      { label: 'I need a yacht charter', icon: '🛥️', category: 'Complete this...', action: 'ai-chat', query: 'I need a yacht charter' },
     ]},
     { pattern: /^i\s*need\s*a\s*/i, suggestions: [
-      { label: 'I need a private jet', icon: '✈️', category: 'Complete this...', action: 'jets', query: 'I need a private jet' },
-      { label: 'I need a helicopter', icon: '🚁', category: 'Complete this...', action: 'helicopter', query: 'I need a helicopter' },
-      { label: 'I need a luxury car', icon: '🚗', category: 'Complete this...', action: 'luxury-cars', query: 'I need a luxury car' },
-      { label: 'I need an adventure trip', icon: '�️', category: 'Complete this...', action: 'adventures', query: 'I need an adventure trip' },
+      { label: 'I need a private jet', icon: '✈️', category: 'Complete this...', action: 'ai-chat', query: 'I need a private jet' },
+      { label: 'I need a helicopter', icon: '🚁', category: 'Complete this...', action: 'ai-chat', query: 'I need a helicopter' },
+      { label: 'I need a yacht', icon: '🛥️', category: 'Complete this...', action: 'ai-chat', query: 'I need a yacht charter' },
+      { label: 'I need ground transport', icon: '🚐', category: 'Complete this...', action: 'ai-chat', query: 'I need ground transportation' },
     ]},
     // "I want..." patterns
     { pattern: /^i\s*wa/i, suggestions: [
-      { label: 'I want to tokenize my jet', icon: '💎', category: 'Complete this...', action: 'tokenize', query: 'I want to tokenize my jet' },
-      { label: 'I want to buy NFT membership', icon: '🎫', category: 'Complete this...', action: 'wallet-nfts', query: 'I want to buy NFT membership' },
-      { label: 'I want to offset CO2 emissions', icon: '🌱', category: 'Complete this...', action: 'co2-saf', query: 'I want to offset CO2 emissions' },
-      { label: 'I want to swap tokens', icon: '🔄', category: 'Complete this...', action: 'swap', query: 'I want to swap tokens' },
+      { label: 'I want to tokenize my jet', icon: '💎', category: 'Complete this...', action: 'ai-chat', query: 'I want to tokenize my jet' },
+      { label: 'I want to buy NFT membership', icon: '🎫', category: 'Complete this...', action: 'ai-chat', query: 'I want to buy NFT membership' },
+      { label: 'I want to offset CO2 emissions', icon: '🌱', category: 'Complete this...', action: 'ai-chat', query: 'I want to offset CO2 emissions' },
+      { label: 'I want premium cigars for my flight', icon: '🚬', category: 'Complete this...', action: 'ai-chat', query: 'I want premium cigars for my flight' },
     ]},
     // "Show me..." patterns
     { pattern: /^sh/i, suggestions: [
-      { label: 'Show me empty leg flights', icon: '🛫', category: 'Complete this...', action: 'empty-legs', query: 'Show me empty leg flights' },
-      { label: 'Show me available jets', icon: '✈️', category: 'Complete this...', action: 'jets', query: 'Show me available jets' },
-      { label: 'Show me tokenized assets', icon: '💎', category: 'Complete this...', action: 'tokenized-assets', query: 'Show me tokenized assets' },
-      { label: 'Show me my bookings', icon: '📅', category: 'Complete this...', action: 'calendar', query: 'Show me my bookings' },
+      { label: 'Show me empty leg flights', icon: '🛫', category: 'Complete this...', action: 'ai-chat', query: 'Show me empty leg flights' },
+      { label: 'Show me available jets', icon: '✈️', category: 'Complete this...', action: 'ai-chat', query: 'Show me available jets' },
+      { label: 'Show me yacht charters', icon: '🛥️', category: 'Complete this...', action: 'ai-chat', query: 'Show me yacht charters' },
+      { label: 'Show me premium wines', icon: '🍷', category: 'Complete this...', action: 'ai-chat', query: 'Show me premium wines' },
     ]},
     // "Book..." patterns
     { pattern: /^bo/i, suggestions: [
-      { label: 'Book a private jet', icon: '✈️', category: 'Complete this...', action: 'jets', query: 'Book a private jet' },
-      { label: 'Book a helicopter', icon: '🚁', category: 'Complete this...', action: 'helicopter', query: 'Book a helicopter' },
-      { label: 'Book a luxury car', icon: '🚗', category: 'Complete this...', action: 'luxury-cars', query: 'Book a luxury car' },
-      { label: 'Book an adventure', icon: '🏔️', category: 'Complete this...', action: 'adventures', query: 'Book an adventure' },
+      { label: 'Book a private jet', icon: '✈️', category: 'Complete this...', action: 'ai-chat', query: 'Book a private jet' },
+      { label: 'Book a helicopter', icon: '🚁', category: 'Complete this...', action: 'ai-chat', query: 'Book a helicopter' },
+      { label: 'Book a yacht charter', icon: '🛥️', category: 'Complete this...', action: 'ai-chat', query: 'Book a yacht charter' },
+      { label: 'Book ground transport', icon: '🚐', category: 'Complete this...', action: 'ai-chat', query: 'Book ground transportation' },
     ]},
     // "Find..." patterns
     { pattern: /^fi/i, suggestions: [
-      { label: 'Find flights to Dubai', icon: '✈️', category: 'Complete this...', action: 'jets', query: 'Find flights to Dubai' },
-      { label: 'Find empty legs', icon: '🛫', category: 'Complete this...', action: 'empty-legs', query: 'Find empty legs' },
-      { label: 'Find adventure trips', icon: '🏔️', category: 'Complete this...', action: 'adventures', query: 'Find adventure trips' },
+      { label: 'Find flights to Dubai', icon: '✈️', category: 'Complete this...', action: 'ai-chat', query: 'Find flights to Dubai' },
+      { label: 'Find empty legs', icon: '🛫', category: 'Complete this...', action: 'ai-chat', query: 'Find empty legs' },
+      { label: 'Find yacht charters', icon: '🛥️', category: 'Complete this...', action: 'ai-chat', query: 'Find yacht charters' },
     ]},
   ];
 
-  // All available services - RWS & Web3.0
+  // All available services - RWS & Web3.0 (aligned with AI Chat categories)
   const allServices = {
     rwsServices: [
       { label: 'Break the Price', category: 'Services', action: 'ai-chat', query: 'I want to beat a price quote', highlight: true },
       { label: 'Private Jets', category: 'Services', action: 'ai-chat', query: 'I need a private jet' },
-      { label: 'Helicopters', category: 'Services', action: 'ai-chat', query: 'I need a helicopter transfer' },
       { label: 'Empty Legs', category: 'Services', action: 'ai-chat', query: 'Show me available empty legs' },
-      { label: 'Luxury Cars', category: 'Services', action: 'ai-chat', query: 'I need a luxury car' },
-      { label: 'Ground Transport', category: 'Services', action: 'ai-chat', query: 'I need ground transportation' },
-      { label: 'Adventures', category: 'Services', action: 'ai-chat', query: 'Show me adventure packages' },
+      { label: 'Helicopters', category: 'Services', action: 'ai-chat', query: 'I need a helicopter transfer' },
       { label: 'Yachts', category: 'Services', action: 'ai-chat', query: 'I need a yacht charter' },
-      { label: 'Concierge Service', category: 'Services', action: 'ai-chat', query: 'I need concierge assistance' },
+      { label: 'Ground Transport', category: 'Services', action: 'ai-chat', query: 'I need ground transportation' },
       { label: 'CO2 / SAF Certificates', category: 'Services', action: 'ai-chat', query: 'I want to offset my CO2 emissions' },
+      { label: 'Concierge Service', category: 'Services', action: 'ai-chat', query: 'I need concierge assistance' },
+    ],
+    extrasServices: [
+      { label: 'Premium Wines', category: 'In-Flight & Extras', action: 'ai-chat', query: 'Show me premium wines for my flight' },
+      { label: 'Champagne', category: 'In-Flight & Extras', action: 'ai-chat', query: 'I want champagne for my flight' },
+      { label: 'Premium Cigars', category: 'In-Flight & Extras', action: 'ai-chat', query: 'I want premium cigars' },
+      { label: 'Caviar & Delicacies', category: 'In-Flight & Extras', action: 'ai-chat', query: 'Show me caviar and delicacies' },
+      { label: 'Flowers & Gifts', category: 'In-Flight & Extras', action: 'ai-chat', query: 'I need flowers or gifts arranged' },
     ],
     web3Services: [
       { label: 'Tokenize Assets', category: 'Web3.0 Services', action: 'ai-chat', query: 'I want to tokenize my asset' },
@@ -117,7 +123,7 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
   const getAllSuggestions = () => {
     let all = [...allServices.destinations, ...allServices.aircraft];
     if (webMode === 'rws') {
-      all = [...allServices.rwsServices, ...all];
+      all = [...allServices.rwsServices, ...allServices.extrasServices, ...all];
     } else {
       all = [...allServices.web3Services, ...all];
     }
@@ -226,11 +232,11 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
       // Search helicopters - no text filter (table may not have searchable columns)
       const { data: helicopters } = await supabase.from('helicopter_charters').select('*').limit(3);
 
-      // Search luxury cars - no text filter
-      const { data: luxuryCars } = await supabase.from('luxury_cars').select('*').limit(3);
-
       // Search ground transport - no filter
       const { data: groundTransport } = await supabase.from('taxi_cars').select('*').limit(3);
+
+      // Search yachts
+      const { data: yachts } = await supabase.from('yachts').select('*').limit(3);
 
       // Search fixed offers - use keywords if available
       let fixedOffersQuery = supabase.from('fixed_offers').select('*').limit(3);
@@ -281,14 +287,14 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
         });
       }
 
-      if (luxuryCars && luxuryCars.length > 0) {
+      if (yachts && yachts.length > 0) {
         offers.push({
-          category: 'Luxury Cars',
-          icon: '🚗',
-          items: luxuryCars.map(car => ({
-            label: `${car.brand || ''} ${car.model || car.name || car.type} - €${car.daily_rate?.toLocaleString() || car.price_per_day?.toLocaleString() || 'Quote'}/day`,
-            action: 'luxury-cars',
-            data: car
+          category: 'Yachts',
+          icon: '🛥️',
+          items: yachts.map(yacht => ({
+            label: `${yacht.name || yacht.title} - €${yacht.daily_rate?.toLocaleString() || yacht.price_per_day?.toLocaleString() || 'Quote'}/day`,
+            action: 'ai-chat',
+            data: yacht
           }))
         });
       }
@@ -299,7 +305,7 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
           icon: '🚙',
           items: groundTransport.map(car => ({
             label: `${car.name || car.type} - €${car.price_per_hour?.toLocaleString() || car.hourly_rate?.toLocaleString() || 'Quote'}/hr`,
-            action: 'ground-transport',
+            action: 'ai-chat',
             data: car
           }))
         });
@@ -645,7 +651,7 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
                 <>
                   <div className="border-b border-gray-100/50">
                     <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                      Services
+                      Travel Services
                     </div>
                     {allServices.rwsServices.map((item, index) => (
                       <button
@@ -666,6 +672,21 @@ const IntelligentSearch = ({ onSearch, webMode = 'rws', placeholder = "I need a.
                           </span>
                         )}
                         <ChevronRight size={14} className="text-gray-400 ml-auto" />
+                      </button>
+                    ))}
+                  </div>
+                  <div className="border-b border-gray-100/50">
+                    <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                      In-Flight & Extras
+                    </div>
+                    {allServices.extrasServices.map((item, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleSelect(item)}
+                        className="w-full px-4 py-2 hover:bg-gray-50 transition-colors text-left flex items-center justify-between"
+                      >
+                        <span className="text-sm text-gray-800">{item.label}</span>
+                        <ChevronRight size={14} className="text-gray-400" />
                       </button>
                     ))}
                   </div>

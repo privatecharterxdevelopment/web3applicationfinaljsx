@@ -5023,6 +5023,9 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                         // Skip if this message already has action buttons (confirm_booking, etc.)
                         if (msg.bookingData) return null;
 
+                        // Skip if this is an "Added to cart" confirmation message
+                        if (content.startsWith('✓ Added') || content.includes('to your cart')) return null;
+
                         // Luxury item detection patterns with quantity extraction
                         const luxuryItemPatterns = [
                           // Cigars - specific brands with quantity

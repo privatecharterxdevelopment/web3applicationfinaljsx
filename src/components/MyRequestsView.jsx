@@ -808,6 +808,20 @@ const MyRequestsView = ({ user }) => {
               <PriceBreakdown data={data} colorClass="from-amber-600 to-amber-800" textClass="text-amber-100" />
             )}
 
+            {/* Download PDF Button */}
+            <button
+              onClick={(e) => handleDownloadPDF(request, e)}
+              disabled={generatingPDF === request.id}
+              className="w-full mb-3 px-4 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {generatingPDF === request.id ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Download size={16} />
+              )}
+              {generatingPDF === request.id ? 'Generating PDF...' : 'Download PDF'}
+            </button>
+
             {/* Timestamp */}
             <div className="flex items-center justify-between">
               <p className="text-xs text-gray-500">
@@ -982,6 +996,20 @@ const MyRequestsView = ({ user }) => {
             {/* Price Breakdown */}
             <PriceBreakdown data={data} colorClass="from-gray-700 to-gray-900" textClass="text-gray-300" />
 
+            {/* Download PDF Button */}
+            <button
+              onClick={(e) => handleDownloadPDF(request, e)}
+              disabled={generatingPDF === request.id}
+              className="w-full mb-3 px-4 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {generatingPDF === request.id ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Download size={16} />
+              )}
+              {generatingPDF === request.id ? 'Generating PDF...' : 'Download PDF'}
+            </button>
+
             {/* Timestamp */}
             <div className="flex items-center justify-between">
               <p className="text-xs text-gray-500">
@@ -1132,6 +1160,20 @@ const MyRequestsView = ({ user }) => {
 
             {/* Price Breakdown */}
             <PriceBreakdown data={data} colorClass="from-blue-600 to-blue-800" textClass="text-blue-100" />
+
+            {/* Download PDF Button */}
+            <button
+              onClick={(e) => handleDownloadPDF(request, e)}
+              disabled={generatingPDF === request.id}
+              className="w-full mb-3 px-4 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {generatingPDF === request.id ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Download size={16} />
+              )}
+              {generatingPDF === request.id ? 'Generating PDF...' : 'Download PDF'}
+            </button>
 
             {/* Timestamp */}
             <div className="flex items-center justify-between">
@@ -1316,6 +1358,20 @@ const MyRequestsView = ({ user }) => {
             {/* Price Breakdown */}
             <PriceBreakdown data={data} colorClass="from-teal-600 to-teal-800" textClass="text-teal-100" />
 
+            {/* Download PDF Button */}
+            <button
+              onClick={(e) => handleDownloadPDF(request, e)}
+              disabled={generatingPDF === request.id}
+              className="w-full mb-3 px-4 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {generatingPDF === request.id ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Download size={16} />
+              )}
+              {generatingPDF === request.id ? 'Generating PDF...' : 'Download PDF'}
+            </button>
+
             {/* Timestamp */}
             <div className="flex items-center justify-between">
               <p className="text-xs text-gray-500">
@@ -1413,6 +1469,20 @@ const MyRequestsView = ({ user }) => {
                 )}
               </div>
             )}
+
+            {/* Download PDF Button */}
+            <button
+              onClick={(e) => handleDownloadPDF(request, e)}
+              disabled={generatingPDF === request.id}
+              className="w-full mb-3 px-4 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {generatingPDF === request.id ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Download size={16} />
+              )}
+              {generatingPDF === request.id ? 'Generating PDF...' : 'Download PDF'}
+            </button>
 
             {/* Timestamp */}
             <div className="flex items-center justify-between">
@@ -1528,6 +1598,20 @@ const MyRequestsView = ({ user }) => {
               </div>
             )}
 
+            {/* Download PDF Button */}
+            <button
+              onClick={(e) => handleDownloadPDF(request, e)}
+              disabled={generatingPDF === request.id}
+              className="w-full mb-3 px-4 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {generatingPDF === request.id ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Download size={16} />
+              )}
+              {generatingPDF === request.id ? 'Generating PDF...' : 'Download PDF'}
+            </button>
+
             {/* Timestamp */}
             <div className="flex items-center justify-between">
               <p className="text-xs text-gray-500">
@@ -1607,6 +1691,19 @@ const MyRequestsView = ({ user }) => {
                 </div>
               </div>
             )}
+            {/* Download PDF Button */}
+            <button
+              onClick={(e) => handleDownloadPDF(request, e)}
+              disabled={generatingPDF === request.id}
+              className="w-full mb-3 px-4 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {generatingPDF === request.id ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Download size={16} />
+              )}
+              {generatingPDF === request.id ? 'Generating PDF...' : 'Download PDF'}
+            </button>
             <div className="flex items-center justify-between">
               <p className="text-xs text-gray-500">{formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}</p>
             </div>
@@ -1671,6 +1768,19 @@ const MyRequestsView = ({ user }) => {
                 </div>
               </div>
             )}
+            {/* Download PDF Button */}
+            <button
+              onClick={(e) => handleDownloadPDF(request, e)}
+              disabled={generatingPDF === request.id}
+              className="w-full mb-3 px-4 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {generatingPDF === request.id ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Download size={16} />
+              )}
+              {generatingPDF === request.id ? 'Generating PDF...' : 'Download PDF'}
+            </button>
             <div className="flex items-center justify-between">
               <p className="text-xs text-gray-500">{formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}</p>
             </div>
@@ -1739,6 +1849,20 @@ const MyRequestsView = ({ user }) => {
                 </div>
               </div>
             )}
+
+            {/* Download PDF Button */}
+            <button
+              onClick={(e) => handleDownloadPDF(request, e)}
+              disabled={generatingPDF === request.id}
+              className="w-full mb-3 px-4 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {generatingPDF === request.id ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Download size={16} />
+              )}
+              {generatingPDF === request.id ? 'Generating PDF...' : 'Download PDF'}
+            </button>
 
             <div className="flex items-center justify-between">
               <p className="text-xs text-gray-500">{formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}</p>

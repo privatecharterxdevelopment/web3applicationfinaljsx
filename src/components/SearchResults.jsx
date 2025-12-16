@@ -107,7 +107,10 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
               >
                 {/* Service Icon/Image - smaller */}
                 <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500 flex-shrink-0 overflow-hidden">
-                  {(item.primaryImage || item.image_url || item.image_url_1 || item.image) ? (
+                  {/* No images for luxury cars - show icon instead */}
+                  {item.type === 'luxury_cars' ? (
+                    <span className="text-sm">🏎️</span>
+                  ) : (item.primaryImage || item.image_url || item.image_url_1 || item.image) ? (
                     <img
                       src={item.primaryImage || item.image_url || item.image_url_1 || item.image}
                       alt={item.name || item.title || 'Service'}
@@ -205,7 +208,7 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                       </>
                     )}
 
-                    {/* Luxury Cars */}
+                    {/* Luxury Cars - show description like empty legs */}
                     {item.type === 'luxury_cars' && (
                       <>
                         {item.brand && <span>{item.brand}</span>}
@@ -217,6 +220,12 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                         )}
                         <span>•</span>
                         <span>{item.seats || 2} seats</span>
+                        {item.category && (
+                          <>
+                            <span>•</span>
+                            <span className="capitalize">{item.category}</span>
+                          </>
+                        )}
                       </>
                     )}
 
@@ -659,6 +668,13 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
 
                       {item.type === 'luxury_cars' && (
                         <>
+                          {/* Description - show at top like empty legs (no images) */}
+                          {item.description && (
+                            <div className="col-span-2 md:col-span-4 mb-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
+                              <p className="text-sm text-gray-700 leading-relaxed">{item.description}</p>
+                            </div>
+                          )}
+
                           {/* Vehicle specs */}
                           <div>
                             <p className="text-xs text-gray-500">Make & Model</p>
@@ -718,12 +734,12 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                             </div>
                           </div>
 
-                          {/* Color disclaimer */}
+                          {/* Custom specification notice */}
                           <div className="col-span-2 md:col-span-4 mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                            <p className="font-semibold text-amber-900 mb-1">Vehicle Availability</p>
+                            <p className="font-semibold text-amber-900 mb-1">Vehicle Options</p>
                             <p className="text-sm text-amber-800">
-                              Displayed color and interior are representative. Actual vehicle may vary in color, interior finish, and optional features.
-                              <span className="font-medium"> Want a specific color or configuration?</span>
+                              Vehicle availability and exact specifications may vary. We can source specific colors, interior finishes, and configurations.
+                              <span className="font-medium"> Need a specific setup?</span>
                             </p>
                             <button
                               onClick={(e) => {
