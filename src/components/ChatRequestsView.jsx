@@ -27,13 +27,18 @@ const ChatRequestsView = ({ userId, user }) => {
         service_type: request.service_type,
         created_at: request.created_at,
         client_email: user?.email,
+        client_name: user?.user_metadata?.full_name || user?.user_metadata?.name || '',
+        client_phone: user?.user_metadata?.phone || user?.phone || '',
         data: {
           query: request.query,
           from: request.from_location,
           to: request.to_location,
           date: request.date_start,
           passengers: request.passengers,
-          budget: request.budget
+          budget: request.budget,
+          name: user?.user_metadata?.full_name || user?.user_metadata?.name || '',
+          email: user?.email,
+          phone: user?.user_metadata?.phone || user?.phone || ''
         }
       };
       const { blob, filename } = await generateRequestConfirmationPDF(pdfRequest);

@@ -14,8 +14,37 @@ const COMPANY = {
   address: '1000 Brickell Ave, Ste 715',
   city: 'Miami, FL 33131',
   country: 'United States of America',
-  email: 'bookings@privatecharterx.com'
+  email: 'bookings@privatecharterx.com',
+  logoUrl: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_Logo_written-removebg-preview.png'
 };
+
+// Cache for logo image data
+let logoImageCache = null;
+
+/**
+ * Load and cache logo image as base64 for PDF embedding
+ */
+async function loadLogoImage() {
+  if (logoImageCache) return logoImageCache;
+
+  try {
+    const response = await fetch(COMPANY.logoUrl);
+    const blob = await response.blob();
+
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        logoImageCache = reader.result;
+        resolve(logoImageCache);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error('Error loading logo image:', error);
+    return null;
+  }
+}
 
 // Monochromatic colors - Black and Light Grey only
 const COLORS = {
@@ -63,8 +92,9 @@ const formatShortDate = (dateString) => {
 
 /**
  * Create base PDF document with common helper functions
+ * @param {Object} userInfo - Optional user info {name, email, phone}
  */
-function createBasePDF() {
+function createBasePDF(userInfo = {}) {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -97,56 +127,136 @@ function createBasePDF() {
     doc.roundedRect(x, y, w, h, r, r, 'F');
   };
 
-  // Draw header with company info
-  const drawHeader = (confirmNumber, type = 'Confirmation') => {
+  // Draw header with logo and company info
+  const drawHeader = (confirmNumber, type = 'Confirmation', logoImage = null) => {
     let yPos = margin;
 
     // Light gray header background
     drawRoundedRect(margin, yPos, pageWidth - (margin * 2), 40, 3, COLORS.almostWhite);
 
-    yPos += 12;
-    addText(COMPANY.name, margin + 10, yPos, { fontSize: 20, fontStyle: 'bold', color: COLORS.black });
+    yPos += 8;
 
-    yPos += 6;
+    // Add logo image if available, otherwise fallback to text
+    if (logoImage) {
+      try {
+        doc.addImage(logoImage, 'PNG', margin + 8, yPos, 50, 12);
+        yPos += 16;
+      } catch (error) {
+        console.error('Error adding logo to PDF:', error);
+        addText(COMPANY.name, margin + 10, yPos + 4, { fontSize: 20, fontStyle: 'bold', color: COLORS.black });
+        yPos += 10;
+      }
+    } else {
+      addText(COMPANY.name, margin + 10, yPos + 4, { fontSize: 20, fontStyle: 'bold', color: COLORS.black });
+      yPos += 10;
+    }
+
     addText(COMPANY.tagline, margin + 10, yPos, { fontSize: 9, color: COLORS.gray });
 
     // Confirmation number on right
     addText(`${type} #`, pageWidth - margin - 10, yPos - 6, { fontSize: 8, color: COLORS.gray, align: 'right' });
     addText(confirmNumber, pageWidth - margin - 10, yPos + 1, { fontSize: 12, fontStyle: 'bold', color: COLORS.black, align: 'right' });
 
-    return yPos + 30;
+    return yPos + 26;
   };
 
-  // Draw footer with company address
-  const drawFooter = () => {
-    let yPos = pageHeight - 40;
+  // Draw user info section
+  const drawUserInfo = (yPos) => {
+    const userName = userInfo.name || userInfo.username || '';
+    const userEmail = userInfo.email || '';
+    const userPhone = userInfo.phone || '';
+
+    if (!userName && !userEmail && !userPhone) return yPos;
+
     drawLine(yPos);
+    yPos += 10;
+
+    addText('CLIENT INFORMATION', margin, yPos, { fontSize: 10, fontStyle: 'bold', color: COLORS.gray });
     yPos += 8;
 
-    addText('Questions? Contact us:', margin, yPos, { fontSize: 9, fontStyle: 'bold', color: COLORS.darkGray });
-    yPos += 5;
-    addText(COMPANY.email, margin, yPos, { fontSize: 9, color: COLORS.gray });
+    if (userName) {
+      addText('Name', margin, yPos, { fontSize: 8, color: COLORS.gray });
+      addText(userName, margin + 25, yPos, { fontSize: 10, color: COLORS.darkGray });
+      yPos += 7;
+    }
 
-    yPos += 10;
-    addText(COMPANY.name, margin, yPos, { fontSize: 8, color: COLORS.lightGray });
-    addText(COMPANY.address, margin + 50, yPos, { fontSize: 8, color: COLORS.lightGray });
+    if (userEmail) {
+      addText('Email', margin, yPos, { fontSize: 8, color: COLORS.gray });
+      addText(userEmail, margin + 25, yPos, { fontSize: 10, color: COLORS.darkGray });
+      yPos += 7;
+    }
 
-    yPos += 4;
-    addText(`${COMPANY.city}, ${COMPANY.country}`, margin, yPos, { fontSize: 8, color: COLORS.lightGray });
-    addText(`Generated: ${formatShortDate(new Date())}`, pageWidth - margin, yPos, { fontSize: 8, color: COLORS.lightGray, align: 'right' });
+    if (userPhone) {
+      addText('Phone', margin, yPos, { fontSize: 8, color: COLORS.gray });
+      addText(userPhone, margin + 25, yPos, { fontSize: 10, color: COLORS.darkGray });
+      yPos += 7;
+    }
+
+    return yPos + 5;
   };
 
-  return { doc, pageWidth, pageHeight, margin, addText, drawLine, drawRoundedRect, drawHeader, drawFooter };
+  // Draw "What's Next" section - separate from footer
+  const drawWhatsNext = (yPos) => {
+    drawLine(yPos);
+    yPos += 10;
+
+    addText('WHAT HAPPENS NEXT', margin, yPos, { fontSize: 10, fontStyle: 'bold', color: COLORS.gray });
+    yPos += 10;
+
+    const steps = [
+      '1. Our team reviews your request within 2-4 hours',
+      '2. You receive a detailed quote via email',
+      '3. Once confirmed, we arrange all logistics',
+      '4. Final confirmation and travel documents follow'
+    ];
+
+    steps.forEach(step => {
+      addText(step, margin, yPos, { fontSize: 9, color: COLORS.darkGray });
+      yPos += 6;
+    });
+
+    return yPos + 5;
+  };
+
+  // Draw footer with company address - clean and separate
+  const drawFooter = () => {
+    let yPos = pageHeight - 25;
+    drawLine(yPos);
+    yPos += 6;
+
+    // Contact info on left
+    addText('Questions? Contact us:', margin, yPos, { fontSize: 8, fontStyle: 'bold', color: COLORS.darkGray });
+    addText(COMPANY.email, margin + 40, yPos, { fontSize: 8, color: COLORS.gray });
+
+    yPos += 6;
+    // Company address on one line
+    addText(`${COMPANY.name} | ${COMPANY.address}, ${COMPANY.city}, ${COMPANY.country}`, margin, yPos, { fontSize: 7, color: COLORS.lightGray });
+
+    yPos += 5;
+    addText(`Generated: ${formatShortDate(new Date())}`, pageWidth - margin, yPos, { fontSize: 7, color: COLORS.lightGray, align: 'right' });
+  };
+
+  return { doc, pageWidth, pageHeight, margin, addText, drawLine, drawRoundedRect, drawHeader, drawFooter, drawUserInfo, drawWhatsNext };
 }
 
 /**
  * Generate a booking confirmation PDF
  */
 export async function generateBookingConfirmationPDF(booking, options = {}) {
-  const { doc, pageWidth, pageHeight, margin, addText, drawLine, drawRoundedRect, drawHeader, drawFooter } = createBasePDF();
+  // Extract user info from booking or options
+  const userInfo = {
+    name: options.userName || booking.contact_name || booking.user_name || '',
+    email: options.userEmail || booking.contact_email || booking.user_email || '',
+    phone: options.userPhone || booking.contact_phone || booking.user_phone || ''
+  };
+
+  const { doc, pageWidth, pageHeight, margin, addText, drawLine, drawRoundedRect, drawHeader, drawFooter, drawUserInfo } = createBasePDF(userInfo);
+
+  // Load logo image
+  const logoImage = await loadLogoImage();
 
   const confirmationNumber = booking.id?.substring(0, 8).toUpperCase() || 'N/A';
-  let yPos = drawHeader(confirmationNumber, 'Booking');
+  let yPos = drawHeader(confirmationNumber, 'Booking', logoImage);
 
   // ============ STATUS BADGE ============
   const status = booking.booking_status || booking.payment_status || booking.status || 'confirmed';
@@ -344,10 +454,21 @@ export async function generateBookingConfirmationPDF(booking, options = {}) {
  * Generate a request confirmation PDF
  */
 export async function generateRequestConfirmationPDF(request, options = {}) {
-  const { doc, pageWidth, pageHeight, margin, addText, drawLine, drawRoundedRect, drawHeader, drawFooter } = createBasePDF();
+  // Extract user info from request or options
+  const requestData = request.data || request.details || {};
+  const userInfo = {
+    name: options.userName || request.client_name || requestData.name || requestData.contact_name || '',
+    email: options.userEmail || request.client_email || requestData.email || requestData.contact_email || '',
+    phone: options.userPhone || request.client_phone || requestData.phone || requestData.contact_phone || ''
+  };
+
+  const { doc, pageWidth, pageHeight, margin, addText, drawLine, drawRoundedRect, drawHeader, drawFooter, drawUserInfo, drawWhatsNext } = createBasePDF(userInfo);
+
+  // Load logo image
+  const logoImage = await loadLogoImage();
 
   const requestNumber = request.id?.substring(0, 8).toUpperCase() || 'N/A';
-  let yPos = drawHeader(requestNumber, 'Request');
+  let yPos = drawHeader(requestNumber, 'Request', logoImage);
 
   // ============ STATUS BADGE ============
   drawRoundedRect(margin, yPos, 85, 8, 2, COLORS.mediumGray);
@@ -374,8 +495,7 @@ export async function generateRequestConfirmationPDF(request, options = {}) {
   addText('REQUEST DETAILS', margin, yPos, { fontSize: 10, fontStyle: 'bold', color: COLORS.gray });
   yPos += 10;
 
-  // Support both request.data and request.details for flexibility
-  const requestData = request.data || request.details || {};
+  // requestData already defined at top of function
 
   if (requestType.includes('jet') || requestType.includes('helicopter') || requestType.includes('charter')) {
     drawRoundedRect(margin, yPos, pageWidth - (margin * 2), 45, 3, COLORS.almostWhite);
@@ -494,45 +614,14 @@ export async function generateRequestConfirmationPDF(request, options = {}) {
     addText('Our team will provide pricing within 2-4 hours', margin, yPos, { fontSize: 8, color: COLORS.lightGray });
   }
 
+  // ============ CLIENT INFORMATION ============
+  yPos += 10;
+  yPos = drawUserInfo(yPos);
+
   // ============ NEXT STEPS ============
-  yPos += 15;
-  drawLine(yPos);
-  yPos += 10;
+  yPos = drawWhatsNext(yPos);
 
-  addText('WHAT HAPPENS NEXT', margin, yPos, { fontSize: 10, fontStyle: 'bold', color: COLORS.gray });
-  yPos += 10;
-
-  const steps = [
-    '1. Our team reviews your request within 2-4 hours',
-    '2. You receive a detailed quote via email',
-    '3. Once confirmed, we arrange all logistics',
-    '4. Final confirmation and travel documents follow'
-  ];
-
-  steps.forEach(step => {
-    addText(step, margin, yPos, { fontSize: 9, color: COLORS.darkGray });
-    yPos += 6;
-  });
-
-  // ============ CONTACT INFORMATION ============
-  yPos += 10;
-  drawLine(yPos);
-  yPos += 10;
-
-  addText('YOUR CONTACT INFORMATION', margin, yPos, { fontSize: 10, fontStyle: 'bold', color: COLORS.gray });
-  yPos += 8;
-
-  const clientEmail = request.client_email || requestData.email || requestData.contact_email || '-';
-  const clientName = requestData.name || requestData.contact_name || '-';
-
-  addText('Name', margin, yPos, { fontSize: 8, color: COLORS.gray });
-  addText(clientName, margin + 25, yPos, { fontSize: 10, color: COLORS.darkGray });
-
-  yPos += 7;
-  addText('Email', margin, yPos, { fontSize: 8, color: COLORS.gray });
-  addText(clientEmail, margin + 25, yPos, { fontSize: 10, color: COLORS.darkGray });
-
-  // Draw footer
+  // Draw footer (separate from What's Next)
   drawFooter();
 
   const filename = `PrivateCharterX_Request_${requestNumber}_${Date.now()}.pdf`;
@@ -546,10 +635,20 @@ export async function generateRequestConfirmationPDF(request, options = {}) {
  * Generate a subscription confirmation PDF
  */
 export async function generateSubscriptionConfirmationPDF(subscription, options = {}) {
-  const { doc, pageWidth, pageHeight, margin, addText, drawLine, drawRoundedRect, drawHeader, drawFooter } = createBasePDF();
+  // Extract user info from subscription or options
+  const userInfo = {
+    name: options.userName || subscription.user_name || subscription.name || '',
+    email: options.userEmail || subscription.user_email || subscription.email || '',
+    phone: options.userPhone || subscription.user_phone || subscription.phone || ''
+  };
+
+  const { doc, pageWidth, pageHeight, margin, addText, drawLine, drawRoundedRect, drawHeader, drawFooter } = createBasePDF(userInfo);
+
+  // Load logo image
+  const logoImage = await loadLogoImage();
 
   const subscriptionId = subscription.id?.substring(0, 8).toUpperCase() || 'N/A';
-  let yPos = drawHeader(subscriptionId, 'Subscription');
+  let yPos = drawHeader(subscriptionId, 'Subscription', logoImage);
 
   // ============ STATUS BADGE ============
   const isActive = subscription.status === 'active' || subscription.status === 'paid';
