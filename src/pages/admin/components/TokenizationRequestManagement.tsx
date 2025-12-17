@@ -1,21 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Coins,
   Search,
-  Filter,
   Eye,
   X,
   CheckCircle,
   Clock,
-  AlertCircle,
-  XCircle,
-  FileText,
   RefreshCw,
-  MessageSquare,
-  ExternalLink,
-  DollarSign,
   Building2,
-  Globe
+  DollarSign,
+  FileText,
+  MapPin,
+  Calendar
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
@@ -31,7 +27,8 @@ interface TokenizationRequest {
   admin_notes?: string;
   client_email?: string;
   users?: {
-    name: string;
+    first_name: string;
+    last_name: string;
     email: string;
   };
 }
@@ -40,14 +37,11 @@ export default function TokenizationRequestManagement() {
   const [requests, setRequests] = useState<TokenizationRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<TokenizationRequest | null>(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
   const [adminNotes, setAdminNotes] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Tokenization-related request types
   const tokenizationTypes = [
     'tokenization_request',
     'asset_tokenization',
@@ -57,10 +51,10 @@ export default function TokenizationRequestManagement() {
   ];
 
   useEffect(() => {
-    fetchTokenizationRequests();
-  }, [statusFilter, typeFilter]);
+    fetchRequests();
+  }, [statusFilter]);
 
-  const fetchTokenizationRequests = async () => {
+  const fetchRequests = async () => {
     try {
       setLoading(true);
       let query = supabase
@@ -68,7 +62,8 @@ export default function TokenizationRequestManagement() {
         .select(`
           *,
           users:user_id (
-            name,
+            first_name,
+            last_name,
             email
           )
         `)
@@ -79,22 +74,17 @@ export default function TokenizationRequestManagement() {
         query = query.eq('status', statusFilter);
       }
 
-      if (typeFilter !== 'all') {
-        query = query.eq('type', typeFilter);
-      }
-
       const { data, error } = await query;
-
       if (error) throw error;
       setRequests(data || []);
     } catch (error) {
-      console.error('Error fetching tokenization requests:', error);
+      console.error('Error fetching requests:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const updateRequestStatus = async (requestId: string, newStatus: string) => {
+  const updateStatus = async (requestId: string, newStatus: string) => {
     try {
       setIsUpdating(true);
       const updateData: any = {
@@ -117,93 +107,13 @@ export default function TokenizationRequestManagement() {
 
       if (error) throw error;
 
-      // Send notification email
-      try {
-        await supabase.functions.invoke('user-request-notifications', {
-          body: {
-            record: { id: requestId },
-            type: 'status_update',
-            newStatus
-          }
-        });
-      } catch (emailError) {
-        console.error('Email notification error:', emailError);
-      }
-
-      await fetchTokenizationRequests();
-      setShowDetailsModal(false);
+      await fetchRequests();
+      setSelectedRequest(null);
       setAdminNotes('');
     } catch (error) {
       console.error('Error updating request:', error);
-      alert('Failed to update request status');
     } finally {
       setIsUpdating(false);
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'in_progress':
-        return 'bg-blue-100 text-blue-800';
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      case 'approved':
-        return 'bg-emerald-100 text-emerald-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return <Clock className="w-4 h-4" />;
-      case 'in_progress':
-        return <AlertCircle className="w-4 h-4" />;
-      case 'completed':
-      case 'approved':
-        return <CheckCircle className="w-4 h-4" />;
-      case 'cancelled':
-        return <XCircle className="w-4 h-4" />;
-      default:
-        return <FileText className="w-4 h-4" />;
-    }
-  };
-
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'tokenization_request':
-        return 'Asset Tokenization';
-      case 'asset_tokenization':
-        return 'Asset Tokenization';
-      case 'rwa_tokenization':
-        return 'RWA Tokenization';
-      case 'ico_participation':
-        return 'ICO Participation';
-      case 'dao_license':
-        return 'DAO License';
-      default:
-        return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    }
-  };
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'tokenization_request':
-      case 'asset_tokenization':
-        return 'bg-purple-100 text-purple-800';
-      case 'rwa_tokenization':
-        return 'bg-indigo-100 text-indigo-800';
-      case 'ico_participation':
-        return 'bg-blue-100 text-blue-800';
-      case 'dao_license':
-        return 'bg-cyan-100 text-cyan-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -211,30 +121,52 @@ export default function TokenizationRequestManagement() {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      day: 'numeric'
     });
   };
 
   const formatCurrency = (amount: number, currency = 'EUR') => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency
+      currency
     }).format(amount);
   };
 
+  const getUserName = (request: TokenizationRequest) => {
+    if (request.users?.first_name || request.users?.last_name) {
+      return `${request.users.first_name || ''} ${request.users.last_name || ''}`.trim();
+    }
+    return 'Unknown';
+  };
+
+  const getUserEmail = (request: TokenizationRequest) => {
+    return request.users?.email || request.client_email || 'No email';
+  };
+
+  // Extract clean data from request.data object
+  const getAssetInfo = (request: TokenizationRequest) => {
+    const data = request.data || {};
+    return {
+      name: data.assetName || data.asset_name || data.name || 'Unnamed Asset',
+      type: data.assetType || data.asset_type || data.type || request.type.replace(/_/g, ' '),
+      value: data.estimatedValue || data.estimated_value || data.value || 0,
+      currency: data.currency || 'EUR',
+      location: data.location || data.address || data.city || '-',
+      description: data.description || data.details || '-',
+      documents: data.documents || data.files || []
+    };
+  };
+
   const filteredRequests = requests.filter(request => {
-    const assetName = request.data?.assetName || request.data?.asset_name || '';
-    const userEmail = request.users?.email || request.client_email || '';
-    const userName = request.users?.name || '';
+    const assetInfo = getAssetInfo(request);
+    const userEmail = getUserEmail(request);
+    const userName = getUserName(request);
     const searchLower = searchTerm.toLowerCase();
 
     return (
-      assetName.toLowerCase().includes(searchLower) ||
+      assetInfo.name.toLowerCase().includes(searchLower) ||
       userEmail.toLowerCase().includes(searchLower) ||
-      userName.toLowerCase().includes(searchLower) ||
-      request.id.toLowerCase().includes(searchLower)
+      userName.toLowerCase().includes(searchLower)
     );
   });
 
@@ -249,98 +181,61 @@ export default function TokenizationRequestManagement() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-            <Coins className="w-6 h-6 text-purple-600" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Tokenization Requests</h1>
-            <p className="text-sm text-gray-500">Manage RWA tokenization and Web3 requests</p>
-          </div>
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900">Tokenization Requests</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Manage RWA tokenization requests</p>
         </div>
         <button
-          onClick={fetchTokenizationRequests}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          onClick={fetchRequests}
+          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
-          <RefreshCw className="w-4 h-4" />
-          Refresh
+          <RefreshCw size={18} className="text-gray-600" />
         </button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Requests</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: 'Total', value: stats.total, icon: Coins },
+          { label: 'Pending', value: stats.pending, icon: Clock },
+          { label: 'In Progress', value: stats.inProgress, icon: FileText },
+          { label: 'Completed', value: stats.completed, icon: CheckCircle }
+        ].map((stat, idx) => (
+          <div key={idx} className="bg-white border border-gray-200 rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wide">{stat.label}</p>
+                <p className="text-2xl font-semibold text-gray-900 mt-1">{stat.value}</p>
+              </div>
+              <stat.icon className="w-6 h-6 text-gray-400" />
             </div>
-            <Coins className="w-8 h-8 text-purple-400" />
           </div>
-        </div>
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Pending Review</p>
-              <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
-            </div>
-            <Clock className="w-8 h-8 text-yellow-400" />
-          </div>
-        </div>
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">In Progress</p>
-              <p className="text-2xl font-bold text-blue-600">{stats.inProgress}</p>
-            </div>
-            <AlertCircle className="w-8 h-8 text-blue-400" />
-          </div>
-        </div>
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Completed</p>
-              <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-green-400" />
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="Search by asset name, user email, or ID..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Filter className="w-5 h-5 text-gray-400" />
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-          >
-            <option value="all">All Types</option>
-            <option value="tokenization_request">Asset Tokenization</option>
-            <option value="rwa_tokenization">RWA Tokenization</option>
-            <option value="ico_participation">ICO Participation</option>
-            <option value="dao_license">DAO License</option>
-          </select>
+      <div className="bg-white border border-gray-200 rounded-xl p-4">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by asset name, user..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-900"
+            />
+          </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-900"
           >
             <option value="all">All Status</option>
             <option value="pending">Pending</option>
             <option value="in_progress">In Progress</option>
             <option value="completed">Completed</option>
+            <option value="approved">Approved</option>
             <option value="cancelled">Cancelled</option>
           </select>
         </div>
@@ -349,314 +244,255 @@ export default function TokenizationRequestManagement() {
       {/* Requests List */}
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 border-4 border-gray-200 border-t-purple-600 rounded-full animate-spin"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-900 border-t-transparent"></div>
         </div>
       ) : filteredRequests.length === 0 ? (
-        <div className="bg-white rounded-xl p-12 shadow-sm border border-gray-200 text-center">
-          <Coins className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Tokenization Requests Found</h3>
-          <p className="text-gray-500">
-            {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
-              ? 'Try adjusting your search or filter criteria'
-              : 'No tokenization requests have been submitted yet'}
-          </p>
+        <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
+          <Coins className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500">No tokenization requests found</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Asset / User
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Value
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredRequests.map((request) => (
-                <tr key={request.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        {request.data?.assetName || request.data?.asset_name || request.data?.title || 'Unnamed Asset'}
+            <tbody className="divide-y divide-gray-100">
+              {filteredRequests.map((request) => {
+                const assetInfo = getAssetInfo(request);
+                return (
+                  <tr key={request.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{assetInfo.name}</p>
+                        <p className="text-xs text-gray-500 capitalize">{assetInfo.type}</p>
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {request.users?.email || request.client_email || 'Unknown user'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div>
+                        <p className="text-sm text-gray-900">{getUserName(request)}</p>
+                        <p className="text-xs text-gray-500">{getUserEmail(request)}</p>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getTypeColor(request.type)}`}>
-                      {getTypeLabel(request.type)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="font-semibold text-gray-900">
-                      {request.data?.assetValue || request.data?.asset_value || request.data?.amount
-                        ? formatCurrency(request.data?.assetValue || request.data?.asset_value || request.data?.amount)
-                        : 'N/A'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
-                      {getStatusIcon(request.status)}
-                      {request.status.replace('_', ' ').toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {formatDate(request.created_at)}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => {
-                        setSelectedRequest(request);
-                        setAdminNotes(request.admin_notes || '');
-                        setShowDetailsModal(true);
-                      }}
-                      className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                    >
-                      <Eye className="w-5 h-5" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="text-sm font-medium text-gray-900">
+                        {assetInfo.value > 0 ? formatCurrency(assetInfo.value, assetInfo.currency) : '-'}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded ${
+                        request.status === 'completed' || request.status === 'approved'
+                          ? 'bg-gray-900 text-white'
+                          : request.status === 'in_progress'
+                          ? 'bg-gray-200 text-gray-700'
+                          : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {request.status.replace(/_/g, ' ')}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="text-sm text-gray-600">{formatDate(request.created_at)}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => setSelectedRequest(request)}
+                        className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
 
-      {/* Details Modal */}
-      {showDetailsModal && selectedRequest && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                  <Coins className="w-6 h-6 text-purple-600" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    {selectedRequest.data?.assetName || selectedRequest.data?.asset_name || 'Tokenization Request'}
-                  </h2>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getTypeColor(selectedRequest.type)}`}>
-                      {getTypeLabel(selectedRequest.type)}
-                    </span>
-                    <span className="text-sm text-gray-500">ID: {selectedRequest.id.slice(0, 8)}...</span>
-                  </div>
+      {/* Detail Modal */}
+      {selectedRequest && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {getAssetInfo(selectedRequest).name}
+                </h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`px-2 py-0.5 text-xs font-medium rounded ${
+                    selectedRequest.status === 'completed' || selectedRequest.status === 'approved'
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-gray-200 text-gray-700'
+                  }`}>
+                    {selectedRequest.status.replace(/_/g, ' ')}
+                  </span>
+                  <span className="text-xs text-gray-500">{formatDate(selectedRequest.created_at)}</span>
                 </div>
               </div>
               <button
-                onClick={() => setShowDetailsModal(false)}
+                onClick={() => setSelectedRequest(null)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X size={18} />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-280px)]">
-              <div className="space-y-6">
-                {/* User Info */}
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-3">User Information</h3>
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <div className="text-xs text-gray-500 mb-1">Name</div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {selectedRequest.users?.name || 'N/A'}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-500 mb-1">Email</div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {selectedRequest.users?.email || selectedRequest.client_email || 'N/A'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Asset Details */}
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-3">Asset Details</h3>
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <div className="text-xs text-gray-500 mb-1">Asset Name</div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {selectedRequest.data?.assetName || selectedRequest.data?.asset_name || 'N/A'}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-500 mb-1">Asset Type</div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {selectedRequest.data?.assetType || selectedRequest.data?.asset_type || 'N/A'}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-500 mb-1">Asset Value</div>
-                        <div className="text-lg font-bold text-green-600">
-                          {selectedRequest.data?.assetValue || selectedRequest.data?.asset_value
-                            ? formatCurrency(selectedRequest.data?.assetValue || selectedRequest.data?.asset_value)
-                            : 'N/A'}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-500 mb-1">Token Symbol</div>
-                        <div className="text-sm font-medium text-purple-600">
-                          {selectedRequest.data?.tokenSymbol || selectedRequest.data?.symbol || 'N/A'}
-                        </div>
-                      </div>
-                    </div>
-                    {selectedRequest.data?.description && (
-                      <div className="mt-4">
-                        <div className="text-xs text-gray-500 mb-1">Description</div>
-                        <div className="text-sm text-gray-700">
-                          {selectedRequest.data.description}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Blockchain Details */}
-                {(selectedRequest.data?.blockchain || selectedRequest.data?.walletAddress) && (
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* User Info */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h3 className="text-sm font-medium text-gray-900 mb-3">Requester</h3>
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-3">Blockchain Details</h3>
-                    <div className="bg-purple-50 rounded-xl p-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        {selectedRequest.data?.blockchain && (
-                          <div>
-                            <div className="text-xs text-gray-500 mb-1">Blockchain</div>
-                            <div className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                              <Globe className="w-4 h-4 text-purple-500" />
-                              {selectedRequest.data.blockchain}
-                            </div>
-                          </div>
-                        )}
-                        {selectedRequest.data?.walletAddress && (
-                          <div className="col-span-2">
-                            <div className="text-xs text-gray-500 mb-1">Wallet Address</div>
-                            <div className="text-sm font-mono text-gray-700 break-all">
-                              {selectedRequest.data.walletAddress}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    <p className="text-xs text-gray-500">Name</p>
+                    <p className="text-sm text-gray-900">{getUserName(selectedRequest)}</p>
                   </div>
-                )}
+                  <div>
+                    <p className="text-xs text-gray-500">Email</p>
+                    <p className="text-sm text-gray-900">{getUserEmail(selectedRequest)}</p>
+                  </div>
+                </div>
+              </div>
 
-                {/* Status Overview */}
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-3">Status Overview</h3>
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <div className="text-xs text-gray-500 mb-1">Current Status</div>
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedRequest.status)}`}>
-                          {getStatusIcon(selectedRequest.status)}
-                          {selectedRequest.status.replace('_', ' ').toUpperCase()}
-                        </span>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-500 mb-1">Submitted</div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {formatDate(selectedRequest.created_at)}
+              {/* Asset Details */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h3 className="text-sm font-medium text-gray-900 mb-3">Asset Details</h3>
+                {(() => {
+                  const assetInfo = getAssetInfo(selectedRequest);
+                  return (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-start gap-2">
+                        <Building2 size={14} className="text-gray-400 mt-0.5" />
+                        <div>
+                          <p className="text-xs text-gray-500">Asset Type</p>
+                          <p className="text-sm text-gray-900 capitalize">{assetInfo.type}</p>
                         </div>
                       </div>
-                      {selectedRequest.completed_at && (
+                      <div className="flex items-start gap-2">
+                        <DollarSign size={14} className="text-gray-400 mt-0.5" />
                         <div>
-                          <div className="text-xs text-gray-500 mb-1">Completed</div>
-                          <div className="text-sm font-medium text-green-600">
-                            {formatDate(selectedRequest.completed_at)}
+                          <p className="text-xs text-gray-500">Estimated Value</p>
+                          <p className="text-sm text-gray-900">
+                            {assetInfo.value > 0 ? formatCurrency(assetInfo.value, assetInfo.currency) : '-'}
+                          </p>
+                        </div>
+                      </div>
+                      {assetInfo.location !== '-' && (
+                        <div className="flex items-start gap-2">
+                          <MapPin size={14} className="text-gray-400 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-gray-500">Location</p>
+                            <p className="text-sm text-gray-900">{assetInfo.location}</p>
                           </div>
                         </div>
                       )}
+                      <div className="flex items-start gap-2">
+                        <Calendar size={14} className="text-gray-400 mt-0.5" />
+                        <div>
+                          <p className="text-xs text-gray-500">Submitted</p>
+                          <p className="text-sm text-gray-900">{formatDate(selectedRequest.created_at)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Description */}
+              {getAssetInfo(selectedRequest).description !== '-' && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900 mb-2">Description</h3>
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                      {getAssetInfo(selectedRequest).description}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Additional Data - Clean display */}
+              {selectedRequest.data && Object.keys(selectedRequest.data).length > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900 mb-2">Additional Information</h3>
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      {Object.entries(selectedRequest.data)
+                        .filter(([key, value]) =>
+                          !['assetName', 'asset_name', 'name', 'description', 'details',
+                            'estimatedValue', 'estimated_value', 'value', 'currency',
+                            'location', 'address', 'city', 'assetType', 'asset_type', 'type',
+                            'documents', 'files'].includes(key) &&
+                          value !== null && value !== undefined && value !== ''
+                        )
+                        .map(([key, value]) => (
+                          <div key={key}>
+                            <p className="text-xs text-gray-500 capitalize">
+                              {key.replace(/_/g, ' ')}
+                            </p>
+                            <p className="text-sm text-gray-900">
+                              {typeof value === 'object'
+                                ? JSON.stringify(value).slice(0, 50)
+                                : String(value)}
+                            </p>
+                          </div>
+                        ))}
                     </div>
                   </div>
                 </div>
+              )}
 
-                {/* Admin Notes */}
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4" />
-                    Admin Notes
-                  </h3>
-                  <textarea
-                    value={adminNotes}
-                    onChange={(e) => setAdminNotes(e.target.value)}
-                    placeholder="Add notes about this request..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                    rows={3}
-                  />
-                </div>
+              {/* Admin Notes */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-900 mb-2">Admin Notes</h3>
+                <textarea
+                  value={adminNotes || selectedRequest.admin_notes || ''}
+                  onChange={(e) => setAdminNotes(e.target.value)}
+                  placeholder="Add notes..."
+                  className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-900 resize-none"
+                  rows={3}
+                />
               </div>
             </div>
 
-            {/* Modal Footer - Actions */}
-            <div className="p-6 border-t border-gray-100 bg-gray-50">
-              <div className="flex flex-wrap gap-3 justify-end">
-                <button
-                  onClick={() => setShowDetailsModal(false)}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  Close
-                </button>
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+              <div className="flex gap-2">
                 {selectedRequest.status === 'pending' && (
                   <button
-                    onClick={() => updateRequestStatus(selectedRequest.id, 'in_progress')}
+                    onClick={() => updateStatus(selectedRequest.id, 'in_progress')}
                     disabled={isUpdating}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    className="px-4 py-2 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
                   >
-                    {isUpdating ? 'Updating...' : 'Start Review'}
+                    Start Review
                   </button>
                 )}
-                {selectedRequest.status === 'in_progress' && (
-                  <>
-                    <button
-                      onClick={() => updateRequestStatus(selectedRequest.id, 'approved')}
-                      disabled={isUpdating}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                    >
-                      {isUpdating ? 'Updating...' : 'Approve'}
-                    </button>
-                    <button
-                      onClick={() => updateRequestStatus(selectedRequest.id, 'completed')}
-                      disabled={isUpdating}
-                      className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
-                    >
-                      {isUpdating ? 'Updating...' : 'Mark Completed'}
-                    </button>
-                  </>
-                )}
-                {(selectedRequest.status === 'pending' || selectedRequest.status === 'in_progress') && (
+                {selectedRequest.status !== 'completed' && selectedRequest.status !== 'approved' && (
                   <button
-                    onClick={() => updateRequestStatus(selectedRequest.id, 'cancelled')}
+                    onClick={() => updateStatus(selectedRequest.id, 'approved')}
                     disabled={isUpdating}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                    className="px-4 py-2 text-sm font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
                   >
-                    {isUpdating ? 'Updating...' : 'Reject'}
+                    Approve
                   </button>
                 )}
               </div>
+              {selectedRequest.status !== 'cancelled' && selectedRequest.status !== 'completed' && (
+                <button
+                  onClick={() => updateStatus(selectedRequest.id, 'cancelled')}
+                  disabled={isUpdating}
+                  className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50"
+                >
+                  Cancel Request
+                </button>
+              )}
             </div>
           </div>
         </div>
