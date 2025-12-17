@@ -582,15 +582,46 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
             body: {
               action: 'searchText',
               query: searchQuery,
-              maxResults: 8,
+              maxResults: 10,
               location: searchLocation,
               radius: regionalRadius
             }
           });
 
           if (!error && googleData?.places && googleData.places.length > 0) {
+            // Filter results for airport searches - remove roads/highways
+            let filteredPlaces = googleData.places;
+            if (isAirportSearch) {
+              // Filter to only show actual airports, not roads or highways
+              filteredPlaces = googleData.places.filter(place => {
+                const name = (place.name || '').toLowerCase();
+                const category = (place.category || '').toLowerCase();
+                const types = (place.types || []).map(t => t.toLowerCase());
+
+                // Exclude roads, highways, autobahn
+                if (name.includes('autobahn') || name.includes('strasse') || name.includes('street') ||
+                    name.includes('highway') || name.includes('road') || name.includes('route')) {
+                  return false;
+                }
+
+                // Prefer actual airports
+                const isAirport = name.includes('airport') || name.includes('flughafen') ||
+                                  category.includes('airport') ||
+                                  types.some(t => t.includes('airport'));
+                return isAirport || types.includes('transit_station') || types.includes('point_of_interest');
+              });
+
+              // If filtering removed all results, try to find any with airport in name
+              if (filteredPlaces.length === 0) {
+                filteredPlaces = googleData.places.filter(place =>
+                  (place.name || '').toLowerCase().includes('airport') ||
+                  (place.name || '').toLowerCase().includes('flughafen')
+                );
+              }
+            }
+
             // Transform Google Places results to Mapbox-like format for compatibility
-            const googleFeatures = googleData.places.map(place => ({
+            const googleFeatures = filteredPlaces.map(place => ({
               id: place.id,
               place_type: ['poi'],
               text: place.name,
