@@ -535,19 +535,21 @@ const MyBookingsView = ({ user, onBack }) => {
                             </a>
                           )
                         )}
-                        {/* Download PDF Button */}
-                        <button
-                          onClick={(e) => handleDownloadPDF(booking, e)}
-                          disabled={generatingPDF === booking.id}
-                          className="px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1.5 disabled:opacity-50"
-                        >
-                          {generatingPDF === booking.id ? (
-                            <Loader2 size={12} className="animate-spin" />
-                          ) : (
-                            <FileText size={12} />
-                          )}
-                          PDF
-                        </button>
+                        {/* Download PDF Button - Only show when paid */}
+                        {booking.payment_status === 'paid' && (
+                          <button
+                            onClick={(e) => handleDownloadPDF(booking, e)}
+                            disabled={generatingPDF === booking.id}
+                            className="px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                          >
+                            {generatingPDF === booking.id ? (
+                              <Loader2 size={12} className="animate-spin" />
+                            ) : (
+                              <FileText size={12} />
+                            )}
+                            PDF
+                          </button>
+                        )}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -807,19 +809,21 @@ const MyBookingsView = ({ user, onBack }) => {
                 )
               )}
 
-              {/* Download PDF Button */}
-              <button
-                onClick={() => handleDownloadPDF(selectedBooking)}
-                disabled={generatingPDF === selectedBooking?.id}
-                className="w-full py-3 bg-gray-100 text-gray-700 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors disabled:opacity-50"
-              >
-                {generatingPDF === selectedBooking?.id ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <FileText size={16} />
-                )}
-                Download Confirmation PDF
-              </button>
+              {/* Download PDF Button - Only show when paid */}
+              {selectedBooking?.payment_status === 'paid' && (
+                <button
+                  onClick={() => handleDownloadPDF(selectedBooking)}
+                  disabled={generatingPDF === selectedBooking?.id}
+                  className="w-full py-3 bg-gray-100 text-gray-700 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors disabled:opacity-50"
+                >
+                  {generatingPDF === selectedBooking?.id ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <FileText size={16} />
+                  )}
+                  Download Confirmation PDF
+                </button>
+              )}
 
               {/* Timestamp */}
               <p className="text-[10px] text-gray-400 text-center pt-2">

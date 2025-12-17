@@ -4489,7 +4489,7 @@ const TokenizedAssetsGlassmorphic = () => {
         {/* Main Content Area - PART OF SAME CONTAINER */}
         <main className={`flex-1 overflow-y-auto flex flex-col ${webMode === 'web3' ? 'bg-white/10' : ''}`}>
           {/* FIXED TOP BAR - Category menu links on left, icons and switcher on right */}
-          <div className={`sticky top-4 z-40 px-2 sm:px-4 lg:px-8 flex justify-between items-center pt-4 sm:pt-6 pr-2 sm:pr-4 lg:pr-6 ${
+          <div className={`sticky top-0 sm:top-4 z-40 px-2 sm:px-4 lg:px-8 flex justify-between items-center pt-2 sm:pt-6 pr-2 sm:pr-4 lg:pr-6 ${
             activeCategory === 'chat' ? 'hidden' : ''
           }`}>
             {/* MOBILE ONLY: Sidebar Toggle in header row - Categories moved to sidebar */}
@@ -4701,8 +4701,8 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* CONTENT AREA */}
           <div className={`flex-1 ${activeCategory === 'chat' ? 'overflow-hidden' : 'overflow-y-auto'} ${
             activeCategory === 'chat' ? 'p-0' :
-            activeCategory === 'ground-transport' ? 'p-0 pt-2 sm:pt-4' :
-            'px-4 sm:px-6 lg:px-8 pt-6 pb-8'
+            activeCategory === 'ground-transport' ? 'p-0 pt-4 sm:pt-4' :
+            'px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-8'
           }`}>
 
           {/* Transition Loader - Video Animation */}

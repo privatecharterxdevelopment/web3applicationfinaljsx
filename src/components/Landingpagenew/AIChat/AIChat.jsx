@@ -4375,11 +4375,11 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
   // CHAT VIEW - Messages flow from bottom like WhatsApp
   return (
-    <div className="ai-chat-page h-full flex bg-transparent overflow-hidden">
+    <div className="ai-chat-page h-full flex bg-transparent overflow-hidden relative">
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-      {/* 1. HEADER - STICKY TOP - iOS 26 Glass effect */}
-      <div className="flex-shrink-0 px-3 sm:px-6 py-2.5 bg-white/15 border-b border-white/10" style={{ backdropFilter: 'blur(50px) saturate(180%)', WebkitBackdropFilter: 'blur(50px) saturate(180%)' }}>
+      {/* 1. HEADER - FIXED TOP on mobile - iOS 26 Glass effect */}
+      <div className="flex-shrink-0 sticky top-0 z-30 px-3 sm:px-6 py-2.5 bg-white/80 sm:bg-white/15 border-b border-white/10" style={{ backdropFilter: 'blur(50px) saturate(180%)', WebkitBackdropFilter: 'blur(50px) saturate(180%)' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -5015,7 +5015,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       )}
                     </div>
 
-                      {/* Add to Cart Button - Show when AI mentions specific luxury items (cigars, wine, champagne, etc.) */}
+                      {/* Add to Cart Button - Shows ONLY when AI confirms a specific product from search results
+                          Uses actual database data from the SearchResults, not hardcoded patterns */}
                       {msg.role === 'assistant' && !msg.isLoading && !msg.action && (() => {
                         const content = msg.content || '';
                         const contentLower = content.toLowerCase();
@@ -5026,132 +5027,115 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                         // Skip if this is an "Added to cart" confirmation message
                         if (content.startsWith('✓ Added') || content.includes('to your cart')) return null;
 
-                        // Luxury item detection patterns with quantity extraction
-                        const luxuryItemPatterns = [
-                          // Cigars - specific brands with quantity
-                          { pattern: /(\d+)\s*(?:x\s*)?(?:boxes?\s*(?:of\s*)?)?(?:padron\s*1926(?:\s*serie)?|padron)/i, category: 'cigars', name: 'Padron 1926 Serie', basePrice: 850 },
-                          { pattern: /(\d+)\s*(?:x\s*)?(?:boxes?\s*(?:of\s*)?)?cohiba\s*(?:behike|esplendidos?|siglo)?/i, category: 'cigars', name: 'Cohiba Behike', basePrice: 1200 },
-                          { pattern: /(\d+)\s*(?:x\s*)?(?:boxes?\s*(?:of\s*)?)?montecristo(?:\s*no\.?\s*\d)?/i, category: 'cigars', name: 'Montecristo No. 2', basePrice: 600 },
-                          { pattern: /(\d+)\s*(?:x\s*)?(?:boxes?\s*(?:of\s*)?)?davidoff/i, category: 'cigars', name: 'Davidoff', basePrice: 800 },
-                          { pattern: /(\d+)\s*(?:x\s*)?(?:boxes?\s*(?:of\s*)?)?arturo\s*fuente/i, category: 'cigars', name: 'Arturo Fuente', basePrice: 500 },
-                          { pattern: /(\d+)\s*(?:x\s*)?(?:boxes?\s*(?:of\s*)?)?romeo\s*y\s*julieta/i, category: 'cigars', name: 'Romeo y Julieta', basePrice: 400 },
-                          { pattern: /(\d+)\s*(?:x\s*)?(?:boxes?\s*(?:of\s*)?)?partagas/i, category: 'cigars', name: 'Partagas', basePrice: 500 },
-                          // Generic cigar mentions
-                          { pattern: /(\d+)\s*(?:premium\s*)?cigars?/i, category: 'cigars', name: 'Premium Cigars', basePrice: 500 },
+                        // Only show Add to Cart if AI is confirming/recommending a specific product
+                        // Look for confirmation phrases like "excellent choice", "I'll add", "here's the", "you've selected"
+                        const isProductConfirmation =
+                          contentLower.includes('excellent choice') ||
+                          contentLower.includes('great choice') ||
+                          contentLower.includes('perfect choice') ||
+                          contentLower.includes('you\'ve selected') ||
+                          contentLower.includes('you have selected') ||
+                          contentLower.includes('here\'s the') ||
+                          contentLower.includes('here is the') ||
+                          contentLower.includes('i\'ll prepare') ||
+                          contentLower.includes('ready to add') ||
+                          contentLower.includes('for your order') ||
+                          contentLower.includes('adding to your') ||
+                          (contentLower.includes('$') && (contentLower.includes('would you like') || contentLower.includes('shall i add')));
 
-                          // Champagne
-                          { pattern: /(\d+)\s*(?:bottles?\s*(?:of\s*)?)?dom\s*p[eé]rignon/i, category: 'champagne', name: 'Dom Pérignon', basePrice: 300 },
-                          { pattern: /(\d+)\s*(?:bottles?\s*(?:of\s*)?)?krug(?:\s*grande\s*cuv[eé]e)?/i, category: 'champagne', name: 'Krug Grande Cuvée', basePrice: 280 },
-                          { pattern: /(\d+)\s*(?:bottles?\s*(?:of\s*)?)?cristal(?:\s*louis\s*roederer)?/i, category: 'champagne', name: 'Louis Roederer Cristal', basePrice: 350 },
-                          { pattern: /(\d+)\s*(?:bottles?\s*(?:of\s*)?)?veuve\s*clicquot/i, category: 'champagne', name: 'Veuve Clicquot', basePrice: 80 },
-                          { pattern: /(\d+)\s*(?:bottles?\s*(?:of\s*)?)?mo[eë]t(?:\s*&\s*chandon)?/i, category: 'champagne', name: 'Moët & Chandon', basePrice: 70 },
+                        if (!isProductConfirmation) return null;
 
-                          // Wine
-                          { pattern: /(\d+)\s*(?:bottles?\s*(?:of\s*)?)?(?:chateau\s*)?petrus/i, category: 'wine', name: 'Château Pétrus', basePrice: 3500 },
-                          { pattern: /(\d+)\s*(?:bottles?\s*(?:of\s*)?)?(?:chateau\s*)?margaux/i, category: 'wine', name: 'Château Margaux', basePrice: 800 },
-                          { pattern: /(\d+)\s*(?:bottles?\s*(?:of\s*)?)?(?:chateau\s*)?lafite/i, category: 'wine', name: 'Château Lafite Rothschild', basePrice: 1200 },
-                          { pattern: /(\d+)\s*(?:bottles?\s*(?:of\s*)?)?opus\s*one/i, category: 'wine', name: 'Opus One', basePrice: 450 },
-                          { pattern: /(\d+)\s*(?:bottles?\s*(?:of\s*)?)?screaming\s*eagle/i, category: 'wine', name: 'Screaming Eagle', basePrice: 4000 },
-
-                          // Caviar
-                          { pattern: /(\d+)\s*(?:g(?:rams?)?\s*(?:of\s*)?|tins?\s*(?:of\s*)?)?beluga\s*caviar/i, category: 'caviar', name: 'Beluga Caviar', basePrice: 500 },
-                          { pattern: /(\d+)\s*(?:g(?:rams?)?\s*(?:of\s*)?|tins?\s*(?:of\s*)?)?oscietra\s*caviar/i, category: 'caviar', name: 'Oscietra Caviar', basePrice: 350 },
-                          { pattern: /(\d+)\s*(?:g(?:rams?)?\s*(?:of\s*)?|tins?\s*(?:of\s*)?)?sevruga\s*caviar/i, category: 'caviar', name: 'Sevruga Caviar', basePrice: 280 },
-
-                          // Flowers
-                          { pattern: /(\d+)\s*(?:bouquets?\s*(?:of\s*)?)?(?:red\s*)?roses?/i, category: 'flowers', name: 'Premium Rose Bouquet', basePrice: 200 },
-                          { pattern: /(\d+)\s*(?:arrangements?\s*(?:of\s*)?)?(?:luxury\s*)?(?:floral\s*)?flowers?/i, category: 'flowers', name: 'Luxury Floral Arrangement', basePrice: 300 },
-                        ];
-
-                        // Find matching luxury item
-                        let matchedItem = null;
-                        for (const itemDef of luxuryItemPatterns) {
-                          const match = content.match(itemDef.pattern);
-                          if (match) {
-                            const quantity = parseInt(match[1]) || 1;
-                            matchedItem = {
-                              ...itemDef,
-                              quantity,
-                              totalPrice: itemDef.basePrice * quantity
-                            };
+                        // Find the most recent search results from previous messages
+                        const previousMessages = currentChat?.messages?.slice(0, idx) || [];
+                        let latestResults = null;
+                        for (let i = previousMessages.length - 1; i >= 0; i--) {
+                          if (previousMessages[i].role === 'results' && previousMessages[i].tabs) {
+                            latestResults = previousMessages[i].tabs;
                             break;
                           }
                         }
 
-                        // Also check for generic luxury item keywords without quantity
-                        if (!matchedItem) {
-                          const genericPatterns = [
-                            { keywords: ['cohiba', 'behike'], category: 'cigars', name: 'Cohiba Behike', basePrice: 1200 },
-                            { keywords: ['montecristo'], category: 'cigars', name: 'Montecristo No. 2', basePrice: 600 },
-                            { keywords: ['padron', '1926'], category: 'cigars', name: 'Padron 1926 Serie', basePrice: 850 },
-                            { keywords: ['dom perignon', 'dom pérignon'], category: 'champagne', name: 'Dom Pérignon', basePrice: 300 },
-                            { keywords: ['krug'], category: 'champagne', name: 'Krug Grande Cuvée', basePrice: 280 },
-                            { keywords: ['cristal'], category: 'champagne', name: 'Louis Roederer Cristal', basePrice: 350 },
-                            { keywords: ['beluga caviar'], category: 'caviar', name: 'Beluga Caviar', basePrice: 500 },
-                          ];
+                        if (!latestResults || latestResults.length === 0) return null;
 
-                          for (const gp of genericPatterns) {
-                            const hasKeyword = gp.keywords.some(kw => contentLower.includes(kw));
-                            if (hasKeyword) {
-                              matchedItem = {
-                                ...gp,
-                                quantity: 1,
-                                totalPrice: gp.basePrice
-                              };
-                              break;
+                        // Get all items from search results (cigars, delicatesse, wines, etc.)
+                        const allItems = latestResults.flatMap(tab => tab.items || []);
+                        if (allItems.length === 0) return null;
+
+                        // Find the product mentioned in the AI message by matching names
+                        let matchedProduct = null;
+                        let bestMatchScore = 0;
+
+                        for (const item of allItems) {
+                          const itemName = (item.name || item.displayTitle || '').toLowerCase();
+                          const itemBrand = (item.brand || '').toLowerCase();
+                          const fullName = `${itemBrand} ${itemName}`.trim();
+
+                          // Check if item name appears in the AI message
+                          if (itemName && contentLower.includes(itemName)) {
+                            const score = itemName.length; // Longer matches are more specific
+                            if (score > bestMatchScore) {
+                              bestMatchScore = score;
+                              matchedProduct = item;
+                            }
+                          }
+                          // Also check brand + name combination
+                          if (fullName && contentLower.includes(fullName)) {
+                            const score = fullName.length + 10; // Bonus for full name match
+                            if (score > bestMatchScore) {
+                              bestMatchScore = score;
+                              matchedProduct = item;
                             }
                           }
                         }
 
-                        if (!matchedItem) return null;
+                        // If no match found, don't show button
+                        if (!matchedProduct) return null;
+
+                        // Get product details from database
+                        const productName = matchedProduct.displayTitle || matchedProduct.name || 'Product';
+                        const productPrice = matchedProduct.price || matchedProduct.unitPrice || matchedProduct.basePrice || 0;
+                        const productType = matchedProduct.type || 'custom_extra';
+                        const productCategory = matchedProduct.category || productType;
+                        const isCigar = productType === 'cigars' || productCategory === 'cigars';
 
                         // Get emoji for category
                         const categoryEmoji = {
                           cigars: '🚬',
                           champagne: '🍾',
                           wine: '🍷',
+                          wines: '🍷',
                           caviar: '🥄',
                           flowers: '💐',
-                          spirits: '🥃'
+                          spirits: '🥃',
+                          delicatesse: '🍽️'
                         };
 
                         return (
                           <div className="mt-3 pt-3 border-t border-gray-200/50">
                             <div className="flex items-center gap-2 mb-2">
-                              <span className="text-lg">{categoryEmoji[matchedItem.category] || '✨'}</span>
-                              <span className="text-xs text-gray-500">
-                                {matchedItem.quantity > 1 ? `${matchedItem.quantity}x ` : ''}{matchedItem.name}
-                                {matchedItem.category === 'cigars' && <span className="text-orange-500 ml-1">(+$2,000 cleaning)</span>}
+                              <span className="text-lg">{categoryEmoji[productCategory] || categoryEmoji[productType] || '✨'}</span>
+                              <span className="text-sm font-medium text-gray-700">
+                                {productName}
                               </span>
-                              <span className="text-xs font-medium text-gray-700">
-                                ~${matchedItem.totalPrice.toLocaleString()}
+                              <span className="text-sm font-bold text-gray-900">
+                                ${productPrice.toLocaleString()}
                               </span>
+                              {isCigar && <span className="text-xs text-orange-500">(+$2,000 cleaning)</span>}
                             </div>
                             <button
                               onClick={() => {
+                                // Use actual database product data
                                 const cartItem = {
-                                  id: `extra-${Date.now()}`,
+                                  ...matchedProduct,
                                   cartId: Date.now(),
-                                  type: 'custom_extra',
-                                  name: matchedItem.name,
-                                  category: matchedItem.category,
-                                  quantity: matchedItem.quantity,
-                                  unitPrice: matchedItem.basePrice,
-                                  price: matchedItem.totalPrice,
-                                  basePrice: matchedItem.totalPrice,
-                                  totalWithFee: matchedItem.category === 'cigars'
-                                    ? matchedItem.totalPrice + 2000
-                                    : matchedItem.totalPrice,
-                                  isEstimate: true,
-                                  isCustomRequest: true,
-                                  requiresConfirmation: true,
                                   addedAt: new Date().toISOString(),
-                                  notes: `${matchedItem.category} - availability to be confirmed`
+                                  price: productPrice,
+                                  basePrice: productPrice,
+                                  totalWithFee: isCigar ? productPrice + 2000 : productPrice
                                 };
 
                                 // Add cleaning fee for cigars
-                                if (matchedItem.category === 'cigars') {
-                                  // Check if cleaning fee already in cart
+                                if (isCigar) {
                                   const hasCleaningFee = cartItems.some(item =>
                                     item.type === 'service_fee' && item.linkedTo === 'cigars'
                                   );
@@ -5177,20 +5161,20 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                   setCartItems(prev => [...prev, cartItem]);
                                 }
 
-                                setToast({ message: `Added ${matchedItem.name} to cart`, type: 'success' });
+                                setToast({ message: `Added ${productName} to cart`, type: 'success' });
                                 setChatHistory(prev => prev.map(c =>
                                   c.id === activeChat
                                     ? {
                                         ...c,
                                         messages: [...c.messages, {
                                           role: 'assistant',
-                                          content: `✓ Added ${matchedItem.quantity > 1 ? matchedItem.quantity + 'x ' : ''}${matchedItem.name} to your cart${matchedItem.category === 'cigars' ? ' (including $2,000 aircraft cleaning fee)' : ''}. You can review it in your cart before checkout.`
+                                          content: `✓ Added ${productName} to your cart${isCigar ? ' (including $2,000 aircraft cleaning fee)' : ''}. You can review it in your cart before checkout.`
                                         }]
                                       }
                                     : c
                                 ));
                               }}
-                              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-xl transition-all duration-200 flex items-center gap-2 border border-gray-200"
+                              className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium rounded-xl transition-all duration-200 flex items-center gap-2"
                             >
                               <ShoppingCart size={14} />
                               Add to Cart
@@ -5383,8 +5367,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         </div>
       </div>
 
-      {/* 3. INPUT - STICKY AT BOTTOM - Less padding on mobile */}
-      <div className="flex-shrink-0 px-4 sm:px-6 pb-4 sm:pb-6 pt-3 sm:pt-4">
+      {/* 3. INPUT - FIXED AT BOTTOM on mobile - Less padding on mobile */}
+      <div className="flex-shrink-0 sticky bottom-0 z-30 px-4 sm:px-6 pb-4 sm:pb-6 pt-3 sm:pt-4 bg-gradient-to-t from-white via-white/95 to-transparent sm:bg-transparent">
         <div className="max-w-3xl mx-auto">
           {/* Message Limit Reached (20 messages per chat) */}
           {messageLimitReached ? (

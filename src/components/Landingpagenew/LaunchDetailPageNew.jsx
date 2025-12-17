@@ -106,12 +106,12 @@ export default function LaunchDetailPageNew({ launch, onBack }) {
 
   return (
     <div className="w-full min-h-screen bg-transparent" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 pb-6">
 
-        {/* Back Button */}
+        {/* Back Button - Added top margin on mobile for header clearance */}
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 sm:mb-6 transition-colors group"
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 sm:mb-6 mt-2 sm:mt-0 transition-colors group"
         >
           <ArrowLeft size={18} className="group-hover:-translate-x-0.5 transition-transform" />
           <span className="text-sm">Back to Launchpad</span>

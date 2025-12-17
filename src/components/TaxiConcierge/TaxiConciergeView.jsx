@@ -1263,13 +1263,15 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
         if (user) {
           console.log('Attempting to save ground transportation request for user:', user.id);
 
-          // Calculate price breakdown
-          const basePrice = priceRange.min || 0;
+          // Calculate price breakdown - parse price strings to numbers
+          const basePriceMin = parseFloat(priceRange.min) || 0;
+          const basePriceMax = parseFloat(priceRange.max) || 0;
+          const basePrice = basePriceMin; // Use min for calculations
           const platformFeePercent = 2.5;
           const platformFee = Math.round(basePrice * (platformFeePercent / 100));
           const vatPercent = 8.1; // Swiss VAT
           const vatAmount = Math.round(basePrice * (vatPercent / 100));
-          const totalPrice = basePrice + platformFee + vatAmount;
+          const totalPrice = Math.round(basePrice + platformFee + vatAmount);
 
           // Create request in user_requests table - DIRECT INSERT
           const { data: insertedData, error: dbError } = await supabase
@@ -1293,16 +1295,16 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                 // Route details
                 distance: distance,
                 eta: eta,
-                // Full price breakdown
-                base_price: basePrice,
+                // Full price breakdown - store as numbers
+                base_price: Math.round(basePrice),
                 platform_fee: platformFee,
                 platform_fee_percent: platformFeePercent,
                 vat_amount: vatAmount,
                 vat_percent: vatPercent,
                 total_price: totalPrice,
                 priceRange: `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`,
-                priceMin: priceRange.min,
-                priceMax: priceRange.max,
+                priceMin: basePriceMin,
+                priceMax: basePriceMax,
                 currency: selectedCurrency,
                 // Booking details
                 pickupDate: pickupDate,
@@ -1435,7 +1437,9 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
     // Show success modal after a brief delay
     setTimeout(() => {
       setIsSubmitting(false);
-      // Save booking data for success modal
+      // Save booking data for success modal - parse prices to numbers for display
+      const parsedMinPrice = parseFloat(priceRange.min) || 0;
+      const parsedMaxPrice = parseFloat(priceRange.max) || 0;
       setSuccessData({
         from: locationA,
         to: locationB,
@@ -1444,8 +1448,8 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
         passengers: passengers,
         vehicleName: carToUse.name,
         vehicleClass: carToUse.class || carToUse.category || 'Business',
-        priceMin: priceRange.min,
-        priceMax: priceRange.max,
+        priceMin: parsedMinPrice.toFixed(2),
+        priceMax: parsedMaxPrice.toFixed(2),
         currency: selectedCurrency,
         distance: distance,
         isZurichBooking: isZurichBooking
@@ -1481,6 +1485,8 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
     // Show success modal immediately
     if (selectedCar) {
       const priceRange = calculatePrice(selectedCar);
+      const parsedMinPrice = parseFloat(priceRange.min) || 0;
+      const parsedMaxPrice = parseFloat(priceRange.max) || 0;
       setSuccessData({
         from: locationA,
         to: locationB,
@@ -1489,8 +1495,8 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
         passengers: passengers,
         vehicleName: selectedCar.name,
         vehicleClass: selectedCar.class || selectedCar.category || 'Business',
-        priceMin: priceRange.min,
-        priceMax: priceRange.max,
+        priceMin: parsedMinPrice.toFixed(2),
+        priceMax: parsedMaxPrice.toFixed(2),
         currency: selectedCurrency,
         distance: distance,
         isZurichBooking: isZurichBooking

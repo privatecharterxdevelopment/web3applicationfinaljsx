@@ -62,12 +62,12 @@ export default function LaunchpadPageNew() {
 
   return (
     <div className="w-full min-h-screen bg-transparent" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-6 pb-8">
 
         {/* Header Section */}
         <div className="mb-6">
           {/* Title and Description */}
-          <div className="mb-4">
+          <div className="mb-4 mt-2 sm:mt-0">
             <h1 className="text-xl sm:text-2xl font-medium text-gray-900 mb-1">Security Token Offerings</h1>
             <p className="text-xs sm:text-sm text-gray-500">SEC-regulated investments via our licensed U.S. partner (Reg D, Reg C, Reg CF)</p>
           </div>

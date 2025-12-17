@@ -442,7 +442,12 @@ export async function generateBookingConfirmationPDF(booking, options = {}) {
   doc.setTextColor(COLORS.black);
   doc.text(serviceTitle, boxLeft, y);
 
-  const route = `${booking.departure_location || serviceDetails.from || ''} → ${booking.arrival_location || serviceDetails.to || ''}`.trim();
+  // Build route from available fields - prefer named locations over IATA codes
+  const fromLocation = booking.departure_location || booking.origin || serviceDetails.from || '';
+  const toLocation = booking.arrival_location || booking.destination || serviceDetails.to || '';
+  // Clean up any strange characters from location strings
+  const cleanLocation = (loc) => loc ? loc.replace(/[!']/g, '').trim() : '';
+  const route = `${cleanLocation(fromLocation)} → ${cleanLocation(toLocation)}`.trim();
   if (route && route !== ' → ') {
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
