@@ -61,6 +61,8 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
   const [selectedBrand, setSelectedBrand] = useState('all');
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [isModalExpanded, setIsModalExpanded] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successData, setSuccessData] = useState(null);
 
   // Country-based pricing configuration with local currencies
   // Switzerland: CHF, Eurozone: EUR, USA: USD, Thailand: THB, Others: USD (on request)
@@ -431,8 +433,31 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                   const countryName = countryContext.text;
                   console.log('Detected country:', countryName);
 
-                  // All countries now default to USD
-                  const detectedCurrency = 'USD';
+                  // Set currency based on country:
+                  // Switzerland = CHF, Europe = EUR, Thailand = THB, USA/UAE/Asia = USD
+                  let detectedCurrency = 'USD'; // Default
+                  const countryLower = countryName.toLowerCase();
+
+                  if (countryLower.includes('switzerland') || countryLower.includes('schweiz') ||
+                      countryLower.includes('suisse') || countryLower.includes('svizzera')) {
+                    detectedCurrency = 'CHF';
+                  } else if (countryLower.includes('thailand') || countryLower.includes('ไทย')) {
+                    detectedCurrency = 'THB';
+                  } else if (
+                    countryLower.includes('germany') || countryLower.includes('deutschland') ||
+                    countryLower.includes('france') || countryLower.includes('italy') || countryLower.includes('italia') ||
+                    countryLower.includes('spain') || countryLower.includes('españa') ||
+                    countryLower.includes('portugal') || countryLower.includes('netherlands') ||
+                    countryLower.includes('belgium') || countryLower.includes('austria') || countryLower.includes('österreich') ||
+                    countryLower.includes('greece') || countryLower.includes('ireland') || countryLower.includes('bulgaria') ||
+                    countryLower.includes('poland') || countryLower.includes('czech') || countryLower.includes('hungary') ||
+                    countryLower.includes('romania') || countryLower.includes('croatia') || countryLower.includes('slovakia') ||
+                    countryLower.includes('slovenia') || countryLower.includes('finland') || countryLower.includes('luxembourg')
+                  ) {
+                    detectedCurrency = 'EUR';
+                  }
+                  // USA, UAE, Asian countries = USD (default)
+
                   setSelectedCurrency(detectedCurrency);
                   console.log(`Auto-selected currency: ${detectedCurrency} for ${countryName}`);
                 }
@@ -980,10 +1005,8 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
       setIsSwissBooking(pickupInZurich); // Now means "Zurich booking" for direct booking
       setIsZurichBooking(pickupInZurich); // Direct booking only from Zurich
 
-      // Disable "Book Now" if pickup is not in Zurich
-      if (!pickupInZurich && bookNow) {
-        setBookNow(false);
-      }
+      // Book Now is disabled - always require 2h advance booking
+      // (keeping setBookNow(false) for safety)
 
       // Detect country and set pricing with regional currencies
       const country = detectCountryFromFeature(featureA) || detectCountryFromFeature(featureB);
@@ -1193,7 +1216,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
       alert('Please select locations and a car type');
       return;
     }
-    if (!bookNow && (!pickupDate || !pickupTime)) {
+    if (!pickupDate || !pickupTime) {
       alert('Please select pickup date and time');
       return;
     }
@@ -1212,8 +1235,8 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
       distance: serviceCategory !== 'luxury-cars' ? distance : undefined,
       eta: serviceCategory !== 'luxury-cars' ? eta : undefined,
       priceRange: `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`,
-      pickupDate: bookNow ? 'Now' : pickupDate,
-      pickupTime: bookNow ? 'Now' : pickupTime,
+      pickupDate: pickupDate,
+      pickupTime: pickupTime,
       returnDate: serviceCategory === 'luxury-cars' ? returnDate : undefined,
       returnTime: serviceCategory === 'luxury-cars' ? returnTime : undefined,
       deliveryAddress: serviceCategory === 'luxury-cars' ? deliveryAddress : undefined,
@@ -1282,10 +1305,10 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                 priceMax: priceRange.max,
                 currency: selectedCurrency,
                 // Booking details
-                pickupDate: bookNow ? 'Now' : pickupDate,
-                pickupTime: bookNow ? 'Now' : pickupTime,
+                pickupDate: pickupDate,
+                pickupTime: pickupTime,
                 passengers: passengers,
-                bookNow: bookNow,
+                bookNow: false, // Instant booking disabled - 2h minimum required
                 // Extra info
                 extraNotes: extraNotes,
                 isSwissBooking: isSwissBooking,
@@ -1317,12 +1340,17 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                 data: {
                   from: locationA,
                   to: locationB,
-                  pickupDate: bookNow ? 'Now' : pickupDate,
-                  pickupTime: bookNow ? 'Now' : pickupTime,
+                  pickupDate: pickupDate,
+                  pickupTime: pickupTime,
                   passengers: passengers,
                   carName: carToUse.name,
-                  total: totalPrice,
-                  currency: selectedCurrency
+                  vehicleClass: carToUse.class || carToUse.category || 'Business',
+                  total: priceRange.max, // Use max price for PDF
+                  priceMin: priceRange.min,
+                  priceMax: priceRange.max,
+                  currency: selectedCurrency,
+                  distance: distance,
+                  eta: eta
                 }
               };
 
@@ -1356,12 +1384,16 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                       details: {
                         from: locationA,
                         to: locationB,
-                        date: bookNow ? 'Now' : pickupDate,
-                        time: bookNow ? 'Now' : pickupTime,
+                        date: pickupDate,
+                        time: pickupTime,
                         passengers: passengers,
                         service_type: 'Ground Transport',
-                        price: totalPrice,
-                        currency: selectedCurrency
+                        vehicleClass: carToUse.class || carToUse.category || 'Business',
+                        vehicleName: carToUse.name,
+                        price: priceRange.max,
+                        priceRange: `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`,
+                        currency: selectedCurrency,
+                        distance: distance
                       }
                     },
                     pdfBase64: base64,
@@ -1400,52 +1432,75 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
 
     saveRequest();
 
-    // Simulate confirmation wait (in real app, this would be WebSocket/API polling)
+    // Show success modal after a brief delay
     setTimeout(() => {
       setIsSubmitting(false);
-      setShowNotification(true);
-
-      if (isZurichBooking) {
-        setNotificationMessage('Your ride is confirmed! Driver will arrive at the scheduled time.');
-      } else {
-        setNotificationMessage('Quote request submitted! Our team will contact you within 24 hours with pricing.');
-      }
-
-      // Auto-hide notification after 3 seconds, then redirect to dashboard
+      // Save booking data for success modal
+      setSuccessData({
+        from: locationA,
+        to: locationB,
+        date: pickupDate,
+        time: pickupTime,
+        passengers: passengers,
+        vehicleName: carToUse.name,
+        vehicleClass: carToUse.class || carToUse.category || 'Business',
+        priceMin: priceRange.min,
+        priceMax: priceRange.max,
+        currency: selectedCurrency,
+        distance: distance,
+        isZurichBooking: isZurichBooking
+      });
+      setShowSuccessModal(true);
+      // Redirect to dashboard after short delay
       setTimeout(() => {
-        setShowNotification(false);
-        // Reset form
-        setLocationA('');
-        setLocationB('');
-        setCoordsA(null);
-        setCoordsB(null);
-        setSelectedCar(null);
-        setPickupDate('');
-        setPickupTime('');
-        setExtraNotes('');
-        // Redirect to dashboard overview
-        navigate('/dashboard');
+        handleSuccessModalClose();
       }, 3000);
-    }, 3000);
+    }, 2000);
+  };
+
+  // Handle success modal close and redirect
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    setSuccessData(null);
+    // Reset form
+    setLocationA('');
+    setLocationB('');
+    setCoordsA(null);
+    setCoordsB(null);
+    setSelectedCar(null);
+    setPickupDate('');
+    setPickupTime('');
+    setExtraNotes('');
+    setBookingStep(1);
+    // Redirect to dashboard overview
+    navigate('/dashboard');
   };
 
   const skipLoader = () => {
     setIsSubmitting(false);
-    setShowNotification(true);
-    setNotificationMessage('Your ride request has been submitted! You will be notified when a driver confirms.');
-    setTimeout(() => {
-      setShowNotification(false);
-      setLocationA('');
-      setLocationB('');
-      setCoordsA(null);
-      setCoordsB(null);
-      setSelectedCar(null);
-      setPickupDate('');
-      setPickupTime('');
-      setExtraNotes('');
-      // Redirect to dashboard overview
-      navigate('/dashboard');
-    }, 3000);
+    // Show success modal immediately
+    if (selectedCar) {
+      const priceRange = calculatePrice(selectedCar);
+      setSuccessData({
+        from: locationA,
+        to: locationB,
+        date: pickupDate,
+        time: pickupTime,
+        passengers: passengers,
+        vehicleName: selectedCar.name,
+        vehicleClass: selectedCar.class || selectedCar.category || 'Business',
+        priceMin: priceRange.min,
+        priceMax: priceRange.max,
+        currency: selectedCurrency,
+        distance: distance,
+        isZurichBooking: isZurichBooking
+      });
+      setShowSuccessModal(true);
+      // Redirect to dashboard after short delay
+      setTimeout(() => {
+        handleSuccessModalClose();
+      }, 3000);
+    }
   };
 
   return (
@@ -1782,7 +1837,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-600">Pickup Time:</span>
                           <span className="text-sm font-semibold text-gray-800">
-                            {bookNow ? 'Now' : `${pickupDate} at ${pickupTime}`}
+                            {pickupDate && pickupTime ? `${pickupDate} at ${pickupTime}` : 'Not set'}
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
@@ -1914,7 +1969,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                               <div className="text-xs text-gray-600 mt-1 truncate">
                                 {serviceCategory === 'luxury-cars'
                                   ? `${car.seats} seats - ${car.location || locationA}`
-                                  : `${car.seats} seats - ${distance} km - ${bookNow ? 'Now' : pickupTime}`
+                                  : `${car.seats} seats - ${distance} km - ${pickupTime || 'Time TBD'}`
                                 }
                               </div>
                             </div>
@@ -1995,47 +2050,23 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
               </button>
             </div>
 
-            {/* Book Now Toggle - Only available in Switzerland and NOT for luxury cars */}
-            {serviceCategory !== 'luxury-cars' && isSwissBooking ? (
-              <div className="mb-4 p-3 bg-gray-50 rounded-xl">
-                <label className="flex items-center justify-between cursor-pointer">
-                  <div>
-                    <span className="text-sm font-semibold text-gray-800">Book for now</span>
-                    <p className="text-xs text-gray-600 mt-0.5">Instant booking available in Switzerland</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={bookNow}
-                    onChange={(e) => {
-                      setBookNow(e.target.checked);
-                      if (e.target.checked) {
-                        setPickupDate('');
-                        setPickupTime('');
-                      }
-                    }}
-                    className="w-12 h-6 rounded-full appearance-none bg-gray-300 checked:bg-black relative cursor-pointer transition-colors
-                      after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform
-                      checked:after:translate-x-6"
-                  />
-                </label>
-              </div>
-            ) : serviceCategory !== 'luxury-cars' ? (
+            {/* Advance Booking Notice - 2h minimum for all locations */}
+            {serviceCategory !== 'luxury-cars' && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
                 <div className="flex items-start gap-2">
                   <Clock size={14} className="text-blue-600 mt-0.5" />
                   <div>
                     <p className="text-sm font-semibold text-blue-900">Advance Booking Required</p>
                     <p className="text-xs text-blue-700 mt-0.5">
-                      Instant booking is only available in Switzerland. Please schedule at least 30 minutes in advance.
+                      Please schedule at least 2 hours in advance for all bookings.
                     </p>
                   </div>
                 </div>
               </div>
-            ) : null}
+            )}
 
             {/* Date and Time Pickers - Different for luxury cars */}
-            {!bookNow && (
-              <div className="mb-4 space-y-4">
+            <div className="mb-4 space-y-4">
                 {/* Pickup/Rental Start Date & Time */}
                 <div>
                   <label className="block text-sm font-medium text-gray-800 mb-2">
@@ -2059,8 +2090,8 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                       <label className="block text-xs font-medium text-gray-600 mb-1.5">
                         <Clock size={12} className="inline mr-1" />
                         Time
-                        {serviceCategory !== 'luxury-cars' && !isSwissBooking && (
-                          <span className="ml-1 text-[10px] text-blue-600 font-normal">(min. 30min)</span>
+                        {serviceCategory !== 'luxury-cars' && (
+                          <span className="ml-1 text-[10px] text-blue-600 font-normal">(min. 2h)</span>
                         )}
                       </label>
                       <input
@@ -2127,7 +2158,6 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                   </div>
                 )}
               </div>
-            )}
 
             {/* Number of Passengers */}
             <div className="mb-5">
@@ -2156,8 +2186,8 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
             <button
               onClick={() => {
                 // Validation for pickup date/time
-                if (!bookNow && (!pickupDate || !pickupTime)) {
-                  alert('Please select rental start date and time');
+                if (!pickupDate || !pickupTime) {
+                  alert('Please select pickup date and time');
                   return;
                 }
 
@@ -2183,14 +2213,14 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                   }
                 }
 
-                // Validate 30-minute minimum for non-Switzerland bookings (taxi/concierge only)
-                if (serviceCategory !== 'luxury-cars' && !isSwissBooking && !bookNow) {
+                // Validate 2-hour minimum for all taxi/concierge bookings
+                if (serviceCategory !== 'luxury-cars') {
                   const selectedDateTime = new Date(`${pickupDate}T${pickupTime}`);
                   const now = new Date();
-                  const minTime = new Date(now.getTime() + 30 * 60000); // 30 minutes from now
+                  const minTime = new Date(now.getTime() + 2 * 60 * 60000); // 2 hours from now
 
                   if (selectedDateTime < minTime) {
-                    alert('Please schedule at least 30 minutes in advance for locations outside Switzerland.');
+                    alert('Please schedule at least 2 hours in advance.');
                     return;
                   }
                 }
@@ -2451,7 +2481,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
             passengers,
             pickupDate,
             pickupTime,
-            bookNow,
+            bookNow: false, // Instant booking disabled
             currency: selectedCurrency
           }}
           onClose={() => setShowPaymentPage(false)}
@@ -2459,15 +2489,54 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
         />
       )}
 
-      {/* Success Notification - Monochromatic Style */}
-      {showNotification && (
-        <div className="fixed top-4 right-4 z-50 bg-gray-900 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-slideIn border border-gray-700">
-          <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center flex-shrink-0">
-            <Check className="w-4 h-4 text-gray-900" />
-          </div>
-          <div>
-            <h4 className="font-semibold text-white">Request Submitted!</h4>
-            <p className="text-sm text-gray-300">{notificationMessage}</p>
+      {/* Success Popup - Small Centered */}
+      {showSuccessModal && successData && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-sm w-full shadow-xl animate-fadeInUp p-5">
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <Check className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Request Submitted!</h3>
+                <p className="text-xs text-gray-500">Confirmation sent to your email</p>
+              </div>
+            </div>
+
+            {/* Booking Summary */}
+            <div className="bg-gray-50 rounded-lg p-3 mb-4 text-sm space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Route</span>
+                <span className="text-gray-800 font-medium text-right max-w-[180px] truncate">{successData.from} → {successData.to}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Date</span>
+                <span className="text-gray-800 font-medium">{successData.date} at {successData.time}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Vehicle</span>
+                <span className="text-gray-800 font-medium">{successData.vehicleName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Class</span>
+                <span className="text-gray-800 font-medium">{successData.vehicleClass}</span>
+              </div>
+              <div className="flex justify-between pt-2 border-t border-gray-200">
+                <span className="text-gray-700 font-medium">Price Range</span>
+                <span className="text-gray-900 font-bold">
+                  {formatPrice(successData.priceMin)} - {formatPrice(successData.priceMax)}
+                </span>
+              </div>
+            </div>
+
+            {/* Button */}
+            <button
+              onClick={handleSuccessModalClose}
+              className="w-full py-2.5 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors text-sm"
+            >
+              Go to Dashboard
+            </button>
           </div>
         </div>
       )}

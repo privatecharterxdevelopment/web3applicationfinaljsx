@@ -371,8 +371,13 @@ function AppContent() {
               {/* Dashboard with specific chat session - allows direct linking to chats */}
               <Route path="/dashboard/chat/:chatId" element={<TokenizedAssetsGlassmorphic />} />
 
-              {/* Ground Transport / Transfer booking */}
+              {/* Service category routes */}
+              <Route path="/dashboard/jets" element={<TokenizedAssetsGlassmorphic />} />
+              <Route path="/dashboard/helis" element={<TokenizedAssetsGlassmorphic />} />
+              <Route path="/dashboard/empty-legs" element={<TokenizedAssetsGlassmorphic />} />
+              <Route path="/dashboard/ground-transport" element={<TokenizedAssetsGlassmorphic />} />
               <Route path="/dashboard/transfer" element={<Navigate to="/dashboard?tab=ground-transport" replace />} />
+              <Route path="/ground-transport" element={<Navigate to="/dashboard/ground-transport" replace />} />
 
               {/* User Overview Dashboard (old) */}
               <Route path="/user-overview" element={<Dashboard />} />

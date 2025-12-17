@@ -1972,7 +1972,7 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   }, [isAuthenticated, user, activeCategory, setActiveCategory]);
 
-  // URL Sync: Handle /dashboard/chat routes
+  // URL Sync: Handle /dashboard/chat and service category routes
   // Track the last processed path to avoid re-processing the same URL
   const lastProcessedPathRef = useRef('');
 
@@ -1981,14 +1981,22 @@ const TokenizedAssetsGlassmorphic = () => {
     const isOnChatRoute = currentPath.startsWith('/dashboard/chat');
     const isExactChatRoute = currentPath === '/dashboard/chat' || currentPath === '/dashboard/chat/';
 
-    console.log('🌐 URL Sync Effect:', {
-      currentPath,
-      search: location.search,
-      isOnChatRoute,
-      isExactChatRoute,
-      lastProcessed: lastProcessedPathRef.current,
-      willSkip: lastProcessedPathRef.current === currentPath + location.search
-    });
+    // Handle service category routes: /dashboard/jets, /dashboard/helis, /dashboard/empty-legs, /dashboard/ground-transport
+    const serviceRoutes = {
+      '/dashboard/jets': 'jets',
+      '/dashboard/helis': 'helicopter',
+      '/dashboard/empty-legs': 'empty-legs',
+      '/dashboard/ground-transport': 'ground-transport'
+    };
+
+    // Check if current path matches any service route
+    for (const [route, category] of Object.entries(serviceRoutes)) {
+      if (currentPath === route || currentPath === route + '/') {
+        setActiveCategory(category);
+        setShowDashboard(true);
+        return;
+      }
+    }
 
     // Skip if we've already processed this exact path
     if (lastProcessedPathRef.current === currentPath + location.search) return;
