@@ -489,10 +489,28 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Geocoding function - Enhanced with Google Places for hotels/restaurants
+  // Geocoding function - Enhanced with Google Places for hotels/restaurants/airports
   const geocodeAddress = async (address) => {
     try {
       const searchLower = address.toLowerCase();
+
+      // Detect if this is an airport search (multiple languages)
+      const isAirportSearch = searchLower.includes('airport') ||
+                              searchLower.includes('flughafen') ||
+                              searchLower.includes('aéroport') ||
+                              searchLower.includes('aeroporto') ||
+                              searchLower.includes('aeropuerto') ||
+                              searchLower.includes('luchthaven') ||
+                              searchLower.includes('lufthavn') ||
+                              searchLower.includes('lotnisko') ||
+                              searchLower.includes('letisko') ||
+                              searchLower.includes('letiště') ||
+                              searchLower.includes('repülőtér') ||
+                              searchLower.includes('terminal') ||
+                              searchLower.includes('intl') ||
+                              searchLower.includes('international') ||
+                              // Common 3-letter airport codes
+                              /\b(jfk|lax|lhr|cdg|fra|zrh|muc|vie|ams|bcn|mad|fco|mxp|ory|lgw|stn|bhx|man|dub|bru|dus|ham|ber|txl|nce|gcn|las|sfo|ord|atl|dfw|mia|sea|bos|den|phx|iah|msp|dtw|phl|ewr|tpa|san|sju|hnl|anc|pdx|slc|sin|hkg|nrt|hnd|icn|bkk|dxb|auh|doh|ist|cph|arn|osl|hel|waw|prg|bud|svo|dme|led|pek|pvg|can|ckg|tpe|kul|mnl|sgn|han|del|bom|blr|maa|ccu|gru|gig|eze|scl|bog|mex|cun|gdl|lim|bue|rio)\b/.test(searchLower);
 
       // Detect if this is likely a POI search (hotel, restaurant, landmark)
       const isPOISearch = searchLower.includes('hotel') ||
@@ -510,18 +528,34 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                           searchLower.includes('lac') ||
                           searchLower.includes('grand') ||
                           searchLower.includes('plaza') ||
-                          searchLower.includes('resort');
+                          searchLower.includes('resort') ||
+                          searchLower.includes('kempinski') ||
+                          searchLower.includes('mandarin') ||
+                          searchLower.includes('shangri') ||
+                          searchLower.includes('peninsula') ||
+                          searchLower.includes('st. regis') ||
+                          searchLower.includes('w hotel') ||
+                          searchLower.includes('waldorf') ||
+                          searchLower.includes('intercontinental') ||
+                          searchLower.includes('sofitel') ||
+                          searchLower.includes('fairmont');
 
-      // For POI searches, use Google Places API via edge function
-      if (isPOISearch && address.length >= 3) {
+      // For airport and POI searches, use Google Places API via edge function
+      if ((isAirportSearch || isPOISearch) && address.length >= 3) {
         try {
+          // For airports, append "airport" if not already present to improve search
+          let searchQuery = address;
+          if (isAirportSearch && !searchLower.includes('airport') && !searchLower.includes('flughafen')) {
+            searchQuery = `${address} airport`;
+          }
+
           const { data: googleData, error } = await supabase.functions.invoke('google-places', {
             body: {
               action: 'searchText',
-              query: address,
+              query: searchQuery,
               maxResults: 8,
               location: userLocation ? { lat: userLocation[1], lng: userLocation[0] } : null,
-              radius: 50000
+              radius: isAirportSearch ? 100000 : 50000 // Larger radius for airports
             }
           });
 
