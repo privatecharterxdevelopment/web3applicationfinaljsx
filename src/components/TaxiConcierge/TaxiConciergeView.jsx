@@ -543,10 +543,26 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
       // For airport and POI searches, use Google Places API via edge function
       if ((isAirportSearch || isPOISearch) && address.length >= 3) {
         try {
-          // For airports, append "airport" if not already present to improve search
+          // For airports, normalize the search query for better Google Places results
           let searchQuery = address;
-          if (isAirportSearch && !searchLower.includes('airport') && !searchLower.includes('flughafen')) {
-            searchQuery = `${address} airport`;
+          if (isAirportSearch) {
+            // Replace non-English airport terms with "airport" for better Google results
+            searchQuery = searchQuery
+              .replace(/flughafen/gi, 'airport')
+              .replace(/aéroport/gi, 'airport')
+              .replace(/aeroporto/gi, 'airport')
+              .replace(/aeropuerto/gi, 'airport')
+              .replace(/luchthaven/gi, 'airport')
+              .replace(/lufthavn/gi, 'airport')
+              .replace(/lotnisko/gi, 'airport')
+              .replace(/letisko/gi, 'airport')
+              .replace(/letiště/gi, 'airport')
+              .replace(/repülőtér/gi, 'airport');
+
+            // If no "airport" keyword after replacement, add it
+            if (!searchQuery.toLowerCase().includes('airport')) {
+              searchQuery = `${searchQuery} airport`;
+            }
           }
 
           const { data: googleData, error } = await supabase.functions.invoke('google-places', {
