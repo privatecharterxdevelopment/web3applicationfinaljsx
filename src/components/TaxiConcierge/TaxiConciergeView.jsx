@@ -489,12 +489,74 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Geocoding function - Enhanced for international street names, hotels, restaurants
+  // Geocoding function - Enhanced with Google Places for hotels/restaurants
   const geocodeAddress = async (address) => {
     try {
-      // Use fuzzyMatch for better street name matching in all countries
-      // Include POI for hotels, restaurants, landmarks - Mapbox POI includes all business types
-      // Types: poi (all POIs including hotels, restaurants), poi.landmark, address, place, locality, neighborhood, postcode
+      const searchLower = address.toLowerCase();
+
+      // Detect if this is likely a POI search (hotel, restaurant, landmark)
+      const isPOISearch = searchLower.includes('hotel') ||
+                          searchLower.includes('baur') ||
+                          searchLower.includes('ritz') ||
+                          searchLower.includes('four seasons') ||
+                          searchLower.includes('hyatt') ||
+                          searchLower.includes('marriott') ||
+                          searchLower.includes('hilton') ||
+                          searchLower.includes('restaurant') ||
+                          searchLower.includes('cafe') ||
+                          searchLower.includes('bar') ||
+                          searchLower.includes('bistro') ||
+                          searchLower.includes('palace') ||
+                          searchLower.includes('lac') ||
+                          searchLower.includes('grand') ||
+                          searchLower.includes('plaza') ||
+                          searchLower.includes('resort');
+
+      // For POI searches, use Google Places API via edge function
+      if (isPOISearch && address.length >= 3) {
+        try {
+          const { data: googleData, error } = await supabase.functions.invoke('google-places', {
+            body: {
+              action: 'searchText',
+              query: address,
+              maxResults: 8,
+              location: userLocation ? { lat: userLocation[1], lng: userLocation[0] } : null,
+              radius: 50000
+            }
+          });
+
+          if (!error && googleData?.places && googleData.places.length > 0) {
+            // Transform Google Places results to Mapbox-like format for compatibility
+            const googleFeatures = googleData.places.map(place => ({
+              id: place.id,
+              place_type: ['poi'],
+              text: place.name,
+              place_name: `${place.name}, ${place.address}`,
+              center: place.location ? [place.location.lng, place.location.lat] : null,
+              geometry: place.location ? {
+                type: 'Point',
+                coordinates: [place.location.lng, place.location.lat]
+              } : null,
+              properties: {
+                category: place.category,
+                rating: place.rating,
+                phone: place.phone,
+                website: place.website
+              },
+              context: []
+            })).filter(f => f.center !== null);
+
+            if (googleFeatures.length > 0) {
+              console.log('Google Places results for:', address, googleFeatures.length);
+              return googleFeatures;
+            }
+          }
+        } catch (googleError) {
+          console.warn('Google Places search failed, falling back to Mapbox:', googleError);
+        }
+      }
+
+      // Fallback to Mapbox for regular addresses or if Google fails
       let url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&fuzzyMatch=true&limit=10&types=poi,poi.landmark,address,place,locality,neighborhood&language=en,de,fr,it,es,bg,nl,pt,pl,cs,ro,hu`;
 
       // Add proximity bias if we have user location for better local results
@@ -505,29 +567,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
       const response = await fetch(url);
       const data = await response.json();
 
-      // Sort results to prioritize POIs (hotels, restaurants) when searching for specific names
-      const sortedFeatures = data.features.sort((a, b) => {
-        // Prioritize POIs when search contains hotel/restaurant keywords
-        const searchLower = address.toLowerCase();
-        const isHotelSearch = searchLower.includes('hotel') || searchLower.includes('baur') || searchLower.includes('ritz') || searchLower.includes('four seasons') || searchLower.includes('hyatt') || searchLower.includes('marriott') || searchLower.includes('hilton');
-        const isRestaurantSearch = searchLower.includes('restaurant') || searchLower.includes('cafe') || searchLower.includes('bar') || searchLower.includes('bistro');
-
-        if (isHotelSearch || isRestaurantSearch) {
-          // POIs first when searching for hotels/restaurants
-          if (a.place_type?.includes('poi') && !b.place_type?.includes('poi')) return -1;
-          if (!a.place_type?.includes('poi') && b.place_type?.includes('poi')) return 1;
-        }
-
-        // For exact name matches, prioritize them
-        const aNameMatch = a.text?.toLowerCase().includes(searchLower) || a.place_name?.toLowerCase().includes(searchLower);
-        const bNameMatch = b.text?.toLowerCase().includes(searchLower) || b.place_name?.toLowerCase().includes(searchLower);
-        if (aNameMatch && !bNameMatch) return -1;
-        if (!aNameMatch && bNameMatch) return 1;
-
-        return 0;
-      });
-
-      return sortedFeatures;
+      return data.features || [];
     } catch (error) {
       console.error('Geocoding error:', error);
       return [];
