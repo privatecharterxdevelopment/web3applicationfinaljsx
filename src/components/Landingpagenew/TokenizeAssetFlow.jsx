@@ -1790,7 +1790,7 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
             <button
               onClick={() => {
                 console.log('Submitting form:', formData);
-                alert('Form submitted! (Demo)');
+                setShowSuccessModal(true);
               }}
               className="flex items-center gap-2 px-6 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
             >

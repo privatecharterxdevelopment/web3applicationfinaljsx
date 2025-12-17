@@ -392,8 +392,14 @@ const SPVFormationFlow = ({ onBack, onSuccess }) => {
             <option value="">Select asset type</option>
             <option value="jet">Private Jet</option>
             <option value="helicopter">Helicopter</option>
+            <option value="limousine-service">Limousine Service</option>
+            <option value="evtol">eVTOL</option>
             <option value="yacht">Yacht</option>
+            <option value="hangar">Hangar</option>
             <option value="real-estate">Real Estate</option>
+            <option value="luxury-car">Luxury Car</option>
+            <option value="art">Art & Collectibles</option>
+            <option value="business">Business Revenue</option>
             <option value="multiple">Multiple Assets</option>
           </select>
         </div>
