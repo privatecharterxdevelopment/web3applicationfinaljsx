@@ -315,9 +315,9 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
     fetchLuxuryCars();
   }, []);
 
-  // Get user's current location
+  // Get user's current location - wait for map to be fully loaded
   useEffect(() => {
-    if (!map.current) return;
+    if (!map.current || !mapLoaded) return;
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -404,7 +404,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
         }
       };
     }
-  }, [map.current]);
+  }, [mapLoaded]);
 
   // Detect user's country and set currency based on location
   useEffect(() => {
@@ -856,8 +856,8 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
     setFeatureA(feature);
     setShowSuggestionsA(false);
 
-    // Add marker with pulsing effect
-    if (map.current) {
+    // Add marker with pulsing effect - ensure map is fully loaded
+    if (map.current && mapLoaded) {
       // Remove existing marker A
       const existingMarkers = document.querySelectorAll('.marker-a');
       existingMarkers.forEach(marker => marker.remove());
@@ -920,8 +920,8 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
     setFeatureB(feature); // Store feature for Switzerland checking
     setShowSuggestionsB(false);
 
-    // Add marker - destination pin
-    if (map.current) {
+    // Add marker - destination pin - ensure map is fully loaded
+    if (map.current && mapLoaded) {
       // Remove existing marker B
       const existingMarkers = document.querySelectorAll('.marker-b');
       existingMarkers.forEach(marker => marker.remove());
