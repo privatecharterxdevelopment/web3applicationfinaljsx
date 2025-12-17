@@ -490,7 +490,8 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
   }, []);
 
   // Geocoding function - Enhanced with Google Places for hotels/restaurants/airports
-  const geocodeAddress = async (address) => {
+  // referenceCoords: optional [lng, lat] to restrict results to same region (for drop-off location)
+  const geocodeAddress = async (address, referenceCoords = null) => {
     try {
       const searchLower = address.toLowerCase();
 
@@ -540,6 +541,18 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                           searchLower.includes('sofitel') ||
                           searchLower.includes('fairmont');
 
+      // Determine the best location bias for search
+      // Priority: referenceCoords (pickup location) > userLocation
+      // For ground transport, drop-off should be in same region as pickup (max 500km for airports, 200km otherwise)
+      const searchLocation = referenceCoords
+        ? { lat: referenceCoords[1], lng: referenceCoords[0] }
+        : (userLocation ? { lat: userLocation[1], lng: userLocation[0] } : null);
+
+      // Regional radius: 500km for airports (cross-country possible), 200km for regular (within region)
+      const regionalRadius = referenceCoords
+        ? (isAirportSearch ? 500000 : 200000) // 500km for airports, 200km for local
+        : (isAirportSearch ? 100000 : 50000);  // Default without reference
+
       // For airport and POI searches, use Google Places API via edge function
       if ((isAirportSearch || isPOISearch) && address.length >= 3) {
         try {
@@ -570,8 +583,8 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
               action: 'searchText',
               query: searchQuery,
               maxResults: 8,
-              location: userLocation ? { lat: userLocation[1], lng: userLocation[0] } : null,
-              radius: isAirportSearch ? 100000 : 50000 // Larger radius for airports
+              location: searchLocation,
+              radius: regionalRadius
             }
           });
 
@@ -609,8 +622,10 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
       // Fallback to Mapbox for regular addresses or if Google fails
       let url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&fuzzyMatch=true&limit=10&types=poi,poi.landmark,address,place,locality,neighborhood&language=en,de,fr,it,es,bg,nl,pt,pl,cs,ro,hu`;
 
-      // Add proximity bias if we have user location for better local results
-      if (userLocation) {
+      // Add proximity bias - use reference coords (pickup location) if available for regional results
+      if (referenceCoords) {
+        url += `&proximity=${referenceCoords[0]},${referenceCoords[1]}`;
+      } else if (userLocation) {
         url += `&proximity=${userLocation[0]},${userLocation[1]}`;
       }
 
@@ -756,11 +771,12 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
     }
   };
 
-  // Handle location B input
+  // Handle location B input - restrict to same region as pickup location (coordsA)
   const handleLocationBChange = async (value) => {
     setLocationB(value);
     if (value.length > 2) {
-      const results = await geocodeAddress(value);
+      // Pass coordsA as reference to restrict results to same region (for ground transport)
+      const results = await geocodeAddress(value, coordsA);
       setSuggestionsB(results);
       setShowSuggestionsB(true);
     } else {
