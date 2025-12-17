@@ -1130,39 +1130,11 @@ const AIChat = ({
     // Convert hourly rate from EUR to USD
     const hourlyRateUSD = item.hourly_rate_eur ? Math.round(convertToUSD(item.hourly_rate_eur, 'EUR')) : 0;
 
-    // Operational fees for jets and helicopters (in USD)
-    // These are standard fees that apply to most charter flights
-    const getOperationalFees = (flightPrice, aircraftType, route) => {
-      if (!isJet && !isHelicopter) return { total: 0, breakdown: [] };
-
-      const fees = [];
-
-      // Ground handling fee: ~$800-2000 per airport (departure + arrival)
-      // Based on airport category and aircraft size
-      const groundHandlingPerAirport = isJet ? 1200 : 600; // Jets need more handling
-      const groundHandlingTotal = groundHandlingPerAirport * 2; // Departure + arrival
-      fees.push({ name: 'Ground Handling', amount: groundHandlingTotal, note: '(departure + arrival)' });
-
-      // Landing fees: varies by airport, ~$200-800 per landing
-      const landingFee = isJet ? 500 : 250;
-      fees.push({ name: 'Landing Fees', amount: landingFee, note: '' });
-
-      // Crew expenses (overnight stays, per diem): ~$400-800
-      const crewExpenses = isJet ? 600 : 300;
-      fees.push({ name: 'Crew Expenses', amount: crewExpenses, note: '' });
-
-      // Navigation/ATC fees: ~1-2% of flight cost
-      const atcFees = Math.round(flightPrice * 0.015);
-      fees.push({ name: 'ATC/Navigation', amount: atcFees, note: '' });
-
-      // Insurance surcharge: ~$200-500
-      const insurance = isJet ? 350 : 150;
-      fees.push({ name: 'Insurance', amount: insurance, note: '' });
-
-      // Total operational fees
-      const total = fees.reduce((sum, fee) => sum + fee.amount, 0);
-
-      return { total, breakdown: fees };
+    // All fees included in total price (ground handling, landing, crew, ATC, insurance)
+    const getOperationalFees = (flightPrice) => {
+      if (!isJet && !isHelicopter) return 0;
+      // ~15% covers all operational costs
+      return Math.round(flightPrice * (isJet ? 0.15 : 0.12));
     };
 
     if ((isJet || isHelicopter) && item.hourly_rate_eur) {
@@ -1170,10 +1142,8 @@ const AIChat = ({
       if (item.estimatedPrice && item.estimatedPrice > 0) {
         // Convert pre-calculated price from EUR to USD
         const estimatedPriceUSD = Math.round(convertToUSD(item.estimatedPrice, 'EUR'));
-
-        // Calculate operational fees based on flight price
-        const opFees = getOperationalFees(estimatedPriceUSD, item.type, item.route);
-        const totalWithFees = estimatedPriceUSD + opFees.total;
+        const opFees = getOperationalFees(estimatedPriceUSD);
+        const totalPrice = estimatedPriceUSD + opFees;
 
         cartItem = {
           ...cartItem,
@@ -1181,20 +1151,13 @@ const AIChat = ({
           flightTimeHours: item.flightHours || item.billedHours,
           estimatedDuration: item.estimatedDuration,
           billedHours: item.billedHours || item.flightHours,
-          // Base charter price
-          charterPrice: estimatedPriceUSD,
-          // Operational fees
-          operationalFees: opFees.total,
-          operationalFeesBreakdown: opFees.breakdown,
-          // Total price including all fees
-          estimatedPrice: totalWithFees,
-          price: totalWithFees,
-          basePrice: estimatedPriceUSD,
-          totalWithFee: totalWithFees,
+          estimatedPrice: totalPrice,
+          price: totalPrice,
+          basePrice: totalPrice,
+          totalWithFee: totalPrice,
           hourly_rate_usd: hourlyRateUSD,
           isEstimate: true,
           priceCalculation: item.priceCalculation ? item.priceCalculation.replace(/€/g, '$') : `${item.estimatedDuration} × $${hourlyRateUSD.toLocaleString()}/hr`,
-          priceBreakdown: `Charter: $${estimatedPriceUSD.toLocaleString()} + Fees: $${opFees.total.toLocaleString()}`,
           route: item.route || `${item.from} → ${item.to}`,
           feesIncluded: true
         };
@@ -1206,31 +1169,23 @@ const AIChat = ({
           flightTimeHours = parseInt(durationMatch[1]) + (parseInt(durationMatch[2] || 0) / 60);
         }
 
-        // Calculate estimated price in USD
         const estimatedPriceUSD = Math.round(flightTimeHours * hourlyRateUSD);
+        const opFees = getOperationalFees(estimatedPriceUSD);
+        const totalPrice = estimatedPriceUSD + opFees;
 
-        // Calculate operational fees
-        const opFees = getOperationalFees(estimatedPriceUSD, item.type, item.route);
-        const totalWithFees = estimatedPriceUSD + opFees.total;
-
-        // Add calculated fields to cart item
         cartItem = {
           ...cartItem,
           flightDistanceNm: item.flightDistance,
           flightTimeHours: flightTimeHours,
           estimatedDuration: item.estimatedDuration,
           billedHours: flightTimeHours,
-          charterPrice: estimatedPriceUSD,
-          operationalFees: opFees.total,
-          operationalFeesBreakdown: opFees.breakdown,
-          estimatedPrice: totalWithFees,
-          price: totalWithFees,
-          basePrice: estimatedPriceUSD,
-          totalWithFee: totalWithFees,
+          estimatedPrice: totalPrice,
+          price: totalPrice,
+          basePrice: totalPrice,
+          totalWithFee: totalPrice,
           hourly_rate_usd: hourlyRateUSD,
           isEstimate: true,
           priceCalculation: `${item.estimatedDuration} × $${hourlyRateUSD.toLocaleString()}/hr`,
-          priceBreakdown: `Charter: $${estimatedPriceUSD.toLocaleString()} + Fees: $${opFees.total.toLocaleString()}`,
           route: item.route || `${item.flightDistance.toLocaleString()} nm flight`,
           feesIncluded: true
         };
@@ -1240,103 +1195,79 @@ const AIChat = ({
         const destination = item.to || item.to_city || item.destination || item.arrival_airport;
 
         if (origin && destination) {
-          // Calculate distance in nautical miles
           const distanceNm = calculateDistance(origin, destination);
 
           if (distanceNm) {
-            // Get cruise speed (default 450 kts for jets, 150 kts for helicopters)
             const cruiseSpeedKts = item.speed_kts || (isJet ? 450 : 150);
-
-            // Calculate flight time in hours
             const flightTimeHours = distanceNm / cruiseSpeedKts;
-
-            // Calculate estimated price in USD
             const estimatedPriceUSD = Math.round(flightTimeHours * hourlyRateUSD);
+            const opFees = getOperationalFees(estimatedPriceUSD);
+            const totalPrice = estimatedPriceUSD + opFees;
 
-            // Calculate operational fees
-            const opFees = getOperationalFees(estimatedPriceUSD, item.type, `${origin} → ${destination}`);
-            const totalWithFees = estimatedPriceUSD + opFees.total;
-
-            // Format duration string
             const hours = Math.floor(flightTimeHours);
             const minutes = Math.round((flightTimeHours - hours) * 60);
             const durationStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 
-            // Add calculated fields to cart item
             cartItem = {
               ...cartItem,
               flightDistanceNm: distanceNm,
               flightTimeHours: flightTimeHours,
               estimatedDuration: durationStr,
               billedHours: flightTimeHours,
-              charterPrice: estimatedPriceUSD,
-              operationalFees: opFees.total,
-              operationalFeesBreakdown: opFees.breakdown,
-              estimatedPrice: totalWithFees,
-              price: totalWithFees,
-              basePrice: estimatedPriceUSD,
-              totalWithFee: totalWithFees,
+              estimatedPrice: totalPrice,
+              price: totalPrice,
+              basePrice: totalPrice,
+              totalWithFee: totalPrice,
               hourly_rate_usd: hourlyRateUSD,
               isEstimate: true,
               priceCalculation: `${durationStr} × $${hourlyRateUSD.toLocaleString()}/hr`,
-              priceBreakdown: `Charter: $${estimatedPriceUSD.toLocaleString()} + Fees: $${opFees.total.toLocaleString()}`,
               route: `${origin} → ${destination}`,
               feesIncluded: true
             };
           } else if (item.estimatedDuration) {
-            // Distance calculation failed but we have duration - parse and use it
             const durationMatch = item.estimatedDuration.match(/(\d+)h\s*(\d+)?m?/);
-            let flightTimeHours = 1; // minimum 1 hour
+            let flightTimeHours = 1;
             if (durationMatch) {
               flightTimeHours = parseInt(durationMatch[1]) + (parseInt(durationMatch[2] || 0) / 60);
             }
             const estimatedPriceUSD = Math.round(flightTimeHours * hourlyRateUSD);
-            const opFees = getOperationalFees(estimatedPriceUSD, item.type, `${origin} → ${destination}`);
-            const totalWithFees = estimatedPriceUSD + opFees.total;
+            const opFees = getOperationalFees(estimatedPriceUSD);
+            const totalPrice = estimatedPriceUSD + opFees;
 
             cartItem = {
               ...cartItem,
               flightTimeHours: flightTimeHours,
               estimatedDuration: item.estimatedDuration,
               billedHours: flightTimeHours,
-              charterPrice: estimatedPriceUSD,
-              operationalFees: opFees.total,
-              operationalFeesBreakdown: opFees.breakdown,
-              estimatedPrice: totalWithFees,
-              price: totalWithFees,
-              basePrice: estimatedPriceUSD,
-              totalWithFee: totalWithFees,
+              estimatedPrice: totalPrice,
+              price: totalPrice,
+              basePrice: totalPrice,
+              totalWithFee: totalPrice,
               hourly_rate_usd: hourlyRateUSD,
               isEstimate: true,
               priceCalculation: `${item.estimatedDuration} × $${hourlyRateUSD.toLocaleString()}/hr`,
-              priceBreakdown: `Charter: $${estimatedPriceUSD.toLocaleString()} + Fees: $${opFees.total.toLocaleString()}`,
               route: `${origin} → ${destination}`,
               feesIncluded: true
             };
           } else {
-            // Last resort: use minimum 1 hour billing
-            const minHours = isHelicopter ? 0.5 : 1; // 30 min for heli, 1h for jets
+            const minHours = isHelicopter ? 0.5 : 1;
             const estimatedPriceUSD = Math.round(minHours * hourlyRateUSD);
             const durationStr = isHelicopter ? '30m' : '1h';
-            const opFees = getOperationalFees(estimatedPriceUSD, item.type, `${origin} → ${destination}`);
-            const totalWithFees = estimatedPriceUSD + opFees.total;
+            const opFees = getOperationalFees(estimatedPriceUSD);
+            const totalPrice = estimatedPriceUSD + opFees;
 
             cartItem = {
               ...cartItem,
               flightTimeHours: minHours,
               estimatedDuration: `${durationStr} (minimum)`,
               billedHours: minHours,
-              charterPrice: estimatedPriceUSD,
-              operationalFees: opFees.total,
-              operationalFeesBreakdown: opFees.breakdown,
-              estimatedPrice: totalWithFees,
-              price: totalWithFees,
-              basePrice: estimatedPriceUSD,
-              totalWithFee: totalWithFees,
+              estimatedPrice: totalPrice,
+              price: totalPrice,
+              basePrice: totalPrice,
+              totalWithFee: totalPrice,
               hourly_rate_usd: hourlyRateUSD,
               isEstimate: true,
               priceCalculation: `${durationStr} min × $${hourlyRateUSD.toLocaleString()}/hr`,
-              priceBreakdown: `Charter: $${estimatedPriceUSD.toLocaleString()} + Fees: $${opFees.total.toLocaleString()}`,
               route: `${origin} → ${destination}`,
               feesIncluded: true
             };
@@ -1363,16 +1294,7 @@ const AIChat = ({
     if (cartItem.estimatedPrice && cartItem.priceCalculation) {
       msg += `\n\n📍 Route: ${cartItem.route}`;
       msg += `\n⏱️ Est. flight time: ${cartItem.estimatedDuration}`;
-      msg += `\n💰 Charter rate: ${cartItem.priceCalculation}`;
-      if (cartItem.charterPrice) {
-        msg += ` = $${cartItem.charterPrice.toLocaleString()}`;
-      }
-      if (cartItem.operationalFees && cartItem.feesIncluded) {
-        msg += `\n📋 Operational fees: +$${cartItem.operationalFees.toLocaleString()} (ground handling, landing, crew, ATC, insurance)`;
-        msg += `\n💵 Total estimate: ~$${cartItem.estimatedPrice.toLocaleString()}`;
-      } else {
-        msg += `\n💵 Total: ~$${cartItem.estimatedPrice.toLocaleString()}`;
-      }
+      msg += `\n💵 Est. total: ~$${cartItem.estimatedPrice.toLocaleString()} (all fees included)`;
     }
     msg += `\n\nContinue browsing or say "send request" when ready.`;
 
@@ -6157,30 +6079,11 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                   )}
                                 </div>
 
-                                {/* Price Breakdown with Fees */}
-                                {item.feesIncluded && item.operationalFees > 0 && (
-                                  <div className="mt-3 pt-3 border-t border-gray-200">
-                                    <p className="text-xs font-medium text-gray-700 mb-2">Price Breakdown</p>
-                                    <div className="space-y-1.5 text-[11px]">
-                                      <div className="flex justify-between">
-                                        <span className="text-gray-600">Charter ({item.priceCalculation})</span>
-                                        <span className="font-medium">${item.charterPrice?.toLocaleString() || item.basePrice?.toLocaleString()}</span>
-                                      </div>
-                                      {item.operationalFeesBreakdown?.map((fee, feeIdx) => (
-                                        <div key={feeIdx} className="flex justify-between text-gray-500">
-                                          <span>{fee.name} {fee.note}</span>
-                                          <span>${fee.amount.toLocaleString()}</span>
-                                        </div>
-                                      ))}
-                                      <div className="flex justify-between pt-1.5 border-t border-gray-100 font-medium">
-                                        <span className="text-gray-700">Total (all-inclusive)</span>
-                                        <span className="text-gray-900">${item.price?.toLocaleString()}</span>
-                                      </div>
-                                    </div>
-                                    <p className="text-[9px] text-gray-400 mt-2 italic">
-                                      Includes ground handling, landing fees, crew expenses, ATC, and insurance
-                                    </p>
-                                  </div>
+                                {/* All fees included note */}
+                                {item.feesIncluded && (
+                                  <p className="text-[10px] text-gray-500 mt-2 italic">
+                                    All fees included (ground handling, landing, crew, ATC, insurance)
+                                  </p>
                                 )}
 
                                 {/* Catering Options - Monochromatic */}
