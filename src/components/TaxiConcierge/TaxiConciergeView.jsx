@@ -489,12 +489,13 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Geocoding function - Enhanced for international street names
+  // Geocoding function - Enhanced for international street names, hotels, restaurants
   const geocodeAddress = async (address) => {
     try {
       // Use fuzzyMatch for better street name matching in all countries
-      // Include more types and use proximity if we have user location
-      let url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&fuzzyMatch=true&limit=8&types=address,poi,place,locality,neighborhood,postcode&language=en,de,fr,it,es,bg,nl,pt,pl,cs,ro,hu`;
+      // Include POI for hotels, restaurants, landmarks - Mapbox POI includes all business types
+      // Types: poi (all POIs including hotels, restaurants), poi.landmark, address, place, locality, neighborhood, postcode
+      let url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&fuzzyMatch=true&limit=10&types=poi,poi.landmark,address,place,locality,neighborhood&language=en,de,fr,it,es,bg,nl,pt,pl,cs,ro,hu`;
 
       // Add proximity bias if we have user location for better local results
       if (userLocation) {
@@ -503,7 +504,30 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
 
       const response = await fetch(url);
       const data = await response.json();
-      return data.features;
+
+      // Sort results to prioritize POIs (hotels, restaurants) when searching for specific names
+      const sortedFeatures = data.features.sort((a, b) => {
+        // Prioritize POIs when search contains hotel/restaurant keywords
+        const searchLower = address.toLowerCase();
+        const isHotelSearch = searchLower.includes('hotel') || searchLower.includes('baur') || searchLower.includes('ritz') || searchLower.includes('four seasons') || searchLower.includes('hyatt') || searchLower.includes('marriott') || searchLower.includes('hilton');
+        const isRestaurantSearch = searchLower.includes('restaurant') || searchLower.includes('cafe') || searchLower.includes('bar') || searchLower.includes('bistro');
+
+        if (isHotelSearch || isRestaurantSearch) {
+          // POIs first when searching for hotels/restaurants
+          if (a.place_type?.includes('poi') && !b.place_type?.includes('poi')) return -1;
+          if (!a.place_type?.includes('poi') && b.place_type?.includes('poi')) return 1;
+        }
+
+        // For exact name matches, prioritize them
+        const aNameMatch = a.text?.toLowerCase().includes(searchLower) || a.place_name?.toLowerCase().includes(searchLower);
+        const bNameMatch = b.text?.toLowerCase().includes(searchLower) || b.place_name?.toLowerCase().includes(searchLower);
+        if (aNameMatch && !bNameMatch) return -1;
+        if (!aNameMatch && bNameMatch) return 1;
+
+        return 0;
+      });
+
+      return sortedFeatures;
     } catch (error) {
       console.error('Geocoding error:', error);
       return [];
