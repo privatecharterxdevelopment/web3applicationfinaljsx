@@ -7632,7 +7632,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             price: selectedPaymentItem.price_usd || selectedPaymentItem.price || selectedPaymentItem.discounted_price || 0,
             price_usd: selectedPaymentItem.price_usd || selectedPaymentItem.price || 0,
             totalWithFee: selectedPaymentItem.totalWithFee || selectedPaymentItem.price_with_vat || Math.round((selectedPaymentItem.price_usd || selectedPaymentItem.price || 0) * 1.106),
-            currency: selectedPaymentItem.currency || 'USD',
+            currency: 'USD', // CoinGate payments are always in USD
             // Use original EmptyLegs_ id if available
             id: selectedPaymentItem.original_id || selectedPaymentItem.id
           }}
