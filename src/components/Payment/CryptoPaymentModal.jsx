@@ -144,7 +144,18 @@ const CryptoPaymentModal = ({ isOpen, onClose, service, serviceType, onSuccess }
   };
 
   const getServiceCurrency = () => {
-    return service?.currency || 'USD';
+    // Empty legs and most services should always be USD
+    // Sanitize currency - only accept valid 3-letter codes
+    const currency = service?.currency;
+    if (!currency || currency.length !== 3 || /[^A-Za-z]/.test(currency)) {
+      return 'USD'; // Default to USD for invalid/missing currency
+    }
+    // For empty legs, always use USD regardless of what's stored
+    const isEmptyLeg = service?.type === 'empty_legs' || service?.type === 'emptyleg' || service?.type === 'empty_leg';
+    if (isEmptyLeg) {
+      return 'USD';
+    }
+    return currency.toUpperCase();
   };
 
   // Auto-create payment and redirect when modal opens

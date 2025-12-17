@@ -183,7 +183,7 @@ function mapEmptyLeg(leg) {
     price: leg.price_usd || price, // Default to USD price
     price_eur: leg.price_eur || price,
     price_usd: leg.price_usd || leg.price || null, // Prioritize USD
-    currency: '$', // Always USD for empty legs
+    currency: 'USD', // Always USD for empty legs
     discount_percentage: leg.discount_percentage || leg.discount || null,
     // Booking
     booking_link: leg.booking_link || null,

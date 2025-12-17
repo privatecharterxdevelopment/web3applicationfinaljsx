@@ -5373,7 +5373,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 onPayCrypto={(item) => {
                   // Set item for crypto payment and open payment modal
                   setSelectedPaymentItem(item);
-                  setShowPaymentModal(true);
+                  setShowCryptoPayment(true);
                 }}
                 onBuildJourney={handleBuildJourney}
               />
