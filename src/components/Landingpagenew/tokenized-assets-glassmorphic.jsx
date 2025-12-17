@@ -4361,6 +4361,13 @@ const TokenizedAssetsGlassmorphic = () => {
                 <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2 px-2">RWA Services</p>
                 {rwsCategoryMenu.map((item) => {
                   const isActive = activeCategory === item.category;
+                  // Map category to URL path
+                  const categoryToPath = {
+                    'jets': '/dashboard/jets',
+                    'helicopter': '/dashboard/helis',
+                    'empty-legs': '/dashboard/empty-legs',
+                    'ground-transport': '/dashboard/ground-transport'
+                  };
                   return (
                     <button
                       key={item.id}
@@ -4368,6 +4375,10 @@ const TokenizedAssetsGlassmorphic = () => {
                         setActiveCategory(item.category);
                         setShowJetDetail(false);
                         setIsMobileMenuOpen(false);
+                        // Update URL to match category
+                        if (categoryToPath[item.category]) {
+                          navigate(categoryToPath[item.category]);
+                        }
                         // Handle external links
                         if (item.externalLink) {
                           window.location.href = item.externalLink;
@@ -4500,12 +4511,23 @@ const TokenizedAssetsGlassmorphic = () => {
                 <>
                   {rwsCategoryMenu.map((item) => {
                     const isActive = activeCategory === item.category;
+                    // Map category to URL path
+                    const categoryToPath = {
+                      'jets': '/dashboard/jets',
+                      'helicopter': '/dashboard/helis',
+                      'empty-legs': '/dashboard/empty-legs',
+                      'ground-transport': '/dashboard/ground-transport'
+                    };
                     return (
                       <button
                         key={item.id}
                         onClick={() => {
                           setActiveCategory(item.category);
                           setShowJetDetail(false);
+                          // Update URL to match category
+                          if (categoryToPath[item.category]) {
+                            navigate(categoryToPath[item.category]);
+                          }
                         }}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-200 ${
                           isActive
