@@ -56,10 +56,10 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
       ]);
 
       setSubscriptionData({
-        tier: profile?.subscription_tier || 'explorer',
-        status: profile?.subscription_status || 'active',
+        tier: profile?.subscription_tier || null,
+        status: profile?.subscription_status || 'inactive',
         chatsUsed: stats?.chatsUsed || 0,
-        chatsLimit: stats?.chatsLimit || 1,
+        chatsLimit: stats?.chatsLimit || 0,
         chatsRemaining: stats?.chatsRemaining,
         unlimited: stats?.unlimited || false,
         resetDate: profile?.chats_reset_date,
@@ -72,11 +72,11 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
     } catch (error) {
       console.error('Error loading subscription:', error);
       setSubscriptionData({
-        tier: 'explorer',
-        status: 'active',
+        tier: null,
+        status: 'inactive',
         chatsUsed: 0,
-        chatsLimit: 1,
-        chatsRemaining: 1,
+        chatsLimit: 0,
+        chatsRemaining: 0,
         unlimited: false
       });
     } finally {
@@ -112,9 +112,8 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
   const getTierDisplayName = (tier) => {
     const names = {
       explorer: 'Explorer',
-      starter: 'Starter',
-      pro: 'Professional',
-      elite: 'Elite'
+      traveller: 'Traveller',
+      elite: 'Elite Club'
     };
     return names[tier] || tier;
   };
@@ -135,16 +134,33 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
 
   const getPlanFeatures = (tier) => {
     const features = {
-      explorer: { chats: '1 total', support: 'Email', concierge: 'No' },
-      starter: { chats: '5/month', support: 'Email + Voice', concierge: 'No' },
-      pro: { chats: '20/month', support: 'Priority', concierge: 'Yes' },
-      elite: { chats: 'Unlimited', support: '24/7 VIP', concierge: 'Yes' }
+      explorer: {
+        chats: '5/month',
+        messages: '10/chat',
+        support: 'Email',
+        concierge: 'No',
+        highlights: ['Empty Legs', 'Restaurants', 'Ground Transport', 'Catering']
+      },
+      traveller: {
+        chats: '10/month',
+        messages: '25/chat',
+        support: 'Priority',
+        concierge: 'Yes',
+        highlights: ['All Explorer +', 'MEDEVAC', 'Concierge', 'Event Booking']
+      },
+      elite: {
+        chats: 'Unlimited',
+        messages: 'Unlimited',
+        support: '24/7 Phone',
+        concierge: 'Yes',
+        highlights: ['All Traveller +', 'MembershipX Card', 'VIP Events', '2x Transfers/mo']
+      }
     };
     return features[tier] || features.explorer;
   };
 
   const getTierPrice = (tier) => {
-    const prices = { explorer: 0, starter: 20, pro: 40, elite: 130 };
+    const prices = { explorer: 49, traveller: 99, elite: 399 };
     return prices[tier] || 0;
   };
 
@@ -189,7 +205,8 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
           <p className="text-sm text-gray-500 mb-6">View your plan details, usage stats, and billing history</p>
           <button
             onClick={() => navigate('/login')}
-            className="px-6 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
+            className="px-6 py-2.5 bg-white/60 text-gray-700 rounded-lg hover:bg-white/80 transition-colors text-sm font-medium border border-gray-200/50"
+            style={{ backdropFilter: 'blur(8px)' }}
           >
             Sign In
           </button>
@@ -199,7 +216,8 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
   }
 
   const planFeatures = getPlanFeatures(subscriptionData?.tier);
-  const isPaidPlan = subscriptionData?.tier !== 'explorer';
+  const isPaidPlan = subscriptionData?.tier && ['explorer', 'traveller', 'elite'].includes(subscriptionData?.tier);
+  const hasSubscription = !!subscriptionData?.tier;
 
   return (
     <div className="h-full overflow-y-auto" style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -249,9 +267,10 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
               onClick={() => setFilter(status)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 filter === status
-                  ? 'bg-gray-900 text-white'
-                  : 'text-gray-500 hover:bg-gray-100'
+                  ? 'bg-white/70 text-gray-700 border border-gray-200/50'
+                  : 'text-gray-500 hover:bg-white/50'
               }`}
+              style={filter === status ? { backdropFilter: 'blur(8px)' } : {}}
             >
               {status === 'all' ? 'All' : status === 'completed' ? 'Completed' : 'Pending'}
             </button>
@@ -261,18 +280,39 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
 
       {/* Content */}
       <div className="px-6 py-4 space-y-4">
-        {/* Current Plan Card - Expandable */}
-        <div className="bg-white border border-gray-100 rounded-xl overflow-hidden hover:border-gray-200 transition-all">
+        {/* No Subscription Banner - Monochromatic light gray glass */}
+        {!hasSubscription && (
+          <div
+            className="bg-white/70 rounded-2xl p-6 border border-gray-200/60"
+            style={{ backdropFilter: 'blur(20px)' }}
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/60 rounded-xl flex items-center justify-center border border-gray-200/50">
+                <Crown size={24} className="text-gray-500" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900">No Active Subscription</h3>
+                <p className="text-gray-500 text-sm mt-0.5">Choose a membership plan to unlock AI-powered travel planning</p>
+              </div>
+              <button
+                onClick={handleViewPlans}
+                className="px-5 py-2.5 bg-white/60 text-gray-700 rounded-xl text-sm font-medium hover:bg-white/80 transition-colors border border-gray-200/50"
+                style={{ backdropFilter: 'blur(8px)' }}
+              >
+                View Plans
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Current Plan Card - Expandable - Glass style */}
+        {hasSubscription && (
+        <div className="bg-white/70 border border-gray-100/80 rounded-xl overflow-hidden hover:border-gray-200/80 transition-all" style={{ backdropFilter: 'blur(10px)' }}>
           <div
             className="px-4 py-3 flex items-center gap-4 cursor-pointer"
             onClick={() => setShowPlanDetails(!showPlanDetails)}
           >
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
-              subscriptionData.tier === 'elite' ? 'bg-gray-900 text-white' :
-              subscriptionData.tier === 'pro' ? 'bg-gray-700 text-white' :
-              subscriptionData.tier === 'starter' ? 'bg-gray-600 text-white' :
-              'bg-gray-100 text-gray-600'
-            }`}>
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-white/60 text-gray-600 border border-gray-200/50" style={{ backdropFilter: 'blur(8px)' }}>
               <Crown size={16} />
             </div>
 
@@ -314,7 +354,7 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
               {/* Usage Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                 <div>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">Conversations Used</p>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">Chats Used</p>
                   <p className="text-sm text-gray-900">
                     {subscriptionData.unlimited ? 'Unlimited' : subscriptionData.chatsUsed}
                   </p>
@@ -326,14 +366,25 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">Support Level</p>
-                  <p className="text-sm text-gray-900">{planFeatures.support}</p>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">Messages/Chat</p>
+                  <p className="text-sm text-gray-900">{planFeatures.messages}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">Concierge</p>
-                  <p className="text-sm text-gray-900">{planFeatures.concierge}</p>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">Support</p>
+                  <p className="text-sm text-gray-900">{planFeatures.support}</p>
                 </div>
               </div>
+
+              {/* Feature Highlights */}
+              {planFeatures.highlights && (
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {planFeatures.highlights.map((highlight, idx) => (
+                    <span key={idx} className="px-2 py-1 text-[10px] font-medium rounded-full bg-gray-100 text-gray-600 border border-gray-200/50">
+                      {highlight}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               {/* Usage Progress */}
               {!subscriptionData.unlimited && (
@@ -349,7 +400,7 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
                           ? 'bg-red-500'
                           : (subscriptionData.chatsUsed / subscriptionData.chatsLimit) >= 0.7
                             ? 'bg-yellow-500'
-                            : 'bg-gray-900'
+                            : 'bg-gray-400'
                       }`}
                       style={{ width: `${Math.min(100, (subscriptionData.chatsUsed / subscriptionData.chatsLimit) * 100)}%` }}
                     />
@@ -361,30 +412,31 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
               )}
 
               {/* Payment Summary */}
-              <div className="bg-gray-900 text-white rounded-xl p-4 mb-3">
-                <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-3">Spending Summary</p>
+              <div className="bg-white/60 text-gray-700 rounded-xl p-4 mb-3 border border-gray-200/50" style={{ backdropFilter: 'blur(8px)' }}>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-3">Spending Summary</p>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-400">This Month</span>
-                    <span>${spendingSummary?.this_month?.toFixed(2) || '0.00'}</span>
+                    <span className="text-gray-500">This Month</span>
+                    <span className="text-gray-700">${spendingSummary?.this_month?.toFixed(2) || '0.00'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Last Month</span>
-                    <span>${spendingSummary?.last_month?.toFixed(2) || '0.00'}</span>
+                    <span className="text-gray-500">Last Month</span>
+                    <span className="text-gray-700">${spendingSummary?.last_month?.toFixed(2) || '0.00'}</span>
                   </div>
-                  <div className="flex justify-between pt-2 border-t border-gray-700 font-medium">
-                    <span>Total Spent</span>
-                    <span>${totalSpent.toFixed(2)}</span>
+                  <div className="flex justify-between pt-2 border-t border-gray-200/50 font-medium">
+                    <span className="text-gray-700">Total Spent</span>
+                    <span className="text-gray-900">${totalSpent.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Actions */}
+              {/* Actions - Monochromatic light gray glass */}
               <div className="flex items-center gap-2">
                 {subscriptionData.tier !== 'elite' && (
                   <button
                     onClick={handleViewPlans}
-                    className="flex-1 py-2 bg-gray-900 text-white text-xs font-medium rounded-lg flex items-center justify-center gap-1.5 hover:bg-gray-800 transition-colors"
+                    className="flex-1 py-2 bg-white/60 text-gray-700 text-xs font-medium rounded-lg flex items-center justify-center gap-1.5 hover:bg-white/80 transition-colors border border-gray-200/50"
+                    style={{ backdropFilter: 'blur(8px)' }}
                   >
                     <TrendingUp size={12} />
                     Upgrade Plan
@@ -394,7 +446,8 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
                   <button
                     onClick={handleManageBilling}
                     disabled={processingPortal}
-                    className="px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1.5"
+                    className="px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200/50 rounded-lg bg-white/50 hover:bg-white/70 transition-colors flex items-center gap-1.5"
+                    style={{ backdropFilter: 'blur(8px)' }}
                   >
                     {processingPortal ? <Loader2 size={12} className="animate-spin" /> : <Settings size={12} />}
                     Manage Billing
@@ -403,7 +456,8 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
                 )}
                 <button
                   onClick={handleViewPlans}
-                  className="px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200/50 rounded-lg bg-white/50 hover:bg-white/70 transition-colors"
+                  style={{ backdropFilter: 'blur(8px)' }}
                 >
                   View Plans
                 </button>
@@ -418,6 +472,7 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
             </div>
           )}
         </div>
+        )}
 
         {/* Transaction History */}
         <div className="mb-2">

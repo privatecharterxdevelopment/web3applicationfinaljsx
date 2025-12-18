@@ -1987,12 +1987,15 @@ const TokenizedAssetsGlassmorphic = () => {
     const isOnChatRoute = currentPath.startsWith('/dashboard/chat');
     const isExactChatRoute = currentPath === '/dashboard/chat' || currentPath === '/dashboard/chat/';
 
-    // Handle service category routes: /dashboard/jets, /dashboard/helis, /dashboard/empty-legs, /dashboard/ground-transport
+    // Handle service category routes: /dashboard/jets, /dashboard/helis, /dashboard/empty-legs, /dashboard/ground-transport, /dashboard/spv
     const serviceRoutes = {
       '/dashboard/jets': 'jets',
       '/dashboard/helis': 'helicopter',
       '/dashboard/empty-legs': 'empty-legs',
-      '/dashboard/ground-transport': 'ground-transport'
+      '/dashboard/ground-transport': 'ground-transport',
+      '/dashboard/spv': 'spv-formation',
+      '/dashboard/spv/create': 'spv-formation',
+      '/dashboard/spv/my-spvs': 'my-spvs'
     };
 
     // Check if current path matches any service route
@@ -3189,12 +3192,13 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   };
 
-  // Load chat history when viewing chat-history page or on initial load
+  // Load chat history on initial load and when viewing chat pages
+  // Also load for sidebar display of recent chats
   useEffect(() => {
-    if ((activeCategory === 'chat-history' || activeCategory === 'chat') && user?.id) {
+    if (user?.id) {
       fetchChatHistory();
     }
-  }, [activeCategory, user?.id]);
+  }, [user?.id]);
 
   // Load user requests for overview page and AI requests page
   useEffect(() => {
@@ -4263,6 +4267,38 @@ const TokenizedAssetsGlassmorphic = () => {
                 <History size={12} className="flex-shrink-0" />
                 <span className={`text-xs font-medium ${isMobileMenuOpen || sidebarExpanded ? 'inline-block' : 'hidden'}`}>History</span>
               </button>
+
+              {/* Latest 4 Chats - Only show when sidebar is expanded */}
+              {(isMobileMenuOpen || sidebarExpanded) && chatHistory.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {chatHistory.slice(0, 4).map((chat) => (
+                    <button
+                      key={chat.id}
+                      onClick={() => {
+                        setActiveChat(chat.id);
+                        setActiveCategory('chat');
+                        window.history.pushState({}, '', `/dashboard/chat/${chat.id}`);
+                        if (isMobileMenuOpen) {
+                          setIsMobileMenuOpen(false);
+                        }
+                      }}
+                      className={`w-full h-7 flex items-center gap-2 px-2 rounded-md transition-all duration-300 text-left ${
+                        activeChat === chat.id
+                          ? webMode === 'web3'
+                            ? 'bg-white/30 text-gray-900'
+                            : 'bg-white/60 text-gray-900'
+                          : webMode === 'web3'
+                            ? 'text-gray-700 hover:bg-white/20'
+                            : 'text-gray-600 hover:bg-white/40'
+                      }`}
+                      title={chat.title}
+                    >
+                      <MessageSquare size={10} className="flex-shrink-0 opacity-60" />
+                      <span className="text-[11px] truncate flex-1">{chat.title}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -4977,9 +5013,10 @@ const TokenizedAssetsGlassmorphic = () => {
                         <p className="text-sm text-gray-500 mb-4">No requests yet</p>
                         <button
                           onClick={() => setActiveCategory('jets')}
-                          className="px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 transition-all inline-flex items-center gap-2"
+                          className="px-4 py-2 bg-white/60 text-gray-700 text-sm rounded-lg hover:bg-white/80 transition-all inline-flex items-center gap-2 border border-gray-200/50"
+                          style={{ backdropFilter: 'blur(8px)' }}
                         >
-                          <Plane size={14} />
+                          <Plane size={14} className="text-gray-500" />
                           Browse Services
                         </button>
                       </div>
@@ -5031,6 +5068,16 @@ const TokenizedAssetsGlassmorphic = () => {
                         const specialRequests = d.special_requests;
                         // NFT Free Flight check
                         const isNFTFreeFlight = request.type === 'nft_free_flight' || d.is_free === true;
+                        // SPV Formation check
+                        const isSPVFormation = request.type === 'spv_formation';
+                        // SPV specific fields (form uses camelCase)
+                        const spvCompanyName = d.companyName || d.company_name;
+                        const spvJurisdiction = d.jurisdiction;
+                        const spvBusinessActivity = d.businessActivity || d.business_activity;
+                        const spvTier = d.selectedTier;
+                        const spvDirectors = d.numberOfDirectors || d.directors?.length;
+                        const spvShareholders = d.numberOfShareholders || d.shareholders?.length;
+                        const spvJurisdictionDetails = d.jurisdictionDetails;
 
                         const requestTitle = request.type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Request';
                         const getTypeIcon = (type) => {
@@ -5041,6 +5088,7 @@ const TokenizedAssetsGlassmorphic = () => {
                           if (type?.includes('taxi') || type?.includes('transfer') || type?.includes('ground')) return '🚐';
                           if (type?.includes('empty') || type?.includes('leg')) return '🛩️';
                           if (type?.includes('adventure')) return '🏔️';
+                          if (type?.includes('spv')) return '🏢';
                           return '📋';
                         };
 
@@ -5100,7 +5148,19 @@ const TokenizedAssetsGlassmorphic = () => {
                                       year: 'numeric'
                                     })}
                                   </span>
-                                  {flightRoute && (
+                                  {isSPVFormation && spvJurisdiction && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="truncate">{spvJurisdiction}</span>
+                                      {spvCompanyName && (
+                                        <>
+                                          <span>•</span>
+                                          <span className="truncate">{spvCompanyName}</span>
+                                        </>
+                                      )}
+                                    </>
+                                  )}
+                                  {!isSPVFormation && flightRoute && (
                                     <>
                                       <span>•</span>
                                       <span className="truncate">{flightRoute}</span>
@@ -5132,8 +5192,82 @@ const TokenizedAssetsGlassmorphic = () => {
                             {/* Expanded Details */}
                             {isExpanded && (
                               <div className="px-4 pb-4 pt-2 border-t border-gray-50">
+                                {/* SPV Formation Details */}
+                                {isSPVFormation && (
+                                  <>
+                                    <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                                      <p className="text-[10px] text-gray-400 uppercase mb-2">Company Information</p>
+                                      <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                          <p className="text-[10px] text-gray-400">Company Name</p>
+                                          <p className="text-sm font-medium text-gray-900">{spvCompanyName || 'Not specified'}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-[10px] text-gray-400">Jurisdiction</p>
+                                          <p className="text-sm font-medium text-gray-900">{spvJurisdiction || 'Not specified'}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-[10px] text-gray-400">Business Activity</p>
+                                          <p className="text-sm font-medium text-gray-900">{spvBusinessActivity || 'Not specified'}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-[10px] text-gray-400">Service Tier</p>
+                                          <p className="text-sm font-medium text-gray-900 capitalize">{spvTier || 'Standard'}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    {spvJurisdictionDetails && (
+                                      <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                                        <p className="text-[10px] text-gray-400 uppercase mb-2">Jurisdiction Details</p>
+                                        <div className="grid grid-cols-2 gap-3">
+                                          <div>
+                                            <p className="text-[10px] text-gray-400">Tax Rate</p>
+                                            <p className="text-sm font-medium text-gray-900">{spvJurisdictionDetails.tax || 'N/A'}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-[10px] text-gray-400">Formation Duration</p>
+                                            <p className="text-sm font-medium text-gray-900">{spvJurisdictionDetails.duration || 'N/A'}</p>
+                                          </div>
+                                        </div>
+                                        {spvJurisdictionDetails.description && (
+                                          <div className="mt-2">
+                                            <p className="text-[10px] text-gray-400">Description</p>
+                                            <p className="text-xs text-gray-600">{spvJurisdictionDetails.description}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                    <div className="flex flex-wrap gap-2 mb-3">
+                                      {spvDirectors && (
+                                        <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600 flex items-center gap-1">
+                                          <Users size={10} className="text-gray-400" />
+                                          {spvDirectors} Director{spvDirectors > 1 ? 's' : ''}
+                                        </div>
+                                      )}
+                                      {spvShareholders && (
+                                        <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600 flex items-center gap-1">
+                                          <Users size={10} className="text-gray-400" />
+                                          {spvShareholders} Shareholder{spvShareholders > 1 ? 's' : ''}
+                                        </div>
+                                      )}
+                                      {d.needsNomineeDirector && (
+                                        <span className="px-2 py-1 bg-blue-50 rounded text-xs text-blue-700">Nominee Director</span>
+                                      )}
+                                      {d.needsNomineeShareholder && (
+                                        <span className="px-2 py-1 bg-blue-50 rounded text-xs text-blue-700">Nominee Shareholder</span>
+                                      )}
+                                      {d.needsBankAccountGuarantee && (
+                                        <span className="px-2 py-1 bg-blue-50 rounded text-xs text-blue-700">Bank Account</span>
+                                      )}
+                                      {d.needsExpressService && (
+                                        <span className="px-2 py-1 bg-amber-50 rounded text-xs text-amber-700">Express Service</span>
+                                      )}
+                                    </div>
+                                  </>
+                                )}
+
                                 {/* Route Display - Full Locations with IATA */}
-                                {(fromLocation || toLocation) && (
+                                {!isSPVFormation && (fromLocation || toLocation) && (
                                   <div className="bg-gray-50 rounded-lg p-3 mb-3">
                                     <div className="flex items-center justify-between">
                                       <div className="flex-1">
@@ -5156,7 +5290,7 @@ const TokenizedAssetsGlassmorphic = () => {
                                 )}
 
                                 {/* Aircraft/Vehicle Info */}
-                                {(aircraft || manufacturer || category) && (
+                                {!isSPVFormation && (aircraft || manufacturer || category) && (
                                   <div className="bg-gray-50 rounded-lg p-3 mb-3">
                                     <p className="text-[10px] text-gray-400 uppercase mb-1">Aircraft / Vehicle</p>
                                     <p className="text-sm font-medium text-gray-900">
@@ -5360,14 +5494,16 @@ const TokenizedAssetsGlassmorphic = () => {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setActiveCategory('subscriptions')}
-                      className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-all flex items-center gap-1.5"
+                      className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white/50 hover:bg-white/70 rounded-lg transition-all flex items-center gap-1.5 border border-gray-200/50"
+                      style={{ backdropFilter: 'blur(8px)' }}
                     >
                       <Crown size={14} />
                       Subscriptions
                     </button>
                     <button
                       onClick={() => setActiveCategory('chat-history')}
-                      className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-all flex items-center gap-1.5"
+                      className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white/50 hover:bg-white/70 rounded-lg transition-all flex items-center gap-1.5 border border-gray-200/50"
+                      style={{ backdropFilter: 'blur(8px)' }}
                     >
                       <History size={14} />
                       Chat History
@@ -5430,9 +5566,10 @@ const TokenizedAssetsGlassmorphic = () => {
                             setActiveChat('new'); // Reset to new chat screen directly
                             window.history.pushState({}, '', '/dashboard/chat');
                           }}
-                          className="px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 transition-all inline-flex items-center gap-2"
+                          className="px-4 py-2 bg-white/60 text-gray-700 text-sm rounded-lg hover:bg-white/80 transition-all inline-flex items-center gap-2 border border-gray-200/50"
+                          style={{ backdropFilter: 'blur(8px)' }}
                         >
-                          <MessageSquare size={14} />
+                          <MessageSquare size={14} className="text-gray-500" />
                           Start New Chat
                         </button>
                       </div>
@@ -5595,9 +5732,9 @@ const TokenizedAssetsGlassmorphic = () => {
 
                                 {/* Admin Notes */}
                                 {request.admin_notes && (
-                                  <div className="bg-gray-900 rounded-lg p-3 mb-4">
-                                    <p className="text-[10px] text-gray-400 uppercase mb-1">Response</p>
-                                    <p className="text-xs text-white">{request.admin_notes}</p>
+                                  <div className="bg-white/60 rounded-lg p-3 mb-4 border border-gray-200/50" style={{ backdropFilter: 'blur(8px)' }}>
+                                    <p className="text-[10px] text-gray-500 uppercase mb-1">Response</p>
+                                    <p className="text-xs text-gray-700">{request.admin_notes}</p>
                                   </div>
                                 )}
 
@@ -5646,9 +5783,10 @@ const TokenizedAssetsGlassmorphic = () => {
                                           }
                                         }
                                       }}
-                                      className="px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-1.5"
+                                      className="px-3 py-1.5 bg-white/60 text-gray-700 text-xs rounded-lg hover:bg-white/80 transition-colors flex items-center gap-1.5 border border-gray-200/50"
+                                      style={{ backdropFilter: 'blur(8px)' }}
                                     >
-                                      <MessageSquare size={12} />
+                                      <MessageSquare size={12} className="text-gray-500" />
                                       Continue Chat
                                     </button>
                                   )}
@@ -5671,9 +5809,10 @@ const TokenizedAssetsGlassmorphic = () => {
                       setActiveCategory('chat');
                       setActiveChat('new'); // Reset to new chat screen directly
                     }}
-                    className="w-full px-4 py-3 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-all flex items-center justify-center gap-2"
+                    className="w-full px-4 py-3 bg-white/60 text-gray-700 text-sm font-medium rounded-xl hover:bg-white/80 transition-all flex items-center justify-center gap-2 border border-gray-200/50"
+                    style={{ backdropFilter: 'blur(8px)' }}
                   >
-                    <Plus size={16} />
+                    <Plus size={16} className="text-gray-500" />
                     New AI Request
                   </button>
                 </div>
@@ -5779,8 +5918,8 @@ const TokenizedAssetsGlassmorphic = () => {
                 {/* Success Card */}
                 <div className="bg-white/50 backdrop-blur-sm border border-gray-200/50 rounded-2xl p-8 text-center">
                   {/* Success Icon */}
-                  <div className="w-20 h-20 bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Check size={40} className="text-white" />
+                  <div className="w-20 h-20 bg-white/70 rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-200/50" style={{ backdropFilter: 'blur(8px)' }}>
+                    <Check size={40} className="text-emerald-500" />
                   </div>
 
                   {/* Title */}
@@ -5799,32 +5938,36 @@ const TokenizedAssetsGlassmorphic = () => {
                     <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-4">Your Benefits</h3>
                     <ul className="space-y-4">
                       <li className="flex items-center gap-4">
-                        <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center flex-shrink-0">
-                          <MessageSquare size={16} className="text-white" />
+                        <div className="w-8 h-8 bg-white/60 rounded-full flex items-center justify-center flex-shrink-0 border border-gray-200/50">
+                          <MessageSquare size={16} className="text-gray-600" />
                         </div>
                         <div>
                           <div className="font-medium text-gray-900">
-                            {successSubscriptionTier === 'elite' ? 'Unlimited' : successSubscriptionTier === 'pro' ? '30' : '15'} AI Conversations
+                            {successSubscriptionTier === 'elite' ? 'Unlimited' : successSubscriptionTier === 'traveller' ? '10' : '5'} AI Conversations
                           </div>
                           <div className="text-sm text-gray-500">Per month, resets automatically</div>
                         </div>
                       </li>
                       <li className="flex items-center gap-4">
-                        <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center flex-shrink-0">
-                          <Zap size={16} className="text-white" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">Break the Price</div>
-                          <div className="text-sm text-gray-500">Submit quotes for better pricing</div>
-                        </div>
-                      </li>
-                      <li className="flex items-center gap-4">
-                        <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center flex-shrink-0">
-                          <Crown size={16} className="text-white" />
+                        <div className="w-8 h-8 bg-white/60 rounded-full flex items-center justify-center flex-shrink-0 border border-gray-200/50">
+                          <Zap size={16} className="text-gray-600" />
                         </div>
                         <div>
                           <div className="font-medium text-gray-900">
-                            {successSubscriptionTier === 'elite' ? '24/7 VIP Support' : successSubscriptionTier === 'pro' ? 'Priority Support' : 'Email & Voice Support'}
+                            {successSubscriptionTier === 'explorer' ? 'Basic Services' : 'Break the Price'}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {successSubscriptionTier === 'explorer' ? 'Empty legs, restaurants, ground transport' : 'Submit quotes for better pricing'}
+                          </div>
+                        </div>
+                      </li>
+                      <li className="flex items-center gap-4">
+                        <div className="w-8 h-8 bg-white/60 rounded-full flex items-center justify-center flex-shrink-0 border border-gray-200/50">
+                          <Crown size={16} className="text-gray-600" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {successSubscriptionTier === 'elite' ? '24/7 Phone Support' : successSubscriptionTier === 'traveller' ? 'Priority Support' : 'Email Support'}
                           </div>
                           <div className="text-sm text-gray-500">Dedicated assistance when you need it</div>
                         </div>
@@ -5833,10 +5976,10 @@ const TokenizedAssetsGlassmorphic = () => {
                   </div>
 
                   {/* PDF Confirmation Notice */}
-                  <div className="bg-gray-100/80 rounded-xl p-4 mb-6 text-left border border-gray-200/50">
+                  <div className="bg-white/60 rounded-xl p-4 mb-6 text-left border border-gray-200/50" style={{ backdropFilter: 'blur(8px)' }}>
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center flex-shrink-0">
-                        <FileText size={16} className="text-white" />
+                      <div className="w-8 h-8 bg-white/70 rounded-full flex items-center justify-center flex-shrink-0 border border-gray-200/50">
+                        <FileText size={16} className="text-gray-600" />
                       </div>
                       <div className="flex-1">
                         <div className="font-medium text-gray-900 text-sm">Confirmation PDF</div>
@@ -5852,11 +5995,11 @@ const TokenizedAssetsGlassmorphic = () => {
                         <button
                           onClick={() => {
                             const planDetails = {
-                              starter: { name: 'Starter', price: 20, features: ['5 AI Conversations/month', '50 messages per conversation', 'Break the Price feature', 'Email Support'] },
-                              pro: { name: 'Professional', price: 40, features: ['20 AI Conversations/month', '100 messages per conversation', 'Break the Price feature', 'Priority Support', 'Dedicated Manager'] },
-                              elite: { name: 'Elite', price: 130, features: ['Unlimited AI Conversations', 'Unlimited messages per chat', 'Unlimited Break the Price', '24/7 Concierge Service'] }
+                              explorer: { name: 'Explorer', price: 49, features: ['5 AI Conversations/month', '10 messages per conversation', 'Break the Price feature', 'Email Support'] },
+                              traveller: { name: 'Traveller', price: 99, features: ['10 AI Conversations/month', '25 messages per conversation', 'Break the Price feature', 'Priority Support', 'Dedicated Manager'] },
+                              elite: { name: 'Elite Club', price: 399, features: ['Unlimited AI Conversations', 'Unlimited messages per chat', 'Unlimited Break the Price', '24/7 Concierge Service'] }
                             };
-                            const plan = planDetails[successSubscriptionTier] || planDetails.starter;
+                            const plan = planDetails[successSubscriptionTier] || planDetails.explorer;
                             const subscriptionData = {
                               id: `SUB-${Date.now()}`,
                               tier: successSubscriptionTier,
@@ -5877,7 +6020,8 @@ const TokenizedAssetsGlassmorphic = () => {
                             const filename = `PrivateCharterX_Subscription_${successSubscriptionTier.toUpperCase()}_${new Date().toISOString().split('T')[0]}.pdf`;
                             downloadPDF(pdfBlob, filename);
                           }}
-                          className="px-3 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+                          className="px-3 py-1.5 text-xs font-medium bg-white/60 text-gray-700 rounded-lg hover:bg-white/80 transition-colors border border-gray-200/50"
+                          style={{ backdropFilter: 'blur(8px)' }}
                         >
                           Download Again
                         </button>
@@ -5892,15 +6036,17 @@ const TokenizedAssetsGlassmorphic = () => {
                   <div className="flex gap-4">
                     <button
                       onClick={() => setActiveCategory('subscriptions')}
-                      className="flex-1 px-6 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                      className="flex-1 px-6 py-3 bg-white/60 text-gray-700 rounded-xl hover:bg-white/80 transition-colors font-medium border border-gray-200/50"
+                      style={{ backdropFilter: 'blur(8px)' }}
                     >
                       Manage Plan
                     </button>
                     <button
                       onClick={() => setActiveCategory('ai-chat')}
-                      className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
+                      className="flex-1 px-6 py-3 bg-white/60 text-gray-700 rounded-xl hover:bg-white/80 transition-colors font-medium flex items-center justify-center gap-2 border border-gray-200/50"
+                      style={{ backdropFilter: 'blur(8px)' }}
                     >
-                      <Sparkles size={18} />
+                      <Sparkles size={18} className="text-gray-500" />
                       Start AI Chat
                     </button>
                   </div>
@@ -6230,8 +6376,13 @@ const TokenizedAssetsGlassmorphic = () => {
                         <button
                           onClick={() => {
                             // Open AI Chat with prefilled message based on current aviation type
-                            const query = encodeURIComponent(currentAviationType === 0 ? 'I want to charter a helicopter' : 'I want to charter a private jet');
-                            navigate(`/dashboard/chat?query=${query}`);
+                            const queryText = currentAviationType === 0 ? 'I want to charter a helicopter' : 'I want to charter a private jet';
+                            // Set state directly to ensure it's picked up immediately
+                            setAiChatQuery(queryText);
+                            setActiveChat('new');
+                            setActiveCategory('chat');
+                            // Update URL cosmetically
+                            window.history.pushState({}, '', `/dashboard/chat?query=${encodeURIComponent(queryText)}`);
                           }}
                           className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50 relative overflow-hidden"
                           style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
@@ -6815,11 +6966,12 @@ const TokenizedAssetsGlassmorphic = () => {
                       };
 
                       // Extract data from the spv.data JSON field
+                      // Note: formData uses camelCase (companyName, businessActivity)
                       const spvData = spv.data || {};
-                      const jurisdictionFlag = spvData.jurisdiction_flag || '🏢';
-                      const companyName = spvData.company_name || spv.service_type || 'SPV Formation';
+                      const jurisdictionFlag = spvData.jurisdiction_flag || spvData.jurisdictionFlag || '🏢';
+                      const companyName = spvData.companyName || spvData.company_name || spv.service_type || 'SPV Formation';
                       const jurisdiction = spvData.jurisdiction || '';
-                      const businessActivity = spvData.business_activity || '';
+                      const businessActivity = spvData.businessActivity || spvData.business_activity || '';
 
                       return (
                         <div key={spv.id} className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all">
@@ -6915,11 +7067,11 @@ const TokenizedAssetsGlassmorphic = () => {
                       <div className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-xl p-6 mb-6">
                         <div className="flex items-start gap-4">
                           <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-4xl">
-                            {spvData.jurisdiction_flag || '🏢'}
+                            {spvData.jurisdictionFlag || spvData.jurisdiction_flag || '🏢'}
                           </div>
                           <div className="flex-1">
                             <h1 className="text-2xl font-semibold text-gray-900 mb-1">
-                              {spvData.company_name || selectedSPV.service_type || 'SPV Formation'}
+                              {spvData.companyName || spvData.company_name || selectedSPV.service_type || 'SPV Formation'}
                             </h1>
                             <p className="text-sm text-gray-600 mb-2">{spvData.jurisdiction || ''}</p>
                             <span className={`inline-block text-xs px-3 py-1 rounded-full ${statusColors[selectedSPV.status] || 'bg-gray-100 text-gray-700'}`}>
@@ -6935,19 +7087,19 @@ const TokenizedAssetsGlassmorphic = () => {
                         <div className="grid grid-cols-2 gap-4">
                           <div className="bg-gray-50 rounded-lg p-4">
                             <p className="text-xs text-gray-500 mb-1">Company Name</p>
-                            <p className="text-sm font-medium text-gray-900">{spvData.company_name || 'N/A'}</p>
+                            <p className="text-sm font-medium text-gray-900">{spvData.companyName || spvData.company_name || 'N/A'}</p>
                           </div>
                           <div className="bg-gray-50 rounded-lg p-4">
                             <p className="text-xs text-gray-500 mb-1">Business Activity</p>
-                            <p className="text-sm font-medium text-gray-900">{spvData.business_activity || 'N/A'}</p>
+                            <p className="text-sm font-medium text-gray-900">{spvData.businessActivity || spvData.business_activity || 'N/A'}</p>
                           </div>
                           <div className="bg-gray-50 rounded-lg p-4">
                             <p className="text-xs text-gray-500 mb-1">Number of Directors</p>
-                            <p className="text-sm font-medium text-gray-900">{spvData.number_of_directors || 'N/A'}</p>
+                            <p className="text-sm font-medium text-gray-900">{spvData.numberOfDirectors || spvData.number_of_directors || 'N/A'}</p>
                           </div>
                           <div className="bg-gray-50 rounded-lg p-4">
                             <p className="text-xs text-gray-500 mb-1">Number of Shareholders</p>
-                            <p className="text-sm font-medium text-gray-900">{spvData.number_of_shareholders || 'N/A'}</p>
+                            <p className="text-sm font-medium text-gray-900">{spvData.numberOfShareholders || spvData.number_of_shareholders || (spvData.shareholders?.length) || 'N/A'}</p>
                           </div>
                         </div>
                       </div>
@@ -6958,65 +7110,92 @@ const TokenizedAssetsGlassmorphic = () => {
                         <div className="grid grid-cols-2 gap-4">
                           <div className="bg-gray-50 rounded-lg p-4">
                             <p className="text-xs text-gray-500 mb-1">Jurisdiction</p>
-                            <p className="text-sm font-medium text-gray-900">{spvData.jurisdiction || 'N/A'}</p>
+                            <p className="text-sm font-medium text-gray-900">{spvData.jurisdiction || spvData.jurisdictionDetails?.name || 'N/A'}</p>
                           </div>
                           <div className="bg-gray-50 rounded-lg p-4">
                             <p className="text-xs text-gray-500 mb-1">Tax Rate</p>
-                            <p className="text-sm font-medium text-gray-900">{spvData.jurisdiction_tax_rate || 'N/A'}</p>
+                            <p className="text-sm font-medium text-gray-900">{spvData.jurisdictionDetails?.tax || spvData.jurisdiction_tax_rate || 'N/A'}</p>
                           </div>
                           <div className="bg-gray-50 rounded-lg p-4">
                             <p className="text-xs text-gray-500 mb-1">Formation Duration</p>
-                            <p className="text-sm font-medium text-gray-900">{spvData.jurisdiction_duration || 'N/A'}</p>
+                            <p className="text-sm font-medium text-gray-900">{spvData.jurisdictionDetails?.duration || spvData.jurisdiction_duration || 'N/A'}</p>
                           </div>
                           <div className="bg-gray-50 rounded-lg p-4">
-                            <p className="text-xs text-gray-500 mb-1">Annual Fee</p>
+                            <p className="text-xs text-gray-500 mb-1">Description</p>
                             <p className="text-sm font-medium text-gray-900">
-                              {spvData.jurisdiction_annual_fee ? `$${parseFloat(spvData.jurisdiction_annual_fee).toLocaleString()}` : 'N/A'}
+                              {spvData.jurisdictionDetails?.description || spvData.jurisdiction_description || 'N/A'}
                             </p>
                           </div>
                         </div>
                       </div>
 
-                      {/* Cost Summary */}
+                      {/* Selected Tier & Services */}
                       <div className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-xl p-6 mb-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Cost Summary</h3>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Selected Package</h3>
                         <div className="space-y-3">
                           <div className="flex justify-between items-center py-2">
-                            <span className="text-sm text-gray-600">Formation Fee</span>
-                            <span className="text-sm font-medium text-gray-900">
-                              {spvData.jurisdiction_formation_fee ? `$${parseFloat(spvData.jurisdiction_formation_fee).toLocaleString()}` : 'N/A'}
+                            <span className="text-sm text-gray-600">Service Tier</span>
+                            <span className="text-sm font-medium text-gray-900 capitalize">
+                              {spvData.selectedTier || 'Standard'}
                             </span>
                           </div>
-                          <div className="flex justify-between items-center py-2">
-                            <span className="text-sm text-gray-600">Annual Fee</span>
-                            <span className="text-sm font-medium text-gray-900">
-                              {spvData.jurisdiction_annual_fee ? `$${parseFloat(spvData.jurisdiction_annual_fee).toLocaleString()}` : 'N/A'}
-                            </span>
-                          </div>
+                          {spvData.needsNomineeDirector && (
+                            <div className="flex justify-between items-center py-2">
+                              <span className="text-sm text-gray-600">Nominee Director</span>
+                              <span className="text-sm font-medium text-green-600">✓ Included</span>
+                            </div>
+                          )}
+                          {spvData.needsNomineeShareholder && (
+                            <div className="flex justify-between items-center py-2">
+                              <span className="text-sm text-gray-600">Nominee Shareholder</span>
+                              <span className="text-sm font-medium text-green-600">✓ Included</span>
+                            </div>
+                          )}
+                          {spvData.needsBankAccountGuarantee && (
+                            <div className="flex justify-between items-center py-2">
+                              <span className="text-sm text-gray-600">Bank Account Guarantee</span>
+                              <span className="text-sm font-medium text-green-600">✓ Included</span>
+                            </div>
+                          )}
+                          {spvData.needsAccounting && (
+                            <div className="flex justify-between items-center py-2">
+                              <span className="text-sm text-gray-600">Accounting & Bookkeeping</span>
+                              <span className="text-sm font-medium text-green-600">✓ Included</span>
+                            </div>
+                          )}
+                          {spvData.needsExpressService && (
+                            <div className="flex justify-between items-center py-2">
+                              <span className="text-sm text-gray-600">Express Service</span>
+                              <span className="text-sm font-medium text-green-600">✓ Included</span>
+                            </div>
+                          )}
                           <div className="flex justify-between items-center py-3 border-t border-gray-200">
-                            <span className="text-base font-semibold text-gray-900">Total First Year</span>
+                            <span className="text-base font-semibold text-gray-900">Estimated Cost</span>
                             <span className="text-xl font-bold text-gray-900">
-                              {selectedSPV.estimated_cost ? `$${parseFloat(selectedSPV.estimated_cost).toLocaleString()}` : 'N/A'}
+                              {selectedSPV.estimated_cost ? `$${parseFloat(selectedSPV.estimated_cost).toLocaleString()}` : 'Quote pending'}
                             </span>
                           </div>
+                          <p className="text-xs text-gray-500 text-center">
+                            Final pricing will be provided after legal review
+                          </p>
                         </div>
                       </div>
 
                       {/* Contact Information */}
-                      {(spvData.contact_email || spvData.contact_phone) && (
+                      {(spvData.contactEmail || spvData.contact_email || spvData.contactPhone || spvData.contact_phone) && (
                         <div className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-xl p-6 mb-6">
                           <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
                           <div className="grid grid-cols-2 gap-4">
-                            {spvData.contact_email && (
+                            {(spvData.contactEmail || spvData.contact_email) && (
                               <div className="bg-gray-50 rounded-lg p-4">
                                 <p className="text-xs text-gray-500 mb-1">Email</p>
-                                <p className="text-sm font-medium text-gray-900">{spvData.contact_email}</p>
+                                <p className="text-sm font-medium text-gray-900">{spvData.contactEmail || spvData.contact_email}</p>
                               </div>
                             )}
-                            {spvData.contact_phone && (
+                            {(spvData.contactPhone || spvData.contact_phone) && (
                               <div className="bg-gray-50 rounded-lg p-4">
                                 <p className="text-xs text-gray-500 mb-1">Phone</p>
-                                <p className="text-sm font-medium text-gray-900">{spvData.contact_phone}</p>
+                                <p className="text-sm font-medium text-gray-900">{spvData.contactPhone || spvData.contact_phone}</p>
                               </div>
                             )}
                           </div>
@@ -7024,12 +7203,12 @@ const TokenizedAssetsGlassmorphic = () => {
                       )}
 
                       {/* Tokenization Plans */}
-                      {spvData.planning_to_tokenize && (
+                      {(spvData.planningToTokenizeAssets || spvData.planning_to_tokenize) && (
                         <div className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-xl p-6 mb-6">
                           <h3 className="text-lg font-semibold text-gray-900 mb-4">Tokenization Plans</h3>
                           <div className="bg-blue-50 rounded-lg p-4">
                             <p className="text-sm text-blue-800">
-                              Planning to tokenize: <span className="font-medium">{spvData.asset_type || 'Assets'}</span>
+                              Planning to tokenize: <span className="font-medium">{(spvData.tokenizeAssetTypes || []).join(', ') || spvData.asset_type || 'Assets'}</span>
                             </p>
                           </div>
                         </div>
@@ -7289,7 +7468,7 @@ const TokenizedAssetsGlassmorphic = () => {
 
           {/* Taxi/Concierge View */}
           {!isTransitioning && activeCategory === 'ground-transport' && (
-            <div className="w-full h-full">
+            <div className="w-full h-full pt-4 md:pt-6">
               <TaxiConciergeView
                 onRequestSubmit={(data) => {
                   console.log('Taxi request submitted:', data);
@@ -7304,7 +7483,7 @@ const TokenizedAssetsGlassmorphic = () => {
             <div className="w-full flex-1 flex flex-col">
 
               {!showJetDetail && (
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6 gap-3">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6 gap-3 pt-4 md:pt-6">
                 <h2 className="text-xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter">Private Jets</h2>
 
                 <div className="flex items-center gap-2 md:gap-3">
@@ -7321,30 +7500,6 @@ const TokenizedAssetsGlassmorphic = () => {
                     <SlidersHorizontal size={12} />
                     <span>Filters</span>
                   </button>
-
-                  {/* View Mode Switcher - Hidden on mobile, force grid on mobile */}
-                  <div className="hidden md:flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                    <button
-                      onClick={() => setJetsViewMode('grid')}
-                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                        jetsViewMode === 'grid'
-                          ? 'bg-gray-800 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      Grid
-                    </button>
-                    <button
-                      onClick={() => setJetsViewMode('tabs')}
-                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                        jetsViewMode === 'tabs'
-                          ? 'bg-gray-800 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      Tabs
-                    </button>
-                  </div>
 
                   {/* Charter a Jet Button - Opens AI Chat */}
                   <button
@@ -7458,202 +7613,8 @@ const TokenizedAssetsGlassmorphic = () => {
                 </div>
               )}
 
-              {/* Jets Grid View - Mobile Optimized with Vertical Cards */}
-              {!showJetDetail && !isLoadingJets && (jetsViewMode === 'grid' || window.innerWidth < 768) && (
-                <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5">
-                  {jetsData
-                    .slice((currentJetsPage - 1) * jetsPerPage, currentJetsPage * jetsPerPage)
-                    .map((jet) => (
-                    <div
-                      key={jet.id}
-                      onClick={() => handleJetClick(jet)}
-                      className="bg-white/35 hover:bg-white/40 rounded-xl overflow-hidden hover:shadow-lg cursor-pointer border border-gray-300/50"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    >
-                      {/* Mobile: Vertical stacked layout */}
-                      <div className="md:hidden">
-                        {/* Image on top */}
-                        <div className="relative h-36 bg-white/10">
-                          {jet.image && (
-                            <img
-                              src={jet.image}
-                              alt={jet.name}
-                              className="w-full h-full object-cover"
-                            />
-                          )}
-                          <div className="absolute top-2 left-2 flex flex-wrap gap-1">
-                            <div className="bg-white/90 px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 backdrop-blur-sm">
-                              <span className="w-1 h-1 bg-red-500 rounded-full"></span>
-                              <span className="text-gray-800">{jet.location}</span>
-                            </div>
-                            <div className="bg-white/90 px-1.5 py-0.5 rounded text-[10px] font-medium text-gray-800 backdrop-blur-sm">✈️ {jet.category?.substring(0, 15)}</div>
-                          </div>
-                        </div>
-                        {/* Content below */}
-                        <div className="p-3">
-                          <h3 className="text-sm font-semibold text-gray-800 mb-2 line-clamp-1">{jet.name}</h3>
-                          <div className="grid grid-cols-3 gap-2 mb-3">
-                            <div className="text-center bg-gray-100/50 rounded-lg py-1.5">
-                              <span className="text-[10px] text-gray-500 block">Price</span>
-                              <span className="text-xs font-semibold text-gray-800">{jet.totalPrice}</span>
-                            </div>
-                            <div className="text-center bg-gray-100/50 rounded-lg py-1.5">
-                              <span className="text-[10px] text-gray-500 block">Capacity</span>
-                              <span className="text-xs font-semibold text-gray-800">{jet.capacity}</span>
-                            </div>
-                            <div className="text-center bg-gray-100/50 rounded-lg py-1.5">
-                              <span className="text-[10px] text-gray-500 block">Range</span>
-                              <span className="text-xs font-semibold text-gray-800">{jet.range}</span>
-                            </div>
-                          </div>
-                          <button className="w-full py-2 bg-gray-800 text-white rounded-lg text-xs font-medium">
-                            View Details
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Desktop: Horizontal layout */}
-                      <div className="hidden md:flex h-64">
-                        <div className="w-2/5 bg-white/10 relative flex-shrink-0 rounded-l-xl overflow-hidden">
-                          {jet.image && (
-                            <img
-                              src={jet.image}
-                              alt={jet.name}
-                              className="w-full h-64 object-cover"
-                            />
-                          )}
-                          <div className="absolute top-3 left-3 flex flex-col space-y-1.5">
-                            <div className="flex space-x-1.5">
-                              <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium flex items-center space-x-1 backdrop-blur-sm">
-                                <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
-                                <span className="text-gray-800">{jet.location}</span>
-                              </div>
-                              <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium text-gray-800 backdrop-blur-sm">⌂ {jet.category}</div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex-1 p-5 flex flex-col">
-                          <div className="flex items-center justify-between mb-3">
-                            {jet.rawData?.is_partner_offer ? (
-                              <div className="flex items-center gap-2">
-                                <img
-                                  src={jet.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
-                                  alt={jet.rawData.partner_name || 'Partner'}
-                                  className="h-6 w-auto object-contain rounded"
-                                  onError={(e) => {
-                                    e.target.src = 'https://via.placeholder.com/80x24/000/fff?text=Partner';
-                                  }}
-                                />
-                              </div>
-                            ) : (
-                              <img
-                                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_logo_vectorized.glb.png"
-                                alt="PrivateCharterX"
-                                className="h-6 w-auto object-contain"
-                              />
-                            )}
-                          </div>
-                          <h3 className="text-base font-semibold text-gray-800 mb-4 line-clamp-2 overflow-hidden">{jet.name}</h3>
-                          <div className="flex space-x-6 border-b border-gray-600/30 mb-5">
-                            <button className="pb-3 text-xs relative text-gray-800">
-                              Properties
-                              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-800"></div>
-                            </button>
-                            <button className="pb-3 text-xs text-gray-600">Description</button>
-                          </div>
-
-                          {/* Jet specific fields */}
-                          <div className="flex justify-between mt-auto mb-5">
-                            <div className="flex flex-col space-y-1">
-                              <span className="text-xs text-gray-600">Price Range</span>
-                              <span className="text-sm font-semibold text-gray-800">{jet.totalPrice}</span>
-                            </div>
-                            <div className="flex flex-col space-y-1">
-                              <span className="text-xs text-gray-600">Capacity</span>
-                              <span className="text-sm font-semibold text-gray-800">{jet.capacity}</span>
-                            </div>
-                            <div className="flex flex-col space-y-1">
-                              <span className="text-xs text-gray-600">Range</span>
-                              <span className="text-sm font-semibold text-gray-800">{jet.range}</span>
-                            </div>
-                          </div>
-
-                          <div className="flex space-x-4 pt-4 border-t border-gray-600/30 text-xs">
-                            <a href="#" className="text-gray-600 hover:text-gray-800">See details ↗</a>
-                            <a href="#" className="text-gray-600 hover:text-gray-800">Aircraft specs ⚖</a>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {jetsData.length > jetsPerPage && (
-                  <div className="flex justify-center items-center mt-8 gap-2">
-                    <button
-                      onClick={() => setCurrentJetsPage(prev => Math.max(1, prev - 1))}
-                      disabled={currentJetsPage === 1}
-                      className="px-4 py-2 bg-white/35 hover:bg-white/40 border border-gray-300/50 rounded-lg text-sm text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    >
-                      Previous
-                    </button>
-
-                    {(() => {
-                      const totalPages = Math.ceil(jetsData.length / jetsPerPage);
-                      const pages = [];
-
-                      if (totalPages <= 5) {
-                        for (let i = 1; i <= totalPages; i++) pages.push(i);
-                      } else {
-                        pages.push(1);
-                        if (currentJetsPage > 3) pages.push('...');
-
-                        for (let i = Math.max(2, currentJetsPage - 1); i <= Math.min(totalPages - 1, currentJetsPage + 1); i++) {
-                          if (!pages.includes(i)) pages.push(i);
-                        }
-
-                        if (currentJetsPage < totalPages - 2) pages.push('...');
-                        if (!pages.includes(totalPages)) pages.push(totalPages);
-                      }
-
-                      return pages.map((page, idx) =>
-                        page === '...' ? (
-                          <span key={`ellipsis-${idx}`} className="px-2 text-gray-500">...</span>
-                        ) : (
-                          <button
-                            key={page}
-                            onClick={() => setCurrentJetsPage(page)}
-                            className={`w-10 h-10 rounded-lg text-sm transition-all ${
-                              currentJetsPage === page
-                                ? 'bg-gray-800 text-white'
-                                : 'bg-white/35 hover:bg-white/40 border border-gray-300/50 text-gray-700'
-                            }`}
-                            style={currentJetsPage !== page ? { backdropFilter: 'blur(20px) saturate(180%)' } : {}}
-                          >
-                            {page}
-                          </button>
-                        )
-                      );
-                    })()}
-
-                    <button
-                      onClick={() => setCurrentJetsPage(prev => Math.min(Math.ceil(jetsData.length / jetsPerPage), prev + 1))}
-                      disabled={currentJetsPage === Math.ceil(jetsData.length / jetsPerPage)}
-                      className="px-4 py-2 bg-white/35 hover:bg-white/40 border border-gray-300/50 rounded-lg text-sm text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    >
-                      Next
-                    </button>
-                  </div>
-                )}
-                </>
-              )}
-
-              {/* Jets Tabs View - List Format */}
-              {!showJetDetail && !isLoadingJets && jetsViewMode === 'tabs' && (
+              {/* Jets List View */}
+              {!showJetDetail && !isLoadingJets && (
                 <div className="w-full space-y-2">
                   {jetsData
                     .slice((currentJetsPage - 1) * jetsPerPage, currentJetsPage * jetsPerPage)
@@ -7664,8 +7625,38 @@ const TokenizedAssetsGlassmorphic = () => {
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                       onClick={() => handleJetClick(jet)}
                     >
-                      <div className="flex items-center p-4 gap-4">
-                        {/* Icon/Image */}
+                      {/* Mobile Layout */}
+                      <div className="md:hidden p-3">
+                        <div className="flex gap-3">
+                          <div className="w-20 h-20 bg-gray-100/50 rounded-lg flex-shrink-0 overflow-hidden">
+                            {jet.image ? (
+                              <img src={jet.image} alt={jet.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Plane size={24} className="text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-semibold text-gray-800 line-clamp-1">{jet.name}</h3>
+                            <p className="text-[10px] text-gray-500 mb-2 line-clamp-1">{jet.category}</p>
+                            <div className="flex gap-3 text-[10px]">
+                              <div>
+                                <span className="text-gray-500">Capacity: </span>
+                                <span className="font-medium text-gray-800">{jet.capacity}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">Range: </span>
+                                <span className="font-medium text-gray-800">{jet.range}</span>
+                              </div>
+                            </div>
+                            <div className="text-xs font-semibold text-gray-800 mt-1">{jet.totalPrice}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Desktop Layout */}
+                      <div className="hidden md:flex items-center p-4 gap-4">
                         <div className="w-16 h-16 bg-gray-100/50 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
                           {jet.image ? (
                             <img src={jet.image} alt={jet.name} className="w-full h-full object-cover" />
@@ -7674,31 +7665,26 @@ const TokenizedAssetsGlassmorphic = () => {
                           )}
                         </div>
 
-                        {/* Jet Name & Description */}
                         <div className="flex-1 min-w-0">
                           <h3 className="text-base font-semibold text-gray-800">{jet.name}</h3>
                           <p className="text-xs text-gray-600">{jet.category}</p>
                         </div>
 
-                        {/* Capacity */}
                         <div className="text-center px-4">
                           <div className="text-sm font-light text-gray-800">{jet.capacity}</div>
                           <div className="text-[10px] text-gray-600">Capacity</div>
                         </div>
 
-                        {/* Price Range */}
                         <div className="text-center px-4">
                           <div className="text-sm font-light text-gray-800">{jet.totalPrice}</div>
                           <div className="text-[10px] text-gray-600">Price Range</div>
                         </div>
 
-                        {/* Range */}
                         <div className="text-center px-4">
                           <div className="text-sm font-light text-gray-800">{jet.range}</div>
                           <div className="text-[10px] text-gray-600">Range</div>
                         </div>
 
-                        {/* Buttons */}
                         <div className="flex gap-2 flex-shrink-0">
                           <button
                             onClick={(e) => {
@@ -7708,12 +7694,6 @@ const TokenizedAssetsGlassmorphic = () => {
                             className="px-4 py-2 bg-gray-800 text-white rounded-lg text-xs font-medium hover:bg-gray-700 transition-all"
                           >
                             View Details
-                          </button>
-                          <button
-                            onClick={(e) => e.stopPropagation()}
-                            className="px-4 py-2 bg-white/20 border border-gray-300/50 text-gray-800 rounded-lg text-xs font-medium hover:bg-white/30 transition-all"
-                          >
-                            Read More
                           </button>
                         </div>
                       </div>
@@ -7976,7 +7956,7 @@ const TokenizedAssetsGlassmorphic = () => {
             <div className="w-full flex-1 flex flex-col">
 
               {!showHelicopterDetail && (
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6 gap-3">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6 gap-3 pt-4 md:pt-6">
                 <h2 className="text-xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter">Helicopter Charters</h2>
 
                 <div className="flex items-center gap-2 md:gap-3">
@@ -7993,30 +7973,6 @@ const TokenizedAssetsGlassmorphic = () => {
                     <SlidersHorizontal size={12} />
                     <span>Filters</span>
                   </button>
-
-                  {/* View Mode Switcher - Hidden on mobile, force grid on mobile */}
-                  <div className="hidden md:flex items-center gap-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-1 backdrop-blur-xl" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                    <button
-                      onClick={() => setHelicoptersViewMode('grid')}
-                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                        helicoptersViewMode === 'grid'
-                          ? 'bg-gray-800 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      Grid
-                    </button>
-                    <button
-                      onClick={() => setHelicoptersViewMode('tabs')}
-                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                        helicoptersViewMode === 'tabs'
-                          ? 'bg-gray-800 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      Tabs
-                    </button>
-                  </div>
 
                   {/* Charter a Heli Button - Opens AI Chat */}
                   <button
@@ -8135,241 +8091,8 @@ const TokenizedAssetsGlassmorphic = () => {
                 </div>
               )}
 
-              {/* Helicopters Grid View - Mobile Optimized with Vertical Cards */}
-              {!isLoadingHelicopters && !showHelicopterDetail && (helicoptersViewMode === 'grid' || window.innerWidth < 768) && (
-                <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5">
-                  {helicoptersData
-                    .slice((currentHelicoptersPage - 1) * helicoptersPerPage, currentHelicoptersPage * helicoptersPerPage)
-                    .map((heli) => (
-                    <div
-                      key={heli.id}
-                      onClick={() => {
-                        setSelectedHelicopter(heli);
-                        setShowHelicopterDetail(true);
-                        setCurrentHelicopterImageIndex(0);
-                      }}
-                      className="bg-white/35 hover:bg-white/40 rounded-xl overflow-hidden hover:shadow-lg cursor-pointer border border-gray-300/50"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    >
-                      {/* Mobile: Vertical stacked layout */}
-                      <div className="md:hidden">
-                        {/* Image on top */}
-                        <div className="relative h-36 bg-white/10">
-                          {heli.image && (
-                            <img
-                              src={heli.image}
-                              alt={heli.name}
-                              className="w-full h-full object-cover"
-                            />
-                          )}
-                          <div className="absolute top-2 left-2 flex flex-wrap gap-1">
-                            <div className="bg-white/90 px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 backdrop-blur-sm">
-                              <span className="w-1 h-1 bg-green-500 rounded-full"></span>
-                              <span className="text-gray-800">{heli.location}</span>
-                            </div>
-                            <div className="bg-white/90 px-1.5 py-0.5 rounded text-[10px] font-medium text-gray-800 backdrop-blur-sm">🚁 {heli.category?.substring(0, 15)}</div>
-                          </div>
-                          <FavouriteButton
-                            item={{
-                              id: heli.id,
-                              type: 'helicopter',
-                              name: heli.name,
-                              location: heli.location,
-                              image: heli.image,
-                              category: heli.category,
-                              price: heli.totalPrice,
-                              metadata: {
-                                capacity: heli.capacity,
-                                range: heli.range,
-                                manufacturer: heli.rawData?.manufacturer
-                              }
-                            }}
-                            variant="floating"
-                            size={16}
-                          />
-                        </div>
-                        {/* Content below */}
-                        <div className="p-3">
-                          <h3 className="text-sm font-semibold text-gray-800 mb-2 line-clamp-1">{heli.name}</h3>
-                          <div className="grid grid-cols-3 gap-2 mb-3">
-                            <div className="text-center bg-gray-100/50 rounded-lg py-1.5">
-                              <span className="text-[10px] text-gray-500 block">Price/Hr</span>
-                              <span className="text-xs font-semibold text-gray-800">{heli.totalPrice}</span>
-                            </div>
-                            <div className="text-center bg-gray-100/50 rounded-lg py-1.5">
-                              <span className="text-[10px] text-gray-500 block">Capacity</span>
-                              <span className="text-xs font-semibold text-gray-800">{heli.capacity}</span>
-                            </div>
-                            <div className="text-center bg-gray-100/50 rounded-lg py-1.5">
-                              <span className="text-[10px] text-gray-500 block">Range</span>
-                              <span className="text-xs font-semibold text-gray-800">{heli.range}</span>
-                            </div>
-                          </div>
-                          <button className="w-full py-2 bg-gray-800 text-white rounded-lg text-xs font-medium">
-                            View Details
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Desktop: Horizontal layout */}
-                      <div className="hidden md:flex h-64">
-                        <div className="w-2/5 bg-white/10 relative flex-shrink-0 rounded-l-xl overflow-hidden">
-                          {heli.image && (
-                            <img
-                              src={heli.image}
-                              alt={heli.name}
-                              className="w-full h-64 object-cover"
-                            />
-                          )}
-                          <div className="absolute top-3 left-3 flex flex-col space-y-1.5">
-                            <div className="flex space-x-1.5">
-                              <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium flex items-center space-x-1 backdrop-blur-sm">
-                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                                <span className="text-gray-800">{heli.location}</span>
-                              </div>
-                              <div className="bg-white/90 px-2 py-1 rounded text-xs font-medium text-gray-800 backdrop-blur-sm">🚁 {heli.category?.substring(0, 20)}</div>
-                            </div>
-                          </div>
-                          <FavouriteButton
-                            item={{
-                              id: heli.id,
-                              type: 'helicopter',
-                              name: heli.name,
-                              location: heli.location,
-                              image: heli.image,
-                              category: heli.category,
-                              price: heli.totalPrice,
-                              metadata: {
-                                capacity: heli.capacity,
-                                range: heli.range,
-                                manufacturer: heli.rawData?.manufacturer
-                              }
-                            }}
-                            variant="floating"
-                            size={18}
-                          />
-                        </div>
-                        <div className="flex-1 p-5 flex flex-col">
-                          <div className="flex items-center justify-between mb-3">
-                            {heli.rawData?.is_partner_offer ? (
-                              <div className="flex items-center gap-2">
-                                <img
-                                  src={heli.rawData.partner_logo_url || 'https://via.placeholder.com/80x24/000/fff?text=Partner'}
-                                  alt={heli.rawData.partner_name || 'Partner'}
-                                  className="h-6 w-auto object-contain rounded"
-                                  onError={(e) => {
-                                    e.target.src = 'https://via.placeholder.com/80x24/000/fff?text=Partner';
-                                  }}
-                                />
-                              </div>
-                            ) : (
-                              <img
-                                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivatecharterX_logo_vectorized.glb.png"
-                                alt="PrivateCharterX"
-                                className="h-6 w-auto object-contain"
-                              />
-                            )}
-                          </div>
-                          <h3 className="text-base font-semibold text-gray-800 mb-4 line-clamp-2 overflow-hidden">{heli.name}</h3>
-                          <div className="flex space-x-6 border-b border-gray-600/30 mb-5">
-                            <button className="pb-3 text-xs relative text-gray-800">
-                              Properties
-                              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-800"></div>
-                            </button>
-                            <button className="pb-3 text-xs text-gray-600">Description</button>
-                          </div>
-
-                          <div className="flex justify-between mt-auto mb-5">
-                            <div className="flex flex-col space-y-1">
-                              <span className="text-xs text-gray-600">Price/Hour</span>
-                              <span className="text-sm font-semibold text-gray-800">{heli.totalPrice}</span>
-                            </div>
-                            <div className="flex flex-col space-y-1">
-                              <span className="text-xs text-gray-600">Capacity</span>
-                              <span className="text-sm font-semibold text-gray-800">{heli.capacity}</span>
-                            </div>
-                            <div className="flex flex-col space-y-1">
-                              <span className="text-xs text-gray-600">Range</span>
-                              <span className="text-sm font-semibold text-gray-800">{heli.range}</span>
-                            </div>
-                          </div>
-
-                          <div className="flex space-x-4 pt-4 border-t border-gray-600/30 text-xs">
-                            <a href="#" className="text-gray-600 hover:text-gray-800">See details ↗</a>
-                            <a href="#" className="text-gray-600 hover:text-gray-800">Specifications ⚖</a>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {helicoptersData.length > helicoptersPerPage && (
-                  <div className="flex justify-center items-center mt-8 gap-2">
-                    <button
-                      onClick={() => setCurrentHelicoptersPage(prev => Math.max(1, prev - 1))}
-                      disabled={currentHelicoptersPage === 1}
-                      className="px-4 py-2 bg-white/35 hover:bg-white/40 border border-gray-300/50 rounded-lg text-sm text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    >
-                      Previous
-                    </button>
-
-                    {(() => {
-                      const totalPages = Math.ceil(helicoptersData.length / helicoptersPerPage);
-                      const pages = [];
-
-                      if (totalPages <= 5) {
-                        for (let i = 1; i <= totalPages; i++) pages.push(i);
-                      } else {
-                        pages.push(1);
-                        if (currentHelicoptersPage > 3) pages.push('...');
-
-                        for (let i = Math.max(2, currentHelicoptersPage - 1); i <= Math.min(totalPages - 1, currentHelicoptersPage + 1); i++) {
-                          if (!pages.includes(i)) pages.push(i);
-                        }
-
-                        if (currentHelicoptersPage < totalPages - 2) pages.push('...');
-                        if (!pages.includes(totalPages)) pages.push(totalPages);
-                      }
-
-                      return pages.map((page, idx) =>
-                        page === '...' ? (
-                          <span key={`ellipsis-${idx}`} className="px-2 text-gray-500">...</span>
-                        ) : (
-                          <button
-                            key={page}
-                            onClick={() => setCurrentHelicoptersPage(page)}
-                            className={`w-10 h-10 rounded-lg text-sm transition-all ${
-                              currentHelicoptersPage === page
-                                ? 'bg-gray-800 text-white'
-                                : 'bg-white/35 hover:bg-white/40 border border-gray-300/50 text-gray-700'
-                            }`}
-                            style={currentHelicoptersPage !== page ? { backdropFilter: 'blur(20px) saturate(180%)' } : {}}
-                          >
-                            {page}
-                          </button>
-                        )
-                      );
-                    })()}
-
-                    <button
-                      onClick={() => setCurrentHelicoptersPage(prev => Math.min(Math.ceil(helicoptersData.length / helicoptersPerPage), prev + 1))}
-                      disabled={currentHelicoptersPage === Math.ceil(helicoptersData.length / helicoptersPerPage)}
-                      className="px-4 py-2 bg-white/35 hover:bg-white/40 border border-gray-300/50 rounded-lg text-sm text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    >
-                      Next
-                    </button>
-                  </div>
-                )}
-                </>
-              )}
-
-              {/* Helicopters Tabs View - List Format */}
-              {!isLoadingHelicopters && !showHelicopterDetail && helicoptersViewMode === 'tabs' && (
+              {/* Helicopters List View */}
+              {!isLoadingHelicopters && !showHelicopterDetail && (
                 <div className="w-full space-y-2">
                   {helicoptersData
                     .slice((currentHelicoptersPage - 1) * helicoptersPerPage, currentHelicoptersPage * helicoptersPerPage)
@@ -8384,8 +8107,38 @@ const TokenizedAssetsGlassmorphic = () => {
                       className="bg-white/35 hover:bg-white/40 rounded-lg border border-gray-300/50 overflow-hidden transition-all cursor-pointer"
                       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
-                      <div className="flex items-center p-4 gap-4">
-                        {/* Icon/Image */}
+                      {/* Mobile Layout */}
+                      <div className="md:hidden p-3">
+                        <div className="flex gap-3">
+                          <div className="w-20 h-20 bg-gray-100/50 rounded-lg flex-shrink-0 overflow-hidden">
+                            {heli.image ? (
+                              <img src={heli.image} alt={heli.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Zap size={24} className="text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-semibold text-gray-800 line-clamp-1">{heli.name}</h3>
+                            <p className="text-[10px] text-gray-500 mb-2 line-clamp-1">{heli.category?.substring(0, 30)}</p>
+                            <div className="flex gap-3 text-[10px]">
+                              <div>
+                                <span className="text-gray-500">Capacity: </span>
+                                <span className="font-medium text-gray-800">{heli.capacity}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">Range: </span>
+                                <span className="font-medium text-gray-800">{heli.range}</span>
+                              </div>
+                            </div>
+                            <div className="text-xs font-semibold text-gray-800 mt-1">{heli.totalPrice}/hr</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Desktop Layout */}
+                      <div className="hidden md:flex items-center p-4 gap-4">
                         <div className="w-16 h-16 bg-gray-100/50 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
                           {heli.image ? (
                             <img src={heli.image} alt={heli.name} className="w-full h-full object-cover" />
@@ -8394,37 +8147,29 @@ const TokenizedAssetsGlassmorphic = () => {
                           )}
                         </div>
 
-                        {/* Helicopter Name & Description */}
                         <div className="flex-1 min-w-0">
                           <h3 className="text-base font-semibold text-gray-800">{heli.name}</h3>
-                          <p className="text-xs text-gray-600">{heli.category.substring(0, 50)}</p>
+                          <p className="text-xs text-gray-600">{heli.category?.substring(0, 50)}</p>
                         </div>
 
-                        {/* Price */}
                         <div className="text-center px-4">
                           <div className="text-sm font-light text-gray-800">{heli.totalPrice}</div>
                           <div className="text-[10px] text-gray-600">Price/Hour</div>
                         </div>
 
-                        {/* Capacity */}
                         <div className="text-center px-4">
                           <div className="text-sm font-light text-gray-800">{heli.capacity}</div>
                           <div className="text-[10px] text-gray-600">Capacity</div>
                         </div>
 
-                        {/* Range */}
                         <div className="text-center px-4">
                           <div className="text-sm font-light text-gray-800">{heli.range}</div>
                           <div className="text-[10px] text-gray-600">Range</div>
                         </div>
 
-                        {/* Buttons */}
                         <div className="flex gap-2 flex-shrink-0">
                           <button className="px-4 py-2 bg-gray-800 text-white rounded-lg text-xs font-medium hover:bg-gray-700 transition-all">
                             View Details
-                          </button>
-                          <button className="px-4 py-2 bg-white/20 border border-gray-300/50 text-gray-800 rounded-lg text-xs font-medium hover:bg-white/30 transition-all">
-                            Read More
                           </button>
                         </div>
                       </div>
@@ -8697,7 +8442,7 @@ const TokenizedAssetsGlassmorphic = () => {
             <div className="w-full flex-1 flex flex-col">
 
               {!showEmptyLegDetail && (
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6 gap-3">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6 gap-3 pt-4 md:pt-6">
                 <h2 className="text-xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter">Empty Legs</h2>
 
                 <div className="flex items-center gap-2 md:gap-3">

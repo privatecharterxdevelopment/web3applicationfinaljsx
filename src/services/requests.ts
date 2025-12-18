@@ -35,6 +35,7 @@ export type RequestType =
   | 'consultation'            // Consultation requests
   | 'ai_chat_bulk'            // AI Chat bulk requests (multiple items)
   | 'travel_request'          // Luxury travel planning requests (min $20K)
+  | 'medevac'                 // Medical evacuation requests (Traveller/Elite only)
   | string;                   // Allow any other string for flexibility
 
 interface CreateRequestOptions {

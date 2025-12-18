@@ -19,14 +19,37 @@ export function useSubscriptionLimits({ user, isAdmin }) {
 
     setLoading(true);
     try {
-      const subscriptionLimits = await subscriptionService.getUserSubscriptionLimits(user.id);
-      setLimits(subscriptionLimits);
+      const profile = await subscriptionService.getUserProfile(user.id);
+      const tier = profile?.subscription_tier;
+      const tierConfig = tier ? TIER_LIMITS[tier] : null;
+
+      setLimits({
+        tier: tier,
+        chats_limit: profile?.chats_limit || 0,
+        chats_used: profile?.chats_used || 0,
+        messages_per_chat: tierConfig?.messagesPerChat || 0,
+        unlimited_chats: tier === SUBSCRIPTION_TIERS.ELITE,
+        unlimited_messages: tier === SUBSCRIPTION_TIERS.ELITE,
+        break_the_price: tierConfig?.breakThePrice || false,
+        features: tierConfig?.features || [],
+        has_subscription: !!tier && profile?.subscription_status === 'active'
+      });
       setError(null);
     } catch (err) {
       console.error('Error loading subscription limits:', err);
       setError(err);
-      // Default to explorer tier on error
-      setLimits(TIER_LIMITS[SUBSCRIPTION_TIERS.EXPLORER]);
+      // Default to no subscription on error
+      setLimits({
+        tier: null,
+        chats_limit: 0,
+        chats_used: 0,
+        messages_per_chat: 0,
+        unlimited_chats: false,
+        unlimited_messages: false,
+        break_the_price: false,
+        features: [],
+        has_subscription: false
+      });
     } finally {
       setLoading(false);
     }
@@ -40,20 +63,20 @@ export function useSubscriptionLimits({ user, isAdmin }) {
   // Check if user can start a new chat
   const canStartNewChat = useCallback(async () => {
     if (isAdmin) return { canStart: true, chatsUsed: 0, chatsLimit: Infinity };
-    if (!user?.id) return { canStart: false, chatsUsed: 0, chatsLimit: 0 };
+    if (!user?.id) return { canStart: false, requiresSubscription: true, chatsUsed: 0, chatsLimit: 0 };
 
     try {
       return await subscriptionService.canStartNewChat(user.id);
     } catch (err) {
       console.error('Error checking chat limit:', err);
-      return { canStart: true, chatsUsed: 0, chatsLimit: 5 }; // Allow on error
+      return { canStart: false, requiresSubscription: true, chatsUsed: 0, chatsLimit: 0 };
     }
   }, [user?.id, isAdmin]);
 
   // Check if user can send message in chat
   const canSendMessage = useCallback((currentMessageCount) => {
     if (isAdmin) return true;
-    if (!limits) return true; // Allow while loading
+    if (!limits?.has_subscription) return false;
 
     // Elite has unlimited
     if (limits.unlimited_messages) return true;
@@ -61,33 +84,32 @@ export function useSubscriptionLimits({ user, isAdmin }) {
 
     const maxMessages = limits.messages_per_chat ||
                        TIER_LIMITS[limits.tier]?.messagesPerChat ||
-                       20;
+                       10;
 
     return currentMessageCount < maxMessages;
   }, [limits, isAdmin]);
 
-  // Check if user can use Break the Price feature
+  // Check if user can use Break the Price feature (Traveller and Elite only)
   const canUseBreakThePrice = useCallback(() => {
     if (isAdmin) return true;
-    if (!limits) return false;
+    if (!limits?.has_subscription) return false;
 
     return limits.break_the_price === true ||
-           limits.tier === SUBSCRIPTION_TIERS.PRO ||
+           limits.tier === SUBSCRIPTION_TIERS.TRAVELLER ||
            limits.tier === SUBSCRIPTION_TIERS.ELITE;
   }, [limits, isAdmin]);
 
   // Get tier display name
   const getTierDisplayName = useCallback(() => {
-    if (!limits?.tier) return 'Explorer';
+    if (!limits?.tier) return 'No Subscription';
 
     const names = {
       [SUBSCRIPTION_TIERS.EXPLORER]: 'Explorer',
-      [SUBSCRIPTION_TIERS.STARTER]: 'Starter',
-      [SUBSCRIPTION_TIERS.PRO]: 'Professional',
-      [SUBSCRIPTION_TIERS.ELITE]: 'Elite'
+      [SUBSCRIPTION_TIERS.TRAVELLER]: 'Traveller',
+      [SUBSCRIPTION_TIERS.ELITE]: 'Elite Club'
     };
 
-    return names[limits.tier] || 'Explorer';
+    return names[limits.tier] || 'No Subscription';
   }, [limits]);
 
   // Check if user has unlimited messages
@@ -103,23 +125,32 @@ export function useSubscriptionLimits({ user, isAdmin }) {
     if (!user?.id) return 0;
 
     try {
-      const { chatsUsed, chatsLimit } = await subscriptionService.canStartNewChat(user.id);
-      return Math.max(0, chatsLimit - chatsUsed);
+      const result = await subscriptionService.canStartNewChat(user.id);
+      if (result.unlimited) return Infinity;
+      return result.chatsRemaining || 0;
     } catch {
-      return 5; // Default
+      return 0;
     }
   }, [user?.id, isAdmin]);
 
   // Get remaining messages for current chat
   const getRemainingMessages = useCallback((currentMessageCount) => {
     if (hasUnlimitedMessages()) return Infinity;
+    if (!limits?.has_subscription) return 0;
 
     const maxMessages = limits?.messages_per_chat ||
                        TIER_LIMITS[limits?.tier]?.messagesPerChat ||
-                       20;
+                       10;
 
     return Math.max(0, maxMessages - currentMessageCount);
   }, [limits, hasUnlimitedMessages]);
+
+  // Check if user has access to a specific feature
+  const hasFeatureAccess = useCallback((feature) => {
+    if (isAdmin) return true;
+    if (!limits?.has_subscription) return false;
+    return limits?.features?.includes(feature) || false;
+  }, [limits, isAdmin]);
 
   return {
     limits,
@@ -133,13 +164,15 @@ export function useSubscriptionLimits({ user, isAdmin }) {
     hasUnlimitedMessages,
     getRemainingChats,
     getRemainingMessages,
+    hasFeatureAccess,
 
     // Direct access
-    tier: limits?.tier || SUBSCRIPTION_TIERS.EXPLORER,
+    tier: limits?.tier || null,
+    hasSubscription: limits?.has_subscription || false,
     isElite: limits?.tier === SUBSCRIPTION_TIERS.ELITE,
-    isPro: limits?.tier === SUBSCRIPTION_TIERS.PRO,
-    isStarter: limits?.tier === SUBSCRIPTION_TIERS.STARTER,
-    isExplorer: !limits?.tier || limits?.tier === SUBSCRIPTION_TIERS.EXPLORER
+    isTraveller: limits?.tier === SUBSCRIPTION_TIERS.TRAVELLER,
+    isExplorer: limits?.tier === SUBSCRIPTION_TIERS.EXPLORER,
+    requiresSubscription: !limits?.has_subscription
   };
 }
 

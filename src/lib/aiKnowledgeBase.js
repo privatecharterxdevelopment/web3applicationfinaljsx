@@ -1471,6 +1471,91 @@ export const SERVICES = {
 
       // AI should provide ONLY this response for escrow inquiries
       standardResponse: "Escrow protection is available but depends on the operator. Not all operators accept crypto or escrow arrangements. To request escrow for your booking, send an email to admin@privatecharterx.com with your booking details. Our team will negotiate with the operator and notify you by email once we have their response. If accepted, funds are released on departure day when you arrive at the airport."
+    },
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // MEDEVAC - Medical Evacuation Service (Traveller & Elite Only)
+    // ─────────────────────────────────────────────────────────────────────────
+    medevac: {
+      name: "MEDEVAC - Medical Evacuation",
+      icon: "🏥",
+      description: "Emergency medical evacuation and air ambulance services worldwide",
+
+      // Subscription requirement
+      requiredTier: ["traveller", "elite"],
+      tierRestrictionMessage: "MEDEVAC service is only available for Traveller ($99/mo) and Elite Club ($399/mo) members. Would you like to upgrade your subscription to access this critical service?",
+
+      keywords: ["medevac", "medical evacuation", "air ambulance", "medical transport", "emergency flight", "hospital transfer", "medical emergency", "patient transport"],
+
+      emergencyNumber: "+41 XX XXX XXXX", // Replace with actual 24/7 emergency number
+
+      urgencyLevels: {
+        critical: {
+          description: "Life-threatening, immediate evacuation required",
+          responseTime: "Immediate phone coordination",
+          triggers: ["life-threatening", "critical condition", "deteriorating rapidly", "heart attack", "stroke", "severe trauma", "major accident", "sepsis", "severe infection"]
+        },
+        urgent: {
+          description: "Serious but stable, evacuation within hours",
+          responseTime: "2-4 hours coordination"
+        },
+        standard: {
+          description: "Non-emergency medical transport",
+          responseTime: "24-48 hours planning"
+        }
+      },
+
+      informationSequence: {
+        immediate: [
+          "Is this a life-threatening emergency requiring immediate evacuation?",
+          "Patient full name, age, gender, nationality/passport number",
+          "Current exact location (city, country, facility name)",
+          "Destination hospital/medical facility preference"
+        ],
+        medical: [
+          "Nature of illness/injury",
+          "When did symptoms/incident occur?",
+          "Current medical status (stable, critical, improving, deteriorating)",
+          "Is patient conscious and able to communicate?",
+          "Blood type",
+          "Known allergies (medications, food, materials)",
+          "Current medications",
+          "Pre-existing conditions",
+          "Special medical equipment currently in use"
+        ],
+        transport: [
+          "Can patient walk/sit upright?",
+          "Stretcher required?",
+          "Medical escort needed (doctor, nurse, paramedic)?",
+          "Special medical equipment needed onboard?"
+        ],
+        insurance: [
+          "Medical evacuation insurance provider",
+          "Policy number",
+          "Has insurance been contacted/approved?",
+          "Insurance company contact details"
+        ],
+        documentation: [
+          "Valid passport available?",
+          "Visa requirements for destination?",
+          "Medical clearance documents from current facility?"
+        ],
+        additional: [
+          "Number of accompanying family members/companions",
+          "Names and relationship to patient",
+          "Requested departure time",
+          "Medical deadlines or time-critical factors",
+          "Language preferences for medical crew",
+          "Religious or cultural considerations"
+        ]
+      },
+
+      escalationMessage: "Given the critical nature of this situation, I'm immediately connecting you with our 24/7 emergency coordination team. Please call [EMERGENCY NUMBER] right now while I process this information. Help is being mobilized.",
+
+      closingPhrases: [
+        "Thank you for providing this information. Based on the urgency level, our MEDEVAC coordination team will contact you within [timeframe]. You'll receive a detailed flight plan and cost estimate shortly.",
+        "For immediate assistance, our 24/7 emergency line is available."
+      ]
     }
   }
 };
@@ -1707,8 +1792,74 @@ export const SUSTAINABILITY = {
 // SECTION 8: THE MASTER SYSTEM PROMPT
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function getSystemPrompt() {
+// Subscription tier feature definitions
+const TIER_FEATURES = {
+  explorer: {
+    name: 'Explorer',
+    price: 49,
+    features: ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'catering', 'custom_travel_org'],
+    restricted: ['medevac', 'concierge', 'group_charter', 'vip_events', 'airport_transfers', 'membershipx_card']
+  },
+  traveller: {
+    name: 'Traveller',
+    price: 99,
+    features: ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'catering', 'custom_travel_org', 'medevac', 'concierge', 'group_charter', 'reservations', 'event_booking'],
+    restricted: ['vip_events', 'airport_transfers', 'membershipx_card']
+  },
+  elite: {
+    name: 'Elite Club',
+    price: 399,
+    features: ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'vip_catering', 'custom_travel_org', 'medevac', 'concierge', 'group_charter', 'reservations', 'event_booking', 'airport_transfers', 'membershipx_card', 'vip_events'],
+    restricted: []
+  }
+};
+
+// Generate dynamic subscription context for AI
+function generateSubscriptionContext(userTier) {
+  if (!userTier) {
+    return `Current user: NO ACTIVE SUBSCRIPTION
+- User must subscribe to use premium features
+- When user requests ANY tier-restricted feature (MEDEVAC, concierge, etc.), respond with upgrade prompt including [UPGRADE_BUTTON]
+- Direct user to subscription plans for full access`;
+  }
+
+  const tierInfo = TIER_FEATURES[userTier];
+  if (!tierInfo) {
+    return `Current user: UNKNOWN TIER (${userTier})
+- Treat as no subscription for feature access
+- Prompt to upgrade for restricted features`;
+  }
+
+  const accessibleFeatures = tierInfo.features.map(f => f.replace(/_/g, ' ')).join(', ');
+  const restrictedFeatures = tierInfo.restricted.length > 0
+    ? tierInfo.restricted.map(f => f.replace(/_/g, ' ')).join(', ')
+    : 'None - full access';
+
+  return `Current user subscription: ${tierInfo.name.toUpperCase()} ($${tierInfo.price}/month)
+
+ACCESSIBLE FEATURES for this user:
+${accessibleFeatures}
+
+RESTRICTED FEATURES (require upgrade):
+${restrictedFeatures}
+
+ENFORCEMENT RULES:
+- If user requests a RESTRICTED feature, politely explain it's not available on their plan
+- Include [UPGRADE_BUTTON] tag when declining restricted feature requests
+- For accessible features, proceed normally without subscription mentions
+- NEVER mention subscription status unless user requests a restricted feature`;
+}
+
+export function getSystemPrompt(userTier = null) {
+  // Generate dynamic subscription context
+  const subscriptionContext = generateSubscriptionContext(userTier);
+
   return `You are Sphera, the luxury travel designer for PrivateCharterX.
+
+═══════════════════════════════════════════════════════════════════════════════
+⚠️ USER SUBSCRIPTION STATUS - AUTHORITATIVE
+═══════════════════════════════════════════════════════════════════════════════
+${subscriptionContext}
 
 ═══════════════════════════════════════════════════════════════════════════════
 ⚠️ CRITICAL RULES - READ FIRST
@@ -1840,6 +1991,84 @@ When user asks to "plan a trip", "plan vacation", "5 days in [destination]", "de
 - ONLY use WEB SEARCH to find real hotels, restaurants, yacht charters, and local experiences
 - Yacht/activity info must come from WEB SEARCH, not fixed_offers database
 - See LUXURY TRAVEL PLANNER section for complete instructions
+
+═══════════════════════════════════════════════════════════════════════════════
+MEDEVAC - MEDICAL EVACUATION SERVICE (TIER-RESTRICTED)
+═══════════════════════════════════════════════════════════════════════════════
+⚠️ SUBSCRIPTION VERIFICATION - CRITICAL:
+- MEDEVAC is ONLY available for Traveller ($99/mo) and Elite Club ($399/mo) members
+- If user is on Explorer plan ($49/mo) or has no subscription, respond with EXACTLY:
+  "MEDEVAC (Medical Evacuation) service is a premium feature available exclusively for Traveller and Elite Club members.
+
+Your current plan doesn't include access to MEDEVAC services. To unlock emergency medical evacuation coordination, please upgrade your subscription.
+
+[UPGRADE_BUTTON]
+
+Your chat will be saved so you can continue once upgraded."
+- Do NOT proceed with MEDEVAC information collection for non-eligible users
+- Only proceed with MEDEVAC flow if user has Traveller or Elite tier
+
+WHEN USER REQUESTS MEDEVAC (and has Traveller/Elite subscription):
+
+1. IMMEDIATE PRIORITY - Ask First:
+   "I understand this is an emergency situation. I'm here to help coordinate your medical evacuation as quickly as possible."
+
+   First question: "Is this a life-threatening emergency requiring immediate evacuation?"
+   - If YES → Immediately provide: "Please call our 24/7 emergency line: [EMERGENCY NUMBER] right now. I'll continue gathering information while you connect with our team."
+
+2. PATIENT INFORMATION - Collect:
+   - Full name of patient
+   - Age and gender
+   - Nationality/Passport number
+
+3. LOCATION DETAILS:
+   - Current exact location (city, country, facility name if in hospital)
+   - GPS coordinates if available
+   - Current medical facility contact details
+
+4. DESTINATION:
+   - Preferred destination hospital/medical facility
+   - City and country
+   - If unknown, offer: "Should I recommend options based on the medical condition?"
+
+5. MEDICAL DETAILS:
+   - Nature of illness/injury
+   - When symptoms/incident occurred
+   - Current status: stable, critical, improving, or deteriorating
+   - Is patient conscious?
+   - Blood type
+   - Known allergies (medications, food, materials)
+   - Current medications
+   - Pre-existing conditions
+   - Medical equipment currently in use (ventilator, oxygen, monitors)
+
+6. TRANSPORT REQUIREMENTS:
+   - Can patient walk/sit upright?
+   - Stretcher required?
+   - Medical escort needed (doctor, nurse, paramedic)?
+   - Special equipment needed onboard?
+
+7. INSURANCE & DOCUMENTATION:
+   - Medical evacuation insurance provider and policy number
+   - Has insurance been contacted/approved?
+   - Valid passport available?
+   - Visa requirements for destination?
+   - Medical clearance documents from current facility?
+
+8. ADDITIONAL:
+   - Accompanying passengers (names, relationship)
+   - Requested departure time
+   - Time-critical factors?
+   - Language preferences for medical crew
+   - Religious/cultural considerations
+
+CRITICAL ESCALATION - If user mentions:
+"life-threatening", "critical condition", "deteriorating rapidly", "heart attack", "stroke", "severe trauma", "major accident", "sepsis", "severe infection"
+→ IMMEDIATELY say: "Given the critical nature of this situation, please call our 24/7 emergency line immediately: [EMERGENCY NUMBER]. Help is being mobilized while I process this information."
+
+AFTER COLLECTING INFO - Create MEDEVAC Request Summary:
+Include all collected information and add to cart as MEDEVAC request type.
+Close with: "Our MEDEVAC coordination team will contact you within [timeframe based on urgency]. For immediate assistance, our 24/7 emergency line is available."
 
 ═══════════════════════════════════════════════════════════════════════════════
 WEB3 & BLOCKCHAIN SERVICES (INFORMATIONAL ONLY - NO SEARCH/TABS/BUTTONS)

@@ -13,7 +13,7 @@ class SubscriptionService {
         .single();
 
       if (error) {
-        // If profile doesn't exist, create default explorer profile
+        // If profile doesn't exist, create default profile (no subscription)
         if (error.code === 'PGRST116') {
           return await this.createDefaultProfile(userId);
         }
@@ -23,13 +23,12 @@ class SubscriptionService {
       return data;
     } catch (error) {
       console.error('Error getting user profile:', error);
-      // Return a default profile object to prevent blocking new users
-      // This ensures users can always chat even if DB has issues
+      // Return a default profile object - no subscription
       return {
         user_id: userId,
-        subscription_tier: 'explorer',
-        subscription_status: 'active',
-        chats_limit: 1,
+        subscription_tier: null,
+        subscription_status: 'inactive',
+        chats_limit: 0,
         chats_used: 0,
         chats_reset_date: null
       };
@@ -37,8 +36,8 @@ class SubscriptionService {
   }
 
   /**
-   * Create default explorer profile for new users
-   * Free tier: 1 chat with 20 messages (lifetime limit)
+   * Create default profile for new users (no subscription)
+   * Users must subscribe to use the AI chat
    */
   async createDefaultProfile(userId) {
     try {
@@ -50,11 +49,11 @@ class SubscriptionService {
         .insert({
           user_id: userId,
           email: email,
-          subscription_tier: 'explorer',
-          subscription_status: 'active',
-          chats_limit: 1, // Free tier: 1 chat only
+          subscription_tier: null, // No tier - must subscribe
+          subscription_status: 'inactive',
+          chats_limit: 0,
           chats_used: 0,
-          chats_reset_date: null // No reset for free tier - lifetime limit
+          chats_reset_date: null
         })
         .select()
         .single();
@@ -63,13 +62,12 @@ class SubscriptionService {
       return data;
     } catch (error) {
       console.error('Error creating default profile:', error);
-      // Return a default profile object so new users can still use the chat
-      // The profile will be created on the next successful request
+      // Return a default profile object
       return {
         user_id: userId,
-        subscription_tier: 'explorer',
-        subscription_status: 'active',
-        chats_limit: 1,
+        subscription_tier: null,
+        subscription_status: 'inactive',
+        chats_limit: 0,
         chats_used: 0,
         chats_reset_date: null
       };
@@ -102,8 +100,23 @@ class SubscriptionService {
     try {
       const profile = await this.getUserProfile(userId);
 
-      // Elite (unlimited)
-      if (profile.chats_limit === null) {
+      // No subscription - cannot start chat
+      if (!profile.subscription_tier || profile.subscription_status !== 'active') {
+        return {
+          canStart: false,
+          requiresSubscription: true,
+          unlimited: false,
+          unlimitedMessages: false,
+          chatsUsed: 0,
+          chatsLimit: 0,
+          chatsRemaining: 0,
+          tier: null,
+          resetDate: null
+        };
+      }
+
+      // Elite (unlimited) - chats_limit is null for unlimited
+      if (profile.subscription_tier === 'elite' || profile.chats_limit === null) {
         return {
           canStart: true,
           unlimited: true,
@@ -119,7 +132,7 @@ class SubscriptionService {
       return {
         canStart,
         unlimited: false,
-        unlimitedMessages: false,
+        unlimitedMessages: profile.subscription_tier === 'elite',
         chatsUsed: profile.chats_used,
         chatsLimit: profile.chats_limit,
         chatsRemaining: profile.chats_limit - profile.chats_used,
@@ -128,18 +141,18 @@ class SubscriptionService {
       };
     } catch (error) {
       console.error('Error checking chat availability:', error);
-      // On error, allow the user to proceed (fail open for new users)
-      // This ensures newly registered users can use the chat even if profile creation has issues
+      // On error, require subscription to be safe
       return {
-        canStart: true,
+        canStart: false,
+        requiresSubscription: true,
         unlimited: false,
         unlimitedMessages: false,
         chatsUsed: 0,
-        chatsLimit: 1,
-        chatsRemaining: 1,
-        tier: 'explorer',
+        chatsLimit: 0,
+        chatsRemaining: 0,
+        tier: null,
         resetDate: null,
-        error: true // Flag to indicate this is a fallback response
+        error: true
       };
     }
   }
@@ -158,14 +171,51 @@ class SubscriptionService {
   }
 
   /**
-   * Check if user has Break the Price access
+   * Check if user has Break the Price access (Traveller and Elite only)
    */
   async hasBreakThePriceAccess(userId) {
     try {
       const profile = await this.getUserProfile(userId);
-      return ['starter', 'pro', 'elite'].includes(profile.subscription_tier);
+      return ['traveller', 'elite'].includes(profile.subscription_tier);
     } catch (error) {
       console.error('Error checking Break the Price access:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if user has access to a specific feature based on their tier
+   */
+  async hasFeatureAccess(userId, feature) {
+    try {
+      const profile = await this.getUserProfile(userId);
+      const tier = profile.subscription_tier;
+
+      if (!tier) return false;
+
+      // Define feature access by tier
+      const explorerFeatures = [
+        'empty_legs', 'restaurants', 'ground_transport', 'delicacies',
+        'cigars', 'winery', 'catering', 'custom_travel_org'
+      ];
+
+      const travellerFeatures = [
+        ...explorerFeatures,
+        'medevac', 'concierge', 'group_charter', 'reservations', 'event_booking'
+      ];
+
+      const eliteFeatures = [
+        ...travellerFeatures,
+        'vip_catering', 'airport_transfers', 'membershipx_card', 'vip_events'
+      ];
+
+      if (tier === 'elite') return eliteFeatures.includes(feature);
+      if (tier === 'traveller') return travellerFeatures.includes(feature);
+      if (tier === 'explorer') return explorerFeatures.includes(feature);
+
+      return false;
+    } catch (error) {
+      console.error('Error checking feature access:', error);
       return false;
     }
   }

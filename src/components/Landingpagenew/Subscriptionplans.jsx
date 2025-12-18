@@ -1,10 +1,16 @@
 /**
  * Subscription Plans Page
- * Design: Card/Grid layout with MyBookingsView header styling
+ * Design: Modern glassmorphic card layout with new tier structure
+ * Tiers: Starter ($49), Traveller ($99), Elite Club ($399)
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Crown, MessageSquare, ArrowLeft, Check, Sparkles, Users, CheckCircle, Infinity } from 'lucide-react';
+import {
+  X, Loader2, Crown, MessageSquare, ArrowLeft, Check, Sparkles,
+  Users, CheckCircle, Infinity, Plane, Car, UtensilsCrossed,
+  HeartPulse, Calendar, Star, CreditCard, Phone, Mail, Wine,
+  Map, ChefHat, Cigarette, Cookie, CalendarCheck, Shield
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { subscriptionService } from '../../services/subscriptionService';
@@ -25,7 +31,7 @@ const PricingPackages = ({ onClose, onBack }) => {
       try {
         const profile = await subscriptionService.getUserProfile(user.id);
         setUserSubscription({
-          tier: profile?.subscription_tier || 'explorer',
+          tier: profile?.subscription_tier || null,
           chatsUsed: profile?.chats_used || 0,
           chatsLimit: profile?.chats_limit,
           unlimited: profile?.chats_limit === null
@@ -52,11 +58,11 @@ const PricingPackages = ({ onClose, onBack }) => {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('📡 Subscription updated in real-time:', payload.new);
+          console.log('Subscription updated in real-time:', payload.new);
           const newProfile = payload.new;
           if (newProfile) {
             setUserSubscription({
-              tier: newProfile.subscription_tier || 'explorer',
+              tier: newProfile.subscription_tier || null,
               chatsUsed: newProfile.chats_used || 0,
               chatsLimit: newProfile.chats_limit,
               unlimited: newProfile.chats_limit === null
@@ -69,7 +75,8 @@ const PricingPackages = ({ onClose, onBack }) => {
     return () => {
       supabase.removeChannel(subscription);
     };
-  }, [user?.id]); // Only depend on user.id to avoid re-render loops
+  }, [user?.id]);
+
   const [businessForm, setBusinessForm] = useState({
     name: '',
     email: '',
@@ -82,67 +89,95 @@ const PricingPackages = ({ onClose, onBack }) => {
   const [processingPlan, setProcessingPlan] = useState(null);
 
   const STRIPE_PAYMENT_LINKS = {
-    starter: import.meta.env.VITE_STRIPE_STARTER_PAYMENT_LINK || '',
-    pro: import.meta.env.VITE_STRIPE_PRO_PAYMENT_LINK || '',
+    explorer: import.meta.env.VITE_STRIPE_EXPLORER_PAYMENT_LINK || '',
+    traveller: import.meta.env.VITE_STRIPE_TRAVELLER_PAYMENT_LINK || '',
     elite: import.meta.env.VITE_STRIPE_ELITE_PAYMENT_LINK || ''
   };
 
   const plans = [
     {
-      id: 'starter',
-      name: 'STARTER',
+      id: 'explorer',
+      name: 'EXPLORER',
       tagline: 'Get Started',
-      price: 20,
+      price: 49,
       period: 'month',
       chatsPerMonth: 5,
-      messagesPerChat: 50,
-      breakThePrice: true,
-      stripePriceId: import.meta.env.VITE_STRIPE_STARTER_PRICE_ID,
+      messagesPerChat: 10,
+      support: 'Basic Email',
+      stripePriceId: import.meta.env.VITE_STRIPE_EXPLORER_PRICE_ID,
       features: [
-        '5 AI Conversations/month',
-        '50 messages per conversation',
-        'Break the Price feature',
-        'Email Support'
+        { text: '5 AI Conversations/month', included: true },
+        { text: '10 messages per conversation', included: true },
+        { text: 'Empty Legs Access', included: true },
+        { text: 'Restaurant Reservations', included: true },
+        { text: 'Ground Transport', included: true },
+        { text: 'Delicacies & Cigars', included: true },
+        { text: 'Winery Access', included: true },
+        { text: 'Catering Services', included: true },
+        { text: 'Custom Travel Organization', included: true },
+        { text: 'Basic Email Support', included: true },
+        { text: 'MEDEVAC Services', included: false },
+        { text: 'Concierge Services', included: false },
+        { text: 'Group Charter Requests', included: false },
+        { text: 'Event Booking', included: false }
       ],
-      tags: ['5 AI Chats/mo', '50 Messages/chat', 'Email Support']
+      highlights: ['5 Chats/mo', '10 Msgs/chat', 'Email Support']
     },
     {
-      id: 'pro',
-      name: 'PROFESSIONAL',
+      id: 'traveller',
+      name: 'TRAVELLER',
       tagline: 'Most Popular',
-      price: 40,
+      price: 99,
       period: 'month',
-      chatsPerMonth: 20,
-      messagesPerChat: 100,
-      breakThePrice: true,
-      stripePriceId: import.meta.env.VITE_STRIPE_PRO_PRICE_ID,
+      chatsPerMonth: 10,
+      messagesPerChat: 25,
+      support: 'Priority',
+      stripePriceId: import.meta.env.VITE_STRIPE_TRAVELLER_PRICE_ID,
       popular: true,
       features: [
-        '20 AI Conversations/month',
-        '100 messages per conversation',
-        'Break the Price feature',
-        'Priority Support',
-        'Dedicated Manager'
+        { text: '10 AI Conversations/month', included: true },
+        { text: '25 messages per conversation', included: true },
+        { text: 'Empty Legs Access', included: true },
+        { text: 'Restaurant Reservations', included: true },
+        { text: 'Ground Transport', included: true },
+        { text: 'Delicacies & Cigars', included: true },
+        { text: 'Winery Access', included: true },
+        { text: 'Catering Services', included: true },
+        { text: 'Custom Travel Organization', included: true },
+        { text: 'MEDEVAC Services', included: true },
+        { text: 'Concierge Services', included: true },
+        { text: 'Group Charter Requests', included: true },
+        { text: 'Reservations & Event Booking', included: true },
+        { text: 'Priority Support', included: true }
       ],
-      tags: ['20 AI Chats/mo', '100 Messages/chat', 'Priority Support', 'Dedicated Manager']
+      highlights: ['10 Chats/mo', '25 Msgs/chat', 'Priority Support', 'Concierge']
     },
     {
       id: 'elite',
-      name: 'ELITE',
+      name: 'ELITE CLUB',
       tagline: 'Unlimited Access',
-      price: 130,
+      price: 399,
       period: 'month',
       chatsPerMonth: 'Unlimited',
       messagesPerChat: 'Unlimited',
-      breakThePrice: true,
+      support: '24/7 Phone',
       stripePriceId: import.meta.env.VITE_STRIPE_ELITE_PRICE_ID,
+      elite: true,
       features: [
-        'Unlimited AI Conversations',
-        'Unlimited messages per chat',
-        'Unlimited Break the Price',
-        '24/7 Concierge Service'
+        { text: 'Unlimited AI Conversations', included: true },
+        { text: 'Unlimited messages per chat', included: true },
+        { text: 'All Traveller Features', included: true },
+        { text: '24/7 Phone Coordination', included: true },
+        { text: '2x Free Airport Transfers/month', included: true },
+        { text: 'VIP Catering Services', included: true },
+        { text: 'MembershipX Club Card', included: true },
+        { text: 'VIP Event Invitations', included: true },
+        { text: 'F1 VIP Access', included: true },
+        { text: 'Yacht Shows & Events', included: true },
+        { text: 'Mystery VIP Invitations', included: true },
+        { text: 'Dedicated Account Manager', included: true }
       ],
-      tags: ['Unlimited Chats', 'Unlimited Messages', '24/7 Concierge', 'Break the Price']
+      highlights: ['Unlimited', '24/7 Phone', 'MembershipX Card', 'VIP Events']
     }
   ];
 
@@ -222,7 +257,7 @@ const PricingPackages = ({ onClose, onBack }) => {
       }, 3000);
     } catch (error) {
       console.error('Error submitting business request:', error);
-      setSubmitMessage('Error submitting request. Please try again or email us at business@sphera.ai');
+      setSubmitMessage('Error submitting request. Please try again or email us at business@privatecharterx.com');
     } finally {
       setIsSubmitting(false);
     }
@@ -230,7 +265,7 @@ const PricingPackages = ({ onClose, onBack }) => {
 
   return (
     <div className="h-full overflow-y-auto" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-      {/* Header - Matching MyBookingsView */}
+      {/* Header */}
       <div className="px-6 py-5 border-b border-gray-100">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -240,8 +275,8 @@ const PricingPackages = ({ onClose, onBack }) => {
               </button>
             )}
             <div>
-              <h1 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">Plans & Pricing</h1>
-              <p className="text-xs text-gray-400 mt-0.5">Select the perfect plan for your needs</p>
+              <h1 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">Membership Plans</h1>
+              <p className="text-xs text-gray-400 mt-0.5">Select the perfect plan for your travel needs</p>
             </div>
           </div>
           {onClose && (
@@ -251,30 +286,44 @@ const PricingPackages = ({ onClose, onBack }) => {
           )}
         </div>
 
-        {/* Stats - Minimal Inline */}
-        <div className="flex items-center gap-6 mt-4 text-sm">
-          <div>
-            <span className="text-gray-400">Current Plan</span>
-            <span className="ml-2 font-medium text-gray-900 capitalize">
-              {loadingSubscription ? '...' : userSubscription?.tier || 'Explorer'}
-            </span>
+        {/* Stats - Current subscription info */}
+        {userSubscription?.tier && (
+          <div className="flex items-center gap-6 mt-4 text-sm">
+            <div>
+              <span className="text-gray-400">Current Plan</span>
+              <span className="ml-2 font-medium text-gray-900 capitalize">
+                {loadingSubscription ? '...' : userSubscription?.tier || 'None'}
+              </span>
+            </div>
+            <div>
+              <span className="text-gray-400">Chats</span>
+              <span className="ml-2 font-medium text-gray-900">
+                {loadingSubscription ? '...' : userSubscription?.unlimited ? '∞ Unlimited' : `${userSubscription?.chatsUsed || 0}/${userSubscription?.chatsLimit || 0}`}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Sparkles size={12} className="text-amber-500" />
+              <span className="text-gray-400">Popular</span>
+              <span className="ml-1 font-medium text-gray-900">Traveller</span>
+            </div>
           </div>
-          <div>
-            <span className="text-gray-400">Chats</span>
-            <span className="ml-2 font-medium text-gray-900">
-              {loadingSubscription ? '...' : userSubscription?.unlimited ? '∞ Unlimited' : `${userSubscription?.chatsUsed || 0}/${userSubscription?.chatsLimit || 1}`}
-            </span>
+        )}
+
+        {!userSubscription?.tier && !loadingSubscription && (
+          <div className="mt-4 bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-4 text-white">
+            <div className="flex items-center gap-3">
+              <Shield size={20} className="text-amber-400" />
+              <div>
+                <p className="text-sm font-medium">Choose a membership to get started</p>
+                <p className="text-xs text-gray-400">Unlock AI-powered travel planning and exclusive services</p>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <Sparkles size={12} className="text-amber-500" />
-            <span className="text-gray-400">Popular</span>
-            <span className="ml-1 font-medium text-gray-900">Professional</span>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Current Plan Banner */}
-      {userSubscription && userSubscription.tier !== 'explorer' && (
+      {userSubscription && userSubscription.tier && (
         <div className="mx-6 mt-4 bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-5 text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -314,7 +363,7 @@ const PricingPackages = ({ onClose, onBack }) => {
         </div>
       )}
 
-      {/* Plans Grid - Glassmorphic Design */}
+      {/* Plans Grid */}
       <div className="px-6 py-6 bg-gradient-to-br from-gray-100/50 via-gray-50/50 to-gray-100/50">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl">
           {plans.map((plan) => {
@@ -322,104 +371,163 @@ const PricingPackages = ({ onClose, onBack }) => {
 
             return (
               <div
-              key={plan.id}
-              className={`relative bg-white/80 backdrop-blur-md rounded-2xl p-6 transition-all duration-300 hover:bg-white/90 hover:shadow-xl hover:-translate-y-1 ${
-                isCurrentPlan
-                  ? 'border-2 border-emerald-500 ring-2 ring-emerald-500/20 shadow-lg'
-                  : plan.popular
-                  ? 'border-2 border-gray-900/20 ring-1 ring-gray-900/5 shadow-lg'
-                  : 'border border-gray-200/60 hover:border-gray-300/80'
-              }`}
-            >
-              {/* Current Plan Badge */}
-              {isCurrentPlan && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="inline-flex items-center gap-1 bg-emerald-500 text-white px-3 py-1 rounded-full text-[10px] font-medium tracking-wide shadow-lg">
-                    <CheckCircle size={10} />
-                    CURRENT PLAN
-                  </span>
-                </div>
-              )}
-              {/* Popular Badge */}
-              {plan.popular && !isCurrentPlan && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="inline-flex items-center gap-1 bg-gray-900 text-white px-3 py-1 rounded-full text-[10px] font-medium tracking-wide shadow-lg">
-                    <Sparkles size={10} />
-                    MOST POPULAR
-                  </span>
-                </div>
-              )}
-
-              {/* Plan Header */}
-              <div className={`${plan.popular || isCurrentPlan ? 'mt-2' : ''}`}>
-                <h3 className="text-lg font-semibold text-gray-900 tracking-tight">
-                  {plan.name}
-                </h3>
-                <p className="text-gray-500 text-xs mt-0.5">{plan.tagline}</p>
-              </div>
-
-              {/* Price */}
-              <div className="mt-4 mb-5">
-                <span className="text-4xl font-light text-gray-900 tracking-tight">${plan.price}</span>
-                <span className="text-gray-400 text-sm ml-1">/{plan.period}</span>
-              </div>
-
-              {/* Features List - Clean minimal style */}
-              <div className="space-y-3 mb-5">
-                {plan.features.map((feature, index) => (
-                  <div key={index} className="flex items-center gap-2.5">
-                    <div className="w-4 h-4 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                      <Check size={10} className="text-gray-600" />
-                    </div>
-                    <span className="text-sm text-gray-600">{feature}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Tags - Minimal pill style */}
-              <div className="flex flex-wrap gap-1.5 mb-5">
-                {plan.tags.slice(0, 3).map((tag, index) => (
-                  <span
-                    key={index}
-                    className="px-2.5 py-1 rounded-full text-[10px] font-medium text-gray-600 bg-gray-100/80 border border-gray-200/50"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-
-              {/* CTA Button */}
-              <button
-                onClick={() => !isCurrentPlan && handlePlanClick(plan)}
-                disabled={processingPlan === plan.id || isCurrentPlan}
-                className={`w-full py-3 rounded-xl text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                key={plan.id}
+                className={`relative bg-white/80 backdrop-blur-md rounded-2xl p-6 transition-all duration-300 hover:bg-white/90 hover:shadow-xl hover:-translate-y-1 ${
                   isCurrentPlan
-                    ? 'bg-emerald-500 text-white cursor-default'
+                    ? 'border-2 border-emerald-500 ring-2 ring-emerald-500/20 shadow-lg'
                     : plan.popular
-                    ? 'bg-gray-900 text-white hover:bg-gray-800 shadow-md hover:shadow-lg'
-                    : 'bg-gray-100 text-gray-900 hover:bg-gray-200 border border-gray-200'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    ? 'border-2 border-gray-900/20 ring-1 ring-gray-900/5 shadow-lg'
+                    : plan.elite
+                    ? 'border-2 border-amber-500/30 ring-1 ring-amber-500/10 shadow-lg bg-gradient-to-br from-white/90 to-amber-50/30'
+                    : 'border border-gray-200/60 hover:border-gray-300/80'
+                }`}
               >
-                {processingPlan === plan.id ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" />
-                    Processing...
-                  </>
-                ) : isCurrentPlan ? (
-                  <>
-                    <CheckCircle size={16} />
-                    Current Plan
-                  </>
-                ) : (
-                  'Select Plan'
+                {/* Current Plan Badge */}
+                {isCurrentPlan && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="inline-flex items-center gap-1 bg-emerald-500 text-white px-3 py-1 rounded-full text-[10px] font-medium tracking-wide shadow-lg">
+                      <CheckCircle size={10} />
+                      CURRENT PLAN
+                    </span>
+                  </div>
                 )}
-              </button>
-            </div>
+                {/* Popular Badge */}
+                {plan.popular && !isCurrentPlan && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="inline-flex items-center gap-1 bg-gray-900 text-white px-3 py-1 rounded-full text-[10px] font-medium tracking-wide shadow-lg">
+                      <Sparkles size={10} />
+                      MOST POPULAR
+                    </span>
+                  </div>
+                )}
+                {/* Elite Badge */}
+                {plan.elite && !isCurrentPlan && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="inline-flex items-center gap-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white px-3 py-1 rounded-full text-[10px] font-medium tracking-wide shadow-lg">
+                      <Crown size={10} />
+                      ELITE CLUB
+                    </span>
+                  </div>
+                )}
+
+                {/* Plan Header */}
+                <div className={`${plan.popular || plan.elite || isCurrentPlan ? 'mt-2' : ''}`}>
+                  <h3 className="text-lg font-semibold text-gray-900 tracking-tight">
+                    {plan.name}
+                  </h3>
+                  <p className="text-gray-500 text-xs mt-0.5">{plan.tagline}</p>
+                </div>
+
+                {/* Price */}
+                <div className="mt-4 mb-5">
+                  <span className="text-4xl font-light text-gray-900 tracking-tight">${plan.price}</span>
+                  <span className="text-gray-400 text-sm ml-1">/{plan.period}</span>
+                </div>
+
+                {/* Key Stats */}
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <div className="bg-gray-50 rounded-lg p-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <MessageSquare size={12} className="text-gray-400" />
+                      <span className="text-[10px] text-gray-500">Chats/mo</span>
+                    </div>
+                    <p className="text-sm font-semibold text-gray-900 mt-0.5">
+                      {plan.chatsPerMonth === 'Unlimited' ? '∞' : plan.chatsPerMonth}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <Mail size={12} className="text-gray-400" />
+                      <span className="text-[10px] text-gray-500">Msgs/chat</span>
+                    </div>
+                    <p className="text-sm font-semibold text-gray-900 mt-0.5">
+                      {plan.messagesPerChat === 'Unlimited' ? '∞' : plan.messagesPerChat}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Support Level */}
+                <div className="flex items-center gap-2 mb-4 p-2 bg-gray-50 rounded-lg">
+                  {plan.support === '24/7 Phone' ? (
+                    <Phone size={14} className="text-amber-500" />
+                  ) : plan.support === 'Priority' ? (
+                    <Star size={14} className="text-gray-600" />
+                  ) : (
+                    <Mail size={14} className="text-gray-400" />
+                  )}
+                  <span className="text-xs text-gray-600">{plan.support} Support</span>
+                </div>
+
+                {/* Features List */}
+                <div className="space-y-2 mb-5 max-h-48 overflow-y-auto">
+                  {plan.features.slice(0, 8).map((feature, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                        feature.included ? 'bg-gray-100' : 'bg-gray-50'
+                      }`}>
+                        {feature.included ? (
+                          <Check size={10} className="text-gray-600" />
+                        ) : (
+                          <X size={10} className="text-gray-300" />
+                        )}
+                      </div>
+                      <span className={`text-xs ${feature.included ? 'text-gray-600' : 'text-gray-400'}`}>
+                        {feature.text}
+                      </span>
+                    </div>
+                  ))}
+                  {plan.features.length > 8 && (
+                    <p className="text-[10px] text-gray-400 pl-6">+{plan.features.length - 8} more features</p>
+                  )}
+                </div>
+
+                {/* Highlight Tags */}
+                <div className="flex flex-wrap gap-1.5 mb-5">
+                  {plan.highlights.slice(0, 4).map((tag, index) => (
+                    <span
+                      key={index}
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-medium border ${
+                        plan.elite
+                          ? 'text-amber-700 bg-amber-50 border-amber-200/50'
+                          : 'text-gray-600 bg-gray-100/80 border-gray-200/50'
+                      }`}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+
+                {/* CTA Button - Monochromatic light gray glass */}
+                <button
+                  onClick={() => !isCurrentPlan && handlePlanClick(plan)}
+                  disabled={processingPlan === plan.id || isCurrentPlan}
+                  className={`w-full py-3 rounded-xl text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                    isCurrentPlan
+                      ? 'bg-gray-100/50 text-gray-400 cursor-default border border-gray-200/40'
+                      : 'bg-white/60 text-gray-700 hover:bg-white/80 border border-gray-200/50 hover:border-gray-300/60'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  style={{ backdropFilter: 'blur(8px)' }}
+                >
+                  {processingPlan === plan.id ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Processing...
+                    </>
+                  ) : isCurrentPlan ? (
+                    <>
+                      <CheckCircle size={16} />
+                      Current Plan
+                    </>
+                  ) : (
+                    'Select Plan'
+                  )}
+                </button>
+              </div>
             );
           })}
         </div>
 
-        {/* Business Solutions Card - Glassmorphic Full Width */}
+        {/* Business Solutions Card */}
         <div
           onClick={() => setShowBusinessModal(true)}
           className="mt-5 max-w-6xl bg-white/80 backdrop-blur-md border border-gray-200/60 rounded-2xl p-6 hover:bg-white/90 hover:shadow-xl hover:border-gray-300/80 transition-all duration-300 cursor-pointer group"
@@ -427,8 +535,8 @@ const PricingPackages = ({ onClose, onBack }) => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
-                  <Users size={14} className="text-white" />
+                <div className="w-8 h-8 bg-white/60 rounded-lg flex items-center justify-center border border-gray-200/50" style={{ backdropFilter: 'blur(8px)' }}>
+                  <Users size={14} className="text-gray-600" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 tracking-tight">
                   Business Solutions
@@ -441,16 +549,120 @@ const PricingPackages = ({ onClose, onBack }) => {
                 Tailored solutions for your organization with unlimited access, dedicated support, and custom integrations.
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {['Unlimited Access', 'Dedicated Team', 'Custom Integration', 'White Label'].map((tag, i) => (
+                {['Unlimited Access', 'Dedicated Team', 'Custom Integration', 'White Label', 'API Access'].map((tag, i) => (
                   <span key={i} className="px-2.5 py-1 rounded-full text-[10px] font-medium text-gray-600 bg-gray-100/80 border border-gray-200/50">
                     {tag}
                   </span>
                 ))}
               </div>
             </div>
-            <button className="px-6 py-3 bg-gray-100 text-gray-900 rounded-xl hover:bg-gray-200 transition-all text-sm font-medium border border-gray-200 whitespace-nowrap group-hover:bg-gray-900 group-hover:text-white group-hover:border-gray-900">
+            <button
+              className="px-6 py-3 bg-white/60 text-gray-700 rounded-xl hover:bg-white/80 transition-all text-sm font-medium border border-gray-200/50 whitespace-nowrap"
+              style={{ backdropFilter: 'blur(8px)' }}
+            >
               Contact Us
             </button>
+          </div>
+        </div>
+
+        {/* Feature Comparison Table */}
+        <div className="mt-8 max-w-6xl bg-white/60 backdrop-blur-sm rounded-2xl border border-gray-200/60 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-900">Compare Plans</h3>
+            <p className="text-xs text-gray-500 mt-1">See what's included in each membership tier</p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left px-6 py-3 text-gray-500 font-medium">Feature</th>
+                  <th className="text-center px-4 py-3 text-gray-900 font-medium">Explorer</th>
+                  <th className="text-center px-4 py-3 text-gray-900 font-medium bg-gray-50">Traveller</th>
+                  <th className="text-center px-4 py-3 text-amber-700 font-medium">Elite Club</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                <tr>
+                  <td className="px-6 py-3 text-gray-600">AI Chats/month</td>
+                  <td className="text-center px-4 py-3">5</td>
+                  <td className="text-center px-4 py-3 bg-gray-50">10</td>
+                  <td className="text-center px-4 py-3 text-amber-600 font-medium">Unlimited</td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-3 text-gray-600">Messages/chat</td>
+                  <td className="text-center px-4 py-3">10</td>
+                  <td className="text-center px-4 py-3 bg-gray-50">25</td>
+                  <td className="text-center px-4 py-3 text-amber-600 font-medium">Unlimited</td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-3 text-gray-600">Empty Legs</td>
+                  <td className="text-center px-4 py-3"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-4 py-3 bg-gray-50"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-4 py-3"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-3 text-gray-600">Ground Transport</td>
+                  <td className="text-center px-4 py-3"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-4 py-3 bg-gray-50"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-4 py-3"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-3 text-gray-600">Restaurants</td>
+                  <td className="text-center px-4 py-3"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-4 py-3 bg-gray-50"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-4 py-3"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-3 text-gray-600">MEDEVAC Services</td>
+                  <td className="text-center px-4 py-3"><X size={16} className="text-gray-300 mx-auto" /></td>
+                  <td className="text-center px-4 py-3 bg-gray-50"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-4 py-3"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-3 text-gray-600">Concierge Services</td>
+                  <td className="text-center px-4 py-3"><X size={16} className="text-gray-300 mx-auto" /></td>
+                  <td className="text-center px-4 py-3 bg-gray-50"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-4 py-3"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-3 text-gray-600">Group Charter</td>
+                  <td className="text-center px-4 py-3"><X size={16} className="text-gray-300 mx-auto" /></td>
+                  <td className="text-center px-4 py-3 bg-gray-50"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-4 py-3"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-3 text-gray-600">Event Booking</td>
+                  <td className="text-center px-4 py-3"><X size={16} className="text-gray-300 mx-auto" /></td>
+                  <td className="text-center px-4 py-3 bg-gray-50"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-4 py-3"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-3 text-gray-600">Free Airport Transfers</td>
+                  <td className="text-center px-4 py-3"><X size={16} className="text-gray-300 mx-auto" /></td>
+                  <td className="text-center px-4 py-3 bg-gray-50"><X size={16} className="text-gray-300 mx-auto" /></td>
+                  <td className="text-center px-4 py-3 text-amber-600 font-medium">2x/month</td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-3 text-gray-600">MembershipX Card</td>
+                  <td className="text-center px-4 py-3"><X size={16} className="text-gray-300 mx-auto" /></td>
+                  <td className="text-center px-4 py-3 bg-gray-50"><X size={16} className="text-gray-300 mx-auto" /></td>
+                  <td className="text-center px-4 py-3"><Check size={16} className="text-amber-500 mx-auto" /></td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-3 text-gray-600">VIP Event Invites</td>
+                  <td className="text-center px-4 py-3"><X size={16} className="text-gray-300 mx-auto" /></td>
+                  <td className="text-center px-4 py-3 bg-gray-50"><X size={16} className="text-gray-300 mx-auto" /></td>
+                  <td className="text-center px-4 py-3"><Check size={16} className="text-amber-500 mx-auto" /></td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-3 text-gray-600">Support</td>
+                  <td className="text-center px-4 py-3 text-gray-500">Email</td>
+                  <td className="text-center px-4 py-3 bg-gray-50 text-gray-700">Priority</td>
+                  <td className="text-center px-4 py-3 text-amber-600 font-medium">24/7 Phone</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -469,7 +681,7 @@ const PricingPackages = ({ onClose, onBack }) => {
             <div className="p-5 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-900 rounded-lg flex items-center justify-center text-white">
+                  <div className="w-10 h-10 bg-white/60 rounded-lg flex items-center justify-center text-gray-600 border border-gray-200/50" style={{ backdropFilter: 'blur(8px)' }}>
                     <Users size={18} />
                   </div>
                   <div>
@@ -565,12 +777,13 @@ const PricingPackages = ({ onClose, onBack }) => {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2.5 text-sm font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-2.5 text-sm font-medium bg-white/60 text-gray-700 rounded-lg hover:bg-white/80 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 border border-gray-200/50"
+                    style={{ backdropFilter: 'blur(8px)' }}
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? (
                       <>
-                        <Loader2 size={14} className="animate-spin" />
+                        <Loader2 size={14} className="animate-spin text-gray-500" />
                         Submitting...
                       </>
                     ) : (

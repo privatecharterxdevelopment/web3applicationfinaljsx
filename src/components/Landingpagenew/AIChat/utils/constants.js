@@ -2,46 +2,125 @@
 // Centralized configuration values
 
 // Message limits
-export const MAX_MESSAGES_PER_CHAT = 20;
-export const MAX_CHATS_FREE = 5;
-export const MAX_CHATS_STARTER = 5;
-export const MAX_CHATS_PRO = 20;
+export const MAX_MESSAGES_PER_CHAT = 10;
+export const MAX_CHATS_EXPLORER = 5;
+export const MAX_CHATS_TRAVELLER = 10;
 export const MAX_CHATS_ELITE = Infinity;
 
 // Subscription tiers
 export const SUBSCRIPTION_TIERS = {
   EXPLORER: 'explorer',
-  STARTER: 'starter',
-  PRO: 'pro',
+  TRAVELLER: 'traveller',
   ELITE: 'elite'
+};
+
+// Tier pricing (USD)
+export const TIER_PRICING = {
+  [SUBSCRIPTION_TIERS.EXPLORER]: 49,
+  [SUBSCRIPTION_TIERS.TRAVELLER]: 99,
+  [SUBSCRIPTION_TIERS.ELITE]: 399
 };
 
 // Tier limits
 export const TIER_LIMITS = {
   [SUBSCRIPTION_TIERS.EXPLORER]: {
-    chats: 2,
+    chats: 5,
     messagesPerChat: 10,
     breakThePrice: false,
-    unlimitedMessages: false
+    unlimitedMessages: false,
+    price: 49,
+    support: 'email',
+    features: [
+      'empty_legs',
+      'restaurants',
+      'ground_transport',
+      'delicacies',
+      'cigars',
+      'winery',
+      'catering',
+      'custom_travel_org'
+    ]
   },
-  [SUBSCRIPTION_TIERS.STARTER]: {
-    chats: 5,
-    messagesPerChat: 50,
-    breakThePrice: false,
-    unlimitedMessages: false
-  },
-  [SUBSCRIPTION_TIERS.PRO]: {
-    chats: 20,
-    messagesPerChat: 100,
+  [SUBSCRIPTION_TIERS.TRAVELLER]: {
+    chats: 10,
+    messagesPerChat: 25,
     breakThePrice: true,
-    unlimitedMessages: false
+    unlimitedMessages: false,
+    price: 99,
+    support: 'priority',
+    features: [
+      'empty_legs',
+      'restaurants',
+      'ground_transport',
+      'delicacies',
+      'cigars',
+      'winery',
+      'catering',
+      'custom_travel_org',
+      'medevac',
+      'concierge',
+      'group_charter',
+      'reservations',
+      'event_booking'
+    ]
   },
   [SUBSCRIPTION_TIERS.ELITE]: {
     chats: Infinity,
     messagesPerChat: Infinity,
     breakThePrice: true,
-    unlimitedMessages: true
+    unlimitedMessages: true,
+    price: 399,
+    support: '24/7_phone',
+    freeAirportTransfers: 2,
+    membershipXCard: true,
+    vipEventInvites: true,
+    features: [
+      'empty_legs',
+      'restaurants',
+      'ground_transport',
+      'delicacies',
+      'cigars',
+      'winery',
+      'vip_catering',
+      'custom_travel_org',
+      'medevac',
+      'concierge',
+      'group_charter',
+      'reservations',
+      'event_booking',
+      'airport_transfers',
+      'membershipx_card',
+      'vip_events'
+    ]
   }
+};
+
+// Feature definitions for display
+export const FEATURE_DEFINITIONS = {
+  empty_legs: { name: 'Empty Legs', icon: 'Plane' },
+  restaurants: { name: 'Restaurant Reservations', icon: 'UtensilsCrossed' },
+  ground_transport: { name: 'Ground Transport', icon: 'Car' },
+  delicacies: { name: 'Delicacies', icon: 'Cookie' },
+  cigars: { name: 'Premium Cigars', icon: 'Cigarette' },
+  winery: { name: 'Winery Access', icon: 'Wine' },
+  catering: { name: 'Catering', icon: 'ChefHat' },
+  vip_catering: { name: 'VIP Catering', icon: 'ChefHat' },
+  custom_travel_org: { name: 'Custom Travel Organization', icon: 'Map' },
+  medevac: { name: 'MEDEVAC Services', icon: 'HeartPulse' },
+  concierge: { name: 'Concierge Services', icon: 'Concierge' },
+  group_charter: { name: 'Group Charter Requests', icon: 'Users' },
+  reservations: { name: 'Reservations', icon: 'CalendarCheck' },
+  event_booking: { name: 'Event Booking', icon: 'Calendar' },
+  airport_transfers: { name: 'Free Airport Transfers', icon: 'Car' },
+  membershipx_card: { name: 'MembershipX Card', icon: 'CreditCard' },
+  vip_events: { name: 'VIP Event Invites', icon: 'Star' }
+};
+
+// Check if feature is available for tier
+export const hasFeatureAccess = (tier, feature) => {
+  const tierConfig = TIER_LIMITS[tier];
+  if (!tierConfig) return false;
+  return tierConfig.features?.includes(feature) || false;
 };
 
 // Service types
@@ -55,7 +134,10 @@ export const SERVICE_TYPES = {
   LUXURY_CARS: 'luxury_cars',
   EMPTY_LEGS: 'empty_legs',
   EMPTYLEG: 'emptyleg',
-  CUSTOM_EXTRA: 'custom_extra'
+  CUSTOM_EXTRA: 'custom_extra',
+  MEDEVAC: 'medevac',
+  GROUND_TRANSPORT: 'ground_transport',
+  CONCIERGE: 'concierge'
 };
 
 // Cart item types that support multi-stop

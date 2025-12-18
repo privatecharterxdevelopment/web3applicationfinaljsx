@@ -128,7 +128,7 @@ const TypingAnimation = () => (
 );
 
 // Typing Text Effect Component - Smooth word-by-word streaming like ChatGPT
-const TypingText = ({ text, speed = 30, onComplete }) => {
+const TypingText = ({ text, speed = 30, onComplete, renderAfterComplete }) => {
   const [displayedText, setDisplayedText] = useState('');
   const [isComplete, setIsComplete] = useState(false);
   const requestRef = useRef();
@@ -200,10 +200,13 @@ const TypingText = ({ text, speed = 30, onComplete }) => {
   }, [text, speed]); // Removed onComplete from dependencies
 
   return (
-    <p className="text-sm leading-relaxed whitespace-pre-line">
-      {displayedText}
-      {!isComplete && <span className="inline-block w-0.5 h-4 bg-gray-500 ml-0.5 animate-pulse" />}
-    </p>
+    <div className="text-sm leading-relaxed">
+      <p className="whitespace-pre-line">
+        {displayedText}
+        {!isComplete && <span className="inline-block w-0.5 h-4 bg-gray-500 ml-0.5 animate-pulse" />}
+      </p>
+      {isComplete && renderAfterComplete && renderAfterComplete()}
+    </div>
   );
 };
 
@@ -823,7 +826,7 @@ const AIChat = ({
       const queryToProcess = initialQuery;
       const userMessage = { role: 'user', content: queryToProcess };
       const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
-      const title = queryToProcess.split(' ').slice(0, 5).join(' ') + '...';
+      const title = chatService.generateTitle(userMessage);
 
       // Create chat and immediately send to AI (all in one async flow)
       const createChatAndSendToAI = async () => {
@@ -855,8 +858,36 @@ const AIChat = ({
 
         // Step 2: Add to chat history and set as active
         // Use a callback to ensure we set activeChat AFTER the chat is added
+        // Check for duplicates before adding - prevent double entries
         setChatHistory(prev => {
           console.log('📚 Adding chat to history. Previous length:', prev.length, 'New chat ID:', chatId);
+
+          // Check if a chat with this ID already exists
+          const existingById = prev.find(c => c.id === chatId);
+          if (existingById) {
+            console.log('⚠️ Chat already exists in history, skipping add:', chatId);
+            // Still update activeChat even if we're skipping
+            setTimeout(() => {
+              setActiveChat(chatId);
+              setTimeout(() => onQueryProcessed(), 50);
+            }, 0);
+            return prev;
+          }
+
+          // Also check for very recent chats with same first message (prevent race condition duplicates)
+          const sameContent = prev.find(c => {
+            const firstUserMsg = c.messages?.find(m => m.role === 'user');
+            return firstUserMsg?.content === queryToProcess && c.date === 'Just now';
+          });
+          if (sameContent) {
+            console.log('⚠️ Chat with same content already exists, skipping add:', sameContent.id);
+            setTimeout(() => {
+              setActiveChat(sameContent.id);
+              setTimeout(() => onQueryProcessed(), 50);
+            }, 0);
+            return prev;
+          }
+
           // Schedule activeChat update after this state update
           setTimeout(() => {
             console.log('🎯 Setting activeChat to:', chatId);
@@ -875,7 +906,7 @@ const AIChat = ({
         setIsProcessing(true);
 
         try {
-          const systemPrompt = getSystemPrompt();
+          const systemPrompt = getSystemPrompt(userProfile?.subscription_tier);
           const claudeUserMessage = { role: 'user', content: queryToProcess };
 
           const response = await claudeEdgeService.messages.create({
@@ -1253,6 +1284,41 @@ const AIChat = ({
           }
         }
       }
+    }
+
+    // Handle MEDEVAC requests - WITH BACKEND ENFORCEMENT
+    if (item.type === 'medevac') {
+      // SECURITY: Verify user has Traveller or Elite subscription
+      const userTier = userProfile?.subscription_tier;
+      const hasMedevacAccess = userTier === 'traveller' || userTier === 'elite' || isAdmin;
+
+      if (!hasMedevacAccess) {
+        console.warn('🚫 MEDEVAC access denied - user tier:', userTier);
+        setToast({
+          message: 'MEDEVAC requires Traveller or Elite subscription',
+          type: 'error'
+        });
+        // Open subscription modal to prompt upgrade
+        setShowSubscriptionModal(true);
+        return; // Block the add to cart
+      }
+
+      cartItem = {
+        ...cartItem,
+        type: 'medevac',
+        name: item.name || 'MEDEVAC Request',
+        title: 'Medical Evacuation Request',
+        urgencyLevel: item.urgencyLevel || 'standard',
+        patientInfo: item.patientInfo || {},
+        medicalDetails: item.medicalDetails || {},
+        transportRequirements: item.transportRequirements || {},
+        insurance: item.insurance || {},
+        route: item.route || `${item.currentLocation || 'TBD'} → ${item.destination || 'TBD'}`,
+        price: 0, // Price determined after consultation
+        estimatedPrice: 0,
+        isQuoteRequest: true,
+        requiresConsultation: true
+      };
     }
 
     setCartItems(prev => [...prev, cartItem]);
@@ -2337,7 +2403,7 @@ Your quote has been received and will be reviewed within 12 hours.`;
         setAssistantTyping(true);
         
         try {
-          const systemPrompt = getSystemPrompt();
+          const systemPrompt = getSystemPrompt(userProfile?.subscription_tier);
           claudeService.setSystemPrompt(systemPrompt);
 
           const noResultsContext = `The user searched for "${query}" but we didn't find any exact matches in our current inventory.
@@ -2609,7 +2675,7 @@ As their luxury travel consultant:
       setAssistantTyping(true);
 
       try {
-        const systemPrompt = getSystemPrompt();
+        const systemPrompt = getSystemPrompt(userProfile?.subscription_tier);
         claudeService.setSystemPrompt(systemPrompt);
 
         // Get top 3 results from the first tab
@@ -2767,7 +2833,7 @@ As their luxury travel consultant, provide an enthusiastic response that:
       }
     } else if (activeChat === 'new') {
       // Create new chat when starting from category overview
-      const title = message.substring(0, 50) + (message.length > 50 ? '...' : '');
+      const title = chatService.generateTitle({ content: message });
 
       console.log('🆕 Creating new chat from service bubble:', { title, userId: user?.id });
 
@@ -2840,7 +2906,25 @@ As their luxury travel consultant, provide an enthusiastic response that:
       console.log('✅ Adding chat to history:', { id: chatId, title: chatTitle });
 
       // Update chat history and active chat TOGETHER
+      // Check for duplicates before adding - prevent double entries
       setChatHistory(prev => {
+        // Check if a chat with this ID already exists
+        const existingById = prev.find(c => c.id === chatId);
+        if (existingById) {
+          console.log('⚠️ Chat already exists in history, skipping add:', chatId);
+          return prev;
+        }
+
+        // Also check for very recent chats with same first message (prevent race condition duplicates)
+        const sameContent = prev.find(c => {
+          const firstUserMsg = c.messages?.find(m => m.role === 'user');
+          return firstUserMsg?.content === message && c.date === 'Just now';
+        });
+        if (sameContent) {
+          console.log('⚠️ Chat with same content already exists, skipping add:', sameContent.id);
+          return prev;
+        }
+
         const updated = [newChat, ...prev];
         console.log('📝 Chat history updated, total chats:', updated.length);
         return updated;
@@ -2996,7 +3080,7 @@ Click **"Add to Route"** to confirm this stop, or provide corrections.`;
     // Loading message is already added when user message was added (both for new and existing chats)
 
     try {
-      const systemPrompt = getSystemPrompt();
+      const systemPrompt = getSystemPrompt(userProfile?.subscription_tier);
 
       // Filter out UI-only messages - only user/assistant are valid Claude roles
       // place, hotels, adventures, confirm_booking, results, loading are UI-only
@@ -3841,7 +3925,7 @@ Keep responses conversational and ask for 1-2 details at a time.`;
         setAssistantTyping(true);
 
         try {
-          const systemPrompt = getSystemPrompt();
+          const systemPrompt = getSystemPrompt(userProfile?.subscription_tier);
           claudeService.setSystemPrompt(systemPrompt);
 
           const addOnContext = `The user seems interested in the search results for "${searchResults.query}".
@@ -3885,7 +3969,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
     try {
       // Use the comprehensive system prompt from aiKnowledgeBase
-      const systemPrompt = getSystemPrompt();
+      const systemPrompt = getSystemPrompt(userProfile?.subscription_tier);
       claudeService.setSystemPrompt(systemPrompt);
 
       // Prepare conversation history for AI consultation
@@ -4211,27 +4295,9 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     <button
                       key={suggestion.id}
                       onClick={() => {
-                        // Create new chat
-                        const chatId = `chat-${Date.now()}`;
-                        const userMessage = { role: 'user', content: suggestion.prompt };
-
-                        // For all suggestions (including empty legs), show loading animation
-                        // Claude AI will naturally ask for route details for empty legs based on knowledge base
-                        const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
-
-                        const newChat = {
-                          id: chatId,
-                          title: suggestion.label,
-                          date: 'Just now',
-                          messages: [userMessage, loadingMsg]
-                        };
-
-                        setChatHistory(prev => [newChat, ...prev]);
-                        setActiveChat(chatId);
-
-                        setTimeout(() => {
-                          handleSendMessage(suggestion.prompt);
-                        }, 100);
+                        // Let handleSendMessage create the chat (single code path prevents duplicates)
+                        setActiveChat('new');
+                        handleSendMessage(suggestion.prompt);
                       }}
                       className="group"
                       style={{
@@ -4261,26 +4327,11 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 onChange={(e) => setCurrentMessage(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && currentMessage.trim()) {
-                    // Create new chat and send message
-                    const chatId = `chat-${Date.now()}`;
-                    const userMessage = { role: 'user', content: currentMessage };
-                    const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
-
-                    const newChat = {
-                      id: chatId,
-                      title: currentMessage.split(' ').slice(0, 4).join(' ') + '...',
-                      date: 'Just now',
-                      messages: [userMessage, loadingMsg]
-                    };
-
-                    setChatHistory(prev => [newChat, ...prev]);
-                    setActiveChat(chatId);
+                    // Let handleSendMessage create the chat (single code path prevents duplicates)
                     const msgToSend = currentMessage;
                     setCurrentMessage('');
-
-                    setTimeout(() => {
-                      handleSendMessage(msgToSend);
-                    }, 100);
+                    setActiveChat('new');
+                    handleSendMessage(msgToSend);
                   }
                 }}
                 placeholder="Message Sphera... e.g. 'Private jet from London to Monaco'"
@@ -4290,25 +4341,11 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               <button
                 onClick={() => {
                   if (currentMessage.trim()) {
-                    const chatId = `chat-${Date.now()}`;
-                    const userMessage = { role: 'user', content: currentMessage };
-                    const loadingMsg = { role: 'assistant', content: '...', isLoading: true };
-
-                    const newChat = {
-                      id: chatId,
-                      title: currentMessage.split(' ').slice(0, 4).join(' ') + '...',
-                      date: 'Just now',
-                      messages: [userMessage, loadingMsg]
-                    };
-
-                    setChatHistory(prev => [newChat, ...prev]);
-                    setActiveChat(chatId);
+                    // Let handleSendMessage create the chat (single code path prevents duplicates)
                     const msgToSend = currentMessage;
                     setCurrentMessage('');
-
-                    setTimeout(() => {
-                      handleSendMessage(msgToSend);
-                    }, 100);
+                    setActiveChat('new');
+                    handleSendMessage(msgToSend);
                   }
                 }}
                 disabled={!currentMessage.trim()}
@@ -4421,7 +4458,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             </button>
             */}
 
-            {/* Chat Counter - Clickable to open subscriptions */}
+            {/* Subscription & Message Counter - Clickable to open subscriptions */}
             <button
               onClick={() => setShowSubscriptionModal(true)}
               className="px-2.5 py-1.5 bg-white/40 hover:bg-white/60 rounded-xl text-xs font-medium text-gray-700 transition-all duration-200 flex items-center gap-1.5 border border-gray-200/40 hover:border-gray-300/50"
@@ -4432,24 +4469,28 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 <span className="flex items-center gap-1">
                   <Crown size={12} className="text-amber-600" />
                   <span className="text-gray-700">Elite</span>
-                </span>
-              ) : userSubscriptionLimits?.tier === 'pro' ? (
-                <span className="flex items-center gap-1">
-                  <span className="text-gray-600">Pro</span>
                   <span className="text-gray-300">•</span>
-                  <span className="text-gray-500">{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 20}</span>
+                  <span className="text-gray-500">∞</span>
                 </span>
-              ) : userSubscriptionLimits?.tier === 'starter' ? (
+              ) : userSubscriptionLimits?.tier === 'traveller' ? (
                 <span className="flex items-center gap-1">
-                  <span className="text-gray-600">Starter</span>
+                  <span className="text-gray-600">Traveller</span>
                   <span className="text-gray-300">•</span>
-                  <span className="text-gray-500">{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 5}</span>
+                  <span className={`${messageCount >= 20 ? 'text-red-500' : messageCount >= 15 ? 'text-amber-500' : 'text-gray-500'}`}>
+                    {messageCount}/25
+                  </span>
+                </span>
+              ) : userSubscriptionLimits?.tier === 'explorer' ? (
+                <span className="flex items-center gap-1">
+                  <span className="text-gray-600">Explorer</span>
+                  <span className="text-gray-300">•</span>
+                  <span className={`${messageCount >= 8 ? 'text-red-500' : messageCount >= 5 ? 'text-amber-500' : 'text-gray-500'}`}>
+                    {messageCount}/10
+                  </span>
                 </span>
               ) : (
                 <span className="flex items-center gap-1">
-                  <span className="text-gray-500">Free</span>
-                  <span className="text-gray-300">•</span>
-                  <span className="text-gray-400">{userProfile?.chats_used || 0}/{userProfile?.chats_limit || 2}</span>
+                  <span className="text-gray-500">No Plan</span>
                 </span>
               )}
             </button>
@@ -4816,13 +4857,71 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       {msg.isLoading ? (
                         <TypingAnimation />
                       ) : shouldType ? (
-                        <TypingText
-                          text={msg.content}
-                          speed={5}
-                          onComplete={() => setTypingMessageIndex(null)}
-                        />
+                        // Check if message contains upgrade button tag for animated typing
+                        (() => {
+                          const content = msg.content || '';
+                          const hasUpgradeButton = content.includes('[UPGRADE_BUTTON]') || content.includes('[ACTION:SHOW_SUBSCRIPTION_MODAL]');
+
+                          if (hasUpgradeButton) {
+                            // Strip the tag from text for typing animation
+                            const cleanContent = content
+                              .replace('[ACTION:SHOW_SUBSCRIPTION_MODAL]', '')
+                              .replace('[UPGRADE_BUTTON]', '')
+                              .trim();
+
+                            return (
+                              <TypingText
+                                text={cleanContent}
+                                speed={5}
+                                onComplete={() => setTypingMessageIndex(null)}
+                                renderAfterComplete={() => (
+                                  <button
+                                    onClick={() => setShowSubscriptionModal(true)}
+                                    className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-white/60 hover:bg-white/80 text-gray-700 text-sm font-medium rounded-xl transition-all border border-gray-200/50 hover:border-gray-300/60 animate-fade-in"
+                                    style={{ backdropFilter: 'blur(8px)' }}
+                                  >
+                                    <Crown size={14} className="text-gray-500" />
+                                    Upgrade Subscription
+                                  </button>
+                                )}
+                              />
+                            );
+                          }
+
+                          return (
+                            <TypingText
+                              text={content}
+                              speed={5}
+                              onComplete={() => setTypingMessageIndex(null)}
+                            />
+                          );
+                        })()
                       ) : (
-                        <p className="text-sm leading-relaxed whitespace-pre-line">{msg.content}</p>
+                        // Parse message content for special action buttons (static/already typed)
+                        (() => {
+                          const content = msg.content || '';
+                          // Check for upgrade button tag
+                          if (content.includes('[UPGRADE_BUTTON]') || content.includes('[ACTION:SHOW_SUBSCRIPTION_MODAL]')) {
+                            const cleanContent = content
+                              .replace('[ACTION:SHOW_SUBSCRIPTION_MODAL]', '')
+                              .replace('[UPGRADE_BUTTON]', '')
+                              .trim();
+                            return (
+                              <div className="text-sm leading-relaxed">
+                                <p className="whitespace-pre-line">{cleanContent}</p>
+                                <button
+                                  onClick={() => setShowSubscriptionModal(true)}
+                                  className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-white/60 hover:bg-white/80 text-gray-700 text-sm font-medium rounded-xl transition-all border border-gray-200/50 hover:border-gray-300/60"
+                                  style={{ backdropFilter: 'blur(8px)' }}
+                                >
+                                  <Crown size={14} className="text-gray-500" />
+                                  Upgrade Subscription
+                                </button>
+                              </div>
+                            );
+                          }
+                          return <p className="text-sm leading-relaxed whitespace-pre-line">{content}</p>;
+                        })()
                       )}
 
                       {/* Multi-Leg Route Button - Show when AI detects multi-stop journey FOR JETS/HELIS ONLY */}
@@ -5430,9 +5529,10 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       </button>
                       <button
                         onClick={() => setShowSubscriptionModal(true)}
-                        className="flex-1 py-3 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-colors font-medium border border-gray-300 flex items-center justify-center gap-2"
+                        className="flex-1 py-3 bg-white/60 text-gray-700 rounded-lg hover:bg-white/80 transition-colors font-medium border border-gray-200/50 flex items-center justify-center gap-2"
+                        style={{ backdropFilter: 'blur(8px)' }}
                       >
-                        <Crown size={18} />
+                        <Crown size={18} className="text-gray-500" />
                         Upgrade
                       </button>
                     </>
@@ -5811,6 +5911,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     const isLuxuryCar = item.type === 'luxury_cars' || item.type === 'luxury_car';
                     const isWine = item.type === 'wines' || item.type === 'wine';
                     const isCustomExtra = item.type === 'custom_extra';
+                    const isMedevac = item.type === 'medevac';
                     const canDirectCheckout = isEmptyLeg || isAdventure || isWine;
                     const hasAirportFee = item.airportPickupFee && item.airportPickupFee > 0;
                     // Currency: All prices now in USD
@@ -5911,6 +6012,62 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                     <p className="text-sm font-bold text-gray-900">~${(item.price || item.basePrice || 0).toLocaleString()}</p>
                                   </>
                                 )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // MEDEVAC - Medical Evacuation Request
+                    if (isMedevac) {
+                      return (
+                        <div key={idx} className="bg-red-50 rounded-xl p-3 border border-red-200 animate-fade-in hover:border-red-300 transition-all duration-300">
+                          <div className="flex gap-3">
+                            {/* Left: Emergency Icon */}
+                            <div className="flex-shrink-0">
+                              <div className="w-12 h-12 rounded-lg bg-red-100 border border-red-200 flex items-center justify-center">
+                                <span className="text-2xl">🏥</span>
+                              </div>
+                            </div>
+
+                            {/* Center: Details */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-red-600 text-white">
+                                  MEDEVAC
+                                </span>
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                                  item.urgencyLevel === 'critical' ? 'bg-red-500 text-white' :
+                                  item.urgencyLevel === 'urgent' ? 'bg-amber-500 text-white' :
+                                  'bg-gray-200 text-gray-600'
+                                }`}>
+                                  {(item.urgencyLevel || 'STANDARD').toUpperCase()}
+                                </span>
+                              </div>
+                              <p className="text-sm font-semibold text-gray-900">Medical Evacuation Request</p>
+                              {item.route && (
+                                <p className="text-[10px] text-gray-600 mt-0.5">📍 {item.route}</p>
+                              )}
+                              {item.patientInfo?.name && (
+                                <p className="text-[10px] text-gray-500 mt-0.5">Patient: {item.patientInfo.name}</p>
+                              )}
+                              <p className="text-[10px] text-red-600 mt-1 font-medium">
+                                Price quoted after consultation
+                              </p>
+                            </div>
+
+                            {/* Right: Remove */}
+                            <div className="flex flex-col items-end justify-between">
+                              <button
+                                onClick={() => removeFromCart(item.cartId || idx)}
+                                className="p-1 hover:bg-red-100 text-gray-400 hover:text-red-600 rounded transition-all"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                              <div className="text-right">
+                                <p className="text-xs text-gray-500">Quote</p>
+                                <p className="text-sm font-bold text-gray-900">TBD</p>
                               </div>
                             </div>
                           </div>

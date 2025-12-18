@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUpRight, ArrowDownLeft, History, Wallet, MessageCircle, Shield, User, Award, Plus, X, ExternalLink, LogOut, RefreshCw, Coins, Plane, Leaf, Send, CheckCircle, Headphones, Camera, Loader2 } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, History, Wallet, MessageCircle, Shield, User, Award, Plus, X, ExternalLink, LogOut, RefreshCw, Coins, Plane, Leaf, Send, CheckCircle, Headphones, Camera, Loader2, Crown, ChevronRight } from 'lucide-react';
 import { supportTicketService } from '../../services/supportTicketService';
 import { LineChart, Line, ResponsiveContainer, YAxis, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import { useAccount, useBalance, useChainId } from 'wagmi';
 import { useAppKit } from '@reown/appkit/react';
 import { supabase } from '../../lib/supabase';
+import { subscriptionService } from '../../services/subscriptionService';
 import { formatEther } from 'viem';
 import { base, mainnet } from 'viem/chains';
 import { web3Service } from '../../lib/web3';
@@ -70,6 +71,10 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState(null);
 
+  // State for subscription
+  const [subscriptionData, setSubscriptionData] = useState(null);
+  const [loadingSubscription, setLoadingSubscription] = useState(true);
+
   // Fetch ETH balance on Base - refetch every 30 seconds
   const { data: baseEthBalance, refetch: refetchBaseEth } = useBalance({
     address: address,
@@ -124,6 +129,7 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
       fetchInvestments();
       fetchNFTCount();
       fetchPVCXData();
+      fetchSubscriptionData();
     }
   }, [user?.id]);
 
@@ -579,6 +585,34 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
       }
     } catch (error) {
       console.error('Error fetching PVCX data:', error);
+    }
+  };
+
+  const fetchSubscriptionData = async () => {
+    if (!user?.id) {
+      setLoadingSubscription(false);
+      return;
+    }
+
+    try {
+      setLoadingSubscription(true);
+      const profile = await subscriptionService.getUserProfile(user.id);
+      const chatStats = await subscriptionService.getChatStats(user.id);
+
+      setSubscriptionData({
+        tier: profile?.subscription_tier || null,
+        status: profile?.subscription_status || 'inactive',
+        currentPeriodEnd: profile?.current_period_end,
+        chatsUsed: chatStats?.chatsUsed || 0,
+        chatsLimit: chatStats?.chatsLimit || 0,
+        chatsRemaining: chatStats?.chatsRemaining || 0,
+        unlimited: chatStats?.unlimited || false
+      });
+    } catch (error) {
+      console.error('Error fetching subscription data:', error);
+      setSubscriptionData(null);
+    } finally {
+      setLoadingSubscription(false);
     }
   };
 
@@ -1347,6 +1381,84 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
 
           {/* Right Column */}
           <div className="space-y-4">
+            {/* Subscription Card - Minimalistic */}
+            <div className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Crown className="w-4 h-4 text-gray-600" />
+                  <span className="text-sm font-medium text-gray-900">Subscription</span>
+                </div>
+                {subscriptionData?.tier && subscriptionData?.status === 'active' && (
+                  <div className="px-2 py-0.5 bg-white/60 rounded-full border border-gray-200/50">
+                    <span className="text-[10px] font-medium text-gray-700 uppercase">
+                      {subscriptionData.tier === 'elite' ? 'Elite Club' : subscriptionData.tier}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {loadingSubscription ? (
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Loading...
+                </div>
+              ) : subscriptionData?.tier && subscriptionData?.status === 'active' ? (
+                <div className="space-y-2">
+                  {/* Usage */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-500">Chats Used</span>
+                    <span className="text-xs font-medium text-gray-900">
+                      {subscriptionData.unlimited ? '∞' : `${subscriptionData.chatsUsed}/${subscriptionData.chatsLimit}`}
+                    </span>
+                  </div>
+
+                  {/* Progress Bar (if not unlimited) */}
+                  {!subscriptionData.unlimited && subscriptionData.chatsLimit > 0 && (
+                    <div className="w-full bg-gray-200/60 rounded-full h-1.5">
+                      <div
+                        className="bg-gray-500 h-1.5 rounded-full transition-all"
+                        style={{ width: `${Math.min(100, (subscriptionData.chatsUsed / subscriptionData.chatsLimit) * 100)}%` }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Validity */}
+                  {subscriptionData.currentPeriodEnd && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500">Valid Until</span>
+                      <span className="text-xs font-medium text-gray-900">
+                        {new Date(subscriptionData.currentPeriodEnd).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Manage Link */}
+                  <button
+                    onClick={() => setActiveCategory && setActiveCategory('subscriptions')}
+                    className="w-full mt-2 py-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors flex items-center justify-center gap-1"
+                  >
+                    Manage Subscription
+                    <ChevronRight className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-xs text-gray-500">No active subscription</p>
+                  <button
+                    onClick={() => setActiveCategory && setActiveCategory('subscriptions')}
+                    className="w-full py-2 bg-white/60 hover:bg-white/80 text-gray-700 rounded-lg text-xs font-medium transition-all border border-gray-200/50"
+                    style={{ backdropFilter: 'blur(8px)' }}
+                  >
+                    View Plans
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* KYC Badge */}
             <div className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl p-4">
               <div className="flex items-start justify-between mb-3">

@@ -368,7 +368,7 @@ function AppContent() {
               <Route path="/tokenswap" element={<TokenSwapPage />} />
 
               {/* Dashboard Route - Glassmorphic Dashboard with Empty Legs & RWS */}
-              <Route path="/dashboard" element={<TokenizedAssetsGlassmorphic />} />
+              <Route path="/dashboard" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
 
               {/* CRM Admin Route - Full CRM System */}
               <Route path="/crm" element={<CRMPage />} />
@@ -377,18 +377,23 @@ function AppContent() {
               <Route path="/admin" element={<AdminCRM />} />
 
               {/* Dashboard AI Chat - new chat session */}
-              <Route path="/dashboard/chat" element={<TokenizedAssetsGlassmorphic />} />
+              <Route path="/dashboard/chat" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
 
               {/* Dashboard with specific chat session - allows direct linking to chats */}
-              <Route path="/dashboard/chat/:chatId" element={<TokenizedAssetsGlassmorphic />} />
+              <Route path="/dashboard/chat/:chatId" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
 
-              {/* Service category routes */}
-              <Route path="/dashboard/jets" element={<TokenizedAssetsGlassmorphic />} />
-              <Route path="/dashboard/helis" element={<TokenizedAssetsGlassmorphic />} />
-              <Route path="/dashboard/empty-legs" element={<TokenizedAssetsGlassmorphic />} />
-              <Route path="/dashboard/ground-transport" element={<TokenizedAssetsGlassmorphic />} />
+              {/* Service category routes - use same key to prevent remount on route change */}
+              <Route path="/dashboard/jets" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/helis" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/empty-legs" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/ground-transport" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
               <Route path="/dashboard/transfer" element={<Navigate to="/dashboard?tab=ground-transport" replace />} />
               <Route path="/ground-transport" element={<Navigate to="/dashboard/ground-transport" replace />} />
+
+              {/* SPV routes */}
+              <Route path="/dashboard/spv" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/spv/create" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/spv/my-spvs" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
 
               {/* User Overview Dashboard (old) */}
               <Route path="/user-overview" element={<Dashboard />} />
