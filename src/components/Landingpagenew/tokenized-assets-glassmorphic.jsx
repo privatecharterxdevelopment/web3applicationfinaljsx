@@ -6226,9 +6226,13 @@ const TokenizedAssetsGlassmorphic = () => {
                           )}
                         </button>
 
-                        {/* Charter Aviation Card (Helicopter/Jet) - Mobile: only title */}
+                        {/* Charter Aviation Card (Helicopter/Jet) - Opens AI Chat */}
                         <button
-                          onClick={() => setActiveCategory('private-jet')}
+                          onClick={() => {
+                            // Open AI Chat with prefilled message based on current aviation type
+                            const query = encodeURIComponent(currentAviationType === 0 ? 'I want to charter a helicopter' : 'I want to charter a private jet');
+                            navigate(`/dashboard/chat?query=${query}`);
+                          }}
                           className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50 relative overflow-hidden"
                           style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                         >
