@@ -160,11 +160,24 @@ export default function AdminUsers() {
         .update({ is_verified: !currentVerified })
         .eq('user_id', userId);
 
+      // Also update KYC application status if exists
+      if (!currentVerified) {
+        // If verifying user, approve their KYC
+        await supabase
+          .from('kyc_applications')
+          .update({ status: 'approved', reviewed_at: new Date().toISOString() })
+          .eq('user_id', userId);
+      }
+
       fetchUsers();
 
       // Refresh selected user if open
       if (selectedUser?.id === userId) {
         setSelectedUser(prev => prev ? { ...prev, email_verified: !currentVerified } : null);
+        // Refresh user details to show updated KYC status
+        if (userDetails) {
+          fetchUserDetails({ ...selectedUser, email_verified: !currentVerified } as User);
+        }
       }
     } catch (error) {
       console.error('Error toggling verification:', error);

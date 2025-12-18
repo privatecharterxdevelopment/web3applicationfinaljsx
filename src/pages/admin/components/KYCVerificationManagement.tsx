@@ -263,47 +263,35 @@ export default function KYCVerificationManagement() {
   const getStatusColor = (status: string): string => {
     switch (status.toLowerCase()) {
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-gray-200 text-gray-700';
       case 'under_review':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-gray-300 text-gray-800';
       case 'approved':
-        return 'bg-green-100 text-green-800';
+        return 'bg-gray-900 text-white';
       case 'rejected':
-        return 'bg-red-100 text-red-800';
+        return 'bg-gray-100 text-gray-500';
       case 'requires_additional_info':
-        return 'bg-orange-100 text-orange-800';
+        return 'bg-gray-200 text-gray-600';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-700';
     }
   };
 
   const getRiskColor = (score?: number): string => {
     if (!score) return 'bg-gray-100 text-gray-600';
-
-    if (score <= 30) return 'bg-green-100 text-green-800';
-    if (score <= 70) return 'bg-yellow-100 text-yellow-800';
-    return 'bg-red-100 text-red-800';
+    if (score <= 30) return 'bg-gray-100 text-gray-700';
+    if (score <= 70) return 'bg-gray-200 text-gray-800';
+    return 'bg-gray-900 text-white';
   };
 
   const getRiskLabel = (score?: number): string => {
     if (!score) return 'Not Assessed';
-
     const level = RISK_LEVELS.find(level => score >= level.min && score <= level.max);
     return level ? level.label : 'Unknown';
   };
 
-  const getVerificationLevelColor = (level: string): string => {
-    const levelConfig = VERIFICATION_LEVELS.find(l => l.value === level);
-    const color = levelConfig?.color || 'gray';
-
-    const colorMap = {
-      blue: 'bg-blue-100 text-blue-800',
-      green: 'bg-green-100 text-green-800',
-      purple: 'bg-purple-100 text-purple-800',
-      gray: 'bg-gray-100 text-gray-800'
-    };
-
-    return colorMap[color as keyof typeof colorMap] || colorMap.gray;
+  const getVerificationLevelColor = (_level: string): string => {
+    return 'bg-gray-100 text-gray-700';
   };
 
   const filteredApplications = applications.filter(application => {
@@ -328,7 +316,7 @@ export default function KYCVerificationManagement() {
   if (error) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 text-red-700 p-4 rounded-lg">
+        <div className="bg-gray-100 text-gray-700 p-4 rounded-lg">
           {error}
         </div>
       </div>
@@ -417,7 +405,7 @@ export default function KYCVerificationManagement() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <Shield size={20} className="text-blue-600" />
+                        <Shield size={20} className="text-gray-600" />
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">
@@ -445,7 +433,7 @@ export default function KYCVerificationManagement() {
                         DOB: {new Date(application.application_data.dateOfBirth).toLocaleDateString()}
                       </div>
                       {application.application_data.file_info && (
-                        <div className="flex items-center mt-1 text-xs text-green-600">
+                        <div className="flex items-center mt-1 text-xs text-gray-700">
                           <FileText size={12} className="mr-1" />
                           Document uploaded
                         </div>
@@ -496,7 +484,7 @@ export default function KYCVerificationManagement() {
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={() => openEditModal(application)}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="text-gray-600 hover:text-gray-900"
                         title="Review application"
                       >
                         <Eye size={18} />
@@ -515,7 +503,7 @@ export default function KYCVerificationManagement() {
                       {application.status === 'pending' && hasPermission('kyc_applications', 'write') && (
                         <button
                           onClick={() => handleStatusChange(application.id, 'under_review')}
-                          className="text-orange-600 hover:text-orange-900"
+                          className="text-gray-500 hover:text-gray-900"
                           title="Start review"
                         >
                           <FileText size={18} />
@@ -525,7 +513,7 @@ export default function KYCVerificationManagement() {
                       {['pending', 'under_review'].includes(application.status) && canApproveKYC && (
                         <button
                           onClick={() => handleStatusChange(application.id, 'approved')}
-                          className="text-green-600 hover:text-green-900"
+                          className="text-gray-700 hover:text-gray-900"
                           title="Quick approve"
                         >
                           <Check size={18} />
@@ -535,7 +523,7 @@ export default function KYCVerificationManagement() {
                       {['pending', 'under_review'].includes(application.status) && canRejectKYC && (
                         <button
                           onClick={() => handleStatusChange(application.id, 'rejected')}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-gray-400 hover:text-gray-600"
                           title="Quick reject"
                         >
                           <X size={18} />
@@ -642,7 +630,7 @@ export default function KYCVerificationManagement() {
                           </div>
                           <button
                             onClick={() => handleDownloadDocument(editingApplication.application_data.file_info!.public_url)}
-                            className="text-blue-600 hover:text-blue-900"
+                            className="text-gray-600 hover:text-gray-900"
                             title="Download document"
                           >
                             <Download size={18} />

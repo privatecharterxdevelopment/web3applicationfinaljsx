@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  FileText, 
-  User, 
-  Calendar, 
-  Check, 
-  X, 
+import {
+  FileText,
+  User,
+  Calendar,
+  Check,
+  X,
   Clock,
   Mail,
   Phone,
   MessageSquare,
-  AlertCircle,
   Search,
   Filter,
   Eye,
   MapPin,
   Plane,
-  ArrowRight
+  ArrowRight,
+  RefreshCw
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useAdminPermissions } from '../../../hooks/useAdminPermissions';
@@ -39,30 +39,35 @@ interface UserRequest {
   capacity?: string;
   range?: string;
   speed?: string;
+  users?: {
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
 }
 
 const REQUEST_TYPES = [
-  { value: 'flight_quote', label: 'Flight Quote', color: 'blue' },
-  { value: 'support', label: 'Support', color: 'green' },
-  { value: 'document', label: 'Document', color: 'purple' },
-  { value: 'visa', label: 'Visa', color: 'orange' },
-  { value: 'payment', label: 'Payment', color: 'red' },
-  { value: 'booking', label: 'Booking', color: 'indigo' },
-  { value: 'cancellation', label: 'Cancellation', color: 'red' },
-  { value: 'modification', label: 'Modification', color: 'yellow' },
-  { value: 'private_jet_charter', label: 'Private Jet Charter', color: 'blue' },
-  { value: 'fixed_offer', label: 'Fixed Offer', color: 'cyan' },
-  { value: 'helicopter_charter', label: 'Helicopter Charter', color: 'teal' },
-  { value: 'empty_leg', label: 'Empty Leg', color: 'pink' },
-  { value: 'luxury_car_rental', label: 'Luxury Car Rental', color: 'gray' },
-  { value: 'luxury_car', label: 'Luxury Car', color: 'gray' },
-  { value: 'adventure_package', label: 'Adventure Package', color: 'amber' },
-  { value: 'co2_certificate', label: 'CO2 Certificate', color: 'green' },
-  { value: 'taxi_concierge', label: 'Taxi/Concierge', color: 'slate' },
-  { value: 'nft_discount_empty_leg', label: 'NFT Discount Empty Leg', color: 'violet' },
-  { value: 'nft_free_flight', label: 'NFT Free Flight', color: 'emerald' },
-  { value: 'spv_formation', label: 'SPV Formation', color: 'indigo' },
-  { value: 'tokenization', label: 'Asset Tokenization', color: 'purple' }
+  { value: 'flight_quote', label: 'Flight Quote' },
+  { value: 'support', label: 'Support' },
+  { value: 'document', label: 'Document' },
+  { value: 'visa', label: 'Visa' },
+  { value: 'payment', label: 'Payment' },
+  { value: 'booking', label: 'Booking' },
+  { value: 'cancellation', label: 'Cancellation' },
+  { value: 'modification', label: 'Modification' },
+  { value: 'private_jet_charter', label: 'Private Jet Charter' },
+  { value: 'fixed_offer', label: 'Fixed Offer' },
+  { value: 'helicopter_charter', label: 'Helicopter Charter' },
+  { value: 'empty_leg', label: 'Empty Leg' },
+  { value: 'luxury_car_rental', label: 'Luxury Car Rental' },
+  { value: 'luxury_car', label: 'Luxury Car' },
+  { value: 'adventure_package', label: 'Adventure Package' },
+  { value: 'co2_certificate', label: 'CO2 Certificate' },
+  { value: 'taxi_concierge', label: 'Taxi/Concierge' },
+  { value: 'nft_discount_empty_leg', label: 'NFT Discount Empty Leg' },
+  { value: 'nft_free_flight', label: 'NFT Free Flight' },
+  { value: 'spv_formation', label: 'SPV Formation' },
+  { value: 'tokenization', label: 'Asset Tokenization' }
 ];
 
 export default function UserRequestManagement() {
@@ -90,7 +95,14 @@ export default function UserRequestManagement() {
 
       const { data, error: fetchError } = await supabase
         .from('user_requests')
-        .select('*')
+        .select(`
+          *,
+          users:user_id (
+            first_name,
+            last_name,
+            email
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
@@ -202,39 +214,26 @@ export default function UserRequestManagement() {
   const getStatusColor = (status: string): string => {
     switch (status.toLowerCase()) {
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-gray-200 text-gray-700';
       case 'in_progress':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-gray-300 text-gray-800';
       case 'completed':
-        return 'bg-green-100 text-green-800';
+        return 'bg-gray-900 text-white';
       case 'cancelled':
-        return 'bg-red-100 text-red-800';
+        return 'bg-gray-100 text-gray-500';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-700';
     }
   };
 
-  const getTypeColor = (type: string): string => {
-    const typeConfig = REQUEST_TYPES.find(t => t.value === type);
-    const color = typeConfig?.color || 'gray';
-    
-    const colorMap = {
-      blue: 'bg-blue-100 text-blue-800',
-      green: 'bg-green-100 text-green-800',
-      purple: 'bg-purple-100 text-purple-800',
-      orange: 'bg-orange-100 text-orange-800',
-      red: 'bg-red-100 text-red-800',
-      indigo: 'bg-indigo-100 text-indigo-800',
-      yellow: 'bg-yellow-100 text-yellow-800',
-      cyan: 'bg-cyan-100 text-cyan-800',
-      teal: 'bg-teal-100 text-teal-800',
-      pink: 'bg-pink-100 text-pink-800',
-      gray: 'bg-gray-100 text-gray-800',
-      violet: 'bg-violet-100 text-violet-800',
-      emerald: 'bg-emerald-100 text-emerald-800'
-    };
-    
-    return colorMap[color as keyof typeof colorMap] || colorMap.gray;
+  const getTypeColor = (_type: string): string => {
+    return 'bg-gray-100 text-gray-700';
+  };
+
+  const getUserName = (user: { first_name?: string; last_name?: string } | null) => {
+    if (!user) return null;
+    const name = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+    return name || null;
   };
 
   const getTypeLabel = (type: string): string => {
@@ -282,7 +281,7 @@ export default function UserRequestManagement() {
   if (error) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 text-red-700 p-4 rounded-lg">
+        <div className="bg-gray-100 text-gray-700 p-4 rounded-lg">
           {error}
         </div>
       </div>
@@ -290,242 +289,247 @@ export default function UserRequestManagement() {
   }
 
   return (
-    <div className="p-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">User Requests</h2>
-          <p className="text-gray-600">Manage general user service requests and inquiries</p>
+          <h1 className="text-xl font-semibold text-gray-900">User Requests</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Manage all service requests and inquiries</p>
         </div>
-        
-        <div className="flex items-center gap-4">
-          {/* Type Filter */}
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-            >
-              <option value="all">All Types</option>
-              {REQUEST_TYPES.map(type => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+        <button
+          onClick={fetchRequests}
+          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <RefreshCw size={18} className="text-gray-600" />
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white border border-gray-200 rounded-xl p-4">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search requests..."
+              placeholder="Search by name, email, type..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent w-64"
+              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-900"
             />
           </div>
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-900"
+          >
+            <option value="all">All Types</option>
+            {REQUEST_TYPES.map(type => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
       {/* Status Tabs */}
-      <div className="mb-6">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            {['all', 'pending', 'in_progress', 'completed', 'cancelled'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                  activeTab === tab
-                    ? 'border-black text-black'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {tab === 'all' ? 'All Requests' : tab.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                <span className="ml-2 px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">
-                  {tab === 'all' 
-                    ? requests.length 
-                    : requests.filter(r => r.status.toLowerCase() === tab).length
-                  }
-                </span>
-              </button>
-            ))}
-          </nav>
-        </div>
+      <div className="flex gap-2 flex-wrap">
+        {['all', 'pending', 'in_progress', 'completed', 'cancelled'].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              activeTab === tab
+                ? 'bg-gray-900 text-white'
+                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            {tab === 'all' ? 'All' : tab.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+            <span className={`ml-2 px-1.5 py-0.5 text-xs rounded ${
+              activeTab === tab ? 'bg-white/20' : 'bg-gray-100'
+            }`}>
+              {tab === 'all'
+                ? requests.length
+                : requests.filter(r => r.status.toLowerCase() === tab).length
+              }
+            </span>
+          </button>
+        ))}
       </div>
 
       {/* Requests Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Request
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Client
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Details
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-100">
               {filteredRequests.map((request) => (
-                <tr key={request.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <FileText size={20} className="text-blue-600" />
+                <tr key={request.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <FileText size={16} className="text-gray-500" />
                       </div>
-                      <div className="ml-4">
+                      <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {request.id.substring(0, 8)}...
+                          {request.id.substring(0, 8)}
                         </div>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(request.type)}`}>
+                        <span className="px-2 py-0.5 text-xs font-medium rounded bg-gray-100 text-gray-700">
                           {getTypeLabel(request.type)}
                         </span>
                       </div>
                     </div>
                   </td>
                   
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-3">
                     <div className="text-sm">
-                      {request.client_name ? (
+                      {(request.client_name || getUserName(request.users || null)) ? (
                         <div>
                           <div className="font-medium text-gray-900 flex items-center">
-                            <User size={16} className="text-gray-400 mr-1" />
-                            {request.client_name}
+                            <User size={14} className="text-gray-400 mr-1" />
+                            {request.client_name || getUserName(request.users || null)}
                           </div>
-                          {request.client_email && (
-                            <div className="text-gray-500 flex items-center mt-1">
-                              <Mail size={14} className="text-gray-400 mr-1" />
-                              {request.client_email}
+                          {(request.client_email || request.users?.email) && (
+                            <div className="text-gray-500 flex items-center mt-0.5 text-xs">
+                              <Mail size={12} className="text-gray-400 mr-1" />
+                              {request.client_email || request.users?.email}
                             </div>
                           )}
                           {request.client_phone && (
-                            <div className="text-gray-500 flex items-center">
-                              <Phone size={14} className="text-gray-400 mr-1" />
+                            <div className="text-gray-400 flex items-center text-xs">
+                              <Phone size={12} className="text-gray-400 mr-1" />
                               {request.client_phone}
                             </div>
                           )}
                         </div>
                       ) : (
-                        <div className="text-gray-500 text-sm">
-                          User ID: {request.user_id.substring(0, 8)}...
+                        <div>
+                          <div className="text-gray-500 text-xs">
+                            ID: {request.user_id?.substring(0, 8)}...
+                          </div>
+                          {request.users?.email && (
+                            <div className="text-gray-600 flex items-center mt-0.5 text-xs">
+                              <Mail size={12} className="text-gray-400 mr-1" />
+                              {request.users.email}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
                   </td>
                   
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900 max-w-xs">
+                  <td className="px-4 py-3">
+                    <div className="text-sm max-w-xs">
                       {request.aircraft_model && (
-                        <div className="font-medium mb-1">
-                          {request.aircraft_model} ({request.aircraft_type})
+                        <div className="font-medium text-gray-900 mb-0.5">
+                          {request.aircraft_model}
                         </div>
+                      )}
+                      {request.aircraft_type && (
+                        <div className="text-xs text-gray-500">{request.aircraft_type}</div>
                       )}
                       {request.capacity && (
-                        <div className="text-gray-500">
-                          Capacity: {request.capacity}
-                        </div>
+                        <div className="text-xs text-gray-500">Capacity: {request.capacity}</div>
                       )}
-                      {request.range && (
-                        <div className="text-gray-500">
-                          Range: {request.range}
-                        </div>
-                      )}
-                      {request.data && Object.keys(request.data).length > 0 && (
-                        <div className="text-gray-500 text-xs mt-2 truncate">
-                          {JSON.stringify(request.data).length > 100
-                            ? `${JSON.stringify(request.data).substring(0, 100)}...`
-                            : JSON.stringify(request.data)
+                      {!request.aircraft_model && request.data && (
+                        <div className="text-xs text-gray-500 truncate max-w-[200px]">
+                          {typeof request.data === 'object'
+                            ? (request.data.from || request.data.origin || '-')
+                            : '-'
                           }
+                          {(request.data?.to || request.data?.destination) && (
+                            <> → {request.data.to || request.data.destination}</>
+                          )}
                         </div>
                       )}
                     </div>
                   </td>
-                  
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <Calendar size={16} className="text-gray-400 mr-1" />
-                      <div>
-                        <div>{formatDate(request.created_at)}</div>
-                        {request.completed_at && (
-                          <div className="text-xs text-green-600">
-                            Completed: {formatDate(request.completed_at)}
-                          </div>
-                        )}
-                      </div>
+
+                  <td className="px-4 py-3">
+                    <div className="text-sm text-gray-600">
+                      {formatDate(request.created_at)}
                     </div>
+                    {request.completed_at && (
+                      <div className="text-xs text-gray-400">
+                        Done: {formatDate(request.completed_at)}
+                      </div>
+                    )}
                   </td>
-                  
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
-                      {request.status.replace('_', ' ').toUpperCase()}
+
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded ${getStatusColor(request.status)}`}>
+                      {request.status.replace('_', ' ')}
                     </span>
                   </td>
-                  
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end gap-2">
+
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1">
                       <button
                         onClick={() => openRequestDetails(request)}
-                        className="text-purple-600 hover:text-purple-900"
+                        className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-500"
                         title="View details"
                       >
-                        <Eye size={18} />
+                        <Eye size={16} />
                       </button>
                       <button
                         onClick={() => {
                           setEditingRequest(request);
                           setAdminNotes(request.admin_notes || '');
                         }}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-500"
                         title="Add notes"
                       >
-                        <MessageSquare size={18} />
+                        <MessageSquare size={16} />
                       </button>
-                      
+
                       {request.status === 'pending' && hasPermission('user_requests', 'write') && (
                         <button
                           onClick={() => handleStatusChange(request.id, 'in_progress')}
-                          className="text-orange-600 hover:text-orange-900"
+                          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-500"
                           title="Start processing"
                         >
-                          <Clock size={18} />
+                          <Clock size={16} />
                         </button>
                       )}
-                      
+
                       {request.status === 'in_progress' && canCompleteUserRequests && (
                         <button
                           onClick={() => handleStatusChange(request.id, 'completed')}
-                          className="text-green-600 hover:text-green-900"
+                          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-700"
                           title="Mark completed"
                         >
-                          <Check size={18} />
+                          <Check size={16} />
                         </button>
                       )}
-                      
+
                       {['pending', 'in_progress'].includes(request.status) && hasPermission('user_requests', 'write') && (
                         <button
                           onClick={() => handleStatusChange(request.id, 'cancelled')}
-                          className="text-red-600 hover:text-red-900"
+                          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400"
                           title="Cancel request"
                         >
-                          <X size={18} />
+                          <X size={16} />
                         </button>
                       )}
                     </div>
@@ -534,10 +538,11 @@ export default function UserRequestManagement() {
               ))}
             </tbody>
           </table>
-          
+
           {filteredRequests.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              No user requests found
+            <div className="text-center py-12">
+              <FileText className="mx-auto h-10 w-10 text-gray-300" />
+              <p className="mt-2 text-sm text-gray-500">No requests found</p>
             </div>
           )}
         </div>
@@ -545,102 +550,90 @@ export default function UserRequestManagement() {
 
       {/* Notes Modal */}
       {editingRequest && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold">Add Admin Notes</h3>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Admin Notes</h2>
+                <p className="text-sm text-gray-500">Request {editingRequest.id.slice(0, 8)}</p>
+              </div>
               <button
                 onClick={() => setEditingRequest(null)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X size={20} className="text-gray-500" />
+                <X size={18} />
               </button>
             </div>
 
-            <div className="space-y-6">
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {/* Request Summary */}
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <div className="text-sm text-gray-500">Request ID</div>
-                    <div className="font-medium">{editingRequest.id}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-500">Type</div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(editingRequest.type)}`}>
+                    <div className="text-xs text-gray-500 mb-1">Type</div>
+                    <span className="px-2 py-0.5 text-xs font-medium rounded bg-gray-100 text-gray-700">
                       {getTypeLabel(editingRequest.type)}
                     </span>
                   </div>
                   <div>
-                    <div className="text-sm text-gray-500">Status</div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(editingRequest.status)}`}>
-                      {editingRequest.status.replace('_', ' ').toUpperCase()}
+                    <div className="text-xs text-gray-500 mb-1">Status</div>
+                    <span className={`px-2 py-0.5 text-xs font-medium rounded ${getStatusColor(editingRequest.status)}`}>
+                      {editingRequest.status.replace('_', ' ')}
                     </span>
                   </div>
                   <div>
-                    <div className="text-sm text-gray-500">Created</div>
-                    <div className="font-medium">{formatDate(editingRequest.created_at)}</div>
+                    <div className="text-xs text-gray-500 mb-1">Created</div>
+                    <div className="text-sm text-gray-900">{formatDate(editingRequest.created_at)}</div>
                   </div>
                 </div>
-                
-                {editingRequest.client_name && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <div className="text-sm text-gray-500 mb-2">Client Information</div>
-                    <div className="space-y-1">
-                      <div className="font-medium">{editingRequest.client_name}</div>
-                      {editingRequest.client_email && (
-                        <div className="text-gray-600">{editingRequest.client_email}</div>
+
+                {(editingRequest.client_name || editingRequest.client_email || editingRequest.users?.email) && (
+                  <div className="pt-3 border-t border-gray-200">
+                    <div className="text-xs text-gray-500 mb-2">Client</div>
+                    <div className="space-y-0.5">
+                      {editingRequest.client_name && (
+                        <div className="text-sm font-medium text-gray-900">{editingRequest.client_name}</div>
+                      )}
+                      {(editingRequest.client_email || editingRequest.users?.email) && (
+                        <div className="text-sm text-gray-600">{editingRequest.client_email || editingRequest.users?.email}</div>
                       )}
                       {editingRequest.client_phone && (
-                        <div className="text-gray-600">{editingRequest.client_phone}</div>
+                        <div className="text-sm text-gray-600">{editingRequest.client_phone}</div>
                       )}
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Request Data */}
-              {editingRequest.data && Object.keys(editingRequest.data).length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Request Data
-                  </label>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <pre className="text-sm text-gray-600 whitespace-pre-wrap">
-                      {JSON.stringify(editingRequest.data, null, 2)}
-                    </pre>
-                  </div>
-                </div>
-              )}
-
               {/* Admin Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Admin Notes
-                </label>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Notes</label>
                 <textarea
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
-                  rows={6}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent resize-none"
+                  rows={5}
+                  className="w-full px-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-900 resize-none"
                   placeholder="Add notes about this request..."
                 />
               </div>
+            </div>
 
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setEditingRequest(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveNotes}
-                  className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800"
-                >
-                  Save Notes
-                </button>
-              </div>
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-2">
+              <button
+                onClick={() => setEditingRequest(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveNotes}
+                className="px-4 py-2 text-sm font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                Save Notes
+              </button>
             </div>
           </div>
         </div>
@@ -648,58 +641,57 @@ export default function UserRequestManagement() {
 
       {/* Request Details Modal */}
       {showDetailsModal && selectedRequest && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${getTypeColor(selectedRequest.type).replace('text-', 'bg-').replace('-800', '-100')}`}>
-                  <FileText size={24} className={getTypeColor(selectedRequest.type)} />
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                  <FileText size={20} className="text-gray-500" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-medium text-gray-900">
-                    {getTypeLabel(selectedRequest.type)} Request
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    {getTypeLabel(selectedRequest.type)}
                   </h2>
-                  <p className="text-sm text-gray-600">ID: {selectedRequest.id.slice(0, 8)}</p>
+                  <p className="text-sm text-gray-500">ID: {selectedRequest.id.slice(0, 8)}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={closeRequestDetails}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X size={20} className="text-gray-500" />
-                </button>
-              </div>
+              <button
+                onClick={closeRequestDetails}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={18} />
+              </button>
             </div>
-            
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+
+            <div className="flex-1 overflow-y-auto p-6">
               <div className="space-y-6">
                 {/* Request Overview */}
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-4">Request Overview</h3>
-                  <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                  <h3 className="text-sm font-medium text-gray-900 uppercase tracking-wide mb-3">Overview</h3>
+                  <div className="bg-gray-50 rounded-xl p-4">
                     <div className="grid grid-cols-3 gap-4">
                       <div>
                         <div className="text-xs text-gray-500 mb-1">Status</div>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedRequest.status)}`}>
-                          {selectedRequest.status.replace('_', ' ').toUpperCase()}
+                        <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded ${getStatusColor(selectedRequest.status)}`}>
+                          {selectedRequest.status.replace('_', ' ')}
                         </span>
                       </div>
                       <div>
                         <div className="text-xs text-gray-500 mb-1">Type</div>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(selectedRequest.type)}`}>
+                        <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded bg-gray-100 text-gray-700">
                           {getTypeLabel(selectedRequest.type)}
                         </span>
                       </div>
                       <div>
                         <div className="text-xs text-gray-500 mb-1">Submitted</div>
-                        <div className="text-sm font-medium text-gray-900">{formatDate(selectedRequest.created_at)}</div>
+                        <div className="text-sm text-gray-900">{formatDate(selectedRequest.created_at)}</div>
                       </div>
                     </div>
                     {selectedRequest.completed_at && (
-                      <div>
+                      <div className="mt-3 pt-3 border-t border-gray-200">
                         <div className="text-xs text-gray-500 mb-1">Completed</div>
-                        <div className="text-sm font-medium text-green-600">{formatDate(selectedRequest.completed_at)}</div>
+                        <div className="text-sm text-gray-900">{formatDate(selectedRequest.completed_at)}</div>
                       </div>
                     )}
                   </div>
@@ -788,10 +780,10 @@ export default function UserRequestManagement() {
                             <div>
                               <div className="text-xs text-gray-500 mb-2">Route</div>
                               <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                                <MapPin size={16} className="text-blue-500" />
+                                <MapPin size={16} className="text-gray-500" />
                                 {selectedRequest.data.from}
                                 <ArrowRight size={16} className="text-gray-400" />
-                                <MapPin size={16} className="text-green-500" />
+                                <MapPin size={16} className="text-gray-400" />
                                 {selectedRequest.data.to}
                               </div>
                             </div>
@@ -832,10 +824,10 @@ export default function UserRequestManagement() {
                             <div>
                               <div className="text-xs text-gray-500 mb-2">Route</div>
                               <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                                <MapPin size={16} className="text-blue-500" />
+                                <MapPin size={16} className="text-gray-500" />
                                 {selectedRequest.data.departure_iata}
                                 <ArrowRight size={16} className="text-gray-400" />
-                                <MapPin size={16} className="text-green-500" />
+                                <MapPin size={16} className="text-gray-400" />
                                 {selectedRequest.data.arrival_iata}
                               </div>
                             </div>
@@ -882,10 +874,10 @@ export default function UserRequestManagement() {
                             <div>
                               <div className="text-xs text-gray-500 mb-2">Route</div>
                               <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                                <MapPin size={16} className="text-blue-500" />
+                                <MapPin size={16} className="text-gray-500" />
                                 {selectedRequest.data.origin}
                                 <ArrowRight size={16} className="text-gray-400" />
-                                <MapPin size={16} className="text-green-500" />
+                                <MapPin size={16} className="text-gray-400" />
                                 {selectedRequest.data.destination}
                               </div>
                             </div>
@@ -970,10 +962,10 @@ export default function UserRequestManagement() {
                             <div>
                               <div className="text-xs text-gray-500 mb-2">Route</div>
                               <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                                <MapPin size={16} className="text-blue-500" />
+                                <MapPin size={16} className="text-gray-500" />
                                 {selectedRequest.data.from}
                                 <ArrowRight size={16} className="text-gray-400" />
-                                <MapPin size={16} className="text-green-500" />
+                                <MapPin size={16} className="text-gray-400" />
                                 {selectedRequest.data.to}
                               </div>
                             </div>
@@ -1017,7 +1009,7 @@ export default function UserRequestManagement() {
                               {selectedRequest.data.pricing?.total && (
                                 <div>
                                   <div className="text-xs text-gray-500 mb-1">Total Cost</div>
-                                  <div className="text-sm font-medium text-green-600 text-lg">{formatCurrency(selectedRequest.data.pricing.total, 'EUR')}</div>
+                                  <div className="text-sm font-medium text-gray-900 text-lg">{formatCurrency(selectedRequest.data.pricing.total, 'EUR')}</div>
                                 </div>
                               )}
                             </div>
@@ -1073,7 +1065,7 @@ export default function UserRequestManagement() {
                                       {director.sharePercentage && (
                                         <div>
                                           <div className="text-xs text-gray-500">Share %</div>
-                                          <div className="text-sm font-medium text-blue-600">{director.sharePercentage}%</div>
+                                          <div className="text-sm font-medium text-gray-700">{director.sharePercentage}%</div>
                                         </div>
                                       )}
                                     </div>
@@ -1087,12 +1079,12 @@ export default function UserRequestManagement() {
                           {selectedRequest.data.additionalServices && Object.keys(selectedRequest.data.additionalServices).length > 0 && (
                             <div>
                               <div className="text-sm font-semibold text-gray-900 mb-3">Additional Services</div>
-                              <div className="bg-blue-50 p-3 rounded-lg space-y-2">
+                              <div className="bg-gray-50 p-3 rounded-lg space-y-2">
                                 {Object.entries(selectedRequest.data.additionalServices).map(([key, value]) => {
                                   if (value) {
                                     return (
                                       <div key={key} className="flex items-center gap-2">
-                                        <Check size={16} className="text-green-600" />
+                                        <Check size={16} className="text-gray-900" />
                                         <span className="text-sm text-gray-700">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
                                       </div>
                                     );
@@ -1142,7 +1134,7 @@ export default function UserRequestManagement() {
                               {selectedRequest.data.assetInfo?.assetValue && (
                                 <div>
                                   <div className="text-xs text-gray-500 mb-1">Asset Value</div>
-                                  <div className="text-sm font-medium text-green-600 text-lg">{formatCurrency(selectedRequest.data.assetInfo.assetValue)}</div>
+                                  <div className="text-sm font-medium text-gray-900 text-lg">{formatCurrency(selectedRequest.data.assetInfo.assetValue)}</div>
                                 </div>
                               )}
                               {selectedRequest.data.assetInfo?.location && (
@@ -1174,7 +1166,7 @@ export default function UserRequestManagement() {
                                 {selectedRequest.data.tokenConfig.tokenSymbol && (
                                   <div>
                                     <div className="text-xs text-gray-500 mb-1">Token Symbol</div>
-                                    <div className="text-sm font-medium text-blue-600">{selectedRequest.data.tokenConfig.tokenSymbol}</div>
+                                    <div className="text-sm font-medium text-gray-700">{selectedRequest.data.tokenConfig.tokenSymbol}</div>
                                   </div>
                                 )}
                                 {selectedRequest.data.tokenConfig.totalSupply && (
@@ -1192,7 +1184,7 @@ export default function UserRequestManagement() {
                                 {selectedRequest.data.tokenConfig.expectedAPY && (
                                   <div>
                                     <div className="text-xs text-gray-500 mb-1">Expected APY</div>
-                                    <div className="text-sm font-medium text-green-600">{selectedRequest.data.tokenConfig.expectedAPY}%</div>
+                                    <div className="text-sm font-medium text-gray-900">{selectedRequest.data.tokenConfig.expectedAPY}%</div>
                                   </div>
                                 )}
                               </div>
@@ -1203,8 +1195,8 @@ export default function UserRequestManagement() {
                           {selectedRequest.data.tokenType && (
                             <div>
                               <div className="text-sm font-semibold text-gray-900 mb-3">Token Type</div>
-                              <div className="bg-purple-50 p-3 rounded-lg">
-                                <div className="text-sm font-medium text-purple-900">
+                              <div className="bg-gray-50 p-3 rounded-lg">
+                                <div className="text-sm font-medium text-gray-900">
                                   {selectedRequest.data.tokenType === 'utility' ? 'Utility Token (UTO)' : 'Security Token (STO)'}
                                 </div>
                               </div>
@@ -1225,7 +1217,7 @@ export default function UserRequestManagement() {
                                 {selectedRequest.data.compliance.hasSPV !== undefined && (
                                   <div>
                                     <div className="text-xs text-gray-500 mb-1">SPV Structure</div>
-                                    <div className={`text-sm font-medium ${selectedRequest.data.compliance.hasSPV ? 'text-green-600' : 'text-orange-600'}`}>
+                                    <div className={`text-sm font-medium ${selectedRequest.data.compliance.hasSPV ? 'text-gray-900' : 'text-gray-500'}`}>
                                       {selectedRequest.data.compliance.hasSPV ? 'Yes - SPV Exists' : 'No - Needs SPV'}
                                     </div>
                                   </div>
@@ -1243,9 +1235,9 @@ export default function UserRequestManagement() {
                                   if (value) {
                                     return (
                                       <div key={key} className="flex items-center gap-2 text-sm text-gray-700 bg-gray-50 p-2 rounded">
-                                        <FileText size={16} className="text-green-600" />
+                                        <FileText size={16} className="text-gray-900" />
                                         <span>{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                                        <Check size={16} className="text-green-600 ml-auto" />
+                                        <Check size={16} className="text-gray-900 ml-auto" />
                                       </div>
                                     );
                                   }
@@ -1259,13 +1251,13 @@ export default function UserRequestManagement() {
                           {selectedRequest.data.paymentPackage && (
                             <div>
                               <div className="text-sm font-semibold text-gray-900 mb-3">Selected Package</div>
-                              <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg">
+                              <div className="bg-gray-50 p-4 rounded-lg">
                                 <div className="flex justify-between items-center">
                                   <div>
                                     <div className="font-medium text-gray-900">{selectedRequest.data.paymentPackage.name}</div>
                                     <div className="text-xs text-gray-600 mt-1">{selectedRequest.data.paymentPackage.description}</div>
                                   </div>
-                                  <div className="text-xl font-bold text-purple-600">
+                                  <div className="text-xl font-bold text-gray-900">
                                     {formatCurrency(selectedRequest.data.paymentPackage.price)}
                                   </div>
                                 </div>
@@ -1291,7 +1283,7 @@ export default function UserRequestManagement() {
                 {selectedRequest.admin_notes && (
                   <div>
                     <h3 className="font-medium text-gray-900 mb-4">Admin Notes</h3>
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                       <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedRequest.admin_notes}</p>
                     </div>
                   </div>

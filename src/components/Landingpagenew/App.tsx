@@ -140,6 +140,11 @@ import NewsletterUnsubscribe from '../../pages/NewsletterUnsubscribe.tsx';
 import PaymentSuccessPage from '../../pages/PaymentSuccessPage.jsx';
 import PaymentCancelPage from '../../pages/PaymentCancelPage.jsx';
 
+// Import Admin CRM (old simple version)
+import AdminCRM from '../../pages/AdminCRM';
+// Import full CRM system
+import CRMPage from '../../pages/CRMPage';
+
 import { supabase } from '../../lib/supabase.ts';
 
 // ===== WAGMI/REOWN CONFIGURATION =====
@@ -365,6 +370,12 @@ function AppContent() {
               {/* Dashboard Route - Glassmorphic Dashboard with Empty Legs & RWS */}
               <Route path="/dashboard" element={<TokenizedAssetsGlassmorphic />} />
 
+              {/* CRM Admin Route - Full CRM System */}
+              <Route path="/crm" element={<CRMPage />} />
+              <Route path="/crm-admin" element={<CRMPage />} />
+              {/* Old simple admin (kept for backwards compatibility) */}
+              <Route path="/admin" element={<AdminCRM />} />
+
               {/* Dashboard AI Chat - new chat session */}
               <Route path="/dashboard/chat" element={<TokenizedAssetsGlassmorphic />} />
 
@@ -425,30 +436,6 @@ function AppContent() {
               <Route path="/reset-password" element={<ResetPassword />} />
 
               {/* All other pages now integrated into dashboard */}
-
-              {/* Admin Routes */}
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<Navigate to="/admin/analytics" replace />} />
-                <Route path="analytics" element={<AdminAnalytics />} />
-                <Route path="earnings" element={<AdminEarnings />} />
-                <Route path="users" element={<AdminUsers />} />
-                <Route path="booking-requests" element={<AdminBookingRequests />} />
-                <Route path="empty-legs" element={<AdminEmptyLegs />} />
-                <Route path="user-requests" element={<AdminUserRequests />} />
-                <Route path="kyc-verification" element={<AdminKYCVerification />} />
-                <Route path="co2-certificates" element={<AdminCO2Certificates />} />
-                <Route path="partners" element={<AdminPartners />} />
-                <Route path="transactions" element={<AdminTransactions />} />
-                <Route path="bookings" element={<AdminBookings />} />
-                <Route path="subscriptions" element={<AdminSubscriptions />} />
-                <Route path="spv-formations" element={<AdminSPVFormations />} />
-                <Route path="tokenization" element={<AdminTokenization />} />
-                <Route path="support-tickets" element={<AdminSupportTickets />} />
-                <Route path="chat-messages" element={<AdminChatMessages />} />
-                <Route path="notifications" element={<AdminNotifications />} />
-                <Route path="management" element={<AdminManagement />} />
-                <Route path="newsletter" element={<AdminNewsletter />} />
-              </Route>
 
               {/* Newsletter Routes */}
               <Route path="/newsletter/preferences" element={<NewsletterPreferences />} />

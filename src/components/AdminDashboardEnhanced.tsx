@@ -3,7 +3,8 @@ import {
   Users, FileText, Calendar, Package, Plane, Gift, Wallet, Search,
   MessageSquare, Bell, Rocket, Building2, Coins, TrendingUp,
   Send, CheckCircle, XCircle, Clock, AlertCircle, DollarSign,
-  ExternalLink, Eye, Edit, Trash2, Plus, Filter, Download
+  ExternalLink, Eye, Edit, Trash2, Plus, Filter, Download,
+  ShieldCheck, Image, Car, Bot, Flag, RefreshCw, LogOut
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
@@ -18,6 +19,7 @@ const navSections = [
       { id: "sto_investments", label: "STO Investments", icon: TrendingUp },
       { id: "sto_listings", label: "P2P Listings", icon: Coins },
       { id: "tokenization_services", label: "Tokenization Requests", icon: FileText },
+      { id: "nfts", label: "NFTs", icon: Image },
     ]
   },
   {
@@ -28,6 +30,9 @@ const navSections = [
       { id: "support_tickets", label: "Support Tickets", icon: MessageSquare },
       { id: "booking_requests", label: "Bookings", icon: Calendar },
       { id: "user_requests", label: "User Requests", icon: FileText },
+      { id: "chat_conversations", label: "AI Chat Support", icon: Bot },
+      { id: "chat_reports", label: "Reported Issues", icon: Flag },
+      { id: "taxi_bookings", label: "Taxi/Concierge", icon: Car },
     ]
   },
   {
@@ -43,6 +48,7 @@ const navSections = [
     label: "Management",
     items: [
       { id: "users", label: "Users", icon: Users },
+      { id: "kyc", label: "KYC Verification", icon: ShieldCheck },
       { id: "notifications", label: "Notifications", icon: Bell },
       { id: "wallet", label: "Wallet Transactions", icon: Wallet },
     ]
@@ -70,6 +76,11 @@ export default function AdminDashboardEnhanced() {
   const [fixedOffers, setFixedOffers] = useState([]);
   const [walletTransactions, setWalletTransactions] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [kycApplications, setKycApplications] = useState([]);
+  const [nfts, setNfts] = useState([]);
+  const [chatConversations, setChatConversations] = useState([]);
+  const [chatReports, setChatReports] = useState([]);
+  const [taxiBookings, setTaxiBookings] = useState([]);
 
   // Modal states
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -98,9 +109,14 @@ export default function AdminDashboardEnhanced() {
         emptylegsData,
         offersData,
         walletsData,
-        notificationsData
+        notificationsData,
+        kycData,
+        nftsData,
+        chatData,
+        chatReportsData,
+        taxiData
       ] = await Promise.all([
-        supabase.from('auth.users').select('*').order('created_at', { ascending: false }),
+        supabase.from('users').select('*').order('created_at', { ascending: false }),
         supabase.from('launchpad_projects').select('*').order('created_at', { ascending: false }),
         supabase.from('launchpad_waitlist').select('*, project:launchpad_projects(name)').order('created_at', { ascending: false }),
         supabase.from('sto_investments').select('*, user:user_id(email), asset:asset_id(*)').order('created_at', { ascending: false }),
@@ -113,7 +129,12 @@ export default function AdminDashboardEnhanced() {
         supabase.from('emptylegs').select('*').order('created_at', { ascending: false }),
         supabase.from('fixed_offers').select('*').order('created_at', { ascending: false }),
         supabase.from('wallet_transactions').select('*').order('created_at', { ascending: false }),
-        supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(100)
+        supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(100),
+        supabase.from('kyc_applications').select('*, users:user_id(email, first_name, last_name)').order('created_at', { ascending: false }),
+        supabase.from('nfts').select('*, owner:owner_id(email)').order('created_at', { ascending: false }),
+        supabase.from('chat_conversations').select('*, user:user_id(email, first_name, last_name)').order('updated_at', { ascending: false }).limit(100),
+        supabase.from('chat_reports').select('*, user:user_id(email), conversation:conversation_id(title)').order('created_at', { ascending: false }),
+        supabase.from('taxi_bookings').select('*, user:user_id(email, first_name, last_name)').order('created_at', { ascending: false })
       ]);
 
       setUsers(usersData.data || []);
@@ -130,6 +151,11 @@ export default function AdminDashboardEnhanced() {
       setFixedOffers(offersData.data || []);
       setWalletTransactions(walletsData.data || []);
       setNotifications(notificationsData.data || []);
+      setKycApplications(kycData.data || []);
+      setNfts(nftsData.data || []);
+      setChatConversations(chatData.data || []);
+      setChatReports(chatReportsData.data || []);
+      setTaxiBookings(taxiData.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -272,6 +298,103 @@ export default function AdminDashboardEnhanced() {
     } catch (error) {
       console.error('Error sending notification:', error);
       alert('Failed to send notification');
+    }
+  };
+
+  // KYC verification toggle - updates both kyc_applications and users table
+  const handleKYCVerification = async (userId: string, kycId: string, currentStatus: string) => {
+    try {
+      const newStatus = currentStatus === 'approved' ? 'pending' : 'approved';
+      const isVerifying = newStatus === 'approved';
+
+      // Update KYC application status
+      const { error: kycError } = await supabase
+        .from('kyc_applications')
+        .update({
+          status: newStatus,
+          reviewed_at: isVerifying ? new Date().toISOString() : null
+        })
+        .eq('id', kycId);
+
+      if (kycError) throw kycError;
+
+      // Update user's email_verified status (this activates the green badge)
+      const { error: userError } = await supabase
+        .from('users')
+        .update({ email_verified: isVerifying })
+        .eq('id', userId);
+
+      if (userError) throw userError;
+
+      // Also update user_profiles if exists
+      await supabase
+        .from('user_profiles')
+        .update({ is_verified: isVerifying })
+        .eq('user_id', userId);
+
+      // Send notification to user
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: userId,
+          type: isVerifying ? 'kyc_approved' : 'kyc_revoked',
+          title: isVerifying ? 'KYC Verified!' : 'KYC Status Changed',
+          message: isVerifying
+            ? 'Congratulations! Your identity has been verified. You now have access to all premium features.'
+            : 'Your KYC verification status has been changed. Please contact support for more information.',
+          is_read: false
+        });
+
+      // Refresh data
+      await fetchAllData();
+      alert(`KYC ${isVerifying ? 'approved' : 'revoked'} successfully!`);
+    } catch (error) {
+      console.error('Error updating KYC status:', error);
+      alert('Failed to update KYC status');
+    }
+  };
+
+  // Toggle user verification directly from users list
+  const handleUserVerificationToggle = async (userId: string, currentVerified: boolean) => {
+    try {
+      const newVerified = !currentVerified;
+
+      // Update user's verification status
+      const { error: userError } = await supabase
+        .from('users')
+        .update({ email_verified: newVerified })
+        .eq('id', userId);
+
+      if (userError) throw userError;
+
+      // Also update user_profiles if exists
+      await supabase
+        .from('user_profiles')
+        .update({ is_verified: newVerified })
+        .eq('user_id', userId);
+
+      // Update or create KYC application
+      if (newVerified) {
+        // Check if KYC application exists
+        const { data: existingKyc } = await supabase
+          .from('kyc_applications')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+
+        if (existingKyc) {
+          await supabase
+            .from('kyc_applications')
+            .update({ status: 'approved', reviewed_at: new Date().toISOString() })
+            .eq('user_id', userId);
+        }
+      }
+
+      // Refresh data
+      await fetchAllData();
+    } catch (error) {
+      console.error('Error toggling verification:', error);
+      alert('Failed to toggle verification');
     }
   };
 
@@ -879,19 +1002,36 @@ export default function AdminDashboardEnhanced() {
               <h2 className="text-xl font-light text-gray-900">Users ({users.length})</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filter(users, ['email', 'user_role']).map((user) => (
+              {filter(users, ['email', 'user_role', 'first_name', 'last_name']).map((user) => (
                 <div
                   key={user.id}
                   className="border border-gray-300/50 rounded-xl p-4 bg-white/35"
                   style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                 >
                   <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-blue-600 font-medium">{user.email?.charAt(0).toUpperCase()}</span>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      user.email_verified ? 'bg-emerald-100' : 'bg-blue-100'
+                    }`}>
+                      <span className={`font-medium ${user.email_verified ? 'text-emerald-600' : 'text-blue-600'}`}>
+                        {user.email?.charAt(0).toUpperCase()}
+                      </span>
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">{user.email}</p>
-                      {user.is_admin && <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full">Admin</span>}
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-gray-900">
+                          {user.first_name && user.last_name
+                            ? `${user.first_name} ${user.last_name}`
+                            : user.email?.split('@')[0]
+                          }
+                        </p>
+                        {user.email_verified && (
+                          <span className="flex items-center gap-1 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                            <CheckCircle className="w-3 h-3" />
+                            Verified
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500">{user.email}</p>
                     </div>
                   </div>
                   <div className="space-y-2 text-sm">
@@ -903,17 +1043,50 @@ export default function AdminDashboardEnhanced() {
                       <span className="text-gray-600">Created</span>
                       <span>{new Date(user.created_at).toLocaleDateString()}</span>
                     </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">KYC Status</span>
+                      <button
+                        onClick={() => handleUserVerificationToggle(user.id, user.email_verified)}
+                        className={`px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+                          user.email_verified
+                            ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {user.email_verified ? 'Verified ✓' : 'Not Verified'}
+                      </button>
+                    </div>
                   </div>
-                  <div className="mt-4">
+                  <div className="mt-4 flex gap-2">
+                    <button
+                      onClick={() => handleUserVerificationToggle(user.id, user.email_verified)}
+                      className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-2 ${
+                        user.email_verified
+                          ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                          : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                      }`}
+                    >
+                      {user.email_verified ? (
+                        <>
+                          <XCircle className="w-3 h-3" />
+                          Revoke KYC
+                        </>
+                      ) : (
+                        <>
+                          <ShieldCheck className="w-3 h-3" />
+                          Verify KYC
+                        </>
+                      )}
+                    </button>
                     <button
                       onClick={() => {
                         setSelectedItem(user);
                         setShowNotificationModal(true);
                       }}
-                      className="w-full px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
                     >
                       <Send className="w-3 h-3" />
-                      Send Notification
+                      Notify
                     </button>
                   </div>
                 </div>
@@ -994,38 +1167,358 @@ export default function AdminDashboardEnhanced() {
           </div>
         );
 
+      case "kyc":
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-light text-gray-900">KYC Verification ({kycApplications.length})</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filter(kycApplications, ['users.email', 'users.first_name', 'status']).map((kyc) => (
+                <div
+                  key={kyc.id}
+                  className="border border-gray-300/50 rounded-xl p-4 bg-white/35"
+                  style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center">
+                        <ShieldCheck className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900 text-sm">
+                          {kyc.users?.first_name} {kyc.users?.last_name}
+                        </h3>
+                        <p className="text-xs text-gray-500">{kyc.users?.email}</p>
+                      </div>
+                    </div>
+                    <span className={getStatusBadge(kyc.status)}>{kyc.status}</span>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Document Type</span>
+                      <span className="capitalize">{kyc.document_type || 'ID Card'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Submitted</span>
+                      <span>{new Date(kyc.created_at).toLocaleDateString()}</span>
+                    </div>
+                    {kyc.reviewed_at && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Reviewed</span>
+                        <span>{new Date(kyc.reviewed_at).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    {kyc.status !== 'approved' ? (
+                      <button
+                        onClick={() => handleKYCVerification(kyc.user_id, kyc.id, kyc.status)}
+                        className="flex-1 px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        Verify User
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleKYCVerification(kyc.user_id, kyc.id, kyc.status)}
+                        className="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Revoke Verification
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {kycApplications.length === 0 && (
+                <div className="col-span-full text-center py-8 text-gray-500">
+                  No KYC applications yet
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case "nfts":
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-light text-gray-900">NFTs ({nfts.length})</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filter(nfts, ['name', 'collection', 'owner.email']).map((nft) => (
+                <div
+                  key={nft.id}
+                  className="border border-gray-300/50 rounded-xl p-4 bg-white/35"
+                  style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    {nft.image_url ? (
+                      <img src={nft.image_url} alt={nft.name} className="w-16 h-16 rounded-lg object-cover" />
+                    ) : (
+                      <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                        <Image className="w-8 h-8 text-white" />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900">{nft.name}</h3>
+                      <p className="text-xs text-gray-500">{nft.collection || 'PrivateCharterX'}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Token ID</span>
+                      <span className="font-mono text-xs">{nft.token_id}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Owner</span>
+                      <span className="text-xs">{nft.owner?.email?.slice(0, 20)}...</span>
+                    </div>
+                    {nft.tier && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Tier</span>
+                        <span className="capitalize font-medium">{nft.tier}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Minted</span>
+                      <span>{new Date(nft.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {nfts.length === 0 && (
+                <div className="col-span-full text-center py-8 text-gray-500">
+                  No NFTs minted yet
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case "chat_conversations":
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-light text-gray-900">AI Chat Conversations ({chatConversations.length})</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filter(chatConversations, ['title', 'user.email']).map((chat) => (
+                <div
+                  key={chat.id}
+                  className="border border-gray-300/50 rounded-xl p-4 bg-white/35"
+                  style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                      <Bot className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900 text-sm line-clamp-1">{chat.title || 'Untitled Chat'}</h3>
+                      <p className="text-xs text-gray-500">{chat.user?.email}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Messages</span>
+                      <span>{chat.message_count || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Last Activity</span>
+                      <span>{new Date(chat.updated_at).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Created</span>
+                      <span>{new Date(chat.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {chatConversations.length === 0 && (
+                <div className="col-span-full text-center py-8 text-gray-500">
+                  No chat conversations yet
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case "chat_reports":
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-light text-gray-900">Reported Issues ({chatReports.length})</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filter(chatReports, ['reason', 'user.email', 'status']).map((report) => (
+                <div
+                  key={report.id}
+                  className="border border-gray-300/50 rounded-xl p-4 bg-white/35"
+                  style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-orange-500 rounded-full flex items-center justify-center">
+                        <Flag className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900 text-sm capitalize">{report.reason || 'Issue Report'}</h3>
+                        <p className="text-xs text-gray-500">{report.user?.email}</p>
+                      </div>
+                    </div>
+                    <span className={getStatusBadge(report.status || 'pending')}>{report.status || 'pending'}</span>
+                  </div>
+                  {report.description && (
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{report.description}</p>
+                  )}
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Reported</span>
+                      <span>{new Date(report.created_at).toLocaleDateString()}</span>
+                    </div>
+                    {report.conversation?.title && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Chat</span>
+                        <span className="text-xs truncate max-w-[120px]">{report.conversation.title}</span>
+                      </div>
+                    )}
+                  </div>
+                  {(report.status === 'pending' || !report.status) && (
+                    <div className="mt-4 flex gap-2">
+                      <button
+                        onClick={() => handleStatusUpdate('chat_reports', report.id, 'resolved')}
+                        className="flex-1 px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 transition-colors"
+                      >
+                        Mark Resolved
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {chatReports.length === 0 && (
+                <div className="col-span-full text-center py-8 text-gray-500">
+                  No reported issues
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case "taxi_bookings":
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-light text-gray-900">Taxi/Concierge Bookings ({taxiBookings.length})</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filter(taxiBookings, ['pickup_location', 'dropoff_location', 'user.email', 'status']).map((booking) => (
+                <div
+                  key={booking.id}
+                  className="border border-gray-300/50 rounded-xl p-4 bg-white/35"
+                  style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-amber-500 rounded-full flex items-center justify-center">
+                        <Car className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900 text-sm">
+                          {booking.user?.first_name} {booking.user?.last_name}
+                        </h3>
+                        <p className="text-xs text-gray-500">{booking.user?.email}</p>
+                      </div>
+                    </div>
+                    <span className={getStatusBadge(booking.status)}>{booking.status}</span>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="text-gray-600 text-xs">Pickup</span>
+                      <p className="text-gray-900 truncate">{booking.pickup_location}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600 text-xs">Dropoff</span>
+                      <p className="text-gray-900 truncate">{booking.dropoff_location}</p>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Date</span>
+                      <span>{new Date(booking.pickup_datetime || booking.created_at).toLocaleDateString()}</span>
+                    </div>
+                    {booking.estimated_price && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Est. Price</span>
+                        <span className="font-medium text-green-600">€{booking.estimated_price}</span>
+                      </div>
+                    )}
+                  </div>
+                  {booking.status === 'pending' && (
+                    <div className="mt-4 flex gap-2">
+                      <button
+                        onClick={() => handleStatusUpdate('taxi_bookings', booking.id, 'confirmed')}
+                        className="flex-1 px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 transition-colors"
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        onClick={() => handleStatusUpdate('taxi_bookings', booking.id, 'cancelled')}
+                        className="flex-1 px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {taxiBookings.length === 0 && (
+                <div className="col-span-full text-center py-8 text-gray-500">
+                  No taxi bookings yet
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
       default:
         return <div className="text-center text-gray-500 py-12">Select a section from the menu</div>;
     }
   };
 
   return (
-    <div className="min-h-screen p-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-      <div className="max-w-[1920px] mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <div className="max-w-[1600px] mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
           <div>
-            <h1 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">Admin Dashboard</h1>
-            <p className="text-sm text-gray-600 mt-1">Manage all platform operations</p>
+            <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 tracking-tight">Admin Dashboard</h1>
+            <p className="text-sm text-gray-500 mt-1">Manage all platform operations</p>
           </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300/50 rounded-lg w-64 focus:outline-none focus:border-gray-400/50 transition-colors bg-white/20 text-sm"
-              style={{ backdropFilter: 'blur(10px)' }}
-            />
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="relative flex-1 md:flex-none">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                placeholder="Search..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 transition-all bg-white text-sm"
+              />
+            </div>
+            <button
+              onClick={fetchAllData}
+              className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              title="Refresh data"
+            >
+              <RefreshCw className={`w-4 h-4 text-gray-600 ${loading ? 'animate-spin' : ''}`} />
+            </button>
           </div>
         </div>
 
         {/* Navigation Sections */}
-        <div className="mb-6 space-y-4">
+        <div className="mb-6 space-y-3">
           {navSections.map((section) => (
-            <div key={section.id}>
-              <div className="flex items-center gap-2 mb-2 px-1">
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">{section.label}</span>
+            <div key={section.id} className="bg-white rounded-xl border border-gray-200 p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{section.label}</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {section.items.map((item) => {
@@ -1037,15 +1530,14 @@ export default function AdminDashboardEnhanced() {
                         setActiveSection(section.id);
                         setActiveTab(item.id);
                       }}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all border ${
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                         activeTab === item.id
-                          ? 'bg-white/40 text-gray-900 shadow-sm border-gray-300/50'
-                          : 'bg-white/20 text-gray-600 hover:bg-white/30 border-gray-300/30'
+                          ? 'bg-gray-900 text-white shadow-sm'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                     >
                       <Icon className="w-4 h-4" />
-                      <span>{item.label}</span>
+                      <span className="hidden sm:inline">{item.label}</span>
                     </button>
                   );
                 })}
@@ -1055,7 +1547,7 @@ export default function AdminDashboardEnhanced() {
         </div>
 
         {/* Content */}
-        <div className="border border-gray-300/50 rounded-2xl p-6 bg-white/35" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+        <div className="bg-white rounded-2xl border border-gray-200 p-4 md:p-6 shadow-sm">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mb-4"></div>

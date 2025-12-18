@@ -6,7 +6,7 @@ import {
   Leaf, Award, Settings, User, ChevronRight, ChevronDown, ChevronUp, ChevronLeft, X, LogOut, MessageSquare, MessageCircle,
   Users, Calendar, Package, Compass, ArrowLeft, Wallet, History, Crown, Gift, LayoutDashboard, Clock,
   Mail, Phone, Globe, FileText, Edit3, Check, Loader2, Building2, Coins, Share2, Menu, ExternalLink, SlidersHorizontal, Info, CreditCard,
-  ShoppingCart, Send, AlertCircle
+  ShoppingCart, Send, AlertCircle, Lock
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -1150,6 +1150,12 @@ const TokenizedAssetsGlassmorphic = () => {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [showPartnerRegisterModal, setShowPartnerRegisterModal] = useState(false);
+
+  // Admin login modal state (for secret CRM admin access)
+  const [showAdminLoginModal, setShowAdminLoginModal] = useState(false);
+  const [isSimpleAdminAuth, setIsSimpleAdminAuth] = useState(() => {
+    return sessionStorage.getItem('pvcx_admin_authenticated') === 'true';
+  });
 
   // Search and UI states
   const [searchQuery, setSearchQuery] = useState('');
@@ -2803,31 +2809,34 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   }, [isAuthenticated, initializing]);
 
-  // Check for secret admin route
+  // Check for admin route (/admin or /crm-admin)
   useEffect(() => {
     const checkAdminRoute = () => {
       const path = window.location.pathname;
-      const hash = window.location.hash;
 
-      // Secret admin path: /x8833gulfstream66admin or #x8833gulfstream66admin
-      if (path.includes('x8833gulfstream66admin') || hash.includes('x8833gulfstream66admin')) {
-        // Verify user is admin (check user_role field from AuthContext)
-        if (user && (user.user_role === 'admin' || profile?.role === 'admin' || profile?.user_role === 'admin')) {
+      // Admin path: /admin or /crm-admin
+      const isAdminRoute = path === '/admin' || path === '/crm-admin' || path.startsWith('/admin/');
+
+      if (isAdminRoute) {
+        // Check if already authenticated via simple admin auth (session storage)
+        const adminAuth = sessionStorage.getItem('pvcx_admin_authenticated');
+        if (adminAuth === 'true') {
+          setIsSimpleAdminAuth(true);
           setActiveCategory('admin-dashboard');
-          // Clean URL without reloading
-          window.history.replaceState({}, document.title, window.location.pathname.replace('/x8833gulfstream66admin', ''));
         } else {
-          console.log('Unauthorized admin access attempt - user_role:', user?.user_role);
+          // Show admin login modal
+          setShowAdminLoginModal(true);
         }
       }
     };
 
-    checkAdminRoute();
+    // Small delay to ensure component is mounted
+    const timeoutId = setTimeout(checkAdminRoute, 100);
 
-    // Listen for hash changes
-    window.addEventListener('hashchange', checkAdminRoute);
-    return () => window.removeEventListener('hashchange', checkAdminRoute);
-  }, [user, profile]);
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, []);
 
   // Load NFTs and CO2 certificates when wallet is connected
   useEffect(() => {
@@ -3975,10 +3984,14 @@ const TokenizedAssetsGlassmorphic = () => {
     isTransitioning
   });
 
+  // Check if on admin route
+  const isOnAdminRoute = window.location.pathname === '/admin' || window.location.pathname === '/crm-admin' || window.location.pathname.startsWith('/admin/');
+
   // Don't render dashboard content until authenticated
   // MOBILE FIX: If authenticated (even without showDashboard flag), show dashboard immediately
   // This prevents the blank screen flash on mobile devices
-  if (!isAuthenticated) {
+  // EXCEPTION: Admin routes should always render to show login modal
+  if (!isAuthenticated && !isOnAdminRoute && !isSimpleAdminAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
@@ -12219,6 +12232,110 @@ const TokenizedAssetsGlassmorphic = () => {
             showToast('Partner registration successful! Please wait for verification.', 'success');
           }}
         />
+      )}
+
+      {/* Admin Login Modal - for secret CRM admin access */}
+      {showAdminLoginModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Lock className="w-8 h-8 text-white" />
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900">Admin Access</h1>
+              <p className="text-gray-500 mt-2">Enter your admin credentials to continue</p>
+            </div>
+
+            {/* Form */}
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const email = form.adminEmail.value;
+                const password = form.adminPassword.value;
+                const errorEl = document.getElementById('adminLoginError');
+                const submitBtn = form.querySelector('button[type="submit"]');
+
+                // Admin credentials (same as /admin panel)
+                const ADMIN_EMAIL = atob('YnVpb2x1Y2VHdWxmc3RyZWFtZzcwMDMzODhAZ2dtYWlsLmNvbQ==');
+                const ADMIN_PASSWORD = atob('QXVmZGVtYmVzdGVud2VnMyVhdWZkZW1iZXN0ZW53ZWc2NiUu');
+
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Verifying...';
+
+                // Simulate brief loading
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+                  // Store admin auth in session storage
+                  sessionStorage.setItem('pvcx_admin_authenticated', 'true');
+                  sessionStorage.setItem('pvcx_admin_email', email);
+                  setIsSimpleAdminAuth(true);
+                  setShowAdminLoginModal(false);
+                  setActiveCategory('admin-dashboard');
+                  // Clean URL
+                  window.history.replaceState({}, document.title, window.location.pathname.replace('/x8833gulfstream66admin', ''));
+                } else {
+                  errorEl.textContent = 'Invalid admin credentials';
+                  errorEl.classList.remove('hidden');
+                  submitBtn.disabled = false;
+                  submitBtn.innerHTML = 'Access Admin Panel';
+                }
+              }}
+              className="space-y-5"
+            >
+              {/* Error Message */}
+              <div id="adminLoginError" className="hidden p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700"></div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Admin Email
+                </label>
+                <input
+                  type="email"
+                  name="adminEmail"
+                  placeholder="admin@example.com"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  name="adminPassword"
+                  placeholder="Enter admin password"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                Access Admin Panel
+              </button>
+            </form>
+
+            {/* Close button */}
+            <button
+              onClick={() => setShowAdminLoginModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <X size={24} />
+            </button>
+
+            {/* Footer */}
+            <p className="text-center text-xs text-gray-400 mt-6">
+              PrivateCharterX CRM Admin Panel
+            </p>
+          </div>
+        </div>
       )}
 
       {/* Toast Notifications */}

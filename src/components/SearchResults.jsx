@@ -13,10 +13,18 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
       const item = tabs[0].items[0];
       console.log('📋 First item in first tab:', item);
       console.log('📋 Item type:', item.type);
+      console.log('📋 Item name:', item.name);
+      console.log('📋 Item displayTitle:', item.displayTitle);
+      console.log('📋 Item title:', item.title);
       console.log('📋 Item max_passengers:', item.max_passengers);
       console.log('📋 Item range_km:', item.range_km);
       console.log('📋 Item category:', item.category);
       console.log('📋 Item price_range:', item.price_range);
+    }
+    // Log delicatesse items specifically
+    const delicatesseTab = tabs?.find(t => t.id === 'delicatesse');
+    if (delicatesseTab?.items) {
+      console.log('🍾 Delicatesse items:', delicatesseTab.items.map(i => ({ name: i.name, displayTitle: i.displayTitle, category: i.category })));
     }
   }, [tabs]);
 
@@ -133,9 +141,11 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                       {item.type === 'empty_legs'
                         ? `${item.from_iata || item.from_city || '?'} → ${item.to_iata || item.to_city || '?'}`
                         : item.type === 'wines'
-                        ? (item.displayTitle || item.name || 'Wine')
-                        : item.type === 'delicatesse' || item.type === 'cigars'
-                        ? (item.displayTitle || item.name || 'Luxury Extra')
+                        ? (item.displayTitle || item.name || item.title || 'Wine')
+                        : item.type === 'delicatesse'
+                        ? (item.name || item.displayTitle || item.title || item.description?.slice(0, 40) || item.category || 'Delicacy')
+                        : item.type === 'cigars'
+                        ? (item.name || item.displayTitle || item.title || `${item.brand || ''} Cigar`.trim() || 'Premium Cigar')
                         : (item.name || item.model || item.title || 'Unnamed Service')}
                     </p>
                     {/* Category Badge - subtle */}

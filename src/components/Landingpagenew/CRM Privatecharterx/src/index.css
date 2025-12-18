@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Optimize rendering performance */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  box-sizing: border-box;
+}
+
+/* Reduce layout shifts */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Improve performance for fixed elements */
+.fixed {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Optimize animations */
+@layer utilities {
+  .animation-reduce {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Reduce repaints for hover states */
+@layer components {
+  .hover-optimized {
+    backface-visibility: hidden;
+    transform: translateZ(0);
+  }
+}
+
+/* Prevent content layout shifts */
+img, svg {
+  height: auto;
+  max-width: 100%;
+}
+
+/* Prevent map container from causing layout shifts */
+#partner-map {
+  min-height: 600px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Optimize table rendering */
+table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+/* Prevent FOUC (Flash of Unstyled Content) */
+.no-fouc {
+  visibility: hidden;
+}
+
+html.fonts-loaded .no-fouc {
+  visibility: visible;
+}
+
+/* Optimize for GPU rendering */
+.gpu-accelerated {
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Prevent unnecessary repaints */
+.content-visibility-auto {
+  content-visibility: auto;
+}
+
+/* Prevent layout shifts from loading images */
+.image-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.image-container img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Optimize scrolling performance */
+.optimize-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Prevent Google Maps from causing layout shifts */
+.google-map-container {
+  position: relative;
+  width: 100%;
+  height: 600px;
+}

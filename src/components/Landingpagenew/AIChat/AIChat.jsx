@@ -52,6 +52,7 @@ import CartJourneyDisplay from './components/CartJourneyDisplay';
 
 // PDF Generator
 import { generateRequestConfirmationPDF, downloadPDF, savePDFToStorage } from '../../../services/pdfGeneratorService';
+import { generateRequestConfirmationHTML, openHTMLForPrint } from '../../../services/pdfHtmlGenerator';
 
 // Web3
 import { useAccount, useDisconnect, useSignMessage } from 'wagmi';
@@ -2169,7 +2170,7 @@ Your quote has been received and will be reviewed within 12 hours.`;
             // Don't block the flow if email fails
           }
 
-          // Generate PDF confirmation for the request
+          // Generate HTML PDF confirmation for the request
           try {
             const pdfRequest = {
               id: insertedRequest.id,
@@ -2179,24 +2180,30 @@ Your quote has been received and will be reviewed within 12 hours.`;
               client_email: userInfo?.user?.email,
               data: {
                 ...payload.data,
+                contact_name: payload.data?.contact_name || userInfo?.user?.user_metadata?.full_name || userInfo?.user?.email?.split('@')[0],
                 cart_items: detailedItems,
                 estimated_total: grandTotal
               }
             };
 
-            const { blob, filename } = await generateRequestConfirmationPDF(pdfRequest);
+            // Generate beautiful HTML-based PDF with all cart items
+            const htmlContent = generateRequestConfirmationHTML(pdfRequest, detailedItems, {
+              userName: payload.data?.contact_name || userInfo?.user?.user_metadata?.full_name,
+              userEmail: userInfo?.user?.email
+            });
 
-            // Save PDF to storage
+            // Open in new window for print/save as PDF
+            openHTMLForPrint(htmlContent, `PrivateCharterX_Request_${insertedRequest.id.substring(0, 8).toUpperCase()}.pdf`);
+            console.log('HTML Request confirmation opened for printing');
+
+            // Also generate jsPDF version for storage
             try {
+              const { blob, filename } = await generateRequestConfirmationPDF(pdfRequest);
               await savePDFToStorage(blob, filename, 'request', insertedRequest.id);
               console.log('Request PDF saved to storage');
             } catch (storageErr) {
               console.warn('Could not save request PDF to storage:', storageErr);
             }
-
-            // Auto-download PDF for user
-            downloadPDF(blob, filename);
-            console.log('Request confirmation PDF generated and downloaded');
           } catch (pdfErr) {
             console.error('Failed to generate request PDF:', pdfErr);
             // Don't block the flow if PDF generation fails
@@ -5848,7 +5855,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                   {item.isLoadingPrice ? 'LOADING...' : 'TBC'}
                                 </span>
                               </div>
-                              <p className="text-sm font-semibold text-gray-900 truncate">{item.name}</p>
+                              <p className="text-sm font-semibold text-gray-900 truncate">{item.name || item.title || item.displayTitle || item.description?.slice(0, 40) || item.category || 'Item'}</p>
                               <p className="text-[10px] text-gray-500 mt-0.5">{item.isLoadingPrice ? 'Fetching estimated price...' : 'Availability to be confirmed'}</p>
 
                               {/* Quantity selector */}
@@ -5958,7 +5965,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                               )}
                             </div>
                             <p className="text-sm font-semibold text-gray-900 truncate">
-                              {isEmptyLeg ? `${item.from_iata || item.from_city || item.from || ''} → ${item.to_iata || item.to_city || item.to || ''}` : (item.name || item.title || item.aircraft_type || item.model)}
+                              {isEmptyLeg ? `${item.from_iata || item.from_city || item.from || ''} → ${item.to_iata || item.to_city || item.to || ''}` : (item.name || item.title || item.displayTitle || item.aircraft_type || item.model || item.description?.slice(0, 40) || item.category || 'Service')}
                             </p>
                             {/* Flight route & duration for jets/helicopters */}
                             {(isJet || isHelicopter) && item.route && (
@@ -7072,7 +7079,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                               )}
                             </div>
                             <p className="text-sm font-medium text-gray-900 truncate">
-                              {item.name || item.title || item.aircraft_type || item.model}
+                              {item.name || item.title || item.displayTitle || item.aircraft_type || item.model || item.description?.slice(0, 40) || item.category || 'Service'}
                             </p>
                             {(item.route || item.from) && (
                               <p className="text-xs text-gray-500 mt-0.5">
@@ -7262,6 +7269,24 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                         // Generate PDF confirmation first
                         let pdfBase64 = null;
                         let pdfFilename = null;
+
+                        // Prepare detailed cart items for PDF
+                        const detailedCartItems = cartItems.map(item => ({
+                          ...item,
+                          name: item.name || item.title || item.displayTitle || item.aircraft_type || item.model,
+                          type: item.type,
+                          price: item.totalWithFee || item.price_usd || item.price || item.basePrice || 0,
+                          from_city: item.from_city || item.from || item.origin,
+                          to_city: item.to_city || item.to || item.destination,
+                          from_iata: item.from_iata,
+                          to_iata: item.to_iata,
+                          date: item.date || item.departure_date,
+                          time: item.time || item.departure_time,
+                          passengers: item.passengers || item.pax || 1,
+                          estimatedDuration: item.estimatedDuration,
+                          quantity: item.quantity || 1
+                        }));
+
                         try {
                           const pdfRequest = {
                             id: request.id,
@@ -7271,16 +7296,23 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                             client_email: user?.email,
                             data: {
                               ...bulkRequestData,
-                              cart_items: cartItems.map(item => ({
-                                name: item.name || item.title,
-                                type: item.type,
-                                price: item.price_usd || item.price || item.basePrice || 0,
-                                quantity: item.quantity || 1
-                              })),
+                              contact_name: user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0],
+                              cart_items: detailedCartItems,
                               estimated_total: grandTotal
                             }
                           };
 
+                          // Generate beautiful HTML-based PDF with all cart items
+                          const htmlContent = generateRequestConfirmationHTML(pdfRequest, detailedCartItems, {
+                            userName: user?.user_metadata?.full_name || user?.user_metadata?.name,
+                            userEmail: user?.email
+                          });
+
+                          // Open in new window for print/save as PDF
+                          openHTMLForPrint(htmlContent, `PrivateCharterX_Request_${request.id.substring(0, 8).toUpperCase()}.pdf`);
+                          console.log('HTML Bulk request confirmation opened for printing');
+
+                          // Also generate jsPDF version for storage and email
                           const { blob, filename, base64 } = await generateRequestConfirmationPDF(pdfRequest);
                           pdfFilename = filename;
                           pdfBase64 = base64;
@@ -7292,10 +7324,6 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           } catch (storageErr) {
                             console.warn('Could not save bulk request PDF:', storageErr);
                           }
-
-                          // Auto-download PDF for user
-                          downloadPDF(blob, filename);
-                          console.log('Bulk request PDF generated and downloaded');
                         } catch (pdfErr) {
                           console.error('Failed to generate bulk request PDF:', pdfErr);
                         }
@@ -7718,8 +7746,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               <div key={index} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
-                    <h4 className="font-medium text-black text-sm">{item.name || item.title}</h4>
-                    <p className="text-xs text-gray-500 mt-1">{item.type}</p>
+                    <h4 className="font-medium text-black text-sm">{item.name || item.title || item.displayTitle || item.description?.slice(0, 40) || item.category || 'Service'}</h4>
+                    <p className="text-xs text-gray-500 mt-1">{item.category || item.type}</p>
                   </div>
                   <button
                     onClick={() => {
