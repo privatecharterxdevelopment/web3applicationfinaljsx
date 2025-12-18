@@ -7342,13 +7342,13 @@ const TokenizedAssetsGlassmorphic = () => {
                     </button>
                   </div>
 
-                  {/* Charter a Jet Button */}
+                  {/* Charter a Jet Button - Opens AI Chat */}
                   <button
                     onClick={() => {
-                      setBookingVehicleType('private-jet');
-                      setActiveCategory('private-jet');
+                      const query = encodeURIComponent('I want to charter a private jet');
+                      navigate(`/dashboard/chat?query=${query}`);
                     }}
-                    className="px-3 md:px-4 py-1.5 md:py-2 bg-black text-white rounded-lg text-[10px] md:text-sm font-medium hover:bg-gray-800 transition-colors"
+                    className="px-3 md:px-4 py-1.5 md:py-2 bg-gray-200 text-gray-700 rounded-lg text-[10px] md:text-sm font-medium hover:bg-gray-300 transition-colors"
                   >
                     Charter a Jet
                   </button>
@@ -8014,13 +8014,13 @@ const TokenizedAssetsGlassmorphic = () => {
                     </button>
                   </div>
 
-                  {/* Charter a Heli Button */}
+                  {/* Charter a Heli Button - Opens AI Chat */}
                   <button
                     onClick={() => {
-                      setBookingVehicleType('helicopter');
-                      setActiveCategory('private-jet');
+                      const query = encodeURIComponent('I want to charter a helicopter');
+                      navigate(`/dashboard/chat?query=${query}`);
                     }}
-                    className="px-3 md:px-4 py-1.5 md:py-2 bg-black text-white rounded-lg text-[10px] md:text-sm font-medium hover:bg-gray-800 transition-colors"
+                    className="px-3 md:px-4 py-1.5 md:py-2 bg-gray-200 text-gray-700 rounded-lg text-[10px] md:text-sm font-medium hover:bg-gray-300 transition-colors"
                   >
                     Charter a Heli
                   </button>

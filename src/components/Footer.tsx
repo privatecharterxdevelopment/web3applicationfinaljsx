@@ -128,7 +128,7 @@ export default function Footer() {
               <div>
                 <h3 className="text-xs font-medium text-gray-900 uppercase tracking-wider mb-4">Charter</h3>
                 <ul className="space-y-2">
-                  <li><Link to="/charter-a-jet" className="text-sm text-gray-600 hover:text-gray-900 transition-colors font-light">Charter a Jet</Link></li>
+                  <li><Link to="/dashboard/chat?query=I%20want%20to%20charter%20a%20private%20jet" className="text-sm text-gray-600 hover:text-gray-900 transition-colors font-light">Charter a Jet</Link></li>
                 </ul>
               </div>
             </div>

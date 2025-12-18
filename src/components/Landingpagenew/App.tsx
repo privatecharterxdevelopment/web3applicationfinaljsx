@@ -423,8 +423,8 @@ function AppContent() {
               {/* Partner Dashboard Route */}
               <Route path="/partner-dashboard" element={<PartnerDashboard />} />
 
-              {/* Charter a Jet Route */}
-              <Route path="/charter-a-jet" element={<CharterAJet />} />
+              {/* Charter a Jet Route - Redirect to AI Chat with prefilled message */}
+              <Route path="/charter-a-jet" element={<Navigate to="/dashboard/chat?query=I%20want%20to%20charter%20a%20private%20jet" replace />} />
 
               {/* Launchpad Route */}
               <Route path="/web3/launchpad" element={<LaunchpadPageNew />} />

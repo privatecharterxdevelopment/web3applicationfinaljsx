@@ -685,7 +685,11 @@ const JetDetail = () => {
               </div>
 
               <button
-                onClick={requestQuote}
+                onClick={() => {
+                  // Navigate to AI Chat with prefilled jet charter request
+                  const query = encodeURIComponent(`I want to charter a private jet: ${jet?.aircraft_model || jet?.manufacturer || 'private jet'}`);
+                  navigate(`/dashboard/chat?query=${query}`);
+                }}
                 className="w-full bg-black text-white py-3 rounded-xl font-semibold hover:bg-gray-800 transition-all mb-3"
               >
                 Request Quote

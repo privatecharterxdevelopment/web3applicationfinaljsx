@@ -699,7 +699,11 @@ const HelicopterDetail = () => {
 
               {/* Request Charter Button */}
               <button
-                onClick={requestFlight}
+                onClick={() => {
+                  // Navigate to AI Chat with prefilled helicopter charter request
+                  const query = encodeURIComponent(`I want to charter a helicopter: ${helicopter?.model || helicopter?.name || 'helicopter'}`);
+                  navigate(`/dashboard/chat?query=${query}`);
+                }}
                 className="w-full bg-black text-white py-3 px-4 rounded text-sm font-semibold hover:bg-gray-800 transition-colors"
               >
                 Request Charter
