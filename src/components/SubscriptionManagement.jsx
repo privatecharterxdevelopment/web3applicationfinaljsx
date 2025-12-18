@@ -62,8 +62,12 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
         chatsLimit: stats?.chatsLimit || 0,
         chatsRemaining: stats?.chatsRemaining,
         unlimited: stats?.unlimited || false,
+        // Subscription dates
         resetDate: profile?.chats_reset_date,
+        currentPeriodStart: profile?.current_period_start,
         currentPeriodEnd: profile?.current_period_end,
+        createdAt: profile?.created_at,
+        // Stripe IDs
         stripeCustomerId: profile?.stripe_customer_id,
         stripeSubscriptionId: profile?.stripe_subscription_id
       });
@@ -188,9 +192,16 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="flex flex-col items-center">
-          <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin mb-3"></div>
-          <p className="text-sm text-gray-500 font-light">Loading subscription...</p>
+        <div className="w-16 h-16">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-contain"
+          >
+            <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
+          </video>
         </div>
       </div>
     );
@@ -408,6 +419,33 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
                   {subscriptionData.resetDate && (
                     <p className="text-[10px] text-gray-400 mt-2">Resets {formatDate(subscriptionData.resetDate)}</p>
                   )}
+                </div>
+              )}
+
+              {/* Subscription Dates */}
+              {(subscriptionData.currentPeriodStart || subscriptionData.currentPeriodEnd) && (
+                <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-2">Billing Period</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {subscriptionData.currentPeriodStart && (
+                      <div className="flex items-center gap-2">
+                        <Calendar size={12} className="text-gray-400" />
+                        <div>
+                          <p className="text-[10px] text-gray-400">Started</p>
+                          <p className="text-xs text-gray-700 font-medium">{formatDate(subscriptionData.currentPeriodStart)}</p>
+                        </div>
+                      </div>
+                    )}
+                    {subscriptionData.currentPeriodEnd && (
+                      <div className="flex items-center gap-2">
+                        <Calendar size={12} className="text-emerald-500" />
+                        <div>
+                          <p className="text-[10px] text-gray-400">Renews</p>
+                          <p className="text-xs text-emerald-600 font-medium">{formatDate(subscriptionData.currentPeriodEnd)}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 

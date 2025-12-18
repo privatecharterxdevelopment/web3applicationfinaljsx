@@ -32,12 +32,26 @@ function getSupabase() {
   return supabase;
 }
 
-// Chat limits for each tier - MUST match Subscriptionplans.jsx
+// Chat limits for each tier - MUST match Subscriptionplans.jsx and SubscriptionModal.jsx
+// Updated 2025 pricing: Explorer ($49), Traveller ($99), Elite ($399)
 const TIER_CHAT_LIMITS = {
-  explorer: 1,
-  starter: 5,    // $20/mo - 5 AI conversations
-  pro: 20,       // $40/mo - 20 AI conversations
-  elite: null,   // $130/mo - unlimited
+  explorer: 5,     // $49/mo - 5 AI chats, 10 messages per chat
+  traveller: 10,   // $99/mo - 10 AI chats, 25 messages per chat
+  elite: null,     // $399/mo - unlimited chats and messages
+  // Legacy tiers (for backwards compatibility)
+  starter: 5,
+  pro: 10,
+};
+
+// Price amounts to tier mapping (in cents) for Payment Links
+// This maps the subscription price to the correct tier
+const PRICE_TO_TIER = {
+  4900: 'explorer',    // $49.00
+  9900: 'traveller',   // $99.00
+  39900: 'elite',      // $399.00
+  // Legacy prices
+  2000: 'starter',     // $20.00
+  4000: 'pro',         // $40.00
 };
 
 const WEBHOOK_SECRET = process.env.STRIPE_SUBSCRIPTION_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET;
@@ -185,84 +199,151 @@ async function handleSubscriptionDeleted(subscription) {
 /**
  * Handle checkout.session.completed
  * This fires when a user completes a Stripe Checkout or Payment Link
+ *
+ * Payment Links: Don't have client_reference_id, so we look up user by email
+ * Checkout Sessions: Have client_reference_id with userId
  */
 async function handleCheckoutCompleted(session) {
   console.log(`[Subscription Webhook] Checkout completed: ${session.id}`);
+  console.log(`[Subscription Webhook] Session mode: ${session.mode}, amount: ${session.amount_total}`);
 
-  // Extract user_id from client_reference_id (format: "userId" or "userId:tierId")
-  const clientRefId = session.client_reference_id;
-  if (!clientRefId) {
-    console.log('[Subscription Webhook] No client_reference_id in checkout session');
+  // Skip if not a subscription
+  if (!session.subscription) {
+    console.log('[Subscription Webhook] Not a subscription checkout, skipping');
     return;
   }
 
-  const [userId, tierId] = clientRefId.includes(':') ? clientRefId.split(':') : [clientRefId, null];
+  try {
+    // Get the subscription details from Stripe
+    const subscription = await getStripe().subscriptions.retrieve(session.subscription);
+    const priceAmount = subscription.items.data[0]?.price?.unit_amount || session.amount_total;
 
-  if (!userId) {
-    console.log('[Subscription Webhook] Could not extract user_id');
-    return;
-  }
+    // Determine tier from price amount or metadata
+    let tier = session.metadata?.tier || subscription.metadata?.tier;
 
-  // If this is a subscription checkout, update metadata and profile
-  if (session.subscription) {
-    try {
-      // Determine tier from metadata, session, or price
-      let tier = tierId;
+    if (!tier) {
+      // Map price to tier for Payment Links
+      tier = PRICE_TO_TIER[priceAmount];
+      console.log(`[Subscription Webhook] Mapped price ${priceAmount} to tier: ${tier}`);
+    }
 
-      if (!tier && session.metadata?.tier) {
-        tier = session.metadata.tier;
-      }
+    if (!tier) {
+      // Fallback: estimate tier from amount
+      const amount = priceAmount / 100;
+      if (amount >= 300) tier = 'elite';
+      else if (amount >= 80) tier = 'traveller';
+      else tier = 'explorer';
+      console.log(`[Subscription Webhook] Estimated tier from amount $${amount}: ${tier}`);
+    }
 
-      // Fallback: try to determine from price
-      if (!tier && session.amount_total) {
-        const amount = session.amount_total / 100;
-        if (amount >= 100) tier = 'elite';
-        else if (amount >= 30) tier = 'pro';
-        else tier = 'starter';
-      }
+    // Try to find user_id from multiple sources
+    let userId = null;
 
-      tier = tier || 'starter';
+    // 1. Check client_reference_id (from Checkout Sessions)
+    if (session.client_reference_id) {
+      const [uid, tid] = session.client_reference_id.includes(':')
+        ? session.client_reference_id.split(':')
+        : [session.client_reference_id, null];
+      userId = uid;
+      if (tid && !tier) tier = tid;
+      console.log(`[Subscription Webhook] Found user_id from client_reference_id: ${userId}`);
+    }
 
-      // Update subscription metadata with user_id and tier
-      await getStripe().subscriptions.update(session.subscription, {
-        metadata: {
-          user_id: userId,
-          tier: tier,
+    // 2. Check subscription metadata
+    if (!userId && subscription.metadata?.user_id) {
+      userId = subscription.metadata.user_id;
+      console.log(`[Subscription Webhook] Found user_id from subscription metadata: ${userId}`);
+    }
+
+    // 3. Look up user by customer email (for Payment Links)
+    if (!userId && session.customer_details?.email) {
+      const customerEmail = session.customer_details.email;
+      console.log(`[Subscription Webhook] Looking up user by email: ${customerEmail}`);
+
+      // First check auth.users via Supabase
+      const { data: authUser } = await getSupabase()
+        .from('user_profiles')
+        .select('user_id')
+        .eq('email', customerEmail)
+        .single();
+
+      if (authUser?.user_id) {
+        userId = authUser.user_id;
+        console.log(`[Subscription Webhook] Found user_id from user_profiles by email: ${userId}`);
+      } else {
+        // Try to find in auth.users (if we have service role access)
+        const { data: { users } } = await getSupabase().auth.admin.listUsers();
+        const foundUser = users?.find(u => u.email === customerEmail);
+        if (foundUser) {
+          userId = foundUser.id;
+          console.log(`[Subscription Webhook] Found user_id from auth.users: ${userId}`);
         }
+      }
+    }
+
+    // 4. Look up by Stripe customer ID
+    if (!userId && session.customer) {
+      const { data: profileByCustomer } = await getSupabase()
+        .from('user_profiles')
+        .select('user_id')
+        .eq('stripe_customer_id', session.customer)
+        .single();
+
+      if (profileByCustomer?.user_id) {
+        userId = profileByCustomer.user_id;
+        console.log(`[Subscription Webhook] Found user_id from stripe_customer_id: ${userId}`);
+      }
+    }
+
+    if (!userId) {
+      console.error('[Subscription Webhook] Could not determine user_id for checkout session');
+      console.error('[Subscription Webhook] Session details:', {
+        customer: session.customer,
+        email: session.customer_details?.email,
+        client_reference_id: session.client_reference_id
+      });
+      return;
+    }
+
+    // Update subscription metadata with user_id and tier
+    await getStripe().subscriptions.update(session.subscription, {
+      metadata: {
+        user_id: userId,
+        tier: tier,
+      }
+    });
+
+    // Update user_profiles
+    const chatsLimit = TIER_CHAT_LIMITS[tier] ?? 5;
+    const periodEnd = new Date(subscription.current_period_end * 1000);
+
+    const { error } = await getSupabase()
+      .from('user_profiles')
+      .upsert({
+        user_id: userId,
+        email: session.customer_details?.email, // Store email for future lookups
+        subscription_tier: tier,
+        subscription_status: 'active',
+        chats_limit: chatsLimit,
+        chats_used: 0,
+        chats_reset_date: periodEnd.toISOString(),
+        stripe_customer_id: session.customer,
+        stripe_subscription_id: subscription.id,
+        current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+        current_period_end: periodEnd.toISOString(),
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id',
+        ignoreDuplicates: false
       });
 
-      // Update user_profiles immediately
-      const subscription = await getStripe().subscriptions.retrieve(session.subscription);
-      const chatsLimit = TIER_CHAT_LIMITS[tier] ?? 5;
-      const periodEnd = new Date(subscription.current_period_end * 1000);
-
-      const { error } = await getSupabase()
-        .from('user_profiles')
-        .upsert({
-          user_id: userId,
-          subscription_tier: tier,
-          subscription_status: 'active',
-          chats_limit: chatsLimit,
-          chats_used: 0,
-          chats_reset_date: periodEnd.toISOString(),
-          stripe_customer_id: subscription.customer,
-          stripe_subscription_id: subscription.id,
-          current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-          current_period_end: periodEnd.toISOString(),
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id',
-          ignoreDuplicates: false
-        });
-
-      if (error) {
-        console.error('[Subscription Webhook] Error updating user_profiles:', error);
-      } else {
-        console.log(`[Subscription Webhook] User ${userId} subscribed to ${tier} with ${chatsLimit === null ? 'unlimited' : chatsLimit} chats`);
-      }
-    } catch (error) {
-      console.error('[Subscription Webhook] Error in checkout completion:', error);
+    if (error) {
+      console.error('[Subscription Webhook] Error updating user_profiles:', error);
+    } else {
+      console.log(`[Subscription Webhook] SUCCESS: User ${userId} subscribed to ${tier} with ${chatsLimit === null ? 'unlimited' : chatsLimit} chats`);
     }
+  } catch (error) {
+    console.error('[Subscription Webhook] Error in checkout completion:', error);
   }
 }
 

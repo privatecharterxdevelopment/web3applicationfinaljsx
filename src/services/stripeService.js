@@ -158,8 +158,8 @@ class StripeService {
         body: JSON.stringify({
           priceId,
           customerId: customer.stripe_customer_id,
-          successUrl: `${window.location.origin}/dashboard?subscription=success`,
-          cancelUrl: `${window.location.origin}/pricing?subscription=cancelled`,
+          successUrl: `${window.location.origin}/subscription/success?tier=${tier}`,
+          cancelUrl: `${window.location.origin}/subscriptions/plans?subscription=cancelled`,
           metadata: {
             user_id: user.id,
             tier,

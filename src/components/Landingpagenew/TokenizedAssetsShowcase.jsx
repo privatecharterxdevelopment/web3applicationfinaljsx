@@ -166,29 +166,29 @@ export default function TokenizedAssetsShowcase() {
   // Wallet not connected state
   if (!isConnected) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white font-['DM_Sans']">
         {/* Minimal Header */}
         <div className="border-b border-black/5">
-          <div className="max-w-[1920px] mx-auto px-8 py-6">
+          <div className="max-w-[1920px] mx-auto px-8 py-8">
             <div>
-              <h1 className="text-xl font-medium text-black tracking-tight">My DeFi Assets</h1>
-              <p className="text-xs text-black/40 mt-0.5">Portfolio Overview</p>
+              <h1 className="text-2xl font-medium text-black tracking-tight font-['DM_Sans']">My DeFi Assets</h1>
+              <p className="text-sm text-black/40 mt-1 font-['DM_Sans']">Portfolio Overview</p>
             </div>
           </div>
         </div>
 
         <div className="flex items-center justify-center py-32">
           <div className="text-center max-w-md">
-            <div className="w-16 h-16 rounded-sm border border-black/10 flex items-center justify-center mx-auto mb-4">
-              <Wallet size={32} className="text-black/20" />
+            <div className="w-20 h-20 rounded-lg border border-black/10 flex items-center justify-center mx-auto mb-6">
+              <Wallet size={40} className="text-black/20" />
             </div>
-            <h3 className="text-sm font-medium text-black mb-2">Connect Wallet</h3>
-            <p className="text-xs text-black/40 mb-6">
+            <h3 className="text-lg font-medium text-black mb-3 font-['DM_Sans']">Connect Wallet</h3>
+            <p className="text-sm text-black/40 mb-8 font-['DM_Sans']">
               Connect your wallet to view your DeFi asset portfolio
             </p>
             <button
               onClick={() => open()}
-              className="px-6 py-2 border border-black hover:bg-black hover:text-white rounded-sm text-xs font-medium transition-colors"
+              className="px-8 py-3 border border-black hover:bg-black hover:text-white rounded-lg text-sm font-medium transition-colors font-['DM_Sans']"
             >
               Connect Wallet
             </button>
@@ -201,24 +201,24 @@ export default function TokenizedAssetsShowcase() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center font-['DM_Sans']">
         <div className="text-center">
-          <div className="w-8 h-8 border border-black/10 border-t-black rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-sm text-black/40">Loading</p>
+          <div className="w-10 h-10 border border-black/10 border-t-black rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-base text-black/40 font-['DM_Sans']">Loading</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white font-['DM_Sans']">
       {/* Minimal Header */}
       <div className="border-b border-black/5">
-        <div className="max-w-[1920px] mx-auto px-8 py-6">
+        <div className="max-w-[1920px] mx-auto px-8 py-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-medium text-black tracking-tight">My DeFi Assets</h1>
-              <p className="text-xs text-black/40 mt-0.5">Portfolio Overview</p>
+              <h1 className="text-2xl font-medium text-black tracking-tight font-['DM_Sans']">My DeFi Assets</h1>
+              <p className="text-sm text-black/40 mt-1 font-['DM_Sans']">Portfolio Overview</p>
             </div>
             <div className="flex items-center gap-3">
               {userAssets.length > 0 && (
@@ -405,7 +405,7 @@ export default function TokenizedAssetsShowcase() {
   );
 }
 
-// Minimal Card View Component
+// Larger Card View Component with DM_Sans
 function AssetCard({ asset, onSell, formatCurrency }) {
   const pnl = asset.currentValue - asset.totalInvested;
   const pnlPercentage = asset.totalInvested > 0 ? ((pnl / asset.totalInvested) * 100) : 0;
@@ -413,9 +413,9 @@ function AssetCard({ asset, onSell, formatCurrency }) {
   const priceChangePercentage = asset.purchasePrice > 0 ? ((priceChange / asset.purchasePrice) * 100) : 0;
 
   return (
-    <div className="border border-black/5 rounded-sm bg-white hover:border-black/10 transition-all group">
+    <div className="border border-black/5 rounded-xl bg-white hover:border-black/10 transition-all group font-['DM_Sans']">
       {/* Image */}
-      <div className="relative aspect-[16/10] overflow-hidden">
+      <div className="relative aspect-[16/10] overflow-hidden rounded-t-xl">
         <img
           src={asset.image}
           alt={asset.name}
@@ -424,23 +424,23 @@ function AssetCard({ asset, onSell, formatCurrency }) {
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 
         {/* Badges */}
-        <div className="absolute top-2 right-2">
-          <span className="px-2 py-0.5 rounded-sm text-[10px] font-mono bg-black/80 text-white backdrop-blur-sm">
+        <div className="absolute top-3 right-3">
+          <span className="px-3 py-1 rounded-lg text-xs font-mono bg-black/80 text-white backdrop-blur-sm">
             {asset.tokenStandard}
           </span>
         </div>
 
-        <div className="absolute top-2 left-2">
-          <span className={`px-2 py-0.5 rounded-sm text-[10px] font-mono backdrop-blur-sm ${
+        <div className="absolute top-3 left-3">
+          <span className={`px-3 py-1 rounded-lg text-xs font-mono backdrop-blur-sm ${
             pnl >= 0 ? 'bg-black/80 text-white' : 'bg-black/80 text-white'
           }`}>
             {pnl >= 0 ? '+' : ''}{pnlPercentage.toFixed(1)}%
           </span>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 p-3">
-          <h3 className="text-sm font-medium text-white mb-0.5 truncate">{asset.name}</h3>
-          <div className="flex items-center gap-2 text-white/80 text-[10px]">
+        <div className="absolute bottom-0 left-0 right-0 p-4">
+          <h3 className="text-base font-medium text-white mb-1 truncate font-['DM_Sans']">{asset.name}</h3>
+          <div className="flex items-center gap-2 text-white/80 text-xs font-['DM_Sans']">
             <span className="font-mono">{asset.tokenSymbol}</span>
             {asset.location && (
               <>
@@ -453,20 +453,20 @@ function AssetCard({ asset, onSell, formatCurrency }) {
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="p-5">
         {/* Price Chart */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10px] uppercase tracking-wider text-black/30">Price</span>
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-mono text-black">{formatCurrency(asset.currentPrice)}</span>
-              <span className={`text-[10px] font-mono ${priceChange >= 0 ? 'text-black/40' : 'text-black/40'}`}>
+        <div className="mb-5">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs uppercase tracking-wider text-black/30 font-['DM_Sans']">Price</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-mono text-black">{formatCurrency(asset.currentPrice)}</span>
+              <span className={`text-xs font-mono ${priceChange >= 0 ? 'text-black/40' : 'text-black/40'}`}>
                 {priceChange >= 0 ? '+' : ''}{priceChangePercentage.toFixed(1)}%
               </span>
             </div>
           </div>
 
-          <div className="h-12">
+          <div className="h-16">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={asset.priceHistory}>
                 <Line
@@ -483,37 +483,37 @@ function AssetCard({ asset, onSell, formatCurrency }) {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-3 mb-4 pb-4 border-b border-black/5">
+        <div className="grid grid-cols-2 gap-4 mb-5 pb-5 border-b border-black/5">
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-black/30 mb-0.5">Tokens</div>
-            <div className="text-xs font-mono text-black">{asset.tokensOwned.toLocaleString()}</div>
+            <div className="text-xs uppercase tracking-wider text-black/30 mb-1 font-['DM_Sans']">Tokens</div>
+            <div className="text-sm font-mono text-black">{asset.tokensOwned.toLocaleString()}</div>
           </div>
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-black/30 mb-0.5">Avg Buy</div>
-            <div className="text-xs font-mono text-black">{formatCurrency(asset.purchasePrice)}</div>
+            <div className="text-xs uppercase tracking-wider text-black/30 mb-1 font-['DM_Sans']">Avg Buy</div>
+            <div className="text-sm font-mono text-black">{formatCurrency(asset.purchasePrice)}</div>
           </div>
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-black/30 mb-0.5">Invested</div>
-            <div className="text-xs font-mono text-black">{formatCurrency(asset.totalInvested)}</div>
+            <div className="text-xs uppercase tracking-wider text-black/30 mb-1 font-['DM_Sans']">Invested</div>
+            <div className="text-sm font-mono text-black">{formatCurrency(asset.totalInvested)}</div>
           </div>
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-black/30 mb-0.5">Value</div>
-            <div className={`text-xs font-mono ${pnl >= 0 ? 'text-black' : 'text-black'}`}>
+            <div className="text-xs uppercase tracking-wider text-black/30 mb-1 font-['DM_Sans']">Value</div>
+            <div className={`text-sm font-mono ${pnl >= 0 ? 'text-black' : 'text-black'}`}>
               {formatCurrency(asset.currentValue)}
             </div>
           </div>
         </div>
 
         {/* Contract */}
-        <div className="mb-4">
-          <div className="text-[10px] uppercase tracking-wider text-black/30 mb-0.5">Contract</div>
-          <div className="text-[10px] font-mono text-black/60 truncate">{asset.contractAddress}</div>
+        <div className="mb-5">
+          <div className="text-xs uppercase tracking-wider text-black/30 mb-1 font-['DM_Sans']">Contract</div>
+          <div className="text-xs font-mono text-black/60 truncate">{asset.contractAddress}</div>
         </div>
 
         {/* Action */}
         <button
           onClick={onSell}
-          className="w-full px-4 py-2 border border-black hover:bg-black hover:text-white rounded-sm text-xs font-medium transition-colors"
+          className="w-full px-5 py-3 border border-black hover:bg-black hover:text-white rounded-xl text-sm font-medium transition-colors font-['DM_Sans']"
         >
           Sell
         </button>
@@ -522,7 +522,7 @@ function AssetCard({ asset, onSell, formatCurrency }) {
   );
 }
 
-// Minimal List View Component
+// Larger List View Component with DM_Sans
 function AssetRow({ asset, onSell, formatCurrency }) {
   const pnl = asset.currentValue - asset.totalInvested;
   const pnlPercentage = asset.totalInvested > 0 ? ((pnl / asset.totalInvested) * 100) : 0;
@@ -530,13 +530,13 @@ function AssetRow({ asset, onSell, formatCurrency }) {
   const priceChangePercentage = asset.purchasePrice > 0 ? ((priceChange / asset.purchasePrice) * 100) : 0;
 
   return (
-    <div className="border border-black/5 rounded-sm bg-white hover:border-black/10 transition-all p-4">
-      <div className="flex items-center gap-4">
+    <div className="border border-black/5 rounded-xl bg-white hover:border-black/10 transition-all p-5 font-['DM_Sans']">
+      <div className="flex items-center gap-5">
         {/* Image */}
-        <div className="relative w-24 h-24 flex-shrink-0 rounded-sm overflow-hidden">
+        <div className="relative w-28 h-28 flex-shrink-0 rounded-xl overflow-hidden">
           <img src={asset.image} alt={asset.name} className="w-full h-full object-cover" />
-          <div className="absolute top-1 right-1">
-            <span className="px-1.5 py-0.5 rounded-sm text-[9px] font-mono bg-black/80 text-white backdrop-blur-sm">
+          <div className="absolute top-2 right-2">
+            <span className="px-2 py-1 rounded-lg text-[10px] font-mono bg-black/80 text-white backdrop-blur-sm">
               {asset.tokenStandard}
             </span>
           </div>
@@ -544,10 +544,10 @@ function AssetRow({ asset, onSell, formatCurrency }) {
 
         {/* Info */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between mb-2">
+          <div className="flex items-start justify-between mb-3">
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-medium text-black mb-0.5 truncate">{asset.name}</h3>
-              <div className="flex items-center gap-2 text-[10px] text-black/40">
+              <h3 className="text-base font-medium text-black mb-1 truncate font-['DM_Sans']">{asset.name}</h3>
+              <div className="flex items-center gap-2 text-xs text-black/40 font-['DM_Sans']">
                 <span className="font-mono">{asset.tokenSymbol}</span>
                 {asset.location && (
                   <>
@@ -558,17 +558,17 @@ function AssetRow({ asset, onSell, formatCurrency }) {
               </div>
             </div>
 
-            <div className={`px-2 py-0.5 rounded-sm text-[10px] font-mono ${
+            <div className={`px-3 py-1 rounded-lg text-xs font-mono ${
               pnl >= 0 ? 'bg-black/5 text-black' : 'bg-black/5 text-black'
             }`}>
               {pnl >= 0 ? '+' : ''}{pnlPercentage.toFixed(1)}%
             </div>
           </div>
 
-          <div className="grid grid-cols-12 gap-4 items-center">
+          <div className="grid grid-cols-12 gap-5 items-center">
             {/* Chart */}
             <div className="col-span-3">
-              <div className="h-10">
+              <div className="h-14">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={asset.priceHistory}>
                     <Line
@@ -585,22 +585,22 @@ function AssetRow({ asset, onSell, formatCurrency }) {
             </div>
 
             {/* Stats */}
-            <div className="col-span-7 grid grid-cols-4 gap-3">
+            <div className="col-span-7 grid grid-cols-4 gap-4">
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-black/30 mb-0.5">Tokens</div>
-                <div className="text-xs font-mono text-black">{asset.tokensOwned.toLocaleString()}</div>
+                <div className="text-xs uppercase tracking-wider text-black/30 mb-1 font-['DM_Sans']">Tokens</div>
+                <div className="text-sm font-mono text-black">{asset.tokensOwned.toLocaleString()}</div>
               </div>
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-black/30 mb-0.5">Invested</div>
-                <div className="text-xs font-mono text-black">{formatCurrency(asset.totalInvested)}</div>
+                <div className="text-xs uppercase tracking-wider text-black/30 mb-1 font-['DM_Sans']">Invested</div>
+                <div className="text-sm font-mono text-black">{formatCurrency(asset.totalInvested)}</div>
               </div>
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-black/30 mb-0.5">Value</div>
-                <div className="text-xs font-mono text-black">{formatCurrency(asset.currentValue)}</div>
+                <div className="text-xs uppercase tracking-wider text-black/30 mb-1 font-['DM_Sans']">Value</div>
+                <div className="text-sm font-mono text-black">{formatCurrency(asset.currentValue)}</div>
               </div>
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-black/30 mb-0.5">APY</div>
-                <div className="text-xs font-mono text-black">{asset.apy.toFixed(2)}%</div>
+                <div className="text-xs uppercase tracking-wider text-black/30 mb-1 font-['DM_Sans']">APY</div>
+                <div className="text-sm font-mono text-black">{asset.apy.toFixed(2)}%</div>
               </div>
             </div>
 
@@ -608,7 +608,7 @@ function AssetRow({ asset, onSell, formatCurrency }) {
             <div className="col-span-2">
               <button
                 onClick={onSell}
-                className="w-full px-3 py-1.5 border border-black hover:bg-black hover:text-white rounded-sm text-xs font-medium transition-colors"
+                className="w-full px-4 py-2.5 border border-black hover:bg-black hover:text-white rounded-xl text-sm font-medium transition-colors font-['DM_Sans']"
               >
                 Sell
               </button>
@@ -620,7 +620,7 @@ function AssetRow({ asset, onSell, formatCurrency }) {
   );
 }
 
-// Minimal Sell Modal
+// Larger Sell Modal with DM_Sans
 function SellTokenModal({ asset, onClose, onConfirm, formatCurrency }) {
   const [amount, setAmount] = useState('');
   const [percentage, setPercentage] = useState(0);
@@ -641,12 +641,12 @@ function SellTokenModal({ asset, onClose, onConfirm, formatCurrency }) {
 
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-      <div className="bg-white border border-black/10 rounded-sm max-w-md w-full p-6">
-        <h2 className="text-sm font-medium text-black mb-1">Sell Tokens</h2>
-        <p className="text-xs text-black/40 mb-6">{asset.name} ({asset.tokenSymbol})</p>
+      <div className="bg-white border border-black/10 rounded-2xl max-w-lg w-full p-8 font-['DM_Sans']">
+        <h2 className="text-lg font-medium text-black mb-2 font-['DM_Sans']">Sell Tokens</h2>
+        <p className="text-sm text-black/40 mb-8 font-['DM_Sans']">{asset.name} ({asset.tokenSymbol})</p>
 
-        <div className="mb-4">
-          <label className="block text-[10px] uppercase tracking-wider text-black/40 mb-2">
+        <div className="mb-5">
+          <label className="block text-xs uppercase tracking-wider text-black/40 mb-3 font-['DM_Sans']">
             Amount
           </label>
           <input
@@ -654,18 +654,18 @@ function SellTokenModal({ asset, onClose, onConfirm, formatCurrency }) {
             value={amount}
             onChange={(e) => handleAmountChange(e.target.value)}
             max={asset.tokensOwned}
-            className="w-full px-3 py-2 border border-black/10 rounded-sm text-sm focus:outline-none focus:border-black/30"
+            className="w-full px-4 py-3 border border-black/10 rounded-xl text-base focus:outline-none focus:border-black/30 font-['DM_Sans']"
             placeholder="0"
           />
-          <p className="text-[10px] text-black/40 mt-1">Available: {asset.tokensOwned} tokens</p>
+          <p className="text-xs text-black/40 mt-2 font-['DM_Sans']">Available: {asset.tokensOwned} tokens</p>
         </div>
 
-        <div className="grid grid-cols-4 gap-2 mb-6">
+        <div className="grid grid-cols-4 gap-3 mb-8">
           {[25, 50, 75, 100].map(percent => (
             <button
               key={percent}
               onClick={() => handlePercentageChange(percent)}
-              className={`px-3 py-1.5 rounded-sm text-[10px] font-medium transition-all ${
+              className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all font-['DM_Sans'] ${
                 Math.abs(percentage - percent) < 1
                   ? 'bg-black text-white'
                   : 'border border-black/10 text-black/60 hover:border-black/30'
@@ -676,23 +676,23 @@ function SellTokenModal({ asset, onClose, onConfirm, formatCurrency }) {
           ))}
         </div>
 
-        <div className="border border-black/10 rounded-sm p-4 mb-6">
-          <p className="text-[10px] uppercase tracking-wider text-black/40 mb-1">Est. Value</p>
-          <p className="text-2xl font-light text-black">{formatCurrency(estimatedValue)}</p>
-          <p className="text-[10px] text-black/40 mt-1">@ {formatCurrency(asset.currentPrice)} per token</p>
+        <div className="border border-black/10 rounded-xl p-5 mb-8">
+          <p className="text-xs uppercase tracking-wider text-black/40 mb-2 font-['DM_Sans']">Est. Value</p>
+          <p className="text-3xl font-light text-black font-['DM_Sans']">{formatCurrency(estimatedValue)}</p>
+          <p className="text-xs text-black/40 mt-2 font-['DM_Sans']">@ {formatCurrency(asset.currentPrice)} per token</p>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-4">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 border border-black/10 text-black hover:border-black/30 rounded-sm text-xs font-medium transition-colors"
+            className="flex-1 px-5 py-3 border border-black/10 text-black hover:border-black/30 rounded-xl text-sm font-medium transition-colors font-['DM_Sans']"
           >
             Cancel
           </button>
           <button
             onClick={() => onConfirm(parseFloat(amount) || 0)}
             disabled={!amount || parseFloat(amount) <= 0 || parseFloat(amount) > asset.tokensOwned}
-            className="flex-1 px-4 py-2 bg-black text-white hover:bg-black/90 rounded-sm text-xs font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex-1 px-5 py-3 bg-black text-white hover:bg-black/90 rounded-xl text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed font-['DM_Sans']"
           >
             Confirm
           </button>

@@ -331,7 +331,7 @@ function mapTokenizationService(service) {
 }
 
 export const UnifiedSearchService = {
-  async searchAll({ passengers, location, fromLocation, toLocation, country, dateFrom, dateTo, q, serviceTypes } = {}) {
+  async searchAll({ passengers, location, fromLocation, toLocation, country, dateFrom, dateTo, q, serviceTypes, aircraftModel, category } = {}) {
     try {
       const today = new Date().toISOString().split('T')[0];
 
@@ -376,13 +376,32 @@ export const UnifiedSearchService = {
       // IMPORTANT: Exclude Turboprops and Cessna Caravan - only show proper jets
       let jetsQ = Promise.resolve({ data: [], error: null });
       if (searchJets) {
-        jetsQ = supabase.from('jets').select('*')
+        let query = supabase.from('jets').select('*')
           .neq('aircraft_category', 'Turboprop')  // Exclude turboprops
           .not('aircraft_model', 'ilike', '%caravan%')  // Exclude Cessna Caravan
-          .not('aircraft_model', 'ilike', '%king air%')  // Exclude King Air turboprops
-          .limit(15);  // Increased limit to ensure enough jets after filtering
-        // Note: capacity filter removed as column stores string values like "8 passengers"
-        // Filtering is done in JS after parsing
+          .not('aircraft_model', 'ilike', '%king air%');  // Exclude King Air turboprops
+
+        // Filter by specific aircraft model if provided (e.g., "Gulfstream G650", "Citation X")
+        if (aircraftModel) {
+          // Use ilike for case-insensitive partial matching
+          query = query.ilike('aircraft_model', `%${aircraftModel}%`);
+        }
+
+        // Filter by category if provided (e.g., "Light Jet", "Heavy Jet")
+        if (category) {
+          const categoryMap = {
+            'light': 'Light Jet',
+            'midsize': 'Midsize Jet',
+            'super-midsize': 'Super Midsize Jet',
+            'heavy': 'Heavy Jet',
+            'ultra-long-range': 'Ultra Long Range'
+          };
+          const dbCategory = categoryMap[category.toLowerCase()] || category;
+          query = query.ilike('aircraft_category', `%${dbCategory}%`);
+        }
+
+        // Increase limit when searching for specific model to ensure we get all matching jets
+        jetsQ = query.limit(aircraftModel ? 50 : 15);
       }
 
       // Empty Legs query - FETCH ALL and filter client-side for worldwide search
@@ -398,9 +417,17 @@ export const UnifiedSearchService = {
       // Note: helicopter_charters table may use different column names
       let helicoptersQ = Promise.resolve({ data: [], error: null });
       if (searchHelicopters) {
-        helicoptersQ = supabase.from('helicopter_charters').select('*').limit(10);
-        // Note: passenger_capacity filter removed - column may not exist or use different name
-        // Filtering is done in JS after mapping
+        let heliQuery = supabase.from('helicopter_charters').select('*');
+
+        // Filter by specific helicopter model if provided (e.g., "EC135", "AS350", "AW139")
+        if (aircraftModel) {
+          // Try to match against name, model, or aircraft_model columns
+          // Using OR filter to check multiple possible column names
+          heliQuery = heliQuery.or(`name.ilike.%${aircraftModel}%,model.ilike.%${aircraftModel}%,aircraft_model.ilike.%${aircraftModel}%`);
+        }
+
+        // Increase limit when searching for specific model
+        helicoptersQ = heliQuery.limit(aircraftModel ? 50 : 10);
       }
 
       const yachtsQ = searchYachts ? supabase.from('fixed_offers').select('*').limit(10) : Promise.resolve({ data: [], error: null });

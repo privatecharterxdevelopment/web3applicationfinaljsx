@@ -599,14 +599,27 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
       const profile = await subscriptionService.getUserProfile(user.id);
       const chatStats = await subscriptionService.getChatStats(user.id);
 
+      // Get messages per chat based on tier
+      const getMessagesPerChat = (tier) => {
+        if (tier === 'elite') return '∞';
+        if (tier === 'traveller') return '25';
+        return '10'; // explorer
+      };
+
       setSubscriptionData({
         tier: profile?.subscription_tier || null,
         status: profile?.subscription_status || 'inactive',
+        // Dates
+        currentPeriodStart: profile?.current_period_start,
         currentPeriodEnd: profile?.current_period_end,
+        chatsResetDate: profile?.chats_reset_date,
+        // Usage
         chatsUsed: chatStats?.chatsUsed || 0,
         chatsLimit: chatStats?.chatsLimit || 0,
         chatsRemaining: chatStats?.chatsRemaining || 0,
-        unlimited: chatStats?.unlimited || false
+        unlimited: chatStats?.unlimited || false,
+        // Messages per chat
+        messagesPerChat: getMessagesPerChat(profile?.subscription_tier)
       });
     } catch (error) {
       console.error('Error fetching subscription data:', error);
@@ -1404,9 +1417,9 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                 </div>
               ) : subscriptionData?.tier && subscriptionData?.status === 'active' ? (
                 <div className="space-y-2">
-                  {/* Usage */}
+                  {/* Chat Usage */}
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-500">Chats Used</span>
+                    <span className="text-xs text-gray-500">Chats</span>
                     <span className="text-xs font-medium text-gray-900">
                       {subscriptionData.unlimited ? '∞' : `${subscriptionData.chatsUsed}/${subscriptionData.chatsLimit}`}
                     </span>
@@ -1416,17 +1429,44 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                   {!subscriptionData.unlimited && subscriptionData.chatsLimit > 0 && (
                     <div className="w-full bg-gray-200/60 rounded-full h-1.5">
                       <div
-                        className="bg-gray-500 h-1.5 rounded-full transition-all"
+                        className={`h-1.5 rounded-full transition-all ${
+                          (subscriptionData.chatsUsed / subscriptionData.chatsLimit) >= 0.9
+                            ? 'bg-red-500'
+                            : (subscriptionData.chatsUsed / subscriptionData.chatsLimit) >= 0.7
+                              ? 'bg-amber-500'
+                              : 'bg-gray-500'
+                        }`}
                         style={{ width: `${Math.min(100, (subscriptionData.chatsUsed / subscriptionData.chatsLimit) * 100)}%` }}
                       />
                     </div>
                   )}
 
-                  {/* Validity */}
+                  {/* Messages per Chat */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-500">Msgs/Chat</span>
+                    <span className="text-xs font-medium text-gray-900">
+                      {subscriptionData.messagesPerChat}
+                    </span>
+                  </div>
+
+                  {/* Billing Period - Started */}
+                  {subscriptionData.currentPeriodStart && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500">Started</span>
+                      <span className="text-xs font-medium text-gray-700">
+                        {new Date(subscriptionData.currentPeriodStart).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Renewal Date */}
                   {subscriptionData.currentPeriodEnd && (
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-500">Valid Until</span>
-                      <span className="text-xs font-medium text-gray-900">
+                      <span className="text-xs text-gray-500">Renews</span>
+                      <span className="text-xs font-medium text-emerald-600">
                         {new Date(subscriptionData.currentPeriodEnd).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',

@@ -57,6 +57,7 @@ import { generateRequestConfirmationHTML, openHTMLForPrint } from '../../../serv
 // Web3
 import { useAccount, useDisconnect, useSignMessage } from 'wagmi';
 import { signAIChatRequest } from '../../../lib/web3';
+import { checkServiceAccess } from './utils/constants';
 
 // Weather Widget - Light gray design
 const WeatherWidget = ({ location, weather }) => {
@@ -341,6 +342,10 @@ const AIChat = ({
 
   // Chat limit tracking (for free users)
   const [chatLimitReached, setChatLimitReached] = useState(false);
+
+  // Subscription blocker popup (glassmorphic overlay)
+  const [showSubscriptionBlocker, setShowSubscriptionBlocker] = useState(false);
+  const [subscriptionBlockerReason, setSubscriptionBlockerReason] = useState(null); // 'no_subscription', 'chat_limit', 'message_limit', 'feature_restricted'
 
   // Voice Interaction State
   const [isVoiceMode, setIsVoiceMode] = useState(false);
@@ -656,6 +661,27 @@ const AIChat = ({
     if (user?.id) {
       loadUserProfile();
     }
+
+    // Check if returning from Stripe subscription success
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('subscription') === 'success') {
+      console.log('🎉 Subscription success detected - refreshing profile');
+      // Remove the param from URL to prevent re-triggering
+      urlParams.delete('subscription');
+      const newUrl = window.location.pathname + (urlParams.toString() ? `?${urlParams.toString()}` : '');
+      window.history.replaceState({}, '', newUrl);
+
+      // Refresh profile after short delay to ensure Stripe webhook has processed
+      setTimeout(() => {
+        if (user?.id) {
+          loadUserProfile();
+          setToast({
+            message: 'Welcome to your new subscription! Your AI chat limits have been updated.',
+            type: 'success'
+          });
+        }
+      }, 1500);
+    }
   }, [user?.id]);
 
   // Handle Break the Price file from hero upload (sessionStorage)
@@ -706,6 +732,11 @@ const AIChat = ({
     if (!user?.id) return;
     try {
       const profile = await subscriptionService.getUserProfile(user.id);
+      console.log('📦 Loaded user profile:', {
+        tier: profile?.subscription_tier,
+        status: profile?.subscription_status,
+        userId: user.id
+      });
       setUserProfile(profile);
     } catch (error) {
       console.error('Error loading user profile:', error);
@@ -953,9 +984,25 @@ const AIChat = ({
                 if (toolUse.name === 'searchEmptyLegs' && toolResult.results.length > 0) {
                   tabs.push({ id: 'emptylegs', title: 'Empty Legs', count: toolResult.results.length, items: toolResult.results });
                 } else if (toolUse.name === 'searchPrivateJets' && toolResult.results.length > 0) {
-                  tabs.push({ id: 'jets', title: 'Private Jets', count: toolResult.results.length, items: toolResult.results });
+                  tabs.push({
+                    id: 'jets',
+                    title: toolResult.showingAlternatives ? 'Alternative Jets' : 'Private Jets',
+                    count: toolResult.results.length,
+                    items: toolResult.results,
+                    showingAlternatives: toolResult.showingAlternatives,
+                    requestedModel: toolResult.requestedModel,
+                    alternativeMessage: toolResult.alternativeMessage
+                  });
                 } else if (toolUse.name === 'searchHelicopters' && toolResult.results.length > 0) {
-                  tabs.push({ id: 'helicopters', title: 'Helicopters', count: toolResult.results.length, items: toolResult.results });
+                  tabs.push({
+                    id: 'helicopters',
+                    title: toolResult.showingAlternatives ? 'Alternative Helicopters' : 'Helicopters',
+                    count: toolResult.results.length,
+                    items: toolResult.results,
+                    showingAlternatives: toolResult.showingAlternatives,
+                    requestedModel: toolResult.requestedModel,
+                    alternativeMessage: toolResult.alternativeMessage
+                  });
                 } else if (toolUse.name === 'searchLuxuryCars' && toolResult.results.length > 0) {
                   tabs.push({ id: 'luxury_cars', title: 'Luxury Cars', count: toolResult.results.length, items: toolResult.results });
                 } else if (toolUse.name === 'searchWines' && toolResult.results.length > 0) {
@@ -2023,6 +2070,7 @@ Your quote has been received and will be reviewed within 12 hours.`;
       if (!user?.id) return;
       try {
         const { data, error } = await supabase.rpc('get_chat_limits', { p_user_id: user.id });
+        console.log('📊 Subscription limits RPC response:', { data, error, userId: user.id });
         if (!error && data) {
           setUserSubscriptionLimits(data);
         }
@@ -2791,18 +2839,83 @@ As their luxury travel consultant, provide an enthusiastic response that:
     if (!message.trim() || isProcessing) return;
     // NOTE: anthropicRef check removed - claudeEdgeService is always available
 
+    // SUBSCRIPTION CHECK - Block if user has no active subscription
+    if (!isAdmin && user?.id) {
+      const hasSubscription = userProfile?.subscription_tier && userProfile?.subscription_status === 'active';
+
+      if (!hasSubscription) {
+        // Show glassmorphic subscription blocker popup
+        setSubscriptionBlockerReason('no_subscription');
+        setShowSubscriptionBlocker(true);
+        return;
+      }
+    }
+
+    // Check if user is requesting a service that requires a higher subscription tier
+    const currentTier = userProfile?.subscription_tier || null;
+    const serviceAccessCheck = checkServiceAccess(message, currentTier);
+
+    if (!serviceAccessCheck.hasAccess && !isAdmin) {
+      // User doesn't have access to this service - show upgrade popup
+      const tierDisplayName = serviceAccessCheck.requiredTier === 'elite' ? 'Elite Club' : 'Traveller';
+
+      // Add user message to chat
+      const userMessage = { role: 'user', content: message };
+      setChatHistory(prev => prev.map(c =>
+        c.id === activeChat
+          ? { ...c, messages: [...c.messages, userMessage] }
+          : c
+      ));
+
+      // Add assistant response explaining the upgrade requirement
+      setTimeout(() => {
+        const upgradeMessage = {
+          role: 'assistant',
+          content: `I'd love to help you with **${serviceAccessCheck.displayName}**, but this premium service requires a **${tierDisplayName}** subscription or higher.\n\nYour current plan: **${currentTier ? currentTier.charAt(0).toUpperCase() + currentTier.slice(1) : 'None'}**\n\nUpgrade now to unlock:\n• ${serviceAccessCheck.displayName}\n• ${serviceAccessCheck.requiredTier === 'elite' ? 'Unlimited chats & messages' : 'More chats & messages'}\n• Priority support`
+        };
+
+        setChatHistory(prev => prev.map(c =>
+          c.id === activeChat
+            ? { ...c, messages: [...c.messages, upgradeMessage] }
+            : c
+        ));
+
+        // Show glassmorphic subscription blocker popup
+        setSubscriptionBlockerReason('feature_restricted');
+        setShowSubscriptionBlocker(true);
+      }, 500);
+
+      setCurrentMessage('');
+      return;
+    }
+
     const existingChat = chatHistory.find(c => c.id === activeChat);
 
-    // SKIP CHAT LIMITS FOR TESTING - chat limits disabled
-    // const currentMsgCount = existingChat?.messages?.filter(m => m.role === 'user').length || 0;
-    // const hasUnlimitedMessages = userSubscriptionLimits?.unlimited_messages === true;
-    // if (!hasUnlimitedMessages && currentMsgCount >= MAX_MESSAGES_PER_CHAT && activeChat !== 'new') {
-    //   setMessageLimitReached(true);
-    //   return;
-    // }
-    // if (!hasUnlimitedMessages) {
-    //   setMessageCount(currentMsgCount + 1);
-    // }
+    // MESSAGE LIMIT CHECK - Enforce per-chat message limits based on subscription tier
+    if (!isAdmin && activeChat !== 'new' && existingChat) {
+      const currentMsgCount = existingChat.messages?.filter(m => m.role === 'user').length || 0;
+      const tierMessageLimit = userProfile?.subscription_tier === 'elite' ? Infinity :
+                               userProfile?.subscription_tier === 'traveller' ? 25 : 10;
+
+      if (currentMsgCount >= tierMessageLimit) {
+        setMessageLimitReached(true);
+        // Add message explaining the limit
+        const limitMessage = {
+          role: 'assistant',
+          content: `You've reached the message limit for this chat (${tierMessageLimit} messages).\n\n${userProfile?.subscription_tier === 'explorer' ? 'Upgrade to Traveller for 25 messages per chat, or Elite for unlimited messages.' : 'Upgrade to Elite for unlimited messages per chat.'}`
+        };
+        setChatHistory(prev => prev.map(c =>
+          c.id === activeChat
+            ? { ...c, messages: [...c.messages, limitMessage] }
+            : c
+        ));
+        // Show glassmorphic subscription blocker popup
+        setSubscriptionBlockerReason('message_limit');
+        setShowSubscriptionBlocker(true);
+        return;
+      }
+      setMessageCount(currentMsgCount + 1);
+    }
 
     setShowWelcomeMessage(false);
     const userMessage = { role: 'user', content: message };
@@ -2844,22 +2957,33 @@ As their luxury travel consultant, provide an enthusiastic response that:
         return;
       }
 
-      // SKIP CHAT LIMITS FOR TESTING
-      // if (!isAdmin) {
-      //   try {
-      //     const { canStart, chatsUsed, chatsLimit } = await subscriptionService.canStartNewChat(user.id);
-      //     if (!canStart) {
-      //       setChatLimitReached(true);
-      //       setToast({
-      //         message: `You've used your free chat. Upgrade to continue booking luxury travel.`,
-      //         type: 'warning'
-      //       });
-      //       return;
-      //     }
-      //   } catch (error) {
-      //     console.warn('Failed to check chat limit:', error);
-      //   }
-      // }
+      // CHAT LIMIT CHECK - Enforce total chat limits based on subscription tier
+      if (!isAdmin) {
+        try {
+          const { canStart, chatsUsed, chatsLimit, requiresSubscription, chatsRemaining } = await subscriptionService.canStartNewChat(user.id);
+          console.log('📊 Chat limit check:', { canStart, chatsUsed, chatsLimit, chatsRemaining, requiresSubscription });
+
+          if (requiresSubscription) {
+            setChatLimitReached(true);
+            // Show glassmorphic subscription blocker popup
+            setSubscriptionBlockerReason('no_subscription');
+            setShowSubscriptionBlocker(true);
+            setIsProcessing(false);
+            return;
+          }
+
+          if (!canStart) {
+            setChatLimitReached(true);
+            // Show glassmorphic subscription blocker popup
+            setSubscriptionBlockerReason('chat_limit');
+            setShowSubscriptionBlocker(true);
+            setIsProcessing(false);
+            return;
+          }
+        } catch (error) {
+          console.warn('Failed to check chat limit:', error);
+        }
+      }
 
       // Reset message count for new chat
       setMessageCount(0);
@@ -2875,15 +2999,17 @@ As their luxury travel consultant, provide an enthusiastic response that:
           chatTitle = chat.title;
           console.log('✅ Chat created in database:', { id: chatId, title: chatTitle });
 
-          // SKIP SUBSCRIPTION TRACKING FOR TESTING
-          // if (!isAdmin) {
-          //   try {
-          //     await subscriptionService.incrementChatUsage(user.id);
-          //     await subscriptionService.createChatSession(user.id, chatId);
-          //   } catch (usageError) {
-          //     console.warn('Failed to update chat usage:', usageError);
-          //   }
-          // }
+          // SUBSCRIPTION TRACKING - Increment chat usage count
+          if (!isAdmin) {
+            try {
+              await subscriptionService.incrementChatUsage(user.id);
+              await subscriptionService.createChatSession(user.id, chatId);
+              console.log('📈 Chat usage incremented for user:', user.id);
+            } catch (usageError) {
+              console.warn('Failed to update chat usage:', usageError);
+              // Don't block the chat - just log the warning
+            }
+          }
         } else {
           throw new Error('Chat creation returned false');
         }
@@ -3166,16 +3292,22 @@ Click **"Add to Route"** to confirm this stop, or provide corrections.`;
             } else if (toolUse.name === 'searchPrivateJets' && toolResult.results && toolResult.results.length > 0) {
               tabs.push({
                 id: 'jets',
-                title: 'Private Jets',
+                title: toolResult.showingAlternatives ? 'Alternative Jets' : 'Private Jets',
                 count: toolResult.results.length,
-                items: toolResult.results
+                items: toolResult.results,
+                showingAlternatives: toolResult.showingAlternatives,
+                requestedModel: toolResult.requestedModel,
+                alternativeMessage: toolResult.alternativeMessage
               });
             } else if (toolUse.name === 'searchHelicopters' && toolResult.results && toolResult.results.length > 0) {
               tabs.push({
                 id: 'helicopters',
-                title: 'Helicopters',
+                title: toolResult.showingAlternatives ? 'Alternative Helicopters' : 'Helicopters',
                 count: toolResult.results.length,
-                items: toolResult.results
+                items: toolResult.results,
+                showingAlternatives: toolResult.showingAlternatives,
+                requestedModel: toolResult.requestedModel,
+                alternativeMessage: toolResult.alternativeMessage
               });
             } else if (toolUse.name === 'searchYachtsAndAdventures' && toolResult.results) {
               if (toolResult.results.yachts && toolResult.results.yachts.length > 0) {
@@ -4229,6 +4361,47 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
     }
   };
 
+  // Check if user has active subscription
+  const hasActiveSubscription = userProfile?.subscription_tier && userProfile?.subscription_status === 'active';
+  const isSubscriptionRequired = !isAdmin && !hasActiveSubscription;
+
+  // Get tier limits for message tracking
+  const getTierMessageLimit = () => {
+    if (!userProfile?.subscription_tier) return 0;
+    if (userProfile.subscription_tier === 'elite') return Infinity;
+    if (userProfile.subscription_tier === 'traveller') return 25;
+    return 10; // explorer
+  };
+
+  // Get tier chat limit
+  const getTierChatLimit = () => {
+    if (!userProfile?.subscription_tier) return 0;
+    if (userProfile.subscription_tier === 'elite') return Infinity;
+    if (userProfile.subscription_tier === 'traveller') return 10;
+    return 5; // explorer
+  };
+
+  // Get user's tier features
+  const getUserTierFeatures = () => {
+    const tier = userProfile?.subscription_tier;
+    if (!tier) return [];
+
+    const explorerFeatures = ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'catering', 'custom_travel_org'];
+    const travellerFeatures = [...explorerFeatures, 'medevac', 'concierge', 'group_charter', 'reservations', 'event_booking', 'break_the_price'];
+    const eliteFeatures = [...travellerFeatures, 'vip_catering', 'airport_transfers', 'membershipx_card', 'vip_events'];
+
+    if (tier === 'elite') return eliteFeatures;
+    if (tier === 'traveller') return travellerFeatures;
+    return explorerFeatures;
+  };
+
+  // Check if user has access to a specific feature
+  const hasFeatureAccess = (feature) => {
+    if (isAdmin) return true;
+    if (!hasActiveSubscription) return false;
+    return getUserTierFeatures().includes(feature);
+  };
+
   // If we have an initialQuery prop, show loading state while useEffect processes it
   // This must come BEFORE the NEW CHAT VIEW check
   if (initialQuery && initialQuery.trim() && !processedQueriesRef.current.has(initialQuery)) {
@@ -4459,41 +4632,49 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             */}
 
             {/* Subscription & Message Counter - Clickable to open subscriptions */}
-            <button
-              onClick={() => setShowSubscriptionModal(true)}
-              className="px-2.5 py-1.5 bg-white/40 hover:bg-white/60 rounded-xl text-xs font-medium text-gray-700 transition-all duration-200 flex items-center gap-1.5 border border-gray-200/40 hover:border-gray-300/50"
-              style={{ backdropFilter: 'blur(8px)' }}
-              title="Click to manage subscription"
-            >
-              {userSubscriptionLimits?.tier === 'elite' ? (
-                <span className="flex items-center gap-1">
-                  <Crown size={12} className="text-amber-600" />
-                  <span className="text-gray-700">Elite</span>
-                  <span className="text-gray-300">•</span>
-                  <span className="text-gray-500">∞</span>
-                </span>
-              ) : userSubscriptionLimits?.tier === 'traveller' ? (
-                <span className="flex items-center gap-1">
-                  <span className="text-gray-600">Traveller</span>
-                  <span className="text-gray-300">•</span>
-                  <span className={`${messageCount >= 20 ? 'text-red-500' : messageCount >= 15 ? 'text-amber-500' : 'text-gray-500'}`}>
-                    {messageCount}/25
-                  </span>
-                </span>
-              ) : userSubscriptionLimits?.tier === 'explorer' ? (
-                <span className="flex items-center gap-1">
-                  <span className="text-gray-600">Explorer</span>
-                  <span className="text-gray-300">•</span>
-                  <span className={`${messageCount >= 8 ? 'text-red-500' : messageCount >= 5 ? 'text-amber-500' : 'text-gray-500'}`}>
-                    {messageCount}/10
-                  </span>
-                </span>
-              ) : (
-                <span className="flex items-center gap-1">
-                  <span className="text-gray-500">No Plan</span>
-                </span>
-              )}
-            </button>
+            {(() => {
+              // Use userSubscriptionLimits.tier OR userProfile.subscription_tier as fallback
+              const rawTier = userSubscriptionLimits?.tier || userProfile?.subscription_tier;
+              const displayTier = rawTier?.toLowerCase(); // Normalize to lowercase for comparison
+
+              return (
+                <button
+                  onClick={() => setShowSubscriptionModal(true)}
+                  className="px-2.5 py-1.5 bg-white/40 hover:bg-white/60 rounded-xl text-xs font-medium text-gray-700 transition-all duration-200 flex items-center gap-1.5 border border-gray-200/40 hover:border-gray-300/50"
+                  style={{ backdropFilter: 'blur(8px)' }}
+                  title="Click to manage subscription"
+                >
+                  {displayTier === 'elite' ? (
+                    <span className="flex items-center gap-1">
+                      <Crown size={12} className="text-amber-600" />
+                      <span className="text-gray-700">Elite</span>
+                      <span className="text-gray-300">•</span>
+                      <span className="text-gray-500">∞</span>
+                    </span>
+                  ) : displayTier === 'traveller' ? (
+                    <span className="flex items-center gap-1">
+                      <span className="text-gray-600">Traveller</span>
+                      <span className="text-gray-300">•</span>
+                      <span className={`${messageCount >= 20 ? 'text-red-500' : messageCount >= 15 ? 'text-amber-500' : 'text-gray-500'}`}>
+                        {messageCount}/25
+                      </span>
+                    </span>
+                  ) : displayTier === 'explorer' ? (
+                    <span className="flex items-center gap-1">
+                      <span className="text-gray-600">Explorer</span>
+                      <span className="text-gray-300">•</span>
+                      <span className={`${messageCount >= 8 ? 'text-red-500' : messageCount >= 5 ? 'text-amber-500' : 'text-gray-500'}`}>
+                        {messageCount}/10
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <span className="text-gray-500">No Plan</span>
+                    </span>
+                  )}
+                </button>
+              );
+            })()}
 
             {/* Report Issue Button */}
             <button
@@ -7659,8 +7840,20 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       {/* Subscription Modal */}
       <SubscriptionModal
         isOpen={showSubscriptionModal}
-        onClose={() => setShowSubscriptionModal(false)}
-        currentTier={userProfile?.subscription_tier || 'explorer'}
+        onClose={async () => {
+          setShowSubscriptionModal(false);
+          // Refresh profile in case subscription was updated (webhook processed)
+          if (user?.id) {
+            await loadUserProfile();
+          }
+        }}
+        currentTier={userProfile?.subscription_tier || userSubscriptionLimits?.tier}
+        onUpgrade={async (tierId) => {
+          console.log('🎉 Plan selected:', tierId);
+          // The SubscriptionModal handles redirect to Stripe
+          // After returning, the useEffect will detect subscription=success
+        }}
+        onToast={({ message, type }) => setToast({ message, type })}
       />
 
       {/* Break the Price Modal - HIDDEN (feature disabled) */}
@@ -8377,6 +8570,106 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             setLastAddedJourney(null);
           }}
         />
+      )}
+
+      {/* Subscription Blocker Popup - Glassmorphic Cookie Banner Style */}
+      {showSubscriptionBlocker && (
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-4 pointer-events-none">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/20 pointer-events-auto"
+            onClick={() => setShowSubscriptionBlocker(false)}
+          />
+
+          {/* Popup Card */}
+          <div
+            className="relative w-full max-w-md bg-white/90 rounded-2xl shadow-2xl border border-white/40 overflow-hidden pointer-events-auto animate-slide-up"
+            style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+          >
+            {/* Header */}
+            <div className="p-5 pb-4">
+              <div className="flex items-start gap-4">
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center bg-gray-100/80 border border-gray-200/50 flex-shrink-0"
+                  style={{ backdropFilter: 'blur(8px)' }}
+                >
+                  <Crown size={24} className="text-gray-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {subscriptionBlockerReason === 'no_subscription' && 'Subscription Required'}
+                    {subscriptionBlockerReason === 'chat_limit' && 'Chat Limit Reached'}
+                    {subscriptionBlockerReason === 'message_limit' && 'Message Limit Reached'}
+                    {subscriptionBlockerReason === 'feature_restricted' && 'Feature Upgrade Required'}
+                    {!subscriptionBlockerReason && 'Subscription Required'}
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1 leading-relaxed">
+                    {subscriptionBlockerReason === 'no_subscription' &&
+                      'Subscribe to access Sphera AI and start planning your luxury travel experiences.'}
+                    {subscriptionBlockerReason === 'chat_limit' &&
+                      `You've used all your chats this month (${userProfile?.chats_used || 0}/${getTierChatLimit()}). Upgrade for more.`}
+                    {subscriptionBlockerReason === 'message_limit' &&
+                      `You've reached ${getTierMessageLimit()} messages in this chat. Upgrade for more messages.`}
+                    {subscriptionBlockerReason === 'feature_restricted' &&
+                      'This feature requires a higher subscription tier. Upgrade to unlock.'}
+                    {!subscriptionBlockerReason &&
+                      'Subscribe to access Sphera AI and start planning your luxury travel experiences.'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowSubscriptionBlocker(false)}
+                  className="p-1.5 hover:bg-gray-100/50 rounded-lg transition-colors flex-shrink-0"
+                >
+                  <X size={18} className="text-gray-400" />
+                </button>
+              </div>
+            </div>
+
+            {/* Plan Summary */}
+            <div className="px-5 pb-4">
+              <div className="flex gap-2">
+                {[
+                  { tier: 'Explorer', price: '$49', chats: '5 chats', msgs: '10 msgs/chat' },
+                  { tier: 'Traveller', price: '$99', chats: '10 chats', msgs: '25 msgs/chat', popular: true },
+                  { tier: 'Elite', price: '$399', chats: 'Unlimited', msgs: 'Unlimited' }
+                ].map((plan) => (
+                  <div
+                    key={plan.tier}
+                    className={`flex-1 p-3 rounded-xl border transition-all ${
+                      plan.popular
+                        ? 'bg-gray-900/5 border-gray-300/60'
+                        : 'bg-white/50 border-gray-200/50'
+                    }`}
+                    style={{ backdropFilter: 'blur(8px)' }}
+                  >
+                    {plan.popular && (
+                      <span className="text-[9px] font-semibold text-gray-600 uppercase tracking-wide">Popular</span>
+                    )}
+                    <p className={`text-xs font-medium ${plan.popular ? 'text-gray-900' : 'text-gray-700'}`}>{plan.tier}</p>
+                    <p className="text-lg font-light text-gray-900">{plan.price}</p>
+                    <p className="text-[10px] text-gray-500">{plan.chats}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="px-5 pb-5">
+              <button
+                onClick={() => {
+                  setShowSubscriptionBlocker(false);
+                  setShowSubscriptionModal(true);
+                }}
+                className="w-full py-3 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
+              >
+                View Membership Plans
+              </button>
+              <p className="text-[11px] text-gray-400 text-center mt-3">
+                Cancel anytime • Instant access • 24/7 AI concierge
+              </p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Multi-Leg Options - Now inline buttons below AI message, modal removed */}

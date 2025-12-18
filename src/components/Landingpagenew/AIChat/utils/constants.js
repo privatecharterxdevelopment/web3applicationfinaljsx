@@ -123,6 +123,95 @@ export const hasFeatureAccess = (tier, feature) => {
   return tierConfig.features?.includes(feature) || false;
 };
 
+// Service keyword to feature mapping for subscription checks
+// Maps user query patterns to required feature codes
+export const SERVICE_FEATURE_MAP = {
+  // Services requiring Traveller or Elite (not in Explorer)
+  medevac: {
+    patterns: ['medevac', 'medical evacuation', 'medical flight', 'air ambulance', 'emergency medical'],
+    feature: 'medevac',
+    requiredTier: 'traveller',
+    displayName: 'MEDEVAC Services'
+  },
+  concierge: {
+    patterns: ['concierge', 'personal assistant', 'lifestyle manager', 'vip assistance'],
+    feature: 'concierge',
+    requiredTier: 'traveller',
+    displayName: 'Concierge Services'
+  },
+  group_charter: {
+    patterns: ['group charter', 'group booking', 'large group', 'team charter', 'corporate charter'],
+    feature: 'group_charter',
+    requiredTier: 'traveller',
+    displayName: 'Group Charter'
+  },
+  event_booking: {
+    patterns: ['event booking', 'book event', 'event reservation', 'private event'],
+    feature: 'event_booking',
+    requiredTier: 'traveller',
+    displayName: 'Event Booking'
+  },
+  break_the_price: {
+    patterns: ['break the price', 'negotiate price', 'price negotiation', 'get better price', 'lower price'],
+    feature: 'break_the_price',
+    requiredTier: 'traveller',
+    displayName: 'Break the Price'
+  },
+  // Services requiring Elite only
+  vip_events: {
+    patterns: ['vip event', 'exclusive event', 'vip invitation', 'elite event'],
+    feature: 'vip_events',
+    requiredTier: 'elite',
+    displayName: 'VIP Event Invites'
+  },
+  membershipx_card: {
+    patterns: ['membershipx', 'membership card', 'elite card', 'vip card'],
+    feature: 'membershipx_card',
+    requiredTier: 'elite',
+    displayName: 'MembershipX Card'
+  },
+  airport_transfers: {
+    patterns: ['free transfer', 'complimentary transfer', 'free airport'],
+    feature: 'airport_transfers',
+    requiredTier: 'elite',
+    displayName: 'Free Airport Transfers'
+  }
+};
+
+// Check if a message requires a higher tier subscription
+export const checkServiceAccess = (message, currentTier) => {
+  if (!message) return { hasAccess: true };
+
+  const lowerMessage = message.toLowerCase();
+
+  for (const [serviceKey, serviceConfig] of Object.entries(SERVICE_FEATURE_MAP)) {
+    // Check if any pattern matches
+    const matchedPattern = serviceConfig.patterns.find(pattern =>
+      lowerMessage.includes(pattern)
+    );
+
+    if (matchedPattern) {
+      // Check if user has access based on tier
+      const tierHierarchy = { explorer: 1, traveller: 2, elite: 3 };
+      const userTierLevel = tierHierarchy[currentTier] || 0;
+      const requiredLevel = tierHierarchy[serviceConfig.requiredTier] || 3;
+
+      if (userTierLevel < requiredLevel) {
+        return {
+          hasAccess: false,
+          service: serviceKey,
+          feature: serviceConfig.feature,
+          displayName: serviceConfig.displayName,
+          requiredTier: serviceConfig.requiredTier,
+          currentTier: currentTier || 'none'
+        };
+      }
+    }
+  }
+
+  return { hasAccess: true };
+};
+
 // Service types
 export const SERVICE_TYPES = {
   JETS: 'jets',

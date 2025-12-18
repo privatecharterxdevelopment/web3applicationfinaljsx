@@ -1115,11 +1115,83 @@ const TokenizedAssetsGlassmorphic = () => {
   const [activeCategory, setActiveCategoryInternal] = useState('overview');
   const [dashboardView, setDashboardView] = useState('overview');
 
-  // Wrapper for setActiveCategory to prevent invalid values and add logging
-  const setActiveCategory = useCallback((category) => {
+  // Map internal category names to URL paths
+  const categoryToUrl = {
+    // Aviation & Transport
+    'jets': '/dashboard/jets',
+    'helicopter': '/dashboard/helicopter',
+    'empty-legs': '/dashboard/empty-legs',
+    'ground-transport': '/dashboard/ground-transport',
+    'adventures': '/dashboard/adventures',
+    'luxury-cars': '/dashboard/luxury-cars',
+    'hotels': '/dashboard/hotels',
+
+    // SPV Routes
+    'spv-formation': '/dashboard/spv',
+    'my-spvs': '/dashboard/spv/my-spvs',
+
+    // RWA Routes
+    'tokenization': '/dashboard/tokenization',
+    'my-tokenized-assets': '/dashboard/my-tokenized-assets',
+
+    // Web3 Routes
+    'launchpad': '/dashboard/launchpad',
+    'nft-marketplace': '/dashboard/nft-marketplace',
+    'marketplace': '/dashboard/marketplace',
+    'p2p-trading': '/dashboard/p2p-trading',
+    'dao': '/dashboard/dao',
+    'escrow': '/dashboard/escrow',
+    'sto-utl': '/dashboard/sto-utl',
+    'swap': '/dashboard/swap',
+    'pvcx-token': '/dashboard/pvcx-token',
+
+    // CO2/SAF
+    'co2-saf': '/dashboard/co2-saf',
+    'co2-certificates': '/dashboard/co2-certificates',
+
+    // Subscriptions
+    'subscription-plans': '/subscriptions/plans',
+    'subscriptions': '/subscriptions/manage',
+
+    // User
+    'requests': '/dashboard/requests',
+    'ai-requests': '/dashboard/ai-requests',
+    'bookings': '/dashboard/bookings',
+    'my-bookings': '/dashboard/my-bookings',
+    'transactions': '/dashboard/transactions',
+    'calendar': '/dashboard/calendar',
+    'favourites': '/dashboard/favourites',
+    'notifications': '/dashboard/notifications',
+    'settings': '/dashboard/settings',
+    'kyc-verification': '/dashboard/kyc-verification',
+    'referral': '/dashboard/referral',
+    'my-launches': '/dashboard/my-launches',
+
+    // Chat
+    'chat': '/dashboard/chat',
+    'chat-history': '/dashboard/chat-history',
+    'chat-support': '/dashboard/chat-support',
+
+    // Other
+    'search-index': '/dashboard/search-index',
+    'overview': '/dashboard',
+    'profile': '/dashboard/profile',
+  };
+
+  // Wrapper for setActiveCategory to prevent invalid values, add logging, and sync URL
+  const setActiveCategory = useCallback((category, skipUrlUpdate = false) => {
     const validCategory = category || 'overview'; // Default to 'overview' if empty/null
     console.log('📍 Setting activeCategory:', validCategory, 'from:', category);
     setActiveCategoryInternal(validCategory);
+
+    // Update URL to match the category (unless skipUrlUpdate is true)
+    if (!skipUrlUpdate && categoryToUrl[validCategory]) {
+      const newUrl = categoryToUrl[validCategory];
+      // Only update if different from current path to avoid unnecessary history entries
+      if (window.location.pathname !== newUrl) {
+        window.history.pushState({}, '', newUrl);
+      }
+    }
   }, []);
   const [expandedMenus, setExpandedMenus] = useState({});
   const [expandedAIRequestId, setExpandedAIRequestId] = useState(null);
@@ -1261,6 +1333,7 @@ const TokenizedAssetsGlassmorphic = () => {
   const analyserRef = useRef(null);
   const animationFrameRef = useRef(null);
   const [chatHistory, setChatHistory] = useState([]);
+  const [chatHistoryExpanded, setChatHistoryExpanded] = useState(true); // Sidebar chat history collapsible
 
   // Ref to store pending URL params when user needs to log in first
   const pendingUrlParamsRef = useRef(null);
@@ -1987,21 +2060,98 @@ const TokenizedAssetsGlassmorphic = () => {
     const isOnChatRoute = currentPath.startsWith('/dashboard/chat');
     const isExactChatRoute = currentPath === '/dashboard/chat' || currentPath === '/dashboard/chat/';
 
-    // Handle service category routes: /dashboard/jets, /dashboard/helis, /dashboard/empty-legs, /dashboard/ground-transport, /dashboard/spv
+    // Handle service category routes - map URL paths to internal activeCategory values
     const serviceRoutes = {
+      // Aviation & Transport
       '/dashboard/jets': 'jets',
       '/dashboard/helis': 'helicopter',
+      '/dashboard/helicopter': 'helicopter',
       '/dashboard/empty-legs': 'empty-legs',
       '/dashboard/ground-transport': 'ground-transport',
+      '/dashboard/adventures': 'adventures',
+      '/dashboard/luxury-cars': 'luxury-cars',
+      '/dashboard/hotels': 'hotels',
+
+      // SPV Routes
       '/dashboard/spv': 'spv-formation',
       '/dashboard/spv/create': 'spv-formation',
-      '/dashboard/spv/my-spvs': 'my-spvs'
+      '/dashboard/spv/my-spvs': 'my-spvs',
+
+      // RWA (Real World Assets) Routes
+      '/dashboard/rwa': 'overview',
+      '/dashboard/rwa/tokenize': 'tokenization',
+      '/dashboard/rwa/assets': 'my-tokenized-assets',
+      '/dashboard/tokenization': 'tokenization',
+      '/dashboard/my-tokenized-assets': 'my-tokenized-assets',
+
+      // Web3 Routes (with /dashboard/web3/ prefix)
+      '/dashboard/web3': 'overview',
+      '/dashboard/web3/marketplace': 'marketplace',
+      '/dashboard/web3/tokenization': 'tokenization',
+      '/dashboard/web3/nft-marketplace': 'nft-marketplace',
+      '/dashboard/web3/launchpad': 'launchpad',
+      '/dashboard/web3/p2p-trading': 'p2p-trading',
+      '/dashboard/web3/dao': 'dao',
+      '/dashboard/web3/escrow': 'escrow',
+      '/dashboard/web3/swap': 'swap',
+      '/dashboard/web3/pvcx-token': 'pvcx-token',
+
+      // Legacy Web3 Routes (without /web3/ prefix - for backwards compatibility)
+      '/dashboard/launchpad': 'launchpad',
+      '/dashboard/nft-marketplace': 'nft-marketplace',
+      '/dashboard/marketplace': 'marketplace',
+      '/dashboard/p2p-trading': 'p2p-trading',
+      '/dashboard/dao': 'dao',
+      '/dashboard/escrow': 'escrow',
+      '/dashboard/sto-utl': 'sto-utl',
+      '/dashboard/swap': 'swap',
+      '/dashboard/pvcx-token': 'pvcx-token',
+
+      // CO2/SAF Routes
+      '/dashboard/co2-saf': 'co2-saf',
+      '/dashboard/co2-certificates': 'co2-certificates',
+
+      // Subscriptions Routes
+      '/subscriptions/plans': 'subscription-plans',
+      '/subscriptions/manage': 'subscriptions',
+
+      // User Routes
+      '/dashboard/requests': 'requests',
+      '/dashboard/ai-requests': 'ai-requests',
+      '/dashboard/bookings': 'bookings',
+      '/dashboard/my-bookings': 'my-bookings',
+      '/dashboard/transactions': 'transactions',
+      '/dashboard/calendar': 'calendar',
+      '/dashboard/favourites': 'favourites',
+      '/dashboard/notifications': 'notifications',
+      '/dashboard/settings': 'settings',
+      '/dashboard/kyc-verification': 'kyc-verification',
+      '/dashboard/referral': 'referral',
+      '/dashboard/my-launches': 'my-launches',
+
+      // Other
+      '/dashboard/search-index': 'search-index',
+      '/dashboard/chat-support': 'chat-support',
+      '/dashboard/chat-history': 'chat-history',
+      '/dashboard/profile': 'profile'
     };
+
+    // Detect Web3 mode from URL and set webMode accordingly
+    const isWeb3Route = currentPath.startsWith('/dashboard/web3');
+    if (isWeb3Route && webMode !== 'web3') {
+      setWebMode('web3');
+    }
 
     // Check if current path matches any service route
     for (const [route, category] of Object.entries(serviceRoutes)) {
       if (currentPath === route || currentPath === route + '/') {
-        setActiveCategory(category);
+        // Special handling for profile - it uses dashboard category with profile dashboardView
+        if (category === 'profile') {
+          setActiveCategoryInternal('dashboard');
+          setDashboardView('profile');
+        } else {
+          setActiveCategory(category, true); // skipUrlUpdate=true since URL already correct
+        }
         setShowDashboard(true);
         return;
       }
@@ -2043,7 +2193,7 @@ const TokenizedAssetsGlassmorphic = () => {
           // Use setTimeout to ensure query state is set before switching category
           // This prevents AIChat from rendering with empty initialQuery
           setTimeout(() => {
-            setActiveCategory('chat');
+            setActiveCategory('chat', true); // skipUrlUpdate=true since URL already correct
             console.log('🔗 Opening new chat from URL: /dashboard/chat', query ? `with query: ${query}` : '', assistantMessage ? 'with assistant message' : '');
           }, 0);
         }
@@ -2060,7 +2210,7 @@ const TokenizedAssetsGlassmorphic = () => {
         // /dashboard/chat/:chatId - open specific chat
         const targetChatId = urlChatId === 'new' ? 'new' : urlChatId;
         setActiveChat(targetChatId);
-        setActiveCategory('chat');
+        setActiveCategory('chat', true); // skipUrlUpdate=true since URL already correct
         console.log('🔗 Opening chat from URL:', urlChatId);
       }
     }
@@ -2747,26 +2897,23 @@ const TokenizedAssetsGlassmorphic = () => {
             destination: { code: destinationCode, name: destinationName }
           });
         }
-        setActiveCategory(targetTab);
+        setActiveCategory(targetTab); // This will also update the URL
         setShowDashboard(true);
-
-        // Clean up URL using navigate to maintain React Router state
-        navigate(location.pathname, { replace: true });
+        // URL is now updated by setActiveCategory, no need to navigate
       } else if (tabNeedsAuth && login) {
         // Tab needs auth and login=true was passed - store params and show login modal
         console.log('🔐 Showing login modal for protected tab:', targetTab);
         pendingUrlParamsRef.current = { query, tab: targetTab, assistantMessage, newChat, departureCode, departureName, destinationCode, destinationName };
         setShowLoginModal(true);
 
-        // Clean up URL
+        // Clean up URL query params only
         navigate(location.pathname, { replace: true });
       } else if (!tabNeedsAuth) {
         // Tab doesn't need auth - navigate directly
         console.log('📍 Navigating to public tab:', targetTab);
-        setActiveCategory(targetTab);
+        setActiveCategory(targetTab); // This will also update the URL
         setShowDashboard(true);
-
-        navigate(location.pathname, { replace: true });
+        // URL is now updated by setActiveCategory, no need to navigate
       }
     }
   }, [location.search, isAuthenticated, initializing, navigate]);
@@ -3815,6 +3962,12 @@ const TokenizedAssetsGlassmorphic = () => {
       setWebMode(mode);
       // Always reset to overview page when switching modes
       setActiveCategory('overview');
+      // Update URL based on mode
+      if (mode === 'web3') {
+        navigate('/dashboard/web3');
+      } else {
+        navigate('/dashboard');
+      }
       setTimeout(() => {
         setIsTransitioning(false);
         setTargetMode(null);
@@ -3966,13 +4119,20 @@ const TokenizedAssetsGlassmorphic = () => {
     { id: 3, title: 'CO2 Certificate Purchase', time: '3 weeks ago' }
   ];
 
-  // Show loading spinner while auth is initializing
+  // Show PrivateCharterX logo animation while auth is initializing
   if (initializing) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-center">
-          <Loader2 size={40} className="animate-spin text-black mx-auto mb-4" />
-          <p className="text-sm text-gray-600">Loading...</p>
+        <div className="w-20 h-20">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-contain"
+          >
+            <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
+          </video>
         </div>
       </div>
     );
@@ -4238,39 +4398,59 @@ const TokenizedAssetsGlassmorphic = () => {
                 <span className={`text-xs font-medium whitespace-nowrap ${isMobileMenuOpen || sidebarExpanded ? 'inline-block' : 'hidden'}`}>New Chat</span>
               </button>
 
-              <button
-                onClick={() => {
-                  // If sidebar is collapsed, expand it first
-                  if (!sidebarExpanded && !isMobileMenuOpen) {
-                    setSidebarExpanded(true);
-                    return;
-                  }
-                  setActiveCategory('chat-history');
-                  // Close mobile menu after selection
-                  if (isMobileMenuOpen) {
-                    setIsMobileMenuOpen(false);
-                  }
-                }}
-                className={`w-full h-7 flex items-center rounded-md transition-all duration-300 backdrop-blur-xl ${
-                  isMobileMenuOpen || sidebarExpanded ? 'justify-start gap-2 px-2' : 'justify-center'
-                } ${
-                  webMode === 'web3'
-                    ? activeCategory === 'chat-history'
-                      ? 'bg-white/30 text-gray-900'
-                      : 'text-gray-800 hover:bg-white/20'
-                    : activeCategory === 'chat-history'
-                      ? 'bg-white/60 text-gray-900'
-                      : 'text-gray-600 hover:bg-white/40'
-                }`}
-                title="Chat History"
-              >
-                <History size={12} className="flex-shrink-0" />
-                <span className={`text-xs font-medium ${isMobileMenuOpen || sidebarExpanded ? 'inline-block' : 'hidden'}`}>History</span>
-              </button>
+              {/* History button with collapse toggle */}
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => {
+                    // If sidebar is collapsed, expand it first
+                    if (!sidebarExpanded && !isMobileMenuOpen) {
+                      setSidebarExpanded(true);
+                      return;
+                    }
+                    setActiveCategory('chat-history');
+                    // Close mobile menu after selection
+                    if (isMobileMenuOpen) {
+                      setIsMobileMenuOpen(false);
+                    }
+                  }}
+                  className={`flex-1 h-7 flex items-center rounded-md transition-all duration-300 backdrop-blur-xl ${
+                    isMobileMenuOpen || sidebarExpanded ? 'justify-start gap-2 px-2' : 'justify-center'
+                  } ${
+                    webMode === 'web3'
+                      ? activeCategory === 'chat-history'
+                        ? 'bg-white/30 text-gray-900'
+                        : 'text-gray-800 hover:bg-white/20'
+                      : activeCategory === 'chat-history'
+                        ? 'bg-white/60 text-gray-900'
+                        : 'text-gray-600 hover:bg-white/40'
+                  }`}
+                  title="Chat History"
+                >
+                  <History size={12} className="flex-shrink-0" />
+                  <span className={`text-xs font-medium ${isMobileMenuOpen || sidebarExpanded ? 'inline-block' : 'hidden'}`}>History</span>
+                </button>
+                {/* Collapse/Expand toggle for chat history - only show when sidebar expanded and has chats */}
+                {(isMobileMenuOpen || sidebarExpanded) && chatHistory.length > 0 && (
+                  <button
+                    onClick={() => setChatHistoryExpanded(!chatHistoryExpanded)}
+                    className={`h-7 w-7 flex items-center justify-center rounded-md transition-all duration-300 ${
+                      webMode === 'web3'
+                        ? 'text-gray-600 hover:bg-white/20'
+                        : 'text-gray-500 hover:bg-white/40'
+                    }`}
+                    title={chatHistoryExpanded ? 'Collapse recent chats' : 'Expand recent chats'}
+                  >
+                    <ChevronDown
+                      size={12}
+                      className={`transition-transform duration-200 ${chatHistoryExpanded ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                )}
+              </div>
 
-              {/* Latest 4 Chats - Only show when sidebar is expanded */}
-              {(isMobileMenuOpen || sidebarExpanded) && chatHistory.length > 0 && (
-                <div className="mt-2 space-y-1">
+              {/* Latest 4 Chats - Collapsible */}
+              {(isMobileMenuOpen || sidebarExpanded) && chatHistory.length > 0 && chatHistoryExpanded && (
+                <div className="mt-2 space-y-1 animate-in slide-in-from-top-2 duration-200">
                   {chatHistory.slice(0, 4).map((chat) => (
                     <button
                       key={chat.id}
@@ -4328,9 +4508,16 @@ const TokenizedAssetsGlassmorphic = () => {
                           [item.id]: !prev[item.id]
                         }));
                       } else {
-                        setActiveCategory(item.category);
-                        if (item.dashboardTab) {
-                          setDashboardView(item.dashboardTab);
+                        // Special handling for profile which uses dashboard + dashboardView
+                        if (item.dashboardTab === 'profile') {
+                          setActiveCategoryInternal('dashboard');
+                          setDashboardView('profile');
+                          window.history.pushState({}, '', '/dashboard/profile');
+                        } else {
+                          setActiveCategory(item.category);
+                          if (item.dashboardTab) {
+                            setDashboardView(item.dashboardTab);
+                          }
                         }
                         // Close mobile menu after selection
                         if (isMobileMenuOpen) {
@@ -4453,6 +4640,12 @@ const TokenizedAssetsGlassmorphic = () => {
                 <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2 px-2">Web3.0 Services</p>
                 {web3CategoryMenu.map((item) => {
                   const isActive = activeCategory === item.category;
+                  const web3CategoryToPath = {
+                    'marketplace': '/dashboard/web3/marketplace',
+                    'tokenization': '/dashboard/web3/tokenization',
+                    'nft-marketplace': '/dashboard/web3/nft-marketplace',
+                    'launchpad': '/dashboard/web3/launchpad'
+                  };
                   return (
                     <button
                       key={item.id}
@@ -4460,9 +4653,14 @@ const TokenizedAssetsGlassmorphic = () => {
                         // Switch to web3 mode if not already
                         if (webMode !== 'web3') {
                           handleWebModeSwitch('web3');
+                        } else {
+                          // Already in web3 mode, just navigate
+                          setActiveCategory(item.category);
+                          setShowJetDetail(false);
+                          if (web3CategoryToPath[item.category]) {
+                            navigate(web3CategoryToPath[item.category]);
+                          }
                         }
-                        setActiveCategory(item.category);
-                        setShowJetDetail(false);
                         setIsMobileMenuOpen(false);
                       }}
                       className={`w-full h-8 flex items-center gap-2 px-2 rounded-lg transition-all duration-300 text-xs ${
@@ -4598,12 +4796,21 @@ const TokenizedAssetsGlassmorphic = () => {
                     .filter(item => item.id !== 'assets')
                     .map((item) => {
                       const isActive = activeCategory === item.category;
+                      const web3CategoryToPath = {
+                        'marketplace': '/dashboard/web3/marketplace',
+                        'tokenization': '/dashboard/web3/tokenization',
+                        'nft-marketplace': '/dashboard/web3/nft-marketplace',
+                        'launchpad': '/dashboard/web3/launchpad'
+                      };
                       return (
                         <button
                           key={item.id}
                           onClick={() => {
                             setActiveCategory(item.category);
                             setShowJetDetail(false);
+                            if (web3CategoryToPath[item.category]) {
+                              navigate(web3CategoryToPath[item.category]);
+                            }
                           }}
                           className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-200 ${
                             isActive
@@ -4697,8 +4904,9 @@ const TokenizedAssetsGlassmorphic = () => {
               {/* User Profile Icon */}
               <button
                 onClick={() => {
-                  setActiveCategory('dashboard');
+                  setActiveCategoryInternal('dashboard');
                   setDashboardView('profile');
+                  window.history.pushState({}, '', '/dashboard/profile');
                 }}
                 className="flex items-center justify-center transition-all duration-200"
               >
@@ -4757,26 +4965,16 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* Transition Loader - Video Animation */}
           {isTransitioning && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-md">
-              <div className="relative flex flex-col items-center gap-8">
-                {/* Video loader */}
-                <div className="relative w-32 h-32">
-                  <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-full h-full"
-                  >
-                    <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
-                  </video>
-                </div>
-
-                {/* Simple text - no gradient, no animation */}
-                <div className="flex flex-col items-center gap-3">
-                  <div className="text-sm font-medium text-gray-900 tracking-wide">
-                    {targetMode === 'web3' ? 'Switching to Web 3.0' : 'Switching to Real World Services'}
-                  </div>
-                </div>
+              <div className="w-20 h-20">
+                <video
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-contain"
+                >
+                  <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
+                </video>
               </div>
             </div>
           )}
@@ -6843,12 +7041,6 @@ const TokenizedAssetsGlassmorphic = () => {
                           <p className="text-xs text-gray-500 mb-4">
                             {token.status === 'draft' ? 'Last saved' : token.status === 'submitted' ? 'Submitted' : 'Updated'}: {new Date(token.updated_at).toLocaleDateString()}
                           </p>
-                          {token.price_per_token && (
-                            <p className="text-sm font-medium text-gray-900 mb-4">
-                              Price: ${parseFloat(token.price_per_token).toLocaleString()} per token
-                            </p>
-                          )}
-
                           {/* Timeline for Approved Tokenizations */}
                           {token.status === 'approved' && token.marketplace_launch_at && (
                             <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
@@ -7389,10 +7581,28 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
-          {/* Launchpad */}
+          {/* Launchpad - Coming Soon */}
           {!isTransitioning && activeCategory === 'launchpad' && (
-            <div className="w-full h-full overflow-y-auto">
-              <LaunchpadPageNew />
+            <div className="w-full h-full overflow-y-auto flex items-center justify-center">
+              <div className="text-center p-8">
+                <div className="w-24 h-24 mx-auto mb-6">
+                  <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-contain"
+                  >
+                    <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
+                  </video>
+                </div>
+                <h2 className="text-2xl font-semibold text-gray-800 mb-2">Launchpad</h2>
+                <p className="text-gray-500 mb-4">Token launches and IDO platform</p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-600 text-sm font-medium">
+                  <Rocket size={16} />
+                  Launching Q1 / 2026
+                </div>
+              </div>
             </div>
           )}
 
@@ -7417,10 +7627,28 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
-          {/* Marketplace */}
+          {/* Marketplace - Coming Soon */}
           {!isTransitioning && activeCategory === 'marketplace' && (
-            <div className="w-full h-full overflow-y-auto">
-              <Marketplace />
+            <div className="w-full h-full overflow-y-auto flex items-center justify-center">
+              <div className="text-center p-8">
+                <div className="w-24 h-24 mx-auto mb-6">
+                  <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-contain"
+                  >
+                    <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
+                  </video>
+                </div>
+                <h2 className="text-2xl font-semibold text-gray-800 mb-2">Marketplace</h2>
+                <p className="text-gray-500 mb-4">Trade tokenized assets and collectibles</p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-600 text-sm font-medium">
+                  <Rocket size={16} />
+                  Launching Q1 / 2026
+                </div>
+              </div>
             </div>
           )}
 

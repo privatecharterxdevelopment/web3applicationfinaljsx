@@ -359,7 +359,6 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
             formData.tokenStandard &&
             formData.tokenSymbol &&
             formData.totalSupply &&
-            formData.pricePerToken &&
             formData.issuerWalletAddress
           );
         }
@@ -508,16 +507,16 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
     ];
 
     return (
-      <div className="flex-1 overflow-y-auto py-6 px-6">
+      <div className="flex-1 overflow-y-auto py-8 px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-6">
-            <h2 className="text-xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter mb-2">Tokenize Your Asset</h2>
-            <p className="text-sm text-gray-600 max-w-xl">
+          <div className="mb-8">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter mb-3 font-['DM_Sans']">Tokenize Your Asset</h2>
+            <p className="text-base text-gray-600 max-w-xl font-['DM_Sans']">
               Select your asset type to start the tokenization process
             </p>
           </div>
 
-          <div className="grid grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {assetTypes.map((asset) => (
               <button
                 key={asset.id}
@@ -530,23 +529,22 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
               >
                 {asset.popular && (
                   <div className="absolute top-2 right-2 z-10">
-                    <span className="px-1.5 py-0.5 bg-black text-white rounded text-[8px] font-bold">
+                    <span className="px-2 py-1 bg-black text-white rounded text-[10px] font-bold">
                       HOT
                     </span>
                   </div>
                 )}
 
-                <div className="w-full h-20 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden">
+                <div className="w-full h-28 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden">
                   <img
                     src={asset.imageUrl}
                     alt={asset.label}
-                    className={`w-full h-full object-contain group-hover:scale-105 transition-transform duration-200 p-1.5 ${asset.imageScale || ''}`}
+                    className={`w-full h-full object-contain group-hover:scale-105 transition-transform duration-200 p-2 ${asset.imageScale || ''}`}
                   />
                 </div>
 
-                <div className="p-2.5">
-                  <h3 className="text-xs font-medium text-gray-900 mb-0.5 truncate">{asset.label}</h3>
-                  <span className="text-[10px] text-gray-500">{asset.priceRange}</span>
+                <div className="p-3">
+                  <h3 className="text-sm font-medium text-gray-900 truncate font-['DM_Sans']">{asset.label}</h3>
                 </div>
               </button>
             ))}
@@ -556,55 +554,55 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
     );
   };
 
-  // Step 1: Token Type Selection - Compact Design
+  // Step 1: Token Type Selection - Larger Design
   const renderStep1 = () => (
-    <div className="flex-1 overflow-y-auto py-6 px-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="flex-1 overflow-y-auto py-8 px-6">
+      <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-1">Choose Token Type</h2>
-          <p className="text-xs text-gray-600">Select the tokenization model for your {assetCategory?.replace('-', ' ') || 'asset'}</p>
+        <div className="text-center mb-8">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter mb-3 font-['DM_Sans']">Choose Token Type</h2>
+          <p className="text-base text-gray-600 font-['DM_Sans']">Select the tokenization model for your {assetCategory?.replace('-', ' ') || 'asset'}</p>
         </div>
 
         {/* Token Type Cards - Horizontal Layout */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Utility Token Card */}
           <button
             onClick={() => handleTokenTypeSelect('utility')}
-            className="group bg-white/50 hover:bg-white/70 border border-gray-200 hover:border-black rounded-xl p-5 transition-all duration-200 hover:shadow-lg text-left relative overflow-hidden"
+            className="group bg-white/50 hover:bg-white/70 border border-gray-200 hover:border-black rounded-2xl p-6 transition-all duration-200 hover:shadow-lg text-left relative overflow-hidden"
           >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
-                <Coins size={20} className="text-white" />
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-14 h-14 bg-black rounded-xl flex items-center justify-center">
+                <Coins size={28} className="text-white" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-gray-900">Utility Token</h3>
-                <div className="flex gap-1 mt-0.5">
-                  <span className="px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded text-[9px] font-medium">ERC-20</span>
-                  <span className="px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded text-[9px] font-medium">ERC-721</span>
+                <h3 className="text-lg font-semibold text-gray-900 font-['DM_Sans']">Utility Token</h3>
+                <div className="flex gap-2 mt-1">
+                  <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium">ERC-20</span>
+                  <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium">ERC-721</span>
                 </div>
               </div>
             </div>
 
-            <p className="text-[11px] text-gray-600 mb-3 line-clamp-2">
+            <p className="text-sm text-gray-600 mb-4 font-['DM_Sans']">
               Service access, memberships, VIP lounges, event tickets. NFT-based benefits.
             </p>
 
-            <div className="space-y-1 mb-3">
-              <div className="flex items-center gap-1.5 text-[10px] text-gray-700">
-                <Check size={10} className="text-green-600" />
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center gap-2 text-sm text-gray-700 font-['DM_Sans']">
+                <Check size={14} className="text-green-600" />
                 <span>Memberships & Access Rights</span>
               </div>
-              <div className="flex items-center gap-1.5 text-[10px] text-gray-700">
-                <Check size={10} className="text-green-600" />
+              <div className="flex items-center gap-2 text-sm text-gray-700 font-['DM_Sans']">
+                <Check size={14} className="text-green-600" />
                 <span>Service Hours & VIP Access</span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-              <span className="text-[10px] text-gray-500">Audit: Optional</span>
-              <span className="text-xs font-medium text-gray-900 group-hover:text-black flex items-center gap-1">
-                Select <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+            <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+              <span className="text-sm text-gray-500 font-['DM_Sans']">Audit: Optional</span>
+              <span className="text-base font-medium text-gray-900 group-hover:text-black flex items-center gap-2 font-['DM_Sans']">
+                Select <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
               </span>
             </div>
           </button>
@@ -612,51 +610,51 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
           {/* Security Token Card */}
           <button
             onClick={() => handleTokenTypeSelect('security')}
-            className="group bg-white/50 hover:bg-white/70 border border-gray-200 hover:border-black rounded-xl p-5 transition-all duration-200 hover:shadow-lg text-left relative overflow-hidden"
+            className="group bg-white/50 hover:bg-white/70 border border-gray-200 hover:border-black rounded-2xl p-6 transition-all duration-200 hover:shadow-lg text-left relative overflow-hidden"
           >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
-                <Shield size={20} className="text-white" />
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-14 h-14 bg-black rounded-xl flex items-center justify-center">
+                <Shield size={28} className="text-white" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-gray-900">Security Token</h3>
-                <div className="flex gap-1 mt-0.5">
-                  <span className="px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded text-[9px] font-medium">Reg-D</span>
-                  <span className="px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded text-[9px] font-medium">Reg-S</span>
-                  <span className="px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded text-[9px] font-medium">Reg-CF</span>
+                <h3 className="text-lg font-semibold text-gray-900 font-['DM_Sans']">Security Token</h3>
+                <div className="flex gap-2 mt-1">
+                  <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium">Reg-D</span>
+                  <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium">Reg-S</span>
+                  <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium">Reg-CF</span>
                 </div>
               </div>
             </div>
 
-            <p className="text-[11px] text-gray-600 mb-3 line-clamp-2">
+            <p className="text-sm text-gray-600 mb-4 font-['DM_Sans']">
               Investment assets with returns, APY, revenue distribution. Full compliance.
             </p>
 
-            <div className="space-y-1 mb-3">
-              <div className="flex items-center gap-1.5 text-[10px] text-gray-700">
-                <Check size={10} className="text-green-600" />
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center gap-2 text-sm text-gray-700 font-['DM_Sans']">
+                <Check size={14} className="text-green-600" />
                 <span>Fractional Ownership & Revenue</span>
               </div>
-              <div className="flex items-center gap-1.5 text-[10px] text-gray-700">
-                <Check size={10} className="text-green-600" />
+              <div className="flex items-center gap-2 text-sm text-gray-700 font-['DM_Sans']">
+                <Check size={14} className="text-green-600" />
                 <span>KYC/AML & Accreditation</span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-              <span className="text-[10px] text-gray-500">Audit: Required</span>
-              <span className="text-xs font-medium text-gray-900 group-hover:text-black flex items-center gap-1">
-                Select <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+            <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+              <span className="text-sm text-gray-500 font-['DM_Sans']">Audit: Required</span>
+              <span className="text-base font-medium text-gray-900 group-hover:text-black flex items-center gap-2 font-['DM_Sans']">
+                Select <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
               </span>
             </div>
           </button>
         </div>
 
-        {/* Disclaimer - Compact */}
-        <div className="mt-4 bg-blue-50/60 border border-blue-100 rounded-lg p-3">
-          <div className="flex items-start gap-2">
-            <Info size={14} className="text-blue-600 flex-shrink-0 mt-0.5" />
-            <p className="text-[10px] text-blue-800">
+        {/* Disclaimer */}
+        <div className="mt-6 bg-blue-50/60 border border-blue-100 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <Info size={18} className="text-blue-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-blue-800 font-['DM_Sans']">
               <span className="font-medium">SEC-Compliant:</span> Security token offerings handled by our SEC-licensed partner.
             </p>
           </div>
@@ -667,33 +665,33 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
 
   // Step 2: Asset Information
   const renderStep2 = () => (
-    <div className="flex-1 overflow-y-auto py-6 px-6">
-      <div className="max-w-3xl mx-auto">
-        <div className="mb-5">
-          <h2 className="text-xl font-semibold text-gray-900 mb-1">Asset Information</h2>
-          <p className="text-xs text-gray-700">Provide details about the asset you want to tokenize</p>
+    <div className="flex-1 overflow-y-auto py-8 px-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-6">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter mb-3 font-['DM_Sans']">Asset Information</h2>
+          <p className="text-base text-gray-700 font-['DM_Sans']">Provide details about the asset you want to tokenize</p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           {/* Asset Name */}
           <div>
-            <label className="block text-xs font-medium text-gray-900 mb-1">Asset Name *</label>
+            <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Asset Name *</label>
             <input
               type="text"
               value={formData.assetName}
               onChange={(e) => updateFormData('assetName', e.target.value)}
               placeholder="e.g., Gulfstream G650"
-              className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
+              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-base text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl font-['DM_Sans']"
             />
           </div>
 
           {/* Asset Category */}
           <div>
-            <label className="block text-xs font-medium text-gray-900 mb-1">Asset Category *</label>
+            <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Asset Category *</label>
             <select
               value={formData.assetCategory}
               onChange={(e) => updateFormData('assetCategory', e.target.value)}
-              className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
+              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl font-['DM_Sans']"
             >
               <option value="">Select category</option>
               <option value="jet">Private Jet</option>
@@ -711,47 +709,47 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-medium text-gray-900 mb-1">Asset Description *</label>
+            <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Asset Description *</label>
             <textarea
               value={formData.description}
               onChange={(e) => updateFormData('description', e.target.value)}
               placeholder="Provide detailed information about the asset, its condition, features, and any relevant details..."
-              rows={3}
-              className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl resize-none"
+              rows={4}
+              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-base text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl resize-none font-['DM_Sans']"
             />
           </div>
 
           {/* Asset Value & Location - Side by Side */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-900 mb-1">Asset Value (USD) *</label>
+              <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Asset Value (USD) *</label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-700 font-medium text-sm">$</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 font-medium text-base">$</span>
                 <input
                   type="number"
                   value={formData.assetValue}
                   onChange={(e) => updateFormData('assetValue', e.target.value)}
                   placeholder="5000000"
-                  className="w-full pl-7 pr-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
+                  className="w-full pl-8 pr-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-base text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl font-['DM_Sans']"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-900 mb-1">Current Location *</label>
+              <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Current Location *</label>
               <input
                 type="text"
                 value={formData.location}
                 onChange={(e) => updateFormData('location', e.target.value)}
                 placeholder="e.g., Dubai, UAE"
-                className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
+                className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-base text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl font-['DM_Sans']"
               />
             </div>
           </div>
 
           {/* Logo & Header Image - Side by Side */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-900 mb-1">Asset Logo *</label>
+              <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Asset Logo *</label>
               <input
                 type="file"
                 ref={logoInputRef}
@@ -760,40 +758,40 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
                 className="hidden"
               />
               {formData.logo ? (
-                <div className="border-2 border-green-300 rounded-lg p-3 bg-green-50/50 backdrop-blur-xl relative">
-                  <div className="flex items-center gap-2">
-                    <img src={formData.logo.url} alt="Logo" className="w-10 h-10 object-cover rounded" />
+                <div className="border-2 border-green-300 rounded-xl p-4 bg-green-50/50 backdrop-blur-xl relative">
+                  <div className="flex items-center gap-3">
+                    <img src={formData.logo.url} alt="Logo" className="w-14 h-14 object-cover rounded-lg" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-900 font-medium truncate">{formData.logo.name}</p>
-                      <p className="text-[10px] text-green-600">Uploaded</p>
+                      <p className="text-sm text-gray-900 font-medium truncate font-['DM_Sans']">{formData.logo.name}</p>
+                      <p className="text-xs text-green-600 font-['DM_Sans']">Uploaded</p>
                     </div>
                     <button
                       onClick={() => removeFile('logo')}
-                      className="p-1 hover:bg-red-100 rounded transition-colors"
+                      className="p-2 hover:bg-red-100 rounded-lg transition-colors"
                     >
-                      <Trash2 size={14} className="text-red-500" />
+                      <Trash2 size={18} className="text-red-500" />
                     </button>
                   </div>
                 </div>
               ) : (
                 <div
                   onClick={() => logoInputRef.current?.click()}
-                  className="border-2 border-dashed border-gray-300/50 rounded-lg p-3 bg-white/20 backdrop-blur-xl hover:bg-white/25 transition-all cursor-pointer"
+                  className="border-2 border-dashed border-gray-300/50 rounded-xl p-5 bg-white/20 backdrop-blur-xl hover:bg-white/25 transition-all cursor-pointer"
                 >
                   <div className="flex flex-col items-center text-center">
                     {uploadingLogo ? (
-                      <Loader2 size={20} className="text-gray-700 mb-1 animate-spin" />
+                      <Loader2 size={28} className="text-gray-700 mb-2 animate-spin" />
                     ) : (
-                      <Upload size={20} className="text-gray-700 mb-1" />
+                      <Upload size={28} className="text-gray-700 mb-2" />
                     )}
-                    <p className="text-xs text-gray-900 font-medium">Upload Logo</p>
-                    <p className="text-[10px] text-gray-600">PNG, JPG, SVG (max 2MB)</p>
+                    <p className="text-sm text-gray-900 font-medium font-['DM_Sans']">Upload Logo</p>
+                    <p className="text-xs text-gray-600 font-['DM_Sans']">PNG, JPG, SVG (max 2MB)</p>
                   </div>
                 </div>
               )}
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-900 mb-1">Header Image *</label>
+              <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Header Image *</label>
               <input
                 type="file"
                 ref={headerInputRef}
@@ -802,34 +800,34 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
                 className="hidden"
               />
               {formData.headerImage ? (
-                <div className="border-2 border-green-300 rounded-lg p-3 bg-green-50/50 backdrop-blur-xl relative">
-                  <div className="flex items-center gap-2">
-                    <img src={formData.headerImage.url} alt="Header" className="w-10 h-10 object-cover rounded" />
+                <div className="border-2 border-green-300 rounded-xl p-4 bg-green-50/50 backdrop-blur-xl relative">
+                  <div className="flex items-center gap-3">
+                    <img src={formData.headerImage.url} alt="Header" className="w-14 h-14 object-cover rounded-lg" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-900 font-medium truncate">{formData.headerImage.name}</p>
-                      <p className="text-[10px] text-green-600">Uploaded</p>
+                      <p className="text-sm text-gray-900 font-medium truncate font-['DM_Sans']">{formData.headerImage.name}</p>
+                      <p className="text-xs text-green-600 font-['DM_Sans']">Uploaded</p>
                     </div>
                     <button
                       onClick={() => removeFile('headerImage')}
-                      className="p-1 hover:bg-red-100 rounded transition-colors"
+                      className="p-2 hover:bg-red-100 rounded-lg transition-colors"
                     >
-                      <Trash2 size={14} className="text-red-500" />
+                      <Trash2 size={18} className="text-red-500" />
                     </button>
                   </div>
                 </div>
               ) : (
                 <div
                   onClick={() => headerInputRef.current?.click()}
-                  className="border-2 border-dashed border-gray-300/50 rounded-lg p-3 bg-white/20 backdrop-blur-xl hover:bg-white/25 transition-all cursor-pointer"
+                  className="border-2 border-dashed border-gray-300/50 rounded-xl p-5 bg-white/20 backdrop-blur-xl hover:bg-white/25 transition-all cursor-pointer"
                 >
                   <div className="flex flex-col items-center text-center">
                     {uploadingHeader ? (
-                      <Loader2 size={20} className="text-gray-700 mb-1 animate-spin" />
+                      <Loader2 size={28} className="text-gray-700 mb-2 animate-spin" />
                     ) : (
-                      <Upload size={20} className="text-gray-700 mb-1" />
+                      <Upload size={28} className="text-gray-700 mb-2" />
                     )}
-                    <p className="text-xs text-gray-900 font-medium">Upload Header</p>
-                    <p className="text-[10px] text-gray-600">1920x400px (max 5MB)</p>
+                    <p className="text-sm text-gray-900 font-medium font-['DM_Sans']">Upload Header</p>
+                    <p className="text-xs text-gray-600 font-['DM_Sans']">1920x400px (max 5MB)</p>
                   </div>
                 </div>
               )}
@@ -838,7 +836,7 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
 
           {/* Upload Asset Images */}
           <div>
-            <label className="block text-xs font-medium text-gray-900 mb-1">Asset Images *</label>
+            <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Asset Images *</label>
             <input
               type="file"
               ref={imagesInputRef}
@@ -850,15 +848,15 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
 
             {/* Uploaded Images Grid */}
             {formData.images && formData.images.length > 0 && (
-              <div className="grid grid-cols-4 gap-2 mb-2">
+              <div className="grid grid-cols-3 md:grid-cols-4 gap-3 mb-3">
                 {formData.images.map((img, index) => (
                   <div key={index} className="relative group">
-                    <img src={img.url} alt={img.name} className="w-full h-16 object-cover rounded-lg" />
+                    <img src={img.url} alt={img.name} className="w-full h-24 object-cover rounded-xl" />
                     <button
                       onClick={() => removeFile('images', index)}
-                      className="absolute top-1 right-1 p-1 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                     >
-                      <X size={10} className="text-white" />
+                      <X size={14} className="text-white" />
                     </button>
                   </div>
                 ))}
@@ -867,35 +865,35 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
 
             <div
               onClick={() => imagesInputRef.current?.click()}
-              className="border-2 border-dashed border-gray-300/50 rounded-lg p-4 bg-white/20 backdrop-blur-xl hover:bg-white/25 transition-all cursor-pointer"
+              className="border-2 border-dashed border-gray-300/50 rounded-xl p-6 bg-white/20 backdrop-blur-xl hover:bg-white/25 transition-all cursor-pointer"
             >
               <div className="flex flex-col items-center text-center">
                 {uploadingImages ? (
-                  <Loader2 size={24} className="text-gray-700 mb-1 animate-spin" />
+                  <Loader2 size={32} className="text-gray-700 mb-2 animate-spin" />
                 ) : (
-                  <Upload size={24} className="text-gray-700 mb-1" />
+                  <Upload size={32} className="text-gray-700 mb-2" />
                 )}
-                <p className="text-xs text-gray-900 font-medium">
+                <p className="text-sm text-gray-900 font-medium font-['DM_Sans']">
                   {formData.images?.length > 0 ? 'Add more images' : 'Click to upload or drag and drop'}
                 </p>
-                <p className="text-[10px] text-gray-600">PNG, JPG up to 10MB each</p>
+                <p className="text-xs text-gray-600 font-['DM_Sans']">PNG, JPG up to 10MB each</p>
               </div>
             </div>
           </div>
 
           {/* Navigation Buttons */}
-          <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-200/50">
+          <div className="flex items-center justify-between pt-6 mt-6 border-t border-gray-200/50">
             <button
               onClick={prevStep}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-2 px-5 py-3 text-base text-gray-700 hover:text-gray-900 transition-colors font-['DM_Sans']"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={20} />
               Back
             </button>
             <button
               onClick={nextStep}
               disabled={!formData.assetName || !formData.description || !formData.assetValue}
-              className="flex items-center gap-2 px-6 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-8 py-3 bg-black text-white text-base font-medium rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-['DM_Sans']"
             >
               Continue
               <ChevronRight size={16} />
@@ -908,76 +906,76 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
 
   // Step 3a: Utility Token Configuration
   const renderStep3Utility = () => (
-    <div className="flex-1 overflow-y-auto py-6 px-6">
-      <div className="max-w-3xl mx-auto">
-        <div className="mb-5">
-          <h2 className="text-xl font-semibold text-gray-900 mb-1">Utility Token Configuration</h2>
-          <p className="text-xs text-gray-700">Define your NFT-based utility token parameters</p>
+    <div className="flex-1 overflow-y-auto py-8 px-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-6">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter mb-3 font-['DM_Sans']">Utility Token Configuration</h2>
+          <p className="text-base text-gray-700 font-['DM_Sans']">Define your NFT-based utility token parameters</p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           {/* Token Standard */}
           <div>
-            <label className="block text-xs font-medium text-gray-900 mb-1">Token Standard *</label>
-            <div className="grid grid-cols-2 gap-3">
+            <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Token Standard *</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button
                 onClick={() => updateFormData('tokenStandard', 'ERC-20')}
-                className={`p-3 rounded-lg border-2 transition-all backdrop-blur-xl ${
+                className={`p-4 rounded-xl border-2 transition-all backdrop-blur-xl ${
                   formData.tokenStandard === 'ERC-20'
                     ? 'bg-black text-white border-black'
                     : 'bg-white/20 border-gray-300/50 text-gray-900 hover:bg-white/30'
                 }`}
               >
-                <div className="text-sm font-medium">ERC-20</div>
-                <div className="text-[10px] opacity-80">Fungible tokens</div>
+                <div className="text-base font-medium font-['DM_Sans']">ERC-20</div>
+                <div className="text-sm opacity-80 font-['DM_Sans']">Fungible tokens</div>
               </button>
               <button
                 onClick={() => updateFormData('tokenStandard', 'ERC-721')}
-                className={`p-3 rounded-lg border-2 transition-all backdrop-blur-xl ${
+                className={`p-4 rounded-xl border-2 transition-all backdrop-blur-xl ${
                   formData.tokenStandard === 'ERC-721'
                     ? 'bg-black text-white border-black'
                     : 'bg-white/20 border-gray-300/50 text-gray-900 hover:bg-white/30'
                 }`}
               >
-                <div className="text-sm font-medium">ERC-721</div>
-                <div className="text-[10px] opacity-80">Unique NFTs</div>
+                <div className="text-base font-medium font-['DM_Sans']">ERC-721</div>
+                <div className="text-sm opacity-80 font-['DM_Sans']">Unique NFTs</div>
               </button>
             </div>
           </div>
 
           {/* Total Supply & Token Symbol - Side by Side */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-900 mb-1">Total Supply *</label>
+              <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Total Supply *</label>
               <input
                 type="number"
                 value={formData.totalSupply}
                 onChange={(e) => updateFormData('totalSupply', e.target.value)}
                 placeholder="e.g., 100"
-                className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
+                className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-base text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl font-['DM_Sans']"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-900 mb-1">Token Symbol *</label>
+              <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Token Symbol *</label>
               <input
                 type="text"
                 value={formData.tokenSymbol}
                 onChange={(e) => updateFormData('tokenSymbol', e.target.value)}
                 placeholder="e.g., VIP-LOUNGE"
-                className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl uppercase"
+                className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-base text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl uppercase font-['DM_Sans']"
               />
             </div>
           </div>
 
           {/* Issuer Wallet Address */}
           <div>
-            <label className="block text-xs font-medium text-gray-900 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">
               Issuer Wallet Address *
               {address && (
                 <button
                   type="button"
                   onClick={() => updateFormData('issuerWalletAddress', address)}
-                  className="ml-2 text-[10px] text-blue-600 hover:text-blue-700"
+                  className="ml-2 text-xs text-blue-600 hover:text-blue-700 font-['DM_Sans']"
                 >
                   (Use Connected Wallet)
                 </button>
@@ -988,82 +986,82 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
               value={formData.issuerWalletAddress || ''}
               onChange={(e) => updateFormData('issuerWalletAddress', e.target.value)}
               placeholder="0x..."
-              className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl font-mono text-xs"
+              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl font-mono text-sm"
             />
           </div>
 
           {/* Access Rights */}
           <div>
-            <label className="block text-xs font-medium text-gray-900 mb-1">Access Rights / Benefits *</label>
+            <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Access Rights / Benefits *</label>
             <textarea
               value={formData.accessRights}
               onChange={(e) => updateFormData('accessRights', e.target.value)}
               placeholder="e.g., 10 hours of limousine service, VIP lounge access for 1 year..."
-              rows={2}
-              className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl resize-none"
+              rows={3}
+              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-base text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl resize-none font-['DM_Sans']"
             />
           </div>
 
           {/* Validity Period */}
           <div>
-            <label className="block text-xs font-medium text-gray-900 mb-1">Validity Period (Optional)</label>
+            <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Validity Period (Optional)</label>
             <input
               type="text"
               value={formData.validityPeriod}
               onChange={(e) => updateFormData('validityPeriod', e.target.value)}
               placeholder="e.g., 12 months, No expiration"
-              className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
+              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-base text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl font-['DM_Sans']"
             />
           </div>
 
           {/* Smart Contract Features */}
           <div>
-            <label className="block text-xs font-medium text-gray-900 mb-2">Smart Contract Features</label>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 p-2.5 bg-white/20 rounded-lg border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
+            <label className="block text-sm font-medium text-gray-900 mb-3 font-['DM_Sans']">Smart Contract Features</label>
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 p-4 bg-white/20 rounded-xl border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
                 <input
                   type="checkbox"
                   checked={formData.isTransferable}
                   onChange={(e) => updateFormData('isTransferable', e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
+                  className="w-5 h-5 rounded border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
                 />
                 <div className="flex-1">
-                  <div className="text-xs font-medium text-gray-900">Transferable</div>
-                  <div className="text-[10px] text-gray-700">Token holders can transfer/sell their NFTs</div>
+                  <div className="text-sm font-medium text-gray-900 font-['DM_Sans']">Transferable</div>
+                  <div className="text-xs text-gray-700 font-['DM_Sans']">Token holders can transfer/sell their NFTs</div>
                 </div>
               </label>
 
-              <label className="flex items-center gap-2 p-2.5 bg-white/20 rounded-lg border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
+              <label className="flex items-center gap-3 p-4 bg-white/20 rounded-xl border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
                 <input
                   type="checkbox"
                   checked={formData.isBurnable}
                   onChange={(e) => updateFormData('isBurnable', e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
+                  className="w-5 h-5 rounded border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
                 />
                 <div className="flex-1">
-                  <div className="text-xs font-medium text-gray-900">Burnable</div>
-                  <div className="text-[10px] text-gray-700">Tokens can be destroyed after use</div>
+                  <div className="text-sm font-medium text-gray-900 font-['DM_Sans']">Burnable</div>
+                  <div className="text-xs text-gray-700 font-['DM_Sans']">Tokens can be destroyed after use</div>
                 </div>
               </label>
 
-              <label className="flex items-center gap-2 p-2.5 bg-white/20 rounded-lg border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
+              <label className="flex items-center gap-3 p-4 bg-white/20 rounded-xl border border-gray-300/50 cursor-pointer hover:bg-white/30 transition-all backdrop-blur-xl">
                 <input
                   type="checkbox"
                   checked={formData.needsAudit}
                   onChange={(e) => updateFormData('needsAudit', e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
+                  className="w-5 h-5 rounded border-gray-300 text-black focus:ring-2 focus:ring-gray-400"
                 />
                 <div className="flex-1">
-                  <div className="text-xs font-medium text-gray-900 flex items-center gap-1">
+                  <div className="text-sm font-medium text-gray-900 flex items-center gap-2 font-['DM_Sans']">
                     Smart Contract Audit (Optional)
                     <div className="group relative">
-                      <Info size={12} className="text-gray-600 cursor-help" />
-                      <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-48 p-2 bg-gray-900 text-white text-[10px] rounded-lg shadow-lg z-10">
+                      <Info size={14} className="text-gray-600 cursor-help" />
+                      <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-52 p-3 bg-gray-900 text-white text-xs rounded-xl shadow-lg z-10 font-['DM_Sans']">
                         Professional security audit by certified firms.
                       </div>
                     </div>
                   </div>
-                  <div className="text-[10px] text-gray-700">Professional security audit (+€8,500)</div>
+                  <div className="text-xs text-gray-700 font-['DM_Sans']">Professional security audit by certified firms</div>
                 </div>
               </label>
             </div>
@@ -1071,35 +1069,35 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
 
           {/* Jurisdiction */}
           <div>
-            <label className="block text-xs font-medium text-gray-900 mb-1">Legal Jurisdiction *</label>
+            <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Legal Jurisdiction *</label>
             <button
               type="button"
               onClick={() => setShowJurisdictionPopup(true)}
-              className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-left hover:bg-white/40 transition-all backdrop-blur-xl flex items-center justify-between"
+              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-left hover:bg-white/40 transition-all backdrop-blur-xl flex items-center justify-between"
             >
-              <span className={`text-sm ${formData.jurisdiction ? 'text-gray-900' : 'text-gray-500'}`}>
+              <span className={`text-base font-['DM_Sans'] ${formData.jurisdiction ? 'text-gray-900' : 'text-gray-500'}`}>
                 {formData.jurisdiction || 'Select jurisdiction'}
               </span>
-              <Search size={14} className="text-gray-600" />
+              <Search size={18} className="text-gray-600" />
             </button>
           </div>
 
           {/* Navigation Buttons */}
-          <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-200/50">
+          <div className="flex items-center justify-between pt-6 mt-6 border-t border-gray-200/50">
             <button
               onClick={prevStep}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-2 px-5 py-3 text-base text-gray-700 hover:text-gray-900 transition-colors font-['DM_Sans']"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={20} />
               Back
             </button>
             <button
               onClick={nextStep}
               disabled={!formData.totalSupply || !formData.tokenSymbol || !formData.jurisdiction}
-              className="flex items-center gap-2 px-6 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-8 py-3 bg-black text-white text-base font-medium rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-['DM_Sans']"
             >
               Continue
-              <ChevronRight size={16} />
+              <ChevronRight size={20} />
             </button>
           </div>
         </div>
@@ -1109,87 +1107,87 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
 
   // Step 3b: Security Token Configuration
   const renderStep3Security = () => (
-    <div className="flex-1 overflow-y-auto py-6 px-6">
-      <div className="max-w-3xl mx-auto">
-        <div className="mb-5">
-          <h2 className="text-xl font-semibold text-gray-900 mb-1">Security Token Configuration</h2>
-          <p className="text-xs text-gray-700">Configure investment terms and compliance settings</p>
+    <div className="flex-1 overflow-y-auto py-8 px-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-6">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter mb-3 font-['DM_Sans']">Security Token Configuration</h2>
+          <p className="text-base text-gray-700 font-['DM_Sans']">Configure investment terms and compliance settings</p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           {/* SEC Regulation Type */}
           <div>
-            <label className="block text-xs font-medium text-gray-900 mb-1">SEC Regulation Type *</label>
-            <div className="grid grid-cols-3 gap-2">
+            <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">SEC Regulation Type *</label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <button
                 onClick={() => updateFormData('tokenStandard', 'Reg-D')}
-                className={`p-2.5 rounded-lg border-2 transition-all backdrop-blur-xl ${
+                className={`p-4 rounded-xl border-2 transition-all backdrop-blur-xl ${
                   formData.tokenStandard === 'Reg-D'
                     ? 'bg-blue-100 border-blue-500 text-blue-900'
                     : 'bg-white/20 border-gray-300/50 text-gray-900 hover:bg-white/30'
                 }`}
               >
-                <div className="text-sm font-medium">Reg-D</div>
-                <div className="text-[10px] opacity-80">Accredited only</div>
+                <div className="text-base font-medium font-['DM_Sans']">Reg-D</div>
+                <div className="text-sm opacity-80 font-['DM_Sans']">Accredited only</div>
               </button>
               <button
                 onClick={() => updateFormData('tokenStandard', 'Reg-S')}
-                className={`p-2.5 rounded-lg border-2 transition-all backdrop-blur-xl ${
+                className={`p-4 rounded-xl border-2 transition-all backdrop-blur-xl ${
                   formData.tokenStandard === 'Reg-S'
                     ? 'bg-blue-100 border-blue-500 text-blue-900'
                     : 'bg-white/20 border-gray-300/50 text-gray-900 hover:bg-white/30'
                 }`}
               >
-                <div className="text-sm font-medium">Reg-S</div>
-                <div className="text-[10px] opacity-80">Non-US investors</div>
+                <div className="text-base font-medium font-['DM_Sans']">Reg-S</div>
+                <div className="text-sm opacity-80 font-['DM_Sans']">Non-US investors</div>
               </button>
               <button
                 onClick={() => updateFormData('tokenStandard', 'Reg-CF')}
-                className={`p-2.5 rounded-lg border-2 transition-all backdrop-blur-xl ${
+                className={`p-4 rounded-xl border-2 transition-all backdrop-blur-xl ${
                   formData.tokenStandard === 'Reg-CF'
                     ? 'bg-blue-100 border-blue-500 text-blue-900'
                     : 'bg-white/20 border-gray-300/50 text-gray-900 hover:bg-white/30'
                 }`}
               >
-                <div className="text-sm font-medium">Reg-CF</div>
-                <div className="text-[10px] opacity-80">Crowdfunding</div>
+                <div className="text-base font-medium font-['DM_Sans']">Reg-CF</div>
+                <div className="text-sm opacity-80 font-['DM_Sans']">Crowdfunding</div>
               </button>
             </div>
           </div>
 
           {/* Total Supply & Token Symbol - Side by Side */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-900 mb-1">Total Token Supply *</label>
+              <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Total Token Supply *</label>
               <input
                 type="number"
                 value={formData.totalSupply}
                 onChange={(e) => updateFormData('totalSupply', e.target.value)}
                 placeholder="e.g., 1000000"
-                className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
+                className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-base text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl font-['DM_Sans']"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-900 mb-1">Token Symbol *</label>
+              <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Token Symbol *</label>
               <input
                 type="text"
                 value={formData.tokenSymbol}
                 onChange={(e) => updateFormData('tokenSymbol', e.target.value)}
                 placeholder="e.g., G650-SEC"
-                className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl uppercase"
+                className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-base text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl uppercase font-['DM_Sans']"
               />
             </div>
           </div>
 
           {/* Issuer Wallet Address */}
           <div>
-            <label className="block text-xs font-medium text-gray-900 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">
               Issuer Wallet Address *
               {address && (
                 <button
                   type="button"
                   onClick={() => updateFormData('issuerWalletAddress', address)}
-                  className="ml-2 text-[10px] text-blue-600 hover:text-blue-700"
+                  className="ml-2 text-xs text-blue-600 hover:text-blue-700 font-['DM_Sans']"
                 >
                   (Use Connected Wallet)
                 </button>
@@ -1200,40 +1198,27 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
               value={formData.issuerWalletAddress || ''}
               onChange={(e) => updateFormData('issuerWalletAddress', e.target.value)}
               placeholder="0x..."
-              className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl font-mono text-xs"
+              className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl font-mono text-sm"
             />
           </div>
 
-          {/* Price per Token, Min Investment & APY */}
-          <div className="grid grid-cols-3 gap-3">
+          {/* Min Investment & APY */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-900 mb-1">Price/Token (USD) *</label>
+              <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Min. Investment *</label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-700 font-medium text-sm">$</span>
-                <input
-                  type="number"
-                  value={formData.pricePerToken}
-                  onChange={(e) => updateFormData('pricePerToken', e.target.value)}
-                  placeholder="100"
-                  className="w-full pl-7 pr-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-900 mb-1">Min. Investment *</label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-700 font-medium text-sm">$</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 font-medium text-base">$</span>
                 <input
                   type="number"
                   value={formData.minimumInvestment}
                   onChange={(e) => updateFormData('minimumInvestment', e.target.value)}
                   placeholder="10000"
-                  className="w-full pl-7 pr-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
+                  className="w-full pl-8 pr-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-base text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl font-['DM_Sans']"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-900 mb-1">Expected APY %</label>
+              <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Expected APY %</label>
               <div className="relative">
                 <input
                   type="number"
@@ -1241,9 +1226,9 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
                   value={formData.expectedAPY}
                   onChange={(e) => updateFormData('expectedAPY', e.target.value)}
                   placeholder="8.5"
-                  className="w-full px-3 py-2 bg-white/30 border border-gray-300/50 rounded-lg text-sm text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl"
+                  className="w-full px-4 py-3 bg-white/30 border border-gray-300/50 rounded-xl text-base text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400/50 backdrop-blur-xl font-['DM_Sans']"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-700 font-medium text-xs">%</span>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-700 font-medium text-sm">%</span>
               </div>
             </div>
           </div>
@@ -1543,7 +1528,7 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
               <Lock size={14} className="text-red-600 flex-shrink-0" />
               <div className="flex items-center gap-2 flex-1">
                 <input type="checkbox" checked={true} disabled className="w-3 h-3 rounded border-gray-300 text-red-600" />
-                <span className="text-xs font-medium text-red-900">Smart Contract Audit Required (€15,000+)</span>
+                <span className="text-xs font-medium text-red-900">Smart Contract Audit Required</span>
               </div>
             </div>
           </div>
@@ -1559,7 +1544,7 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
             </button>
             <button
               onClick={nextStep}
-              disabled={!formData.tokenStandard || !formData.pricePerToken || !formData.jurisdiction}
+              disabled={!formData.tokenStandard || !formData.jurisdiction}
               className="flex items-center gap-2 px-6 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Continue
@@ -1708,17 +1693,11 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
                   <div className="text-gray-500 text-[10px]">Symbol</div>
                   <div className="text-gray-900 font-medium">{formData.tokenSymbol || '-'}</div>
                 </div>
-                {tokenType === 'security' && (
-                  <>
-                    <div>
-                      <div className="text-gray-500 text-[10px]">Price/Token</div>
-                      <div className="text-gray-900 font-medium">${formData.pricePerToken || '-'}</div>
-                    </div>
-                    <div>
-                      <div className="text-gray-500 text-[10px]">APY</div>
-                      <div className="text-gray-900 font-medium">{formData.expectedAPY ? `${formData.expectedAPY}%` : '-'}</div>
-                    </div>
-                  </>
+                {tokenType === 'security' && formData.expectedAPY && (
+                  <div>
+                    <div className="text-gray-500 text-[10px]">APY</div>
+                    <div className="text-gray-900 font-medium">{formData.expectedAPY}%</div>
+                  </div>
                 )}
                 <div>
                   <div className="text-gray-500 text-[10px]">Jurisdiction</div>
@@ -1727,40 +1706,7 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
               </div>
             </div>
 
-            {/* Cost Breakdown - Compact */}
-            <div className="bg-white/25 border border-gray-300/50 rounded-lg p-4 backdrop-blur-xl">
-              <h3 className="text-xs font-semibold text-gray-900 mb-3 flex items-center gap-1">
-                <Wallet size={14} />
-                Cost Breakdown
-              </h3>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-600">Platform Fee</span>
-                  <span className="text-gray-900 font-medium">€{platformFee.toLocaleString()}</span>
-                </div>
-                {auditFee > 0 && (
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-600">Smart Contract Audit</span>
-                    <span className="text-gray-900 font-medium">€{auditFee.toLocaleString()}</span>
-                  </div>
-                )}
-                {tokenType === 'security' && formData.hasSPV === false && (
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-600">SPV Setup</span>
-                    <span className="text-gray-600 italic">TBD</span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-600">Gas Fees</span>
-                  <span className="text-gray-900 font-medium">~€{estimatedGas}</span>
-                </div>
-                <div className="pt-2 border-t border-gray-300/50 flex items-center justify-between">
-                  <span className="text-gray-900 font-semibold text-sm">Total</span>
-                  <span className="text-gray-900 font-semibold text-lg">€{total.toLocaleString()}</span>
-                </div>
-              </div>
             </div>
-          </div>
 
           {/* Submission Info - Compact */}
           <div className="bg-blue-50/50 border border-blue-200/50 rounded-lg p-3 backdrop-blur-xl">
@@ -2187,12 +2133,6 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
                     ${formData.tokenSymbol || 'TKN'}
                   </div>
                 </div>
-                <div className="bg-gray-50/80 rounded-xl p-4 text-center">
-                  <div className="text-xs text-gray-500 mb-1">Price/Token</div>
-                  <div className="text-lg font-semibold text-gray-900">
-                    ${formData.pricePerToken || '0'}
-                  </div>
-                </div>
               </div>
 
               {/* Description */}
@@ -2446,13 +2386,6 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
             </div>
           )}
 
-          {formData.tokenStandard && (
-            <div>
-              <div className="text-gray-500 mb-0.5">Token Standard</div>
-              <div className="text-gray-900 font-medium">{formData.tokenStandard}</div>
-            </div>
-          )}
-
           {formData.totalSupply && (
             <div>
               <div className="text-gray-500 mb-0.5">Total Supply</div>
@@ -2464,13 +2397,6 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
             <div>
               <div className="text-gray-500 mb-0.5">Symbol</div>
               <div className="text-gray-900 font-medium">{formData.tokenSymbol}</div>
-            </div>
-          )}
-
-          {formData.pricePerToken && (
-            <div>
-              <div className="text-gray-500 mb-0.5">Price/Token</div>
-              <div className="text-gray-900 font-medium">${formData.pricePerToken}</div>
             </div>
           )}
 

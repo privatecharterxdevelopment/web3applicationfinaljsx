@@ -166,7 +166,7 @@ export const aiToolDefinitions = [
   },
   {
     name: "searchPrivateJets",
-    description: "Search for private jet charters. Use when users ask about private jets, jet charter, or aircraft. IMPORTANT: Do NOT use this tool if you already showed jet results in this conversation - when user provides booking details (date, time, passengers), just confirm their details and reference the options already displayed above. Never search twice for the same route.",
+    description: "Search for private jet charters. Use when users ask about private jets, jet charter, or aircraft. If user requests a SPECIFIC aircraft model (e.g., 'Gulfstream G650', 'Citation X', 'Challenger 350'), include the model parameter. IMPORTANT: Do NOT use this tool if you already showed jet results in this conversation - when user provides booking details (date, time, passengers), just confirm their details and reference the options already displayed above. Never search twice for the same route.",
     input_schema: {
       type: "object",
       properties: {
@@ -189,6 +189,10 @@ export const aiToolDefinitions = [
         category: {
           type: "string",
           description: "Jet category: light, midsize, heavy, ultra-long-range"
+        },
+        model: {
+          type: "string",
+          description: "Specific aircraft model to search for (e.g., 'Gulfstream G650', 'Citation XLS', 'Challenger 350', 'Phenom 300', 'Global 7500'). Use this when user requests a specific jet model."
         }
       },
       required: []
@@ -196,7 +200,7 @@ export const aiToolDefinitions = [
   },
   {
     name: "searchHelicopters",
-    description: "Search for helicopter charters. Use when users ask about helicopters, heli transfers, or rotorcraft. IMPORTANT: Do NOT use this tool if you already showed helicopter results in this conversation - just reference the options already displayed above.",
+    description: "Search for helicopter charters. Use when users ask about helicopters, heli transfers, or rotorcraft. If user requests a SPECIFIC helicopter model (e.g., 'EC135', 'AS350', 'AW139', 'Bell 429'), include the model parameter. IMPORTANT: Do NOT use this tool if you already showed helicopter results in this conversation - just reference the options already displayed above.",
     input_schema: {
       type: "object",
       properties: {
@@ -215,6 +219,10 @@ export const aiToolDefinitions = [
         passengers: {
           type: "number",
           description: "Number of passengers"
+        },
+        model: {
+          type: "string",
+          description: "Specific helicopter model to search for (e.g., 'EC135', 'AS350', 'AW139', 'Bell 429', 'H145', 'S-76'). Use this when user requests a specific helicopter model."
         }
       },
       required: []
@@ -936,13 +944,35 @@ export async function searchEmptyLegs(params) {
  * Note: Uses getEstimatedFlightHours() defined after FLIGHT_DURATIONS constant
  */
 export async function searchPrivateJets(params) {
-  const results = await UnifiedSearchService.searchAll({
+  let results = await UnifiedSearchService.searchAll({
     q: params.location,
     fromLocation: params.from,
     location: params.to,
     passengers: params.passengers,
+    aircraftModel: params.model,  // Pass specific model filter
+    category: params.category,    // Pass category filter
     serviceTypes: { jets: true }
   });
+
+  const requestedModel = params.model;
+  let showingAlternatives = false;
+  let alternativeMessage = null;
+
+  // If a specific model was requested but no results found, fetch alternatives
+  if (requestedModel && (!results.aircraft || results.aircraft.length === 0)) {
+    showingAlternatives = true;
+    alternativeMessage = `The ${requestedModel} is not currently available in our fleet. Here are similar aircraft alternatives:`;
+
+    // Fetch all available jets as alternatives (without model filter)
+    results = await UnifiedSearchService.searchAll({
+      q: params.location,
+      fromLocation: params.from,
+      location: params.to,
+      passengers: params.passengers,
+      category: params.category,  // Keep category filter if specified
+      serviceTypes: { jets: true }
+    });
+  }
 
   // If we have from/to, calculate flight duration and estimated price for each jet
   const { from, to } = params;
@@ -1003,7 +1033,11 @@ export async function searchPrivateJets(params) {
     results: jetsWithPricing,
     total: jetsWithPricing.length,
     params,
-    routeInfo: from && to ? { from, to } : null
+    routeInfo: from && to ? { from, to } : null,
+    // Include alternative info if specific model wasn't available
+    showingAlternatives,
+    requestedModel: requestedModel || null,
+    alternativeMessage
   };
 }
 
@@ -1011,13 +1045,33 @@ export async function searchPrivateJets(params) {
  * Search for helicopters
  */
 export async function searchHelicopters(params) {
-  const results = await UnifiedSearchService.searchAll({
+  let results = await UnifiedSearchService.searchAll({
     q: params.location,
     fromLocation: params.from,
     location: params.to,
     passengers: params.passengers,
+    aircraftModel: params.model,  // Pass specific helicopter model filter
     serviceTypes: { helicopters: true }
   });
+
+  const requestedModel = params.model;
+  let showingAlternatives = false;
+  let alternativeMessage = null;
+
+  // If a specific model was requested but no results found, fetch alternatives
+  if (requestedModel && (!results.helicopters || results.helicopters.length === 0)) {
+    showingAlternatives = true;
+    alternativeMessage = `The ${requestedModel} helicopter is not currently available in our fleet. Here are similar helicopter alternatives:`;
+
+    // Fetch all available helicopters as alternatives (without model filter)
+    results = await UnifiedSearchService.searchAll({
+      q: params.location,
+      fromLocation: params.from,
+      location: params.to,
+      passengers: params.passengers,
+      serviceTypes: { helicopters: true }
+    });
+  }
 
   // If we have from/to, calculate flight duration and estimated price for each helicopter
   const { from, to } = params;
@@ -1075,7 +1129,11 @@ export async function searchHelicopters(params) {
     results: helicoptersWithPricing,
     total: helicoptersWithPricing.length,
     params,
-    routeInfo: from && to ? { from, to } : null
+    routeInfo: from && to ? { from, to } : null,
+    // Include alternative info if specific model wasn't available
+    showingAlternatives,
+    requestedModel: requestedModel || null,
+    alternativeMessage
   };
 }
 

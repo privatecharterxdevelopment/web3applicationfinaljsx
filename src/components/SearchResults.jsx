@@ -78,7 +78,9 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                 : 'text-gray-500 hover:bg-gray-100'
             }`}
           >
-            {tab.id === 'emptylegs' ? 'Empty Legs' :
+            {/* Use custom title if showing alternatives, otherwise use default labels */}
+            {tab.showingAlternatives ? tab.title :
+             tab.id === 'emptylegs' ? 'Empty Legs' :
              tab.id === 'jets' ? 'Private Jets' :
              tab.id === 'helicopters' ? 'Helicopters' :
              tab.id === 'yachts' ? 'Yachts' :
@@ -99,6 +101,25 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
           </button>
         ))}
       </div>
+
+      {/* Alternative Notice Banner - when showing alternatives for unavailable model */}
+      {currentTabData?.showingAlternatives && currentTabData?.alternativeMessage && (
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+          <div className="w-6 h-6 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+            <svg className="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm text-amber-800 font-medium">
+              {currentTabData.requestedModel} not available
+            </p>
+            <p className="text-xs text-amber-600 mt-0.5">
+              Here are similar aircraft from our fleet that you might like
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Tab Content - List format like MyBookings */}
       {currentTabData && (

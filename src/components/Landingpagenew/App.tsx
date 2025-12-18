@@ -120,6 +120,14 @@ import HelicopterDetail from './HelicopterDetail.jsx';
 import CO2CertificateDetail from './CO2CertificateDetail.jsx';
 import HotelDetail from './HotelDetail.jsx';
 
+// Import SPV & RWA components
+import MySPVs from '../../pages/MySPVs.tsx';
+import SPVFormationFlow from '../../components/SPVFormation/SPVFormationFlow.jsx';
+import TokenizeAssetFlow from './TokenizeAssetFlow.jsx';
+
+// Import Web3 pages
+import FlightTracker from '../../pages/web3/FlightTracker.tsx';
+
 // Import Chat Widget
 import ChatWidget from './ChatWidget.jsx';
 
@@ -139,6 +147,7 @@ import NewsletterUnsubscribe from '../../pages/NewsletterUnsubscribe.tsx';
 // Import Payment Pages
 import PaymentSuccessPage from '../../pages/PaymentSuccessPage.jsx';
 import PaymentCancelPage from '../../pages/PaymentCancelPage.jsx';
+import SubscriptionSuccessPage from '../../pages/SubscriptionSuccessPage.jsx';
 
 // Import Admin CRM (old simple version)
 import AdminCRM from '../../pages/AdminCRM';
@@ -395,6 +404,63 @@ function AppContent() {
               <Route path="/dashboard/spv/create" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
               <Route path="/dashboard/spv/my-spvs" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
 
+              {/* Dashboard sub-routes - All render within the dashboard */}
+              <Route path="/dashboard/helicopter" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/adventures" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/luxury-cars" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/hotels" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+
+              {/* RWA Dashboard Routes */}
+              <Route path="/dashboard/rwa" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/rwa/tokenize" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/rwa/assets" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/tokenization" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/my-tokenized-assets" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+
+              {/* Web3 Dashboard Routes - with /dashboard/web3/ prefix */}
+              <Route path="/dashboard/web3" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
+              <Route path="/dashboard/web3/marketplace" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
+              <Route path="/dashboard/web3/tokenization" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
+              <Route path="/dashboard/web3/nft-marketplace" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
+              <Route path="/dashboard/web3/launchpad" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
+              <Route path="/dashboard/web3/p2p-trading" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
+              <Route path="/dashboard/web3/dao" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
+              <Route path="/dashboard/web3/escrow" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
+              <Route path="/dashboard/web3/swap" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
+              <Route path="/dashboard/web3/pvcx-token" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
+              {/* Legacy Web3 routes (without /web3/ prefix) - redirect to new paths */}
+              <Route path="/dashboard/launchpad" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/nft-marketplace" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/marketplace" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/p2p-trading" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/dao" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/escrow" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/sto-utl" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/swap" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/pvcx-token" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+
+              {/* CO2/SAF Dashboard Routes */}
+              <Route path="/dashboard/co2-saf" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/co2-certificates" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+
+              {/* User Dashboard Routes */}
+              <Route path="/dashboard/requests" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/ai-requests" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/bookings" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/my-bookings" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/transactions" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/calendar" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/favourites" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/notifications" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/settings" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/kyc-verification" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/referral" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/my-launches" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/search-index" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/chat-support" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/chat-history" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/profile" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+
               {/* User Overview Dashboard (old) */}
               <Route path="/user-overview" element={<Dashboard />} />
 
@@ -434,6 +500,34 @@ function AppContent() {
               {/* Launchpad Route */}
               <Route path="/web3/launchpad" element={<LaunchpadPageNew />} />
 
+              {/* ===== SPV Routes ===== */}
+              <Route path="/spv" element={<Navigate to="/dashboard/spv" replace />} />
+              <Route path="/spv/create" element={<SPVFormationFlow onBack={() => window.history.back()} />} />
+              <Route path="/spv/my-spvs" element={<MySPVs />} />
+              <Route path="/spv-formation" element={<SPVFormationFlow onBack={() => window.history.back()} />} />
+
+              {/* ===== RWA (Real World Assets) Routes ===== */}
+              <Route path="/rwa" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/rwa/tokenize" element={<TokenizeAssetFlow onBack={() => window.history.back()} />} />
+              <Route path="/rwa/assets" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/rwa/marketplace" element={<Marketplace />} />
+
+              {/* ===== Web3 Routes ===== */}
+              <Route path="/web3" element={<Navigate to="/web3/launchpad" replace />} />
+              <Route path="/web3/ico" element={<ICO />} />
+              <Route path="/web3/nft" element={<NFTCollection />} />
+              <Route path="/web3/nft-collection" element={<NFTCollection />} />
+              <Route path="/web3/carbon" element={<CarbonCertificates />} />
+              <Route path="/web3/carbon-certificates" element={<CarbonCertificates />} />
+              <Route path="/web3/dao" element={<DAODrivenTokenizedAssetLicensing />} />
+              <Route path="/web3/tokenswap" element={<TokenSwapPage />} />
+              <Route path="/web3/flight-tracker" element={<FlightTracker />} />
+
+              {/* ===== Subscriptions Routes ===== */}
+              <Route path="/subscriptions" element={<Navigate to="/subscriptions/plans" replace />} />
+              <Route path="/subscriptions/plans" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/subscriptions/manage" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+
               {/* Auth Routes */}
               <Route path="/login" element={<LoginNew />} />
               <Route path="/register" element={<RegisterNew />} />
@@ -449,6 +543,9 @@ function AppContent() {
               {/* Payment Status Routes */}
               <Route path="/payment/success" element={<PaymentSuccessPage />} />
               <Route path="/payment/cancel" element={<PaymentCancelPage />} />
+
+              {/* Subscription Success Route */}
+              <Route path="/subscription/success" element={<SubscriptionSuccessPage />} />
 
               {/* Home Route - New Landing Page */}
               <Route path="/" element={<Homepage />} />

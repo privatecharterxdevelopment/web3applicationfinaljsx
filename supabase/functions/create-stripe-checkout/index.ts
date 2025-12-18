@@ -7,11 +7,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Chat limits for each tier - MUST match Subscriptionplans.jsx
-const TIER_CONFIG: Record<string, { chats: number | null; price: number }> = {
-  starter: { chats: 5, price: 20 },   // 5 AI conversations/month
-  pro: { chats: 20, price: 40 },       // 20 AI conversations/month
-  elite: { chats: null, price: 130 },  // unlimited - null = unlimited
+// Chat limits for each tier - MUST match Subscriptionplans.jsx and SubscriptionModal.jsx
+// Updated 2025 pricing: Explorer ($49), Traveller ($99), Elite ($399)
+const TIER_CONFIG: Record<string, { chats: number | null; price: number; messagesPerChat: number }> = {
+  explorer: { chats: 5, price: 49, messagesPerChat: 10 },      // $49/mo - 5 chats, 10 msgs/chat
+  traveller: { chats: 10, price: 99, messagesPerChat: 25 },    // $99/mo - 10 chats, 25 msgs/chat
+  elite: { chats: null, price: 399, messagesPerChat: Infinity }, // $399/mo - unlimited
+  // Legacy tiers (for backwards compatibility)
+  starter: { chats: 5, price: 20, messagesPerChat: 10 },
+  pro: { chats: 20, price: 40, messagesPerChat: 20 },
 };
 
 serve(async (req) => {
@@ -81,7 +85,7 @@ serve(async (req) => {
           quantity: 1,
         },
       ],
-      success_url: successUrl || `${req.headers.get('origin')}/dashboard?subscription=success`,
+      success_url: successUrl || `${req.headers.get('origin')}/subscription/success?tier=${tier}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl || `${req.headers.get('origin')}/subscriptions/plans?subscription=cancelled`,
       subscription_data: {
         metadata: {
