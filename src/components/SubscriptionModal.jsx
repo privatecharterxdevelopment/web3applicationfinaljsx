@@ -17,9 +17,10 @@ const SubscriptionModal = ({ isOpen, onClose, currentTier = null, onUpgrade, onT
   const normalizedCurrentTier = currentTier?.toLowerCase();
 
   // Use environment variables for Stripe payment links
+  // Map plan IDs to correct env variable names (STARTER=explorer, PRO=traveller, ELITE=elite)
   const stripePaymentLinks = {
-    explorer: import.meta.env.VITE_STRIPE_EXPLORER_PAYMENT_LINK || '',
-    traveller: import.meta.env.VITE_STRIPE_TRAVELLER_PAYMENT_LINK || '',
+    explorer: import.meta.env.VITE_STRIPE_STARTER_PAYMENT_LINK || import.meta.env.VITE_STRIPE_EXPLORER_PAYMENT_LINK || '',
+    traveller: import.meta.env.VITE_STRIPE_PRO_PAYMENT_LINK || import.meta.env.VITE_STRIPE_TRAVELLER_PAYMENT_LINK || '',
     elite: import.meta.env.VITE_STRIPE_ELITE_PAYMENT_LINK || ''
   };
 

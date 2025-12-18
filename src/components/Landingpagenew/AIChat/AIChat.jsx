@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, ArrowRight, Mic, Send, X, Volume2, VolumeX, Edit2, Shield, Wallet, ShoppingCart, MessageSquare, Plus, Crown, AlertCircle, Calendar, Trash2, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Plane, Clock, Upload, FileText, DollarSign, Users, MapPin, Anchor, Mountain, Car, Minus, Route, Coins, Loader2
+  ArrowLeft, ArrowRight, Mic, Send, X, Volume2, VolumeX, Edit2, Shield, Wallet, ShoppingCart, MessageSquare, Plus, Crown, AlertCircle, Calendar, Trash2, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Plane, Clock, Upload, FileText, DollarSign, Users, MapPin, Anchor, Mountain, Car, Minus, Route, Coins, Loader2, Sparkles, Check
 } from 'lucide-react';
 import { calculateDistance, estimateDuration, estimateCost } from '../../../utils/distanceCalculator';
 // Secure Claude API via Edge Function - API key stays server-side
@@ -8644,101 +8644,175 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         />
       )}
 
-      {/* Subscription Blocker Popup - Glassmorphic Cookie Banner Style */}
+      {/* Subscription Blocker Popup - Modern Design with Direct Plan Selection */}
       {showSubscriptionBlocker && (
-        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-4 pointer-events-none">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
           {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/20 pointer-events-auto"
+            className="absolute inset-0 bg-black/30 pointer-events-auto"
             onClick={() => setShowSubscriptionBlocker(false)}
           />
 
-          {/* Popup Card */}
+          {/* Popup Card - Wider for better plan display */}
           <div
-            className="relative w-full max-w-md bg-white/90 rounded-2xl shadow-2xl border border-white/40 overflow-hidden pointer-events-auto animate-slide-up"
-            style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+            className="relative w-full max-w-2xl bg-white/95 rounded-3xl shadow-2xl border border-white/50 overflow-hidden pointer-events-auto animate-slide-up"
+            style={{ backdropFilter: 'blur(24px) saturate(180%)' }}
           >
-            {/* Header */}
-            <div className="p-5 pb-4">
-              <div className="flex items-start gap-4">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center bg-gray-100/80 border border-gray-200/50 flex-shrink-0"
-                  style={{ backdropFilter: 'blur(8px)' }}
-                >
-                  <Crown size={24} className="text-gray-600" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {subscriptionBlockerReason === 'no_subscription' && 'Subscription Required'}
-                    {subscriptionBlockerReason === 'chat_limit' && 'Chat Limit Reached'}
-                    {subscriptionBlockerReason === 'message_limit' && 'Message Limit Reached'}
-                    {subscriptionBlockerReason === 'feature_restricted' && 'Feature Upgrade Required'}
-                    {!subscriptionBlockerReason && 'Subscription Required'}
-                  </h3>
-                  <p className="text-sm text-gray-500 mt-1 leading-relaxed">
-                    {subscriptionBlockerReason === 'no_subscription' &&
-                      'Subscribe to access Sphera AI and start planning your luxury travel experiences.'}
-                    {subscriptionBlockerReason === 'chat_limit' &&
-                      `You've used all your chats this month (${userProfile?.chats_used || 0}/${getTierChatLimit()}). Upgrade for more.`}
-                    {subscriptionBlockerReason === 'message_limit' &&
-                      `You've reached ${getTierMessageLimit()} messages in this chat. Upgrade for more messages.`}
-                    {subscriptionBlockerReason === 'feature_restricted' &&
-                      'This feature requires a higher subscription tier. Upgrade to unlock.'}
-                    {!subscriptionBlockerReason &&
-                      'Subscribe to access Sphera AI and start planning your luxury travel experiences.'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowSubscriptionBlocker(false)}
-                  className="p-1.5 hover:bg-gray-100/50 rounded-lg transition-colors flex-shrink-0"
-                >
-                  <X size={18} className="text-gray-400" />
-                </button>
+            {/* Close Button */}
+            <button
+              onClick={() => setShowSubscriptionBlocker(false)}
+              className="absolute top-4 right-4 p-2 hover:bg-gray-100/60 rounded-xl transition-all z-10"
+            >
+              <X size={20} className="text-gray-400" />
+            </button>
+
+            {/* Header - Centered */}
+            <div className="pt-8 pb-4 px-6 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200/80 border border-gray-200/60 mb-4">
+                <Sparkles size={28} className="text-gray-600" />
               </div>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+                {subscriptionBlockerReason === 'no_subscription' && 'Unlock Sphera AI'}
+                {subscriptionBlockerReason === 'chat_limit' && 'Need More Chats?'}
+                {subscriptionBlockerReason === 'message_limit' && 'Message Limit Reached'}
+                {subscriptionBlockerReason === 'feature_restricted' && 'Upgrade Required'}
+                {!subscriptionBlockerReason && 'Unlock Sphera AI'}
+              </h2>
+              <p className="text-sm text-gray-500 max-w-md mx-auto">
+                {subscriptionBlockerReason === 'no_subscription' &&
+                  'Choose a plan to access your AI-powered luxury travel concierge'}
+                {subscriptionBlockerReason === 'chat_limit' &&
+                  `You've used ${userProfile?.chats_used || 0}/${getTierChatLimit()} chats. Upgrade for more conversations.`}
+                {subscriptionBlockerReason === 'message_limit' &&
+                  `You've reached your message limit. Upgrade for more messages per chat.`}
+                {subscriptionBlockerReason === 'feature_restricted' &&
+                  'This feature requires a higher tier. Select a plan below.'}
+                {!subscriptionBlockerReason &&
+                  'Choose a plan to access your AI-powered luxury travel concierge'}
+              </p>
             </div>
 
-            {/* Plan Summary */}
-            <div className="px-5 pb-4">
-              <div className="flex gap-2">
+            {/* Plans Grid */}
+            <div className="px-6 pb-6">
+              <div className="grid grid-cols-3 gap-3">
                 {[
-                  { tier: 'Explorer', price: '$49', chats: '5 chats', msgs: '10 msgs/chat' },
-                  { tier: 'Traveller', price: '$99', chats: '10 chats', msgs: '25 msgs/chat', popular: true },
-                  { tier: 'Elite', price: '$399', chats: 'Unlimited', msgs: 'Unlimited' }
+                  {
+                    id: 'explorer',
+                    tier: 'Explorer',
+                    price: 49,
+                    features: ['5 AI Chats/month', '10 Messages/chat', 'Email Support'],
+                    stripeLink: import.meta.env.VITE_STRIPE_STARTER_PAYMENT_LINK || import.meta.env.VITE_STRIPE_EXPLORER_PAYMENT_LINK
+                  },
+                  {
+                    id: 'traveller',
+                    tier: 'Traveller',
+                    price: 99,
+                    features: ['10 AI Chats/month', '25 Messages/chat', 'Priority Support'],
+                    popular: true,
+                    stripeLink: import.meta.env.VITE_STRIPE_PRO_PAYMENT_LINK || import.meta.env.VITE_STRIPE_TRAVELLER_PAYMENT_LINK
+                  },
+                  {
+                    id: 'elite',
+                    tier: 'Elite',
+                    price: 399,
+                    features: ['Unlimited Chats', 'Unlimited Messages', '24/7 Phone Support'],
+                    stripeLink: import.meta.env.VITE_STRIPE_ELITE_PAYMENT_LINK
+                  }
                 ].map((plan) => (
                   <div
                     key={plan.tier}
-                    className={`flex-1 p-3 rounded-xl border transition-all ${
+                    className={`relative p-4 rounded-2xl border transition-all ${
                       plan.popular
-                        ? 'bg-gray-900/5 border-gray-300/60'
-                        : 'bg-white/50 border-gray-200/50'
+                        ? 'bg-gray-900 border-gray-800 text-white'
+                        : 'bg-white/60 border-gray-200/60 hover:border-gray-300/80 hover:bg-white/80'
                     }`}
                     style={{ backdropFilter: 'blur(8px)' }}
                   >
+                    {/* Popular Badge */}
                     {plan.popular && (
-                      <span className="text-[9px] font-semibold text-gray-600 uppercase tracking-wide">Popular</span>
+                      <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-white text-gray-900 px-3 py-0.5 text-[10px] font-semibold rounded-full shadow-sm">
+                        POPULAR
+                      </div>
                     )}
-                    <p className={`text-xs font-medium ${plan.popular ? 'text-gray-900' : 'text-gray-700'}`}>{plan.tier}</p>
-                    <p className="text-lg font-light text-gray-900">{plan.price}</p>
-                    <p className="text-[10px] text-gray-500">{plan.chats}</p>
+
+                    {/* Plan Name */}
+                    <p className={`text-xs font-semibold tracking-wide mb-1 ${plan.popular ? 'text-gray-300' : 'text-gray-500'}`}>
+                      {plan.tier.toUpperCase()}
+                    </p>
+
+                    {/* Price */}
+                    <div className="flex items-baseline gap-1 mb-3">
+                      <span className={`text-3xl font-light ${plan.popular ? 'text-white' : 'text-gray-900'}`}>
+                        ${plan.price}
+                      </span>
+                      <span className={`text-xs ${plan.popular ? 'text-gray-400' : 'text-gray-400'}`}>/mo</span>
+                    </div>
+
+                    {/* Features */}
+                    <div className="space-y-1.5 mb-4">
+                      {plan.features.map((feature, idx) => (
+                        <div key={idx} className={`flex items-center gap-2 text-xs ${plan.popular ? 'text-gray-300' : 'text-gray-600'}`}>
+                          <Check size={12} className={plan.popular ? 'text-green-400' : 'text-green-500'} />
+                          {feature}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Select Button */}
+                    <button
+                      onClick={() => {
+                        if (!plan.stripeLink) {
+                          console.warn('No Stripe link for', plan.id);
+                          return;
+                        }
+                        // Build Stripe URL with user info
+                        const params = new URLSearchParams();
+                        if (user?.email) params.set('prefilled_email', user.email);
+                        if (user?.id) params.set('client_reference_id', `${user.id}:${plan.id}`);
+                        const url = params.toString() ? `${plan.stripeLink}?${params.toString()}` : plan.stripeLink;
+                        console.log('🔗 Redirecting to Stripe:', url);
+                        window.location.href = url;
+                      }}
+                      className={`w-full py-2.5 rounded-xl text-sm font-medium transition-all ${
+                        plan.popular
+                          ? 'bg-white text-gray-900 hover:bg-gray-100'
+                          : 'bg-gray-900 text-white hover:bg-gray-800'
+                      }`}
+                    >
+                      Select Plan
+                    </button>
                   </div>
                 ))}
               </div>
-            </div>
 
-            {/* Actions */}
-            <div className="px-5 pb-5">
-              <button
-                onClick={() => {
-                  setShowSubscriptionBlocker(false);
-                  setShowSubscriptionModal(true);
-                }}
-                className="w-full py-3 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
-              >
-                View Membership Plans
-              </button>
-              <p className="text-[11px] text-gray-400 text-center mt-3">
-                Cancel anytime • Instant access • 24/7 AI concierge
-              </p>
+              {/* View All Plans Link */}
+              <div className="text-center mt-4">
+                <button
+                  onClick={() => {
+                    setShowSubscriptionBlocker(false);
+                    setShowSubscriptionModal(true);
+                  }}
+                  className="text-sm text-gray-500 hover:text-gray-700 underline underline-offset-2 transition-colors"
+                >
+                  View all plan details
+                </button>
+              </div>
+
+              {/* Trust Badges */}
+              <div className="flex items-center justify-center gap-4 mt-4 pt-4 border-t border-gray-100">
+                <span className="text-[11px] text-gray-400 flex items-center gap-1">
+                  <Check size={12} className="text-green-500" />
+                  Cancel anytime
+                </span>
+                <span className="text-[11px] text-gray-400 flex items-center gap-1">
+                  <Check size={12} className="text-green-500" />
+                  Instant access
+                </span>
+                <span className="text-[11px] text-gray-400 flex items-center gap-1">
+                  <Check size={12} className="text-green-500" />
+                  Secure payment
+                </span>
+              </div>
             </div>
           </div>
         </div>
