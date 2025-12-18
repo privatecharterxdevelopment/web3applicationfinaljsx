@@ -870,18 +870,54 @@ const AIChat = ({
 
             if (requiresSubscription || !canStart) {
               console.log('❌ Blocking initial query - no subscription or limit reached');
+
+              // Create a temporary chat to show the user's message before blocking
+              const blockedChatId = `blocked-${Date.now()}`;
+              const blockedChat = {
+                id: blockedChatId,
+                title: title,
+                date: 'Just now',
+                messages: [userMessage] // Show user's message in chat
+              };
+
+              // Add chat to history and set as active so user sees their message
+              setChatHistory(prev => [blockedChat, ...prev]);
+              setActiveChat(blockedChatId);
+
+              // Now show the blocker popup
               setSubscriptionBlockerReason(requiresSubscription ? 'no_subscription' : 'chat_limit');
               setShowSubscriptionBlocker(true);
-              // Clear the query so it doesn't keep trying
-              onQueryProcessed();
-              return; // Stop execution - don't create chat
+
+              // Clear the query after showing the blocker
+              setTimeout(() => {
+                onQueryProcessed();
+              }, 100);
+              return; // Stop execution - don't send to AI
             }
           } catch (error) {
             console.error('Error checking subscription for initial query:', error);
+
+            // Create a temporary chat to show the user's message before blocking
+            const blockedChatId = `blocked-${Date.now()}`;
+            const blockedChat = {
+              id: blockedChatId,
+              title: title,
+              date: 'Just now',
+              messages: [userMessage] // Show user's message in chat
+            };
+
+            // Add chat to history and set as active so user sees their message
+            setChatHistory(prev => [blockedChat, ...prev]);
+            setActiveChat(blockedChatId);
+
             // On error, show blocker to be safe
             setSubscriptionBlockerReason('no_subscription');
             setShowSubscriptionBlocker(true);
-            onQueryProcessed();
+
+            // Clear the query after showing the blocker
+            setTimeout(() => {
+              onQueryProcessed();
+            }, 100);
             return;
           }
         }
