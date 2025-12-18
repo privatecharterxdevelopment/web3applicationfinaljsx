@@ -7938,11 +7938,11 @@ const TokenizedAssetsGlassmorphic = () => {
                           </div>
                         </div>
 
-                        {/* Action Button - Clean like Empty Legs */}
+                        {/* Action Button - Opens AI Chat */}
                         <button
                           onClick={() => {
-                            setBookingVehicleType('private-jet');
-                            setActiveCategory('private-jet');
+                            const query = encodeURIComponent(`I want to charter a private jet: ${selectedJet?.name || 'private jet'}`);
+                            navigate(`/dashboard/chat?query=${query}`);
                           }}
                           className="w-full bg-gray-900 text-white py-3 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
                         >
@@ -8659,11 +8659,11 @@ const TokenizedAssetsGlassmorphic = () => {
                           </div>
                         </div>
 
-                        {/* Action Button - Clean like Empty Legs */}
+                        {/* Action Button - Opens AI Chat */}
                         <button
                           onClick={() => {
-                            setBookingVehicleType('helicopter');
-                            setActiveCategory('private-jet');
+                            const query = encodeURIComponent(`I want to charter a helicopter: ${selectedHelicopter?.name || 'helicopter'}`);
+                            navigate(`/dashboard/chat?query=${query}`);
                           }}
                           className="w-full bg-gray-900 text-white py-3 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
                         >
