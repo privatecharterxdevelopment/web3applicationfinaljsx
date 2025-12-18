@@ -861,6 +861,31 @@ const AIChat = ({
 
       // Create chat and immediately send to AI (all in one async flow)
       const createChatAndSendToAI = async () => {
+        // SUBSCRIPTION CHECK - Block if user has no active subscription
+        // Must check BEFORE creating chat
+        if (!isAdmin) {
+          try {
+            const { canStart, requiresSubscription } = await subscriptionService.canStartNewChat(user.id);
+            console.log('🔒 Subscription check for initial query:', { canStart, requiresSubscription, userId: user.id });
+
+            if (requiresSubscription || !canStart) {
+              console.log('❌ Blocking initial query - no subscription or limit reached');
+              setSubscriptionBlockerReason(requiresSubscription ? 'no_subscription' : 'chat_limit');
+              setShowSubscriptionBlocker(true);
+              // Clear the query so it doesn't keep trying
+              onQueryProcessed();
+              return; // Stop execution - don't create chat
+            }
+          } catch (error) {
+            console.error('Error checking subscription for initial query:', error);
+            // On error, show blocker to be safe
+            setSubscriptionBlockerReason('no_subscription');
+            setShowSubscriptionBlocker(true);
+            onQueryProcessed();
+            return;
+          }
+        }
+
         let chatId;
 
         // Step 1: Create chat in database
@@ -1018,21 +1043,25 @@ const AIChat = ({
               }
 
               // Update chat with results - filter out loading messages first
-              setChatHistory(prev => prev.map(c =>
-                c.id === chatId
-                  ? {
-                      ...c,
-                      messages: [
-                        ...c.messages.filter(m => !m.isLoading),
-                        ...(resultsMessage ? [resultsMessage] : []),
-                        aiMessage
-                      ].filter((msg, index, self) =>
-                        // Remove duplicate user messages
-                        msg.role !== 'user' || index === self.findIndex(m => m.role === 'user' && m.content === msg.content)
-                      )
-                    }
-                  : c
-              ));
+              let aiMessageIndex = 0;
+              setChatHistory(prev => prev.map(c => {
+                if (c.id === chatId) {
+                  const newMessages = [
+                    ...c.messages.filter(m => !m.isLoading),
+                    ...(resultsMessage ? [resultsMessage] : []),
+                    aiMessage
+                  ].filter((msg, index, self) =>
+                    // Remove duplicate user messages
+                    msg.role !== 'user' || index === self.findIndex(m => m.role === 'user' && m.content === msg.content)
+                  );
+                  aiMessageIndex = newMessages.length - 1;
+                  return { ...c, messages: newMessages };
+                }
+                return c;
+              }));
+
+              // Trigger typing animation for AI response
+              setTimeout(() => setTypingMessageIndex(aiMessageIndex), 50);
 
               // Save to database
               try {
@@ -1053,20 +1082,24 @@ const AIChat = ({
             const aiMessage = { role: 'assistant', content: aiText };
 
             // Update chat - filter out loading messages first
-            setChatHistory(prev => prev.map(c =>
-              c.id === chatId
-                ? {
-                    ...c,
-                    messages: [
-                      ...c.messages.filter(m => !m.isLoading),
-                      aiMessage
-                    ].filter((msg, index, self) =>
-                      // Remove duplicate user messages
-                      msg.role !== 'user' || index === self.findIndex(m => m.role === 'user' && m.content === msg.content)
-                    )
-                  }
-                : c
-            ));
+            let textMsgIndex = 0;
+            setChatHistory(prev => prev.map(c => {
+              if (c.id === chatId) {
+                const newMessages = [
+                  ...c.messages.filter(m => !m.isLoading),
+                  aiMessage
+                ].filter((msg, index, self) =>
+                  // Remove duplicate user messages
+                  msg.role !== 'user' || index === self.findIndex(m => m.role === 'user' && m.content === msg.content)
+                );
+                textMsgIndex = newMessages.length - 1;
+                return { ...c, messages: newMessages };
+              }
+              return c;
+            }));
+
+            // Trigger typing animation for AI response
+            setTimeout(() => setTypingMessageIndex(textMsgIndex), 50);
 
             // Save to database
             try {
@@ -1079,19 +1112,22 @@ const AIChat = ({
         } catch (error) {
           console.error('❌ Error calling Claude:', error);
           const errorMessage = { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' };
-          setChatHistory(prev => prev.map(c =>
-            c.id === chatId
-              ? {
-                  ...c,
-                  messages: [
-                    ...c.messages.filter(m => !m.isLoading),
-                    errorMessage
-                  ].filter((msg, index, self) =>
-                    msg.role !== 'user' || index === self.findIndex(m => m.role === 'user' && m.content === msg.content)
-                  )
-                }
-              : c
-          ));
+          let errorMsgIndex = 0;
+          setChatHistory(prev => prev.map(c => {
+            if (c.id === chatId) {
+              const newMessages = [
+                ...c.messages.filter(m => !m.isLoading),
+                errorMessage
+              ].filter((msg, index, self) =>
+                msg.role !== 'user' || index === self.findIndex(m => m.role === 'user' && m.content === msg.content)
+              );
+              errorMsgIndex = newMessages.length - 1;
+              return { ...c, messages: newMessages };
+            }
+            return c;
+          }));
+          // Trigger typing animation for error message
+          setTimeout(() => setTypingMessageIndex(errorMsgIndex), 50);
         } finally {
           setIsProcessing(false);
         }
