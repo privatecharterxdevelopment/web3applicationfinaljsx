@@ -1334,6 +1334,7 @@ const TokenizedAssetsGlassmorphic = () => {
   const animationFrameRef = useRef(null);
   const [chatHistory, setChatHistory] = useState([]);
   const [chatHistoryExpanded, setChatHistoryExpanded] = useState(true); // Sidebar chat history collapsible
+  const previousUserIdRef = useRef(null); // Track previous user to detect user changes
 
   // Ref to store pending URL params when user needs to log in first
   const pendingUrlParamsRef = useRef(null);
@@ -3303,7 +3304,7 @@ const TokenizedAssetsGlassmorphic = () => {
   }, [activeCategory, user?.id]);
 
   // Fetch chat history from database
-  const fetchChatHistory = async () => {
+  const fetchChatHistory = async (isUserChange = false) => {
     if (!user?.id) return;
 
     try {
@@ -3324,26 +3325,62 @@ const TokenizedAssetsGlassmorphic = () => {
           created_at: chat.created_at,
           updated_at: chat.updated_at
         }));
-        // Merge with existing chats to preserve any newly created chats not yet in DB
-        setChatHistory(prev => {
-          // Get IDs of chats from database
-          const dbChatIds = new Set(formattedChats.map(c => c.id));
-          // Keep any local chats that aren't in the database yet (newly created)
-          const localOnlyChats = prev.filter(c => !dbChatIds.has(c.id));
-          // Combine: local-only chats first (most recent), then DB chats
-          return [...localOnlyChats, ...formattedChats];
-        });
+
+        // If user changed, completely replace chat history (don't preserve old user's chats)
+        if (isUserChange) {
+          console.log('🔄 User changed, replacing chat history with new user data');
+          setChatHistory(formattedChats);
+        } else {
+          // Merge with existing chats to preserve any newly created chats not yet in DB
+          setChatHistory(prev => {
+            // Get IDs of chats from database
+            const dbChatIds = new Set(formattedChats.map(c => c.id));
+            // Keep any local chats that aren't in the database yet (newly created)
+            const localOnlyChats = prev.filter(c => !dbChatIds.has(c.id));
+            // Combine: local-only chats first (most recent), then DB chats
+            return [...localOnlyChats, ...formattedChats];
+          });
+        }
+      } else if (isUserChange) {
+        // User changed but no chats found - clear history
+        console.log('🔄 User changed, clearing chat history (no chats found)');
+        setChatHistory([]);
       }
     } catch (error) {
       console.error('Error fetching chat history:', error);
+      if (isUserChange) {
+        // On error with user change, clear history to prevent showing wrong user's chats
+        setChatHistory([]);
+      }
     }
   };
 
-  // Load chat history on initial load and when viewing chat pages
-  // Also load for sidebar display of recent chats
+  // Load chat history on initial load and when user changes
+  // Clear old user's chats when user changes to prevent data leakage
   useEffect(() => {
-    if (user?.id) {
-      fetchChatHistory();
+    const currentUserId = user?.id;
+    const previousUserId = previousUserIdRef.current;
+
+    // Detect user change (including logout -> login with different account)
+    const isUserChange = previousUserId !== null && previousUserId !== currentUserId;
+
+    if (isUserChange) {
+      console.log('👤 User changed from', previousUserId, 'to', currentUserId);
+      // Clear chat history immediately when user changes
+      setChatHistory([]);
+      setActiveChat(null);
+    }
+
+    // Update the ref
+    previousUserIdRef.current = currentUserId;
+
+    // Fetch new user's chats
+    if (currentUserId) {
+      fetchChatHistory(isUserChange);
+    } else {
+      // User logged out - clear everything
+      setChatHistory([]);
+      setActiveChat(null);
     }
   }, [user?.id]);
 
