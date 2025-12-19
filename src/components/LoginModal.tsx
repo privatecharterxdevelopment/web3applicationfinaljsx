@@ -129,7 +129,7 @@ export default function LoginModal({
         <div className="w-full h-full bg-white rounded-3xl shadow-2xl overflow-hidden flex">
 
           {/* LEFT SIDE - Form */}
-          <div className="w-2/5 bg-white p-8 flex flex-col relative z-20">
+          <div className="w-2/5 bg-white p-8 flex flex-col justify-center relative z-20">
 
             {/* Back Arrow - Goes to landing page */}
             <button
@@ -150,34 +150,27 @@ export default function LoginModal({
               <X size={20} className="text-gray-600" />
             </button>
 
-            {/* Logo - Hidden */}
-            {/* <div className="mb-8 mt-6">
-              <img
-                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/PrivatecharterX_logo_vectorized.glb.png"
-                alt="PrivateCharterX"
-                className="h-10"
-              />
-            </div> */}
-
-            {/* Title */}
-            <div className="mb-6">
-              <h1 className="text-2xl font-light text-gray-900 mb-1">
-                Welcome Back
-              </h1>
-              <p className="text-sm text-gray-500 font-light">
-                Sign in to your account
-              </p>
-            </div>
-
-            {/* Error */}
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-xs text-red-600">{error}</p>
+            {/* Form Container - Centered */}
+            <div className="w-full max-w-sm mx-auto">
+              {/* Title */}
+              <div className="mb-6">
+                <h1 className="text-2xl font-light text-gray-900 mb-1">
+                  Welcome Back
+                </h1>
+                <p className="text-sm text-gray-500 font-light">
+                  Sign in to your account
+                </p>
               </div>
-            )}
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
+              {/* Error */}
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-xs text-red-600">{error}</p>
+                </div>
+              )}
+
+              {/* Form */}
+              <form onSubmit={handleSubmit} className="flex flex-col">
               <div className="space-y-3 mb-4">
                 {/* Email */}
                 <div>
@@ -289,7 +282,7 @@ export default function LoginModal({
               </button>
 
               {/* Footer */}
-              <div className="mt-auto pt-4 text-center">
+              <div className="mt-6 text-center">
                 <p className="text-[10px] text-gray-400">
                   By signing in, you agree to our{' '}
                   <a href="/terms" className="underline hover:text-gray-600">Terms</a>
@@ -298,6 +291,7 @@ export default function LoginModal({
                 </p>
               </div>
             </form>
+            </div>
           </div>
 
           {/* RIGHT SIDE - Video Hero */}
