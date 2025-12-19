@@ -153,14 +153,14 @@ function LoginForm({
               <X size={20} className="text-gray-600" />
             </button>
 
-            {/* Logo */}
-            <div className="mb-8 mt-6">
+            {/* Logo - Hidden */}
+            {/* <div className="mb-8 mt-6">
               <img
                 src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/PrivatecharterX_logo_vectorized.glb.png"
                 alt="PrivateCharterX"
                 className="h-10"
               />
-            </div>
+            </div> */}
 
             {/* Title */}
             <div className="mb-6">
