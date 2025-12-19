@@ -10,7 +10,9 @@ import {
   ChevronUp,
   Navigation,
   MessageSquare,
-  Car
+  Car,
+  CalendarPlus,
+  Utensils
 } from 'lucide-react';
 
 /**
@@ -18,7 +20,7 @@ import {
  * Shows photo, ratings, reviews, contact info, and opening hours
  * Monochromatic, glassmorphic design matching the chat UI
  */
-const PlaceCard = ({ place, onRequestTransfer, showAlternatives = false, alternatives = [] }) => {
+const PlaceCard = ({ place, onRequestTransfer, onRequestReservation, showAlternatives = false, alternatives = [] }) => {
   const [showReviews, setShowReviews] = useState(false);
   const [showHours, setShowHours] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
@@ -268,25 +270,38 @@ const PlaceCard = ({ place, onRequestTransfer, showAlternatives = false, alterna
         )}
 
         {/* Action Buttons */}
-        <div className="mt-3 pt-2.5 border-t border-gray-50 flex gap-2">
-          {googleMapsUrl && (
-            <a
-              href={googleMapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 text-xs font-medium rounded-lg transition-colors border border-gray-100"
-            >
-              <Navigation size={12} />
-              <span>Directions</span>
-            </a>
-          )}
-          {onRequestTransfer && (
+        <div className="mt-3 pt-2.5 border-t border-gray-50 space-y-2">
+          {/* Primary Actions Row */}
+          <div className="flex gap-2">
+            {googleMapsUrl && (
+              <a
+                href={googleMapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 text-xs font-medium rounded-lg transition-colors border border-gray-100"
+              >
+                <Navigation size={12} />
+                <span>Directions</span>
+              </a>
+            )}
+            {onRequestTransfer && (
+              <button
+                onClick={() => onRequestTransfer(place)}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium rounded-lg transition-colors"
+              >
+                <Car size={12} />
+                <span>Book Transfer</span>
+              </button>
+            )}
+          </div>
+          {/* Reservation Button - for restaurants */}
+          {onRequestReservation && (
             <button
-              onClick={() => onRequestTransfer(place)}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium rounded-lg transition-colors"
+              onClick={() => onRequestReservation(place)}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium rounded-lg transition-colors"
             >
-              <Car size={12} />
-              <span>Book Transfer</span>
+              <CalendarPlus size={12} />
+              <span>Request Reservation</span>
             </button>
           )}
         </div>

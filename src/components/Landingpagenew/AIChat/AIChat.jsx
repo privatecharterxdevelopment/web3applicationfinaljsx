@@ -4925,6 +4925,44 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           const transferRequest = `I'd like to arrange a luxury car transfer to ${place.name} at ${place.fullAddress}`;
                           handleSendMessage(transferRequest);
                         } : null}
+                        onRequestReservation={(place) => {
+                          // Create a reservation request and add to cart
+                          const reservationItem = {
+                            id: `reservation-${Date.now()}`,
+                            cartId: `reservation-${Date.now()}`,
+                            type: 'concierge_request',
+                            serviceType: 'restaurant_reservation',
+                            name: `Reservation at ${place.name}`,
+                            description: `Restaurant reservation request for ${place.name}`,
+                            venue: place.name,
+                            address: place.fullAddress,
+                            phone: place.phone,
+                            category: place.category || 'Restaurant',
+                            rating: place.rating,
+                            price: 0, // Reservation requests are free to submit
+                            isCustomRequest: true,
+                            requestDetails: {
+                              venueName: place.name,
+                              venueAddress: place.fullAddress,
+                              venuePhone: place.phone,
+                              venueRating: place.rating,
+                              googleMapsUrl: place.googleMapsUrl,
+                              note: 'Our concierge team will contact the venue to arrange your reservation. Please specify your preferred date, time, and party size in the cart notes.'
+                            }
+                          };
+                          addToCart(reservationItem);
+                          setToast({ message: `Reservation request for ${place.name} added to cart`, type: 'success' });
+                          // Add confirmation message
+                          const confirmMessage = {
+                            role: 'assistant',
+                            content: `I've added a reservation request for **${place.name}** to your cart. Our concierge team will arrange your booking once you checkout. Would you also like me to arrange a transfer to the restaurant?`
+                          };
+                          setChatHistory(prev => prev.map(c =>
+                            c.id === currentChatId
+                              ? { ...c, messages: [...c.messages, confirmMessage] }
+                              : c
+                          ));
+                        }}
                       />
                     </div>
                   </div>
