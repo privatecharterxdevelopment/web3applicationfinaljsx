@@ -8660,193 +8660,109 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         />
       )}
 
-      {/* Subscription Blocker Popup - Modern Design with Direct Plan Selection */}
+      {/* Subscription Blocker Popup - Clean minimal design */}
       {showSubscriptionBlocker && (
-        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 pointer-events-none">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
           {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/40 pointer-events-auto"
+            className="absolute inset-0 bg-black/20 pointer-events-auto"
             onClick={() => setShowSubscriptionBlocker(false)}
           />
 
-          {/* Popup Card - Full width on mobile, max-w-2xl on desktop */}
+          {/* Popup Card */}
           <div
-            className="relative w-full sm:max-w-2xl max-h-[90vh] bg-white/98 sm:rounded-3xl rounded-t-3xl shadow-2xl border border-white/50 overflow-hidden pointer-events-auto animate-slide-up"
-            style={{ backdropFilter: 'blur(24px) saturate(180%)' }}
+            className="relative w-full max-w-md bg-white/95 rounded-2xl shadow-xl border border-gray-200/60 overflow-hidden pointer-events-auto"
+            style={{ backdropFilter: 'blur(20px)' }}
           >
             {/* Close Button */}
             <button
               onClick={() => setShowSubscriptionBlocker(false)}
-              className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 hover:bg-gray-100/60 rounded-xl transition-all z-10"
+              className="absolute top-3 right-3 p-1.5 hover:bg-gray-100/60 rounded-lg transition-all z-10"
             >
-              <X size={20} className="text-gray-400" />
+              <X size={18} className="text-gray-400" />
             </button>
 
-            {/* Scrollable Content */}
-            <div className="overflow-y-auto max-h-[90vh]">
-              {/* Header - Centered */}
-              <div className="pt-6 sm:pt-8 pb-3 sm:pb-4 px-4 sm:px-6 text-center">
-                <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200/80 border border-gray-200/60 mb-3 sm:mb-4">
-                  <Sparkles size={24} className="text-gray-600 sm:hidden" />
-                  <Sparkles size={28} className="text-gray-600 hidden sm:block" />
-                </div>
-                <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1.5 sm:mb-2">
-                  {subscriptionBlockerReason === 'no_subscription' && 'Unlock Sphera AI'}
-                  {subscriptionBlockerReason === 'chat_limit' && 'Need More Chats?'}
-                  {subscriptionBlockerReason === 'message_limit' && 'Message Limit Reached'}
-                  {subscriptionBlockerReason === 'feature_restricted' && 'Upgrade Required'}
-                  {!subscriptionBlockerReason && 'Unlock Sphera AI'}
-                </h2>
-                <p className="text-xs sm:text-sm text-gray-500 max-w-md mx-auto px-2">
-                  {subscriptionBlockerReason === 'no_subscription' &&
-                    'Choose a plan to access your AI-powered luxury travel concierge'}
-                  {subscriptionBlockerReason === 'chat_limit' &&
-                    `You've used ${userProfile?.chats_used || 0}/${getTierChatLimit()} chats. Upgrade for more conversations.`}
-                  {subscriptionBlockerReason === 'message_limit' &&
-                    `You've reached your message limit. Upgrade for more messages per chat.`}
-                  {subscriptionBlockerReason === 'feature_restricted' &&
-                    'This feature requires a higher tier. Select a plan below.'}
-                  {!subscriptionBlockerReason &&
-                    'Choose a plan to access your AI-powered luxury travel concierge'}
-                </p>
-              </div>
+            {/* Header */}
+            <div className="pt-6 pb-4 px-6 text-center">
+              {/* Logo */}
+              <img
+                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/PrivatecharterX_logo_vectorized.glb.png"
+                alt="PrivateCharterX"
+                className="w-10 h-10 mx-auto mb-3 object-contain"
+              />
+              <h2 className="text-lg font-light text-gray-900 mb-1">
+                {subscriptionBlockerReason === 'no_subscription' && 'Subscription Required'}
+                {subscriptionBlockerReason === 'chat_limit' && 'Chat Limit Reached'}
+                {subscriptionBlockerReason === 'message_limit' && 'Message Limit Reached'}
+                {subscriptionBlockerReason === 'feature_restricted' && 'Upgrade Required'}
+                {!subscriptionBlockerReason && 'Subscription Required'}
+              </h2>
+              <p className="text-xs font-light text-gray-400">
+                {subscriptionBlockerReason === 'no_subscription' &&
+                  'Subscribe to access Sphera AI and start planning your luxury travel experiences.'}
+                {subscriptionBlockerReason === 'chat_limit' &&
+                  `You've used ${userProfile?.chats_used || 0}/${getTierChatLimit()} chats this month.`}
+                {subscriptionBlockerReason === 'message_limit' &&
+                  `You've reached your message limit for this chat.`}
+                {subscriptionBlockerReason === 'feature_restricted' &&
+                  'This feature requires a higher subscription tier.'}
+                {!subscriptionBlockerReason &&
+                  'Subscribe to access Sphera AI and start planning your luxury travel experiences.'}
+              </p>
+            </div>
 
-              {/* Plans Grid - Vertical on mobile, horizontal on desktop */}
-              <div className="px-4 sm:px-6 pb-4 sm:pb-6">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {[
-                    {
-                      id: 'explorer',
-                      tier: 'Explorer',
-                      price: 49,
-                      features: ['5 AI Chats/month', '10 Messages/chat', 'Email Support'],
-                      stripeLink: import.meta.env.VITE_STRIPE_STARTER_PAYMENT_LINK || import.meta.env.VITE_STRIPE_EXPLORER_PAYMENT_LINK
-                    },
-                    {
-                      id: 'traveller',
-                      tier: 'Traveller',
-                      price: 99,
-                      features: ['10 AI Chats/month', '25 Messages/chat', 'Priority Support'],
-                      popular: true,
-                      stripeLink: import.meta.env.VITE_STRIPE_PRO_PAYMENT_LINK || import.meta.env.VITE_STRIPE_TRAVELLER_PAYMENT_LINK
-                    },
-                    {
-                      id: 'elite',
-                      tier: 'Elite',
-                      price: 399,
-                      features: ['Unlimited Chats', 'Unlimited Messages', '24/7 Phone Support'],
-                      stripeLink: import.meta.env.VITE_STRIPE_ELITE_PAYMENT_LINK
-                    }
-                  ].map((plan) => (
-                    <div
-                      key={plan.tier}
-                      className={`relative p-3 sm:p-4 rounded-xl sm:rounded-2xl border transition-all ${
-                        plan.popular
-                          ? 'bg-gray-900 border-gray-800 text-white order-first sm:order-none'
-                          : 'bg-white/60 border-gray-200/60 hover:border-gray-300/80 hover:bg-white/80'
-                      }`}
-                      style={{ backdropFilter: 'blur(8px)' }}
-                    >
-                      {/* Popular Badge */}
-                      {plan.popular && (
-                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-white text-gray-900 px-3 py-0.5 text-[10px] font-semibold rounded-full shadow-sm">
-                          RECOMMENDED
-                        </div>
-                      )}
-
-                      {/* Mobile: Horizontal layout, Desktop: Vertical layout */}
-                      <div className="flex sm:block items-center gap-3 sm:gap-0">
-                        {/* Left side on mobile: Name + Price */}
-                        <div className="flex-1 sm:flex-none">
-                          {/* Plan Name */}
-                          <p className={`text-[10px] sm:text-xs font-semibold tracking-wide mb-0.5 sm:mb-1 ${plan.popular ? 'text-gray-300' : 'text-gray-500'}`}>
-                            {plan.tier.toUpperCase()}
-                          </p>
-
-                          {/* Price */}
-                          <div className="flex items-baseline gap-1 mb-0 sm:mb-3">
-                            <span className={`text-2xl sm:text-3xl font-light ${plan.popular ? 'text-white' : 'text-gray-900'}`}>
-                              ${plan.price}
-                            </span>
-                            <span className={`text-[10px] sm:text-xs ${plan.popular ? 'text-gray-400' : 'text-gray-400'}`}>/mo</span>
-                          </div>
-
-                          {/* Features - Hidden on mobile, shown on desktop */}
-                          <div className="hidden sm:block space-y-1.5 mb-4">
-                            {plan.features.map((feature, idx) => (
-                              <div key={idx} className={`flex items-center gap-2 text-xs ${plan.popular ? 'text-gray-300' : 'text-gray-600'}`}>
-                                <Check size={12} className={plan.popular ? 'text-green-400' : 'text-green-500'} />
-                                {feature}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Right side on mobile: Button */}
-                        <button
-                          onClick={() => {
-                            if (!plan.stripeLink) {
-                              console.warn('No Stripe link for', plan.id);
-                              return;
-                            }
-                            const params = new URLSearchParams();
-                            if (user?.email) params.set('prefilled_email', user.email);
-                            if (user?.id) params.set('client_reference_id', `${user.id}:${plan.id}`);
-                            const url = params.toString() ? `${plan.stripeLink}?${params.toString()}` : plan.stripeLink;
-                            console.log('🔗 Redirecting to Stripe:', url);
-                            window.location.href = url;
-                          }}
-                          className={`w-auto sm:w-full px-4 sm:px-0 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all ${
-                            plan.popular
-                              ? 'bg-white text-gray-900 hover:bg-gray-100'
-                              : 'bg-gray-900 text-white hover:bg-gray-800'
-                          }`}
-                        >
-                          Select
-                        </button>
-                      </div>
-
-                      {/* Mobile: Features shown below in compact form */}
-                      <div className="sm:hidden flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-gray-200/20">
-                        {plan.features.map((feature, idx) => (
-                          <span key={idx} className={`text-[10px] ${plan.popular ? 'text-gray-400' : 'text-gray-500'}`}>
-                            {idx > 0 && '•'} {feature}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* View All Plans Link */}
-                <div className="text-center mt-3 sm:mt-4">
+            {/* Plans - Horizontal row */}
+            <div className="px-5 pb-4">
+              <div className="flex gap-2">
+                {[
+                  { id: 'explorer', tier: 'Explorer', price: 49, chats: '5 chats', stripeLink: import.meta.env.VITE_STRIPE_STARTER_PAYMENT_LINK || import.meta.env.VITE_STRIPE_EXPLORER_PAYMENT_LINK },
+                  { id: 'traveller', tier: 'Traveller', price: 99, chats: '10 chats', popular: true, stripeLink: import.meta.env.VITE_STRIPE_PRO_PAYMENT_LINK || import.meta.env.VITE_STRIPE_TRAVELLER_PAYMENT_LINK },
+                  { id: 'elite', tier: 'Elite', price: 399, chats: 'Unlimited', stripeLink: import.meta.env.VITE_STRIPE_ELITE_PAYMENT_LINK }
+                ].map((plan) => (
                   <button
+                    key={plan.tier}
                     onClick={() => {
-                      setShowSubscriptionBlocker(false);
-                      setShowSubscriptionModal(true);
+                      if (!plan.stripeLink) {
+                        console.warn('No Stripe link for', plan.id);
+                        return;
+                      }
+                      const params = new URLSearchParams();
+                      if (user?.email) params.set('prefilled_email', user.email);
+                      if (user?.id) params.set('client_reference_id', `${user.id}:${plan.id}`);
+                      const url = params.toString() ? `${plan.stripeLink}?${params.toString()}` : plan.stripeLink;
+                      window.location.href = url;
                     }}
-                    className="text-xs sm:text-sm text-gray-500 hover:text-gray-700 underline underline-offset-2 transition-colors"
+                    className={`flex-1 p-3 rounded-xl border text-center transition-all hover:border-gray-300 ${
+                      plan.popular
+                        ? 'bg-gray-50/80 border-gray-300'
+                        : 'bg-white/60 border-gray-200'
+                    }`}
                   >
-                    View all plan details
+                    {plan.popular && (
+                      <span className="text-[8px] font-medium text-gray-500 uppercase tracking-wider">Popular</span>
+                    )}
+                    <p className="text-[10px] font-light text-gray-500 uppercase tracking-wide">{plan.tier}</p>
+                    <p className="text-xl font-extralight text-gray-900">${plan.price}</p>
+                    <p className="text-[9px] font-light text-gray-400">{plan.chats}</p>
                   </button>
-                </div>
-
-                {/* Trust Badges */}
-                <div className="flex items-center justify-center gap-3 sm:gap-4 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-100">
-                  <span className="text-[10px] sm:text-[11px] text-gray-400 flex items-center gap-1">
-                    <Check size={10} className="text-green-500 sm:w-3 sm:h-3" />
-                    Cancel anytime
-                  </span>
-                  <span className="text-[10px] sm:text-[11px] text-gray-400 flex items-center gap-1">
-                    <Check size={10} className="text-green-500 sm:w-3 sm:h-3" />
-                    Instant access
-                  </span>
-                  <span className="text-[10px] sm:text-[11px] text-gray-400 flex items-center gap-1">
-                    <Check size={10} className="text-green-500 sm:w-3 sm:h-3" />
-                    Secure payment
-                  </span>
-                </div>
+                ))}
               </div>
+            </div>
+
+            {/* View Plans Button */}
+            <div className="px-5 pb-5">
+              <button
+                onClick={() => {
+                  setShowSubscriptionBlocker(false);
+                  setShowSubscriptionModal(true);
+                }}
+                className="w-full py-2.5 bg-gray-900 text-white rounded-xl text-sm font-light hover:bg-gray-800 transition-colors"
+              >
+                View Membership Plans
+              </button>
+              <p className="text-[10px] font-light text-gray-400 text-center mt-3">
+                Cancel anytime • Instant access • 24/7 AI concierge
+              </p>
             </div>
           </div>
         </div>
