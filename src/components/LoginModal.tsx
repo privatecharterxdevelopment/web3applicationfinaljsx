@@ -52,8 +52,6 @@ export default function LoginModal({
         errorMessage = 'Invalid email or password';
       } else if (error.message?.includes('Too many requests')) {
         errorMessage = 'Too many attempts. Please wait.';
-      } else if (error.message?.includes('Email not confirmed')) {
-        errorMessage = 'Please verify your email first';
       }
       setError(errorMessage);
     } finally {
