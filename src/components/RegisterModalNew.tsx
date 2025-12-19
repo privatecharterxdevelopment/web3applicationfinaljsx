@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Mail, Lock, User, Phone, X, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User, Phone, X, ArrowRight, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Portal from './Portal';
 import { supabase } from '../lib/supabase';
 import { VideoHero } from './auth';
@@ -428,6 +429,7 @@ export default function RegisterModalNew({
   onSwitchToPartnerRegister,
   onSuccess
 }: RegisterModalNewProps) {
+  const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2>(1);
   const [formData, setFormData] = useState({
     firstName: '',
@@ -437,6 +439,8 @@ export default function RegisterModalNew({
     confirmPassword: ''
   });
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -525,23 +529,34 @@ export default function RegisterModalNew({
           {/* Form Section */}
           <div className="w-full lg:w-2/5 bg-white p-6 lg:p-8 flex flex-col relative overflow-y-auto">
 
-            {/* Close Button - Mobile */}
+            {/* Back Arrow - Goes to landing page */}
+            <button
+              onClick={() => {
+                handleClose();
+                navigate('/');
+              }}
+              className="absolute left-6 top-6 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
+            >
+              <ArrowLeft size={20} className="text-gray-600" />
+            </button>
+
+            {/* Close Button */}
             <button
               onClick={handleClose}
-              className="absolute top-4 right-4 lg:hidden w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors z-10"
+              className="absolute right-6 top-6 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
               aria-label="Close"
             >
               <X size={20} className="text-gray-600" />
             </button>
 
             {/* Progress Dots */}
-            <div className="absolute right-6 top-20 lg:top-6 flex items-center gap-2">
+            <div className="absolute right-6 top-20 flex items-center gap-2">
               <div className="w-2 h-2 bg-black rounded-full" />
               <div className="w-2 h-2 bg-gray-300 rounded-full" />
             </div>
 
             {/* Logo */}
-            <div className="mb-6">
+            <div className="mb-6 mt-6">
               <img
                 src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/PrivatecharterX_logo_vectorized.glb.png"
                 alt="PrivateCharterX"
@@ -636,15 +651,22 @@ export default function RegisterModalNew({
                   <div className="relative">
                     <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
+                      className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
                       placeholder="••••••••"
                       required
                       minLength={8}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
                   </div>
                   {/* Password strength indicator */}
                   {formData.password && (
@@ -667,14 +689,21 @@ export default function RegisterModalNew({
                   <div className="relative">
                     <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
-                      type="password"
+                      type={showConfirmPassword ? 'text' : 'password'}
                       name="confirmPassword"
                       value={formData.confirmPassword}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
+                      className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
                       placeholder="••••••••"
                       required
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
                   </div>
                   {/* Password match indicator */}
                   {formData.confirmPassword && (

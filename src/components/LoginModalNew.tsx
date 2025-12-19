@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Scan, X } from 'lucide-react';
+import { Mail, Lock, Scan, X, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Portal from './Portal';
@@ -39,6 +39,7 @@ function LoginForm({
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showFaceLogin, setShowFaceLogin] = useState(false);
@@ -132,24 +133,32 @@ function LoginForm({
           {/* Form Section */}
           <div className="w-full lg:w-2/5 bg-white p-6 lg:p-8 flex flex-col relative overflow-y-auto">
 
-            {/* Close Button - Mobile */}
+            {/* Back Arrow - Goes to landing page */}
+            <button
+              onClick={() => {
+                onClose();
+                navigate('/');
+              }}
+              className="absolute left-6 top-6 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
+            >
+              <ArrowLeft size={20} className="text-gray-600" />
+            </button>
+
+            {/* Close Button */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 lg:hidden w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors z-10"
+              className="absolute right-6 top-6 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
               aria-label="Close"
             >
               <X size={20} className="text-gray-600" />
             </button>
 
             {/* Logo */}
-            <div className="mb-8">
+            <div className="mb-8 mt-6">
               <img
-                src="/logo.svg"
+                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/PrivatecharterX_logo_vectorized.glb.png"
                 alt="PrivateCharterX"
-                className="h-8"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                }}
+                className="h-10"
               />
             </div>
 
@@ -200,14 +209,21 @@ function LoginForm({
                   <div className="relative">
                     <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
+                      className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
                       placeholder="••••••••"
                       required
                       disabled={isLoading}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
                   </div>
                 </div>
               </div>
