@@ -6929,14 +6929,12 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   {/* Smart checkout: Direct crypto pay for payable items OR Send Request */}
                   {(() => {
                     // PAYABLE TYPES: Can checkout directly with crypto
-                    // - Empty legs (fixed prices)
-                    // - Wines (fixed prices)
-                    // - Delicacies/extras (cigars, caviar, flowers, etc.)
-                    // - Service fees (cleaning fee)
-                    const payableTypes = ['empty_legs', 'emptyleg', 'adventure', 'fixed_offer', 'wines', 'wine', 'custom_extra', 'service_fee', 'cigars', 'delicatesse'];
+                    // ONLY: Empty legs + Extras (wines, delicacies, cigars, etc.)
+                    // Everything else is REQUEST ONLY
+                    const payableTypes = ['empty_legs', 'emptyleg', 'wines', 'wine', 'custom_extra', 'service_fee', 'cigars', 'delicatesse'];
 
-                    // REQUEST-ONLY TYPES: Need coordinator quote
-                    const requestOnlyTypes = ['jets', 'jet', 'helicopters', 'helicopter', 'yachts', 'yacht', 'luxury_cars', 'luxury_car', 'taxi', 'transfer', 'ground_transport', 'taxi_cars'];
+                    // REQUEST-ONLY TYPES: Need coordinator quote - ALL services except empty legs and extras
+                    const requestOnlyTypes = ['jets', 'jet', 'helicopters', 'helicopter', 'yachts', 'yacht', 'luxury_cars', 'luxury_car', 'taxi', 'transfer', 'ground_transport', 'taxi_cars', 'adventure', 'fixed_offer', 'concierge_request', 'restaurant_reservation', 'hotel', 'experience', 'activity'];
 
                     // Exclude already paid items from calculations
                     const unpaidItems = cartItems.filter(item => !item.isPaid && item.paymentStatus !== 'pending_confirmation');
@@ -6944,15 +6942,20 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     // Check if cart contains ANY request-only items
                     const hasRequestOnlyService = unpaidItems.some(item => requestOnlyTypes.includes(item.type));
 
-                    // Payable items: items that CAN be paid directly (not request-only)
+                    // Payable items: ONLY empty legs + extras that CAN be paid directly
                     const payableItems = unpaidItems.filter(item => {
-                      // Check if it's a payable type
-                      const isPayableType = payableTypes.includes(item.type) ||
+                      // FIRST: Reject if it's explicitly a request-only type
+                      if (requestOnlyTypes.includes(item.type)) return false;
+
+                      // Check if it's a payable type (empty legs or extras ONLY)
+                      const isEmptyLeg = item.type === 'empty_legs' || item.type === 'emptyleg';
+                      const isExtra = payableTypes.includes(item.type) ||
                         item.isCleaningFee ||
                         (item.category && ['cigars', 'caviar', 'flowers', 'cakes', 'decorations', 'photography', 'special', 'smoking', 'Caviar', 'Premium Cigars', 'Flowers', 'Cakes & Desserts', 'Event Decorations', 'Photography & Video', 'Aircraft Services'].includes(item.category));
+
                       // Must have valid price > 0
                       const hasValidPrice = (item.price_usd || item.price || item.basePrice) > 0;
-                      return isPayableType && hasValidPrice;
+                      return (isEmptyLeg || isExtra) && hasValidPrice;
                     });
 
                     const requestOnlyItems = unpaidItems.filter(item => requestOnlyTypes.includes(item.type));
