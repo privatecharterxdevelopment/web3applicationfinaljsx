@@ -544,8 +544,9 @@ function AppContent() {
               <Route path="/payment/success" element={<PaymentSuccessPage />} />
               <Route path="/payment/cancel" element={<PaymentCancelPage />} />
 
-              {/* Subscription Success Route */}
+              {/* Subscription Success Routes */}
               <Route path="/subscription/success" element={<SubscriptionSuccessPage />} />
+              <Route path="/dashboard/success" element={<SubscriptionSuccessPage />} />
 
               {/* Home Route - New Landing Page */}
               <Route path="/" element={<Homepage />} />

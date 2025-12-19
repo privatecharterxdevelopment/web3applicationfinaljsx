@@ -290,7 +290,7 @@ const SubscriptionSuccessPage = () => {
             {/* Action Buttons */}
             <div className="space-y-3">
               <Link
-                to="/"
+                to="/dashboard/chat"
                 className={`w-full py-3 px-6 bg-gradient-to-r ${currentTier.color} text-white font-semibold rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity`}
               >
                 <MessageSquare className="w-5 h-5" />
@@ -299,19 +299,19 @@ const SubscriptionSuccessPage = () => {
               </Link>
 
               <Link
-                to="/subscriptions/manage"
+                to="/dashboard"
                 className="w-full py-3 px-6 bg-white/10 text-white font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-white/20 transition-colors"
               >
-                <Crown className="w-5 h-5" />
-                Manage Subscription
+                <Home className="w-5 h-5" />
+                Go back to Dashboard
               </Link>
 
               <Link
-                to="/"
+                to="/subscriptions/manage"
                 className="w-full py-3 px-6 bg-transparent text-white/70 font-medium rounded-xl flex items-center justify-center gap-2 hover:text-white transition-colors"
               >
-                <Home className="w-5 h-5" />
-                Back to Home
+                <Crown className="w-5 h-5" />
+                Manage Subscription
               </Link>
             </div>
           </div>
