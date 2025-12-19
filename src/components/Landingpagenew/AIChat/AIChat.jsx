@@ -8815,8 +8815,68 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         />
       )}
 
-      {/* Subscription Blocker Popup - Clean minimal design */}
-      {showSubscriptionBlocker && (
+      {/* Subscription Blocker - Cookie Banner style for chat_limit, Modal for others */}
+      {showSubscriptionBlocker && subscriptionBlockerReason === 'chat_limit' && (
+        <div className="fixed bottom-0 left-0 right-0 z-[9999] p-4 pointer-events-none">
+          {/* Cookie Banner Style Card */}
+          <div
+            className="max-w-2xl mx-auto bg-white/95 rounded-2xl shadow-2xl border border-gray-200/60 overflow-hidden pointer-events-auto"
+            style={{ backdropFilter: 'blur(20px)' }}
+          >
+            <div className="p-5">
+              {/* Header Row */}
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center flex-shrink-0">
+                    <MessageSquare size={20} className="text-amber-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-medium text-gray-900">Chat Limit Reached</h3>
+                    <p className="text-sm text-gray-500">
+                      You've used all {getTierChatLimit()} chats this month. Continue on your existing conversations or upgrade for more.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowSubscriptionBlocker(false)}
+                  className="p-1.5 hover:bg-gray-100/60 rounded-lg transition-all flex-shrink-0"
+                >
+                  <X size={18} className="text-gray-400" />
+                </button>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setShowSubscriptionBlocker(false);
+                    // Navigate to the most recent existing chat (not blocked ones)
+                    const existingChat = chatHistory.find(c => !c.id.startsWith('blocked-'));
+                    if (existingChat) {
+                      setActiveChat(existingChat.id);
+                    }
+                  }}
+                  className="flex-1 py-2.5 px-4 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors"
+                >
+                  Continue Existing Chats
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSubscriptionBlocker(false);
+                    setShowSubscriptionModal(true);
+                  }}
+                  className="flex-1 py-2.5 px-4 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
+                >
+                  Upgrade Subscription
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Subscription Blocker Popup - Clean minimal design (for non chat_limit reasons) */}
+      {showSubscriptionBlocker && subscriptionBlockerReason !== 'chat_limit' && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
           {/* Backdrop */}
           <div
@@ -8847,7 +8907,6 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               />
               <h2 className="text-lg font-light text-gray-900 mb-1">
                 {subscriptionBlockerReason === 'no_subscription' && 'Subscription Required'}
-                {subscriptionBlockerReason === 'chat_limit' && 'Chat Limit Reached'}
                 {subscriptionBlockerReason === 'message_limit' && 'Message Limit Reached'}
                 {subscriptionBlockerReason === 'feature_restricted' && 'Upgrade Required'}
                 {!subscriptionBlockerReason && 'Subscription Required'}
@@ -8855,10 +8914,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               <p className="text-xs font-light text-gray-400">
                 {subscriptionBlockerReason === 'no_subscription' &&
                   'Subscribe to access Sphera AI and start planning your luxury travel experiences.'}
-                {subscriptionBlockerReason === 'chat_limit' &&
-                  `You've used ${userProfile?.chats_used || 0}/${getTierChatLimit()} chats this month.`}
                 {subscriptionBlockerReason === 'message_limit' &&
-                  `You've reached your message limit for this chat.`}
+                  `You've reached your message limit for this chat. Continue on another chat or upgrade.`}
                 {subscriptionBlockerReason === 'feature_restricted' &&
                   'This feature requires a higher subscription tier.'}
                 {!subscriptionBlockerReason &&
