@@ -8836,61 +8836,69 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         />
       )}
 
-      {/* Subscription Blocker - Cookie Banner style for chat_limit, Modal for others */}
+      {/* Chat Limit Banner - Glassmorphic floating style like ChatGPT */}
       {showSubscriptionBlocker && subscriptionBlockerReason === 'chat_limit' && (
-        <div className="fixed bottom-0 left-0 right-0 z-[9999] p-2 sm:p-4 pointer-events-none">
-          {/* Cookie Banner Style Card - Mobile optimized */}
+        <div className="fixed inset-x-0 bottom-4 sm:bottom-6 z-[9999] px-3 sm:px-4 pointer-events-none">
           <div
-            className="max-w-2xl mx-auto bg-white/95 rounded-xl sm:rounded-2xl shadow-2xl border border-gray-200/60 overflow-hidden pointer-events-auto"
-            style={{ backdropFilter: 'blur(20px)' }}
+            className="max-w-lg mx-auto pointer-events-auto"
+            style={{
+              background: 'rgba(255, 255, 255, 0.7)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              borderRadius: '16px',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)',
+            }}
           >
             <div className="p-4 sm:p-5">
-              {/* Header Row */}
-              <div className="flex items-start justify-between gap-3 mb-3 sm:mb-4">
-                <div className="flex items-start sm:items-center gap-2 sm:gap-3">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-amber-50 flex items-center justify-center flex-shrink-0">
-                    <MessageSquare size={16} className="text-amber-600 sm:hidden" />
-                    <MessageSquare size={20} className="text-amber-600 hidden sm:block" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm sm:text-base font-medium text-gray-900">Chat Limit Reached</h3>
-                    <p className="text-xs sm:text-sm text-gray-500 leading-tight">
-                      You've used all {getTierChatLimit()} chats. Continue existing chats or upgrade.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowSubscriptionBlocker(false)}
-                  className="p-1 sm:p-1.5 hover:bg-gray-100/60 rounded-lg transition-all flex-shrink-0"
-                >
-                  <X size={16} className="text-gray-400 sm:hidden" />
-                  <X size={18} className="text-gray-400 hidden sm:block" />
-                </button>
+              {/* Close button - top right */}
+              <button
+                onClick={() => setShowSubscriptionBlocker(false)}
+                className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-black/5 transition-colors"
+              >
+                <X size={16} className="text-gray-400" />
+              </button>
+
+              {/* Content */}
+              <div className="pr-6">
+                <p className="text-[13px] sm:text-sm text-gray-600 leading-relaxed">
+                  You've used all <span className="font-medium text-gray-900">{getTierChatLimit()} chats</span> this month.
+                  Continue your existing conversations or upgrade for more.
+                </p>
               </div>
 
-              {/* Action Buttons - Stack on mobile, side by side on desktop */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+              {/* Actions */}
+              <div className="flex items-center gap-2 mt-4">
                 <button
                   onClick={() => {
                     setShowSubscriptionBlocker(false);
-                    // Navigate to the most recent existing chat (not blocked ones)
                     const existingChat = chatHistory.find(c => !c.id.startsWith('blocked-'));
                     if (existingChat) {
                       setActiveChat(existingChat.id);
                     }
                   }}
-                  className="flex-1 py-2.5 px-4 bg-gray-100 text-gray-700 rounded-xl text-xs sm:text-sm font-medium hover:bg-gray-200 transition-colors"
+                  className="flex-1 py-2.5 px-4 text-[13px] sm:text-sm font-medium text-gray-700 rounded-xl transition-all"
+                  style={{
+                    background: 'rgba(0, 0, 0, 0.04)',
+                  }}
+                  onMouseEnter={(e) => e.target.style.background = 'rgba(0, 0, 0, 0.08)'}
+                  onMouseLeave={(e) => e.target.style.background = 'rgba(0, 0, 0, 0.04)'}
                 >
-                  Continue Existing Chats
+                  Continue chats
                 </button>
                 <button
                   onClick={() => {
                     setShowSubscriptionBlocker(false);
                     setShowSubscriptionModal(true);
                   }}
-                  className="flex-1 py-2.5 px-4 bg-gray-900 text-white rounded-xl text-xs sm:text-sm font-medium hover:bg-gray-800 transition-colors"
+                  className="flex-1 py-2.5 px-4 text-[13px] sm:text-sm font-medium text-white rounded-xl transition-all"
+                  style={{
+                    background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)',
+                  }}
+                  onMouseEnter={(e) => e.target.style.opacity = '0.9'}
+                  onMouseLeave={(e) => e.target.style.opacity = '1'}
                 >
-                  Upgrade Subscription
+                  Upgrade
                 </button>
               </div>
             </div>
