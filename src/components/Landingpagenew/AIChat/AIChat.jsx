@@ -765,6 +765,23 @@ const AIChat = ({
     }
   }, [userProfile, isAdmin]);
 
+  // Periodically refresh profile when chat limit is reached (to detect upgrades via webhook)
+  useEffect(() => {
+    if (!chatLimitReached || !user?.id || isAdmin) return;
+
+    console.log('🔄 Starting periodic profile refresh (checking for subscription updates)');
+
+    const refreshInterval = setInterval(async () => {
+      console.log('🔄 Checking for subscription updates...');
+      await loadUserProfile();
+    }, 30000); // Check every 30 seconds
+
+    return () => {
+      console.log('🔄 Stopping periodic profile refresh');
+      clearInterval(refreshInterval);
+    };
+  }, [chatLimitReached, user?.id, isAdmin]);
+
   // Reset chatsLoaded when user changes to force reload
   useEffect(() => {
     const currentUserId = user?.id;
