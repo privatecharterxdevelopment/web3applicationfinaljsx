@@ -1770,7 +1770,9 @@ const TokenizedAssetsGlassmorphic = () => {
   const [chatHistoryViewMode, setChatHistoryViewMode] = useState('grid');
   const [selectedChatForView, setSelectedChatForView] = useState(null);
 
-  // Blog post state
+  // Blog post state - now supports multiple posts with rotation
+  const [blogPosts, setBlogPosts] = useState([]);
+  const [currentBlogIndex, setCurrentBlogIndex] = useState(0);
   const [latestBlogPost, setLatestBlogPost] = useState(null);
   const [blogLoading, setBlogLoading] = useState(false);
 
@@ -2412,34 +2414,37 @@ const TokenizedAssetsGlassmorphic = () => {
     fetchWeather();
   }, []);
 
-  // Fetch latest blog post based on webMode (Aviation for RWS, Web3 for Web3.0)
-  // Caches for 24 hours, then refreshes
+  // Fetch blog posts and rotate every 60 seconds
+  // Fetches multiple posts and cycles through them
   useEffect(() => {
-    const BLOG_CACHE_KEY = `blog_post_cache_${webMode}`;
+    const BLOG_CACHE_KEY = `blog_posts_cache_${webMode}`;
     const BLOG_VERSION_KEY = 'blog_cache_version';
-    const CURRENT_VERSION = '2'; // Increment this to force cache clear
-    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    const CURRENT_VERSION = '3'; // Increment this to force cache clear
+    const CACHE_DURATION = 60 * 60 * 1000; // 1 hour cache for posts list
 
-    // Clear old cache if version changed (forces fresh fetch)
+    // Clear old cache if version changed
     const cachedVersion = localStorage.getItem(BLOG_VERSION_KEY);
     if (cachedVersion !== CURRENT_VERSION) {
       console.log('📰 Clearing old blog cache (version update)');
+      localStorage.removeItem('blog_posts_cache_rws');
+      localStorage.removeItem('blog_posts_cache_web3');
       localStorage.removeItem('blog_post_cache_rws');
       localStorage.removeItem('blog_post_cache_web3');
       localStorage.setItem(BLOG_VERSION_KEY, CURRENT_VERSION);
     }
 
-    const fetchLatestBlogPost = async (forceRefresh = false) => {
+    const fetchBlogPosts = async (forceRefresh = false) => {
       try {
-        // Check cache first (unless force refresh)
+        // Check cache first
         if (!forceRefresh) {
           const cached = localStorage.getItem(BLOG_CACHE_KEY);
           if (cached) {
             const { data, timestamp } = JSON.parse(cached);
             const isValid = Date.now() - timestamp < CACHE_DURATION;
-            if (isValid && data) {
-              console.log('📰 Using cached blog post for', webMode);
-              setLatestBlogPost(data);
+            if (isValid && data && data.length > 0) {
+              console.log(`📰 Using cached blog posts for ${webMode} (${data.length} posts)`);
+              setBlogPosts(data);
+              setLatestBlogPost(data[0]);
               setBlogLoading(false);
               return;
             }
@@ -2447,53 +2452,57 @@ const TokenizedAssetsGlassmorphic = () => {
         }
 
         setBlogLoading(true);
-        console.log('📰 Fetching fresh blog post for', webMode);
+        console.log('📰 Fetching blog posts for', webMode);
 
         // Aviation category ID: 137, Web3 category ID: 131
+        // Fetch 10 posts for rotation
         const categoryId = webMode === 'web3' ? '131' : '137';
         const response = await fetch(
-          `https://www.privatecharterx.blog/wp-json/wp/v2/posts?_embed&per_page=1&orderby=date&order=desc&categories=${categoryId}&_=${Date.now()}`,
+          `https://www.privatecharterx.blog/wp-json/wp/v2/posts?_embed&per_page=10&orderby=date&order=desc&categories=${categoryId}&_=${Date.now()}`,
           {
             method: 'GET',
             headers: {
               'Accept': 'application/json',
               'Content-Type': 'application/json',
             },
-            cache: 'no-store', // Force fresh fetch
+            cache: 'no-store',
           }
         );
 
         if (response.ok) {
           const posts = await response.json();
           if (posts && posts.length > 0) {
-            const post = posts[0];
-            const blogData = {
+            const formattedPosts = posts.map(post => ({
               title: post.title.rendered.replace(/<[^>]*>/g, ''),
               link: `https://www.privatecharterx.blog/${post.slug}`,
               date: post.date,
               excerpt: post.excerpt?.rendered?.replace(/<[^>]*>/g, '').substring(0, 100) || '',
-            };
+              featuredImage: post._embedded?.['wp:featuredmedia']?.[0]?.source_url || null,
+            }));
 
-            // Cache the result
+            // Cache the results
             localStorage.setItem(BLOG_CACHE_KEY, JSON.stringify({
-              data: blogData,
+              data: formattedPosts,
               timestamp: Date.now(),
             }));
 
-            setLatestBlogPost(blogData);
-            console.log('✅ Blog post fetched and cached:', blogData.title);
+            setBlogPosts(formattedPosts);
+            setLatestBlogPost(formattedPosts[0]);
+            setCurrentBlogIndex(0);
+            console.log(`✅ Fetched ${formattedPosts.length} blog posts for rotation`);
           }
         } else {
           console.log('❌ Blog fetch failed:', response.status);
         }
       } catch (error) {
-        console.log('Failed to fetch blog post:', error);
+        console.log('Failed to fetch blog posts:', error);
         // Try to use stale cache if fetch fails
         const cached = localStorage.getItem(BLOG_CACHE_KEY);
         if (cached) {
           const { data } = JSON.parse(cached);
-          if (data) {
-            setLatestBlogPost(data);
+          if (data && data.length > 0) {
+            setBlogPosts(data);
+            setLatestBlogPost(data[0]);
           }
         }
       } finally {
@@ -2501,15 +2510,31 @@ const TokenizedAssetsGlassmorphic = () => {
       }
     };
 
-    fetchLatestBlogPost();
+    fetchBlogPosts();
 
-    // Also set up interval to check for new posts every hour (will use cache if still valid)
-    const interval = setInterval(() => {
-      fetchLatestBlogPost();
-    }, 60 * 60 * 1000); // Check every hour
+    // Refresh posts list every hour
+    const refreshInterval = setInterval(() => {
+      fetchBlogPosts(true);
+    }, 60 * 60 * 1000);
 
-    return () => clearInterval(interval);
+    return () => clearInterval(refreshInterval);
   }, [webMode]);
+
+  // Rotate through blog posts every 60 seconds
+  useEffect(() => {
+    if (blogPosts.length <= 1) return;
+
+    const rotationInterval = setInterval(() => {
+      setCurrentBlogIndex(prevIndex => {
+        const nextIndex = (prevIndex + 1) % blogPosts.length;
+        setLatestBlogPost(blogPosts[nextIndex]);
+        console.log(`📰 Rotating to blog post ${nextIndex + 1}/${blogPosts.length}: ${blogPosts[nextIndex]?.title?.substring(0, 30)}...`);
+        return nextIndex;
+      });
+    }, 60 * 1000); // Rotate every 60 seconds
+
+    return () => clearInterval(rotationInterval);
+  }, [blogPosts]);
 
   // Fetch Ethereum price and history from CoinGecko API
   useEffect(() => {

@@ -1,28 +1,44 @@
 // Supabase Edge Function to fetch blog posts from privatecharterx.blog
 // This bypasses CORS issues by making the request server-side
+// Uses WordPress REST API
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const BLOG_URL = 'https://www.privatecharterx.blog';
-const WEB3_RSS_FEED = `${BLOG_URL}/feeds/posts/default/-/web3?alt=json&max-results=50`;
+const WP_API_BASE = `${BLOG_URL}/wp-json/wp/v2`;
+
+// Category IDs from WordPress
+const CATEGORIES = {
+  web3: 131,
+  aviation: 1, // Default/uncategorized or aviation category
+};
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
-    return new Response('ok', {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-      },
-    });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    console.log('🔍 Fetching Web3 posts from privatecharterx.blog...');
+    // Get category from query params (default to web3)
+    const url = new URL(req.url);
+    const category = url.searchParams.get('category') || 'web3';
+    const limit = parseInt(url.searchParams.get('limit') || '10');
 
-    // Fetch RSS feed from Blogger
-    const response = await fetch(WEB3_RSS_FEED, {
+    const categoryId = CATEGORIES[category as keyof typeof CATEGORIES] || CATEGORIES.web3;
+
+    console.log(`🔍 Fetching ${category} posts from privatecharterx.blog (category ${categoryId})...`);
+
+    // Fetch from WordPress REST API with embedded media
+    const wpUrl = `${WP_API_BASE}/posts?categories=${categoryId}&per_page=${limit}&_embed&orderby=date&order=desc`;
+
+    const response = await fetch(wpUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; PrivateCharterX/1.0)',
         'Accept': 'application/json',
@@ -30,61 +46,81 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`WordPress API error: ${response.status}`);
     }
 
-    const responseText = await response.text();
+    const wpPosts = await response.json();
 
-    // Validate JSON
-    if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
-      throw new Error('Received HTML instead of JSON');
+    if (!Array.isArray(wpPosts)) {
+      throw new Error('Invalid response from WordPress API');
     }
 
-    const data = JSON.parse(responseText);
-    const entries = data.feed?.entry || [];
-
-    console.log(`📝 Found ${entries.length} posts`);
+    console.log(`📝 Found ${wpPosts.length} posts`);
 
     // Format posts
-    const posts = entries.map((entry: any) => {
-      const title = entry.title?.$t || 'Untitled';
-      const content = entry.content?.$t || '';
-      const published = entry.published?.$t;
-      const link = entry.link?.find((l: any) => l.rel === 'alternate')?.href || '';
+    const posts = wpPosts.map((post: any) => {
+      // Extract title
+      const title = post.title?.rendered || 'Untitled';
+
+      // Extract content
+      const content = post.content?.rendered || '';
 
       // Extract excerpt
-      const textContent = content.replace(/<[^>]*>/g, '');
-      const excerpt = textContent.substring(0, 200) + '...';
+      let excerpt = post.excerpt?.rendered || '';
+      excerpt = excerpt.replace(/<[^>]*>/g, '').trim();
+      if (!excerpt && content) {
+        const textContent = content.replace(/<[^>]*>/g, '').trim();
+        excerpt = textContent.substring(0, 200) + '...';
+      }
 
-      // Extract featured image
-      const imageMatch = content.match(/<img[^>]+src="([^">]+)"/);
-      const featuredImage = imageMatch ? imageMatch[1] : null;
+      // Extract featured image from _embedded
+      let featuredImage = null;
+      if (post._embedded?.['wp:featuredmedia']?.[0]) {
+        const media = post._embedded['wp:featuredmedia'][0];
+        featuredImage = media.source_url || media.media_details?.sizes?.large?.source_url || null;
+      }
+
+      // Fallback: extract image from content
+      if (!featuredImage && content) {
+        const imageMatch = content.match(/<img[^>]+src="([^">]+)"/);
+        featuredImage = imageMatch ? imageMatch[1] : null;
+      }
+
+      // Extract author
+      let author = 'PrivateCharterX Team';
+      if (post._embedded?.author?.[0]) {
+        author = post._embedded.author[0].name || author;
+      }
 
       // Extract tags
-      const tags = (entry.category || [])
-        .map((cat: any) => cat.term)
-        .filter((term: string) => term && !term.toLowerCase().includes('http'));
+      let tags: string[] = [];
+      if (post._embedded?.['wp:term']) {
+        const allTerms = post._embedded['wp:term'].flat();
+        tags = allTerms
+          .filter((term: any) => term.taxonomy === 'post_tag')
+          .map((term: any) => term.name);
+      }
 
       return {
+        id: post.id,
         title,
         excerpt,
         content,
         featured_image: featuredImage,
-        author: entry.author?.[0]?.name?.$t || 'PrivateCharterX Team',
+        author,
         source: 'privatecharterx.blog',
-        category: 'web3',
-        source_url: link,
+        category,
+        source_url: post.link,
+        slug: post.slug,
         tags,
-        published_at: published || new Date().toISOString(),
+        published_at: post.date || new Date().toISOString(),
       };
     });
 
-    return new Response(JSON.stringify({ success: true, posts, count: posts.length }), {
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-    });
+    return new Response(
+      JSON.stringify({ success: true, posts, count: posts.length, category }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
     console.error('❌ Error fetching blog posts:', error);
 
@@ -96,10 +132,7 @@ serve(async (req) => {
       }),
       {
         status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
   }
