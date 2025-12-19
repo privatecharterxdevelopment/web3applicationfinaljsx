@@ -290,125 +290,118 @@ function Step2Form({
     );
   }
 
-  // Phone & Submit Step
+  // Phone & Submit Step - Same layout as LoginModalNew (3 sections)
   return (
     <Portal>
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-0 lg:p-8 font-['DM_Sans']">
         <div className="w-full h-screen lg:h-[90vh] lg:max-w-7xl bg-white rounded-none lg:rounded-3xl shadow-2xl overflow-hidden flex flex-col-reverse lg:flex-row">
 
-          {/* Form Section */}
-          <div className="w-full lg:w-2/5 bg-white p-6 lg:p-8 flex flex-col relative overflow-y-auto">
+          {/* Form Section - 3 parts: top nav, middle form, bottom buttons */}
+          <div className="w-full lg:w-2/5 bg-white flex flex-col relative overflow-hidden">
 
-            {/* Close Button - Mobile */}
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 lg:hidden w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors z-10"
-              aria-label="Close"
-            >
-              <X size={20} className="text-gray-600" />
-            </button>
-
-            {/* Progress Dots */}
-            <div className="absolute right-6 top-20 lg:top-6 flex items-center gap-2">
-              <div className="w-2 h-2 bg-gray-300 rounded-full" />
-              <div className="w-2 h-2 bg-black rounded-full" />
+            {/* TOP: Navigation Bar */}
+            <div className="flex items-center justify-between p-4 lg:p-6">
+              <button
+                onClick={onGoBack}
+                disabled={isLoading}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50"
+              >
+                <ArrowLeft size={20} className="text-gray-600" />
+              </button>
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="Close"
+              >
+                <X size={20} className="text-gray-600" />
+              </button>
             </div>
 
-            {/* Logo */}
-            <div className="mb-6">
-              <img
-                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/PrivatecharterX_logo_vectorized.glb.png"
-                alt="PrivateCharterX"
-                className="h-10"
-              />
-            </div>
+            {/* MIDDLE: Form Fields - Scrollable, centered */}
+            <div className="flex-1 overflow-y-auto px-6 lg:px-8">
+              <div className="w-full max-w-sm mx-auto py-4">
+                {/* Title */}
+                <div className="mb-6">
+                  <h1 className="text-2xl font-semibold text-gray-900 mb-1">
+                    Complete Registration
+                  </h1>
+                  <p className="text-sm text-gray-500 font-light">
+                    Step 2 of 2: Almost there!
+                  </p>
+                </div>
 
-            {/* Title */}
-            <div className="mb-6">
-              <h1 className="text-2xl font-semibold text-gray-900 mb-1">
-                Complete Registration
-              </h1>
-              <p className="text-sm text-gray-500 font-light">
-                Step 2 of 2: Almost there!
-              </p>
-            </div>
+                {/* Pre-filled data display */}
+                <div className="p-3 bg-gray-50 rounded-lg text-sm mb-4">
+                  <p className="text-gray-600">Creating account for:</p>
+                  <p className="font-medium">{formData.firstName} {formData.lastName}</p>
+                  <p className="text-gray-600">{formData.email}</p>
+                </div>
 
-            {/* Pre-filled data display */}
-            <div className="p-3 bg-gray-50 rounded-lg text-sm mb-4">
-              <p className="text-gray-600">Creating account for:</p>
-              <p className="font-medium">{formData.firstName} {formData.lastName}</p>
-              <p className="text-gray-600">{formData.email}</p>
-            </div>
-
-            {/* Error */}
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-xs text-red-600">{error}</p>
-              </div>
-            )}
-
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
-              <div className="space-y-3 mb-4">
-                {/* Phone */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                    Phone Number <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
-                      placeholder="Enter your phone number"
-                      disabled={isLoading}
-                      required
-                    />
+                {/* Error */}
+                {error && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-xs text-red-600">{error}</p>
                   </div>
-                  <div className="text-xs text-gray-500 mt-1.5">
-                    Required for booking confirmations and important updates
+                )}
+
+                {/* Form Fields */}
+                <div className="space-y-3">
+                  {/* Phone */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                      Phone Number <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
+                        placeholder="Enter your phone number"
+                        disabled={isLoading}
+                        required
+                      />
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1.5">
+                      Required for booking confirmations and important updates
+                    </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Buttons */}
-              <div className="flex gap-3 mb-4">
+            {/* BOTTOM: Buttons fixed at bottom */}
+            <div className="p-4 lg:p-6 border-t border-gray-100">
+              <div className="w-full max-w-sm mx-auto space-y-3">
+                {/* Create Account Button */}
                 <button
                   type="button"
-                  onClick={onGoBack}
-                  disabled={isLoading}
-                  className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Back
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex-1 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  onClick={handleSubmit}
+                  disabled={isLoading || !phone}
+                  className="w-full py-3 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isLoading ? (
-                    <span className="flex items-center justify-center gap-2">
+                    <>
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       Creating account...
-                    </span>
+                    </>
                   ) : (
                     'Create Account'
                   )}
                 </button>
-              </div>
 
-              {/* Footer */}
-              <div className="mt-auto pt-4 text-center">
-                <p className="text-[10px] text-gray-400">
-                  By creating an account, you agree to our{' '}
-                  <a href="/terms" className="underline hover:text-gray-600">Terms</a>
-                  {' & '}
-                  <a href="/privacy" className="underline hover:text-gray-600">Privacy</a>
-                </p>
+                {/* Footer */}
+                <div className="pt-2 text-center">
+                  <p className="text-[10px] text-gray-400">
+                    By creating an account, you agree to our{' '}
+                    <a href="/terms" className="underline hover:text-gray-600">Terms</a>
+                    {' & '}
+                    <a href="/privacy" className="underline hover:text-gray-600">Privacy</a>
+                  </p>
+                </div>
               </div>
-            </form>
+            </div>
           </div>
 
           {/* Video Section - Top on mobile, right on desktop */}
@@ -518,7 +511,7 @@ export default function RegisterModalNew({
     );
   }
 
-  // Step 1: Basic Info
+  // Step 1: Basic Info - Same layout as LoginModalNew (3 sections)
   return (
     <Portal>
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-0 lg:p-8 font-['DM_Sans']">
@@ -526,200 +519,186 @@ export default function RegisterModalNew({
         {/* Modal Container - Fullscreen mobile, centered desktop */}
         <div className="w-full h-screen lg:h-[90vh] lg:max-w-7xl bg-white rounded-none lg:rounded-3xl shadow-2xl overflow-hidden flex flex-col-reverse lg:flex-row">
 
-          {/* Form Section */}
-          <div className="w-full lg:w-2/5 bg-white p-6 lg:p-8 flex flex-col relative overflow-y-auto">
+          {/* Form Section - 3 parts: top nav, middle form, bottom buttons */}
+          <div className="w-full lg:w-2/5 bg-white flex flex-col relative overflow-hidden">
 
-            {/* Back Arrow - Goes to landing page */}
-            <button
-              onClick={() => {
-                handleClose();
-                navigate('/');
-              }}
-              className="absolute left-6 top-6 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
-            >
-              <ArrowLeft size={20} className="text-gray-600" />
-            </button>
-
-            {/* Close Button */}
-            <button
-              onClick={handleClose}
-              className="absolute right-6 top-6 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
-              aria-label="Close"
-            >
-              <X size={20} className="text-gray-600" />
-            </button>
-
-            {/* Progress Dots */}
-            <div className="absolute right-6 top-20 flex items-center gap-2">
-              <div className="w-2 h-2 bg-black rounded-full" />
-              <div className="w-2 h-2 bg-gray-300 rounded-full" />
+            {/* TOP: Navigation Bar */}
+            <div className="flex items-center justify-between p-4 lg:p-6">
+              <button
+                onClick={() => {
+                  handleClose();
+                  navigate('/');
+                }}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <ArrowLeft size={20} className="text-gray-600" />
+              </button>
+              <button
+                onClick={handleClose}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="Close"
+              >
+                <X size={20} className="text-gray-600" />
+              </button>
             </div>
 
-            {/* Logo */}
-            <div className="mb-6 mt-6">
-              <img
-                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/PrivatecharterX_logo_vectorized.glb.png"
-                alt="PrivateCharterX"
-                className="h-10"
-              />
-            </div>
+            {/* MIDDLE: Form Fields - Scrollable, centered */}
+            <div className="flex-1 overflow-y-auto px-6 lg:px-8">
+              <div className="w-full max-w-sm mx-auto py-4">
+                {/* Title */}
+                <div className="mb-6">
+                  <h1 className="text-2xl font-semibold text-gray-900 mb-1">
+                    Create Account
+                  </h1>
+                  <p className="text-sm text-gray-500 font-light">
+                    Step 1 of 2: Basic Information
+                  </p>
+                </div>
 
-            {/* Title */}
-            <div className="mb-6">
-              <h1 className="text-2xl font-semibold text-gray-900 mb-1">
-                Create Account
-              </h1>
-              <p className="text-sm text-gray-500 font-light">
-                Step 1 of 2: Basic Information
-              </p>
-            </div>
+                {/* Error */}
+                {error && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-xs text-red-600">{error}</p>
+                  </div>
+                )}
 
-            {/* Error */}
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-xs text-red-600">{error}</p>
-              </div>
-            )}
+                {/* Form Fields */}
+                <div className="space-y-3 mb-4">
+                  {/* First Name & Last Name in One Row */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* First Name */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                        First Name *
+                      </label>
+                      <div className="relative">
+                        <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input
+                          type="text"
+                          name="firstName"
+                          value={formData.firstName}
+                          onChange={handleChange}
+                          className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
+                          placeholder="John"
+                          required
+                        />
+                      </div>
+                    </div>
 
-            {/* Form */}
-            <form onSubmit={handleBasicInfoSubmit} className="flex-1 flex flex-col">
-              <div className="space-y-3 mb-4">
-                {/* First Name & Last Name in One Row */}
-                <div className="grid grid-cols-2 gap-3">
-                  {/* First Name */}
+                    {/* Last Name */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                        Last Name
+                      </label>
+                      <div className="relative">
+                        <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input
+                          type="text"
+                          name="lastName"
+                          value={formData.lastName}
+                          onChange={handleChange}
+                          className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
+                          placeholder="Doe"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Email */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                      First Name *
+                      Email *
                     </label>
                     <div className="relative">
-                      <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                       <input
-                        type="text"
-                        name="firstName"
-                        value={formData.firstName}
+                        type="email"
+                        name="email"
+                        value={formData.email}
                         onChange={handleChange}
                         className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
-                        placeholder="John"
+                        placeholder="your@email.com"
                         required
                       />
                     </div>
                   </div>
 
-                  {/* Last Name */}
+                  {/* Password */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                      Last Name
+                      Password *
                     </label>
                     <div className="relative">
-                      <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                       <input
-                        type="text"
-                        name="lastName"
-                        value={formData.lastName}
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        value={formData.password}
                         onChange={handleChange}
-                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
-                        placeholder="Doe"
+                        className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
+                        placeholder="••••••••"
+                        required
+                        minLength={8}
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
                     </div>
+                    {/* Password strength indicator */}
+                    {formData.password && (
+                      <div className="mt-2 space-y-1">
+                        {passwordRequirements.map((req, index) => (
+                          <div key={index} className="flex items-center gap-2 text-xs">
+                            <div className={`w-1.5 h-1.5 rounded-full ${req.test ? 'bg-green-500' : 'bg-gray-300'}`} />
+                            <span className={req.test ? 'text-green-600' : 'text-gray-500'}>{req.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
 
-                {/* Email */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                    Email *
-                  </label>
-                  <div className="relative">
-                    <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
-                      placeholder="your@email.com"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Password */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                    Password *
-                  </label>
-                  <div className="relative">
-                    <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
-                      placeholder="••••••••"
-                      required
-                      minLength={8}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                  {/* Password strength indicator */}
-                  {formData.password && (
-                    <div className="mt-2 space-y-1">
-                      {passwordRequirements.map((req, index) => (
-                        <div key={index} className="flex items-center gap-2 text-xs">
-                          <div className={`w-1.5 h-1.5 rounded-full ${req.test ? 'bg-green-500' : 'bg-gray-300'}`} />
-                          <span className={req.test ? 'text-green-600' : 'text-gray-500'}>{req.label}</span>
-                        </div>
-                      ))}
+                  {/* Confirm Password */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                      Confirm Password *
+                    </label>
+                    <div className="relative">
+                      <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
+                        placeholder="••••••••"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
                     </div>
-                  )}
-                </div>
-
-                {/* Confirm Password */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                    Confirm Password *
-                  </label>
-                  <div className="relative">
-                    <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
-                      placeholder="••••••••"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
+                    {/* Password match indicator */}
+                    {formData.confirmPassword && (
+                      <div className="mt-2 flex items-center gap-2 text-xs">
+                        <div className={`w-1.5 h-1.5 rounded-full ${doPasswordsMatch ? 'bg-green-500' : 'bg-red-500'}`} />
+                        <span className={doPasswordsMatch ? 'text-green-600' : 'text-red-600'}>
+                          {doPasswordsMatch ? 'Passwords match' : 'Passwords do not match'}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  {/* Password match indicator */}
-                  {formData.confirmPassword && (
-                    <div className="mt-2 flex items-center gap-2 text-xs">
-                      <div className={`w-1.5 h-1.5 rounded-full ${doPasswordsMatch ? 'bg-green-500' : 'bg-red-500'}`} />
-                      <span className={doPasswordsMatch ? 'text-green-600' : 'text-red-600'}>
-                        {doPasswordsMatch ? 'Passwords match' : 'Passwords do not match'}
-                      </span>
-                    </div>
-                  )}
                 </div>
-              </div>
 
-              {/* Links */}
-              <div className="flex flex-col gap-2 text-xs mb-4">
-                <div className="flex justify-between items-center">
+                {/* Links */}
+                <div className="flex justify-between items-center text-xs">
                   <button
                     type="button"
                     onClick={(e) => {
@@ -732,53 +711,34 @@ export default function RegisterModalNew({
                     Already have an account?
                   </button>
                 </div>
-
-                {/* Partner Registration Link - Hidden for now */}
-                {/* TODO: Re-enable partner onboarding when ready
-                {onSwitchToPartnerRegister && (
-                  <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg">
-                    <div className="flex-1">
-                      <p className="text-gray-700 font-medium text-xs">Looking to offer services?</p>
-                      <p className="text-gray-500 text-[10px]">Join as a partner and list your services</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onSwitchToPartnerRegister();
-                      }}
-                      className="px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md hover:bg-black transition-colors whitespace-nowrap"
-                    >
-                      Become a Partner
-                    </button>
-                  </div>
-                )}
-                */}
               </div>
+            </div>
 
-              {/* Next Button */}
-              <button
-                type="submit"
-                disabled={!formData.firstName || !formData.email || !isPasswordValid || !doPasswordsMatch}
-                className="w-full py-3 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-3 flex items-center justify-center gap-2"
-              >
-                <>
+            {/* BOTTOM: Buttons fixed at bottom */}
+            <div className="p-4 lg:p-6 border-t border-gray-100">
+              <div className="w-full max-w-sm mx-auto space-y-3">
+                {/* Next Button */}
+                <button
+                  type="button"
+                  onClick={handleBasicInfoSubmit}
+                  disabled={!formData.firstName || !formData.email || !isPasswordValid || !doPasswordsMatch}
+                  className="w-full py-3 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
                   Next Step
                   <ArrowRight size={16} />
-                </>
-              </button>
+                </button>
 
-              {/* Footer */}
-              <div className="mt-auto pt-4 text-center">
-                <p className="text-[10px] text-gray-400">
-                  By creating an account, you agree to our{' '}
-                  <a href="/terms" className="underline hover:text-gray-600">Terms</a>
-                  {' & '}
-                  <a href="/privacy" className="underline hover:text-gray-600">Privacy</a>
-                </p>
+                {/* Footer */}
+                <div className="pt-2 text-center">
+                  <p className="text-[10px] text-gray-400">
+                    By creating an account, you agree to our{' '}
+                    <a href="/terms" className="underline hover:text-gray-600">Terms</a>
+                    {' & '}
+                    <a href="/privacy" className="underline hover:text-gray-600">Privacy</a>
+                  </p>
+                </div>
               </div>
-            </form>
+            </div>
           </div>
 
           {/* Video Section - Top on mobile, right on desktop */}
