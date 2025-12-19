@@ -55,13 +55,22 @@ const CRMDashboard = ({ onClose }) => {
   const [refreshing, setRefreshing] = useState(false);
   const pageSize = 9;
 
-  // Check admin status
+  // Check admin status - check both auth.users metadata AND users table
   useEffect(() => {
     const checkAdmin = async () => {
       if (!user?.id) { setLoading(false); return; }
       try {
-        const { data } = await supabaseAdmin.from('users').select('is_admin, user_role').eq('id', user.id).single();
-        if (data) setIsAdmin(data.is_admin || data.user_role === 'admin' || data.user_role === 'super_admin');
+        // Check 1: auth.users user_metadata (where we set is_admin via auth.admin.updateUserById)
+        const { data: authData } = await supabaseAdmin.auth.admin.getUserById(user.id);
+        const authIsAdmin = authData?.user?.user_metadata?.is_admin === true;
+
+        // Check 2: users table (fallback/legacy)
+        const { data: usersData } = await supabaseAdmin.from('users').select('is_admin, user_role').eq('id', user.id).single();
+        const tableIsAdmin = usersData?.is_admin || usersData?.user_role === 'admin' || usersData?.user_role === 'super_admin';
+
+        // Admin if either source says so
+        setIsAdmin(authIsAdmin || tableIsAdmin);
+        console.log('Admin check:', { userId: user.id, authIsAdmin, tableIsAdmin, final: authIsAdmin || tableIsAdmin });
       } catch (err) { console.error('Error checking admin:', err); }
       setLoading(false);
     };
