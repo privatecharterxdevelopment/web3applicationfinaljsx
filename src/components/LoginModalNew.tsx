@@ -130,107 +130,99 @@ function LoginForm({
         {/* Modal Container - Fullscreen mobile, centered desktop */}
         <div className="w-full h-screen lg:h-[90vh] lg:max-w-7xl bg-white rounded-none lg:rounded-3xl shadow-2xl overflow-hidden flex flex-col-reverse lg:flex-row">
 
-          {/* Form Section */}
-          <div className="w-full lg:w-2/5 bg-white p-6 lg:p-8 flex flex-col relative overflow-y-auto">
+          {/* Form Section - 3 parts: top nav, middle form, bottom buttons */}
+          <div className="w-full lg:w-2/5 bg-white flex flex-col relative overflow-hidden">
 
-            {/* Back Arrow - Goes to landing page */}
-            <button
-              onClick={() => {
-                onClose();
-                navigate('/');
-              }}
-              className="absolute left-6 top-6 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
-            >
-              <ArrowLeft size={20} className="text-gray-600" />
-            </button>
-
-            {/* Close Button */}
-            <button
-              onClick={onClose}
-              className="absolute right-6 top-6 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
-              aria-label="Close"
-            >
-              <X size={20} className="text-gray-600" />
-            </button>
-
-            {/* Logo - Hidden */}
-            {/* <div className="mb-8 mt-6">
-              <img
-                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/PrivatecharterX_logo_vectorized.glb.png"
-                alt="PrivateCharterX"
-                className="h-10"
-              />
-            </div> */}
-
-            {/* Title */}
-            <div className="mb-6">
-              <h1 className="text-2xl font-semibold text-gray-900 mb-1">
-                Welcome Back
-              </h1>
-              <p className="text-sm text-gray-500 font-light">
-                Sign in to your account
-              </p>
+            {/* TOP: Navigation Bar */}
+            <div className="flex items-center justify-between p-4 lg:p-6">
+              <button
+                onClick={() => {
+                  onClose();
+                  navigate('/');
+                }}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <ArrowLeft size={20} className="text-gray-600" />
+              </button>
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="Close"
+              >
+                <X size={20} className="text-gray-600" />
+              </button>
             </div>
 
-            {/* Error */}
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-xs text-red-600">{error}</p>
-              </div>
-            )}
+            {/* MIDDLE: Form Fields - Scrollable, centered */}
+            <div className="flex-1 overflow-y-auto px-6 lg:px-8">
+              <div className="w-full max-w-sm mx-auto py-4">
+                {/* Title */}
+                <div className="mb-6">
+                  <h1 className="text-2xl font-semibold text-gray-900 mb-1">
+                    Welcome Back
+                  </h1>
+                  <p className="text-sm text-gray-500 font-light">
+                    Sign in to your account
+                  </p>
+                </div>
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
-              <div className="space-y-3 mb-4">
-                {/* Email */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                    Email
-                  </label>
-                  <div className="relative">
-                    <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
-                      placeholder="your@email.com"
-                      required
-                      disabled={isLoading}
-                    />
+                {/* Error */}
+                {error && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-xs text-red-600">{error}</p>
+                  </div>
+                )}
+
+                {/* Form Fields */}
+                <div className="space-y-3 mb-4">
+                  {/* Email */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                      Email
+                    </label>
+                    <div className="relative">
+                      <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
+                        placeholder="your@email.com"
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Password */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
+                        placeholder="••••••••"
+                        required
+                        disabled={isLoading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                {/* Password */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
-                      placeholder="••••••••"
-                      required
-                      disabled={isLoading}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Links */}
-              <div className="flex flex-col gap-2 text-xs mb-4">
-                <div className="flex justify-between items-center">
+                {/* Links */}
+                <div className="flex justify-between items-center text-xs">
                   <button
                     type="button"
                     onClick={onSwitchToRegister}
@@ -254,44 +246,51 @@ function LoginForm({
                   </button>
                 </div>
               </div>
+            </div>
 
-              {/* Sign In Button - Monochromatic */}
-              <button
-                type="submit"
-                disabled={isLoading || !email || !password}
-                className="w-full py-3 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-3"
-              >
-                {isLoading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Signing in...
-                  </span>
-                ) : (
-                  'Sign In'
-                )}
-              </button>
+            {/* BOTTOM: Buttons fixed at bottom */}
+            <div className="p-4 lg:p-6 border-t border-gray-100">
+              <div className="w-full max-w-sm mx-auto space-y-3">
+                {/* Sign In Button */}
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isLoading || !email || !password}
+                  className="w-full py-3 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Signing in...
+                    </span>
+                  ) : (
+                    'Sign In'
+                  )}
+                </button>
 
-              {/* Face ID Button - Coming Soon */}
-              <button
-                type="button"
-                disabled={true}
-                className="w-full py-3 bg-gray-100 text-gray-400 rounded-lg text-sm font-medium cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <Scan size={18} />
-                <span>Face ID</span>
-                <span className="ml-1 px-2 py-0.5 bg-gray-200 text-gray-500 text-[10px] font-medium rounded-full">Coming Soon</span>
-              </button>
+                {/* Face ID Button - Regional */}
+                <button
+                  type="button"
+                  onClick={handleFaceLoginClick}
+                  disabled={isLoading || !email}
+                  className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  <Scan size={18} />
+                  <span>Face ID</span>
+                  <span className="ml-1 px-2 py-0.5 bg-gray-200 text-gray-500 text-[10px] font-medium rounded-full">Regional</span>
+                </button>
 
-              {/* Footer */}
-              <div className="mt-auto pt-4 text-center">
-                <p className="text-[10px] text-gray-400">
-                  By signing in, you agree to our{' '}
-                  <a href="/terms" className="underline hover:text-gray-600">Terms</a>
-                  {' & '}
-                  <a href="/privacy" className="underline hover:text-gray-600">Privacy</a>
-                </p>
+                {/* Footer */}
+                <div className="pt-2 text-center">
+                  <p className="text-[10px] text-gray-400">
+                    By signing in, you agree to our{' '}
+                    <a href="/terms" className="underline hover:text-gray-600">Terms</a>
+                    {' & '}
+                    <a href="/privacy" className="underline hover:text-gray-600">Privacy</a>
+                  </p>
+                </div>
               </div>
-            </form>
+            </div>
           </div>
 
           {/* Video Section - Top on mobile, right on desktop */}
