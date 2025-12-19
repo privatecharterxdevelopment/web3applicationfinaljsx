@@ -360,14 +360,34 @@ const CRMDashboard = ({ onClose }) => {
     finally { setRefreshing(false); }
   }, []);
 
-  // Fetch empty leg bookings (Coingate payments)
+  // Fetch empty leg bookings (Coingate payments) - includes operator info from EmptyLegs_ table
   const fetchEmptyLegBookings = useCallback(async () => {
     setRefreshing(true);
     try {
       const { data, error } = await supabaseAdmin.from('user_bookings').select('*').eq('booking_type', 'empty_leg').order('created_at', { ascending: false }).limit(100);
       if (error) console.error('Empty leg bookings fetch error:', error);
       const enriched = await enrichWithUserData(data || []);
-      setAllEmptyLegBookings(enriched);
+
+      // Fetch operator info from EmptyLegs_ table for each booking
+      const withOperator = await Promise.all(enriched.map(async (booking) => {
+        // Try to get operator from EmptyLegs_ table using service_id
+        const serviceId = booking.service_id || booking.empty_leg_id || booking.metadata?.empty_leg_id;
+        if (serviceId) {
+          const { data: emptyLeg } = await supabaseAdmin
+            .from('EmptyLegs_')
+            .select('operator')
+            .eq('id', serviceId)
+            .single();
+          if (emptyLeg?.operator) {
+            return { ...booking, operator: emptyLeg.operator };
+          }
+        }
+        // Fallback: check if operator is stored in booking details/metadata
+        const operator = booking.details?.operator || booking.metadata?.operator || booking.service_details?.operator;
+        return { ...booking, operator: operator || null };
+      }));
+
+      setAllEmptyLegBookings(withOperator);
     } catch (err) { console.error('Error fetching empty leg bookings:', err); }
     finally { setRefreshing(false); }
   }, []);
@@ -1457,9 +1477,19 @@ const EmptyLegsSection = ({ bookings, refreshing, onRefresh }) => {
                           {origin || 'N/A'} → {destination || 'N/A'}
                         </p>
                       </div>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {contactEmail || b.users?.email || 'Unknown user'} • {new Date(b.created_at).toLocaleString()}
-                      </p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-xs text-gray-500">
+                          {contactEmail || b.users?.email || 'Unknown user'} • {new Date(b.created_at).toLocaleString()}
+                        </p>
+                        {b.operator && (
+                          <>
+                            <span className="text-xs text-gray-300">|</span>
+                            <span className="text-xs font-medium text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                              Operator: {b.operator}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -1524,6 +1554,26 @@ const EmptyLegsSection = ({ bookings, refreshing, onRefresh }) => {
                         )}
                       </div>
                     </div>
+
+                    {/* Operator Info - ADMIN ONLY */}
+                    {b.operator && (
+                      <div className="px-5 py-4 border-t border-gray-200">
+                        <p className="text-xs font-bold text-blue-600 uppercase tracking-wide mb-3 flex items-center gap-2">
+                          <Building2 size={14} /> Operator Information
+                        </p>
+                        <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                              <Building2 size={18} className="text-white" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-blue-900">{b.operator}</p>
+                              <p className="text-xs text-blue-600">Aircraft Operator</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Customer Info */}
                     {(contactName || contactEmail || contactPhone) && (
