@@ -60,12 +60,35 @@ const WEBHOOK_SECRET = process.env.STRIPE_SUBSCRIPTION_WEBHOOK_SECRET || process
  * Main webhook handler
  */
 async function handleStripeSubscriptionWebhook(req, res) {
+  console.log('[Subscription Webhook] Received webhook request');
+  console.log('[Subscription Webhook] Webhook secret configured:', !!WEBHOOK_SECRET);
+  console.log('[Subscription Webhook] Stripe key configured:', !!process.env.STRIPE_SECRET_KEY);
+
   const sig = req.headers['stripe-signature'];
   let event;
 
+  if (!sig) {
+    console.error('[Subscription Webhook] No stripe-signature header');
+    return res.status(400).send('No stripe-signature header');
+  }
+
+  if (!WEBHOOK_SECRET) {
+    console.error('[Subscription Webhook] STRIPE_SUBSCRIPTION_WEBHOOK_SECRET not configured');
+    return res.status(500).send('Webhook secret not configured');
+  }
+
   try {
+    // On Vercel/Express with express.raw(), the raw body is in req.body as a Buffer
+    // We need to use the raw body (Buffer) for signature verification
+    const rawBody = req.rawBody || req.body;
+
+    if (!rawBody) {
+      console.error('[Subscription Webhook] No request body received');
+      return res.status(400).send('No request body');
+    }
+
     event = getStripe().webhooks.constructEvent(
-      req.rawBody || req.body,
+      rawBody,
       sig,
       WEBHOOK_SECRET
     );
