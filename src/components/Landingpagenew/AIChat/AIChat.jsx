@@ -744,6 +744,27 @@ const AIChat = ({
     }
   };
 
+  // Show chat limit banner immediately when profile loads and limit is reached
+  useEffect(() => {
+    if (!userProfile || isAdmin) return;
+
+    // Check if user has a subscription but has reached their chat limit
+    const hasSubscription = userProfile.subscription_tier && userProfile.subscription_status === 'active';
+    const hasLimit = userProfile.chats_limit !== null && userProfile.chats_limit !== undefined;
+    const limitReached = hasLimit && userProfile.chats_used >= userProfile.chats_limit;
+
+    if (hasSubscription && limitReached) {
+      console.log('⚠️ Chat limit reached on load:', {
+        used: userProfile.chats_used,
+        limit: userProfile.chats_limit,
+        tier: userProfile.subscription_tier
+      });
+      setChatLimitReached(true);
+      setSubscriptionBlockerReason('chat_limit');
+      setShowSubscriptionBlocker(true);
+    }
+  }, [userProfile, isAdmin]);
+
   // Reset chatsLoaded when user changes to force reload
   useEffect(() => {
     const currentUserId = user?.id;
