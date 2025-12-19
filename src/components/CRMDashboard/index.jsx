@@ -2574,30 +2574,70 @@ const StatusBadge = ({ status }) => {
 const UserDetailsModal = ({ user, onClose, getUserName }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState({ bookings: [], requests: [], aiChats: [], supportTickets: [], transactions: [], subscriptions: [], kycApps: [] });
+  const [data, setData] = useState({ bookings: [], requests: [], aiChats: [], supportTickets: [], transactions: [], subscriptions: [], kycApps: [], userProfile: null });
+  const [updatingKyc, setUpdatingKyc] = useState(false);
+
+  const fetchAllUserData = async () => {
+    setLoading(true);
+    try {
+      const [{ data: bookings }, { data: requests }, { data: aiChats }, { data: supportTickets }, { data: transactions }, { data: subscriptions }, { data: kycApps }, { data: userProfile }] = await Promise.all([
+        supabaseAdmin.from('user_bookings').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+        supabaseAdmin.from('user_requests').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+        supabaseAdmin.from('ai_chat_sessions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+        supabaseAdmin.from('support_tickets').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+        supabaseAdmin.from('transactions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+        supabaseAdmin.from('user_subscriptions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+        supabaseAdmin.from('kyc_applications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+        supabaseAdmin.from('user_profiles').select('kyc_status, kyc_hash, kyc_verified_at, verification_level').eq('user_id', user.id).maybeSingle()
+      ]);
+      setData({ bookings: bookings || [], requests: requests || [], aiChats: aiChats || [], supportTickets: supportTickets || [], transactions: transactions || [], subscriptions: subscriptions || [], kycApps: kycApps || [], userProfile: userProfile });
+    } catch (err) { console.error('Error:', err); }
+    finally { setLoading(false); }
+  };
 
   useEffect(() => {
-    const fetchAllUserData = async () => {
-      setLoading(true);
-      try {
-        const [{ data: bookings }, { data: requests }, { data: aiChats }, { data: supportTickets }, { data: transactions }, { data: subscriptions }, { data: kycApps }] = await Promise.all([
-          supabaseAdmin.from('user_bookings').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-          supabaseAdmin.from('user_requests').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-          supabaseAdmin.from('ai_chat_sessions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-          supabaseAdmin.from('support_tickets').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-          supabaseAdmin.from('transactions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-          supabaseAdmin.from('user_subscriptions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-          supabaseAdmin.from('kyc_applications').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
-        ]);
-        setData({ bookings: bookings || [], requests: requests || [], aiChats: aiChats || [], supportTickets: supportTickets || [], transactions: transactions || [], subscriptions: subscriptions || [], kycApps: kycApps || [] });
-      } catch (err) { console.error('Error:', err); }
-      finally { setLoading(false); }
-    };
     fetchAllUserData();
   }, [user.id]);
 
+  // Update KYC status
+  const updateKycStatus = async (newStatus, newLevel) => {
+    setUpdatingKyc(true);
+    try {
+      const updateData = {
+        kyc_status: newStatus,
+        verification_level: newLevel,
+        updated_at: new Date().toISOString()
+      };
+      if (newStatus === 'verified') {
+        updateData.kyc_verified_at = new Date().toISOString();
+      }
+
+      // Check if user_profile exists
+      const { data: existing } = await supabaseAdmin
+        .from('user_profiles')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existing) {
+        await supabaseAdmin.from('user_profiles').update(updateData).eq('user_id', user.id);
+      } else {
+        await supabaseAdmin.from('user_profiles').insert({ user_id: user.id, ...updateData });
+      }
+
+      // Refresh data
+      fetchAllUserData();
+    } catch (err) {
+      console.error('Error updating KYC:', err);
+      alert('Failed to update KYC status');
+    } finally {
+      setUpdatingKyc(false);
+    }
+  };
+
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Eye },
+    { id: 'kyc', label: 'KYC', icon: ShieldCheck },
     { id: 'bookings', label: 'Bookings', count: data.bookings.length, icon: Calendar },
     { id: 'requests', label: 'Requests', count: data.requests.length, icon: FileText },
     { id: 'ai-chats', label: 'AI Chats', count: data.aiChats.length, icon: MessageSquare },
@@ -2617,7 +2657,11 @@ const UserDetailsModal = ({ user, onClose, getUserName }) => {
                 <p className="text-sm text-gray-500">{user.email}</p>
                 <div className="flex items-center gap-2 mt-2">
                   {user.is_admin && <span className="px-2 py-0.5 bg-black text-white text-xs rounded-full">Admin</span>}
-                  {data.kycApps[0]?.status === 'approved' && <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full flex items-center gap-1"><ShieldCheck size={12} /> Verified</span>}
+                  {data.userProfile?.kyc_status === 'verified' ? (
+                    <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full flex items-center gap-1"><ShieldCheck size={12} /> KYC Verified (L{data.userProfile?.verification_level || 0})</span>
+                  ) : (
+                    <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full flex items-center gap-1"><ShieldAlert size={12} /> KYC Pending</span>
+                  )}
                   {data.subscriptions[0] && <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">{data.subscriptions[0].plan_type}</span>}
                 </div>
               </div>
@@ -2667,6 +2711,139 @@ const UserDetailsModal = ({ user, onClose, getUserName }) => {
                       </div>
                     </div>
                   </div>
+                </div>
+              )}
+              {activeTab === 'kyc' && (
+                <div className="space-y-6">
+                  {/* Current KYC Status */}
+                  <div className="bg-gray-50 rounded-xl p-6">
+                    <h3 className="font-medium text-gray-900 mb-4 flex items-center gap-2">
+                      <ShieldCheck size={18} /> KYC Verification Status
+                    </h3>
+                    <div className="grid grid-cols-3 gap-4 mb-6">
+                      <div className="bg-white p-4 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Status</p>
+                        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${
+                          data.userProfile?.kyc_status === 'verified'
+                            ? 'bg-green-100 text-green-700'
+                            : data.userProfile?.kyc_status === 'rejected'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {data.userProfile?.kyc_status === 'verified' ? <ShieldCheck size={14} /> : <ShieldAlert size={14} />}
+                          {data.userProfile?.kyc_status?.charAt(0).toUpperCase() + data.userProfile?.kyc_status?.slice(1) || 'Pending'}
+                        </div>
+                      </div>
+                      <div className="bg-white p-4 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Verification Level</p>
+                        <p className="text-2xl font-semibold text-gray-900">Level {data.userProfile?.verification_level || 0}</p>
+                      </div>
+                      <div className="bg-white p-4 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Verified At</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {data.userProfile?.kyc_verified_at
+                            ? new Date(data.userProfile.kyc_verified_at).toLocaleString()
+                            : 'Not verified yet'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* KYC Hash */}
+                    {data.userProfile?.kyc_hash && (
+                      <div className="bg-white p-4 rounded-lg border border-gray-200 mb-6">
+                        <p className="text-xs text-gray-500 mb-1">KYC Hash</p>
+                        <p className="text-sm font-mono text-gray-900 break-all">{data.userProfile.kyc_hash}</p>
+                      </div>
+                    )}
+
+                    {/* Admin Controls */}
+                    <div className="bg-white p-4 rounded-lg border-2 border-blue-200">
+                      <p className="text-xs font-bold text-blue-600 uppercase tracking-wide mb-4">Admin Controls</p>
+
+                      <div className="space-y-4">
+                        {/* Status Change */}
+                        <div>
+                          <p className="text-xs text-gray-600 mb-2">Change KYC Status:</p>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => updateKycStatus('pending', 0)}
+                              disabled={updatingKyc || data.userProfile?.kyc_status === 'pending'}
+                              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                                data.userProfile?.kyc_status === 'pending'
+                                  ? 'bg-yellow-100 text-yellow-700 ring-2 ring-yellow-400'
+                                  : 'bg-gray-100 text-gray-600 hover:bg-yellow-50'
+                              } ${updatingKyc ? 'opacity-50 cursor-wait' : ''}`}
+                            >
+                              Pending
+                            </button>
+                            <button
+                              onClick={() => updateKycStatus('verified', 1)}
+                              disabled={updatingKyc || (data.userProfile?.kyc_status === 'verified' && data.userProfile?.verification_level === 1)}
+                              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                                data.userProfile?.kyc_status === 'verified' && data.userProfile?.verification_level === 1
+                                  ? 'bg-green-100 text-green-700 ring-2 ring-green-400'
+                                  : 'bg-gray-100 text-gray-600 hover:bg-green-50'
+                              } ${updatingKyc ? 'opacity-50 cursor-wait' : ''}`}
+                            >
+                              Verified (L1)
+                            </button>
+                            <button
+                              onClick={() => updateKycStatus('verified', 2)}
+                              disabled={updatingKyc || (data.userProfile?.kyc_status === 'verified' && data.userProfile?.verification_level === 2)}
+                              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                                data.userProfile?.kyc_status === 'verified' && data.userProfile?.verification_level === 2
+                                  ? 'bg-green-100 text-green-700 ring-2 ring-green-400'
+                                  : 'bg-gray-100 text-gray-600 hover:bg-green-50'
+                              } ${updatingKyc ? 'opacity-50 cursor-wait' : ''}`}
+                            >
+                              Verified (L2)
+                            </button>
+                            <button
+                              onClick={() => updateKycStatus('verified', 3)}
+                              disabled={updatingKyc || (data.userProfile?.kyc_status === 'verified' && data.userProfile?.verification_level === 3)}
+                              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                                data.userProfile?.kyc_status === 'verified' && data.userProfile?.verification_level === 3
+                                  ? 'bg-green-100 text-green-700 ring-2 ring-green-400'
+                                  : 'bg-gray-100 text-gray-600 hover:bg-green-50'
+                              } ${updatingKyc ? 'opacity-50 cursor-wait' : ''}`}
+                            >
+                              Verified (L3)
+                            </button>
+                            <button
+                              onClick={() => updateKycStatus('rejected', 0)}
+                              disabled={updatingKyc || data.userProfile?.kyc_status === 'rejected'}
+                              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                                data.userProfile?.kyc_status === 'rejected'
+                                  ? 'bg-red-100 text-red-700 ring-2 ring-red-400'
+                                  : 'bg-gray-100 text-gray-600 hover:bg-red-50'
+                              } ${updatingKyc ? 'opacity-50 cursor-wait' : ''}`}
+                            >
+                              Rejected
+                            </button>
+                            {updatingKyc && <Loader2 size={18} className="animate-spin text-blue-600 ml-2" />}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* KYC Applications History */}
+                  {data.kycApps.length > 0 && (
+                    <div className="bg-gray-50 rounded-xl p-6">
+                      <h3 className="font-medium text-gray-900 mb-4">KYC Application History</h3>
+                      <div className="space-y-3">
+                        {data.kycApps.map((app, idx) => (
+                          <div key={idx} className="bg-white p-4 rounded-lg border border-gray-200">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium text-gray-900">Application #{app.id?.slice(0, 8)}</span>
+                              <StatusBadge status={app.status} />
+                            </div>
+                            <p className="text-xs text-gray-500">Submitted: {new Date(app.created_at).toLocaleString()}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
               {activeTab === 'bookings' && <ModalTable data={data.bookings} columns={[{ key: 'service_type', label: 'Service' }, { key: 'status', label: 'Status', format: (v) => <StatusBadge status={v} /> }, { key: 'total_amount', label: 'Amount', format: (v) => v ? `$${Number(v).toLocaleString()}` : '-' }, { key: 'created_at', label: 'Date', format: (v) => new Date(v).toLocaleDateString() }]} emptyMessage="No bookings" />}
