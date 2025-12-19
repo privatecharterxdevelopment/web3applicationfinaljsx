@@ -744,7 +744,7 @@ const AIChat = ({
     }
   };
 
-  // Show chat limit banner immediately when profile loads and limit is reached
+  // Set chat limit reached state when profile loads (for inline banner display)
   useEffect(() => {
     if (!userProfile || isAdmin) return;
 
@@ -760,8 +760,8 @@ const AIChat = ({
         tier: userProfile.subscription_tier
       });
       setChatLimitReached(true);
-      setSubscriptionBlockerReason('chat_limit');
-      setShowSubscriptionBlocker(true);
+    } else {
+      setChatLimitReached(false);
     }
   }, [userProfile, isAdmin]);
 
@@ -4570,6 +4570,45 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     I can help you book private jets, find restaurants, arrange transfers, explore tokenization, and much more. What would you like to do today?
                   </p>
                 </div>
+
+                {/* Chat Limit Banner - Inline glassmorphic style */}
+                {chatLimitReached && !isAdmin && userProfile?.chats_limit && (
+                  <div
+                    className="mt-3 px-4 py-3 rounded-2xl"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.6)',
+                      backdropFilter: 'blur(16px)',
+                      WebkitBackdropFilter: 'blur(16px)',
+                      border: '1px solid rgba(0, 0, 0, 0.06)',
+                    }}
+                  >
+                    <p className="text-[13px] text-gray-600 leading-relaxed">
+                      You've used all <span className="font-medium text-gray-800">{userProfile.chats_limit} chats</span> this month.
+                      Continue your existing conversations or upgrade for more.
+                    </p>
+                    <div className="flex items-center gap-2 mt-3">
+                      <button
+                        onClick={() => {
+                          const existingChat = chatHistory.find(c => !c.id.startsWith('blocked-'));
+                          if (existingChat) {
+                            setActiveChat(existingChat.id);
+                          }
+                        }}
+                        className="flex-1 py-2 px-3 text-[13px] font-medium text-gray-600 rounded-xl transition-all"
+                        style={{ background: 'rgba(0, 0, 0, 0.04)' }}
+                      >
+                        Continue chats
+                      </button>
+                      <button
+                        onClick={() => setShowSubscriptionModal(true)}
+                        className="flex-1 py-2 px-3 text-[13px] font-medium text-white rounded-xl"
+                        style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)' }}
+                      >
+                        Upgrade
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Quick Suggestion Bubbles - Small, blurred, monochromatic */}
                 <div className="flex flex-wrap gap-2 mt-2 px-2">
@@ -8836,75 +8875,6 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         />
       )}
 
-      {/* Chat Limit Banner - Glassmorphic floating style like ChatGPT */}
-      {showSubscriptionBlocker && subscriptionBlockerReason === 'chat_limit' && (
-        <div className="fixed inset-x-0 bottom-4 sm:bottom-6 z-[9999] px-3 sm:px-4 pointer-events-none">
-          <div
-            className="max-w-lg mx-auto pointer-events-auto"
-            style={{
-              background: 'rgba(255, 255, 255, 0.7)',
-              backdropFilter: 'blur(24px)',
-              WebkitBackdropFilter: 'blur(24px)',
-              borderRadius: '16px',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)',
-            }}
-          >
-            <div className="p-4 sm:p-5">
-              {/* Close button - top right */}
-              <button
-                onClick={() => setShowSubscriptionBlocker(false)}
-                className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-black/5 transition-colors"
-              >
-                <X size={16} className="text-gray-400" />
-              </button>
-
-              {/* Content */}
-              <div className="pr-6">
-                <p className="text-[13px] sm:text-sm text-gray-600 leading-relaxed">
-                  You've used all <span className="font-medium text-gray-900">{getTierChatLimit()} chats</span> this month.
-                  Continue your existing conversations or upgrade for more.
-                </p>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-2 mt-4">
-                <button
-                  onClick={() => {
-                    setShowSubscriptionBlocker(false);
-                    const existingChat = chatHistory.find(c => !c.id.startsWith('blocked-'));
-                    if (existingChat) {
-                      setActiveChat(existingChat.id);
-                    }
-                  }}
-                  className="flex-1 py-2.5 px-4 text-[13px] sm:text-sm font-medium text-gray-700 rounded-xl transition-all"
-                  style={{
-                    background: 'rgba(0, 0, 0, 0.04)',
-                  }}
-                  onMouseEnter={(e) => e.target.style.background = 'rgba(0, 0, 0, 0.08)'}
-                  onMouseLeave={(e) => e.target.style.background = 'rgba(0, 0, 0, 0.04)'}
-                >
-                  Continue chats
-                </button>
-                <button
-                  onClick={() => {
-                    setShowSubscriptionBlocker(false);
-                    setShowSubscriptionModal(true);
-                  }}
-                  className="flex-1 py-2.5 px-4 text-[13px] sm:text-sm font-medium text-white rounded-xl transition-all"
-                  style={{
-                    background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)',
-                  }}
-                  onMouseEnter={(e) => e.target.style.opacity = '0.9'}
-                  onMouseLeave={(e) => e.target.style.opacity = '1'}
-                >
-                  Upgrade
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Subscription Blocker Popup - Clean minimal design (for non chat_limit reasons) */}
       {showSubscriptionBlocker && subscriptionBlockerReason !== 'chat_limit' && (
