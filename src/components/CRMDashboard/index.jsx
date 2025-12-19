@@ -1362,21 +1362,42 @@ const RequestsSection = ({ requests, refreshing, onRefresh, supabaseAdmin }) => 
 const EmptyLegsSection = ({ bookings, refreshing, onRefresh }) => {
   const [expandedBooking, setExpandedBooking] = useState(null);
 
+  // Generate PCX booking ID from booking id
+  const generatePCXId = (bookingId) => {
+    if (!bookingId) return 'PCX-000000';
+    const shortId = bookingId.replace(/-/g, '').slice(-8).toUpperCase();
+    return `PCX-${shortId}`;
+  };
+
   const getPaymentStatusColor = (status) => {
     const colors = {
       paid: 'bg-green-100 text-green-700',
       pending: 'bg-yellow-100 text-yellow-700',
       cancelled: 'bg-red-100 text-red-700',
       expired: 'bg-gray-100 text-gray-700',
-      refunded: 'bg-purple-100 text-purple-700'
+      refunded: 'bg-purple-100 text-purple-700',
+      confirming: 'bg-blue-100 text-blue-700'
     };
     return colors[status?.toLowerCase()] || 'bg-gray-100 text-gray-700';
+  };
+
+  const getBookingStatusColor = (status) => {
+    const colors = {
+      confirmed: 'bg-green-500',
+      pending: 'bg-yellow-500',
+      cancelled: 'bg-red-500',
+      completed: 'bg-blue-500'
+    };
+    return colors[status?.toLowerCase()] || 'bg-gray-500';
   };
 
   return (
     <>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-medium text-gray-900">Empty Leg Bookings ({bookings.length})</h2>
+        <div>
+          <h2 className="text-lg font-medium text-gray-900">Empty Leg Bookings ({bookings.length})</h2>
+          <p className="text-xs text-gray-500">Crypto payments via Coingate</p>
+        </div>
         <button onClick={onRefresh} disabled={refreshing} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
           <RefreshCcw size={16} className={`text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
         </button>
@@ -1387,87 +1408,221 @@ const EmptyLegsSection = ({ bookings, refreshing, onRefresh }) => {
       ) : bookings.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border"><Tag className="w-12 h-12 text-gray-300 mb-3" /><p className="text-gray-500">No empty leg bookings found</p></div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {bookings.map((b, i) => {
             const isExpanded = expandedBooking === b.id;
-            const bookingData = b.details || b.booking_data || {};
+            // Get data from both direct fields and nested objects
+            const bookingData = b.details || b.booking_data || b.metadata || {};
+
+            // Extract all possible field locations
+            const origin = b.origin || bookingData.origin || bookingData.departure_city || bookingData.from || bookingData.departure_airport;
+            const destination = b.destination || bookingData.destination || bookingData.arrival_city || bookingData.to || bookingData.arrival_airport;
+            const departureDate = b.departure_date || bookingData.departure_date || bookingData.date;
+            const aircraft = b.aircraft_type || bookingData.aircraft_type || bookingData.aircraft || bookingData.category;
+            const passengers = b.passengers || bookingData.passengers || bookingData.max_passengers;
+            const serviceTitle = b.service_title || bookingData.title || bookingData.service_title;
+            const totalAmount = b.total_amount || b.total_price || bookingData.total_price || bookingData.price || 0;
+            const basePrice = b.base_price || bookingData.base_price || 0;
+            const contactName = b.contact_name || bookingData.contact_name;
+            const contactEmail = b.contact_email || bookingData.contact_email || b.users?.email;
+            const contactPhone = b.contact_phone || bookingData.contact_phone;
+            const specialRequests = b.special_requests || bookingData.special_requests;
+            const walletAddress = b.wallet_address || bookingData.wallet_address;
 
             return (
-              <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                {/* Header */}
                 <div
-                  className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-gray-50"
+                  className="px-5 py-4 flex items-center justify-between cursor-pointer hover:bg-gray-50"
                   onClick={() => setExpandedBooking(isExpanded ? null : b.id)}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                      <Tag size={18} className="text-amber-600" />
+                    <div className="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center shadow-sm">
+                      <Plane size={22} className="text-white" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {bookingData.departure_city || bookingData.from || 'N/A'} → {bookingData.arrival_city || bookingData.to || 'N/A'}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded">{generatePCXId(b.id)}</span>
+                        <span className="text-xs text-gray-400">•</span>
+                        <p className="text-sm font-medium text-gray-900">
+                          {origin || 'N/A'} → {destination || 'N/A'}
+                        </p>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {contactEmail || b.users?.email || 'Unknown user'} • {new Date(b.created_at).toLocaleString()}
                       </p>
-                      <p className="text-xs text-gray-500">{b.users?.email || b.user_id?.slice(0, 8)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
+                    {departureDate && (
+                      <div className="text-right hidden md:block">
+                        <p className="text-sm font-medium text-gray-900">{new Date(departureDate).toLocaleDateString()}</p>
+                        <p className="text-xs text-gray-500">{aircraft || 'Aircraft TBD'}</p>
+                      </div>
+                    )}
                     <span className={`px-2 py-1 text-xs rounded-full font-medium ${getPaymentStatusColor(b.payment_status)}`}>
                       {b.payment_status || 'pending'}
                     </span>
-                    <span className="text-sm font-medium text-gray-900">${Number(b.total_price || bookingData.price || 0).toLocaleString()}</span>
-                    <span className="text-xs text-gray-500">{new Date(b.created_at).toLocaleDateString()}</span>
-                    <ChevronDown size={16} className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                    <span className="text-sm font-bold text-gray-900">${Number(totalAmount).toLocaleString()}</span>
+                    <ChevronDown size={18} className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                   </div>
                 </div>
 
+                {/* Expanded Details */}
                 {isExpanded && (
-                  <div className="px-4 py-4 border-t border-gray-100 bg-gray-50">
-                    <div className="grid grid-cols-4 gap-3 mb-4">
-                      <div className="bg-white p-3 rounded-lg border border-gray-200">
-                        <p className="text-xs text-gray-500 mb-1">Departure</p>
-                        <p className="text-sm font-medium text-gray-900">{bookingData.departure_city || bookingData.from || 'N/A'}</p>
+                  <div className="bg-gray-50 border-t border-gray-100">
+                    {/* Booking ID Banner */}
+                    <div className="px-5 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border-b flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Tag size={16} className="text-amber-600" />
+                        <div>
+                          <p className="text-xs text-amber-600 font-medium">Booking Reference</p>
+                          <p className="text-lg font-bold text-amber-700">{generatePCXId(b.id)}</p>
+                        </div>
                       </div>
-                      <div className="bg-white p-3 rounded-lg border border-gray-200">
-                        <p className="text-xs text-gray-500 mb-1">Arrival</p>
-                        <p className="text-sm font-medium text-gray-900">{bookingData.arrival_city || bookingData.to || 'N/A'}</p>
-                      </div>
-                      <div className="bg-white p-3 rounded-lg border border-gray-200">
-                        <p className="text-xs text-gray-500 mb-1">Date</p>
-                        <p className="text-sm font-medium text-gray-900">{bookingData.departure_date || bookingData.date || 'N/A'}</p>
-                      </div>
-                      <div className="bg-white p-3 rounded-lg border border-gray-200">
-                        <p className="text-xs text-gray-500 mb-1">Aircraft</p>
-                        <p className="text-sm font-medium text-gray-900">{bookingData.aircraft_type || bookingData.aircraft || 'N/A'}</p>
-                      </div>
+                      <div className={`w-3 h-3 rounded-full ${getBookingStatusColor(b.booking_status)}`} title={b.booking_status || 'pending'} />
                     </div>
 
-                    {/* Payment Info */}
-                    <div className="bg-white p-4 rounded-lg border-2 border-amber-200 mb-4">
-                      <p className="text-xs font-semibold text-amber-700 mb-2 flex items-center gap-2">
-                        <CreditCard size={14} /> COINGATE PAYMENT INFO
-                      </p>
-                      <div className="grid grid-cols-3 gap-3">
-                        <div>
-                          <p className="text-xs text-gray-500">Payment Status</p>
-                          <p className={`text-sm font-medium ${b.payment_status === 'paid' ? 'text-green-600' : 'text-yellow-600'}`}>
-                            {b.payment_status?.toUpperCase() || 'PENDING'}
+                    {/* Flight Details */}
+                    <div className="px-5 py-4">
+                      <p className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-3">Flight Details</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="bg-white p-3 rounded-lg border border-gray-200 col-span-2">
+                          <p className="text-xs text-gray-500 mb-1 flex items-center gap-1"><Plane size={12} /> Route</p>
+                          <p className="text-sm font-semibold text-gray-900">{origin || 'N/A'} → {destination || 'N/A'}</p>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg border border-gray-200">
+                          <p className="text-xs text-gray-500 mb-1 flex items-center gap-1"><Calendar size={12} /> Departure Date</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {departureDate ? new Date(departureDate).toLocaleDateString() : 'N/A'}
                           </p>
                         </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Coingate Order ID</p>
-                          <p className="text-sm font-mono text-gray-900">{b.coingate_order_id || 'N/A'}</p>
+                        <div className="bg-white p-3 rounded-lg border border-gray-200">
+                          <p className="text-xs text-gray-500 mb-1">Aircraft</p>
+                          <p className="text-sm font-medium text-gray-900">{aircraft || 'N/A'}</p>
                         </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Total Price</p>
-                          <p className="text-sm font-medium text-gray-900">${Number(b.total_price || 0).toLocaleString()}</p>
-                        </div>
+                        {passengers && (
+                          <div className="bg-white p-3 rounded-lg border border-gray-200">
+                            <p className="text-xs text-gray-500 mb-1 flex items-center gap-1"><Users size={12} /> Passengers</p>
+                            <p className="text-sm font-medium text-gray-900">{passengers}</p>
+                          </div>
+                        )}
+                        {serviceTitle && (
+                          <div className="bg-white p-3 rounded-lg border border-gray-200 col-span-2">
+                            <p className="text-xs text-gray-500 mb-1">Service Title</p>
+                            <p className="text-sm font-medium text-gray-900">{serviceTitle}</p>
+                          </div>
+                        )}
                       </div>
                     </div>
 
+                    {/* Customer Info */}
+                    {(contactName || contactEmail || contactPhone) && (
+                      <div className="px-5 py-4 border-t border-gray-200">
+                        <p className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-3">Customer Information</p>
+                        <div className="bg-white p-4 rounded-lg border border-gray-200 flex items-center gap-6">
+                          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                            <Users size={20} className="text-gray-500" />
+                          </div>
+                          <div className="flex-1 grid grid-cols-3 gap-4">
+                            {contactName && (
+                              <div>
+                                <p className="text-xs text-gray-500">Name</p>
+                                <p className="text-sm font-medium text-gray-900">{contactName}</p>
+                              </div>
+                            )}
+                            {contactEmail && (
+                              <div>
+                                <p className="text-xs text-gray-500">Email</p>
+                                <a href={`mailto:${contactEmail}`} className="text-sm font-medium text-blue-600 hover:underline">{contactEmail}</a>
+                              </div>
+                            )}
+                            {contactPhone && (
+                              <div>
+                                <p className="text-xs text-gray-500">Phone</p>
+                                <a href={`tel:${contactPhone}`} className="text-sm font-medium text-blue-600 hover:underline">{contactPhone}</a>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Payment Info */}
+                    <div className="px-5 py-4 border-t border-gray-200">
+                      <p className="text-xs font-bold text-amber-600 uppercase tracking-wide mb-3 flex items-center gap-2">
+                        <CreditCard size={14} /> Coingate Payment Details
+                      </p>
+                      <div className="bg-white p-4 rounded-lg border-2 border-amber-200">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div>
+                            <p className="text-xs text-gray-500">Payment Status</p>
+                            <p className={`text-sm font-bold ${b.payment_status === 'paid' ? 'text-green-600' : b.payment_status === 'confirming' ? 'text-blue-600' : 'text-yellow-600'}`}>
+                              {b.payment_status?.toUpperCase() || 'PENDING'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Coingate Order ID</p>
+                            <p className="text-sm font-mono text-gray-900">{b.coingate_order_id || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Base Price</p>
+                            <p className="text-sm font-medium text-gray-900">${Number(basePrice).toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Total (with VAT)</p>
+                            <p className="text-sm font-bold text-emerald-600">${Number(totalAmount).toLocaleString()}</p>
+                          </div>
+                        </div>
+                        {walletAddress && (
+                          <div className="mt-3 pt-3 border-t border-amber-100">
+                            <p className="text-xs text-gray-500">Wallet Address</p>
+                            <p className="text-xs font-mono text-gray-700 break-all">{walletAddress}</p>
+                          </div>
+                        )}
+                        {b.coingate_payment_url && (
+                          <div className="mt-3 pt-3 border-t border-amber-100">
+                            <a href={b.coingate_payment_url} target="_blank" rel="noopener noreferrer" className="text-xs text-amber-600 hover:underline flex items-center gap-1">
+                              View Payment Page <ArrowRight size={12} />
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Special Requests */}
+                    {specialRequests && (
+                      <div className="px-5 py-4 border-t border-gray-200">
+                        <p className="text-xs font-bold text-violet-600 uppercase tracking-wide mb-2">Special Requests</p>
+                        <div className="bg-white p-4 rounded-lg border-l-4 border-violet-500">
+                          <p className="text-sm text-gray-800 whitespace-pre-wrap">{specialRequests}</p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Raw Data */}
-                    <details className="bg-white rounded-lg border border-gray-200">
-                      <summary className="px-4 py-2 text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-50">View Full Booking Data (JSON)</summary>
-                      <pre className="px-4 py-3 text-xs text-gray-700 overflow-auto max-h-48 bg-gray-50">{JSON.stringify(b, null, 2)}</pre>
-                    </details>
+                    <div className="px-5 py-4 border-t border-gray-200">
+                      <details className="bg-white rounded-lg border border-gray-200">
+                        <summary className="px-4 py-2 text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-50">View Full Booking Data (JSON)</summary>
+                        <pre className="px-4 py-3 text-xs text-gray-700 overflow-auto max-h-48 bg-gray-50">{JSON.stringify(b, null, 2)}</pre>
+                      </details>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="px-5 py-4 bg-white border-t flex items-center gap-3">
+                      <a
+                        href={`mailto:${contactEmail || b.users?.email}?subject=Re: Your Empty Leg Booking ${generatePCXId(b.id)}`}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+                      >
+                        <Mail size={16} /> Contact Customer
+                      </a>
+                      <button className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200">
+                        <FileText size={16} /> Generate Invoice
+                      </button>
+                      <button className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-100 text-emerald-700 rounded-lg text-sm font-medium hover:bg-emerald-200">
+                        <ShieldCheck size={16} /> Confirm Booking
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
