@@ -5417,8 +5417,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       )}
                     </div>
 
-                      {/* Add to Cart Button - Shows when AI discusses ANY booking/request/reservation/service
-                          CRITICAL: Must show button every time AI mentions a service the user can book */}
+                      {/* Add to Cart Button - Shows ONLY when user has CONFIRMED a service
+                          Natural flow: User confirms -> AI acknowledges -> Show Add to Cart button */}
                       {msg.role === 'assistant' && !msg.isLoading && !msg.action && (() => {
                         const content = msg.content || '';
                         const contentLower = content.toLowerCase();
@@ -5429,69 +5429,69 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                         // Skip if this is an "Added to cart" confirmation message
                         if (content.startsWith('✓ Added') || content.includes('to your cart')) return null;
 
-                        // EXPANDED: Show Add to Cart for ANY booking/request/service discussion
-                        // Including: product confirmations, price mentions, bookings, reservations, requests
-                        const isBookingDiscussion =
-                          // Product confirmation phrases
+                        // Check if user CONFIRMED something in the previous message
+                        const previousMessages = currentChat?.messages?.slice(0, idx) || [];
+                        const previousUserMsg = [...previousMessages].reverse().find(m => m.role === 'user');
+                        const userConfirmed = previousUserMsg?.content?.toLowerCase() || '';
+
+                        // User confirmation phrases - natural language
+                        const hasUserConfirmed =
+                          userConfirmed.includes('yes') ||
+                          userConfirmed.includes('yeah') ||
+                          userConfirmed.includes('yep') ||
+                          userConfirmed.includes('sure') ||
+                          userConfirmed.includes('ok') ||
+                          userConfirmed.includes('okay') ||
+                          userConfirmed.includes('confirm') ||
+                          userConfirmed.includes('book it') ||
+                          userConfirmed.includes('book that') ||
+                          userConfirmed.includes('i want') ||
+                          userConfirmed.includes('i\'d like') ||
+                          userConfirmed.includes('i would like') ||
+                          userConfirmed.includes('let\'s do') ||
+                          userConfirmed.includes('let\'s go') ||
+                          userConfirmed.includes('sounds good') ||
+                          userConfirmed.includes('perfect') ||
+                          userConfirmed.includes('great') ||
+                          userConfirmed.includes('add it') ||
+                          userConfirmed.includes('add that') ||
+                          userConfirmed.includes('add this') ||
+                          userConfirmed.includes('proceed') ||
+                          userConfirmed.includes('go ahead') ||
+                          userConfirmed.includes('do it') ||
+                          userConfirmed.includes('please') ||
+                          userConfirmed.includes('i\'ll take') ||
+                          userConfirmed.includes('i will take') ||
+                          userConfirmed.includes('that one') ||
+                          userConfirmed.includes('this one') ||
+                          userConfirmed.includes('the first') ||
+                          userConfirmed.includes('the second') ||
+                          userConfirmed.includes('option 1') ||
+                          userConfirmed.includes('option 2');
+
+                        // AI acknowledgment phrases - AI is responding to user's confirmation
+                        const isAIAcknowledgingConfirmation =
                           contentLower.includes('excellent choice') ||
                           contentLower.includes('great choice') ||
                           contentLower.includes('perfect choice') ||
+                          contentLower.includes('wonderful choice') ||
                           contentLower.includes('you\'ve selected') ||
                           contentLower.includes('you have selected') ||
-                          contentLower.includes('here\'s the') ||
-                          contentLower.includes('here is the') ||
-                          contentLower.includes('i\'ll prepare') ||
-                          contentLower.includes('ready to add') ||
-                          contentLower.includes('for your order') ||
-                          contentLower.includes('adding to your') ||
-                          // Booking/Request phrases
+                          contentLower.includes('i\'ve prepared') ||
+                          contentLower.includes('i have prepared') ||
+                          contentLower.includes('prepared this') ||
+                          contentLower.includes('ready for you') ||
+                          contentLower.includes('here\'s what') ||
                           contentLower.includes('click add to cart') ||
                           contentLower.includes('use the button') ||
+                          contentLower.includes('button below') ||
                           contentLower.includes('when you\'re ready') ||
-                          contentLower.includes('when ready') ||
-                          contentLower.includes('click the button') ||
-                          contentLower.includes('i\'ve prepared') ||
-                          contentLower.includes('prepared this') ||
-                          contentLower.includes('i can arrange') ||
-                          contentLower.includes('i can book') ||
-                          contentLower.includes('i can help') ||
-                          contentLower.includes('would you like me to') ||
-                          contentLower.includes('shall i') ||
-                          contentLower.includes('i recommend') ||
-                          contentLower.includes('recommendation') ||
-                          // Price discussion with service types
-                          (contentLower.includes('$') && (
-                            contentLower.includes('would you like') ||
-                            contentLower.includes('shall i add') ||
-                            contentLower.includes('per person') ||
-                            contentLower.includes('per night') ||
-                            contentLower.includes('per hour') ||
-                            contentLower.includes('total') ||
-                            contentLower.includes('price') ||
-                            contentLower.includes('cost') ||
-                            contentLower.includes('rate')
-                          )) ||
-                          // Service-specific keywords
-                          contentLower.includes('reservation') ||
-                          contentLower.includes('booking') ||
-                          contentLower.includes('transfer') ||
-                          contentLower.includes('charter') ||
-                          contentLower.includes('flight') ||
-                          contentLower.includes('yacht') ||
-                          contentLower.includes('helicopter') ||
-                          contentLower.includes('jet') ||
-                          contentLower.includes('limousine') ||
-                          contentLower.includes('restaurant') ||
-                          contentLower.includes('hotel') ||
-                          contentLower.includes('experience') ||
-                          contentLower.includes('adventure') ||
-                          contentLower.includes('tour') ||
-                          contentLower.includes('concierge');
+                          contentLower.includes('when ready');
 
-                        if (!isBookingDiscussion) return null;
+                        // Only show button if: user confirmed OR AI is explicitly acknowledging a selection
+                        if (!hasUserConfirmed && !isAIAcknowledgingConfirmation) return null;
 
                         // Find the most recent search results from previous messages
-                        const previousMessages = currentChat?.messages?.slice(0, idx) || [];
                         let latestResults = null;
                         for (let i = previousMessages.length - 1; i >= 0; i--) {
                           if (previousMessages[i].role === 'results' && previousMessages[i].tabs) {
