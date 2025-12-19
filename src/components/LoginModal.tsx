@@ -129,173 +129,177 @@ export default function LoginModal({
         <div className="w-full h-full bg-white rounded-3xl shadow-2xl overflow-hidden flex">
 
           {/* LEFT SIDE - Form */}
-          <div className="w-2/5 bg-white p-8 flex flex-col justify-center relative z-20">
+          <div className="w-2/5 bg-white flex flex-col relative z-20">
 
-            {/* Back Arrow - Goes to landing page */}
-            <button
-              onClick={() => {
-                onClose();
-                navigate('/');
-              }}
-              className="absolute left-6 top-6 p-2 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <ArrowLeft size={20} className="text-gray-600" />
-            </button>
-
-            {/* Close Button */}
-            <button
-              onClick={onClose}
-              className="absolute right-6 top-6 p-2 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <X size={20} className="text-gray-600" />
-            </button>
-
-            {/* Form Container - Centered */}
-            <div className="w-full max-w-sm mx-auto">
-              {/* Title */}
-              <div className="mb-6">
-                <h1 className="text-2xl font-light text-gray-900 mb-1">
-                  Welcome Back
-                </h1>
-                <p className="text-sm text-gray-500 font-light">
-                  Sign in to your account
-                </p>
-              </div>
-
-              {/* Error */}
-              {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-xs text-red-600">{error}</p>
-                </div>
-              )}
-
-              {/* Form */}
-              <form onSubmit={handleSubmit} className="flex flex-col">
-              <div className="space-y-3 mb-4">
-                {/* Email */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                    Email
-                  </label>
-                  <div className="relative">
-                    <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
-                      placeholder="your@email.com"
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-                </div>
-
-                {/* Password */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
-                      placeholder="••••••••"
-                      required
-                      disabled={isLoading}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Links */}
-              <div className="flex justify-between items-center text-xs mb-4 relative z-30">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('Create account clicked');
-                    if (onSwitchToRegister) {
-                      onSwitchToRegister();
-                    }
-                  }}
-                  className="text-gray-500 hover:text-gray-900 transition-colors font-light cursor-pointer"
-                >
-                  Create account
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('Forgot password clicked');
-                    if (onSwitchToForgotPassword) {
-                      onSwitchToForgotPassword();
-                    } else {
-                      onClose();
-                      navigate('/reset-password');
-                    }
-                  }}
-                  className="text-gray-500 hover:text-gray-900 transition-colors font-light cursor-pointer"
-                >
-                  Forgot password?
-                </button>
-              </div>
-
-              {/* Sign In Button - Monochromatic */}
+            {/* Top Navigation Bar - Fixed height */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
               <button
-                type="submit"
-                disabled={isLoading || !email || !password}
-                className="w-full py-3 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-3"
+                onClick={() => {
+                  onClose();
+                  navigate('/');
+                }}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
-                {isLoading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Signing in...
-                  </span>
-                ) : (
-                  'Sign In'
+                <ArrowLeft size={20} className="text-gray-600" />
+              </button>
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={20} className="text-gray-600" />
+              </button>
+            </div>
+
+            {/* Form Container - Scrollable middle section */}
+            <div className="flex-1 flex flex-col justify-center px-8 py-6 overflow-y-auto">
+              <div className="w-full max-w-sm mx-auto">
+                {/* Title */}
+                <div className="mb-6">
+                  <h1 className="text-2xl font-light text-gray-900 mb-1">
+                    Welcome Back
+                  </h1>
+                  <p className="text-sm text-gray-500 font-light">
+                    Sign in to your account
+                  </p>
+                </div>
+
+                {/* Error */}
+                {error && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-xs text-red-600">{error}</p>
+                  </div>
                 )}
-              </button>
 
-              {/* Face ID Button - Interactive Monochromatic */}
-              <button
-                type="button"
-                onClick={handleFaceLoginClick}
-                disabled={isLoading || !email}
-                className="group w-full py-3 bg-gray-100 hover:bg-gray-900 text-gray-900 hover:text-white rounded-lg text-sm font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-gray-900/0 via-gray-900/10 to-gray-900/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                <Scan size={18} className="relative z-10 group-hover:scale-110 transition-transform" />
-                <span className="relative z-10">Verify with Face ID</span>
-              </button>
+                {/* Form Fields */}
+                <div className="space-y-3 mb-4">
+                  {/* Email */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                      Email
+                    </label>
+                    <div className="relative">
+                      <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
+                        placeholder="your@email.com"
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
 
-              {/* Footer */}
-              <div className="mt-6 text-center">
-                <p className="text-[10px] text-gray-400">
-                  By signing in, you agree to our{' '}
-                  <a href="/terms" className="underline hover:text-gray-600">Terms</a>
-                  {' & '}
-                  <a href="/privacy" className="underline hover:text-gray-600">Privacy</a>
-                </p>
+                  {/* Password */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all"
+                        placeholder="••••••••"
+                        required
+                        disabled={isLoading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Links */}
+                <div className="flex justify-between items-center text-xs mb-4">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (onSwitchToRegister) {
+                        onSwitchToRegister();
+                      }
+                    }}
+                    className="text-gray-500 hover:text-gray-900 transition-colors font-light cursor-pointer"
+                  >
+                    Create account
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (onSwitchToForgotPassword) {
+                        onSwitchToForgotPassword();
+                      } else {
+                        onClose();
+                        navigate('/reset-password');
+                      }
+                    }}
+                    className="text-gray-500 hover:text-gray-900 transition-colors font-light cursor-pointer"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
               </div>
-            </form>
+            </div>
+
+            {/* Bottom Section - Buttons fixed at bottom */}
+            <div className="p-6 border-t border-gray-100">
+              <div className="w-full max-w-sm mx-auto space-y-3">
+                {/* Sign In Button */}
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isLoading || !email || !password}
+                  className="w-full py-3 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Signing in...
+                    </span>
+                  ) : (
+                    'Sign In'
+                  )}
+                </button>
+
+                {/* Face ID Button */}
+                <button
+                  type="button"
+                  onClick={handleFaceLoginClick}
+                  disabled={isLoading || !email}
+                  className="group w-full py-3 bg-gray-100 hover:bg-gray-900 text-gray-900 hover:text-white rounded-lg text-sm font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-gray-900/0 via-gray-900/10 to-gray-900/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                  <Scan size={18} className="relative z-10 group-hover:scale-110 transition-transform" />
+                  <span className="relative z-10">Verify with Face ID (Regional)</span>
+                </button>
+
+                {/* Footer */}
+                <div className="pt-2 text-center">
+                  <p className="text-[10px] text-gray-400">
+                    By signing in, you agree to our{' '}
+                    <a href="/terms" className="underline hover:text-gray-600">Terms</a>
+                    {' & '}
+                    <a href="/privacy" className="underline hover:text-gray-600">Privacy</a>
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* RIGHT SIDE - Video Hero */}
-          <div className="w-3/5 h-full bg-red-500">
+          <div className="w-3/5 h-full bg-gray-900">
             <VideoHero videos={videos} interval={5000} />
           </div>
 

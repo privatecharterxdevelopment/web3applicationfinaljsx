@@ -5417,8 +5417,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       )}
                     </div>
 
-                      {/* Add to Cart Button - Shows ONLY when AI confirms a specific product from search results
-                          Uses actual database data from the SearchResults, not hardcoded patterns */}
+                      {/* Add to Cart Button - Shows when AI discusses ANY booking/request/reservation/service
+                          CRITICAL: Must show button every time AI mentions a service the user can book */}
                       {msg.role === 'assistant' && !msg.isLoading && !msg.action && (() => {
                         const content = msg.content || '';
                         const contentLower = content.toLowerCase();
@@ -5429,9 +5429,10 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                         // Skip if this is an "Added to cart" confirmation message
                         if (content.startsWith('✓ Added') || content.includes('to your cart')) return null;
 
-                        // Only show Add to Cart if AI is confirming/recommending a specific product
-                        // Look for confirmation phrases like "excellent choice", "I'll add", "here's the", "you've selected"
-                        const isProductConfirmation =
+                        // EXPANDED: Show Add to Cart for ANY booking/request/service discussion
+                        // Including: product confirmations, price mentions, bookings, reservations, requests
+                        const isBookingDiscussion =
+                          // Product confirmation phrases
                           contentLower.includes('excellent choice') ||
                           contentLower.includes('great choice') ||
                           contentLower.includes('perfect choice') ||
@@ -5443,9 +5444,51 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           contentLower.includes('ready to add') ||
                           contentLower.includes('for your order') ||
                           contentLower.includes('adding to your') ||
-                          (contentLower.includes('$') && (contentLower.includes('would you like') || contentLower.includes('shall i add')));
+                          // Booking/Request phrases
+                          contentLower.includes('click add to cart') ||
+                          contentLower.includes('use the button') ||
+                          contentLower.includes('when you\'re ready') ||
+                          contentLower.includes('when ready') ||
+                          contentLower.includes('click the button') ||
+                          contentLower.includes('i\'ve prepared') ||
+                          contentLower.includes('prepared this') ||
+                          contentLower.includes('i can arrange') ||
+                          contentLower.includes('i can book') ||
+                          contentLower.includes('i can help') ||
+                          contentLower.includes('would you like me to') ||
+                          contentLower.includes('shall i') ||
+                          contentLower.includes('i recommend') ||
+                          contentLower.includes('recommendation') ||
+                          // Price discussion with service types
+                          (contentLower.includes('$') && (
+                            contentLower.includes('would you like') ||
+                            contentLower.includes('shall i add') ||
+                            contentLower.includes('per person') ||
+                            contentLower.includes('per night') ||
+                            contentLower.includes('per hour') ||
+                            contentLower.includes('total') ||
+                            contentLower.includes('price') ||
+                            contentLower.includes('cost') ||
+                            contentLower.includes('rate')
+                          )) ||
+                          // Service-specific keywords
+                          contentLower.includes('reservation') ||
+                          contentLower.includes('booking') ||
+                          contentLower.includes('transfer') ||
+                          contentLower.includes('charter') ||
+                          contentLower.includes('flight') ||
+                          contentLower.includes('yacht') ||
+                          contentLower.includes('helicopter') ||
+                          contentLower.includes('jet') ||
+                          contentLower.includes('limousine') ||
+                          contentLower.includes('restaurant') ||
+                          contentLower.includes('hotel') ||
+                          contentLower.includes('experience') ||
+                          contentLower.includes('adventure') ||
+                          contentLower.includes('tour') ||
+                          contentLower.includes('concierge');
 
-                        if (!isProductConfirmation) return null;
+                        if (!isBookingDiscussion) return null;
 
                         // Find the most recent search results from previous messages
                         const previousMessages = currentChat?.messages?.slice(0, idx) || [];
@@ -5490,8 +5533,79 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           }
                         }
 
-                        // If no match found, don't show button
-                        if (!matchedProduct) return null;
+                        // Detect service type from content for generic requests
+                        const detectServiceType = () => {
+                          if (contentLower.includes('jet') || contentLower.includes('private flight')) return { type: 'jets', emoji: '✈️', name: 'Private Jet Charter' };
+                          if (contentLower.includes('helicopter')) return { type: 'helicopters', emoji: '🚁', name: 'Helicopter Charter' };
+                          if (contentLower.includes('yacht')) return { type: 'yachts', emoji: '🛥️', name: 'Yacht Charter' };
+                          if (contentLower.includes('limousine') || contentLower.includes('transfer') || contentLower.includes('car service')) return { type: 'transfer', emoji: '🚗', name: 'Ground Transfer' };
+                          if (contentLower.includes('restaurant') || contentLower.includes('dining') || contentLower.includes('reservation')) return { type: 'restaurant_reservation', emoji: '🍽️', name: 'Restaurant Reservation' };
+                          if (contentLower.includes('hotel') || contentLower.includes('accommodation')) return { type: 'hotel', emoji: '🏨', name: 'Hotel Booking' };
+                          if (contentLower.includes('experience') || contentLower.includes('adventure') || contentLower.includes('tour')) return { type: 'experience', emoji: '🎯', name: 'Experience Booking' };
+                          if (contentLower.includes('concierge')) return { type: 'concierge_request', emoji: '🎩', name: 'Concierge Service' };
+                          if (contentLower.includes('wine') || contentLower.includes('champagne')) return { type: 'wines', emoji: '🍷', name: 'Wine Selection' };
+                          if (contentLower.includes('cigar')) return { type: 'cigars', emoji: '🚬', name: 'Premium Cigars' };
+                          if (contentLower.includes('caviar') || contentLower.includes('delicatesse')) return { type: 'delicatesse', emoji: '🥄', name: 'Gourmet Selection' };
+                          return { type: 'concierge_request', emoji: '✨', name: 'Service Request' };
+                        };
+
+                        // If no matched product from search results, show generic "Add Request to Cart" button
+                        if (!matchedProduct) {
+                          const detectedService = detectServiceType();
+
+                          return (
+                            <div className="mt-3 pt-3 border-t border-gray-200/50">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-lg">{detectedService.emoji}</span>
+                                <span className="text-sm font-medium text-gray-700">{detectedService.name}</span>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  // Extract any price mentioned in the message
+                                  const priceMatch = content.match(/\$[\d,]+(?:\.\d{2})?/);
+                                  const extractedPrice = priceMatch ? parseFloat(priceMatch[0].replace(/[$,]/g, '')) : 0;
+
+                                  // Create a custom request cart item
+                                  const requestItem = {
+                                    id: `request-${Date.now()}`,
+                                    cartId: Date.now(),
+                                    type: detectedService.type,
+                                    serviceType: detectedService.type,
+                                    name: detectedService.name,
+                                    description: content.substring(0, 200) + (content.length > 200 ? '...' : ''),
+                                    price: extractedPrice,
+                                    basePrice: extractedPrice,
+                                    totalWithFee: extractedPrice,
+                                    isCustomRequest: true,
+                                    requestDetails: {
+                                      originalMessage: content,
+                                      serviceType: detectedService.type
+                                    },
+                                    addedAt: new Date().toISOString()
+                                  };
+
+                                  setCartItems(prev => [...prev, requestItem]);
+                                  setToast({ message: `${detectedService.name} added to cart`, type: 'success' });
+                                  setChatHistory(prev => prev.map(c =>
+                                    c.id === activeChat
+                                      ? {
+                                          ...c,
+                                          messages: [...c.messages, {
+                                            role: 'assistant',
+                                            content: `✓ Added ${detectedService.name} request to your cart. Our team will provide a custom quote after you submit your request.`
+                                          }]
+                                        }
+                                      : c
+                                  ));
+                                }}
+                                className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium rounded-xl transition-all duration-200 flex items-center gap-2"
+                              >
+                                <ShoppingCart size={14} />
+                                Add to Cart
+                              </button>
+                            </div>
+                          );
+                        }
 
                         // Get product details from database
                         const productName = matchedProduct.displayTitle || matchedProduct.name || 'Product';
