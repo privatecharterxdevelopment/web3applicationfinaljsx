@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
-import { Check, Crown, MessageSquare, Sparkles, Home, ArrowRight, Loader2, Calendar } from 'lucide-react';
+import { Check, Crown, MessageSquare, Sparkles, Home, ArrowRight, Loader2, Calendar, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import confetti from 'canvas-confetti';
@@ -14,6 +14,10 @@ const SubscriptionSuccessPage = () => {
 
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [verificationStatus, setVerificationStatus] = useState(null); // 'verifying', 'success', 'error'
+  const [verificationError, setVerificationError] = useState(null);
+  const [activatedTier, setActivatedTier] = useState(tier);
+  const verificationAttempted = useRef(false);
 
   // Tier display info
   const tierInfo = {
@@ -43,7 +47,61 @@ const SubscriptionSuccessPage = () => {
     }
   };
 
-  const currentTier = tierInfo[tier] || tierInfo.explorer;
+  const currentTier = tierInfo[activatedTier] || tierInfo[tier] || tierInfo.explorer;
+
+  // Verify subscription with Stripe session on page load
+  useEffect(() => {
+    const verifySubscription = async () => {
+      // Only attempt verification once, when we have a session_id and user
+      if (verificationAttempted.current || !sessionId) return;
+
+      verificationAttempted.current = true;
+      setVerificationStatus('verifying');
+
+      try {
+        console.log('Verifying subscription session:', sessionId);
+
+        // Call the Supabase Edge Function to verify and activate subscription
+        const { data, error } = await supabase.functions.invoke('verify-subscription-session', {
+          body: {
+            sessionId: sessionId,
+            userId: user?.id
+          }
+        });
+
+        if (error) {
+          console.error('Verification error:', error);
+          setVerificationStatus('error');
+          setVerificationError(error.message);
+          return;
+        }
+
+        if (data?.success) {
+          console.log('Subscription verified and activated:', data);
+          setVerificationStatus('success');
+          if (data.tier) {
+            setActivatedTier(data.tier);
+          }
+          // Reload subscription data after successful verification
+          if (user?.id) {
+            loadSubscription();
+          }
+        } else {
+          console.error('Verification failed:', data?.error);
+          setVerificationStatus('error');
+          setVerificationError(data?.error || 'Verification failed');
+        }
+      } catch (err) {
+        console.error('Failed to verify subscription:', err);
+        setVerificationStatus('error');
+        setVerificationError(err.message);
+      }
+    };
+
+    // Small delay to ensure user auth is ready
+    const timer = setTimeout(verifySubscription, 500);
+    return () => clearTimeout(timer);
+  }, [sessionId, user?.id]);
 
   useEffect(() => {
     // Trigger confetti animation
@@ -133,7 +191,38 @@ const SubscriptionSuccessPage = () => {
             </div>
 
             <h1 className="text-3xl font-bold text-white mb-2">Welcome to {currentTier.name}!</h1>
-            <p className="text-white/60 mb-6">Your subscription is now active</p>
+            <p className="text-white/60 mb-6">
+              {verificationStatus === 'verifying' ? 'Activating your subscription...' : 'Your subscription is now active'}
+            </p>
+
+            {/* Verification Status */}
+            {verificationStatus === 'verifying' && (
+              <div className="flex items-center justify-center gap-2 mb-4 text-white/70">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm">Verifying payment with Stripe...</span>
+              </div>
+            )}
+
+            {verificationStatus === 'error' && (
+              <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3 mb-4">
+                <div className="flex items-center gap-2 text-red-400">
+                  <AlertCircle className="w-4 h-4" />
+                  <span className="text-sm">Verification issue - please contact support if your subscription is not active</span>
+                </div>
+                {verificationError && (
+                  <p className="text-red-300/60 text-xs mt-1">{verificationError}</p>
+                )}
+              </div>
+            )}
+
+            {verificationStatus === 'success' && (
+              <div className="bg-emerald-500/20 border border-emerald-500/30 rounded-lg p-3 mb-4">
+                <div className="flex items-center justify-center gap-2 text-emerald-400">
+                  <Check className="w-4 h-4" />
+                  <span className="text-sm">Payment verified and subscription activated!</span>
+                </div>
+              </div>
+            )}
 
             {/* Plan Badge */}
             <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r ${currentTier.color} mb-6`}>
