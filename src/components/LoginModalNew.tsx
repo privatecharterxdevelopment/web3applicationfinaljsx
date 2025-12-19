@@ -268,17 +268,14 @@ function LoginForm({
                   )}
                 </button>
 
-                {/* Face ID Button - Regional */}
-                <button
-                  type="button"
-                  onClick={handleFaceLoginClick}
-                  disabled={isLoading || !email}
-                  className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                {/* Face ID Button - Disabled (Regional restrictions) */}
+                <div
+                  className="w-full py-3 bg-gray-50 text-gray-400 rounded-lg text-sm font-medium flex items-center justify-center gap-2 cursor-not-allowed opacity-60"
                 >
                   <Scan size={18} />
                   <span>Face ID</span>
-                  <span className="ml-1 px-2 py-0.5 bg-gray-200 text-gray-500 text-[10px] font-medium rounded-full">Regional</span>
-                </button>
+                  <span className="ml-1 px-2 py-0.5 bg-gray-200 text-gray-400 text-[10px] font-medium rounded-full">Regional</span>
+                </div>
 
                 {/* Footer */}
                 <div className="pt-2 text-center">
