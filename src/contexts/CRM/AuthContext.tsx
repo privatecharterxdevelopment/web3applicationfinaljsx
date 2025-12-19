@@ -93,6 +93,15 @@ const allowedUsers: User[] = [
     isOnline: true,
     lastSeen: new Date(),
     department: 'Finance'
+  },
+  {
+    id: 'g0eebc99-9c0b-4ef8-bb6d-6bb9bd380a17',
+    email: 'eltesto@gmail.com',
+    name: 'El Testo Admin',
+    role: 'admin',
+    isOnline: true,
+    lastSeen: new Date(),
+    department: 'Management'
   }
 ];
 
