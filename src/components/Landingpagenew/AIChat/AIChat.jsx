@@ -4614,19 +4614,14 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     </p>
                     <div className="flex items-center gap-2 mt-3">
                       <button
-                        onClick={() => {
-                          const existingChat = chatHistory.find(c => !c.id.startsWith('blocked-'));
-                          if (existingChat) {
-                            setActiveChat(existingChat.id);
-                          }
-                        }}
+                        onClick={() => navigate('/chat-history')}
                         className="flex-1 py-2 px-3 text-[13px] font-medium text-gray-600 rounded-xl transition-all"
                         style={{ background: 'rgba(0, 0, 0, 0.04)' }}
                       >
                         Continue chats
                       </button>
                       <button
-                        onClick={() => setShowSubscriptionModal(true)}
+                        onClick={() => navigate('/manage-plans')}
                         className="flex-1 py-2 px-3 text-[13px] font-medium text-white rounded-xl"
                         style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)' }}
                       >
@@ -4755,11 +4750,9 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
   // CHAT VIEW - Messages flow from bottom like WhatsApp
   return (
-    <div className="ai-chat-page h-full flex bg-transparent overflow-hidden relative">
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-      {/* 1. HEADER - FIXED TOP on mobile - iOS 26 Glass effect */}
-      <div className="flex-shrink-0 sticky top-0 z-30 px-3 sm:px-6 py-2.5 bg-white/80 sm:bg-white/15 border-b border-white/10" style={{ backdropFilter: 'blur(50px) saturate(180%)', WebkitBackdropFilter: 'blur(50px) saturate(180%)' }}>
+    <div className="ai-chat-page h-full flex flex-col bg-transparent overflow-hidden relative">
+      {/* 1. HEADER - FIXED on mobile, sticky on desktop - iOS 26 Glass effect */}
+      <div className="fixed sm:relative top-0 left-0 right-0 z-30 px-3 sm:px-6 py-2.5 bg-white/90 sm:bg-white/15 border-b border-white/10 flex-shrink-0" style={{ backdropFilter: 'blur(50px) saturate(180%)', WebkitBackdropFilter: 'blur(50px) saturate(180%)' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -4970,8 +4963,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         </div>
       </div>
 
-      {/* 2. MESSAGES - FLOW FROM BOTTOM - Less padding on mobile */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-6 py-3 sm:py-4 flex flex-col-reverse">
+      {/* 2. MESSAGES - FLOW FROM BOTTOM - Less padding on mobile, pt-14 for fixed header on mobile */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-6 pt-16 sm:pt-4 pb-3 sm:pb-4 flex flex-col-reverse">
         <div className="max-w-3xl mx-auto space-y-4 flex flex-col w-full">
             {currentChat?.messages.map((msg, idx) => {
               const timestamp = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -8400,7 +8393,6 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
           setToast({ message: `Wallet connection failed: ${error}`, type: 'error' });
         }}
       />
-      </div>
 
       {/* CART WIDGET - Right Side (hidden on mobile, use cart sidebar instead) */}
       {showCartWidget && cartItems.length > 0 && (
