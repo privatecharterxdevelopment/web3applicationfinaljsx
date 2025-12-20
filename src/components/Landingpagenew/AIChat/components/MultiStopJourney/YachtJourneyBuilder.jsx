@@ -25,6 +25,15 @@ const YACHT_CATEGORIES = [
   { id: 'gulet', label: 'Gulet', hasHelipad: false }
 ];
 
+// Budget ranges (daily rate in EUR)
+const BUDGET_RANGES = [
+  { id: 'economy', label: '€5k - €15k/day', min: 5000, max: 15000 },
+  { id: 'premium', label: '€15k - €50k/day', min: 15000, max: 50000 },
+  { id: 'luxury', label: '€50k - €150k/day', min: 50000, max: 150000 },
+  { id: 'ultra', label: '€150k+/day', min: 150000, max: null },
+  { id: 'flexible', label: 'Flexible / Open', min: null, max: null }
+];
+
 const YachtJourneyBuilder = ({
   yacht,
   onAddToCart,
@@ -42,6 +51,7 @@ const YachtJourneyBuilder = ({
   const [guests, setGuests] = useState(yacht?.max_passengers || 8);
   const [crewIncluded, setCrewIncluded] = useState(true);
   const [departureDate, setDepartureDate] = useState('');
+  const [budgetRange, setBudgetRange] = useState('flexible');
 
   // UI state
   const [expandedLeg, setExpandedLeg] = useState(0);
@@ -125,6 +135,12 @@ const YachtJourneyBuilder = ({
   const handleAddToCart = () => {
     const cartItems = [];
 
+    // Get budget range details
+    const selectedBudget = BUDGET_RANGES.find(b => b.id === budgetRange);
+    const budgetLabel = selectedBudget?.label || 'Flexible';
+    const budgetMin = selectedBudget?.min || null;
+    const budgetMax = selectedBudget?.max || null;
+
     // Main yacht charter item
     const yachtItem = {
       id: `yacht-journey-${Date.now()}`,
@@ -137,6 +153,11 @@ const YachtJourneyBuilder = ({
       crewIncluded,
       departureDate,
       totalDays,
+      // Budget information
+      budgetRange: budgetRange,
+      budgetLabel: budgetLabel,
+      budgetMin: budgetMin,
+      budgetMax: budgetMax,
       legs: legs.map((leg, index) => ({
         legNumber: index + 1,
         dock: leg.dock,
@@ -151,7 +172,7 @@ const YachtJourneyBuilder = ({
       hasHelipad,
       price: 0, // Price on request
       isCustomRequest: true,
-      note: 'Our coordinators will provide a detailed quote based on your itinerary.',
+      note: `Budget: ${budgetLabel}. Our coordinators will provide a detailed quote based on your itinerary.`,
       addedAt: new Date().toISOString()
     };
 
@@ -315,6 +336,27 @@ const YachtJourneyBuilder = ({
                 {crewIncluded ? 'Crew Included' : 'Bareboat'}
               </button>
             </div>
+          </div>
+
+          {/* Budget Range - Always visible */}
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Daily Budget Range</label>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              {BUDGET_RANGES.map(range => (
+                <button
+                  key={range.id}
+                  onClick={() => setBudgetRange(range.id)}
+                  className={`px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
+                    budgetRange === range.id
+                      ? 'bg-blue-600 border-blue-600 text-white'
+                      : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                  }`}
+                >
+                  {range.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-gray-400">This helps us find the perfect yacht for your journey</p>
           </div>
 
           {hasHelipad && (
@@ -564,6 +606,7 @@ const YachtJourneyBuilder = ({
                 <span>{totalDays} day{totalDays > 1 ? 's' : ''}</span>
                 <span>{guests} guest{guests > 1 ? 's' : ''}</span>
                 <span>{crewIncluded ? 'With crew' : 'Bareboat'}</span>
+                <span className="text-blue-600 font-medium">{BUDGET_RANGES.find(b => b.id === budgetRange)?.label}</span>
                 {legs.reduce((sum, l) => sum + (l.services?.length || 0), 0) > 0 && (
                   <span>{legs.reduce((sum, l) => sum + (l.services?.length || 0), 0)} services</span>
                 )}
