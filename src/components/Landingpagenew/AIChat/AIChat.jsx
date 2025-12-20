@@ -5580,19 +5580,60 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                         if (!hasUserConfirmed && !isAIAcknowledgingConfirmation) return null;
 
                         // Find the most recent search results from previous messages
+                        // EXCLUDE: empty legs, private jets, helicopters, ground transport, wineries, delicacies tabs
+                        // These have their own built-in booking UI
+                        const excludedTabTypes = [
+                          'empty-legs', 'emptylegs', 'empty_legs',
+                          'jets', 'jet', 'private-jets', 'private_jets',
+                          'helicopters', 'helicopter', 'heli',
+                          'cars', 'car', 'ground-transport', 'ground_transport', 'luxury-cars', 'luxury_cars', 'transfer',
+                          'wineries', 'winery', 'wines', 'wine',
+                          'delicacies', 'delicatesse', 'caviar', 'cigars', 'cigar'
+                        ];
+
                         let latestResults = null;
                         for (let i = previousMessages.length - 1; i >= 0; i--) {
                           if (previousMessages[i].role === 'results' && previousMessages[i].tabs) {
-                            latestResults = previousMessages[i].tabs;
-                            break;
+                            // Filter out excluded tab types - only keep custom/concierge tabs
+                            const filteredTabs = previousMessages[i].tabs.filter(tab => {
+                              const tabType = (tab.type || tab.category || tab.id || '').toLowerCase();
+                              const tabLabel = (tab.label || '').toLowerCase();
+                              return !excludedTabTypes.some(excluded =>
+                                tabType.includes(excluded) || tabLabel.includes(excluded)
+                              );
+                            });
+                            if (filteredTabs.length > 0) {
+                              latestResults = filteredTabs;
+                              break;
+                            }
                           }
                         }
 
-                        if (!latestResults || latestResults.length === 0) return null;
+                        // For custom requests (restaurants, hotels, experiences, concierge), show Add to Cart
+                        // If no filtered results, check if AI is discussing a custom service request
+                        const isCustomServiceRequest =
+                          contentLower.includes('reservation') ||
+                          contentLower.includes('restaurant') ||
+                          contentLower.includes('hotel') ||
+                          contentLower.includes('club') ||
+                          contentLower.includes('event') ||
+                          contentLower.includes('concierge') ||
+                          contentLower.includes('experience') ||
+                          contentLower.includes('trip') ||
+                          contentLower.includes('itinerary') ||
+                          contentLower.includes('custom') ||
+                          contentLower.includes('arrange') ||
+                          contentLower.includes('book this') ||
+                          contentLower.includes('i can help you with');
 
-                        // Get all items from search results (cigars, delicatesse, wines, etc.)
-                        const allItems = latestResults.flatMap(tab => tab.items || []);
-                        if (allItems.length === 0) return null;
+                        // Only proceed if we have custom service results OR AI is discussing a custom request
+                        if (!latestResults && !isCustomServiceRequest) return null;
+
+                        // Get all items from filtered results (only custom/concierge items)
+                        const allItems = latestResults ? latestResults.flatMap(tab => tab.items || []) : [];
+
+                        // If no items but user confirmed a custom request, allow generic cart button
+                        if (allItems.length === 0 && !isCustomServiceRequest) return null;
 
                         // Find the product mentioned in the AI message by matching names
                         let matchedProduct = null;
@@ -6030,30 +6071,37 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   ) : (
                     <>
                       <button
-                        onClick={() => setShowRequestForm(true)}
+                        onClick={() => {
+                          // Start a new chat to continue
+                          setActiveChat('new');
+                          setWeather(null);
+                          setCartItems([]);
+                          setSearchResults(null);
+                          setMessageLimitReached(false);
+                        }}
                         className="flex-1 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
                       >
-                        <Send size={18} />
-                        Send Request
+                        <Plus size={18} />
+                        New Chat
                       </button>
                       <button
-                        onClick={() => setShowSubscriptionModal(true)}
+                        onClick={() => navigate('/dashboard/subscription')}
                         className="flex-1 py-3 bg-white/60 text-gray-700 rounded-lg hover:bg-white/80 transition-colors font-medium border border-gray-200/50 flex items-center justify-center gap-2"
                         style={{ backdropFilter: 'blur(8px)' }}
                       >
                         <Crown size={18} className="text-gray-500" />
-                        Upgrade
+                        Manage Plans
                       </button>
                     </>
                   )}
                 </div>
-                {/* Upgrade option for more messages */}
+                {/* Manage subscription link */}
                 <button
-                  onClick={() => setShowSubscriptionModal(true)}
+                  onClick={() => navigate('/dashboard/subscription')}
                   className="mt-3 w-full py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors flex items-center justify-center gap-1"
                 >
                   <Crown size={14} />
-                  Need more messages? Upgrade your plan
+                  Manage your subscription
                 </button>
               </div>
             </div>
