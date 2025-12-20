@@ -4749,8 +4749,6 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
   console.log('🎨 Rendering: CHAT VIEW with chat:', currentChat.id, currentChat.title);
 
   // CHAT VIEW - Messages flow from bottom like WhatsApp
-  const navigate = useNavigate();
-
   return (
     <div className="ai-chat-page h-full flex flex-col bg-transparent overflow-hidden relative">
       {/* 1. HEADER - Fixed on mobile, sticky on desktop */}
