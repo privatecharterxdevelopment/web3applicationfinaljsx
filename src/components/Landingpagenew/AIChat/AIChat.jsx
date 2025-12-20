@@ -7855,15 +7855,15 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   <span className="text-lg font-bold text-gray-900">${grandTotal.toLocaleString()}</span>
                 </div>
 
-                {/* Empty Leg Crypto Notice */}
+                {/* Empty Leg & Fixed Price Items - Go to My Bookings */}
                 {hasEmptyLeg && (
                   <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
                     <div className="flex items-start gap-2">
                       <Wallet size={16} className="text-emerald-600 mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-sm font-medium text-emerald-800">Pay Empty Legs by Crypto</p>
+                        <p className="text-sm font-medium text-emerald-800">Instant Booking Available</p>
                         <p className="text-xs text-emerald-700 mt-0.5">
-                          You can pay {emptyLegItems.length > 1 ? 'your empty legs' : 'the empty leg'} directly from <strong>"My Requests"</strong> and secure your booking within 2 minutes.
+                          {emptyLegItems.length > 1 ? 'Empty legs' : 'The empty leg'} will be saved to <strong>"My Bookings"</strong> where you can pay instantly via crypto. Secure your booking within 2 minutes before it expires!
                         </p>
                       </div>
                     </div>
@@ -7902,7 +7902,85 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       const vatAmount = cartItems.reduce((sum, item) => sum + safeN(item.vat || 0), 0);
                       const grandTotal = cartItems.reduce((sum, item) => sum + safeN(item.totalWithFee || item.price_usd || item.price || 0) + safeN(item.cateringPrice || 0), 0);
 
-                      // Create ONE bulk request with all cart items
+                      // SPLIT ITEMS: Empty legs + fixed-price extras → My Bookings | Rest → My Requests
+                      const bookableTypes = ['empty_legs', 'emptyleg', 'wines', 'wine', 'cigars', 'delicatesse', 'service_fee'];
+                      const bookableItems = cartItems.filter(item => {
+                        const itemType = (item.type || '').toLowerCase();
+                        const hasFixedPrice = (item.price || item.basePrice || item.price_usd || 0) > 0;
+                        return bookableTypes.some(t => itemType.includes(t)) && hasFixedPrice;
+                      });
+                      const requestItems = cartItems.filter(item => !bookableItems.includes(item));
+
+                      // Save bookable items to user_bookings (for direct payment)
+                      const savedBookings = [];
+                      for (const item of bookableItems) {
+                        try {
+                          const rawBasePrice = item.price_usd || item.price || item.basePrice || 0;
+                          const basePrice = safeN(rawBasePrice);
+                          const vatAmt = safeN(item.vat_amount || Math.round(basePrice * 0.081));
+                          const totalPrice = safeN(item.totalWithFee || (basePrice + vatAmt));
+                          const isEmptyLeg = item.type === 'empty_legs' || item.type === 'emptyleg';
+
+                          const bookingData = {
+                            user_id: user.id,
+                            service_id: item.original_id || item.id,
+                            service_type: isEmptyLeg ? 'empty_leg' :
+                                          item.type === 'cigars' ? 'cigars' :
+                                          item.type === 'wines' || item.type === 'wine' ? 'wines' :
+                                          item.type === 'delicatesse' ? 'delicatesse' : 'extras',
+                            booking_type: isEmptyLeg ? 'empty_leg' : 'fixed_price_extra',
+                            service_title: item.name || item.title || item.displayTitle || 'Item',
+                            origin: item.from_city || item.origin || item.from || null,
+                            destination: item.to_city || item.destination || item.to || null,
+                            departure_date: item.departure_date || item.date || null,
+                            passengers: item.passengers || item.pax || null,
+                            base_amount: basePrice,
+                            vat_amount: vatAmt,
+                            total_amount: totalPrice,
+                            currency: 'USD',
+                            payment_status: 'pending',
+                            service_details: {
+                              ...item,
+                              base_price: basePrice,
+                              vat_amount: vatAmt,
+                              total_price: totalPrice,
+                              currency: 'USD'
+                            },
+                            conversation_id: activeChat
+                          };
+
+                          const { data, error } = await supabase
+                            .from('user_bookings')
+                            .insert([bookingData])
+                            .select()
+                            .single();
+
+                          if (!error && data) {
+                            savedBookings.push(data);
+                            console.log('✅ Saved to My Bookings:', item.name || item.title);
+                          }
+                        } catch (err) {
+                          console.error('Error saving booking item:', err);
+                        }
+                      }
+
+                      // If no items for requests, just show booking success
+                      if (requestItems.length === 0 && savedBookings.length > 0) {
+                        const confirmMsg = {
+                          role: 'assistant',
+                          content: `✅ **Saved to My Bookings!**\n\n${savedBookings.length} item(s) ready for payment:\n${savedBookings.map(b => `• ${b.service_title}`).join('\n')}\n\n**Total:** ~$${bookableItems.reduce((sum, item) => sum + safeN(item.totalWithFee || item.price || 0), 0).toLocaleString()}\n\n🚀 Go to **My Bookings** to pay instantly via crypto and secure your booking!`
+                        };
+                        setChatHistory(prev => prev.map(c =>
+                          c.id === activeChat ? { ...c, messages: [...c.messages, confirmMsg] } : c
+                        ));
+                        setCartItems([]);
+                        setShowRequestForm(false);
+                        setToast({ message: `${savedBookings.length} item(s) saved to My Bookings!`, type: 'success' });
+                        setIsProcessing(false);
+                        return;
+                      }
+
+                      // Create bulk request for non-bookable items
                       const bulkRequestData = {
                         source: 'ai_chat',  // Mark as AI-generated
                         request_id: `AI-${Date.now()}`,
@@ -8128,9 +8206,30 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                         }
                       }
 
+                      // Build confirmation message with split info
+                      let confirmContent = `✅ **Request Submitted!**\n\n`;
+
+                      // If bookings were saved
+                      if (savedBookings.length > 0) {
+                        confirmContent += `📦 **My Bookings** (pay now via crypto):\n${savedBookings.map(b => `• ${b.service_title}`).join('\n')}\n\n`;
+                      }
+
+                      // If requests were created
+                      if (requestItems.length > 0) {
+                        confirmContent += `📋 **My Requests** (coordinator quote needed):\n• ${requestItems.length} item(s) sent for review\n\n`;
+                      }
+
+                      confirmContent += `**Estimated Total:** ~$${grandTotal.toLocaleString()}\n\n`;
+
+                      if (savedBookings.length > 0) {
+                        confirmContent += `🚀 **Empty legs & extras** are in My Bookings - pay instantly to secure!\n`;
+                      }
+
+                      confirmContent += `\nOur team will contact you within 2-4 hours for items requiring quotes.\n\n📧 Confirmation sent to ${user?.email}`;
+
                       const confirmMsg = {
                         role: 'assistant',
-                        content: `✅ **Booking Request Sent!**\n\nWe've received your request containing:\n• ${mainServices.length} service(s)${customExtras.length > 0 ? `\n• ${customExtras.length} custom extra(s) (availability TBC)` : ''}\n\n**Estimated Total:** ~$${grandTotal.toLocaleString()}\n\nOur team will review and contact you within 2-4 hours to confirm details and availability.\n\n📧 A confirmation email with PDF has been sent to ${user?.email}\n📄 PDF also downloaded to your device`
+                        content: confirmContent
                       };
 
                       setChatHistory(prev => prev.map(c =>
@@ -8141,7 +8240,10 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
                       setCartItems([]);
                       setShowRequestForm(false);
-                      setToast({ message: 'Booking request sent!', type: 'info' });
+                      const toastMsg = savedBookings.length > 0
+                        ? `${savedBookings.length} item(s) in My Bookings, ${requestItems.length} request(s) sent!`
+                        : 'Booking request sent!';
+                      setToast({ message: toastMsg, type: 'info' });
                     } catch (error) {
                       console.error('Booking error:', error);
                       setToast({ message: 'Failed to send request', type: 'error' });
