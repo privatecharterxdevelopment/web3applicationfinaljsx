@@ -8907,23 +8907,24 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       {/* Multi-Stop Journey Builder Modal */}
       {showJourneyBuilder && journeyBuilderJet && (
         <JourneyBuilder
-          isOpen={showJourneyBuilder}
+          jet={journeyBuilderJet}
+          initialOrigin={journeyBuilderJet.from_iata ? {
+            city: journeyBuilderJet.from || journeyBuilderJet.from_city || journeyBuilderJet.origin,
+            code: journeyBuilderJet.from_iata || journeyBuilderJet.originIata || '',
+            lat: journeyBuilderJet.originLat || journeyBuilderJet.from_lat,
+            lng: journeyBuilderJet.originLng || journeyBuilderJet.from_lng
+          } : null}
+          initialDestination={journeyBuilderJet.to_iata ? {
+            city: journeyBuilderJet.to || journeyBuilderJet.to_city || journeyBuilderJet.destination,
+            code: journeyBuilderJet.to_iata || journeyBuilderJet.destinationIata || '',
+            lat: journeyBuilderJet.destLat || journeyBuilderJet.to_lat,
+            lng: journeyBuilderJet.destLng || journeyBuilderJet.to_lng
+          } : null}
+          onAddToCart={handleJourneyComplete}
           onClose={() => {
             setShowJourneyBuilder(false);
             setJourneyBuilderJet(null);
           }}
-          jet={journeyBuilderJet}
-          origin={journeyBuilderJet.from || journeyBuilderJet.from_city || journeyBuilderJet.origin}
-          originCode={journeyBuilderJet.from_iata || journeyBuilderJet.originIata || ''}
-          originLat={journeyBuilderJet.originLat || journeyBuilderJet.from_lat}
-          originLng={journeyBuilderJet.originLng || journeyBuilderJet.from_lng}
-          destination={journeyBuilderJet.to || journeyBuilderJet.to_city || journeyBuilderJet.destination}
-          destinationCode={journeyBuilderJet.to_iata || journeyBuilderJet.destinationIata || ''}
-          destinationLat={journeyBuilderJet.destLat || journeyBuilderJet.to_lat}
-          destinationLng={journeyBuilderJet.destLng || journeyBuilderJet.to_lng}
-          departureDate={journeyBuilderJet.departure_date}
-          departureTime={journeyBuilderJet.departure_time || '09:00'}
-          onComplete={handleJourneyComplete}
         />
       )}
 
