@@ -15,6 +15,7 @@ import NFTBenefitsModal from '../NFTBenefitsModal';
 import CryptoPaymentModal from '../Payment/CryptoPaymentModal';
 import { convertToUSD, formatUSD, initializeExchangeRates } from '../../services/currencyService';
 import { generateRequestConfirmationPDF, downloadPDF, savePDFToStorage } from '../../services/pdfGeneratorService';
+import { generateRequestConfirmationHTML, downloadHTMLAsPDF } from '../../services/pdfHtmlGenerator';
 
 const EmptyLegDetail = () => {
   const { id } = useParams();
@@ -294,6 +295,33 @@ const EmptyLegDetail = () => {
           }
         };
 
+        // Create detailed cart items for HTML PDF
+        const detailedCartItems = [{
+          type: 'empty_legs',
+          name: emptyLeg.aircraft_type || emptyLeg.aircraft || 'Empty Leg Flight',
+          rawItemName: emptyLeg.aircraft_type || emptyLeg.aircraft || 'Empty Leg Flight',
+          category: 'Empty Leg Flight',
+          details: {
+            from: emptyLeg.from_city || emptyLeg.from_iata,
+            to: emptyLeg.to_city || emptyLeg.to_iata,
+            date: emptyLeg.departure_date,
+            passengers: passengers,
+            aircraft: emptyLeg.aircraft_type || emptyLeg.aircraft,
+            category: emptyLeg.category
+          },
+          price: finalPrice,
+          currency: 'USD',
+          quantity: 1
+        }];
+
+        // Generate beautiful HTML-based PDF (user-facing)
+        const htmlContent = generateRequestConfirmationHTML(pdfRequest, detailedCartItems, {
+          userName: user?.user_metadata?.name || user?.email?.split('@')[0] || 'Valued Client',
+          userEmail: user?.email
+        });
+        await downloadHTMLAsPDF(htmlContent, `PrivateCharterX_Request_${insertedData.id.substring(0, 8).toUpperCase()}.pdf`);
+
+        // Also generate jsPDF version for storage and email
         const { blob, filename, base64 } = await generateRequestConfirmationPDF(pdfRequest);
 
         // Save PDF to storage
@@ -302,9 +330,6 @@ const EmptyLegDetail = () => {
         } catch (storageErr) {
           console.warn('Could not save PDF:', storageErr);
         }
-
-        // Download PDF
-        downloadPDF(blob, filename);
 
         // Send email with PDF attachment
         await supabase.functions.invoke('send-request-email', {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Navigation, Car, Clock, ChevronRight, Check, Calendar, MessageSquare, Loader2, ChevronDown, ChevronUp, Users, X } from 'lucide-react';
 import mapboxgl from 'mapbox-gl';
@@ -8,6 +8,7 @@ import { createRequest } from '../../services/requests';
 import PaymentModal from './PaymentModal';
 import { convertToUSD, initializeExchangeRates } from '../../services/currencyService';
 import { generateRequestConfirmationPDF, downloadPDF, savePDFToStorage } from '../../services/pdfGeneratorService';
+import { generateRequestConfirmationHTML, downloadHTMLAsPDF } from '../../services/pdfHtmlGenerator';
 
 // Mapbox token - privatecharterx account
 const MAPBOX_TOKEN = 'pk.eyJ1IjoicHJpdmF0ZWNoYXJ0ZXJ4IiwiYSI6ImNsdGJ2dG4zazFucGsya21tNXRldW5udjYifQ.NrWJLJuG9n6b1jhRh5AkSg';
@@ -196,84 +197,140 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
     }
   ];
 
-  // Initialize map
-  useEffect(() => {
-    if (map.current) return; // initialize map only once
-
-    try {
-      if (!MAPBOX_TOKEN) {
-        console.error('❌ Mapbox token missing!');
+  // Initialize map - use useLayoutEffect to ensure DOM is ready
+  useLayoutEffect(() => {
+    // Small delay to ensure container is rendered
+    const initMap = () => {
+      if (map.current) return; // initialize map only once
+      if (!mapContainer.current) {
+        console.warn('⏳ Map container not ready, retrying...');
+        setTimeout(initMap, 100);
         return;
       }
 
-      mapboxgl.accessToken = MAPBOX_TOKEN;
+      try {
+        if (!MAPBOX_TOKEN) {
+          console.error('❌ Mapbox token missing!');
+          return;
+        }
 
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/light-v11', // Monochromatic grey/white Uber-style
-        center: [-80.1918, 25.7617], // Miami
-        zoom: 12,
-        pitch: 45,
-        bearing: 0,
-        antialias: true,
-        hash: false,
-        preserveDrawingBuffer: false,
-        refreshExpiredTiles: false,
-        maxTileCacheSize: 50
-      });
+        mapboxgl.accessToken = MAPBOX_TOKEN;
 
-      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-      map.current.addControl(new mapboxgl.FullscreenControl(), 'top-right');
+        map.current = new mapboxgl.Map({
+          container: mapContainer.current,
+          style: 'mapbox://styles/mapbox/light-v11', // Monochromatic grey/white Uber-style
+          center: [-80.1918, 25.7617], // Miami
+          zoom: 12,
+          pitch: 45,
+          bearing: 0,
+          antialias: true,
+          hash: false,
+          preserveDrawingBuffer: false,
+          refreshExpiredTiles: false,
+          maxTileCacheSize: 50
+        });
 
-      // Map load event - fast
-      map.current.on('load', () => {
-        setMapLoaded(true);
+        map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+        map.current.addControl(new mapboxgl.FullscreenControl(), 'top-right');
 
-        // Add 3D buildings AFTER initial load (lazy)
-        setTimeout(() => {
-          try {
-            if (!map.current) return;
-            const layers = map.current.getStyle().layers;
-            const labelLayerId = layers.find(
-              (layer) => layer.type === 'symbol' && layer.layout && layer.layout['text-field']
-            )?.id;
+        // Map load event - fast
+        map.current.on('load', () => {
+          setMapLoaded(true);
 
-            if (labelLayerId) {
-              map.current.addLayer(
-                {
-                  id: '3d-buildings',
-                  source: 'composite',
-                  'source-layer': 'building',
-                  filter: ['==', 'extrude', 'true'],
-                  type: 'fill-extrusion',
-                  minzoom: 15,
-                  paint: {
-                    'fill-extrusion-color': '#ddd',
-                    'fill-extrusion-height': ['get', 'height'],
-                    'fill-extrusion-base': ['get', 'min_height'],
-                    'fill-extrusion-opacity': 0.6
-                  }
-                },
-                labelLayerId
-              );
+          // Add 3D buildings AFTER initial load (lazy)
+          setTimeout(() => {
+            try {
+              if (!map.current) return;
+              const layers = map.current.getStyle().layers;
+              const labelLayerId = layers.find(
+                (layer) => layer.type === 'symbol' && layer.layout && layer.layout['text-field']
+              )?.id;
+
+              if (labelLayerId) {
+                map.current.addLayer(
+                  {
+                    id: '3d-buildings',
+                    source: 'composite',
+                    'source-layer': 'building',
+                    filter: ['==', 'extrude', 'true'],
+                    type: 'fill-extrusion',
+                    minzoom: 15,
+                    paint: {
+                      'fill-extrusion-color': '#ddd',
+                      'fill-extrusion-height': ['get', 'height'],
+                      'fill-extrusion-base': ['get', 'min_height'],
+                      'fill-extrusion-opacity': 0.6
+                    }
+                  },
+                  labelLayerId
+                );
+              }
+            } catch (error) {
+              console.error('3D error:', error);
             }
-          } catch (error) {
-            console.error('3D error:', error);
+          }, 500);
+        });
+
+        map.current.on('error', (e) => {
+          console.error('Mapbox error:', e.error?.message || e);
+        });
+
+      } catch (error) {
+        console.error('❌ Map initialization failed:', error);
+      }
+    };
+
+    // Start map initialization
+    initMap();
+
+    // Watch for container resize (e.g., when sidebar opens/closes)
+    const resizeObserver = new ResizeObserver(() => {
+      if (map.current) {
+        // Delay resize to let CSS transitions complete
+        setTimeout(() => {
+          if (map.current) {
+            map.current.resize();
           }
-        }, 500);
-      });
+        }, 150);
+      }
+    });
 
-      map.current.on('error', (e) => {
-        console.error('Mapbox error:', e.error?.message || e);
-      });
-
-    } catch (error) {
-      console.error('❌ Map initialization failed:', error);
+    // Observe the map container
+    if (mapContainer.current) {
+      resizeObserver.observe(mapContainer.current);
     }
 
+    // Also observe parent elements that might resize (sidebar toggle affects these)
+    if (mapContainer.current?.parentElement) {
+      resizeObserver.observe(mapContainer.current.parentElement);
+    }
+
+    // Also listen for window resize
+    const handleWindowResize = () => {
+      if (map.current) {
+        map.current.resize();
+      }
+    };
+    window.addEventListener('resize', handleWindowResize);
+
+    // Periodic check for resize (fallback for sidebar transitions)
+    const resizeInterval = setInterval(() => {
+      if (map.current && mapContainer.current) {
+        const containerWidth = mapContainer.current.offsetWidth;
+        const mapCanvas = mapContainer.current.querySelector('.mapboxgl-canvas');
+        if (mapCanvas && Math.abs(mapCanvas.width - containerWidth * window.devicePixelRatio) > 10) {
+          map.current.resize();
+        }
+      }
+    }, 500);
+
     return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', handleWindowResize);
+      clearInterval(resizeInterval);
       if (map.current) {
         map.current.remove();
+        map.current = null;
       }
     };
   }, []);
@@ -1352,10 +1409,43 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                   priceMax: priceRange.max,
                   currency: selectedCurrency,
                   distance: distance,
-                  eta: eta
+                  eta: eta,
+                  estimated_total: priceRange.max
                 }
               };
 
+              // Create detailed cart items for HTML PDF
+              const detailedCartItems = [{
+                type: 'ground_transport',
+                name: carToUse.name,
+                rawItemName: carToUse.name,
+                category: 'Ground Transport',
+                details: {
+                  from: locationA,
+                  to: locationB,
+                  pickupDate: pickupDate,
+                  pickupTime: pickupTime,
+                  passengers: passengers,
+                  vehicleClass: carToUse.class || carToUse.category || 'Business',
+                  distance: distance,
+                  eta: eta
+                },
+                price: priceRange.max,
+                priceMin: priceRange.min,
+                priceMax: priceRange.max,
+                currency: selectedCurrency,
+                quantity: 1
+              }];
+
+              // Generate beautiful HTML-based PDF (user-facing)
+              const htmlContent = generateRequestConfirmationHTML(pdfRequest, detailedCartItems, {
+                userName: user?.user_metadata?.name || user?.email?.split('@')[0] || 'Valued Client',
+                userEmail: user?.email
+              });
+              await downloadHTMLAsPDF(htmlContent, `PrivateCharterX_Request_${savedRequest.id.substring(0, 8).toUpperCase()}.pdf`);
+              console.log('Ground transport HTML PDF downloaded successfully');
+
+              // Also generate jsPDF version for storage and email
               const { blob, filename, base64 } = await generateRequestConfirmationPDF(pdfRequest);
 
               // Save PDF to storage
@@ -1365,9 +1455,6 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
               } catch (storageErr) {
                 console.warn('Could not save PDF:', storageErr);
               }
-
-              // Download PDF for user
-              downloadPDF(blob, filename);
 
               // Send email with PDF attachment
               try {
@@ -1773,16 +1860,11 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
                     </div>
                   ) : (
                     <>
-                      {/* Badge - Only Zurich allows direct booking, all others are On Request */}
+                      {/* Badge - All regions are On Request */}
                       {serviceCategory === 'luxury-cars' ? (
                         <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-medium">
                           <MessageSquare size={14} />
                           Quote Request - Interior photos sent within 24h
-                        </div>
-                      ) : isZurichBooking ? (
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium">
-                          <Check size={14} />
-                          Direct Booking Available - Zurich
                         </div>
                       ) : (
                         <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-medium">

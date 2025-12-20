@@ -5,6 +5,8 @@
  * Usage: Generate HTML string, then use html2pdf.js or browser print to PDF
  */
 
+import html2pdf from 'html2pdf.js';
+
 // Company Information
 const COMPANY = {
   name: 'PrivateCharterX LLC',
@@ -45,6 +47,7 @@ const getServiceIcon = (type) => {
     'jet': '✈️',
     'jets': '✈️',
     'jet_charter': '✈️',
+    'private_jet': '✈️',
     'helicopter': '🚁',
     'helicopters': '🚁',
     'helicopter_charter': '🚁',
@@ -57,17 +60,66 @@ const getServiceIcon = (type) => {
     'taxi': '🚕',
     'transfer': '🚕',
     'ground_transport': '🚕',
+    'airport_transfer': '🚕',
     'empty_legs': '✈️',
     'emptyleg': '✈️',
+    'empty_leg': '✈️',
     'wine': '🍷',
     'wines': '🍷',
+    'champagne': '🍾',
     'cigars': '🚬',
+    'caviar': '🥂',
     'delicatesse': '🍾',
+    'delicacies': '🍾',
     'custom_extra': '✨',
     'adventure': '🌟',
+    'concierge': '🎩',
+    'restaurant': '🍽️',
+    'flowers': '💐',
     'tokenization': '🪙'
   };
   return icons[type?.toLowerCase()] || '📋';
+};
+
+// Get proper service title from type
+const getServiceTitle = (type, itemName) => {
+  const titles = {
+    'jet': 'Private Jet Charter',
+    'jets': 'Private Jet Charter',
+    'jet_charter': 'Private Jet Charter',
+    'private_jet': 'Private Jet Charter',
+    'helicopter': 'Helicopter Charter',
+    'helicopters': 'Helicopter Charter',
+    'helicopter_charter': 'Helicopter Charter',
+    'yacht': 'Yacht Charter',
+    'yachts': 'Yacht Charter',
+    'yacht_charter': 'Yacht Charter',
+    'car': 'Ground Transport',
+    'luxury_cars': 'Luxury Car Rental',
+    'car_rental': 'Car Rental',
+    'taxi': 'Airport Transfer',
+    'transfer': 'Airport Transfer',
+    'ground_transport': 'Ground Transport',
+    'airport_transfer': 'Airport Transfer',
+    'empty_legs': 'Empty Leg Flight',
+    'emptyleg': 'Empty Leg Flight',
+    'empty_leg': 'Empty Leg Flight',
+    'wine': 'Premium Wines',
+    'wines': 'Premium Wines',
+    'champagne': 'Champagne',
+    'cigars': 'Premium Cigars',
+    'caviar': 'Caviar & Delicacies',
+    'delicatesse': 'Delicacies',
+    'delicacies': 'Delicacies',
+    'custom_extra': 'Custom Extra',
+    'adventure': 'Adventure Package',
+    'concierge': 'Concierge Service',
+    'restaurant': 'Restaurant Reservation',
+    'flowers': 'Flowers & Gifts',
+    'tokenization': 'Asset Tokenization'
+  };
+  // Return specific title or fall back to item name or formatted type
+  return titles[type?.toLowerCase()] || itemName || type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Service';
 };
 
 // Base CSS styles for PDF
@@ -488,8 +540,17 @@ export function generateRequestConfirmationHTML(request, cartItems = [], options
   // Generate service cards HTML
   const serviceCardsHTML = items.map((item, index) => {
     const itemType = item.type || item.item_type || 'service';
-    const itemName = item.name || item.title || item.displayTitle || item.aircraft_type || item.model || item.service_name || 'Service';
+    const rawItemName = item.name || item.title || item.displayTitle || item.aircraft_type || item.model || item.service_name || '';
     const itemPrice = item.totalWithFee || item.price || item.basePrice || item.price_usd || 0;
+
+    // Get the category/type display name for subtitle
+    const categoryName = getServiceTitle(itemType);
+
+    // TITLE should be the EXACT product name, SUBTITLE should be the category
+    // If we have a specific product name, use it as title with category as subtitle
+    // Otherwise fall back to category as title
+    const serviceTitle = rawItemName || categoryName;
+    const subtitle = rawItemName ? categoryName : '';
 
     // Route info
     const fromCity = item.from_city || item.from || item.origin || item.pickup_location || '';
@@ -506,14 +567,17 @@ export function generateRequestConfirmationHTML(request, cartItems = [], options
 
     const hasRoute = fromCity || toCity;
 
+    // For aircraft/vehicles, show the model as additional info in subtitle
+    const fullSubtitle = aircraft && aircraft !== rawItemName ? `${subtitle}${subtitle ? ' • ' : ''}${aircraft}` : subtitle;
+
     return `
       <div class="service-card">
         <div class="service-header">
           <div style="display: flex; align-items: flex-start;">
             <span class="service-icon">${getServiceIcon(itemType)}</span>
             <div>
-              <div class="service-title">${itemName}</div>
-              <div class="service-subtitle">${itemType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}${aircraft ? ` • ${aircraft}` : ''}</div>
+              <div class="service-title">${serviceTitle}</div>
+              ${fullSubtitle ? `<div class="service-subtitle">${fullSubtitle}</div>` : ''}
             </div>
           </div>
           <div class="service-price">
@@ -631,11 +695,14 @@ export function generateRequestConfirmationHTML(request, cartItems = [], options
       <div class="section-title">Price Summary</div>
       <div class="pricing-table">
         ${items.map(item => {
-          const itemName = item.name || item.title || item.displayTitle || 'Service';
+          const itemType = item.type || item.item_type || 'service';
+          const rawItemName = item.name || item.title || item.displayTitle || '';
+          // Use exact product name in price summary, fall back to category if no name
+          const displayName = rawItemName || getServiceTitle(itemType);
           const itemPrice = item.totalWithFee || item.price || item.basePrice || item.price_usd || 0;
           return `
           <div class="pricing-row">
-            <span class="pricing-label">${itemName}${item.quantity > 1 ? ` x${item.quantity}` : ''}</span>
+            <span class="pricing-label">${displayName}${item.quantity > 1 ? ` x${item.quantity}` : ''}</span>
             <span class="pricing-value">${formatCurrency(itemPrice, currency)}</span>
           </div>
           `;
@@ -707,9 +774,18 @@ export function generateBookingConfirmationHTML(booking, options = {}) {
 
   // Generate service cards HTML (same as request but simpler)
   const serviceCardsHTML = items.map((item, index) => {
-    const itemType = item.type || 'service';
-    const itemName = item.name || item.title || item.service_name || 'Service';
-    const itemPrice = item.price || item.basePrice || 0;
+    const itemType = item.type || item.item_type || 'service';
+    const rawItemName = item.name || item.title || item.service_name || '';
+    const itemPrice = item.price || item.basePrice || item.totalWithFee || 0;
+    const aircraft = item.aircraft || item.aircraft_type || item.model || item.vehicleName || '';
+
+    // Get the category/type display name
+    const categoryName = getServiceTitle(itemType);
+
+    // TITLE = exact product name, SUBTITLE = category
+    const serviceTitle = rawItemName || categoryName;
+    const subtitle = rawItemName ? categoryName : '';
+    const fullSubtitle = aircraft && aircraft !== rawItemName ? `${subtitle}${subtitle ? ' • ' : ''}${aircraft}` : subtitle;
 
     return `
       <div class="service-card">
@@ -717,8 +793,8 @@ export function generateBookingConfirmationHTML(booking, options = {}) {
           <div style="display: flex; align-items: flex-start;">
             <span class="service-icon">${getServiceIcon(itemType)}</span>
             <div>
-              <div class="service-title">${itemName}</div>
-              <div class="service-subtitle">${itemType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+              <div class="service-title">${serviceTitle}</div>
+              ${fullSubtitle ? `<div class="service-subtitle">${fullSubtitle}</div>` : ''}
             </div>
           </div>
           <div class="service-price">
@@ -834,33 +910,52 @@ export function openHTMLForPrint(html, filename = 'document.pdf') {
 }
 
 /**
- * Download HTML as PDF using html2canvas + jsPDF (if available)
- * Falls back to print dialog
+ * Download HTML as PDF using html2pdf.js
+ * Directly downloads PDF file with beautiful HTML layout
  */
 export async function downloadHTMLAsPDF(html, filename = 'document.pdf') {
-  // Try using html2pdf if available
-  if (typeof window !== 'undefined' && window.html2pdf) {
-    const element = document.createElement('div');
-    element.innerHTML = html;
-    document.body.appendChild(element);
+  // Create a temporary container for the HTML
+  const element = document.createElement('div');
+  element.innerHTML = html;
+  element.style.position = 'absolute';
+  element.style.left = '-9999px';
+  element.style.top = '0';
+  element.style.width = '210mm'; // A4 width
+  document.body.appendChild(element);
 
-    try {
-      await window.html2pdf()
-        .set({
-          margin: 10,
-          filename: filename,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        })
-        .from(element.firstChild)
-        .save();
-    } finally {
-      document.body.removeChild(element);
-    }
-  } else {
-    // Fallback to print dialog
+  try {
+    // Wait for any images to load
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Generate and download PDF
+    await html2pdf()
+      .set({
+        margin: [10, 10, 10, 10],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          logging: false
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'portrait'
+        },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      })
+      .from(element.firstChild)
+      .save();
+
+    console.log('HTML PDF downloaded successfully:', filename);
+  } catch (err) {
+    console.error('Error generating HTML PDF:', err);
+    // Fallback to print dialog if html2pdf fails
     openHTMLForPrint(html, filename);
+  } finally {
+    document.body.removeChild(element);
   }
 }
 

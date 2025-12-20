@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUpRight, ArrowDownLeft, History, Wallet, MessageCircle, Shield, User, Award, Plus, X, ExternalLink, LogOut, RefreshCw, Coins, Plane, Leaf, Send, CheckCircle, Headphones, Camera, Loader2, Crown, ChevronRight } from 'lucide-react';
-import { supportTicketService } from '../../services/supportTicketService';
+import { ArrowUpRight, ArrowDownLeft, History, Wallet, MessageCircle, Shield, User, Award, Plus, X, ExternalLink, LogOut, RefreshCw, Coins, Plane, Leaf, Send, CheckCircle, Headphones, Camera, Loader2, Crown, ChevronRight, Clock } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer, YAxis, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import { useAccount, useBalance, useChainId } from 'wagmi';
@@ -50,6 +49,7 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
   const [supportCategory, setSupportCategory] = useState('general');
   const [sendingSupport, setSendingSupport] = useState(false);
   const [supportSent, setSupportSent] = useState(false);
+  const [supportTickets, setSupportTickets] = useState([]);
 
   // State for Edit Profile modal
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -74,6 +74,9 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
   // State for subscription
   const [subscriptionData, setSubscriptionData] = useState(null);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
+
+  // State for chat history with message counts
+  const [userChats, setUserChats] = useState([]);
 
   // Fetch ETH balance on Base - refetch every 30 seconds
   const { data: baseEthBalance, refetch: refetchBaseEth } = useBalance({
@@ -126,6 +129,7 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
       fetchUserProfile();
       fetchKYCData();
       fetchUserRequests();
+      fetchSupportTickets();
       fetchInvestments();
       fetchNFTCount();
       fetchPVCXData();
@@ -528,6 +532,22 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
     }
   };
 
+  const fetchSupportTickets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('support_tickets')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setSupportTickets(data);
+      }
+    } catch (error) {
+      console.error('Error fetching support tickets:', error);
+    }
+  };
+
   const fetchInvestments = async () => {
     if (!address) return;
 
@@ -605,6 +625,23 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
         if (tier === 'traveller') return '25';
         return '10'; // explorer
       };
+
+      // Fetch user's chat sessions with message counts
+      const { data: chats } = await supabase
+        .from('chat_sessions')
+        .select('id, title, created_at, messages')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (chats) {
+        setUserChats(chats.map(chat => ({
+          id: chat.id,
+          title: chat.title || 'Untitled Chat',
+          messageCount: Array.isArray(chat.messages) ? chat.messages.length : 0,
+          createdAt: chat.created_at
+        })));
+      }
 
       setSubscriptionData({
         tier: profile?.subscription_tier || null,
@@ -748,54 +785,47 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
     setActiveSection(activeSection === section ? null : section);
   };
 
-  // Handle support inquiry submission
+  // Handle support inquiry submission - saves to support_tickets for CRM
   const handleSupportSubmit = async () => {
     if (!supportMessage.trim() || !user?.id) return;
 
     setSendingSupport(true);
     try {
-      // Save to support_tickets table
-      const { data, error } = await supabase
+      const userName = user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : user.email;
+
+      // Save to support_tickets table (shown in CRM Support section)
+      // Using correct column names: subject, description (not message), tags, ticket_data
+      const { error } = await supabase
         .from('support_tickets')
         .insert([{
           user_id: user.id,
-          subject: `Support Request - ${supportCategory.charAt(0).toUpperCase() + supportCategory.slice(1)}`,
-          message: supportMessage.trim(),
-          category: supportCategory,
+          subject: `${supportCategory.charAt(0).toUpperCase() + supportCategory.slice(1)} Inquiry from ${userName}`,
+          description: supportMessage.trim(),
           priority: 'normal',
           status: 'open',
-          user_email: user.email,
-          user_name: user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : user.email
-        }])
-        .select()
-        .single();
+          tags: [supportCategory, 'web_support'],
+          ticket_data: {
+            category: supportCategory,
+            user_email: user.email,
+            user_name: userName,
+            source: 'profile_dashboard'
+          }
+        }]);
 
       if (error) throw error;
-
-      // Send email notification
-      try {
-        await supportTicketService.sendChatNotificationEmail({
-          message: supportMessage.trim(),
-          name: user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : user.email,
-          email: user.email || '',
-          phone: '',
-          userId: user.id,
-          ticketId: data.id,
-          category: supportCategory
-        });
-      } catch (emailError) {
-        console.error('Email notification error:', emailError);
-      }
 
       setSupportSent(true);
       setSupportMessage('');
       setSupportCategory('general');
 
-      // Close modal after 2 seconds
+      // Refresh support tickets list
+      fetchSupportTickets();
+
+      // Close modal after 4 seconds
       setTimeout(() => {
         setShowSupportModal(false);
         setSupportSent(false);
-      }, 2000);
+      }, 4000);
 
     } catch (error) {
       console.error('Error submitting support request:', error);
@@ -1254,6 +1284,102 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
               </div>
             </div>
 
+            {/* Support Tickets Section */}
+            <div className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl overflow-hidden">
+              <button
+                onClick={() => toggleSection('support')}
+                className="w-full p-3 flex items-center justify-between hover:bg-white/10 transition-all"
+              >
+                <div className="flex items-center gap-2">
+                  <Headphones className="w-4 h-4 text-gray-600" />
+                  <span className="text-sm font-medium text-gray-900">My Support Tickets</span>
+                  {supportTickets.length > 0 && (
+                    <span className="px-2 py-0.5 bg-orange-500 text-white rounded-full text-xs">
+                      {supportTickets.length}
+                    </span>
+                  )}
+                </div>
+                <Plus className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${activeSection === 'support' ? 'rotate-45' : ''}`} />
+              </button>
+              <div className={`transition-all duration-300 ease-in-out overflow-hidden ${activeSection === 'support' ? 'max-h-[600px] overflow-y-auto' : 'max-h-0'}`}>
+                <div className="p-4 bg-white/10 space-y-3">
+                  {supportTickets.length > 0 ? (
+                    <>
+                      {supportTickets.slice(0, 5).map((ticket) => {
+                        const statusColors = {
+                          open: 'bg-blue-100 text-blue-700',
+                          pending: 'bg-yellow-100 text-yellow-700',
+                          resolved: 'bg-green-100 text-green-700',
+                          closed: 'bg-gray-100 text-gray-700'
+                        };
+                        const category = ticket.ticket_data?.category || ticket.tags?.[0] || 'general';
+
+                        return (
+                          <div key={ticket.id} className="py-3 px-3 bg-white/5 rounded-lg border border-gray-200/30">
+                            {/* Header with Subject and Status */}
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex-1 pr-2">
+                                <p className="text-sm font-medium text-gray-900 line-clamp-1">
+                                  {ticket.subject || 'Support Request'}
+                                </p>
+                                <p className="text-xs text-gray-500 capitalize mt-0.5">
+                                  {category}
+                                </p>
+                              </div>
+                              <span className={`px-2 py-0.5 text-xs rounded-full capitalize ${statusColors[ticket.status] || statusColors.open}`}>
+                                {ticket.status || 'open'}
+                              </span>
+                            </div>
+
+                            {/* Message Preview */}
+                            <p className="text-xs text-gray-600 line-clamp-2 mb-2">
+                              {ticket.description || 'No message'}
+                            </p>
+
+                            {/* Date */}
+                            <div className="flex items-center gap-1 text-xs text-gray-400">
+                              <Clock className="w-3 h-3" />
+                              <span>
+                                {new Date(ticket.created_at).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {supportTickets.length > 5 && (
+                        <p className="text-xs text-gray-400 text-center py-2">
+                          +{supportTickets.length - 5} more tickets
+                        </p>
+                      )}
+                      {/* New Support Request Button */}
+                      <button
+                        onClick={() => setShowSupportModal(true)}
+                        className="w-full py-2 text-xs text-gray-600 hover:text-gray-900 transition-colors text-center border border-dashed border-gray-300 rounded-lg hover:border-gray-400"
+                      >
+                        + New Support Request
+                      </button>
+                    </>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-gray-500 mb-3">No support tickets yet</p>
+                      <button
+                        onClick={() => setShowSupportModal(true)}
+                        className="px-4 py-2 text-xs bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+                      >
+                        Create Support Ticket
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* PVCX Token Section */}
             <div className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl overflow-hidden">
               <button
@@ -1417,13 +1543,26 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                 </div>
               ) : subscriptionData?.tier && subscriptionData?.status === 'active' ? (
                 <div className="space-y-2">
-                  {/* Chat Usage */}
+                  {/* Chat Usage - Detailed */}
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-500">Chats</span>
+                    <span className="text-xs text-gray-500">Chats Used</span>
                     <span className="text-xs font-medium text-gray-900">
-                      {subscriptionData.unlimited ? '∞' : `${subscriptionData.chatsUsed}/${subscriptionData.chatsLimit}`}
+                      {subscriptionData.unlimited ? '∞ Unlimited' : `${subscriptionData.chatsUsed} of ${subscriptionData.chatsLimit}`}
                     </span>
                   </div>
+
+                  {/* Chats Remaining */}
+                  {!subscriptionData.unlimited && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500">Chats Left</span>
+                      <span className={`text-xs font-medium ${
+                        subscriptionData.chatsRemaining <= 1 ? 'text-red-600' :
+                        subscriptionData.chatsRemaining <= 2 ? 'text-amber-600' : 'text-emerald-600'
+                      }`}>
+                        {subscriptionData.chatsRemaining} remaining
+                      </span>
+                    </div>
+                  )}
 
                   {/* Progress Bar (if not unlimited) */}
                   {!subscriptionData.unlimited && subscriptionData.chatsLimit > 0 && (
@@ -1443,11 +1582,62 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
 
                   {/* Messages per Chat */}
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-500">Msgs/Chat</span>
+                    <span className="text-xs text-gray-500">Messages/Chat</span>
                     <span className="text-xs font-medium text-gray-900">
-                      {subscriptionData.messagesPerChat}
+                      {subscriptionData.messagesPerChat === '∞' ? 'Unlimited' : `${subscriptionData.messagesPerChat} max`}
                     </span>
                   </div>
+
+                  {/* Chat History with Message Counts */}
+                  {userChats.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-200/50">
+                      <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">Your Chats</span>
+                      <div className="mt-2 space-y-1.5 max-h-28 overflow-y-auto">
+                        {userChats.slice(0, 5).map((chat) => {
+                          const maxMsgs = subscriptionData.messagesPerChat === '∞' ? Infinity : parseInt(subscriptionData.messagesPerChat) || 10;
+                          const hasSpace = chat.messageCount < maxMsgs;
+                          return (
+                            <div
+                              key={chat.id}
+                              className={`flex items-center justify-between px-2 py-1.5 rounded-lg ${
+                                hasSpace ? 'bg-white/40' : 'bg-gray-100/40 opacity-60'
+                              }`}
+                            >
+                              <span className="text-[11px] text-gray-700 truncate flex-1 mr-2">{chat.title}</span>
+                              <span className={`text-[10px] font-medium flex-shrink-0 ${
+                                !hasSpace ? 'text-red-500' :
+                                chat.messageCount >= maxMsgs - 2 ? 'text-amber-500' : 'text-gray-500'
+                              }`}>
+                                {chat.messageCount}/{maxMsgs === Infinity ? '∞' : maxMsgs}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Chat Limit Reached Banner */}
+                  {subscriptionData.chatsRemaining === 0 && !subscriptionData.unlimited && (
+                    <div className="mt-3 p-2.5 bg-amber-50/80 border border-amber-200/50 rounded-lg">
+                      <p className="text-[11px] text-amber-700 mb-2">Chat limit reached. Continue existing chats or upgrade.</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setActiveCategory && setActiveCategory('chat-history')}
+                          className="flex-1 py-1.5 px-2 text-[10px] font-medium text-gray-600 bg-white/60 hover:bg-white/80 rounded-lg transition-all border border-gray-200/50"
+                        >
+                          Continue
+                        </button>
+                        <button
+                          onClick={() => setActiveCategory && setActiveCategory('subscriptions')}
+                          className="flex-1 py-1.5 px-2 text-[10px] font-medium text-white rounded-lg transition-all"
+                          style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)' }}
+                        >
+                          Update subscription
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Billing Period - Started */}
                   {subscriptionData.currentPeriodStart && (
@@ -1988,12 +2178,15 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
               {supportSent ? (
                 // Success State
                 <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle className="w-8 h-8 text-green-600" />
+                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-10 h-10 text-green-600" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Request Sent!</h3>
-                  <p className="text-gray-600">
-                    Thank you for reaching out. We'll get back to you shortly.
+                  <h3 className="text-xl font-semibold text-green-700 mb-2">Message Sent Successfully!</h3>
+                  <p className="text-gray-600 mb-2">
+                    Thank you for reaching out to us.
+                  </p>
+                  <p className="text-sm text-green-600 font-medium">
+                    Our team will respond within 5-60 minutes
                   </p>
                 </div>
               ) : (

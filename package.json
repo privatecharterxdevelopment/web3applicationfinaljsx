@@ -63,6 +63,7 @@
     "express": "^4.18.3",
     "face-api.js": "^0.22.2",
     "framer-motion": "^12.10.5",
+    "html2pdf.js": "^0.12.1",
     "i18next": "^23.16.8",
     "i18next-browser-languagedetector": "^7.2.2",
     "i18next-http-backend": "^2.7.3",

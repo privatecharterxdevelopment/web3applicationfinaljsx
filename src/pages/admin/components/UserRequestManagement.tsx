@@ -64,6 +64,7 @@ const REQUEST_TYPES = [
   { value: 'adventure_package', label: 'Adventure Package' },
   { value: 'co2_certificate', label: 'CO2 Certificate' },
   { value: 'taxi_concierge', label: 'Taxi/Concierge' },
+  { value: 'ground_transport', label: 'Ground Transport' },
   { value: 'nft_discount_empty_leg', label: 'NFT Discount Empty Leg' },
   { value: 'nft_free_flight', label: 'NFT Free Flight' },
   { value: 'spv_formation', label: 'SPV Formation' },
@@ -987,6 +988,124 @@ export default function UserRequestManagement() {
                         </div>
                       )}
 
+                      {/* Ground Transport / Taxi Details */}
+                      {(selectedRequest.type === 'ground_transport' || selectedRequest.type === 'taxi_concierge') && (
+                        <div className="space-y-4">
+                          {/* Route */}
+                          {(selectedRequest.data.from || selectedRequest.data.pickupLocation) && (
+                            <div>
+                              <div className="text-xs text-gray-500 mb-2">Route</div>
+                              <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                                <MapPin size={16} className="text-gray-500" />
+                                {selectedRequest.data.from || selectedRequest.data.pickupLocation}
+                                <ArrowRight size={16} className="text-gray-400" />
+                                <MapPin size={16} className="text-gray-400" />
+                                {selectedRequest.data.to || selectedRequest.data.dropoffLocation}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Vehicle Info */}
+                          {selectedRequest.data.carName && (
+                            <div className="bg-gray-100 rounded-lg p-3">
+                              <div className="flex items-center gap-3">
+                                {selectedRequest.data.carImage && (
+                                  <img src={selectedRequest.data.carImage} alt={selectedRequest.data.carName} className="w-16 h-12 object-cover rounded-lg" />
+                                )}
+                                <div>
+                                  <div className="text-sm font-semibold text-gray-900">{selectedRequest.data.carName}</div>
+                                  {selectedRequest.data.carSeats && (
+                                    <div className="text-xs text-gray-500">{selectedRequest.data.carSeats} seats</div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Details Grid */}
+                          <div className="grid grid-cols-2 gap-4">
+                            {selectedRequest.data.pickupDate && (
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">Pickup Date</div>
+                                <div className="text-sm font-medium text-gray-900">{selectedRequest.data.pickupDate}</div>
+                              </div>
+                            )}
+                            {selectedRequest.data.pickupTime && (
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">Pickup Time</div>
+                                <div className="text-sm font-medium text-gray-900">{selectedRequest.data.pickupTime}</div>
+                              </div>
+                            )}
+                            {selectedRequest.data.passengers && (
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">Passengers</div>
+                                <div className="text-sm font-medium text-gray-900">{selectedRequest.data.passengers}</div>
+                              </div>
+                            )}
+                            {selectedRequest.data.distance && (
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">Distance</div>
+                                <div className="text-sm font-medium text-gray-900">{selectedRequest.data.distance} km</div>
+                              </div>
+                            )}
+                            {selectedRequest.data.eta && (
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">Est. Duration</div>
+                                <div className="text-sm font-medium text-gray-900">{selectedRequest.data.eta}</div>
+                              </div>
+                            )}
+                            {selectedRequest.data.currency && (
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">Currency</div>
+                                <div className="text-sm font-medium text-gray-900">{selectedRequest.data.currency}</div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Price Breakdown - CRITICAL */}
+                          <div className="bg-gray-900 text-white rounded-xl p-4">
+                            <div className="text-xs text-gray-400 mb-2">Price Quote</div>
+                            {selectedRequest.data.priceRange && (
+                              <div className="text-lg font-bold mb-2">{selectedRequest.data.priceRange}</div>
+                            )}
+                            <div className="space-y-1 text-sm">
+                              {selectedRequest.data.base_price && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-400">Base Price</span>
+                                  <span>{formatCurrency(selectedRequest.data.base_price, selectedRequest.data.currency)}</span>
+                                </div>
+                              )}
+                              {selectedRequest.data.platform_fee && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-400">Platform Fee ({selectedRequest.data.platform_fee_percent || 2.5}%)</span>
+                                  <span>{formatCurrency(selectedRequest.data.platform_fee, selectedRequest.data.currency)}</span>
+                                </div>
+                              )}
+                              {selectedRequest.data.vat_amount && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-400">VAT ({selectedRequest.data.vat_percent || 8.1}%)</span>
+                                  <span>{formatCurrency(selectedRequest.data.vat_amount, selectedRequest.data.currency)}</span>
+                                </div>
+                              )}
+                              {selectedRequest.data.total_price && (
+                                <div className="flex justify-between pt-2 border-t border-gray-700 font-bold text-base">
+                                  <span>Total</span>
+                                  <span>{formatCurrency(selectedRequest.data.total_price, selectedRequest.data.currency)}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Extra Notes */}
+                          {selectedRequest.data.extraNotes && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                              <div className="text-xs text-amber-700 font-medium mb-1">Special Notes</div>
+                              <div className="text-sm text-amber-900">{selectedRequest.data.extraNotes}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* SPV Formation Details */}
                       {selectedRequest.type === 'spv_formation' && (
                         <div className="space-y-6">
@@ -1268,7 +1387,7 @@ export default function UserRequestManagement() {
                       )}
 
                       {/* Generic data display for other types or when specific parsing isn't available */}
-                      {!['private_jet_charter', 'jets', 'empty_leg', 'nft_discount_empty_leg', 'nft_free_flight', 'adventures', 'co2-certificate', 'luxury_car_rental', 'helicopter_charter', 'spv_formation', 'tokenization'].includes(selectedRequest.type) && (
+                      {!['private_jet_charter', 'jets', 'empty_leg', 'nft_discount_empty_leg', 'nft_free_flight', 'adventures', 'co2-certificate', 'luxury_car_rental', 'helicopter_charter', 'ground_transport', 'taxi_concierge', 'spv_formation', 'tokenization'].includes(selectedRequest.type) && (
                         <div>
                           <pre className="text-sm text-gray-600 whitespace-pre-wrap bg-white p-3 rounded border">
                             {JSON.stringify(selectedRequest.data, null, 2)}

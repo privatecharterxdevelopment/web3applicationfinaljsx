@@ -3,7 +3,8 @@ import { Car, Plane, FileText, Clock, Check, X, ChevronRight, Search, Filter, Al
 import { getUserRequests } from '../services/requests';
 import { formatDistanceToNow } from 'date-fns';
 import ReviewDisputeModal from './modals/ReviewDisputeModal';
-import { generateRequestConfirmationPDF, downloadPDF } from '../services/pdfGeneratorService';
+import { generateRequestConfirmationPDF, downloadPDF, savePDFToStorage } from '../services/pdfGeneratorService';
+import { generateRequestConfirmationHTML, downloadHTMLAsPDF } from '../services/pdfHtmlGenerator';
 
 // Helper component to render price breakdown
 const PriceBreakdown = ({ data, colorClass = 'from-gray-800 to-black', textClass = 'text-gray-300' }) => {
@@ -135,8 +136,58 @@ const MyRequestsView = ({ user }) => {
           cart_items: data.items || data.cart_items
         }
       };
-      const { blob, filename } = await generateRequestConfirmationPDF(pdfRequest);
-      downloadPDF(blob, filename);
+
+      // Create detailed cart items for HTML PDF
+      const detailedCartItems = (data.items || data.cart_items || []).map(item => ({
+        type: item.type || request.type,
+        name: item.name || item.rawItemName || item.title,
+        rawItemName: item.rawItemName || item.name || item.title,
+        category: item.category || request.type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        details: {
+          from: item.from || data.from_city || data.from,
+          to: item.to || data.to_city || data.to,
+          date: item.date || data.departure_date || data.date,
+          passengers: item.passengers || data.passengers
+        },
+        price: item.price || item.total || 0,
+        currency: item.currency || data.currency || 'USD',
+        quantity: item.quantity || 1
+      }));
+
+      // If no cart items, create a single item from the request data
+      if (detailedCartItems.length === 0) {
+        detailedCartItems.push({
+          type: request.type,
+          name: data.aircraft_model || data.car_name || data.helicopter_name || data.name || 'Service Request',
+          rawItemName: data.aircraft_model || data.car_name || data.helicopter_name || data.name || 'Service Request',
+          category: request.type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          details: {
+            from: data.from_city || data.from || data.origin,
+            to: data.to_city || data.to || data.destination,
+            date: data.departure_date || data.date,
+            passengers: data.passengers
+          },
+          price: data.total || data.price || data.total_price || 0,
+          currency: data.currency || 'USD',
+          quantity: 1
+        });
+      }
+
+      // Generate beautiful HTML-based PDF (user-facing)
+      const htmlContent = generateRequestConfirmationHTML(pdfRequest, detailedCartItems, {
+        userName: user?.user_metadata?.full_name || user?.user_metadata?.name || 'Valued Client',
+        userEmail: user?.email
+      });
+      await downloadHTMLAsPDF(htmlContent, `PrivateCharterX_Request_${request.id.substring(0, 8).toUpperCase()}.pdf`);
+
+      // Also save jsPDF version to storage for admin CRM access
+      try {
+        const { blob, filename } = await generateRequestConfirmationPDF(pdfRequest);
+        await savePDFToStorage(blob, filename, request.type || 'request', request.id);
+        console.log('PDF saved to storage for admin access');
+      } catch (storageErr) {
+        console.warn('Could not save PDF to storage:', storageErr);
+      }
     } catch (error) {
       console.error('Error generating PDF:', error);
     } finally {

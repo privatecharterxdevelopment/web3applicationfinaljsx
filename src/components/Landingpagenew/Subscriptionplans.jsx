@@ -249,12 +249,19 @@ const PricingPackages = ({ onClose, onBack }) => {
         .insert([
           {
             user_id: user?.id || null,
-            name: businessForm.name,
-            email: businessForm.email,
             subject: `Business Solutions Request - ${businessForm.company}`,
-            message: `Company: ${businessForm.company}\nPhone: ${businessForm.phone}\n\nRequirements:\n${businessForm.requirements}`,
+            description: `Name: ${businessForm.name}\nEmail: ${businessForm.email}\nCompany: ${businessForm.company}\nPhone: ${businessForm.phone}\n\nRequirements:\n${businessForm.requirements}`,
             status: 'open',
-            category: 'business_solutions'
+            priority: 'normal',
+            tags: ['business_solutions', 'enterprise'],
+            ticket_data: {
+              category: 'business_solutions',
+              user_name: businessForm.name,
+              user_email: businessForm.email,
+              company: businessForm.company,
+              phone: businessForm.phone,
+              source: 'subscription_page'
+            }
           }
         ]);
 

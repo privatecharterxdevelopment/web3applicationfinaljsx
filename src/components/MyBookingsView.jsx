@@ -7,7 +7,8 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { formatDistanceToNow, format } from 'date-fns';
-import { generateBookingConfirmationPDF, downloadPDF } from '../services/pdfGeneratorService';
+import { generateBookingConfirmationPDF, generateRequestConfirmationPDF, downloadPDF, savePDFToStorage } from '../services/pdfGeneratorService';
+import { generateBookingConfirmationHTML, generateRequestConfirmationHTML, downloadHTMLAsPDF } from '../services/pdfHtmlGenerator';
 
 const MyBookingsView = ({ user, onBack }) => {
   const [bookings, setBookings] = useState([]);
@@ -23,8 +24,51 @@ const MyBookingsView = ({ user, onBack }) => {
     if (e) e.stopPropagation();
     setGeneratingPDF(booking.id);
     try {
-      const { blob, filename } = await generateBookingConfirmationPDF(booking);
-      downloadPDF(blob, filename);
+      // For cart_checkout bookings, use the request confirmation with cart items
+      if (booking.booking_type === 'cart_checkout' && booking.service_details?.cart_items?.length > 0) {
+        // Import and use the request HTML generator for cart items
+        const { generateRequestConfirmationHTML } = await import('../services/pdfHtmlGenerator');
+
+        const pdfRequest = {
+          id: booking.id,
+          type: 'cart_checkout',
+          service_type: 'cart_checkout',
+          created_at: booking.created_at,
+          client_email: user?.email,
+          data: {
+            estimated_total: booking.total_amount
+          }
+        };
+
+        const htmlContent = generateRequestConfirmationHTML(pdfRequest, booking.service_details.cart_items, {
+          userName: user?.user_metadata?.full_name || user?.user_metadata?.name || 'Valued Client',
+          userEmail: user?.email
+        });
+        await downloadHTMLAsPDF(htmlContent, `PrivateCharterX_Booking_${booking.id.substring(0, 8).toUpperCase()}.pdf`);
+
+        // Save jsPDF version to storage for admin CRM access
+        try {
+          const { blob, filename } = await generateBookingConfirmationPDF(booking);
+          await savePDFToStorage(blob, filename, 'cart_checkout', booking.id);
+        } catch (storageErr) {
+          console.warn('Could not save PDF to storage:', storageErr);
+        }
+      } else {
+        // Generate beautiful HTML-based PDF (user-facing)
+        const htmlContent = generateBookingConfirmationHTML(booking, {
+          userName: user?.user_metadata?.full_name || user?.user_metadata?.name || 'Valued Client',
+          userEmail: user?.email
+        });
+        await downloadHTMLAsPDF(htmlContent, `PrivateCharterX_Booking_${booking.id.substring(0, 8).toUpperCase()}.pdf`);
+
+        // Save jsPDF version to storage for admin CRM access
+        try {
+          const { blob, filename } = await generateBookingConfirmationPDF(booking);
+          await savePDFToStorage(blob, filename, booking.booking_type || 'booking', booking.id);
+        } catch (storageErr) {
+          console.warn('Could not save PDF to storage:', storageErr);
+        }
+      }
     } catch (error) {
       console.error('Error generating PDF:', error);
     } finally {
@@ -131,6 +175,21 @@ const MyBookingsView = ({ user, onBack }) => {
   };
 
   const getBookingTitle = (booking) => {
+    // For cart checkout, show item count
+    if (booking.booking_type === 'cart_checkout') {
+      const itemCount = booking.service_details?.cart_items?.length || 0;
+      if (itemCount > 0) {
+        // Try to get the first item's name or a summary
+        const firstItem = booking.service_details.cart_items[0];
+        const firstName = firstItem?.name || firstItem?.title || firstItem?.rawItemName;
+        if (firstName && itemCount > 1) {
+          return `${firstName} + ${itemCount - 1} more`;
+        } else if (firstName) {
+          return firstName;
+        }
+      }
+      return `Cart Order (${itemCount} items)`;
+    }
     if (booking.service_title && !booking.service_title.includes('undefined')) {
       return booking.service_title;
     }
@@ -187,6 +246,7 @@ const MyBookingsView = ({ user, onBack }) => {
     if (type === 'adventure_package') return <Mountain size={14} />;
     if (type === 'co2_certificate') return <Leaf size={14} />;
     if (type === 'hotel_booking') return <Building2 size={14} />;
+    if (type === 'cart_checkout') return <Receipt size={14} />;
     return <Plane size={14} />;
   };
 
@@ -195,7 +255,8 @@ const MyBookingsView = ({ user, onBack }) => {
       empty_leg: 'Empty Leg',
       adventure_package: 'Adventure',
       co2_certificate: 'CO2 Offset',
-      hotel_booking: 'Hotel'
+      hotel_booking: 'Hotel',
+      cart_checkout: 'Cart Order'
     };
     return labels[type] || 'Booking';
   };
@@ -366,8 +427,90 @@ const MyBookingsView = ({ user, onBack }) => {
                   {/* Expanded Details */}
                   {isExpanded && (
                     <div className="px-4 pb-4 pt-2 border-t border-gray-50">
-                      {/* Hotel-specific details */}
-                      {booking.booking_type === 'hotel_booking' ? (
+                      {/* Cart Checkout - Show all cart items */}
+                      {booking.booking_type === 'cart_checkout' && booking.service_details?.cart_items?.length > 0 ? (
+                        <div className="mb-4">
+                          <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2">Order Items ({booking.service_details.cart_items.length})</p>
+                          <div className="space-y-2">
+                            {booking.service_details.cart_items.map((item, idx) => {
+                              const itemIcon = {
+                                'empty_legs': '✈️',
+                                'emptyleg': '✈️',
+                                'empty_leg': '✈️',
+                                'jet': '✈️',
+                                'helicopter': '🚁',
+                                'yacht': '🛥️',
+                                'wine': '🍷',
+                                'wines': '🍷',
+                                'champagne': '🍾',
+                                'cigars': '🚬',
+                                'caviar': '🥂',
+                                'delicatesse': '🍾',
+                                'delicacies': '🍾',
+                                'ground_transport': '🚕',
+                                'taxi': '🚕',
+                                'concierge': '🎩',
+                                'restaurant': '🍽️',
+                                'flowers': '💐'
+                              }[item.type?.toLowerCase()] || '📋';
+
+                              const categoryName = {
+                                'empty_legs': 'Empty Leg Flight',
+                                'emptyleg': 'Empty Leg Flight',
+                                'empty_leg': 'Empty Leg Flight',
+                                'jet': 'Private Jet Charter',
+                                'helicopter': 'Helicopter Charter',
+                                'yacht': 'Yacht Charter',
+                                'wine': 'Premium Wines',
+                                'wines': 'Premium Wines',
+                                'champagne': 'Champagne',
+                                'cigars': 'Premium Cigars',
+                                'caviar': 'Caviar & Delicacies',
+                                'delicatesse': 'Delicacies',
+                                'delicacies': 'Delicacies',
+                                'ground_transport': 'Ground Transport',
+                                'taxi': 'Airport Transfer',
+                                'concierge': 'Concierge Service',
+                                'restaurant': 'Restaurant',
+                                'flowers': 'Flowers & Gifts'
+                              }[item.type?.toLowerCase()] || item.type?.replace(/_/g, ' ');
+
+                              const itemName = item.name || item.title || item.rawItemName || categoryName;
+                              const itemPrice = item.price || item.basePrice || item.price_usd || 0;
+                              const hasRoute = item.from || item.to || item.from_city || item.to_city;
+
+                              return (
+                                <div key={idx} className="flex items-start gap-3 p-2 bg-gray-50 rounded-lg">
+                                  <span className="text-lg">{itemIcon}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-gray-900 truncate">{itemName}</p>
+                                    <p className="text-[10px] text-gray-500">{categoryName}</p>
+                                    {hasRoute && (
+                                      <p className="text-xs text-gray-600 mt-0.5">
+                                        {item.from || item.from_city} → {item.to || item.to_city}
+                                      </p>
+                                    )}
+                                    {item.departure_date && (
+                                      <p className="text-xs text-gray-500 mt-0.5">
+                                        {format(new Date(item.departure_date), 'MMM d, yyyy')}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="text-right flex-shrink-0">
+                                    <p className="text-sm font-semibold text-gray-900">
+                                      {formatCurrency(itemPrice, item.currency || 'USD')}
+                                    </p>
+                                    {item.quantity > 1 && (
+                                      <p className="text-[10px] text-gray-500">x{item.quantity}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : booking.booking_type === 'hotel_booking' ? (
+                        /* Hotel-specific details */
                         <div className="mb-4">
                           {/* Hotel image and info */}
                           {booking.hotel_image && (
@@ -535,21 +678,19 @@ const MyBookingsView = ({ user, onBack }) => {
                             </a>
                           )
                         )}
-                        {/* Download PDF Button - Only show when paid */}
-                        {booking.payment_status === 'paid' && (
-                          <button
-                            onClick={(e) => handleDownloadPDF(booking, e)}
-                            disabled={generatingPDF === booking.id}
-                            className="px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1.5 disabled:opacity-50"
-                          >
-                            {generatingPDF === booking.id ? (
-                              <Loader2 size={12} className="animate-spin" />
-                            ) : (
-                              <FileText size={12} />
-                            )}
-                            PDF
-                          </button>
-                        )}
+                        {/* Download PDF Button - Always available */}
+                        <button
+                          onClick={(e) => handleDownloadPDF(booking, e)}
+                          disabled={generatingPDF === booking.id}
+                          className="px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                        >
+                          {generatingPDF === booking.id ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <Download size={12} />
+                          )}
+                          {generatingPDF === booking.id ? 'Generating...' : 'Download PDF'}
+                        </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();

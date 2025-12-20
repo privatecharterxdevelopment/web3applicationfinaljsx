@@ -4,7 +4,7 @@ import {
   MessageSquare, Bell, Rocket, Building2, Coins, TrendingUp,
   Send, CheckCircle, XCircle, Clock, AlertCircle, DollarSign,
   ExternalLink, Eye, Edit, Trash2, Plus, Filter, Download,
-  ShieldCheck, Image, Car, Bot, Flag, RefreshCw, LogOut
+  ShieldCheck, Image, Car, Bot, Flag, RefreshCw, LogOut, Wine, Cigarette
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
@@ -41,6 +41,14 @@ const navSections = [
     items: [
       { id: "emptylegs", label: "Empty Legs", icon: Plane },
       { id: "fixed_offers", label: "Fixed Offers", icon: Gift },
+    ]
+  },
+  {
+    id: "inventory",
+    label: "Inventory",
+    items: [
+      { id: "wines", label: "Wines", icon: Wine },
+      { id: "cigars", label: "Premium Cigars", icon: Cigarette },
     ]
   },
   {
@@ -81,6 +89,8 @@ export default function AdminDashboardEnhanced() {
   const [chatConversations, setChatConversations] = useState([]);
   const [chatReports, setChatReports] = useState([]);
   const [taxiBookings, setTaxiBookings] = useState([]);
+  const [wines, setWines] = useState([]);
+  const [cigars, setCigars] = useState([]);
 
   // Modal states
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -114,7 +124,9 @@ export default function AdminDashboardEnhanced() {
         nftsData,
         chatData,
         chatReportsData,
-        taxiData
+        taxiData,
+        winesData,
+        cigarsData
       ] = await Promise.all([
         supabase.from('users').select('*').order('created_at', { ascending: false }),
         supabase.from('launchpad_projects').select('*').order('created_at', { ascending: false }),
@@ -134,7 +146,9 @@ export default function AdminDashboardEnhanced() {
         supabase.from('nfts').select('*, owner:owner_id(email)').order('created_at', { ascending: false }),
         supabase.from('chat_conversations').select('*, user:user_id(email, first_name, last_name)').order('updated_at', { ascending: false }).limit(100),
         supabase.from('chat_reports').select('*, user:user_id(email), conversation:conversation_id(title)').order('created_at', { ascending: false }),
-        supabase.from('taxi_bookings').select('*, user:user_id(email, first_name, last_name)').order('created_at', { ascending: false })
+        supabase.from('taxi_bookings').select('*, user:user_id(email, first_name, last_name)').order('created_at', { ascending: false }),
+        supabase.from('wines').select('*').order('name', { ascending: true }),
+        supabase.from('premium_cigars').select('*').order('brand', { ascending: true })
       ]);
 
       setUsers(usersData.data || []);
@@ -156,6 +170,8 @@ export default function AdminDashboardEnhanced() {
       setChatConversations(chatData.data || []);
       setChatReports(chatReportsData.data || []);
       setTaxiBookings(taxiData.data || []);
+      setWines(winesData.data || []);
+      setCigars(cigarsData.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -900,28 +916,105 @@ export default function AdminDashboardEnhanced() {
               <h2 className="text-xl font-light text-gray-900">User Requests ({userRequests.length})</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filter(userRequests, ['type', 'status', 'service_type']).map((request) => (
-                <div
-                  key={request.id}
-                  className="border border-gray-300/50 rounded-xl p-4 bg-white/35"
-                  style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-medium text-gray-900 capitalize">{request.type}</h3>
-                    <span className={getStatusBadge(request.status)}>{request.status}</span>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Service</span>
-                      <span className="capitalize">{request.service_type}</span>
+              {filter(userRequests, ['type', 'status', 'service_type', 'data']).map((request) => {
+                // Parse request data
+                let requestData = request.data || {};
+                if (typeof requestData === 'string') {
+                  try { requestData = JSON.parse(requestData); } catch (e) { requestData = {}; }
+                }
+
+                const isSupportInquiry = request.type === 'support_inquiry';
+                const userName = requestData.user_name || requestData.name || 'Unknown';
+                const userEmail = requestData.user_email || requestData.email || '';
+                const userPhone = requestData.user_phone || requestData.phone || '';
+                const message = requestData.message || requestData.notes || '';
+                const category = requestData.category || request.service_type || request.type;
+
+                return (
+                  <div
+                    key={request.id}
+                    className="border border-gray-300/50 rounded-xl p-4 bg-white/35"
+                    style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        {isSupportInquiry && (
+                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                            <MessageSquare className="w-4 h-4 text-white" />
+                          </div>
+                        )}
+                        <div>
+                          <h3 className="font-medium text-gray-900 capitalize text-sm">
+                            {isSupportInquiry ? 'Support Inquiry' : request.type?.replace(/_/g, ' ')}
+                          </h3>
+                          {category && !isSupportInquiry && (
+                            <span className="text-xs text-gray-500 capitalize">{category}</span>
+                          )}
+                        </div>
+                      </div>
+                      <span className={getStatusBadge(request.status)}>{request.status}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Created</span>
-                      <span>{new Date(request.created_at).toLocaleDateString()}</span>
+
+                    {/* User Info */}
+                    <div className="space-y-2 text-sm mb-3">
+                      {userName && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Name</span>
+                          <span className="font-medium">{userName}</span>
+                        </div>
+                      )}
+                      {userEmail && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Email</span>
+                          <span className="text-xs">{userEmail}</span>
+                        </div>
+                      )}
+                      {userPhone && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Phone</span>
+                          <span>{userPhone}</span>
+                        </div>
+                      )}
+                      {isSupportInquiry && category && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Category</span>
+                          <span className="capitalize">{category}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Created</span>
+                        <span>{new Date(request.created_at).toLocaleDateString()}</span>
+                      </div>
                     </div>
+
+                    {/* Message */}
+                    {message && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Message:</p>
+                        <p className="text-sm text-gray-700 line-clamp-3">{message}</p>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    {request.status === 'pending' && (
+                      <div className="mt-4 flex gap-2">
+                        <button
+                          onClick={() => handleStatusUpdate('user_requests', request.id, 'confirmed')}
+                          className="flex-1 px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 transition-colors"
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          onClick={() => handleStatusUpdate('user_requests', request.id, 'closed')}
+                          className="flex-1 px-3 py-1.5 bg-gray-600 text-white rounded-lg text-xs font-medium hover:bg-gray-700 transition-colors"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         );
@@ -1473,6 +1566,178 @@ export default function AdminDashboardEnhanced() {
               {taxiBookings.length === 0 && (
                 <div className="col-span-full text-center py-8 text-gray-500">
                   No taxi bookings yet
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case "wines":
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-light text-gray-900">Wine Inventory ({wines.length})</h2>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">
+                  Total Value: €{wines.reduce((sum, w) => sum + (w.typical_price_eur || 0), 0).toLocaleString()}
+                </span>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filter(wines, ['name', 'producer', 'region', 'country', 'type', 'category']).map((wine) => (
+                <div
+                  key={wine.id}
+                  className="border border-gray-300/50 rounded-xl p-4 bg-white/35"
+                  style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    {wine.image_url ? (
+                      <img src={wine.image_url} alt={wine.name} className="w-16 h-20 rounded-lg object-cover" />
+                    ) : (
+                      <div className="w-16 h-20 bg-gradient-to-br from-purple-500 to-red-500 rounded-lg flex items-center justify-center">
+                        <Wine className="w-8 h-8 text-white" />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900 text-sm">{wine.name}</h3>
+                      {wine.vintage && (
+                        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{wine.vintage}</span>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1">{wine.producer}</p>
+                    </div>
+                    {wine.is_active ? (
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+                    ) : (
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Inactive</span>
+                    )}
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Type</span>
+                      <span className="capitalize">{wine.type || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Category</span>
+                      <span>{wine.category || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Region</span>
+                      <span>{wine.region || wine.country || 'N/A'}</span>
+                    </div>
+                    {wine.classification && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Classification</span>
+                        <span className="text-xs">{wine.classification}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Price</span>
+                      <span className="font-semibold text-green-600">
+                        {wine.price_range_eur || (wine.typical_price_eur ? `€${wine.typical_price_eur.toLocaleString()}` : 'On request')}
+                      </span>
+                    </div>
+                    {wine.rating_points && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Rating</span>
+                        <span className="font-medium">{wine.rating_points} pts</span>
+                      </div>
+                    )}
+                  </div>
+                  {wine.tasting_notes && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <p className="text-xs text-gray-600 line-clamp-2">{wine.tasting_notes}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {wines.length === 0 && (
+                <div className="col-span-full text-center py-8 text-gray-500">
+                  No wines in inventory
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case "cigars":
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-light text-gray-900">Premium Cigars Inventory ({cigars.length})</h2>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">
+                  Avg. Price: ${cigars.length > 0 ? Math.round(cigars.reduce((sum, c) => sum + (c.price_per_stick_usd || 0), 0) / cigars.length) : 0}/stick
+                </span>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filter(cigars, ['name', 'brand', 'origin', 'strength']).map((cigar) => (
+                <div
+                  key={cigar.id}
+                  className="border border-gray-300/50 rounded-xl p-4 bg-white/35"
+                  style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    {cigar.image_url ? (
+                      <img src={cigar.image_url} alt={cigar.name} className="w-16 h-16 rounded-lg object-cover" />
+                    ) : (
+                      <div className="w-16 h-16 bg-gradient-to-br from-amber-700 to-amber-900 rounded-lg flex items-center justify-center">
+                        <Cigarette className="w-8 h-8 text-white" />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900 text-sm">{cigar.brand}</h3>
+                      <p className="text-xs text-gray-600">{cigar.name}</p>
+                    </div>
+                    {cigar.is_active ? (
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+                    ) : (
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Inactive</span>
+                    )}
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Origin</span>
+                      <span>{cigar.origin || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Strength</span>
+                      <span className="capitalize">{cigar.strength || 'N/A'}</span>
+                    </div>
+                    {cigar.ring_gauge && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Ring Gauge</span>
+                        <span>{cigar.ring_gauge}</span>
+                      </div>
+                    )}
+                    {cigar.length && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Length</span>
+                        <span>{cigar.length}"</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Price/Stick</span>
+                      <span className="font-semibold text-green-600">
+                        {cigar.price_per_stick_usd ? `$${cigar.price_per_stick_usd}` : 'On request'}
+                      </span>
+                    </div>
+                  </div>
+                  {cigar.flavor_profile && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <p className="text-xs text-gray-500">Flavor: {cigar.flavor_profile}</p>
+                    </div>
+                  )}
+                  {cigar.description && (
+                    <div className="mt-2">
+                      <p className="text-xs text-gray-600 line-clamp-2">{cigar.description}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {cigars.length === 0 && (
+                <div className="col-span-full text-center py-8 text-gray-500">
+                  No cigars in inventory
                 </div>
               )}
             </div>

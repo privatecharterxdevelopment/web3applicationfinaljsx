@@ -10,7 +10,7 @@ import {
   TrendingUp, TrendingDown, Loader2, ShieldAlert, ChevronDown,
   Home, BarChart3, Briefcase, Tag, Globe, Zap,
   Building2, Sparkles, Ticket, Clock, Package, AlertCircle,
-  ArrowRight, Star, Leaf, Percent
+  ArrowRight, Star, Leaf, Percent, Wine, Cigarette
 } from 'lucide-react';
 
 // ============================================
@@ -47,6 +47,8 @@ const CRMDashboard = ({ onClose }) => {
   const [allChatRequests, setAllChatRequests] = useState([]);
   const [allEmptyLegBookings, setAllEmptyLegBookings] = useState([]);
   const [allEmptyLegsFromTable, setAllEmptyLegsFromTable] = useState([]);
+  const [allWines, setAllWines] = useState([]);
+  const [allCigars, setAllCigars] = useState([]);
   const [sidebarCounts, setSidebarCounts] = useState({});
 
   const [stats, setStats] = useState({ total: 0, new: 0, repeat: 0, churned: 0, active: 0 });
@@ -97,7 +99,9 @@ const CRMDashboard = ({ onClose }) => {
         { count: chatMessagesCount },
         { count: chatRequestsCount },
         { count: emptyLegBookingsCount },
-        { count: emptyLegsTableCount }
+        { count: emptyLegsTableCount },
+        { count: winesCount },
+        { count: cigarsCount }
       ] = await Promise.all([
         supabaseAdmin.from('user_bookings').select('*', { count: 'exact', head: true }),
         supabaseAdmin.from('user_requests').select('*', { count: 'exact', head: true }),
@@ -111,7 +115,9 @@ const CRMDashboard = ({ onClose }) => {
         supabaseAdmin.from('chat_messages').select('*', { count: 'exact', head: true }).eq('sender_type', 'user'),
         supabaseAdmin.from('chat_requests').select('*', { count: 'exact', head: true }),
         supabaseAdmin.from('user_bookings').select('*', { count: 'exact', head: true }).eq('booking_type', 'empty_leg'),
-        supabaseAdmin.from('EmptyLegs_').select('*', { count: 'exact', head: true })
+        supabaseAdmin.from('EmptyLegs_').select('*', { count: 'exact', head: true }),
+        supabaseAdmin.from('wines').select('*', { count: 'exact', head: true }),
+        supabaseAdmin.from('premium_cigars').select('*', { count: 'exact', head: true })
       ]);
       setSidebarCounts({
         customers: authUsersCount, // Use auth.users count - the REAL number of registered users
@@ -127,7 +133,9 @@ const CRMDashboard = ({ onClose }) => {
         chatMessages: chatMessagesCount || 0,
         chatRequests: chatRequestsCount || 0,
         emptyLegBookings: emptyLegBookingsCount || 0,
-        emptyLegsTable: emptyLegsTableCount || 0
+        emptyLegsTable: emptyLegsTableCount || 0,
+        wines: winesCount || 0,
+        cigars: cigarsCount || 0
       });
     } catch (err) { console.error('Error fetching counts:', err); }
   }, []);
@@ -412,6 +420,30 @@ const CRMDashboard = ({ onClose }) => {
     finally { setRefreshing(false); }
   }, []);
 
+  // Fetch wines inventory
+  const fetchAllWines = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const { data, error } = await supabaseAdmin.from('wines').select('*').order('name', { ascending: true });
+      if (error) console.error('Wines fetch error:', error);
+      console.log('Wines fetched:', data?.length, 'records');
+      setAllWines(data || []);
+    } catch (err) { console.error('Error fetching wines:', err); }
+    finally { setRefreshing(false); }
+  }, []);
+
+  // Fetch cigars inventory
+  const fetchAllCigars = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const { data, error } = await supabaseAdmin.from('premium_cigars').select('*').order('brand', { ascending: true });
+      if (error) console.error('Cigars fetch error:', error);
+      console.log('Cigars fetched:', data?.length, 'records');
+      setAllCigars(data || []);
+    } catch (err) { console.error('Error fetching cigars:', err); }
+    finally { setRefreshing(false); }
+  }, []);
+
   // Effect to fetch data based on active section
   useEffect(() => {
     if (!isAdmin) return;
@@ -432,9 +464,11 @@ const CRMDashboard = ({ onClose }) => {
       case 'chat-requests': fetchAllChatRequests(); break;
       case 'empty-legs': fetchEmptyLegBookings(); break;
       case 'emptylegs-table': fetchEmptyLegsFromTable(); break;
+      case 'wines': fetchAllWines(); break;
+      case 'cigars': fetchAllCigars(); break;
       default: fetchCustomers();
     }
-  }, [isAdmin, activeSection, fetchCustomers, fetchAllBookings, fetchAllRequests, fetchAllAiChats, fetchAllSupport, fetchAllTransactions, fetchAllChatMessages, fetchAllChatRequests, fetchEmptyLegBookings, fetchEmptyLegsFromTable, fetchSidebarCounts]);
+  }, [isAdmin, activeSection, fetchCustomers, fetchAllBookings, fetchAllRequests, fetchAllAiChats, fetchAllSupport, fetchAllTransactions, fetchAllChatMessages, fetchAllChatRequests, fetchEmptyLegBookings, fetchEmptyLegsFromTable, fetchAllWines, fetchAllCigars, fetchSidebarCounts]);
 
   const getUserName = (c) => c?.name || `${c?.first_name || ''} ${c?.last_name || ''}`.trim() || c?.email?.split('@')[0] || 'Unknown';
   const getUserRole = (c) => c?.user_role || (c?.bookings?.length > 5 ? 'VIP' : c?.bookings?.length > 0 ? 'Active' : 'New');
@@ -458,6 +492,8 @@ const CRMDashboard = ({ onClose }) => {
     { id: 'ai-chats', icon: Sparkles, label: 'AI Conversations', count: sidebarCounts.aiChats },
     { id: 'support', icon: Ticket, label: 'Support', count: sidebarCounts.support },
     { id: 'transactions', icon: CreditCard, label: 'Transactions', count: sidebarCounts.transactions },
+    { id: 'wines', icon: Wine, label: 'Wines Inventory', count: sidebarCounts.wines },
+    { id: 'cigars', icon: Cigarette, label: 'Cigars Inventory', count: sidebarCounts.cigars },
   ];
 
   if (loading) {
@@ -636,6 +672,16 @@ const CRMDashboard = ({ onClose }) => {
           {activeSection === 'emptylegs-table' && (
             <EmptyLegsTableSection emptyLegs={allEmptyLegsFromTable} refreshing={refreshing} onRefresh={fetchEmptyLegsFromTable} />
           )}
+
+          {/* Wines Inventory Section */}
+          {activeSection === 'wines' && (
+            <WinesSection wines={allWines} refreshing={refreshing} onRefresh={fetchAllWines} />
+          )}
+
+          {/* Cigars Inventory Section */}
+          {activeSection === 'cigars' && (
+            <CigarsSection cigars={allCigars} refreshing={refreshing} onRefresh={fetchAllCigars} />
+          )}
         </div>
       </main>
 
@@ -665,6 +711,8 @@ const DashboardOverview = ({ sidebarCounts, onNavigate }) => {
     { label: 'AI Conversations', value: sidebarCounts.aiChats, icon: Sparkles, color: 'indigo', section: 'ai-chats' },
     { label: 'Support Tickets', value: sidebarCounts.support, icon: Ticket, color: 'red', section: 'support' },
     { label: 'Transactions', value: sidebarCounts.transactions, icon: CreditCard, color: 'emerald', section: 'transactions' },
+    { label: 'Wines Inventory', value: sidebarCounts.wines, icon: Wine, color: 'rose', section: 'wines' },
+    { label: 'Cigars Inventory', value: sidebarCounts.cigars, icon: Cigarette, color: 'amber', section: 'cigars' },
   ];
 
   const colorClasses = {
@@ -681,6 +729,7 @@ const DashboardOverview = ({ sidebarCounts, onNavigate }) => {
     amber: 'bg-amber-100 text-amber-700',
     violet: 'bg-violet-100 text-violet-700',
     teal: 'bg-teal-100 text-teal-700',
+    rose: 'bg-rose-100 text-rose-700',
   };
 
   return (
@@ -1757,14 +1806,57 @@ const ChatRequestsSection = ({ requests, refreshing, onRefresh }) => {
     return items;
   };
 
-  // Format item display
+  // Get proper category name from type
+  const getCategoryName = (type) => {
+    const categoryNames = {
+      'jet': 'Private Jet Charter',
+      'jets': 'Private Jet Charter',
+      'private_jet': 'Private Jet Charter',
+      'helicopter': 'Helicopter Charter',
+      'helicopters': 'Helicopter Charter',
+      'yacht': 'Yacht Charter',
+      'yachts': 'Yacht Charter',
+      'taxi': 'Airport Transfer',
+      'transfer': 'Airport Transfer',
+      'ground_transport': 'Ground Transport',
+      'taxi_cars': 'Ground Transport',
+      'empty_legs': 'Empty Leg Flight',
+      'emptyleg': 'Empty Leg Flight',
+      'wine': 'Premium Wines',
+      'wines': 'Premium Wines',
+      'champagne': 'Champagne',
+      'cigars': 'Premium Cigars',
+      'caviar': 'Caviar & Delicacies',
+      'delicatesse': 'Delicacies',
+      'delicacies': 'Delicacies',
+      'custom_extra': 'Custom Extra',
+      'adventure': 'Adventure Package',
+      'concierge': 'Concierge Service',
+      'restaurant': 'Restaurant Reservation',
+      'flowers': 'Flowers & Gifts'
+    };
+    return categoryNames[type?.toLowerCase()] || type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Service';
+  };
+
+  // Format item display - prioritize exact product name
   const formatItemName = (item) => {
+    // Always prioritize the exact product name
     if (item.name) return item.name;
     if (item.title) return item.title;
+    if (item.displayTitle) return item.displayTitle;
+    if (item.service_name) return item.service_name;
+    // Fallback to aircraft type or route
     if (item.aircraft_type) return item.aircraft_type;
     if (item.from && item.to) return `${item.from} → ${item.to}`;
-    if (item.type) return item.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    // Last resort: category name
+    if (item.type) return getCategoryName(item.type);
     return 'Service Item';
+  };
+
+  // Get category subtitle (shown below product name)
+  const formatItemCategory = (item) => {
+    const type = item.type || item.category || item.service_type;
+    return getCategoryName(type);
   };
 
   const formatItemDetails = (item) => {
@@ -1894,7 +1986,7 @@ const ChatRequestsSection = ({ requests, refreshing, onRefresh }) => {
                                         </div>
                                         <div>
                                           <p className="text-sm font-medium text-gray-900">{formatItemName(item)}</p>
-                                          <p className="text-xs text-gray-500">{item.category || item.type || 'Service'}</p>
+                                          <p className="text-xs text-gray-500">{formatItemCategory(item)}</p>
                                         </div>
                                       </div>
                                     </td>
@@ -1935,7 +2027,7 @@ const ChatRequestsSection = ({ requests, refreshing, onRefresh }) => {
                                     </div>
                                     <div>
                                       <p className="text-sm font-medium text-gray-900">
-                                        {r.service_type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Travel Request'}
+                                        {getCategoryName(r.service_type) || 'Travel Request'}
                                       </p>
                                     </div>
                                   </div>
@@ -2289,14 +2381,18 @@ const SupportSection = ({ tickets, refreshing, onRefresh }) => {
                 {isExpanded && (
                   <div className="px-4 py-4 border-t border-gray-100 bg-gray-50">
                     {/* User Info */}
-                    <div className="grid grid-cols-3 gap-4 mb-4">
+                    <div className="grid grid-cols-4 gap-4 mb-4">
                       <div className="bg-white p-3 rounded-lg border border-gray-200">
-                        <p className="text-xs text-gray-500 mb-1">User Email</p>
-                        <p className="text-sm font-medium text-gray-900">{t.users?.email || 'Unknown'}</p>
+                        <p className="text-xs text-gray-500 mb-1">User Name</p>
+                        <p className="text-sm font-medium text-gray-900">{t.ticket_data?.user_name || t.users?.email?.split('@')[0] || 'Unknown'}</p>
                       </div>
                       <div className="bg-white p-3 rounded-lg border border-gray-200">
-                        <p className="text-xs text-gray-500 mb-1">Ticket Type</p>
-                        <p className="text-sm font-medium text-gray-900 capitalize">{t.type || 'General'}</p>
+                        <p className="text-xs text-gray-500 mb-1">User Email</p>
+                        <p className="text-sm font-medium text-gray-900">{t.ticket_data?.user_email || t.users?.email || 'Unknown'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Category</p>
+                        <p className="text-sm font-medium text-gray-900 capitalize">{t.ticket_data?.category || t.tags?.[0] || 'General'}</p>
                       </div>
                       <div className="bg-white p-3 rounded-lg border border-gray-200">
                         <p className="text-xs text-gray-500 mb-1">Created</p>
@@ -3114,6 +3210,465 @@ const ModalTable = ({ data, columns, emptyMessage }) => {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+};
+
+// ============================================
+// WINES INVENTORY SECTION
+// ============================================
+const WinesSection = ({ wines, refreshing, onRefresh }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [expandedWine, setExpandedWine] = useState(null);
+
+  const filteredWines = wines.filter(wine =>
+    wine.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    wine.producer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    wine.region?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    wine.type?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const formatPrice = (wine) => {
+    if (wine.price_range_eur) return wine.price_range_eur;
+    if (wine.typical_price_eur) return `€${wine.typical_price_eur.toLocaleString()}`;
+    if (wine.price_usd) return `$${wine.price_usd.toLocaleString()}`;
+    if (wine.price) return `€${wine.price.toLocaleString()}`;
+    return 'Price on request';
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">Wines Inventory</h2>
+          <p className="text-sm text-gray-500">Total: {wines.length} wines in database - Click card to view full details</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              type="text"
+              placeholder="Search wines..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+            />
+          </div>
+          <button onClick={onRefresh} disabled={refreshing} className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm hover:bg-gray-800">
+            <RefreshCcw size={14} className={refreshing ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* Wine Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredWines.map((wine) => {
+          const isExpanded = expandedWine === wine.id;
+          return (
+            <div
+              key={wine.id}
+              className={`bg-white rounded-xl border ${isExpanded ? 'border-rose-300 ring-2 ring-rose-100' : 'border-gray-200'} overflow-hidden hover:shadow-lg transition-all cursor-pointer`}
+              onClick={() => setExpandedWine(isExpanded ? null : wine.id)}
+            >
+              <div className="flex">
+                {wine.image_url ? (
+                  <img src={wine.image_url} alt={wine.name} className="w-24 h-32 object-cover" />
+                ) : (
+                  <div className="w-24 h-32 bg-gradient-to-br from-rose-500 to-purple-600 flex items-center justify-center">
+                    <Wine className="w-8 h-8 text-white" />
+                  </div>
+                )}
+                <div className="flex-1 p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-medium text-gray-900 text-sm line-clamp-1">{wine.name}</h3>
+                      {wine.vintage && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{wine.vintage}</span>}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {wine.is_active !== false && (
+                        <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">Active</span>
+                      )}
+                      <ChevronDown size={16} className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">{wine.producer}</p>
+                  <div className="mt-2 space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Type:</span>
+                      <span className="capitalize">{wine.type || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Region:</span>
+                      <span>{wine.region || wine.country || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500">Price:</span>
+                      <span className="font-bold text-lg text-green-600">{formatPrice(wine)}</span>
+                    </div>
+                    {wine.rating_points && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Rating:</span>
+                        <span className="font-medium">{wine.rating_points} pts</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Expanded Details */}
+              {isExpanded && (
+                <div className="border-t border-gray-200 bg-gray-50 p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
+                  {/* Price Details */}
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <h4 className="text-xs font-semibold text-green-800 mb-2 flex items-center gap-1">
+                      <DollarSign size={14} /> PRICING INFORMATION
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {wine.typical_price_eur && (
+                        <div><span className="text-gray-500">Typical Price:</span> <span className="font-bold text-green-700">€{wine.typical_price_eur.toLocaleString()}</span></div>
+                      )}
+                      {wine.price_range_eur && (
+                        <div><span className="text-gray-500">Price Range:</span> <span className="font-bold text-green-700">{wine.price_range_eur}</span></div>
+                      )}
+                      {wine.price_usd && (
+                        <div><span className="text-gray-500">USD Price:</span> <span className="font-bold text-green-700">${wine.price_usd.toLocaleString()}</span></div>
+                      )}
+                      {wine.price && (
+                        <div><span className="text-gray-500">Base Price:</span> <span className="font-bold text-green-700">€{wine.price.toLocaleString()}</span></div>
+                      )}
+                      {wine.bottle_size && (
+                        <div><span className="text-gray-500">Bottle Size:</span> <span className="font-medium">{wine.bottle_size}</span></div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Wine Details */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-white p-2 rounded-lg border border-gray-200">
+                      <p className="text-xs text-gray-500">Producer</p>
+                      <p className="text-sm font-medium">{wine.producer || 'N/A'}</p>
+                    </div>
+                    <div className="bg-white p-2 rounded-lg border border-gray-200">
+                      <p className="text-xs text-gray-500">Country</p>
+                      <p className="text-sm font-medium">{wine.country || 'N/A'}</p>
+                    </div>
+                    <div className="bg-white p-2 rounded-lg border border-gray-200">
+                      <p className="text-xs text-gray-500">Region/Appellation</p>
+                      <p className="text-sm font-medium">{wine.region || wine.appellation || 'N/A'}</p>
+                    </div>
+                    <div className="bg-white p-2 rounded-lg border border-gray-200">
+                      <p className="text-xs text-gray-500">Grape Variety</p>
+                      <p className="text-sm font-medium">{wine.grape_variety || wine.varietal || 'N/A'}</p>
+                    </div>
+                    {wine.alcohol_content && (
+                      <div className="bg-white p-2 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500">Alcohol</p>
+                        <p className="text-sm font-medium">{wine.alcohol_content}%</p>
+                      </div>
+                    )}
+                    {wine.vintage && (
+                      <div className="bg-white p-2 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500">Vintage</p>
+                        <p className="text-sm font-medium">{wine.vintage}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Full Description */}
+                  {(wine.description || wine.tasting_notes) && (
+                    <div className="bg-rose-50 border border-rose-200 rounded-lg p-3">
+                      <h4 className="text-xs font-semibold text-rose-800 mb-2 flex items-center gap-1">
+                        <FileText size={14} /> FULL DESCRIPTION
+                      </h4>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                        {wine.description || wine.tasting_notes}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Tasting Notes (separate if both exist) */}
+                  {wine.description && wine.tasting_notes && (
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                      <h4 className="text-xs font-semibold text-purple-800 mb-2">TASTING NOTES</h4>
+                      <p className="text-sm text-gray-700">{wine.tasting_notes}</p>
+                    </div>
+                  )}
+
+                  {/* Food Pairing */}
+                  {wine.food_pairing && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                      <h4 className="text-xs font-semibold text-amber-800 mb-2">FOOD PAIRING</h4>
+                      <p className="text-sm text-gray-700">{wine.food_pairing}</p>
+                    </div>
+                  )}
+
+                  {/* Stock Info */}
+                  {(wine.stock_quantity !== undefined || wine.availability) && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className={`px-2 py-1 rounded-full ${wine.stock_quantity > 0 || wine.availability === 'in_stock' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {wine.stock_quantity !== undefined ? `${wine.stock_quantity} in stock` : wine.availability}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {filteredWines.length === 0 && (
+        <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
+          <Wine className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500">No wines found</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ============================================
+// CIGARS INVENTORY SECTION
+// ============================================
+const CigarsSection = ({ cigars, refreshing, onRefresh }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [expandedCigar, setExpandedCigar] = useState(null);
+
+  const filteredCigars = cigars.filter(cigar =>
+    cigar.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    cigar.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    cigar.origin?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    cigar.strength?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const formatPrice = (cigar) => {
+    if (cigar.price_per_stick_usd) return `$${cigar.price_per_stick_usd}`;
+    if (cigar.price_per_stick) return `$${cigar.price_per_stick}`;
+    if (cigar.price_range) return cigar.price_range;
+    if (cigar.price) return `$${cigar.price}`;
+    return 'Price on request';
+  };
+
+  const formatBoxPrice = (cigar) => {
+    if (cigar.price_per_box_usd) return `$${cigar.price_per_box_usd}`;
+    if (cigar.box_price) return `$${cigar.box_price}`;
+    return null;
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">Premium Cigars & Delicacies</h2>
+          <p className="text-sm text-gray-500">Total: {cigars.length} items in database - Click card to view full details</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              type="text"
+              placeholder="Search cigars..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+            />
+          </div>
+          <button onClick={onRefresh} disabled={refreshing} className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm hover:bg-gray-800">
+            <RefreshCcw size={14} className={refreshing ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* Cigar Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredCigars.map((cigar) => {
+          const isExpanded = expandedCigar === cigar.id;
+          const boxPrice = formatBoxPrice(cigar);
+          return (
+            <div
+              key={cigar.id}
+              className={`bg-white rounded-xl border ${isExpanded ? 'border-amber-300 ring-2 ring-amber-100' : 'border-gray-200'} overflow-hidden hover:shadow-lg transition-all cursor-pointer`}
+              onClick={() => setExpandedCigar(isExpanded ? null : cigar.id)}
+            >
+              <div className="flex">
+                {cigar.image_url ? (
+                  <img src={cigar.image_url} alt={cigar.name} className="w-24 h-28 object-cover" />
+                ) : (
+                  <div className="w-24 h-28 bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center">
+                    <Cigarette className="w-8 h-8 text-white" />
+                  </div>
+                )}
+                <div className="flex-1 p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-medium text-gray-900 text-sm">{cigar.brand}</h3>
+                      <p className="text-xs text-gray-600">{cigar.name}</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {cigar.is_active !== false && (
+                        <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">Active</span>
+                      )}
+                      <ChevronDown size={16} className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                    </div>
+                  </div>
+                  <div className="mt-2 space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Origin:</span>
+                      <span>{cigar.origin || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Strength:</span>
+                      <span className="capitalize">{cigar.strength || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500">Price/Stick:</span>
+                      <span className="font-bold text-lg text-green-600">{formatPrice(cigar)}</span>
+                    </div>
+                    {boxPrice && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Box Price:</span>
+                        <span className="font-semibold text-green-600">{boxPrice}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Expanded Details */}
+              {isExpanded && (
+                <div className="border-t border-gray-200 bg-gray-50 p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
+                  {/* Price Details */}
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <h4 className="text-xs font-semibold text-green-800 mb-2 flex items-center gap-1">
+                      <DollarSign size={14} /> PRICING INFORMATION
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div><span className="text-gray-500">Per Stick:</span> <span className="font-bold text-green-700">{formatPrice(cigar)}</span></div>
+                      {boxPrice && (
+                        <div><span className="text-gray-500">Per Box:</span> <span className="font-bold text-green-700">{boxPrice}</span></div>
+                      )}
+                      {cigar.box_count && (
+                        <div><span className="text-gray-500">Sticks/Box:</span> <span className="font-medium">{cigar.box_count}</span></div>
+                      )}
+                      {cigar.price_range && (
+                        <div><span className="text-gray-500">Price Range:</span> <span className="font-bold text-green-700">{cigar.price_range}</span></div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Cigar Specifications */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-white p-2 rounded-lg border border-gray-200">
+                      <p className="text-xs text-gray-500">Brand</p>
+                      <p className="text-sm font-medium">{cigar.brand || 'N/A'}</p>
+                    </div>
+                    <div className="bg-white p-2 rounded-lg border border-gray-200">
+                      <p className="text-xs text-gray-500">Origin</p>
+                      <p className="text-sm font-medium">{cigar.origin || 'N/A'}</p>
+                    </div>
+                    <div className="bg-white p-2 rounded-lg border border-gray-200">
+                      <p className="text-xs text-gray-500">Strength</p>
+                      <p className="text-sm font-medium capitalize">{cigar.strength || 'N/A'}</p>
+                    </div>
+                    <div className="bg-white p-2 rounded-lg border border-gray-200">
+                      <p className="text-xs text-gray-500">Wrapper</p>
+                      <p className="text-sm font-medium">{cigar.wrapper || 'N/A'}</p>
+                    </div>
+                    {cigar.ring_gauge && (
+                      <div className="bg-white p-2 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500">Ring Gauge</p>
+                        <p className="text-sm font-medium">{cigar.ring_gauge}</p>
+                      </div>
+                    )}
+                    {cigar.length && (
+                      <div className="bg-white p-2 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500">Length</p>
+                        <p className="text-sm font-medium">{cigar.length}"</p>
+                      </div>
+                    )}
+                    {cigar.vitola && (
+                      <div className="bg-white p-2 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500">Vitola/Shape</p>
+                        <p className="text-sm font-medium">{cigar.vitola}</p>
+                      </div>
+                    )}
+                    {cigar.filler && (
+                      <div className="bg-white p-2 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500">Filler</p>
+                        <p className="text-sm font-medium">{cigar.filler}</p>
+                      </div>
+                    )}
+                    {cigar.binder && (
+                      <div className="bg-white p-2 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500">Binder</p>
+                        <p className="text-sm font-medium">{cigar.binder}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Flavor Profile */}
+                  {cigar.flavor_profile && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                      <h4 className="text-xs font-semibold text-amber-800 mb-2 flex items-center gap-1">
+                        <Sparkles size={14} /> FLAVOR PROFILE
+                      </h4>
+                      <p className="text-sm text-gray-700">{cigar.flavor_profile}</p>
+                    </div>
+                  )}
+
+                  {/* Full Description */}
+                  {(cigar.description || cigar.notes) && (
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                      <h4 className="text-xs font-semibold text-orange-800 mb-2 flex items-center gap-1">
+                        <FileText size={14} /> FULL DESCRIPTION
+                      </h4>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                        {cigar.description || cigar.notes}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Pairing Suggestions */}
+                  {cigar.pairing_suggestions && (
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                      <h4 className="text-xs font-semibold text-purple-800 mb-2">PAIRING SUGGESTIONS</h4>
+                      <p className="text-sm text-gray-700">{cigar.pairing_suggestions}</p>
+                    </div>
+                  )}
+
+                  {/* Stock Info */}
+                  {(cigar.stock_quantity !== undefined || cigar.availability) && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className={`px-2 py-1 rounded-full ${cigar.stock_quantity > 0 || cigar.availability === 'in_stock' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {cigar.stock_quantity !== undefined ? `${cigar.stock_quantity} in stock` : cigar.availability}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Rating */}
+                  {cigar.rating && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                      <span className="font-medium">{cigar.rating}/100</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {filteredCigars.length === 0 && (
+        <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
+          <Cigarette className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500">No cigars found</p>
+        </div>
+      )}
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { Check, Sparkles, ArrowRight, Download, Home, CreditCard, Loader2, FileT
 import { supabase } from '../lib/supabase';
 import confetti from 'canvas-confetti';
 import { generateBookingConfirmationPDF, downloadPDF, savePDFToStorage } from '../services/pdfGeneratorService';
+import { generateBookingConfirmationHTML, downloadHTMLAsPDF } from '../services/pdfHtmlGenerator';
 
 const PaymentSuccessPage = () => {
   const [searchParams] = useSearchParams();
@@ -103,9 +104,27 @@ const PaymentSuccessPage = () => {
     }
   };
 
-  // Handle PDF download
-  const handleDownloadPDF = () => {
-    if (pdfBlob && pdfFilename) {
+  // Handle PDF download - use HTML generator for beautiful PDF
+  const handleDownloadPDF = async () => {
+    if (booking) {
+      try {
+        // Get user info for the PDF
+        const { data: { user } } = await supabase.auth.getUser();
+
+        // Generate beautiful HTML-based PDF (user-facing)
+        const htmlContent = generateBookingConfirmationHTML(booking, {
+          userName: user?.user_metadata?.full_name || user?.user_metadata?.name || 'Valued Client',
+          userEmail: user?.email
+        });
+        await downloadHTMLAsPDF(htmlContent, `PrivateCharterX_Booking_${booking.id.substring(0, 8).toUpperCase()}.pdf`);
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+        // Fallback to old method if HTML generation fails
+        if (pdfBlob && pdfFilename) {
+          downloadPDF(pdfBlob, pdfFilename);
+        }
+      }
+    } else if (pdfBlob && pdfFilename) {
       downloadPDF(pdfBlob, pdfFilename);
     }
   };

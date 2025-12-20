@@ -47,13 +47,18 @@ const ReviewDisputeModal = ({ booking, onClose, mode = 'dispute' }) => {
       // Create support ticket
       await supabase.from('support_tickets').insert({
         user_id: user.id,
-        type: 'ride_dispute',
         priority: 'high',
         subject: `Ride Dispute - Booking #${booking.id.substring(0, 8)}`,
-        description: `${disputeReason}\n\n${disputeDescription}`,
+        description: `Dispute Reason: ${disputeReason}\n\nDetails:\n${disputeDescription}`,
         status: 'open',
-        related_booking_id: booking.id,
-        created_at: new Date().toISOString()
+        tags: ['ride_dispute', 'urgent'],
+        ticket_data: {
+          type: 'ride_dispute',
+          booking_id: booking.id,
+          dispute_reason: disputeReason,
+          user_email: user.email,
+          source: 'ride_dispute_modal'
+        }
       });
 
       // Update booking

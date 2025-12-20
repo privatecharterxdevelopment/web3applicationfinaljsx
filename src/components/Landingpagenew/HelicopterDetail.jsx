@@ -11,6 +11,7 @@ import { useNFT } from '../../context/NFTContext';
 import NFTBenefitsModal from '../NFTBenefitsModal';
 import { convertToUSD, initializeExchangeRates } from '../../services/currencyService';
 import { generateRequestConfirmationPDF, downloadPDF, savePDFToStorage } from '../../services/pdfGeneratorService';
+import { generateRequestConfirmationHTML, downloadHTMLAsPDF } from '../../services/pdfHtmlGenerator';
 
 const HelicopterDetail = () => {
   const { id } = useParams();
@@ -163,13 +164,39 @@ const HelicopterDetail = () => {
           }
         };
 
+        // Create detailed cart items for HTML PDF
+        const detailedCartItems = [{
+          type: 'helicopter',
+          name: helicopter.name,
+          rawItemName: helicopter.name,
+          category: 'Helicopter Charter',
+          details: {
+            from: departure,
+            to: arrival,
+            date: flightDate,
+            time: flightTime || 'Flexible',
+            passengers: passengers,
+            duration: `${flightDuration} hours`,
+            manufacturer: helicopter.manufacturer,
+            location: helicopter.location
+          },
+          price: discountedPrice,
+          currency: 'USD',
+          quantity: 1
+        }];
+
+        // Generate beautiful HTML-based PDF (user-facing)
+        const htmlContent = generateRequestConfirmationHTML(pdfRequest, detailedCartItems, {
+          userName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Valued Client',
+          userEmail: user.email
+        });
+        await downloadHTMLAsPDF(htmlContent, `PrivateCharterX_Request_${insertedData.id.substring(0, 8).toUpperCase()}.pdf`);
+
+        // Also generate jsPDF version for storage and email
         const { blob, filename, base64 } = await generateRequestConfirmationPDF(pdfRequest);
 
         // Save PDF to storage
         await savePDFToStorage(blob, filename, 'helicopter_charter', insertedData.id);
-
-        // Download PDF for user
-        downloadPDF(blob, filename);
 
         // Send email with PDF attachment
         try {

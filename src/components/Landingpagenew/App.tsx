@@ -49,7 +49,6 @@ import AdminPartners from '../../pages/admin/Partners.tsx';
 import AdminTransactions from '../../pages/admin/Transactions.tsx';
 import AdminSPVFormations from '../../pages/admin/SPVFormations.tsx';
 import AdminTokenization from '../../pages/admin/Tokenization.tsx';
-import AdminSupportTickets from '../../pages/admin/SupportTickets.tsx';
 import AdminChatMessages from '../../pages/admin/ChatMessages.tsx';
 import AdminSubscriptions from '../../pages/admin/Subscriptions.tsx';
 import AdminBookings from '../../pages/admin/Bookings.tsx';
@@ -351,7 +350,6 @@ function AppContent() {
                 <Route path="subscriptions" element={<AdminSubscriptions />} />
                 <Route path="spv-formations" element={<AdminSPVFormations />} />
                 <Route path="tokenization" element={<AdminTokenization />} />
-                <Route path="support-tickets" element={<AdminSupportTickets />} />
                 <Route path="chat-messages" element={<AdminChatMessages />} />
                 <Route path="notifications" element={<AdminNotifications />} />
                 <Route path="management" element={<AdminManagement />} />

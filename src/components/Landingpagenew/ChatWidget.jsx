@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Minimize2, Maximize2 } from 'lucide-react';
-import { supportTicketService } from '../../services/supportTicketService';
 import { supabase } from '../../lib/supabase';
 
 export default function ChatWidget({ isVisible = false, onClose = null, embedded = false }) {
@@ -8,7 +7,6 @@ export default function ChatWidget({ isVisible = false, onClose = null, embedded
   const [isOpen, setIsOpen] = useState(embedded ? true : false);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
-  const [emailSent, setEmailSent] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [conversationSaved, setConversationSaved] = useState(false);
@@ -155,7 +153,7 @@ export default function ChatWidget({ isVisible = false, onClose = null, embedded
     }
   }, [embedded, isVisible]);
 
-  // Function to save the entire conversation as a support request
+  // Function to save the entire conversation as a support ticket (to CRM Support section)
   const saveConversationAsRequest = async () => {
     if (!userInfo?.id || conversationSaved) return;
 
@@ -169,46 +167,34 @@ export default function ChatWidget({ isVisible = false, onClose = null, embedded
         `[${m.sender === 'user' ? 'Customer' : 'Support'}] ${m.text}`
       ).join('\n');
 
-      // Create support ticket with full conversation
-      const ticketData = {
-        user_id: userInfo.id,
-        subject: `Chat Support Request - ${userMessages[0]?.text?.substring(0, 50) || 'General Inquiry'}...`,
-        message: conversationSummary,
-        category: 'chat_support',
-        priority: 'normal',
-        status: 'open',
-        user_email: userInfo.email,
-        user_name: userInfo.name
-      };
-
+      // Save to support_tickets (shown in CRM Support section)
+      // Using correct column names: subject, description (not message), tags, ticket_data
       const { data, error } = await supabase
         .from('support_tickets')
-        .insert([ticketData])
+        .insert([{
+          user_id: userInfo.id,
+          subject: `Chat Support - ${userMessages[0]?.text?.substring(0, 50) || 'General'}...`,
+          description: conversationSummary,
+          priority: 'normal',
+          status: 'open',
+          tags: ['chat_support', 'live_chat'],
+          ticket_data: {
+            category: 'chat_support',
+            user_email: userInfo.email,
+            user_name: userInfo.name || 'User',
+            source: 'chat_widget'
+          }
+        }])
         .select()
         .single();
 
       if (error) {
-        console.error('Error saving support request:', error);
+        console.error('Error saving support ticket:', error);
         return;
       }
 
-      console.log('✅ Chat conversation saved as support ticket:', data.id);
+      console.log('✅ Chat conversation saved to support_tickets:', data.id);
       setConversationSaved(true);
-
-      // Send email notification with full conversation summary
-      try {
-        await supportTicketService.sendChatNotificationEmail({
-          message: conversationSummary,
-          name: userInfo.name || 'User',
-          email: userInfo.email || '',
-          phone: userInfo.phone || '',
-          userId: userInfo.id,
-          ticketId: data.id
-        });
-        console.log('✅ Email notification sent with chat summary');
-      } catch (emailError) {
-        console.error('Error sending email notification:', emailError);
-      }
 
       return data;
     } catch (error) {
@@ -256,22 +242,6 @@ export default function ChatWidget({ isVisible = false, onClose = null, embedded
             ? { ...msg, id: savedMsg.id }
             : msg
         ));
-      }
-    }
-
-    // Send email notification for first message (only once per session)
-    if (!emailSent && userInfo?.email) {
-      try {
-        await supportTicketService.sendChatNotificationEmail({
-          message: currentInput,
-          name: userInfo?.name || 'Guest User',
-          email: userInfo?.email || '',
-          phone: userInfo?.phone || '',
-          userId: userInfo?.id || null
-        });
-        setEmailSent(true);
-      } catch (error) {
-        console.error('Error sending chat notification email:', error);
       }
     }
 

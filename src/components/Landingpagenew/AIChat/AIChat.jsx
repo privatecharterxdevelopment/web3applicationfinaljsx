@@ -52,7 +52,7 @@ import CartJourneyDisplay from './components/CartJourneyDisplay';
 
 // PDF Generator
 import { generateRequestConfirmationPDF, downloadPDF, savePDFToStorage } from '../../../services/pdfGeneratorService';
-import { generateRequestConfirmationHTML, openHTMLForPrint } from '../../../services/pdfHtmlGenerator';
+import { generateRequestConfirmationHTML, downloadHTMLAsPDF } from '../../../services/pdfHtmlGenerator';
 
 // Web3
 import { useAccount, useDisconnect, useSignMessage } from 'wagmi';
@@ -2399,6 +2399,15 @@ Your quote has been received and will be reviewed within 12 hours.`;
         if (insertError) {
           console.error('Failed to save to user_requests:', insertError);
         } else if (insertedRequest?.id) {
+          // Mark this chat as "used" for subscription tracking
+          try {
+            await subscriptionService.incrementChatUsage(userId);
+            console.log('Chat usage incremented for user:', userId);
+          } catch (usageErr) {
+            console.error('Failed to increment chat usage:', usageErr);
+            // Don't block the flow if usage tracking fails
+          }
+
           // Trigger email notification via Supabase Edge Function
           try {
             await supabase.functions.invoke('user-request-notifications', {
@@ -2432,9 +2441,9 @@ Your quote has been received and will be reviewed within 12 hours.`;
               userEmail: userInfo?.user?.email
             });
 
-            // Open in new window for print/save as PDF
-            openHTMLForPrint(htmlContent, `PrivateCharterX_Request_${insertedRequest.id.substring(0, 8).toUpperCase()}.pdf`);
-            console.log('HTML Request confirmation opened for printing');
+            // Download as PDF directly
+            await downloadHTMLAsPDF(htmlContent, `PrivateCharterX_Request_${insertedRequest.id.substring(0, 8).toUpperCase()}.pdf`);
+            console.log('HTML Request confirmation PDF downloaded');
 
             // Also generate jsPDF version for storage
             try {
@@ -7966,9 +7975,9 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                             userEmail: user?.email
                           });
 
-                          // Open in new window for print/save as PDF
-                          openHTMLForPrint(htmlContent, `PrivateCharterX_Request_${request.id.substring(0, 8).toUpperCase()}.pdf`);
-                          console.log('HTML Bulk request confirmation opened for printing');
+                          // Download as PDF directly
+                          await downloadHTMLAsPDF(htmlContent, `PrivateCharterX_Request_${request.id.substring(0, 8).toUpperCase()}.pdf`);
+                          console.log('HTML Bulk request confirmation PDF downloaded');
 
                           // Also generate jsPDF version for storage and email
                           const { blob, filename, base64 } = await generateRequestConfirmationPDF(pdfRequest);

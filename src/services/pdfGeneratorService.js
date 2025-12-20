@@ -67,6 +67,46 @@ const formatDate = (dateString) => {
   });
 };
 
+// Get proper service title from type
+const getServiceTitle = (type, itemName) => {
+  const titles = {
+    'jet': 'Private Jet Charter',
+    'jets': 'Private Jet Charter',
+    'jet_charter': 'Private Jet Charter',
+    'private_jet': 'Private Jet Charter',
+    'helicopter': 'Helicopter Charter',
+    'helicopters': 'Helicopter Charter',
+    'helicopter_charter': 'Helicopter Charter',
+    'yacht': 'Yacht Charter',
+    'yachts': 'Yacht Charter',
+    'yacht_charter': 'Yacht Charter',
+    'car': 'Ground Transport',
+    'luxury_cars': 'Luxury Car Rental',
+    'car_rental': 'Car Rental',
+    'taxi': 'Airport Transfer',
+    'transfer': 'Airport Transfer',
+    'ground_transport': 'Ground Transport',
+    'airport_transfer': 'Airport Transfer',
+    'empty_legs': 'Empty Leg Flight',
+    'emptyleg': 'Empty Leg Flight',
+    'empty_leg': 'Empty Leg Flight',
+    'wine': 'Premium Wines',
+    'wines': 'Premium Wines',
+    'champagne': 'Champagne',
+    'cigars': 'Premium Cigars',
+    'caviar': 'Caviar & Delicacies',
+    'delicatesse': 'Delicacies',
+    'delicacies': 'Delicacies',
+    'custom_extra': 'Custom Extra',
+    'adventure': 'Adventure Package',
+    'concierge': 'Concierge Service',
+    'restaurant': 'Restaurant Reservation',
+    'flowers': 'Flowers & Gifts',
+    'tokenization': 'Asset Tokenization'
+  };
+  return titles[type?.toLowerCase()] || itemName || type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Service';
+};
+
 // Helper to draw light gray background box
 const drawGrayBox = (doc, x, y, width, height) => {
   doc.setFillColor(245, 245, 245); // Light gray
@@ -171,22 +211,29 @@ export async function generateRequestConfirmationPDF(request, options = {}) {
   const boxLeft = margin + boxPadding;
   const boxRight = rightCol - boxPadding;
 
+  // Get exact product name if available
+  const productName = requestData.name || requestData.title || requestData.displayTitle || requestData.service_name || '';
+  const categoryName = getServiceTitle(requestType);
+  // Use exact product name as title, category as subtitle
+  const displayTitle = productName || categoryName;
+  const displaySubtitle = productName ? categoryName : '';
+
   // Service type header
-  const formattedType = requestType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(COLORS.black);
 
   if (requestType.includes('ground') || requestType.includes('taxi') || requestType.includes('transfer')) {
-    doc.text('Ground Transport', boxLeft, y);
+    doc.text(displayTitle, boxLeft, y);
 
-    // Vehicle info
-    const vehicleName = requestData.carName || requestData.vehicleName || 'Business Class';
-    const vehicleClass = requestData.vehicleClass || 'Business';
+    // Vehicle info or category subtitle
+    const vehicleName = requestData.carName || requestData.vehicleName || '';
+    const vehicleClass = requestData.vehicleClass || '';
+    const subtitleText = displaySubtitle || (vehicleName ? `${vehicleName}${vehicleClass ? ` (${vehicleClass})` : ''}` : 'Ground Transport');
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(COLORS.gray);
-    doc.text(`${vehicleName} (${vehicleClass})`, boxLeft, y + 5);
+    doc.text(subtitleText, boxLeft, y + 5);
 
     // Route
     y += 12;
@@ -236,13 +283,14 @@ export async function generateRequestConfirmationPDF(request, options = {}) {
     }
 
   } else if (requestType.includes('jet') || requestType.includes('helicopter') || requestType.includes('charter') || requestType.includes('empty')) {
-    doc.text(formattedType, boxLeft, y);
+    doc.text(displayTitle, boxLeft, y);
 
-    const aircraft = requestData.aircraft || requestData.aircraft_type || 'Private Jet';
+    const aircraft = requestData.aircraft || requestData.aircraft_type || '';
+    const subtitleText = displaySubtitle || aircraft || 'Charter Service';
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(COLORS.gray);
-    doc.text(aircraft, boxLeft, y + 5);
+    doc.text(subtitleText, boxLeft, y + 5);
 
     y += 12;
     const from = requestData.from || requestData.origin || '-';
@@ -271,11 +319,12 @@ export async function generateRequestConfirmationPDF(request, options = {}) {
     doc.text(`${requestData.passengers || 1}`, boxLeft + 72, y);
 
   } else {
-    doc.text(formattedType, boxLeft, y);
+    // For products like wine, delicacies, etc. - show exact product name
+    doc.text(displayTitle, boxLeft, y);
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(COLORS.gray);
-    doc.text('Service Request', boxLeft, y + 5);
+    doc.text(displaySubtitle || 'Service Request', boxLeft, y + 5);
   }
 
   // Move past the gray box
@@ -436,11 +485,16 @@ export async function generateBookingConfirmationPDF(booking, options = {}) {
   const boxPadding = 5;
   const boxLeft = margin + boxPadding;
 
-  const serviceTitle = booking.service_title || booking.service_type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Service';
+  // Get exact product name if available
+  const bookingProductName = serviceDetails.name || serviceDetails.title || serviceDetails.displayTitle || booking.service_title || '';
+  const bookingCategoryName = getServiceTitle(booking.service_type);
+  const bookingDisplayTitle = bookingProductName || bookingCategoryName;
+  const bookingDisplaySubtitle = bookingProductName ? bookingCategoryName : '';
+
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(COLORS.black);
-  doc.text(serviceTitle, boxLeft, y);
+  doc.text(bookingDisplayTitle, boxLeft, y);
 
   // Build route from available fields - prefer named locations over IATA codes
   const fromLocation = booking.departure_location || booking.origin || serviceDetails.from || '';
@@ -448,11 +502,14 @@ export async function generateBookingConfirmationPDF(booking, options = {}) {
   // Clean up any strange characters from location strings
   const cleanLocation = (loc) => loc ? loc.replace(/[!']/g, '').trim() : '';
   const route = `${cleanLocation(fromLocation)} → ${cleanLocation(toLocation)}`.trim();
-  if (route && route !== ' → ') {
+
+  // Show subtitle: either category name or route
+  const subtitleToShow = bookingDisplaySubtitle || (route && route !== ' → ' ? route : '');
+  if (subtitleToShow) {
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(COLORS.gray);
-    doc.text(route, boxLeft, y + 5);
+    doc.text(subtitleToShow, boxLeft, y + 5);
   }
 
   y += 12;
