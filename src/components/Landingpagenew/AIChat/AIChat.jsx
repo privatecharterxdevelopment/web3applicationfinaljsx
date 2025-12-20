@@ -9037,16 +9037,27 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               </div>
             </div>
 
-            {/* View Plans Button */}
-            <div className="px-5 pb-5">
+            {/* Action Buttons */}
+            <div className="px-5 pb-5 space-y-2">
               <button
                 onClick={() => {
                   setShowSubscriptionBlocker(false);
-                  setShowSubscriptionModal(true);
+                  navigate('/dashboard/subscription');
                 }}
                 className="w-full py-2.5 bg-gray-900 text-white rounded-xl text-sm font-light hover:bg-gray-800 transition-colors"
               >
-                View Membership Plans
+                Manage Plans
+              </button>
+              <button
+                onClick={() => {
+                  setShowSubscriptionBlocker(false);
+                  setActiveChat('new');
+                  setWeather(null);
+                  setSearchResults(null);
+                }}
+                className="w-full py-2.5 bg-white text-gray-700 rounded-xl text-sm font-light hover:bg-gray-100 transition-colors border border-gray-200"
+              >
+                Continue with New Chat
               </button>
               <p className="text-[10px] font-light text-gray-400 text-center mt-3">
                 Cancel anytime • Instant access • 24/7 AI concierge
