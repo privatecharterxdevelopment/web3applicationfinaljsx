@@ -13,9 +13,7 @@ import {
   ChevronUp,
   Users,
   Bed,
-  Calendar,
   Check,
-  ShoppingCart,
   Plus
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -240,7 +238,7 @@ const HotelCard = ({ hotel, rooms = [], onSelectRoom, onViewDetails, onAddToCart
               <Building2 size={12} />
               <span>View Details</span>
             </button>
-            {rooms.length > 0 && (onAddToCart || onSelectRoom) && (
+            {rooms.length > 0 && onAddToCart && (
               <button
                 onClick={() => {
                   const firstRoom = rooms[0];
@@ -270,14 +268,11 @@ const HotelCard = ({ hotel, rooms = [], onSelectRoom, onViewDetails, onAddToCart
                       totalPrice: firstRate.totalRate * nights,
                       boardType: firstRate.boardType || 'Room Only',
                       currency: hotel.currency || 'USD',
-                      cancellation: firstRate.cancellation
+                      cancellation: firstRate.cancellation,
+                      note: 'Our coordinators will check availability for this room.'
                     };
 
-                    if (onAddToCart) {
-                      onAddToCart(cartItem);
-                    } else if (onSelectRoom) {
-                      onSelectRoom(hotel, firstRoom, firstRate);
-                    }
+                    onAddToCart(cartItem);
                   }
                 }}
                 className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium rounded-lg transition-colors"
@@ -287,23 +282,8 @@ const HotelCard = ({ hotel, rooms = [], onSelectRoom, onViewDetails, onAddToCart
               </button>
             )}
           </div>
-
-          {/* Secondary row: Book Now (direct booking) */}
-          {rooms.length > 0 && onSelectRoom && (
-            <button
-              onClick={() => {
-                const firstRoom = rooms[0];
-                const firstRate = firstRoom?.rates?.[0];
-                if (firstRoom && firstRate) {
-                  onSelectRoom(hotel, firstRoom, firstRate);
-                }
-              }}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-lg transition-colors border border-gray-200"
-            >
-              <Calendar size={12} />
-              <span>Book Now</span>
-            </button>
-          )}
+          {/* Note about availability */}
+          <p className="text-[10px] text-gray-400 text-center">Our coordinators will check availability</p>
         </div>
       </div>
     </div>
