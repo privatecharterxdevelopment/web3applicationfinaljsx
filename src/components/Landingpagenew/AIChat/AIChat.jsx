@@ -6071,37 +6071,30 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   ) : (
                     <>
                       <button
-                        onClick={() => {
-                          // Start a new chat to continue
-                          setActiveChat('new');
-                          setWeather(null);
-                          setCartItems([]);
-                          setSearchResults(null);
-                          setMessageLimitReached(false);
-                        }}
+                        onClick={() => setShowRequestForm(true)}
                         className="flex-1 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
                       >
-                        <Plus size={18} />
-                        New Chat
+                        <Send size={18} />
+                        Send Request
                       </button>
                       <button
-                        onClick={() => navigate('/dashboard/subscription')}
+                        onClick={() => setShowSubscriptionModal(true)}
                         className="flex-1 py-3 bg-white/60 text-gray-700 rounded-lg hover:bg-white/80 transition-colors font-medium border border-gray-200/50 flex items-center justify-center gap-2"
                         style={{ backdropFilter: 'blur(8px)' }}
                       >
                         <Crown size={18} className="text-gray-500" />
-                        Manage Plans
+                        Upgrade
                       </button>
                     </>
                   )}
                 </div>
-                {/* Manage subscription link */}
+                {/* Upgrade option for more messages */}
                 <button
-                  onClick={() => navigate('/dashboard/subscription')}
+                  onClick={() => setShowSubscriptionModal(true)}
                   className="mt-3 w-full py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors flex items-center justify-center gap-1"
                 >
                   <Crown size={14} />
-                  Manage your subscription
+                  Need more messages? Upgrade your plan
                 </button>
               </div>
             </div>
