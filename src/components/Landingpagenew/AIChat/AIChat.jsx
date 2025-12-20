@@ -223,7 +223,9 @@ const AIChat = ({
   activeChat: activeChatProp,
   setActiveChat: setActiveChatProp,
   chatHistory: chatHistoryProp,
-  setChatHistory: setChatHistoryProp
+  setChatHistory: setChatHistoryProp,
+  showChatOverview,
+  setShowChatOverview
 }) => {
   // Use auth context (returns null if not in AuthProvider)
   const authContext = useAuth();
@@ -9045,12 +9047,11 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 onClick={() => {
                   setShowSubscriptionBlocker(false);
                   setActiveChat('new');
-                  setWeather(null);
-                  setSearchResults(null);
+                  setShowChatOverview(true);
                 }}
                 className="w-full py-2.5 bg-white text-gray-700 rounded-xl text-sm font-light hover:bg-gray-100 transition-colors border border-gray-200"
               >
-                Continue with New Chat
+                Continue
               </button>
               <p className="text-[10px] font-light text-gray-400 text-center mt-3">
                 Cancel anytime • Instant access • 24/7 AI concierge
