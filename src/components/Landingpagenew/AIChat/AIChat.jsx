@@ -5604,12 +5604,13 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                         if (!hasUserConfirmed && !isAIAcknowledgingConfirmation) return null;
 
                         // Find the most recent search results from previous messages
-                        // EXCLUDE: empty legs, private jets, helicopters, ground transport, wineries, delicacies tabs
+                        // EXCLUDE: empty legs, private jets, helicopters, yachts, ground transport, wineries, delicacies tabs
                         // These have their own built-in booking UI
                         const excludedTabTypes = [
                           'empty-legs', 'emptylegs', 'empty_legs',
                           'jets', 'jet', 'private-jets', 'private_jets',
                           'helicopters', 'helicopter', 'heli',
+                          'yachts', 'yacht', 'sailing', 'catamaran', 'superyacht',
                           'cars', 'car', 'ground-transport', 'ground_transport', 'luxury-cars', 'luxury_cars', 'transfer',
                           'wineries', 'winery', 'wines', 'wine',
                           'delicacies', 'delicatesse', 'caviar', 'cigars', 'cigar'
@@ -5635,20 +5636,27 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
                         // For custom requests (restaurants, hotels, experiences, concierge), show Add to Cart
                         // If no filtered results, check if AI is discussing a custom service request
-                        const isCustomServiceRequest =
-                          contentLower.includes('reservation') ||
-                          contentLower.includes('restaurant') ||
-                          contentLower.includes('hotel') ||
-                          contentLower.includes('club') ||
-                          contentLower.includes('event') ||
-                          contentLower.includes('concierge') ||
-                          contentLower.includes('experience') ||
-                          contentLower.includes('trip') ||
-                          contentLower.includes('itinerary') ||
-                          contentLower.includes('custom') ||
-                          contentLower.includes('arrange') ||
-                          contentLower.includes('book this') ||
-                          contentLower.includes('i can help you with');
+                        // Avoid false positives by checking for SPECIFIC service types, not generic terms
+                        const isExcludedService =
+                          contentLower.includes('private jet') ||
+                          contentLower.includes('helicopter') ||
+                          contentLower.includes('yacht') ||
+                          contentLower.includes('empty leg') ||
+                          contentLower.includes('charter flight');
+
+                        const isCustomServiceRequest = !isExcludedService && (
+                          contentLower.includes('restaurant reservation') ||
+                          contentLower.includes('table at') ||
+                          contentLower.includes('hotel booking') ||
+                          contentLower.includes('room at') ||
+                          contentLower.includes('nightclub') ||
+                          contentLower.includes('event tickets') ||
+                          contentLower.includes('concierge service') ||
+                          contentLower.includes('custom request') ||
+                          contentLower.includes('arrange a') ||
+                          contentLower.includes('i can book') ||
+                          contentLower.includes('reservation for')
+                        );
 
                         // Only proceed if we have custom service results OR AI is discussing a custom request
                         if (!latestResults && !isCustomServiceRequest) return null;
