@@ -4749,12 +4749,23 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
   console.log('🎨 Rendering: CHAT VIEW with chat:', currentChat.id, currentChat.title);
 
   // CHAT VIEW - Messages flow from bottom like WhatsApp
+  const navigate = useNavigate();
+
   return (
     <div className="ai-chat-page h-full flex flex-col bg-transparent overflow-hidden relative">
-      {/* 1. HEADER - Sticky header with glassmorphic effect */}
-      <div className="sticky top-0 z-30 px-3 sm:px-6 py-2.5 bg-white/90 sm:bg-white/15 border-b border-white/10 flex-shrink-0" style={{ backdropFilter: 'blur(50px) saturate(180%)', WebkitBackdropFilter: 'blur(50px) saturate(180%)' }}>
+      {/* 1. HEADER - Fixed on mobile, sticky on desktop */}
+      <div className="fixed sm:sticky top-0 left-0 right-0 sm:left-auto sm:right-auto z-30 px-3 sm:px-6 py-2.5 bg-white sm:bg-white/15 border-b border-gray-200 sm:border-white/10 flex-shrink-0" style={{ backdropFilter: 'blur(50px) saturate(180%)', WebkitBackdropFilter: 'blur(50px) saturate(180%)' }}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Back to Dashboard button - mobile only */}
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="sm:hidden p-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200"
+              title="Back to Dashboard"
+            >
+              <ArrowLeft size={16} />
+            </button>
+            {/* New Chat button - desktop only */}
             <button
               onClick={() => {
                 setActiveChat('new');
@@ -4762,13 +4773,13 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 setCartItems([]);
                 setSearchResults(null);
               }}
-              className="p-2 bg-white/25 text-gray-700 rounded-xl hover:bg-white/40 transition-all duration-200 border border-white/20"
+              className="hidden sm:flex p-2 bg-white/25 text-gray-700 rounded-xl hover:bg-white/40 transition-all duration-200 border border-white/20"
               style={{ backdropFilter: 'blur(10px)' }}
             >
               <ArrowLeft size={16} />
             </button>
-            <h2 className="text-base font-normal text-gray-700 truncate max-w-md">
-              {currentChat?.messages?.[0]?.content || currentChat?.title || 'New Conversation'}
+            <h2 className="text-sm sm:text-base font-medium sm:font-normal text-gray-800 sm:text-gray-700 truncate max-w-[180px] sm:max-w-md">
+              {currentChat?.messages?.[0]?.content?.substring(0, 30) || currentChat?.title || 'Sphera AI'}
             </h2>
           </div>
 
@@ -4963,8 +4974,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         </div>
       </div>
 
-      {/* 2. MESSAGES - FLOW FROM BOTTOM - Less padding on mobile */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-6 py-3 sm:py-4 flex flex-col-reverse">
+      {/* 2. MESSAGES - FLOW FROM BOTTOM - Add padding for fixed header/input on mobile */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-6 py-3 sm:py-4 flex flex-col-reverse pt-16 sm:pt-3 pb-24 sm:pb-4">
         <div className="max-w-3xl mx-auto space-y-4 flex flex-col w-full">
             {currentChat?.messages.map((msg, idx) => {
               const timestamp = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -5984,8 +5995,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         </div>
       </div>
 
-      {/* 3. INPUT - FIXED AT BOTTOM on mobile - Less padding on mobile */}
-      <div className="flex-shrink-0 sticky bottom-0 z-30 px-4 sm:px-6 pb-4 sm:pb-6 pt-3 sm:pt-4 bg-gradient-to-t from-white via-white/95 to-transparent sm:bg-transparent">
+      {/* 3. INPUT - FIXED AT BOTTOM on mobile, sticky on desktop */}
+      <div className="flex-shrink-0 fixed sm:sticky bottom-0 left-0 right-0 sm:left-auto sm:right-auto z-30 px-4 sm:px-6 pb-4 sm:pb-6 pt-3 sm:pt-4 bg-white sm:bg-gradient-to-t sm:from-white sm:via-white/95 sm:to-transparent border-t border-gray-200 sm:border-transparent">
         <div className="max-w-3xl mx-auto">
           {/* Message Limit Reached (20 messages per chat) */}
           {messageLimitReached ? (
