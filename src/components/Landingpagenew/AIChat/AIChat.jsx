@@ -7877,7 +7877,37 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               </div>
 
               {/* Footer */}
-              <div className="p-6 pt-4 border-t border-gray-100 bg-gray-50 space-y-3">
+              <div className="p-6 pt-4 border-t border-gray-100 bg-gray-50 space-y-4">
+                {/* Payment Method Selection */}
+                <div className="space-y-2">
+                  <label className="text-xs text-gray-500 block text-center">Preferred Payment Method</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setSelectedPaymentMethod('bank_transfer')}
+                      className={`px-4 py-2.5 text-xs font-medium rounded-xl border transition-all duration-200 ${
+                        selectedPaymentMethod === 'bank_transfer'
+                          ? 'bg-gray-900 border-gray-900 text-white'
+                          : 'bg-white/50 border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-white/70'
+                      }`}
+                      style={{ backdropFilter: 'blur(8px)' }}
+                    >
+                      Bank Transfer
+                    </button>
+                    <button
+                      onClick={() => setSelectedPaymentMethod('crypto')}
+                      className={`px-4 py-2.5 text-xs font-medium rounded-xl border transition-all duration-200 ${
+                        selectedPaymentMethod === 'crypto'
+                          ? 'bg-gray-900 border-gray-900 text-white'
+                          : 'bg-white/50 border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-white/70'
+                      }`}
+                      style={{ backdropFilter: 'blur(8px)' }}
+                    >
+                      Crypto
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-gray-400 text-center">Select how you'd like to pay once confirmed</p>
+                </div>
+
                 {/* Terms & Policy Agreement */}
                 <p className="text-[10px] text-gray-400 text-center leading-relaxed">
                   By submitting this request you agree to our{' '}

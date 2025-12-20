@@ -340,17 +340,18 @@ const YachtJourneyBuilder = ({
 
           {/* Budget Range - Always visible */}
           <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Daily Budget Range</label>
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Daily Budget Range</label>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
               {BUDGET_RANGES.map(range => (
                 <button
                   key={range.id}
                   onClick={() => setBudgetRange(range.id)}
-                  className={`px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
+                  className={`px-3 py-2.5 text-xs font-medium rounded-xl border transition-all duration-200 ${
                     budgetRange === range.id
-                      ? 'bg-blue-600 border-blue-600 text-white'
-                      : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                      ? 'bg-gray-900 border-gray-900 text-white'
+                      : 'bg-white/50 border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-white/70'
                   }`}
+                  style={{ backdropFilter: 'blur(8px)' }}
                 >
                   {range.label}
                 </button>
@@ -606,7 +607,7 @@ const YachtJourneyBuilder = ({
                 <span>{totalDays} day{totalDays > 1 ? 's' : ''}</span>
                 <span>{guests} guest{guests > 1 ? 's' : ''}</span>
                 <span>{crewIncluded ? 'With crew' : 'Bareboat'}</span>
-                <span className="text-blue-600 font-medium">{BUDGET_RANGES.find(b => b.id === budgetRange)?.label}</span>
+                <span className="text-gray-700 font-medium">{BUDGET_RANGES.find(b => b.id === budgetRange)?.label}</span>
                 {legs.reduce((sum, l) => sum + (l.services?.length || 0), 0) > 0 && (
                   <span>{legs.reduce((sum, l) => sum + (l.services?.length || 0), 0)} services</span>
                 )}
