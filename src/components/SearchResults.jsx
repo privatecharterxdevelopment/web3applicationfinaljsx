@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Check, X, Plane, Clock, MapPin, Users, Gauge, Fuel, ShoppingCart, CreditCard, Wallet, Wine, Thermometer, Star, Grape } from 'lucide-react';
+import { ChevronDown, ChevronUp, Check, X, Plane, Clock, MapPin, Users, Gauge, Fuel, ShoppingCart, CreditCard, Wallet, Wine, Thermometer, Star, Grape, Route, Ship } from 'lucide-react';
 import BookableServiceCard from './BookableServiceCard';
 
 /**
  * SearchResults component displays search results in expandable tabs/cards
  */
-const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAddToCart, onRequestChanges, onPayCrypto, onBuildJourney }) => {
+const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAddToCart, onRequestChanges, onPayCrypto, onBuildJourney, onBuildYachtJourney }) => {
   // Debug: Log tabs data on mount
   React.useEffect(() => {
     console.log('📋 SearchResults tabs:', tabs);
@@ -675,22 +675,22 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  onBuildYachtJourney && onBuildYachtJourney(item);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg font-medium transition-colors text-sm border border-blue-200"
+                              >
+                                <Route size={16} />
+                                Plan Journey
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   onAddToCart && onAddToCart(item);
                                 }}
                                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-medium transition-colors text-sm border border-gray-200"
                               >
                                 <ShoppingCart size={16} />
                                 Add to Cart
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onBookNow && onBookNow(item);
-                                }}
-                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium transition-colors text-sm"
-                              >
-                                <CreditCard size={16} />
-                                Send Request
                               </button>
                             </div>
                           </div>

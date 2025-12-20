@@ -47,7 +47,7 @@ import CryptoPaymentModal from '../../Payment/CryptoPaymentModal';
 import PlaceCard from '../../PlaceCard';
 import HotelCard from '../../HotelCard';
 import AdventureCard from '../../AdventureCard';
-import { JourneyBuilder, AirportTransferOffer } from './components/MultiStopJourney';
+import { JourneyBuilder, YachtJourneyBuilder, AirportTransferOffer } from './components/MultiStopJourney';
 import CartJourneyDisplay from './components/CartJourneyDisplay';
 
 // PDF Generator
@@ -314,11 +314,15 @@ const AIChat = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
-  // Multi-Stop Journey Builder
+  // Multi-Stop Journey Builder (Jets)
   const [showJourneyBuilder, setShowJourneyBuilder] = useState(false);
   const [journeyBuilderJet, setJourneyBuilderJet] = useState(null);
   const [showTransferOffer, setShowTransferOffer] = useState(false);
   const [lastAddedJourney, setLastAddedJourney] = useState(null);
+
+  // Yacht Journey Builder
+  const [showYachtJourneyBuilder, setShowYachtJourneyBuilder] = useState(false);
+  const [journeyBuilderYacht, setJourneyBuilderYacht] = useState(null);
   const [multiLegRouteInfo, setMultiLegRouteInfo] = useState(null);
   const [multiLegChatMode, setMultiLegChatMode] = useState(false);
   const [multiLegChatData, setMultiLegChatData] = useState({
@@ -1541,6 +1545,23 @@ const AIChat = ({
     }
     setJourneyBuilderJet(jet);
     setShowJourneyBuilder(true);
+  }, []);
+
+  // Yacht Journey Builder handler
+  const handleBuildYachtJourney = useCallback((yacht) => {
+    setJourneyBuilderYacht(yacht);
+    setShowYachtJourneyBuilder(true);
+  }, []);
+
+  const handleYachtJourneyAddToCart = useCallback((item) => {
+    // Add to cart with proper formatting
+    const cartItem = {
+      ...item,
+      cartId: item.cartId || Date.now(),
+      addedAt: item.addedAt || new Date().toISOString()
+    };
+    setCartItems(prev => [...prev, cartItem]);
+    setToast({ message: `${item.name || 'Yacht journey'} added to cart`, type: 'cart' });
   }, []);
 
   const handleJourneyComplete = useCallback((journeyItem) => {
@@ -4991,6 +5012,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       onAddToCart={addToCart}
                       onBookNow={addToCart}
                       onBuildJourney={handleBuildJourney}
+                      onBuildYachtJourney={handleBuildYachtJourney}
                     />
                   </div>
                 );
@@ -6029,6 +6051,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   setShowCryptoPayment(true);
                 }}
                 onBuildJourney={handleBuildJourney}
+                onBuildYachtJourney={handleBuildYachtJourney}
               />
             )}
 
@@ -8924,6 +8947,18 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
           onClose={() => {
             setShowJourneyBuilder(false);
             setJourneyBuilderJet(null);
+          }}
+        />
+      )}
+
+      {/* Yacht Journey Builder Modal */}
+      {showYachtJourneyBuilder && journeyBuilderYacht && (
+        <YachtJourneyBuilder
+          yacht={journeyBuilderYacht}
+          onAddToCart={handleYachtJourneyAddToCart}
+          onClose={() => {
+            setShowYachtJourneyBuilder(false);
+            setJourneyBuilderYacht(null);
           }}
         />
       )}
