@@ -2496,6 +2496,11 @@ Your quote has been received and will be reviewed within 12 hours.`;
 
     setCartItems([]);
     setSelectedPaymentMethod(null);
+
+    // Redirect to AI Requests page after short delay (let PDF download complete)
+    setTimeout(() => {
+      window.location.href = '/dashboard/ai-requests';
+    }, 1500);
   }, [cartItems, cartTotal, activeChat, selectedPaymentMethod, userHasNFT, usedNFTBenefitThisYear, conversationalAI, connectedWallet]);
 
   const handleSearch = async (query, conversationHistory = []) => {
@@ -5610,6 +5615,35 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                         // Only show button if: user confirmed OR AI is explicitly acknowledging a selection
                         if (!hasUserConfirmed && !isAIAcknowledgingConfirmation) return null;
 
+                        // NEVER show Add to Cart on summary messages (cart review, next steps, etc.)
+                        const isSummaryMessage =
+                          contentLower.includes('your current cart') ||
+                          contentLower.includes('current cart:') ||
+                          contentLower.includes('what happens next') ||
+                          contentLower.includes('here\'s what happens') ||
+                          contentLower.includes('next steps') ||
+                          contentLower.includes('**next steps**') ||
+                          contentLower.includes('checkout') && contentLower.includes('payment') ||
+                          contentLower.includes('would you like to add anything else') ||
+                          contentLower.includes('before checkout') ||
+                          contentLower.includes('ready to proceed') ||
+                          contentLower.includes('complete your booking') ||
+                          contentLower.includes('airport experience') ||
+                          contentLower.includes('confirmation') && contentLower.includes('team');
+
+                        if (isSummaryMessage) return null;
+
+                        // NEVER show Add to Cart if item was already added (check for confirmation messages)
+                        const alreadyAddedToCart =
+                          contentLower.includes('added to your cart') ||
+                          contentLower.includes('added to cart') ||
+                          contentLower.includes('✓ added') ||
+                          contentLower.includes('✅ added') ||
+                          contentLower.includes('i\'ve added') ||
+                          contentLower.includes('i have added');
+
+                        if (alreadyAddedToCart) return null;
+
                         // SPECIAL HANDLER: Custom service booking confirmations
                         // Detect service type from AI message content
                         const detectServiceType = () => {
@@ -5780,11 +5814,14 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                       departure_date: details.departureDate,
                                       departureDate: details.departureDate,
                                       hourlyRate: details.rate,
+                                      // Price from AI is already the estimated total - don't add VAT again
                                       price: details.totalPrice,
+                                      price_usd: details.totalPrice,
                                       basePrice: details.totalPrice,
-                                      totalWithFee: details.totalPrice > 0 ? details.totalPrice * 1.081 : 0,
+                                      totalWithFee: details.totalPrice, // Same as base - AI already quoted final estimate
                                       estimatedPrice: details.totalPrice,
                                       isEstimate: true,
+                                      vatIncluded: true, // Mark that VAT is already included in AI estimate
                                       requiresConfirmation: true,
                                       conversationDetails: content,
                                       addedAt: new Date().toISOString()
@@ -6377,6 +6414,47 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 disabled={isSearching}
                 className="flex-1 bg-transparent border-none outline-none text-sm text-gray-700 placeholder-gray-400 disabled:cursor-not-allowed"
               />
+
+              {/* Support Badge */}
+              <button
+                onClick={() => {
+                  // Add support request message to chat
+                  setChatHistory(prev => prev.map(c =>
+                    c.id === activeChat
+                      ? {
+                          ...c,
+                          messages: [...c.messages, {
+                            role: 'assistant',
+                            content: `We noticed you need support due to an error or specific assistance required.\n\nOur team will review this conversation and contact you shortly.\n\n**Please hold on** - a member of our support team will reach out to you via email at ${user?.email || 'your registered email'}.\n\nIn the meantime, feel free to continue chatting or describe the issue you're experiencing.`,
+                            isSupportRequest: true
+                          }]
+                        }
+                      : c
+                  ));
+                  setToast({ message: 'Support request sent. Our team will contact you.', type: 'success' });
+
+                  // Also save to database as support request
+                  if (user?.id) {
+                    supabase.from('user_requests').insert({
+                      user_id: user.id,
+                      request_type: 'support',
+                      status: 'pending',
+                      request_data: {
+                        conversation_id: activeChat,
+                        user_email: user.email,
+                        timestamp: new Date().toISOString(),
+                        context: 'User requested support via AI chat'
+                      }
+                    }).then(({ error }) => {
+                      if (error) console.error('Failed to save support request:', error);
+                    });
+                  }
+                }}
+                className="flex-shrink-0 px-2 py-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                title="Need help? Click for support"
+              >
+                Support?
+              </button>
 
               {/* Message counter - HIDDEN FOR TESTING (limits disabled)
               {messageCount > 0 && !userSubscriptionLimits?.unlimited_messages && (
@@ -6993,76 +7071,129 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                             {/* Jet/Heli Details */}
                             {(isJet || isHelicopter) && !item.isMultiStop && (
                               <div className="p-3 space-y-2 text-xs text-gray-600">
+                                {/* Route info */}
+                                {(item.from || item.from_city) && (item.to || item.to_city) && (
+                                  <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                                    <MapPin size={11} className="text-gray-400" />
+                                    <span className="font-medium">{item.from || item.from_city} → {item.to || item.to_city}</span>
+                                  </div>
+                                )}
                                 <div className="grid grid-cols-2 gap-2">
-                                  {item.max_passengers && (
+                                  {/* Passengers - check multiple field names */}
+                                  {(item.passengers || item.pax || item.max_passengers) && (
                                     <div className="flex items-center gap-1.5">
                                       <Users size={11} className="text-gray-400" />
-                                      <span>{item.max_passengers} pax</span>
+                                      <span>{item.passengers || item.pax || item.max_passengers} pax</span>
                                     </div>
                                   )}
+                                  {/* Departure date/time */}
+                                  {(item.departure_date || item.departureDate) && (
+                                    <div className="flex items-center gap-1.5">
+                                      <Calendar size={11} className="text-gray-400" />
+                                      <span>{item.departure_date || item.departureDate}</span>
+                                    </div>
+                                  )}
+                                  {/* Flight duration */}
+                                  {(item.flightDuration || item.estimatedDuration || item.duration) && (
+                                    <div className="flex items-center gap-1.5">
+                                      <Clock size={11} className="text-gray-400" />
+                                      <span>{item.flightDuration || item.estimatedDuration || item.duration}</span>
+                                    </div>
+                                  )}
+                                  {/* Aircraft specs if from database */}
                                   {item.range_km && (
                                     <div className="flex items-center gap-1.5">
                                       <Plane size={11} className="text-gray-400" />
-                                      <span>{item.range_km.toLocaleString()} km</span>
+                                      <span>{item.range_km.toLocaleString()} km range</span>
                                     </div>
                                   )}
                                   {item.speed_kts && (
                                     <div className="flex items-center gap-1.5">
-                                      <span className="text-gray-400">⚡</span>
+                                      <span className="text-[10px] text-gray-400">⚡</span>
                                       <span>{item.speed_kts} kts</span>
                                     </div>
                                   )}
-                                  {(item.hourly_rate_usd || item.hourly_rate_eur) && (
+                                  {(item.hourly_rate_usd || item.hourlyRate) && (
                                     <div className="flex items-center gap-1.5">
-                                      <span className="text-gray-400">💰</span>
-                                      <span>${(item.hourly_rate_usd || Math.round(convertToUSD(item.hourly_rate_eur, 'EUR'))).toLocaleString()}/hr</span>
+                                      <span className="text-[10px] text-gray-400">💰</span>
+                                      <span>${(item.hourly_rate_usd || item.hourlyRate || 0).toLocaleString()}/hr</span>
                                     </div>
                                   )}
                                 </div>
-
+                                {/* Custom request note */}
+                                {item.isEstimate && (
+                                  <p className="text-[10px] text-gray-400 italic pt-2 border-t border-gray-100">
+                                    Price is estimated. Our team will confirm final pricing.
+                                  </p>
+                                )}
                               </div>
                             )}
 
                             {/* Yacht Details */}
                             {isYacht && (
                               <div className="p-3 space-y-2 text-xs text-gray-600">
+                                {/* Location/Route */}
+                                {(item.from || item.from_city || item.location) && (
+                                  <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                                    <MapPin size={11} className="text-gray-400" />
+                                    <span className="font-medium">
+                                      {item.from || item.from_city || item.location}
+                                      {(item.to || item.to_city) && ` → ${item.to || item.to_city}`}
+                                    </span>
+                                  </div>
+                                )}
                                 <div className="grid grid-cols-2 gap-2">
-                                  {item.length_ft && (
+                                  {/* Guests - check multiple field names */}
+                                  {(item.passengers || item.pax || item.max_passengers || item.guests) && (
                                     <div className="flex items-center gap-1.5">
-                                      <span className="text-gray-400">📏</span>
-                                      <span>{item.length_ft} ft</span>
+                                      <Users size={11} className="text-gray-400" />
+                                      <span>{item.passengers || item.pax || item.max_passengers || item.guests} guests</span>
                                     </div>
                                   )}
-                                  {item.max_passengers && (
+                                  {/* Charter dates */}
+                                  {(item.departure_date || item.departureDate || item.charter_date) && (
                                     <div className="flex items-center gap-1.5">
-                                      <Users size={12} className="text-gray-400" />
-                                      <span>{item.max_passengers} guests</span>
+                                      <Calendar size={11} className="text-gray-400" />
+                                      <span>{item.departure_date || item.departureDate || item.charter_date}</span>
+                                    </div>
+                                  )}
+                                  {/* Duration */}
+                                  {(item.duration || item.charter_duration) && (
+                                    <div className="flex items-center gap-1.5">
+                                      <Clock size={11} className="text-gray-400" />
+                                      <span>{item.duration || item.charter_duration}</span>
+                                    </div>
+                                  )}
+                                  {item.length_ft && (
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-[10px] text-gray-400">📏</span>
+                                      <span>{item.length_ft} ft</span>
                                     </div>
                                   )}
                                   {item.cabins && (
                                     <div className="flex items-center gap-1.5">
-                                      <span className="text-gray-400">🛏️</span>
+                                      <span className="text-[10px] text-gray-400">🛏️</span>
                                       <span>{item.cabins} cabins</span>
                                     </div>
                                   )}
                                   {item.crew && (
                                     <div className="flex items-center gap-1.5">
-                                      <span className="text-gray-400">👥</span>
+                                      <span className="text-[10px] text-gray-400">👥</span>
                                       <span>{item.crew} crew</span>
                                     </div>
                                   )}
                                   {(item.daily_rate_usd || item.daily_rate_eur) && (
                                     <div className="flex items-center gap-1.5 col-span-2">
-                                      <span className="text-gray-400">💰</span>
+                                      <span className="text-[10px] text-gray-400">💰</span>
                                       <span>${(item.daily_rate_usd || Math.round(convertToUSD(item.daily_rate_eur, 'EUR'))).toLocaleString()}/day</span>
                                     </div>
                                   )}
                                 </div>
-                                {item.location && (
-                                  <div className="flex items-center gap-1.5 pt-1">
-                                    <MapPin size={12} className="text-gray-400" />
-                                    <span>{item.location}</span>
-                                  </div>
+                                {/* Custom request note */}
+                                {item.isEstimate && (
+                                  <p className="text-[10px] text-gray-400 italic pt-2 border-t border-gray-100">
+                                    Price is estimated. Our team will confirm final pricing.
+                                  </p>
                                 )}
                               </div>
                             )}
@@ -7313,8 +7444,15 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     const hasEstimates = cartItems.some(item => item.isEstimate);
                     const hasCustomExtras = customExtras.length > 0;
 
-                    // Calculate grand total - with NaN protection
-                    const grandTotal = safeNumber(subtotal + airportFees + cateringTotal);
+                    // Calculate VAT (8.1%) - only for items without vatIncluded flag
+                    const vatAmount = cartItems.reduce((sum, item) => {
+                      if (item.vatIncluded) return sum; // VAT already included in AI estimate
+                      const basePrice = safeNumber(item.basePrice || item.price_usd || item.price || 0);
+                      return sum + (basePrice * 0.081);
+                    }, 0);
+
+                    // Calculate grand total - with NaN protection (subtotal + VAT + fees)
+                    const grandTotal = safeNumber(subtotal + vatAmount + airportFees + cateringTotal);
 
                     return (
                       <div className="space-y-2 mb-3">
@@ -7338,7 +7476,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                         {/* Show services subtotal */}
                         {subtotal > 0 && (
                           <div className="flex justify-between items-start gap-2 text-sm">
-                            <span className="text-gray-500 flex-shrink-0">Services</span>
+                            <span className="text-gray-500 flex-shrink-0">Subtotal</span>
                             <span className="text-gray-700 text-right break-words">{hasEstimates ? '~' : ''}${subtotal.toLocaleString()}</span>
                           </div>
                         )}
@@ -7362,8 +7500,14 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           </div>
                         )}
 
+                        {/* VAT 8.1% - MANDATORY DISPLAY */}
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-500">VAT (8.1%)</span>
+                          <span className="text-gray-600">{hasEstimates ? '~' : ''}${vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
+
                         <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                          <span className="text-sm font-semibold text-gray-700">{hasEstimates ? 'Est. Total' : 'Total'}</span>
+                          <span className="text-sm font-semibold text-gray-700">{hasEstimates ? 'Est. Total' : 'Total'} <span className="text-[10px] font-normal text-gray-400">(incl. VAT)</span></span>
                           <div className="text-right">
                             <span className="text-lg font-bold text-gray-900">
                               {hasEstimates ? '~' : ''}${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -7431,17 +7575,27 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     // Calculate totals for payable items - Base + VAT only
                     const payableSubtotal = payableItems.reduce((sum, item) => sum + (item.price_usd || item.price || item.basePrice || 0), 0);
                     const payableVAT = payableItems.reduce((sum, item) => sum + (item.vat_amount || Math.round((item.price_usd || item.price || item.basePrice || 0) * 0.081)), 0);
-                    const payableTotal = payableItems.reduce((sum, item) => sum + (item.totalWithFee || ((item.price_usd || item.price || item.basePrice || 0) * 1.081)), 0);
+                    // Calculate payable total - don't add VAT if already included
+                    const payableTotal = payableItems.reduce((sum, item) => {
+                      const basePrice = item.price_usd || item.price || item.basePrice || 0;
+                      // If VAT already included (AI estimate) or totalWithFee exists, use as-is
+                      if (item.vatIncluded || item.totalWithFee) {
+                        return sum + (item.totalWithFee || basePrice);
+                      }
+                      // Otherwise add VAT
+                      return sum + (basePrice * 1.081);
+                    }, 0);
 
                     // Helper function to save booking to database (for tracking purposes)
                     const saveBookingToDatabase = async (item, status = 'pending') => {
                       if (!user?.id) return null;
                       try {
-                        // Calculate proper USD prices - Base + VAT only
+                        // Calculate proper USD prices
                         // IMPORTANT: Sanitize to avoid NaN values
                         const rawBasePrice = item.price_usd || item.price || item.basePrice || 0;
                         const basePrice = (typeof rawBasePrice === 'number' && !isNaN(rawBasePrice)) ? rawBasePrice : 0;
-                        const rawVatAmount = item.vat_amount || Math.round(basePrice * 0.081);
+                        // Don't add VAT if already included in AI estimate
+                        const rawVatAmount = item.vatIncluded ? 0 : (item.vat_amount || Math.round(basePrice * 0.081));
                         const vatAmount = (typeof rawVatAmount === 'number' && !isNaN(rawVatAmount)) ? rawVatAmount : 0;
                         const rawTotalPrice = item.totalWithFee || (basePrice + vatAmount);
                         const totalPrice = (typeof rawTotalPrice === 'number' && !isNaN(rawTotalPrice)) ? rawTotalPrice : 0;
@@ -7507,11 +7661,12 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     const saveToAIRequests = async (item) => {
                       if (!user?.id) return null;
                       try {
-                        // Calculate proper USD prices - Base + VAT only
+                        // Calculate proper USD prices
                         // IMPORTANT: Sanitize to avoid NaN values
                         const rawBasePrice = item.price_usd || item.price || item.basePrice || 0;
                         const basePrice = (typeof rawBasePrice === 'number' && !isNaN(rawBasePrice)) ? rawBasePrice : 0;
-                        const rawVatAmount = item.vat_amount || Math.round(basePrice * 0.081);
+                        // Don't add VAT if already included in AI estimate
+                        const rawVatAmount = item.vatIncluded ? 0 : (item.vat_amount || Math.round(basePrice * 0.081));
                         const vatAmount = (typeof rawVatAmount === 'number' && !isNaN(rawVatAmount)) ? rawVatAmount : 0;
                         const rawTotalPrice = item.totalWithFee || (basePrice + vatAmount);
                         const totalPrice = (typeof rawTotalPrice === 'number' && !isNaN(rawTotalPrice)) ? rawTotalPrice : 0;
@@ -8460,10 +8615,16 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
                       setCartItems([]);
                       setShowRequestForm(false);
+                      setShowCartSidebar(false);
                       const toastMsg = savedBookings.length > 0
                         ? `${savedBookings.length} item(s) in My Bookings, ${requestItems.length} request(s) sent!`
                         : 'Booking request sent!';
                       setToast({ message: toastMsg, type: 'info' });
+
+                      // Redirect to AI Requests page after short delay (let PDF download complete)
+                      setTimeout(() => {
+                        window.location.href = '/dashboard/ai-requests';
+                      }, 1500);
                     } catch (error) {
                       console.error('Booking error:', error);
                       setToast({ message: 'Failed to send request', type: 'error' });

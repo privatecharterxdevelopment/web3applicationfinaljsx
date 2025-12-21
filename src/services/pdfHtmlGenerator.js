@@ -912,6 +912,7 @@ export function openHTMLForPrint(html, filename = 'document.pdf') {
 /**
  * Download HTML as PDF using html2pdf.js
  * Directly downloads PDF file with beautiful HTML layout
+ * DOES NOT open any new windows - silent download only
  */
 export async function downloadHTMLAsPDF(html, filename = 'document.pdf') {
   // Create a temporary container for the HTML
@@ -927,7 +928,7 @@ export async function downloadHTMLAsPDF(html, filename = 'document.pdf') {
     // Wait for any images to load
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Generate and download PDF
+    // Generate and download PDF silently
     await html2pdf()
       .set({
         margin: [10, 10, 10, 10],
@@ -949,11 +950,13 @@ export async function downloadHTMLAsPDF(html, filename = 'document.pdf') {
       .from(element.firstChild)
       .save();
 
-    console.log('HTML PDF downloaded successfully:', filename);
+    console.log('PDF downloaded silently:', filename);
+    return true;
   } catch (err) {
-    console.error('Error generating HTML PDF:', err);
-    // Fallback to print dialog if html2pdf fails
-    openHTMLForPrint(html, filename);
+    console.error('Error generating PDF (no fallback, staying on page):', err);
+    // DO NOT open new window - just log the error and continue
+    // User stays on the current page
+    return false;
   } finally {
     document.body.removeChild(element);
   }
