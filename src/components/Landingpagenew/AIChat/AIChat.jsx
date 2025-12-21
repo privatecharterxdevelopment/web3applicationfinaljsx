@@ -7006,12 +7006,23 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           {/* Price & expand icon */}
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <div className="text-right">
-                              <p className="text-sm font-bold text-gray-900">
-                                {currencySymbol}{(item.price || item.basePrice || item.price_usd || 0).toLocaleString()}
-                              </p>
-                              {item.priceCalculation && (
-                                <p className="text-[9px] text-gray-400">{item.priceCalculation}</p>
-                              )}
+                              {(() => {
+                                const itemPrice = item.price || item.basePrice || item.price_usd || 0;
+                                const isQuoteItem = isTransfer || isJet || isHelicopter || isYacht || isLuxuryCar;
+                                if (isQuoteItem && itemPrice === 0) {
+                                  return <p className="text-xs font-medium text-gray-500 italic">On Request</p>;
+                                }
+                                return (
+                                  <>
+                                    <p className="text-sm font-bold text-gray-900">
+                                      {currencySymbol}{itemPrice.toLocaleString()}
+                                    </p>
+                                    {item.priceCalculation && (
+                                      <p className="text-[9px] text-gray-400">{item.priceCalculation}</p>
+                                    )}
+                                  </>
+                                );
+                              })()}
                             </div>
                             <ChevronDown size={16} className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                           </div>
@@ -8166,12 +8177,23 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                             )}
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <p className="text-sm font-semibold text-gray-900">
-                              ${(item.totalWithFee || item.price || item.basePrice || 0).toLocaleString()}
-                            </p>
-                            {item.isEstimate && (
-                              <p className="text-[9px] text-gray-400">estimate</p>
-                            )}
+                            {(() => {
+                              const itemPrice = item.totalWithFee || item.price || item.basePrice || 0;
+                              const isQuoteItem = isTransfer || isJet || isYacht;
+                              if (isQuoteItem && itemPrice === 0) {
+                                return <p className="text-xs font-medium text-gray-500 italic">On Request</p>;
+                              }
+                              return (
+                                <>
+                                  <p className="text-sm font-semibold text-gray-900">
+                                    ${itemPrice.toLocaleString()}
+                                  </p>
+                                  {item.isEstimate && (
+                                    <p className="text-[9px] text-gray-400">estimate</p>
+                                  )}
+                                </>
+                              );
+                            })()}
                           </div>
                         </div>
                       </div>

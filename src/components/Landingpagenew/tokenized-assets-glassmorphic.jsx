@@ -6,7 +6,7 @@ import {
   Leaf, Award, Settings, User, ChevronRight, ChevronDown, ChevronUp, ChevronLeft, X, LogOut, MessageSquare, MessageCircle,
   Users, Calendar, Package, Compass, ArrowLeft, Wallet, History, Crown, Gift, LayoutDashboard, Clock,
   Mail, Phone, Globe, FileText, Edit3, Check, Loader2, Building2, Coins, Share2, Menu, ExternalLink, SlidersHorizontal, Info, CreditCard,
-  ShoppingCart, Send, AlertCircle, Lock
+  ShoppingCart, Send, AlertCircle, Lock, Activity
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -33,6 +33,7 @@ import CalendarView from '../Calendar/CalendarView';
 import FavouritesView from '../Favourites/FavouritesView';
 import MyRequestsView from '../MyRequestsView';
 import MyBookingsView from '../MyBookingsView';
+import MyActivityView from '../MyActivityView';
 import MembershipCard from '../MembershipCard';
 import ReferralCard from '../ReferralCard';
 import SubscriptionManagement from '../SubscriptionManagement';
@@ -4113,17 +4114,11 @@ const TokenizedAssetsGlassmorphic = () => {
     { id: 'overview', label: 'Overview', icon: Home, category: 'overview' },
     { id: 'profile', label: 'Profile', icon: User, category: 'dashboard', dashboardTab: 'profile' },
     // { id: 'calendar', label: 'Calendar', icon: Calendar, category: 'calendar' }, // Hidden - not needed for now
-    { id: 'bookings', label: 'My Bookings', icon: CreditCard, category: 'bookings' }, // Paid crypto bookings
-    {
-      id: 'requests',
-      label: 'My Requests',
-      icon: FolderOpen,
-      category: 'requests',
-      submenu: [
-        { id: 'all-requests', label: 'All Requests', icon: FolderOpen, category: 'requests' },
-        { id: 'ai-requests', label: 'AI Requests', icon: Sparkles, category: 'ai-requests' }
-      ]
-    },
+    // UNIFIED: Single "My Activity" tab replaces My Bookings + My Requests
+    { id: 'activity', label: 'My Activity', icon: Activity, category: 'my-activity' },
+    // OLD ITEMS (kept for backwards compatibility, redirect to my-activity)
+    // { id: 'bookings', label: 'My Bookings', icon: CreditCard, category: 'bookings' },
+    // { id: 'requests', label: 'My Requests', icon: FolderOpen, category: 'requests' },
     {
       id: 'subscriptions',
       label: 'Subscriptions',
@@ -5193,8 +5188,15 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
-          {/* My Requests View - Clean Expandable List Design */}
+          {/* LEGACY: My Requests View - Redirect to My Activity */}
           {!isTransitioning && activeCategory === 'requests' && (
+            <div className="w-full h-full overflow-y-auto">
+              <MyActivityView user={user} />
+            </div>
+          )}
+
+          {/* OLD My Requests View - DEPRECATED, keeping for reference */}
+          {!isTransitioning && activeCategory === 'requests-old-deprecated' && (
             <div className="h-full overflow-y-auto" style={{ fontFamily: "'DM Sans', sans-serif" }}>
               {/* Header */}
               <div className="px-6 py-5 border-b border-gray-100">
@@ -5741,403 +5743,24 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
-          {/* AI Requests View - Clean Expandable List Design */}
+          {/* LEGACY: AI Requests View - Redirect to My Activity */}
           {!isTransitioning && activeCategory === 'ai-requests' && (
-            <div className="h-full overflow-y-auto" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-              {/* Header */}
-              <div className="px-6 py-5 border-b border-gray-100">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h1 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">AI Requests</h1>
-                    <p className="text-xs text-gray-400 mt-0.5">Requests generated via AI Concierge (Sphera)</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setActiveCategory('subscriptions')}
-                      className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white/50 hover:bg-white/70 rounded-lg transition-all flex items-center gap-1.5 border border-gray-200/50"
-                      style={{ backdropFilter: 'blur(8px)' }}
-                    >
-                      <Crown size={14} />
-                      Subscriptions
-                    </button>
-                    <button
-                      onClick={() => setActiveCategory('chat-history')}
-                      className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white/50 hover:bg-white/70 rounded-lg transition-all flex items-center gap-1.5 border border-gray-200/50"
-                      style={{ backdropFilter: 'blur(8px)' }}
-                    >
-                      <History size={14} />
-                      Chat History
-                    </button>
-                  </div>
-                </div>
-
-                {/* Stats - Minimal Inline */}
-                {(() => {
-                  const aiRequests = userRequests.filter(r =>
-                    r.type === 'ai_chat_bulk' ||
-                    r.type === 'custom_request' ||
-                    r.data?.source?.toLowerCase?.()?.includes?.('ai') ||
-                    r.data?.source?.toLowerCase?.()?.includes?.('sphera') ||
-                    r.data?.source === 'ai_chat'
-                  );
-                  const pendingCount = aiRequests.filter(r => r.status === 'pending' || !r.status).length;
-                  const completedCount = aiRequests.filter(r => r.status === 'completed').length;
-
-                  return (
-                    <div className="flex items-center gap-6 mt-4 text-sm">
-                      <div>
-                        <span className="text-gray-400">Total</span>
-                        <span className="ml-2 font-medium text-gray-900">{aiRequests.length}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400">Pending</span>
-                        <span className="ml-2 font-medium text-gray-900">{pendingCount}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400">Completed</span>
-                        <span className="ml-2 font-medium text-gray-900">{completedCount}</span>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-
-              {/* AI Requests List */}
-              <div className="px-6 py-4">
-                {(() => {
-                  const aiRequests = userRequests.filter(r =>
-                    r.type === 'ai_chat_bulk' ||
-                    r.type === 'custom_request' ||
-                    r.data?.source?.toLowerCase?.()?.includes?.('ai') ||
-                    r.data?.source?.toLowerCase?.()?.includes?.('sphera') ||
-                    r.data?.source === 'ai_chat'
-                  );
-
-                  if (aiRequests.length === 0) {
-                    return (
-                      <div className="text-center py-16">
-                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                          <Sparkles size={20} className="text-gray-400" />
-                        </div>
-                        <p className="text-sm text-gray-500 mb-4">No AI requests yet</p>
-                        <button
-                          onClick={() => {
-                            setActiveCategory('chat');
-                            setActiveChat('new'); // Reset to new chat screen directly
-                            window.history.pushState({}, '', '/dashboard/chat');
-                          }}
-                          className="px-4 py-2 bg-white/60 text-gray-700 text-sm rounded-lg hover:bg-white/80 transition-all inline-flex items-center gap-2 border border-gray-200/50"
-                          style={{ backdropFilter: 'blur(8px)' }}
-                        >
-                          <MessageSquare size={14} className="text-gray-500" />
-                          Start New Chat
-                        </button>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div className="space-y-2">
-                      {aiRequests.map((request) => {
-                        const isExpanded = expandedAIRequestId === request.id;
-                        const requestTitle = request.type === 'ai_chat_bulk' ? 'AI Concierge Request' :
-                          request.type === 'custom_request' ? 'Custom Request' :
-                          request.type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-
-                        return (
-                          <div
-                            key={request.id}
-                            className="bg-white border border-gray-100 rounded-xl overflow-hidden hover:border-gray-200 transition-all"
-                          >
-                            {/* Main Row */}
-                            <div
-                              className="px-4 py-3 flex items-center gap-4 cursor-pointer"
-                              onClick={() => setExpandedAIRequestId(isExpanded ? null : request.id)}
-                            >
-                              {/* Icon */}
-                              <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 flex-shrink-0">
-                                <Sparkles size={14} />
-                              </div>
-
-                              {/* Title & Info */}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <p className="text-sm font-medium text-gray-900 truncate">
-                                    {requestTitle}
-                                  </p>
-                                  <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${
-                                    request.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
-                                    request.status === 'in_progress' ? 'bg-blue-50 text-blue-600' :
-                                    request.status === 'cancelled' ? 'bg-gray-50 text-gray-400' :
-                                    'bg-amber-50 text-amber-600'
-                                  }`}>
-                                    {request.status?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Pending'}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
-                                  <span>
-                                    {new Date(request.created_at).toLocaleDateString('en-US', {
-                                      month: 'short',
-                                      day: 'numeric',
-                                      year: 'numeric',
-                                      hour: '2-digit',
-                                      minute: '2-digit'
-                                    })}
-                                  </span>
-                                  {request.data?.items && (
-                                    <>
-                                      <span>•</span>
-                                      <span>{request.data.items.length} item{request.data.items.length !== 1 ? 's' : ''}</span>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Price if available */}
-                              {request.data?.summary?.grand_total && (
-                                <div className="text-right flex-shrink-0">
-                                  <p className="text-sm font-semibold text-gray-900">
-                                    ${request.data.summary.grand_total.toLocaleString()}
-                                  </p>
-                                </div>
-                              )}
-
-                              {/* Expand Icon */}
-                              <ChevronDown
-                                size={16}
-                                className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                              />
-                            </div>
-
-                            {/* Expanded Details */}
-                            {isExpanded && (
-                              <div className="px-4 pb-4 pt-2 border-t border-gray-50">
-                                {/* Summary Stats */}
-                                {request.data?.summary && (
-                                  <div className="flex flex-wrap gap-3 mb-4">
-                                    <div className="px-3 py-1.5 bg-gray-50 rounded-lg">
-                                      <span className="text-[10px] text-gray-400 uppercase">Services</span>
-                                      <p className="text-sm font-medium text-gray-900">{request.data.summary.services_count || 0}</p>
-                                    </div>
-                                    <div className="px-3 py-1.5 bg-gray-50 rounded-lg">
-                                      <span className="text-[10px] text-gray-400 uppercase">Extras</span>
-                                      <p className="text-sm font-medium text-gray-900">{request.data.summary.extras_count || 0}</p>
-                                    </div>
-                                    <div className="px-3 py-1.5 bg-gray-50 rounded-lg">
-                                      <span className="text-[10px] text-gray-400 uppercase">Payment</span>
-                                      <p className="text-sm font-medium text-gray-900 capitalize">{request.data.payment_method || 'TBD'}</p>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Custom Request Details */}
-                                {request.type === 'custom_request' && !request.data?.items && (
-                                  <div className="flex flex-wrap gap-2 mb-4">
-                                    {request.data?.name && (
-                                      <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600">
-                                        {request.data.name}
-                                      </div>
-                                    )}
-                                    {request.data?.from && request.data?.to && (
-                                      <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600">
-                                        {request.data.from} → {request.data.to}
-                                      </div>
-                                    )}
-                                    {request.data?.date && (
-                                      <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600">
-                                        {request.data.date}
-                                      </div>
-                                    )}
-                                    {request.data?.passengers && (
-                                      <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600">
-                                        {request.data.passengers} pax
-                                      </div>
-                                    )}
-                                    {request.data?.price && (
-                                      <div className="px-2 py-1 bg-gray-50 rounded text-xs text-gray-600">
-                                        ${request.data.price.toLocaleString()}
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-
-                                {/* Items List */}
-                                {request.data?.items && request.data.items.length > 0 && (
-                                  <div className="space-y-1 mb-4">
-                                    <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2">Items</p>
-                                    {request.data.items.slice(0, 4).map((item, idx) => {
-                                      // Extract route info from ALL possible field names
-                                      const fromLocation = item.from || item.from_city || item.origin || item.departure_airport ||
-                                        item.pickup || item.pickup_location || item.pickupLocation ||
-                                        (item.legs && item.legs[0]?.from) || (item.legs && item.legs[0]?.dock);
-                                      const toLocation = item.to || item.to_city || item.destination || item.arrival_airport ||
-                                        item.dropoff || item.dropoff_location || item.dropoffLocation ||
-                                        (item.legs && item.legs[item.legs.length - 1]?.location);
-                                      // Check route field directly first, then build from components
-                                      const route = item.route || item.flight_route ||
-                                        (fromLocation && toLocation ? `${fromLocation} → ${toLocation}` : null) ||
-                                        // For multi-leg journeys, show the route from legs
-                                        (item.legs?.length > 1 ? item.legs.filter(l => l.location || l.dock).map(l => l.location || l.dock).join(' → ') : null);
-                                      const itemDate = item.date || item.departure_date || item.pickupDate || item.departureDate;
-                                      const passengers = item.passengers || item.pax || item.max_passengers || item.guests;
-                                      const itemType = item.type?.replace(/_/g, ' ');
-
-                                      return (
-                                        <div key={idx} className="py-2.5 border-b border-gray-50 last:border-0">
-                                          <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                              <span className="text-sm">
-                                                {item.type === 'empty_legs' || item.type === 'emptyleg' ? '🛩️' :
-                                                 item.type === 'jets' || item.type === 'aircraft' || item.type?.includes('jet') ? '✈️' :
-                                                 item.type === 'helicopters' || item.type?.includes('heli') ? '🚁' :
-                                                 item.type === 'luxury_cars' || item.type === 'cars' || item.type === 'ground_transport' ? '🚗' :
-                                                 item.type === 'yachts' || item.type === 'yacht_charter' ? '🛥️' :
-                                                 item.type === 'transfers' || item.type === 'taxi_concierge' ? '🚐' :
-                                                 item.isCustomRequest || item.type === 'custom_extra' ? '🍷' : '📦'}
-                                              </span>
-                                              <div>
-                                                <span className="text-sm font-medium text-gray-800">{item.name || item.rawItemName || item.model || item.aircraft_model || item.title || 'Service'}</span>
-                                                {itemType && <span className="text-[10px] text-gray-400 ml-2 capitalize">{itemType}</span>}
-                                              </div>
-                                            </div>
-                                            <span className="text-sm font-medium text-gray-900">
-                                              {item.isEstimate && '~'}${(item.price || item.estimated_price || item.estimatedPrice || item.totalWithFee || 0).toLocaleString()}
-                                            </span>
-                                          </div>
-                                          {/* Route and details */}
-                                          {(route || itemDate || passengers) && (
-                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 ml-7 mt-1">
-                                              {route && (
-                                                <span className="text-xs text-gray-600">{route}</span>
-                                              )}
-                                              {itemDate && (
-                                                <span className="text-xs text-gray-400">{itemDate}</span>
-                                              )}
-                                              {passengers && (
-                                                <span className="text-xs text-gray-400">{passengers} pax</span>
-                                              )}
-                                              {item.budgetLabel && (
-                                                <span className="text-xs text-gray-400">{item.budgetLabel}</span>
-                                              )}
-                                            </div>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
-                                    {request.data.items.length > 4 && (
-                                      <p className="text-xs text-gray-400 pt-2">+{request.data.items.length - 4} more items</p>
-                                    )}
-                                  </div>
-                                )}
-
-                                {/* Admin Notes */}
-                                {request.admin_notes && (
-                                  <div className="bg-white/60 rounded-lg p-3 mb-4 border border-gray-200/50" style={{ backdropFilter: 'blur(8px)' }}>
-                                    <p className="text-[10px] text-gray-500 uppercase mb-1">Response</p>
-                                    <p className="text-xs text-gray-700">{request.admin_notes}</p>
-                                  </div>
-                                )}
-
-                                {/* Footer */}
-                                <div className="flex items-center justify-between pt-2">
-                                  <span className="text-[10px] text-gray-300 font-mono">{request.id?.slice(0, 8)}</span>
-                                  {/* Continue Chat button - only if valid conversation_id exists (not 'new' or null) */}
-                                  {request.data?.conversation_id && request.data.conversation_id !== 'new' && (
-                                    <button
-                                      onClick={async (e) => {
-                                        e.stopPropagation();
-                                        const conversationId = request.data.conversation_id;
-                                        console.log('🔗 Continue Chat clicked, conversation_id:', conversationId);
-
-                                        // Validate conversation ID format (should be UUID-like)
-                                        if (!conversationId || conversationId === 'new' || conversationId.length < 10) {
-                                          console.warn('Invalid conversation ID, starting new chat');
-                                          setActiveChat('new');
-                                          setActiveCategory('chat');
-                                          return;
-                                        }
-
-                                        // Check if conversation exists in chatHistory
-                                        const existingChat = chatHistory.find(c => c.id === conversationId);
-                                        console.log('📚 Existing chat found:', existingChat ? existingChat.id : 'none');
-
-                                        if (existingChat) {
-                                          // Continue existing chat directly
-                                          setActiveChat(conversationId);
-                                          setActiveCategory('chat');
-                                        } else {
-                                          // Load chat from database
-                                          try {
-                                            console.log('📥 Loading chat from database:', conversationId);
-                                            const result = await chatService.loadChat(conversationId, user?.id);
-                                            console.log('📥 Load result:', result.success, result.chat?.id);
-
-                                            if (result.success && result.chat) {
-                                              // Add to chat history and switch
-                                              setChatHistory(prev => {
-                                                const exists = prev.find(c => c.id === conversationId);
-                                                if (exists) return prev;
-                                                return [...prev, {
-                                                  ...result.chat,
-                                                  date: new Date(result.chat.updated_at).toLocaleDateString()
-                                                }];
-                                              });
-                                              setActiveChat(conversationId);
-                                              setActiveCategory('chat');
-                                            } else {
-                                              // Chat not found, start new
-                                              console.warn('Chat not found in database, starting new');
-                                              setActiveChat('new');
-                                              setActiveCategory('chat');
-                                            }
-                                          } catch (err) {
-                                            console.error('Error loading chat:', err);
-                                            setActiveChat('new');
-                                            setActiveCategory('chat');
-                                          }
-                                        }
-                                      }}
-                                      className="px-3 py-1.5 bg-white/60 text-gray-700 text-xs rounded-lg hover:bg-white/80 transition-colors flex items-center gap-1.5 border border-gray-200/50"
-                                      style={{ backdropFilter: 'blur(8px)' }}
-                                    >
-                                      <MessageSquare size={12} className="text-gray-500" />
-                                      Continue Chat
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
-              </div>
-
-              {/* Footer with New Request button */}
-              {userRequests.filter(r => r.type === 'ai_chat_bulk' || r.type === 'custom_request' || r.data?.source?.toLowerCase?.()?.includes?.('ai') || r.data?.source === 'ai_chat').length > 0 && (
-                <div className="px-6 pb-6">
-                  <button
-                    onClick={() => {
-                      setActiveCategory('chat');
-                      setActiveChat('new'); // Reset to new chat screen directly
-                    }}
-                    className="w-full px-4 py-3 bg-white/60 text-gray-700 text-sm font-medium rounded-xl hover:bg-white/80 transition-all flex items-center justify-center gap-2 border border-gray-200/50"
-                    style={{ backdropFilter: 'blur(8px)' }}
-                  >
-                    <Plus size={16} className="text-gray-500" />
-                    New AI Request
-                  </button>
-                </div>
-              )}
+            <div className="w-full h-full overflow-y-auto">
+              <MyActivityView user={user} initialFilter="ai" />
             </div>
           )}
 
-          {/* My Bookings View - Paid Crypto Bookings */}
+          {/* UNIFIED: My Activity View - All bookings, requests, and orders in one place */}
+          {!isTransitioning && activeCategory === 'my-activity' && (
+            <div className="w-full h-full overflow-y-auto">
+              <MyActivityView user={user} />
+            </div>
+          )}
+
+          {/* LEGACY: My Bookings View - Redirect to My Activity */}
           {!isTransitioning && activeCategory === 'bookings' && (
-            <div className="w-full h-full overflow-y-auto p-4">
-              <MyBookingsView user={user} />
+            <div className="w-full h-full overflow-y-auto">
+              <MyActivityView user={user} />
             </div>
           )}
 

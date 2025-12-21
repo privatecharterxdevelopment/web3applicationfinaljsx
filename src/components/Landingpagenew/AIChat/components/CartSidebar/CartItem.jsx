@@ -41,13 +41,19 @@ const CartItem = ({
     return item.primaryImage || item.image_url || item.image || item.aircraft_image;
   };
 
-  // Format price
-  const formatPrice = (price) => {
-    if (!price || isNaN(price)) return 'TBD';
+  // Format price - show "On Request" for items without fixed pricing
+  const formatPrice = (price, showOnRequest = false) => {
+    if (!price || isNaN(price) || price === 0) {
+      return showOnRequest ? 'On Request' : 'TBD';
+    }
     return `$${Number(price).toLocaleString()}`;
   };
 
   const price = item.totalWithFee || item.price || item.basePrice || 0;
+
+  // Determine if this is a quote-only item (no fixed price)
+  const isQuoteItem = isTransfer || isJet || isHelicopter || isYacht || isLuxuryCar;
+  const hasNoPrice = !price || price === 0;
   const itemName = item.name || item.title || item.aircraft_type || item.model || 'Item';
 
   // Custom Extra - Special horizontal layout
@@ -182,7 +188,11 @@ const CartItem = ({
           >
             <Trash2 size={12} />
           </button>
-          <p className="text-sm font-bold text-gray-900 mt-1">{formatPrice(price)}</p>
+          {isQuoteItem && hasNoPrice ? (
+            <p className="text-xs font-medium text-gray-500 italic mt-1">On Request</p>
+          ) : (
+            <p className="text-sm font-bold text-gray-900 mt-1">{formatPrice(price, isQuoteItem)}</p>
+          )}
         </div>
       </div>
 

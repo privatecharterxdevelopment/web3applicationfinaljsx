@@ -12,6 +12,7 @@ import {
   Building2, Sparkles, Ticket, Clock, Package, AlertCircle,
   ArrowRight, Star, Leaf, Percent, Wine, Cigarette
 } from 'lucide-react';
+import QuoteInvoiceModal from './QuoteInvoiceModal';
 
 // ============================================
 // ADMIN SUPABASE CLIENT - BYPASSES RLS
@@ -476,24 +477,15 @@ const CRMDashboard = ({ onClose }) => {
   const copyToClipboard = (text) => navigator.clipboard.writeText(text);
 
   // Sidebar menu items
+  // SIMPLIFIED MENU - 7 items instead of 16
   const menuItems = [
     { id: 'dashboard', icon: Home, label: 'Dashboard', count: null },
     { id: 'customers', icon: Users, label: 'Customers', count: sidebarCounts.customers },
-    { id: 'bookings', icon: Calendar, label: 'All Bookings', count: sidebarCounts.bookings },
-    { id: 'jets', icon: Plane, label: 'Jet Bookings', count: sidebarCounts.jets },
-    { id: 'empty-legs', icon: Tag, label: 'Empty Leg Bookings', count: sidebarCounts.emptyLegBookings },
-    { id: 'emptylegs-table', icon: Globe, label: 'EmptyLegs Inventory', count: sidebarCounts.emptyLegsTable },
-    { id: 'cars', icon: Car, label: 'Car Rentals', count: sidebarCounts.cars },
-    { id: 'yachts', icon: Ship, label: 'Yacht Charters', count: sidebarCounts.yachts },
-    { id: 'helicopters', icon: Zap, label: 'Helicopters', count: sidebarCounts.helicopters },
-    { id: 'requests', icon: FileText, label: 'Requests', count: sidebarCounts.requests },
-    { id: 'chat-requests', icon: Package, label: 'AI Cart Requests', count: sidebarCounts.chatRequests },
-    { id: 'chat-messages', icon: MessageSquare, label: 'Chat Messages', count: sidebarCounts.chatMessages },
+    { id: 'activity', icon: Activity, label: 'Customer Activity', count: (sidebarCounts.bookings || 0) + (sidebarCounts.requests || 0) + (sidebarCounts.chatRequests || 0) },
     { id: 'ai-chats', icon: Sparkles, label: 'AI Conversations', count: sidebarCounts.aiChats },
     { id: 'support', icon: Ticket, label: 'Support', count: sidebarCounts.support },
     { id: 'transactions', icon: CreditCard, label: 'Transactions', count: sidebarCounts.transactions },
-    { id: 'wines', icon: Wine, label: 'Wines Inventory', count: sidebarCounts.wines },
-    { id: 'cigars', icon: Cigarette, label: 'Cigars Inventory', count: sidebarCounts.cigars },
+    { id: 'inventory', icon: Package, label: 'Inventory', count: (sidebarCounts.emptyLegsTable || 0) + (sidebarCounts.wines || 0) + (sidebarCounts.cigars || 0) },
   ];
 
   if (loading) {
@@ -570,7 +562,10 @@ const CRMDashboard = ({ onClose }) => {
         <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-30">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-semibold text-gray-900 capitalize">
-              {activeSection === 'ai-chats' ? 'AI Chat Sessions' : activeSection.replace('-', ' ')}
+              {activeSection === 'ai-chats' ? 'AI Conversations' :
+               activeSection === 'activity' ? 'Customer Activity' :
+               activeSection === 'inventory' ? 'Inventory' :
+               activeSection.replace('-', ' ')}
             </h1>
             <div className="flex items-center gap-3">
               <div className="relative">
@@ -617,40 +612,21 @@ const CRMDashboard = ({ onClose }) => {
             />
           )}
 
-          {/* Bookings Sections */}
-          {['bookings', 'jets', 'cars', 'yachts', 'helicopters'].includes(activeSection) && (
-            <BookingsSection
+          {/* UNIFIED Customer Activity Section - combines bookings, requests, chat-requests */}
+          {activeSection === 'activity' && (
+            <UnifiedActivitySection
               bookings={allBookings}
+              emptyLegBookings={allEmptyLegBookings}
+              requests={allRequests}
+              chatRequests={allChatRequests}
               refreshing={refreshing}
-              onRefresh={() => {
-                if (activeSection === 'jets') fetchAllBookings('jet');
-                else if (activeSection === 'cars') fetchAllBookings('car');
-                else if (activeSection === 'yachts') fetchAllBookings('yacht');
-                else if (activeSection === 'helicopters') fetchAllBookings('helicopter');
-                else fetchAllBookings();
-              }}
-              title={activeSection === 'bookings' ? 'All Bookings' : `${activeSection.charAt(0).toUpperCase() + activeSection.slice(1)} Bookings`}
+              onRefreshBookings={fetchAllBookings}
+              onRefreshEmptyLegs={fetchEmptyLegBookings}
+              onRefreshRequests={fetchAllRequests}
+              onRefreshChatRequests={fetchAllChatRequests}
+              supabaseAdmin={supabaseAdmin}
+              sidebarCounts={sidebarCounts}
             />
-          )}
-
-          {/* Empty Legs Section */}
-          {activeSection === 'empty-legs' && (
-            <EmptyLegsSection bookings={allEmptyLegBookings} refreshing={refreshing} onRefresh={fetchEmptyLegBookings} />
-          )}
-
-          {/* Requests Section */}
-          {activeSection === 'requests' && (
-            <RequestsSection requests={allRequests} refreshing={refreshing} onRefresh={fetchAllRequests} supabaseAdmin={supabaseAdmin} />
-          )}
-
-          {/* Chat Requests Section (AI Cart) */}
-          {activeSection === 'chat-requests' && (
-            <ChatRequestsSection requests={allChatRequests} refreshing={refreshing} onRefresh={fetchAllChatRequests} />
-          )}
-
-          {/* Chat Messages Section */}
-          {activeSection === 'chat-messages' && (
-            <ChatMessagesSection messages={allChatMessages} refreshing={refreshing} onRefresh={fetchAllChatMessages} />
           )}
 
           {/* AI Chats Section */}
@@ -668,19 +644,18 @@ const CRMDashboard = ({ onClose }) => {
             <TransactionsSection transactions={allTransactions} refreshing={refreshing} onRefresh={fetchAllTransactions} />
           )}
 
-          {/* EmptyLegs Table Section */}
-          {activeSection === 'emptylegs-table' && (
-            <EmptyLegsTableSection emptyLegs={allEmptyLegsFromTable} refreshing={refreshing} onRefresh={fetchEmptyLegsFromTable} />
-          )}
-
-          {/* Wines Inventory Section */}
-          {activeSection === 'wines' && (
-            <WinesSection wines={allWines} refreshing={refreshing} onRefresh={fetchAllWines} />
-          )}
-
-          {/* Cigars Inventory Section */}
-          {activeSection === 'cigars' && (
-            <CigarsSection cigars={allCigars} refreshing={refreshing} onRefresh={fetchAllCigars} />
+          {/* UNIFIED Inventory Section - combines empty legs, wines, cigars */}
+          {activeSection === 'inventory' && (
+            <UnifiedInventorySection
+              emptyLegs={allEmptyLegsFromTable}
+              wines={allWines}
+              cigars={allCigars}
+              refreshing={refreshing}
+              onRefreshEmptyLegs={fetchEmptyLegsFromTable}
+              onRefreshWines={fetchAllWines}
+              onRefreshCigars={fetchAllCigars}
+              sidebarCounts={sidebarCounts}
+            />
           )}
         </div>
       </main>
@@ -697,22 +672,14 @@ const CRMDashboard = ({ onClose }) => {
 // DASHBOARD OVERVIEW
 // ============================================
 const DashboardOverview = ({ sidebarCounts, onNavigate }) => {
+  // SIMPLIFIED - Only 6 main cards matching the new menu structure
   const cards = [
-    { label: 'Total Customers', value: sidebarCounts.customers, icon: Users, color: 'blue', section: 'customers' },
-    { label: 'All Bookings', value: sidebarCounts.bookings, icon: Calendar, color: 'green', section: 'bookings' },
-    { label: 'Jet Bookings', value: sidebarCounts.jets, icon: Plane, color: 'purple', section: 'jets' },
-    { label: 'Empty Leg Bookings', value: sidebarCounts.emptyLegBookings, icon: Tag, color: 'amber', section: 'empty-legs' },
-    { label: 'EmptyLegs Inventory', value: sidebarCounts.emptyLegsTable, icon: Globe, color: 'teal', section: 'emptylegs-table' },
-    { label: 'Car Rentals', value: sidebarCounts.cars, icon: Car, color: 'orange', section: 'cars' },
-    { label: 'Yacht Charters', value: sidebarCounts.yachts, icon: Ship, color: 'cyan', section: 'yachts' },
-    { label: 'Helicopters', value: sidebarCounts.helicopters, icon: Zap, color: 'yellow', section: 'helicopters' },
-    { label: 'Requests', value: sidebarCounts.requests, icon: FileText, color: 'pink', section: 'requests' },
-    { label: 'AI Cart Requests', value: sidebarCounts.chatRequests, icon: Package, color: 'violet', section: 'chat-requests' },
+    { label: 'Customers', value: sidebarCounts.customers, icon: Users, color: 'blue', section: 'customers' },
+    { label: 'Customer Activity', value: (sidebarCounts.bookings || 0) + (sidebarCounts.requests || 0) + (sidebarCounts.chatRequests || 0), icon: Activity, color: 'green', section: 'activity' },
     { label: 'AI Conversations', value: sidebarCounts.aiChats, icon: Sparkles, color: 'indigo', section: 'ai-chats' },
     { label: 'Support Tickets', value: sidebarCounts.support, icon: Ticket, color: 'red', section: 'support' },
     { label: 'Transactions', value: sidebarCounts.transactions, icon: CreditCard, color: 'emerald', section: 'transactions' },
-    { label: 'Wines Inventory', value: sidebarCounts.wines, icon: Wine, color: 'rose', section: 'wines' },
-    { label: 'Cigars Inventory', value: sidebarCounts.cigars, icon: Cigarette, color: 'amber', section: 'cigars' },
+    { label: 'Inventory', value: (sidebarCounts.emptyLegsTable || 0) + (sidebarCounts.wines || 0) + (sidebarCounts.cigars || 0), icon: Package, color: 'purple', section: 'inventory' },
   ];
 
   const colorClasses = {
@@ -733,18 +700,18 @@ const DashboardOverview = ({ sidebarCounts, onNavigate }) => {
   };
 
   return (
-    <div className="grid grid-cols-5 gap-4">
+    <div className="grid grid-cols-3 gap-4">
       {cards.map((card) => (
         <button
           key={card.label}
           onClick={() => onNavigate(card.section)}
-          className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:shadow-md transition-shadow"
+          className="bg-white rounded-xl border border-gray-200 p-5 text-left hover:shadow-md transition-shadow"
         >
-          <div className={`w-10 h-10 ${colorClasses[card.color]} rounded-lg flex items-center justify-center mb-3`}>
-            <card.icon size={18} />
+          <div className={`w-12 h-12 ${colorClasses[card.color]} rounded-lg flex items-center justify-center mb-3`}>
+            <card.icon size={20} />
           </div>
-          <p className="text-2xl font-semibold text-gray-900">{(card.value || 0).toLocaleString()}</p>
-          <p className="text-xs text-gray-500">{card.label}</p>
+          <p className="text-3xl font-semibold text-gray-900">{(card.value || 0).toLocaleString()}</p>
+          <p className="text-sm text-gray-500 mt-1">{card.label}</p>
         </button>
       ))}
     </div>
@@ -1050,6 +1017,14 @@ const BookingsSection = ({ bookings, refreshing, onRefresh, title }) => {
 const RequestsSection = ({ requests, refreshing, onRefresh, supabaseAdmin }) => {
   const [expandedRequest, setExpandedRequest] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(null);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [selectedRequestForQuote, setSelectedRequestForQuote] = useState(null);
+
+  // Open quote/invoice modal for a request
+  const openQuoteModal = (request, userData) => {
+    setSelectedRequestForQuote({ request, user: userData });
+    setShowQuoteModal(true);
+  };
 
   const formatRequestType = (type) => {
     if (!type) return 'General Request';
@@ -1419,8 +1394,11 @@ const RequestsSection = ({ requests, refreshing, onRefresh, supabaseAdmin }) => 
                           <FileText size={16} /> Download PDF
                         </a>
                       )}
-                      <button className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200">
-                        <CreditCard size={16} /> Create Invoice
+                      <button
+                        onClick={() => openQuoteModal(r, r.users)}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700"
+                      >
+                        <FileText size={16} /> Create Quote/Invoice
                       </button>
                     </div>
                   </div>
@@ -1429,6 +1407,18 @@ const RequestsSection = ({ requests, refreshing, onRefresh, supabaseAdmin }) => 
             );
           })}
         </div>
+      )}
+
+      {/* Quote/Invoice Modal */}
+      {showQuoteModal && selectedRequestForQuote && (
+        <QuoteInvoiceModal
+          request={selectedRequestForQuote.request}
+          user={selectedRequestForQuote.user}
+          onClose={() => {
+            setShowQuoteModal(false);
+            setSelectedRequestForQuote(null);
+          }}
+        />
       )}
     </>
   );
@@ -1747,6 +1737,14 @@ const EmptyLegsSection = ({ bookings, refreshing, onRefresh }) => {
 // ============================================
 const ChatRequestsSection = ({ requests, refreshing, onRefresh }) => {
   const [expandedRequest, setExpandedRequest] = useState(null);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [selectedRequestForQuote, setSelectedRequestForQuote] = useState(null);
+
+  // Open quote/invoice modal for a request
+  const openQuoteModal = (request, userData) => {
+    setSelectedRequestForQuote({ request, user: userData });
+    setShowQuoteModal(true);
+  };
 
   // Get service icon based on type
   const getServiceIcon = (type) => {
@@ -2102,11 +2100,11 @@ const ChatRequestsSection = ({ requests, refreshing, onRefresh }) => {
                       >
                         <Mail size={16} /> Reply via Email
                       </a>
-                      <button className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">
-                        <CreditCard size={16} /> Create Invoice
-                      </button>
-                      <button className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200">
-                        <FileText size={16} /> Generate PDF
+                      <button
+                        onClick={() => openQuoteModal(r, r.users)}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700"
+                      >
+                        <FileText size={16} /> Create Quote/Invoice
                       </button>
                     </div>
                   </div>
@@ -2115,6 +2113,18 @@ const ChatRequestsSection = ({ requests, refreshing, onRefresh }) => {
             );
           })}
         </div>
+      )}
+
+      {/* Quote/Invoice Modal */}
+      {showQuoteModal && selectedRequestForQuote && (
+        <QuoteInvoiceModal
+          request={selectedRequestForQuote.request}
+          user={selectedRequestForQuote.user}
+          onClose={() => {
+            setShowQuoteModal(false);
+            setSelectedRequestForQuote(null);
+          }}
+        />
       )}
     </>
   );
@@ -3667,6 +3677,495 @@ const CigarsSection = ({ cigars, refreshing, onRefresh }) => {
         <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
           <Cigarette className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500">No cigars found</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ============================================
+// UNIFIED CUSTOMER ACTIVITY SECTION
+// Combines: Bookings, Empty Legs, Requests, AI Cart Requests
+// ============================================
+const UnifiedActivitySection = ({
+  bookings,
+  emptyLegBookings,
+  requests,
+  chatRequests,
+  refreshing,
+  onRefreshBookings,
+  onRefreshEmptyLegs,
+  onRefreshRequests,
+  onRefreshChatRequests,
+  supabaseAdmin,
+  sidebarCounts
+}) => {
+  const [activeTab, setActiveTab] = useState('all');
+  const [expandedItem, setExpandedItem] = useState(null);
+
+  // Refresh all data
+  const handleRefreshAll = () => {
+    onRefreshBookings();
+    onRefreshEmptyLegs();
+    onRefreshRequests();
+    onRefreshChatRequests();
+  };
+
+  // Tab configuration
+  const tabs = [
+    { id: 'all', label: 'All Activity', count: (bookings?.length || 0) + (requests?.length || 0) + (chatRequests?.length || 0) },
+    { id: 'bookings', label: 'Paid Bookings', count: sidebarCounts?.bookings || bookings?.length || 0 },
+    { id: 'requests', label: 'Requests', count: sidebarCounts?.requests || requests?.length || 0 },
+    { id: 'cart', label: 'AI Cart', count: sidebarCounts?.chatRequests || chatRequests?.length || 0 },
+  ];
+
+  // Merge all data into unified timeline
+  const getAllActivity = () => {
+    const all = [];
+
+    // Add bookings
+    (bookings || []).forEach(b => {
+      all.push({
+        ...b,
+        _source: 'booking',
+        _date: b.created_at,
+        _status: b.payment_status || 'paid',
+        _type: b.service_type
+      });
+    });
+
+    // Add requests
+    (requests || []).forEach(r => {
+      all.push({
+        ...r,
+        _source: 'request',
+        _date: r.created_at,
+        _status: r.status || 'pending',
+        _type: r.service_type
+      });
+    });
+
+    // Add AI cart requests
+    (chatRequests || []).forEach(c => {
+      all.push({
+        ...c,
+        _source: 'cart',
+        _date: c.created_at,
+        _status: c.status || 'pending',
+        _type: c.service_type
+      });
+    });
+
+    // Sort by date (newest first)
+    return all.sort((a, b) => new Date(b._date) - new Date(a._date));
+  };
+
+  // Filter by active tab
+  const getFilteredActivity = () => {
+    const all = getAllActivity();
+    if (activeTab === 'all') return all;
+    if (activeTab === 'bookings') return all.filter(a => a._source === 'booking');
+    if (activeTab === 'requests') return all.filter(a => a._source === 'request');
+    if (activeTab === 'cart') return all.filter(a => a._source === 'cart');
+    return all;
+  };
+
+  const filteredActivity = getFilteredActivity();
+
+  // Get icon based on service type
+  const getIcon = (type) => {
+    const t = (type || '').toLowerCase();
+    if (t.includes('jet') || t.includes('flight') || t.includes('empty')) return Plane;
+    if (t.includes('helicopter') || t.includes('heli')) return Zap;
+    if (t.includes('car') || t.includes('ground') || t.includes('transfer')) return Car;
+    if (t.includes('yacht') || t.includes('boat')) return Ship;
+    return Package;
+  };
+
+  // Get status badge
+  const getStatusBadge = (item) => {
+    const status = item._status?.toLowerCase();
+    const source = item._source;
+
+    if (source === 'booking' && status === 'paid') {
+      return { label: 'PAID', color: 'bg-green-100 text-green-700' };
+    }
+    if (status === 'completed') {
+      return { label: 'COMPLETED', color: 'bg-green-100 text-green-700' };
+    }
+    if (status === 'in_progress') {
+      return { label: 'IN PROGRESS', color: 'bg-blue-100 text-blue-700' };
+    }
+    if (status === 'pending' || status === 'pending_crypto') {
+      return { label: 'PENDING', color: 'bg-yellow-100 text-yellow-700' };
+    }
+    if (status === 'cancelled' || status === 'failed') {
+      return { label: 'CANCELLED', color: 'bg-red-100 text-red-700' };
+    }
+    return { label: source.toUpperCase(), color: 'bg-gray-100 text-gray-700' };
+  };
+
+  // Get source badge
+  const getSourceBadge = (source) => {
+    if (source === 'booking') return { label: 'Booking', color: 'bg-emerald-50 text-emerald-600' };
+    if (source === 'request') return { label: 'Request', color: 'bg-blue-50 text-blue-600' };
+    if (source === 'cart') return { label: 'AI Cart', color: 'bg-purple-50 text-purple-600' };
+    return { label: 'Unknown', color: 'bg-gray-50 text-gray-600' };
+  };
+
+  // Get display info from item
+  const getDisplayInfo = (item) => {
+    const data = item.booking_data || item.data || item.details || item.cart_items || {};
+    return {
+      title: item.service_type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Service',
+      from: data.from || data.origin || item.origin || '-',
+      to: data.to || data.destination || item.destination || '-',
+      date: data.departure_date || data.date || item.departure_date,
+      passengers: data.passengers || item.passengers,
+      price: item.total_amount || item.total_price || data.price || item.budget,
+      email: item.users?.email || item.user_email || item.contact_email
+    };
+  };
+
+  return (
+    <div>
+      {/* Header with Tabs */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === tab.id
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+              }`}
+            >
+              {tab.label}
+              <span className={`ml-2 px-1.5 py-0.5 rounded text-xs ${
+                activeTab === tab.id ? 'bg-white/20' : 'bg-gray-100'
+              }`}>
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={handleRefreshAll}
+          disabled={refreshing}
+          className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
+        >
+          <RefreshCcw size={16} className={`text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
+
+      {/* Activity List */}
+      {refreshing ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+        </div>
+      ) : filteredActivity.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border">
+          <Package className="w-12 h-12 text-gray-300 mb-3" />
+          <p className="text-gray-500">No activity found</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredActivity.slice(0, 50).map((item, idx) => {
+            const isExpanded = expandedItem === (item.id || idx);
+            const Icon = getIcon(item._type);
+            const statusBadge = getStatusBadge(item);
+            const sourceBadge = getSourceBadge(item._source);
+            const info = getDisplayInfo(item);
+
+            return (
+              <div key={item.id || idx} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div
+                  className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-gray-50"
+                  onClick={() => setExpandedItem(isExpanded ? null : (item.id || idx))}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-gradient-to-br from-gray-700 to-gray-900 rounded-lg flex items-center justify-center">
+                      <Icon size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-gray-900">{info.title}</p>
+                        {info.from !== '-' && info.to !== '-' && (
+                          <span className="text-xs text-gray-500">{info.from} → {info.to}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs text-gray-500">{info.email || item.user_id?.slice(0, 8)}</span>
+                        {info.date && (
+                          <span className="text-xs text-gray-400">• {new Date(info.date).toLocaleDateString()}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {info.price && (
+                      <span className="text-sm font-semibold text-gray-900">
+                        ${Number(info.price).toLocaleString()}
+                      </span>
+                    )}
+                    <span className={`px-2 py-1 rounded-full text-[10px] font-medium ${sourceBadge.color}`}>
+                      {sourceBadge.label}
+                    </span>
+                    <span className={`px-2 py-1 rounded-full text-[10px] font-medium ${statusBadge.color}`}>
+                      {statusBadge.label}
+                    </span>
+                    <ChevronDown size={16} className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+
+                {/* Expanded Details */}
+                {isExpanded && (
+                  <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
+                    <div className="grid grid-cols-4 gap-4 text-xs">
+                      <div>
+                        <p className="text-gray-400 mb-1">User ID</p>
+                        <p className="text-gray-700 font-mono text-[10px]">{item.user_id || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 mb-1">Created</p>
+                        <p className="text-gray-700">{new Date(item._date).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 mb-1">Passengers</p>
+                        <p className="text-gray-700">{info.passengers || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 mb-1">Status</p>
+                        <p className="text-gray-700">{item._status || '-'}</p>
+                      </div>
+                    </div>
+                    {(item.notes || item.special_requests) && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-gray-400 text-xs mb-1">Notes</p>
+                        <p className="text-gray-700 text-sm">{item.notes || item.special_requests}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ============================================
+// UNIFIED INVENTORY SECTION
+// Combines: Empty Legs, Wines, Cigars
+// ============================================
+const UnifiedInventorySection = ({
+  emptyLegs,
+  wines,
+  cigars,
+  refreshing,
+  onRefreshEmptyLegs,
+  onRefreshWines,
+  onRefreshCigars,
+  sidebarCounts
+}) => {
+  const [activeTab, setActiveTab] = useState('empty-legs');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Refresh all data
+  const handleRefreshAll = () => {
+    onRefreshEmptyLegs();
+    onRefreshWines();
+    onRefreshCigars();
+  };
+
+  // Tab configuration
+  const tabs = [
+    { id: 'empty-legs', label: 'Empty Legs', icon: Plane, count: sidebarCounts?.emptyLegsTable || emptyLegs?.length || 0 },
+    { id: 'wines', label: 'Wines', icon: Wine, count: sidebarCounts?.wines || wines?.length || 0 },
+    { id: 'cigars', label: 'Cigars', icon: Cigarette, count: sidebarCounts?.cigars || cigars?.length || 0 },
+  ];
+
+  // Filter items by search
+  const filterBySearch = (items, fields) => {
+    if (!searchTerm) return items || [];
+    const term = searchTerm.toLowerCase();
+    return (items || []).filter(item =>
+      fields.some(field => item[field]?.toLowerCase().includes(term))
+    );
+  };
+
+  // Get current data based on active tab
+  const getCurrentData = () => {
+    if (activeTab === 'empty-legs') {
+      return filterBySearch(emptyLegs, ['from_city', 'to_city', 'aircraft_type', 'operator']);
+    }
+    if (activeTab === 'wines') {
+      return filterBySearch(wines, ['name', 'producer', 'region', 'country', 'type']);
+    }
+    if (activeTab === 'cigars') {
+      return filterBySearch(cigars, ['name', 'brand', 'origin', 'wrapper']);
+    }
+    return [];
+  };
+
+  const currentData = getCurrentData();
+
+  return (
+    <div>
+      {/* Header with Tabs */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          {tabs.map(tab => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => { setActiveTab(tab.id); setSearchTerm(''); }}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                  activeTab === tab.id
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                <Icon size={14} />
+                {tab.label}
+                <span className={`ml-1 px-1.5 py-0.5 rounded text-xs ${
+                  activeTab === tab.id ? 'bg-white/20' : 'bg-gray-100'
+                }`}>
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search..."
+              className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm w-48 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+            />
+          </div>
+          <button
+            onClick={handleRefreshAll}
+            disabled={refreshing}
+            className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
+          >
+            <RefreshCcw size={16} className={`text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      {refreshing ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+        </div>
+      ) : currentData.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border">
+          <Package className="w-12 h-12 text-gray-300 mb-3" />
+          <p className="text-gray-500">No items found</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 gap-4">
+          {currentData.slice(0, 30).map((item, idx) => {
+            // Empty Legs Card
+            if (activeTab === 'empty-legs') {
+              return (
+                <div key={item.id || idx} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <Plane size={18} className="text-blue-600" />
+                      </div>
+                      <span className={`px-2 py-1 rounded-full text-[10px] font-medium ${
+                        item.status === 'available' ? 'bg-green-100 text-green-700' :
+                        item.status === 'booked' ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {item.status?.toUpperCase() || 'AVAILABLE'}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium text-gray-900 mb-1">
+                      {item.from_city || item.origin} → {item.to_city || item.destination}
+                    </p>
+                    <p className="text-xs text-gray-500 mb-2">{item.aircraft_type || 'Aircraft'}</p>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>{item.departure_date ? new Date(item.departure_date).toLocaleDateString() : '-'}</span>
+                      <span className="font-semibold text-gray-900">
+                        ${Number(item.price_usd || item.price || 0).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            // Wines Card
+            if (activeTab === 'wines') {
+              return (
+                <div key={item.id || idx} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-10 h-10 bg-rose-100 rounded-lg flex items-center justify-center">
+                        <Wine size={18} className="text-rose-600" />
+                      </div>
+                      <span className="px-2 py-1 rounded-full text-[10px] font-medium bg-rose-50 text-rose-700">
+                        {item.type?.toUpperCase() || 'WINE'}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium text-gray-900 mb-1 line-clamp-2">{item.name}</p>
+                    <p className="text-xs text-gray-500 mb-2">{item.producer || item.region}</p>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>{item.vintage || item.year || '-'}</span>
+                      <span className="font-semibold text-gray-900">
+                        ${Number(item.price || 0).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            // Cigars Card
+            if (activeTab === 'cigars') {
+              return (
+                <div key={item.id || idx} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                        <Cigarette size={18} className="text-amber-600" />
+                      </div>
+                      {item.rating && (
+                        <span className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium bg-amber-50 text-amber-700">
+                          <Star size={10} className="fill-amber-500" />
+                          {item.rating}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm font-medium text-gray-900 mb-1 line-clamp-2">{item.name}</p>
+                    <p className="text-xs text-gray-500 mb-2">{item.brand || item.origin}</p>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>{item.size || item.wrapper || '-'}</span>
+                      <span className="font-semibold text-gray-900">
+                        ${Number(item.price || 0).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            return null;
+          })}
         </div>
       )}
     </div>

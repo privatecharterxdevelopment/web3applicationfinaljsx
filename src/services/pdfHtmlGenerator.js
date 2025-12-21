@@ -122,7 +122,7 @@ const getServiceTitle = (type, itemName) => {
   return titles[type?.toLowerCase()] || itemName || type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Service';
 };
 
-// Base CSS styles for PDF
+// Base CSS styles for PDF - scoped to pdf-container (not body)
 const getBaseStyles = () => `
   * {
     margin: 0;
@@ -135,7 +135,7 @@ const getBaseStyles = () => `
     margin: 15mm;
   }
 
-  body {
+  .pdf-container {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-size: 11px;
     line-height: 1.5;
@@ -143,13 +143,13 @@ const getBaseStyles = () => `
     background: #fff;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-  }
-
-  .pdf-container {
     max-width: 210mm;
     margin: 0 auto;
     padding: 20px;
-    background: #fff;
+  }
+
+  .pdf-container * {
+    font-family: inherit;
   }
 
   /* Header */
@@ -915,56 +915,592 @@ export function openHTMLForPrint(html, filename = 'document.pdf') {
  * DOES NOT open any new windows - silent download only
  */
 export async function downloadHTMLAsPDF(html, filename = 'document.pdf') {
-  // Create a temporary container for the HTML
+  // Extract styles from HTML and inject into document head
+  const styleMatch = html.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+  let styleElement = null;
+
+  if (styleMatch) {
+    styleElement = document.createElement('style');
+    styleElement.id = 'pdf-temp-styles';
+    styleElement.textContent = styleMatch[1];
+    document.head.appendChild(styleElement);
+  }
+
+  // Create a temporary container for the HTML content
+  // Position off-screen but VISIBLE (html2canvas needs visible elements)
   const element = document.createElement('div');
-  element.innerHTML = html;
-  element.style.position = 'absolute';
-  element.style.left = '-9999px';
-  element.style.top = '0';
-  element.style.width = '210mm'; // A4 width
+
+  // Extract just the body content if it's a full HTML document
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  element.innerHTML = bodyMatch ? bodyMatch[1] : html;
+
+  element.style.cssText = `
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    width: 794px;
+    min-height: 1123px;
+    background: white;
+    visibility: visible;
+  `;
   document.body.appendChild(element);
 
   try {
-    // Wait for any images to load
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Wait for DOM to render and images to load
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Force layout recalculation
+    void element.offsetHeight;
+
+    // Find the pdf-container or use element
+    const pdfContainer = element.querySelector('.pdf-container') || element;
+
+    // Debug log
+    console.log('PDF generation - container found:', !!element.querySelector('.pdf-container'), 'height:', pdfContainer.scrollHeight);
 
     // Generate and download PDF silently
     await html2pdf()
       .set({
-        margin: [10, 10, 10, 10],
+        margin: 10,
         filename: filename,
-        image: { type: 'jpeg', quality: 0.98 },
+        image: { type: 'jpeg', quality: 0.95 },
         html2canvas: {
           scale: 2,
           useCORS: true,
           allowTaint: true,
-          logging: false
+          logging: false,
+          backgroundColor: '#ffffff',
+          scrollX: 0,
+          scrollY: 0
         },
         jsPDF: {
           unit: 'mm',
           format: 'a4',
           orientation: 'portrait'
-        },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        }
       })
-      .from(element.firstChild)
+      .from(pdfContainer)
       .save();
 
-    console.log('PDF downloaded silently:', filename);
+    console.log('PDF downloaded successfully:', filename);
     return true;
   } catch (err) {
-    console.error('Error generating PDF (no fallback, staying on page):', err);
-    // DO NOT open new window - just log the error and continue
-    // User stays on the current page
+    console.error('Error generating PDF:', err);
+    // Fallback: Open print dialog in a new window
+    try {
+      const printWindow = window.open('', '_blank', 'width=800,height=1000');
+      if (printWindow) {
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.onload = () => {
+          setTimeout(() => printWindow.print(), 300);
+        };
+      }
+    } catch (fallbackErr) {
+      console.error('Fallback also failed:', fallbackErr);
+    }
     return false;
   } finally {
-    document.body.removeChild(element);
+    // Clean up: remove styles and element after a small delay
+    setTimeout(() => {
+      if (styleElement && document.head.contains(styleElement)) {
+        document.head.removeChild(styleElement);
+      }
+      if (document.body.contains(element)) {
+        document.body.removeChild(element);
+      }
+    }, 500);
   }
+}
+
+/**
+ * Generate Quote/Invoice HTML for admin-created documents
+ * Professional layout with services, pricing, and terms
+ */
+export function generateQuoteInvoiceHTML(quoteData) {
+  const {
+    type = 'quote',
+    number,
+    date,
+    validUntil,
+    paymentTerms,
+    client = {},
+    services = [],
+    subtotal = 0,
+    discount,
+    total = 0,
+    notes,
+    requestId
+  } = quoteData;
+
+  const isQuote = type === 'quote';
+  const formattedDate = new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric', month: 'long', day: 'numeric'
+  });
+  const formattedValidUntil = validUntil ? new Date(validUntil).toLocaleDateString('en-US', {
+    year: 'numeric', month: 'long', day: 'numeric'
+  }) : null;
+
+  // Service type labels
+  const serviceLabels = {
+    private_jet: 'Private Jet Charter',
+    helicopter: 'Helicopter Charter',
+    empty_leg: 'Empty Leg Flight',
+    ground_transport: 'Ground Transport',
+    yacht: 'Yacht Charter',
+    concierge: 'Concierge Service',
+    wine: 'Wine & Spirits',
+    custom: 'Custom Service'
+  };
+
+  // Generate service rows
+  const serviceRows = services.map((service, idx) => {
+    const routeInfo = service.from && service.to
+      ? `<div class="service-route">${service.from} → ${service.to}</div>`
+      : '';
+    const dateInfo = service.date
+      ? `<div class="service-date">${new Date(service.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>`
+      : '';
+    const passengersInfo = service.passengers
+      ? `<div class="service-pax">${service.passengers} passenger${service.passengers > 1 ? 's' : ''}</div>`
+      : '';
+    const detailsInfo = service.details
+      ? `<div class="service-details">${service.details}</div>`
+      : '';
+
+    return `
+      <tr class="service-row">
+        <td class="service-num">${idx + 1}</td>
+        <td class="service-desc">
+          <div class="service-type">${serviceLabels[service.type] || service.type}</div>
+          <div class="service-name">${service.description || ''}</div>
+          ${routeInfo}
+          ${dateInfo}
+          ${passengersInfo}
+          ${detailsInfo}
+        </td>
+        <td class="service-qty">${service.quantity} ${service.unit}</td>
+        <td class="service-price">$${service.unitPrice.toLocaleString()}</td>
+        <td class="service-total">$${service.total.toLocaleString()}</td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${isQuote ? 'Quote' : 'Invoice'} ${number}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    @page { size: A4; margin: 15mm; }
+
+    .pdf-container {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 11px;
+      line-height: 1.5;
+      color: #1a1a1a;
+      background: #fff;
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 30px;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding-bottom: 25px;
+      border-bottom: 3px solid #000;
+      margin-bottom: 30px;
+    }
+
+    .logo-section { }
+
+    .logo {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      color: #000;
+    }
+
+    .logo-sub {
+      font-size: 10px;
+      color: #666;
+      margin-top: 2px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .doc-info {
+      text-align: right;
+    }
+
+    .doc-type {
+      font-size: 32px;
+      font-weight: 700;
+      color: ${isQuote ? '#2563eb' : '#059669'};
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .doc-number {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    .doc-date {
+      font-size: 11px;
+      color: #333;
+      margin-top: 3px;
+    }
+
+    /* Client Section */
+    .client-section {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+    }
+
+    .client-info {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      flex: 1;
+      max-width: 300px;
+    }
+
+    .client-label {
+      font-size: 10px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .client-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #000;
+      margin-bottom: 5px;
+    }
+
+    .client-email, .client-phone {
+      font-size: 11px;
+      color: #555;
+    }
+
+    .validity-info {
+      text-align: right;
+      padding: 20px;
+    }
+
+    .validity-label {
+      font-size: 10px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .validity-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: ${isQuote ? '#dc2626' : '#059669'};
+      margin-top: 5px;
+    }
+
+    /* Services Table */
+    .services-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+    }
+
+    .services-table th {
+      background: #000;
+      color: #fff;
+      padding: 12px 15px;
+      text-align: left;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .services-table th:first-child {
+      border-radius: 6px 0 0 0;
+      width: 40px;
+      text-align: center;
+    }
+
+    .services-table th:last-child {
+      border-radius: 0 6px 0 0;
+      text-align: right;
+    }
+
+    .services-table th:nth-child(3),
+    .services-table th:nth-child(4) {
+      text-align: center;
+      width: 80px;
+    }
+
+    .service-row td {
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+      vertical-align: top;
+    }
+
+    .service-num {
+      text-align: center;
+      color: #999;
+      font-weight: 500;
+    }
+
+    .service-type {
+      font-size: 9px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 3px;
+    }
+
+    .service-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #000;
+      margin-bottom: 5px;
+    }
+
+    .service-route {
+      font-size: 11px;
+      color: #2563eb;
+      font-weight: 500;
+      margin-bottom: 3px;
+    }
+
+    .service-date, .service-pax {
+      font-size: 10px;
+      color: #666;
+      display: inline-block;
+      margin-right: 10px;
+    }
+
+    .service-details {
+      font-size: 10px;
+      color: #888;
+      margin-top: 5px;
+      font-style: italic;
+    }
+
+    .service-qty, .service-price {
+      text-align: center;
+      color: #555;
+    }
+
+    .service-total {
+      text-align: right;
+      font-weight: 600;
+      color: #000;
+    }
+
+    /* Totals */
+    .totals-section {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 30px;
+    }
+
+    .totals-box {
+      width: 280px;
+    }
+
+    .totals-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .totals-row.discount {
+      color: #dc2626;
+    }
+
+    .totals-row.total {
+      border-bottom: none;
+      border-top: 2px solid #000;
+      padding-top: 12px;
+      margin-top: 5px;
+    }
+
+    .totals-label {
+      color: #666;
+    }
+
+    .totals-value {
+      font-weight: 500;
+    }
+
+    .totals-row.total .totals-label,
+    .totals-row.total .totals-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: #000;
+    }
+
+    /* Notes */
+    .notes-section {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+    }
+
+    .notes-label {
+      font-size: 10px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .notes-content {
+      font-size: 11px;
+      color: #555;
+      white-space: pre-line;
+    }
+
+    /* Footer */
+    .footer {
+      border-top: 1px solid #ddd;
+      padding-top: 20px;
+      text-align: center;
+    }
+
+    .footer-contact {
+      font-size: 10px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    .footer-legal {
+      font-size: 9px;
+      color: #999;
+    }
+
+    .ref-id {
+      font-size: 9px;
+      color: #ccc;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="pdf-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo-section">
+        <div class="logo">PrivateCharterX</div>
+        <div class="logo-sub">Luxury Travel Concierge</div>
+      </div>
+      <div class="doc-info">
+        <div class="doc-type">${isQuote ? 'Quote' : 'Invoice'}</div>
+        <div class="doc-number">${number}</div>
+        <div class="doc-date">${formattedDate}</div>
+      </div>
+    </div>
+
+    <!-- Client & Validity -->
+    <div class="client-section">
+      <div class="client-info">
+        <div class="client-label">Prepared For</div>
+        <div class="client-name">${client.name || 'Client'}</div>
+        ${client.email ? `<div class="client-email">${client.email}</div>` : ''}
+        ${client.phone ? `<div class="client-phone">${client.phone}</div>` : ''}
+      </div>
+      <div class="validity-info">
+        ${isQuote && formattedValidUntil ? `
+          <div class="validity-label">Valid Until</div>
+          <div class="validity-value">${formattedValidUntil}</div>
+        ` : ''}
+        ${!isQuote && paymentTerms ? `
+          <div class="validity-label">Payment Terms</div>
+          <div class="validity-value">${paymentTerms}</div>
+        ` : ''}
+      </div>
+    </div>
+
+    <!-- Services Table -->
+    <table class="services-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Service Description</th>
+          <th>Qty</th>
+          <th>Unit Price</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${serviceRows}
+      </tbody>
+    </table>
+
+    <!-- Totals -->
+    <div class="totals-section">
+      <div class="totals-box">
+        <div class="totals-row">
+          <span class="totals-label">Subtotal</span>
+          <span class="totals-value">$${subtotal.toLocaleString()}</span>
+        </div>
+        ${discount && discount.amount > 0 ? `
+          <div class="totals-row discount">
+            <span class="totals-label">Discount ${discount.type === 'percent' ? `(${discount.value}%)` : ''}</span>
+            <span class="totals-value">-$${discount.amount.toLocaleString()}</span>
+          </div>
+        ` : ''}
+        <div class="totals-row total">
+          <span class="totals-label">Total</span>
+          <span class="totals-value">$${total.toLocaleString()} USD</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    ${notes ? `
+      <div class="notes-section">
+        <div class="notes-label">${isQuote ? 'Terms & Conditions' : 'Notes'}</div>
+        <div class="notes-content">${notes}</div>
+      </div>
+    ` : ''}
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-contact">
+        PrivateCharterX | contact@privatecharterx.com | +41 22 000 0000
+      </div>
+      <div class="footer-legal">
+        ${isQuote
+          ? 'This quote is valid for 7 days from the date of issue. Prices are subject to availability and may change.'
+          : 'Payment is due according to the terms specified above. Thank you for choosing PrivateCharterX.'
+        }
+      </div>
+      ${requestId ? `<div class="ref-id">Ref: ${requestId}</div>` : ''}
+    </div>
+  </div>
+</body>
+</html>
+  `;
 }
 
 export default {
   generateRequestConfirmationHTML,
   generateBookingConfirmationHTML,
+  generateQuoteInvoiceHTML,
   openHTMLForPrint,
   downloadHTMLAsPDF,
   getBaseStyles
