@@ -1989,10 +1989,15 @@ const MyRequestsView = ({ user }) => {
             {/* Detailed Items List */}
             <div className="space-y-3 mb-4">
               {items.map((item, idx) => {
-                const itemName = item.name || item.title || item.aircraft_model || item.model || 'Service';
+                const itemName = item.name || item.rawItemName || item.title || item.aircraft_model || item.model || 'Service';
                 const itemType = item.type?.replace(/_/g, ' ');
-                const route = item.route || (item.from && item.to ? `${item.from} → ${item.to}` : null) || (item.origin && item.destination ? `${item.origin} → ${item.destination}` : null);
-                const itemPrice = item.estimated_price || item.price || item.estimatedPrice || item.totalWithFee || 0;
+                // Extract route from various possible field names
+                const fromLocation = item.from || item.from_city || item.origin || item.departure_airport || item.pickup || item.pickupLocation;
+                const toLocation = item.to || item.to_city || item.destination || item.arrival_airport || item.dropoff || item.dropoffLocation;
+                const route = item.route ||
+                  (fromLocation && toLocation ? `${fromLocation} → ${toLocation}` : null) ||
+                  item.flight_route;
+                const itemPrice = item.estimated_price || item.price || item.estimatedPrice || item.totalWithFee || item.price_usd || 0;
                 const itemImage = item.image || item.primaryImage || item.image_url;
 
                 return (
@@ -2034,21 +2039,27 @@ const MyRequestsView = ({ user }) => {
                         {/* Details Grid */}
                         <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[11px]">
                           {/* Date */}
-                          {(item.date || item.departure_date) && (
+                          {(item.date || item.departure_date || item.pickupDate) && (
                             <span className="text-gray-600">
-                              <span className="text-gray-400">Date:</span> {item.date || item.departure_date}
+                              <span className="text-gray-400">Date:</span> {item.date || item.departure_date || item.pickupDate}
                             </span>
                           )}
                           {/* Time */}
-                          {(item.time || item.departure_time) && (
+                          {(item.time || item.departure_time || item.pickupTime) && (
                             <span className="text-gray-600">
-                              <span className="text-gray-400">Time:</span> {item.time || item.departure_time}
+                              <span className="text-gray-400">Time:</span> {item.time || item.departure_time || item.pickupTime}
                             </span>
                           )}
                           {/* Passengers */}
-                          {(item.passengers || item.pax) && (
+                          {(item.passengers || item.pax || item.max_passengers || item.passenger_capacity) && (
                             <span className="text-gray-600">
-                              <span className="text-gray-400">Pax:</span> {item.passengers || item.pax}
+                              <span className="text-gray-400">Pax:</span> {item.passengers || item.pax || item.max_passengers || item.passenger_capacity}
+                            </span>
+                          )}
+                          {/* Aircraft/Model */}
+                          {(item.aircraft_type || item.aircraft_model || item.yacht_name) && !(itemName.includes(item.aircraft_type || item.aircraft_model || item.yacht_name)) && (
+                            <span className="text-gray-600">
+                              <span className="text-gray-400">Model:</span> {item.aircraft_type || item.aircraft_model || item.yacht_name}
                             </span>
                           )}
                           {/* Duration/Flight Time */}
@@ -2058,9 +2069,9 @@ const MyRequestsView = ({ user }) => {
                             </span>
                           )}
                           {/* Distance */}
-                          {(item.distance_km || item.distanceKm) && (
+                          {(item.distance_km || item.distanceKm || item.distance) && (
                             <span className="text-gray-600">
-                              <span className="text-gray-400">Distance:</span> {item.distance_km || item.distanceKm} km
+                              <span className="text-gray-400">Distance:</span> {item.distance_km || item.distanceKm || item.distance} {typeof (item.distance_km || item.distanceKm || item.distance) === 'number' ? 'km' : ''}
                             </span>
                           )}
                           {/* Category */}
@@ -2073,6 +2084,18 @@ const MyRequestsView = ({ user }) => {
                           {item.rental_days && (
                             <span className="text-gray-600">
                               <span className="text-gray-400">Days:</span> {item.rental_days}
+                            </span>
+                          )}
+                          {/* Capacity for yachts/cars */}
+                          {item.capacity && !item.passengers && !item.pax && (
+                            <span className="text-gray-600">
+                              <span className="text-gray-400">Capacity:</span> {item.capacity}
+                            </span>
+                          )}
+                          {/* Budget Range for yachts */}
+                          {item.budgetRange && (
+                            <span className="text-gray-600">
+                              <span className="text-gray-400">Budget:</span> {item.budgetRange}
                             </span>
                           )}
                           {/* Location */}

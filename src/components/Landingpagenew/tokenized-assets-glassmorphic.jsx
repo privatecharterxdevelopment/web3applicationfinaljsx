@@ -5965,25 +5965,48 @@ const TokenizedAssetsGlassmorphic = () => {
                                 {request.data?.items && request.data.items.length > 0 && (
                                   <div className="space-y-1 mb-4">
                                     <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2">Items</p>
-                                    {request.data.items.slice(0, 4).map((item, idx) => (
-                                      <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-sm">
-                                            {item.type === 'empty_legs' ? '🛩️' :
-                                             item.type === 'jets' || item.type === 'aircraft' ? '✈️' :
-                                             item.type === 'helicopters' ? '🚁' :
-                                             item.type === 'luxury_cars' || item.type === 'cars' ? '🚗' :
-                                             item.type === 'yachts' ? '🛥️' :
-                                             item.type === 'transfers' ? '🚐' :
-                                             item.isCustomRequest ? '🍷' : '📦'}
-                                          </span>
-                                          <span className="text-sm text-gray-700">{item.name || item.model || 'Service'}</span>
+                                    {request.data.items.slice(0, 4).map((item, idx) => {
+                                      // Extract route info from various field names
+                                      const fromLocation = item.from || item.from_city || item.origin || item.departure_airport || item.pickup;
+                                      const toLocation = item.to || item.to_city || item.destination || item.arrival_airport || item.dropoff;
+                                      const route = item.route || (fromLocation && toLocation ? `${fromLocation} → ${toLocation}` : null) || item.flight_route;
+                                      const itemDate = item.date || item.departure_date || item.pickupDate;
+                                      const passengers = item.passengers || item.pax || item.max_passengers;
+
+                                      return (
+                                        <div key={idx} className="py-2.5 border-b border-gray-50 last:border-0">
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                              <span className="text-sm">
+                                                {item.type === 'empty_legs' ? '🛩️' :
+                                                 item.type === 'jets' || item.type === 'aircraft' ? '✈️' :
+                                                 item.type === 'helicopters' ? '🚁' :
+                                                 item.type === 'luxury_cars' || item.type === 'cars' ? '🚗' :
+                                                 item.type === 'yachts' ? '🛥️' :
+                                                 item.type === 'transfers' ? '🚐' :
+                                                 item.isCustomRequest ? '🍷' : '📦'}
+                                              </span>
+                                              <span className="text-sm font-medium text-gray-800">{item.name || item.rawItemName || item.model || item.aircraft_model || 'Service'}</span>
+                                            </div>
+                                            <span className="text-sm font-medium text-gray-900">
+                                              {item.isEstimate && '~'}${(item.price || item.estimated_price || item.estimatedPrice || 0).toLocaleString()}
+                                            </span>
+                                          </div>
+                                          {/* Route and details */}
+                                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 ml-7 mt-1">
+                                            {route && (
+                                              <span className="text-xs text-gray-600">{route}</span>
+                                            )}
+                                            {itemDate && (
+                                              <span className="text-xs text-gray-400">{itemDate}</span>
+                                            )}
+                                            {passengers && (
+                                              <span className="text-xs text-gray-400">{passengers} pax</span>
+                                            )}
+                                          </div>
                                         </div>
-                                        <span className="text-sm font-medium text-gray-900">
-                                          {item.isEstimate && '~'}${(item.price || 0).toLocaleString()}
-                                        </span>
-                                      </div>
-                                    ))}
+                                      );
+                                    })}
                                     {request.data.items.length > 4 && (
                                       <p className="text-xs text-gray-400 pt-2">+{request.data.items.length - 4} more items</p>
                                     )}

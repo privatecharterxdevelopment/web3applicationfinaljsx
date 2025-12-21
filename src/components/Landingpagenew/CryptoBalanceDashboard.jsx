@@ -1262,7 +1262,7 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                       })}
                       {userRequests.length > 5 && (
                         <button
-                          onClick={() => setActiveCategory && setActiveCategory('requests')}
+                          onClick={() => setActiveCategory && setActiveCategory('ai-requests')}
                           className="w-full py-2 text-xs text-gray-400 hover:text-gray-600 transition-colors text-center"
                         >
                           See all {userRequests.length} requests →
@@ -1270,7 +1270,7 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                       )}
                       {userRequests.length <= 5 && setActiveCategory && (
                         <button
-                          onClick={() => setActiveCategory('requests')}
+                          onClick={() => setActiveCategory('ai-requests')}
                           className="w-full py-2 text-xs text-gray-400 hover:text-gray-600 transition-colors text-center"
                         >
                           View all requests →
