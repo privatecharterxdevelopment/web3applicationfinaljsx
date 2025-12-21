@@ -140,7 +140,19 @@ const MyActivityView = ({ user, initialFilter, onBack }) => {
       // Normalize chat_requests (AI cart submissions)
       const chatRequests = (chatRequestsRes.data || []).map(cr => {
         const expired = isPaymentExpired(cr);
-        const cartItems = cr.cart_items || [];
+
+        // Parse data field if it's a string
+        let parsedData = cr.data;
+        if (typeof parsedData === 'string') {
+          try { parsedData = JSON.parse(parsedData); } catch (e) { parsedData = {}; }
+        }
+        parsedData = parsedData || {};
+
+        // Extract cart items from multiple possible locations
+        const cartItems = cr.cart_items?.length > 0
+          ? cr.cart_items
+          : (parsedData.items || parsedData.cart_items || parsedData.services || []);
+
         const payableItems = cartItems.filter(ci =>
           ci.type?.includes('empty_leg') || ci.type?.includes('wine') ||
           ci.type?.includes('extra') || ci.type?.includes('champagne')
@@ -166,9 +178,10 @@ const MyActivityView = ({ user, initialFilter, onBack }) => {
           isExpired: expired,
           payableItems,
           activityType,
+          cart_items: cartItems, // Store extracted items back for AIRequestCard to use
           displayTitle: getChatRequestTitle(cr, cartItems), // Pass ALL items, not just payable
           displayRoute: getChatRequestRoute(cr, cartItems),
-          displayPrice: cr.cart_total || cartItems.reduce((sum, i) => sum + (i.price || i.totalWithFee || 0), 0),
+          displayPrice: cr.cart_total || parsedData.cart_total || cartItems.reduce((sum, i) => sum + (i.price || i.totalWithFee || 0), 0),
           displayDate: cr.created_at,
           activityStatus: getChatRequestStatus(cr, expired, payable)
         };
