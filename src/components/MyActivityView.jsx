@@ -1271,8 +1271,22 @@ const AIRequestCard = ({
   data = data || {};
   const items = data.items || data.cart_items || activity.cart_items || [];
 
-  // Helper to get item label
+  // Helper to get item label - PRIORITIZE exact product name over generic type
   const getItemLabel = (item) => {
+    // First priority: Exact product/service name
+    const exactName = item.name || item.title || item.product_name || item.serviceName ||
+                      item.aircraft_type || item.vessel_name || item.wine_name ||
+                      item.productName || item.itemName;
+    if (exactName && exactName.length > 0) {
+      return exactName;
+    }
+
+    // Second priority: Description if meaningful
+    if (item.description && item.description.length > 3 && item.description.length < 100) {
+      return item.description;
+    }
+
+    // Last resort: Generic type label
     const type = (item.type || '').toLowerCase();
     let label = serviceTypeLabels[type];
     if (!label) {
@@ -1280,7 +1294,7 @@ const AIRequestCard = ({
         if (type.includes(key)) { label = val; break; }
       }
     }
-    return label || item.name || item.title || item.aircraft_type || 'Service';
+    return label || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Service';
   };
 
   // Helper to check if item is payable
@@ -1308,6 +1322,22 @@ const AIRequestCard = ({
     const from = item.from || item.from_city || item.origin || item.departure_airport;
     const to = item.to || item.to_city || item.destination || item.arrival_airport;
     if (from && to) return `${from} → ${to}`;
+    return null;
+  };
+
+  // Helper to get short type label for category indicator
+  const getTypeLabel = (item) => {
+    const type = (item.type || '').toLowerCase();
+    if (type.includes('jet')) return 'Jet';
+    if (type.includes('heli')) return 'Helicopter';
+    if (type.includes('empty')) return 'Empty Leg';
+    if (type.includes('yacht')) return 'Yacht';
+    if (type.includes('ground') || type.includes('taxi') || type.includes('transfer')) return 'Transport';
+    if (type.includes('wine')) return 'Wine';
+    if (type.includes('champagne')) return 'Champagne';
+    if (type.includes('caviar')) return 'Caviar';
+    if (type.includes('cigar')) return 'Cigars';
+    if (type.includes('delicatesse') || type.includes('extra')) return 'Delicatessen';
     return null;
   };
 
@@ -1350,6 +1380,8 @@ const AIRequestCard = ({
             const itemRoute = getItemRoute(item);
             const payable = isPayableItem(item);
             const itemPrice = item.price || item.totalWithFee || item.basePrice || 0;
+            const typeLabel = getTypeLabel(item);
+            const itemName = getItemLabel(item);
 
             return (
               <div
@@ -1365,12 +1397,20 @@ const AIRequestCard = ({
                     <ItemIcon size={14} className={payable ? 'text-amber-600' : 'text-gray-500'} />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{getItemLabel(item)}</p>
+                    {/* Show type label above name if we have an exact product name */}
+                    {typeLabel && itemName !== typeLabel && (
+                      <p className="text-[10px] text-gray-400 uppercase tracking-wide">{typeLabel}</p>
+                    )}
+                    <p className="text-sm font-medium text-gray-900">{itemName}</p>
                     {itemRoute && (
                       <p className="text-xs text-gray-500">{itemRoute}</p>
                     )}
                     {item.departure_date && (
                       <p className="text-xs text-gray-400">{item.departure_date}</p>
+                    )}
+                    {/* Show quantity if more than 1 */}
+                    {item.quantity && item.quantity > 1 && (
+                      <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
                     )}
                   </div>
                 </div>
