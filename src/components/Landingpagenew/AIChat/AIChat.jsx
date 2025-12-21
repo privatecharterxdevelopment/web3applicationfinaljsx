@@ -1564,10 +1564,17 @@ const AIChat = ({
     setShowJourneyBuilder(true);
   }, []);
 
-  // Yacht Journey Builder handler
+  // Yacht Journey Builder handler - DISABLED for launch, redirect to email
   const handleBuildYachtJourney = useCallback((yacht) => {
-    setJourneyBuilderYacht(yacht);
-    setShowYachtJourneyBuilder(true);
+    // Show email redirect toast instead of opening YachtJourneyBuilder
+    setToast({
+      message: 'For yacht charters, please contact our charter team: bookings@privatecharterx.com',
+      type: 'info',
+      duration: 8000
+    });
+    // Do NOT open YachtJourneyBuilder - disabled for launch
+    // setJourneyBuilderYacht(yacht);
+    // setShowYachtJourneyBuilder(true);
   }, []);
 
   const handleYachtJourneyAddToCart = useCallback((item) => {
@@ -9454,7 +9461,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
         />
       )}
 
-      {/* Yacht Journey Builder Modal */}
+      {/* Yacht Journey Builder Modal - DISABLED for launch, using email redirect instead
       {showYachtJourneyBuilder && journeyBuilderYacht && (
         <YachtJourneyBuilder
           yacht={journeyBuilderYacht}
@@ -9465,6 +9472,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
           }}
         />
       )}
+      */}
 
       {/* Airport Transfer Offer Modal - after journey is added */}
       {showTransferOffer && lastAddedJourney && (
