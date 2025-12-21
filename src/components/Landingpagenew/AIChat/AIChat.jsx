@@ -4590,7 +4590,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       { id: 'restaurants', label: 'Restaurants', prompt: 'Find me a luxury restaurant' },
       { id: 'transfer', label: 'Airport Transfer', prompt: 'I need an airport transfer' },
       { id: 'emptylegs', label: 'Empty Legs', prompt: 'I want to find empty leg flights', isRouteQuery: true },
-      { id: 'yachts', label: 'Yachts', prompt: 'I want to charter a yacht' },
+      { id: 'medevac', label: 'Medevac', prompt: 'I need medical evacuation services', requiresSubscription: ['elite', 'traveller', 'professional'] },
     ];
 
     // Get time-based greeting
@@ -4658,26 +4658,56 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
                 {/* Quick Suggestion Bubbles - Small, blurred, monochromatic */}
                 <div className="flex flex-wrap gap-2 mt-2 px-2">
-                  {quickSuggestions.map((suggestion, index) => (
-                    <button
-                      key={suggestion.id}
-                      onClick={() => {
-                        // Let handleSendMessage create the chat (single code path prevents duplicates)
-                        setActiveChat('new');
-                        handleSendMessage(suggestion.prompt);
-                      }}
-                      className="group"
-                      style={{
-                        animation: `fadeIn 0.3s ease-out ${0.1 + index * 0.05}s both`
-                      }}
-                    >
-                      <div className="px-3 py-1.5 bg-white/40 backdrop-blur-sm border border-gray-200/60 rounded-full hover:bg-white/70 hover:border-gray-300 transition-all duration-200 hover:shadow-sm">
-                        <span className="text-xs font-medium text-gray-500 group-hover:text-gray-700 transition-colors">
-                          {suggestion.label}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
+                  {quickSuggestions.map((suggestion, index) => {
+                    // Check if suggestion requires subscription
+                    const userTier = userProfile?.subscription_tier?.toLowerCase() || 'explorer';
+                    const hasRequiredSubscription = !suggestion.requiresSubscription ||
+                      suggestion.requiresSubscription.some(tier => userTier.includes(tier.toLowerCase()));
+                    const isLocked = suggestion.requiresSubscription && !hasRequiredSubscription;
+
+                    return (
+                      <button
+                        key={suggestion.id}
+                        onClick={() => {
+                          if (isLocked) {
+                            // Show upgrade toast for locked features
+                            setToast({
+                              message: `${suggestion.label} requires Elite or Professional subscription. Upgrade to access this service.`,
+                              type: 'warning',
+                              duration: 5000
+                            });
+                            return;
+                          }
+                          // Let handleSendMessage create the chat (single code path prevents duplicates)
+                          setActiveChat('new');
+                          handleSendMessage(suggestion.prompt);
+                        }}
+                        className="group"
+                        style={{
+                          animation: `fadeIn 0.3s ease-out ${0.1 + index * 0.05}s both`
+                        }}
+                      >
+                        <div className={`px-3 py-1.5 backdrop-blur-sm border rounded-full transition-all duration-200 hover:shadow-sm flex items-center gap-1.5 ${
+                          isLocked
+                            ? 'bg-gray-100/60 border-gray-200/40 cursor-not-allowed'
+                            : 'bg-white/40 border-gray-200/60 hover:bg-white/70 hover:border-gray-300'
+                        }`}>
+                          <span className={`text-xs font-medium transition-colors ${
+                            isLocked
+                              ? 'text-gray-400'
+                              : 'text-gray-500 group-hover:text-gray-700'
+                          }`}>
+                            {suggestion.label}
+                          </span>
+                          {isLocked && (
+                            <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
