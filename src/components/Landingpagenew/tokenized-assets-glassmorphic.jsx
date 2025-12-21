@@ -5966,44 +5966,61 @@ const TokenizedAssetsGlassmorphic = () => {
                                   <div className="space-y-1 mb-4">
                                     <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2">Items</p>
                                     {request.data.items.slice(0, 4).map((item, idx) => {
-                                      // Extract route info from various field names
-                                      const fromLocation = item.from || item.from_city || item.origin || item.departure_airport || item.pickup;
-                                      const toLocation = item.to || item.to_city || item.destination || item.arrival_airport || item.dropoff;
-                                      const route = item.route || (fromLocation && toLocation ? `${fromLocation} → ${toLocation}` : null) || item.flight_route;
-                                      const itemDate = item.date || item.departure_date || item.pickupDate;
-                                      const passengers = item.passengers || item.pax || item.max_passengers;
+                                      // Extract route info from ALL possible field names
+                                      const fromLocation = item.from || item.from_city || item.origin || item.departure_airport ||
+                                        item.pickup || item.pickup_location || item.pickupLocation ||
+                                        (item.legs && item.legs[0]?.from) || (item.legs && item.legs[0]?.dock);
+                                      const toLocation = item.to || item.to_city || item.destination || item.arrival_airport ||
+                                        item.dropoff || item.dropoff_location || item.dropoffLocation ||
+                                        (item.legs && item.legs[item.legs.length - 1]?.location);
+                                      // Check route field directly first, then build from components
+                                      const route = item.route || item.flight_route ||
+                                        (fromLocation && toLocation ? `${fromLocation} → ${toLocation}` : null) ||
+                                        // For multi-leg journeys, show the route from legs
+                                        (item.legs?.length > 1 ? item.legs.filter(l => l.location || l.dock).map(l => l.location || l.dock).join(' → ') : null);
+                                      const itemDate = item.date || item.departure_date || item.pickupDate || item.departureDate;
+                                      const passengers = item.passengers || item.pax || item.max_passengers || item.guests;
+                                      const itemType = item.type?.replace(/_/g, ' ');
 
                                       return (
                                         <div key={idx} className="py-2.5 border-b border-gray-50 last:border-0">
                                           <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                               <span className="text-sm">
-                                                {item.type === 'empty_legs' ? '🛩️' :
-                                                 item.type === 'jets' || item.type === 'aircraft' ? '✈️' :
-                                                 item.type === 'helicopters' ? '🚁' :
-                                                 item.type === 'luxury_cars' || item.type === 'cars' ? '🚗' :
-                                                 item.type === 'yachts' ? '🛥️' :
-                                                 item.type === 'transfers' ? '🚐' :
-                                                 item.isCustomRequest ? '🍷' : '📦'}
+                                                {item.type === 'empty_legs' || item.type === 'emptyleg' ? '🛩️' :
+                                                 item.type === 'jets' || item.type === 'aircraft' || item.type?.includes('jet') ? '✈️' :
+                                                 item.type === 'helicopters' || item.type?.includes('heli') ? '🚁' :
+                                                 item.type === 'luxury_cars' || item.type === 'cars' || item.type === 'ground_transport' ? '🚗' :
+                                                 item.type === 'yachts' || item.type === 'yacht_charter' ? '🛥️' :
+                                                 item.type === 'transfers' || item.type === 'taxi_concierge' ? '🚐' :
+                                                 item.isCustomRequest || item.type === 'custom_extra' ? '🍷' : '📦'}
                                               </span>
-                                              <span className="text-sm font-medium text-gray-800">{item.name || item.rawItemName || item.model || item.aircraft_model || 'Service'}</span>
+                                              <div>
+                                                <span className="text-sm font-medium text-gray-800">{item.name || item.rawItemName || item.model || item.aircraft_model || item.title || 'Service'}</span>
+                                                {itemType && <span className="text-[10px] text-gray-400 ml-2 capitalize">{itemType}</span>}
+                                              </div>
                                             </div>
                                             <span className="text-sm font-medium text-gray-900">
-                                              {item.isEstimate && '~'}${(item.price || item.estimated_price || item.estimatedPrice || 0).toLocaleString()}
+                                              {item.isEstimate && '~'}${(item.price || item.estimated_price || item.estimatedPrice || item.totalWithFee || 0).toLocaleString()}
                                             </span>
                                           </div>
                                           {/* Route and details */}
-                                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 ml-7 mt-1">
-                                            {route && (
-                                              <span className="text-xs text-gray-600">{route}</span>
-                                            )}
-                                            {itemDate && (
-                                              <span className="text-xs text-gray-400">{itemDate}</span>
-                                            )}
-                                            {passengers && (
-                                              <span className="text-xs text-gray-400">{passengers} pax</span>
-                                            )}
-                                          </div>
+                                          {(route || itemDate || passengers) && (
+                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 ml-7 mt-1">
+                                              {route && (
+                                                <span className="text-xs text-gray-600">{route}</span>
+                                              )}
+                                              {itemDate && (
+                                                <span className="text-xs text-gray-400">{itemDate}</span>
+                                              )}
+                                              {passengers && (
+                                                <span className="text-xs text-gray-400">{passengers} pax</span>
+                                              )}
+                                              {item.budgetLabel && (
+                                                <span className="text-xs text-gray-400">{item.budgetLabel}</span>
+                                              )}
+                                            </div>
+                                          )}
                                         </div>
                                       );
                                     })}
@@ -6024,15 +6041,25 @@ const TokenizedAssetsGlassmorphic = () => {
                                 {/* Footer */}
                                 <div className="flex items-center justify-between pt-2">
                                   <span className="text-[10px] text-gray-300 font-mono">{request.id?.slice(0, 8)}</span>
-                                  {/* Continue Chat button - if conversation_id exists */}
-                                  {request.data?.conversation_id && (
+                                  {/* Continue Chat button - only if valid conversation_id exists (not 'new' or null) */}
+                                  {request.data?.conversation_id && request.data.conversation_id !== 'new' && (
                                     <button
                                       onClick={async (e) => {
                                         e.stopPropagation();
                                         const conversationId = request.data.conversation_id;
+                                        console.log('🔗 Continue Chat clicked, conversation_id:', conversationId);
+
+                                        // Validate conversation ID format (should be UUID-like)
+                                        if (!conversationId || conversationId === 'new' || conversationId.length < 10) {
+                                          console.warn('Invalid conversation ID, starting new chat');
+                                          setActiveChat('new');
+                                          setActiveCategory('chat');
+                                          return;
+                                        }
 
                                         // Check if conversation exists in chatHistory
                                         const existingChat = chatHistory.find(c => c.id === conversationId);
+                                        console.log('📚 Existing chat found:', existingChat ? existingChat.id : 'none');
 
                                         if (existingChat) {
                                           // Continue existing chat directly
@@ -6041,7 +6068,10 @@ const TokenizedAssetsGlassmorphic = () => {
                                         } else {
                                           // Load chat from database
                                           try {
+                                            console.log('📥 Loading chat from database:', conversationId);
                                             const result = await chatService.loadChat(conversationId, user?.id);
+                                            console.log('📥 Load result:', result.success, result.chat?.id);
+
                                             if (result.success && result.chat) {
                                               // Add to chat history and switch
                                               setChatHistory(prev => {
@@ -6056,6 +6086,7 @@ const TokenizedAssetsGlassmorphic = () => {
                                               setActiveCategory('chat');
                                             } else {
                                               // Chat not found, start new
+                                              console.warn('Chat not found in database, starting new');
                                               setActiveChat('new');
                                               setActiveCategory('chat');
                                             }

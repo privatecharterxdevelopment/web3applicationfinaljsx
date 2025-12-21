@@ -8011,6 +8011,11 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       }
 
                       // Create bulk request for non-bookable items
+                      // Get actual conversation ID - ensure we use a valid UUID, not 'new'
+                      const currentConversationId = activeChat && activeChat !== 'new'
+                        ? activeChat
+                        : chatHistory.find(c => c.id && c.id !== 'new')?.id || null;
+
                       const bulkRequestData = {
                         source: 'ai_chat',  // Mark as AI-generated
                         request_id: `AI-${Date.now()}`,
@@ -8101,7 +8106,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                         },
                         payment_method: selectedPaymentMethod || 'bank_transfer',
                         created_via: 'sphera_ai_assistant',
-                        conversation_id: activeChat
+                        conversation_id: currentConversationId
                       };
 
                       // Create single bulk request - using correct API parameters
