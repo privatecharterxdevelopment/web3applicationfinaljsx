@@ -778,175 +778,288 @@ const MyActivityView = ({ user, initialFilter, onBack }) => {
           </div>
         )}
 
-        {/* Activity List - 4 Sections: Requests, Pending Payments, Paid, AI Requests */}
+        {/* Activity List - Conditional rendering based on filter */}
         <div className="space-y-8">
 
-          {/* 1. REQUESTS - Quote pending (jets, helicopters, yachts) */}
-          {requestActivities.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                <h3 className="text-sm font-medium text-gray-700">Requests</h3>
-                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{requestActivities.length}</span>
-              </div>
-              <div className="space-y-4">
-                {Object.entries(requestsGrouped)
-                  .sort(([a], [b]) => new Date(b) - new Date(a))
-                  .map(([dateKey, dateActivities]) => (
-                    <div key={`requests-${dateKey}`}>
-                      <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2 px-1">
-                        {formatDateHeader(dateKey)}
-                      </p>
-                      <div className="space-y-2">
-                        {dateActivities.map(activity => {
-                          const Icon = getActivityIcon(activity.activityType);
-                          const isExpanded = expandedId === activity.id;
-                          return (
-                            <ActivityCard
-                              key={activity.id}
-                              activity={activity}
-                              Icon={Icon}
-                              isExpanded={isExpanded}
-                              showPayNow={false}
-                              expandedId={expandedId}
-                              setExpandedId={setExpandedId}
-                              handlePayNow={handlePayNow}
-                              processingPayment={processingPayment}
-                              getTimeRemaining={getTimeRemaining}
-                            />
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
+          {/* AI CHAT TAB - Only show AI-sourced items */}
+          {filter === 'ai' ? (
+            <>
+              {/* AI Pending Requests */}
+              {aiRequestActivities.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 rounded-full bg-purple-400"></div>
+                    <h3 className="text-sm font-medium text-gray-700">AI Requests</h3>
+                    <span className="text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">{aiRequestActivities.length}</span>
+                  </div>
+                  <div className="space-y-4">
+                    {Object.entries(aiGrouped)
+                      .sort(([a], [b]) => new Date(b) - new Date(a))
+                      .map(([dateKey, dateActivities]) => (
+                        <div key={`ai-${dateKey}`}>
+                          <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2 px-1">
+                            {formatDateHeader(dateKey)}
+                          </p>
+                          <div className="space-y-2">
+                            {dateActivities.map(activity => {
+                              const isExpanded = expandedId === activity.id;
+                              return (
+                                <AIRequestCard
+                                  key={activity.id}
+                                  activity={activity}
+                                  isExpanded={isExpanded}
+                                  expandedId={expandedId}
+                                  setExpandedId={setExpandedId}
+                                  handlePayNow={handlePayNow}
+                                  processingPayment={processingPayment}
+                                  getTimeRemaining={getTimeRemaining}
+                                  serviceTypeLabels={serviceTypeLabels}
+                                  getActivityIcon={getActivityIcon}
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
 
-          {/* 2. PENDING PAYMENTS - Empty legs + Extras awaiting payment */}
-          {pendingPaymentActivities.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-2 h-2 rounded-full bg-amber-400"></div>
-                <h3 className="text-sm font-medium text-gray-700">Pending Payments</h3>
-                <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">{pendingPaymentActivities.length}</span>
-              </div>
-              <div className="space-y-4">
-                {Object.entries(pendingGrouped)
-                  .sort(([a], [b]) => new Date(b) - new Date(a))
-                  .map(([dateKey, dateActivities]) => (
-                    <div key={`pending-${dateKey}`}>
-                      <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2 px-1">
-                        {formatDateHeader(dateKey)}
-                      </p>
-                      <div className="space-y-2">
-                        {dateActivities.map(activity => {
-                          const Icon = getActivityIcon(activity.activityType);
-                          const isExpanded = expandedId === activity.id;
-                          const showPayNow = canPayNow(activity);
-                          return (
-                            <ActivityCard
-                              key={activity.id}
-                              activity={activity}
-                              Icon={Icon}
-                              isExpanded={isExpanded}
-                              showPayNow={showPayNow}
-                              expandedId={expandedId}
-                              setExpandedId={setExpandedId}
-                              handlePayNow={handlePayNow}
-                              processingPayment={processingPayment}
-                              getTimeRemaining={getTimeRemaining}
-                            />
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
+              {/* AI Paid/Completed Items - Only show AI-sourced paid items */}
+              {(() => {
+                const aiPaidActivities = activities.filter(a =>
+                  a.isFromAI === true &&
+                  ['PAID', 'COMPLETED'].includes(a.activityStatus.label)
+                );
+                const aiPaidGrouped = aiPaidActivities.reduce((groups, activity) => {
+                  const dateKey = format(parseISO(activity.created_at), 'yyyy-MM-dd');
+                  if (!groups[dateKey]) groups[dateKey] = [];
+                  groups[dateKey].push(activity);
+                  return groups;
+                }, {});
 
-          {/* 3. PAID / CONFIRMED */}
-          {paidActivities.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
-                <h3 className="text-sm font-medium text-gray-700">Confirmed & Paid</h3>
-                <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{paidActivities.length}</span>
-              </div>
-              <div className="space-y-4">
-                {Object.entries(paidGrouped)
-                  .sort(([a], [b]) => new Date(b) - new Date(a))
-                  .map(([dateKey, dateActivities]) => (
-                    <div key={`paid-${dateKey}`}>
-                      <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2 px-1">
-                        {formatDateHeader(dateKey)}
-                      </p>
-                      <div className="space-y-2">
-                        {dateActivities.map(activity => {
-                          const Icon = getActivityIcon(activity.activityType);
-                          const isExpanded = expandedId === activity.id;
-                          return (
-                            <ActivityCard
-                              key={activity.id}
-                              activity={activity}
-                              Icon={Icon}
-                              isExpanded={isExpanded}
-                              showPayNow={false}
-                              expandedId={expandedId}
-                              setExpandedId={setExpandedId}
-                              handlePayNow={handlePayNow}
-                              processingPayment={processingPayment}
-                              getTimeRemaining={getTimeRemaining}
-                            />
-                          );
-                        })}
-                      </div>
+                return aiPaidActivities.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
+                      <h3 className="text-sm font-medium text-gray-700">AI Requests - Confirmed</h3>
+                      <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{aiPaidActivities.length}</span>
                     </div>
-                  ))}
-              </div>
-            </div>
-          )}
+                    <div className="space-y-4">
+                      {Object.entries(aiPaidGrouped)
+                        .sort(([a], [b]) => new Date(b) - new Date(a))
+                        .map(([dateKey, dateActivities]) => (
+                          <div key={`ai-paid-${dateKey}`}>
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2 px-1">
+                              {formatDateHeader(dateKey)}
+                            </p>
+                            <div className="space-y-2">
+                              {dateActivities.map(activity => {
+                                const isExpanded = expandedId === activity.id;
+                                return (
+                                  <AIRequestCard
+                                    key={activity.id}
+                                    activity={activity}
+                                    isExpanded={isExpanded}
+                                    expandedId={expandedId}
+                                    setExpandedId={setExpandedId}
+                                    handlePayNow={handlePayNow}
+                                    processingPayment={processingPayment}
+                                    getTimeRemaining={getTimeRemaining}
+                                    serviceTypeLabels={serviceTypeLabels}
+                                    getActivityIcon={getActivityIcon}
+                                  />
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
-          {/* 4. AI REQUESTS - Submitted from AI chat - Shows ALL cart items */}
-          {aiRequestActivities.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-2 h-2 rounded-full bg-purple-400"></div>
-                <h3 className="text-sm font-medium text-gray-700">AI Requests</h3>
-                <span className="text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">{aiRequestActivities.length}</span>
-              </div>
-              <div className="space-y-4">
-                {Object.entries(aiGrouped)
-                  .sort(([a], [b]) => new Date(b) - new Date(a))
-                  .map(([dateKey, dateActivities]) => (
-                    <div key={`ai-${dateKey}`}>
-                      <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2 px-1">
-                        {formatDateHeader(dateKey)}
-                      </p>
-                      <div className="space-y-2">
-                        {dateActivities.map(activity => {
-                          const isExpanded = expandedId === activity.id;
-                          return (
-                            <AIRequestCard
-                              key={activity.id}
-                              activity={activity}
-                              isExpanded={isExpanded}
-                              expandedId={expandedId}
-                              setExpandedId={setExpandedId}
-                              handlePayNow={handlePayNow}
-                              processingPayment={processingPayment}
-                              getTimeRemaining={getTimeRemaining}
-                              serviceTypeLabels={serviceTypeLabels}
-                              getActivityIcon={getActivityIcon}
-                            />
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
+              {/* Empty state for AI Chat */}
+              {aiRequestActivities.length === 0 && activities.filter(a => a.isFromAI === true && ['PAID', 'COMPLETED'].includes(a.activityStatus.label)).length === 0 && (
+                <div className="text-center py-16">
+                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <MessageSquare size={20} className="text-purple-400" />
+                  </div>
+                  <p className="text-sm text-gray-500 mb-2">No AI chat requests yet</p>
+                  <p className="text-xs text-gray-400">Submit a request through the AI concierge to see it here</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* 1. REQUESTS - Quote pending (jets, helicopters, yachts) - NOT shown in AI tab */}
+              {requestActivities.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 rounded-full bg-blue-400"></div>
+                    <h3 className="text-sm font-medium text-gray-700">Requests</h3>
+                    <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{requestActivities.length}</span>
+                  </div>
+                  <div className="space-y-4">
+                    {Object.entries(requestsGrouped)
+                      .sort(([a], [b]) => new Date(b) - new Date(a))
+                      .map(([dateKey, dateActivities]) => (
+                        <div key={`requests-${dateKey}`}>
+                          <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2 px-1">
+                            {formatDateHeader(dateKey)}
+                          </p>
+                          <div className="space-y-2">
+                            {dateActivities.map(activity => {
+                              const Icon = getActivityIcon(activity.activityType);
+                              const isExpanded = expandedId === activity.id;
+                              return (
+                                <ActivityCard
+                                  key={activity.id}
+                                  activity={activity}
+                                  Icon={Icon}
+                                  isExpanded={isExpanded}
+                                  showPayNow={false}
+                                  expandedId={expandedId}
+                                  setExpandedId={setExpandedId}
+                                  handlePayNow={handlePayNow}
+                                  processingPayment={processingPayment}
+                                  getTimeRemaining={getTimeRemaining}
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 2. PENDING PAYMENTS - Empty legs + Extras awaiting payment */}
+              {pendingPaymentActivities.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 rounded-full bg-amber-400"></div>
+                    <h3 className="text-sm font-medium text-gray-700">Pending Payments</h3>
+                    <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">{pendingPaymentActivities.length}</span>
+                  </div>
+                  <div className="space-y-4">
+                    {Object.entries(pendingGrouped)
+                      .sort(([a], [b]) => new Date(b) - new Date(a))
+                      .map(([dateKey, dateActivities]) => (
+                        <div key={`pending-${dateKey}`}>
+                          <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2 px-1">
+                            {formatDateHeader(dateKey)}
+                          </p>
+                          <div className="space-y-2">
+                            {dateActivities.map(activity => {
+                              const Icon = getActivityIcon(activity.activityType);
+                              const isExpanded = expandedId === activity.id;
+                              const showPayNow = canPayNow(activity);
+                              return (
+                                <ActivityCard
+                                  key={activity.id}
+                                  activity={activity}
+                                  Icon={Icon}
+                                  isExpanded={isExpanded}
+                                  showPayNow={showPayNow}
+                                  expandedId={expandedId}
+                                  setExpandedId={setExpandedId}
+                                  handlePayNow={handlePayNow}
+                                  processingPayment={processingPayment}
+                                  getTimeRemaining={getTimeRemaining}
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 3. PAID / CONFIRMED */}
+              {paidActivities.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
+                    <h3 className="text-sm font-medium text-gray-700">Confirmed & Paid</h3>
+                    <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{paidActivities.length}</span>
+                  </div>
+                  <div className="space-y-4">
+                    {Object.entries(paidGrouped)
+                      .sort(([a], [b]) => new Date(b) - new Date(a))
+                      .map(([dateKey, dateActivities]) => (
+                        <div key={`paid-${dateKey}`}>
+                          <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2 px-1">
+                            {formatDateHeader(dateKey)}
+                          </p>
+                          <div className="space-y-2">
+                            {dateActivities.map(activity => {
+                              const Icon = getActivityIcon(activity.activityType);
+                              const isExpanded = expandedId === activity.id;
+                              return (
+                                <ActivityCard
+                                  key={activity.id}
+                                  activity={activity}
+                                  Icon={Icon}
+                                  isExpanded={isExpanded}
+                                  showPayNow={false}
+                                  expandedId={expandedId}
+                                  setExpandedId={setExpandedId}
+                                  handlePayNow={handlePayNow}
+                                  processingPayment={processingPayment}
+                                  getTimeRemaining={getTimeRemaining}
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 4. AI REQUESTS - Submitted from AI chat - Shows ALL cart items (in non-AI filter views) */}
+              {aiRequestActivities.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 rounded-full bg-purple-400"></div>
+                    <h3 className="text-sm font-medium text-gray-700">AI Requests</h3>
+                    <span className="text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">{aiRequestActivities.length}</span>
+                  </div>
+                  <div className="space-y-4">
+                    {Object.entries(aiGrouped)
+                      .sort(([a], [b]) => new Date(b) - new Date(a))
+                      .map(([dateKey, dateActivities]) => (
+                        <div key={`ai-${dateKey}`}>
+                          <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2 px-1">
+                            {formatDateHeader(dateKey)}
+                          </p>
+                          <div className="space-y-2">
+                            {dateActivities.map(activity => {
+                              const isExpanded = expandedId === activity.id;
+                              return (
+                                <AIRequestCard
+                                  key={activity.id}
+                                  activity={activity}
+                                  isExpanded={isExpanded}
+                                  expandedId={expandedId}
+                                  setExpandedId={setExpandedId}
+                                  handlePayNow={handlePayNow}
+                                  processingPayment={processingPayment}
+                                  getTimeRemaining={getTimeRemaining}
+                                  serviceTypeLabels={serviceTypeLabels}
+                                  getActivityIcon={getActivityIcon}
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
