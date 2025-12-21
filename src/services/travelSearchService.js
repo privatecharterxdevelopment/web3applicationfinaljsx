@@ -531,36 +531,13 @@ export class TravelSearchService {
 
   /**
    * Query Yachts table
+   * NOTE: Yachts are NOT in the database - yacht requests are handled conversationally
+   * Always returns empty array to prevent showing wrong results
    */
   async queryYachts(intent) {
-    try {
-      let query = supabase.from('yachts').select('*');
-
-      // Filter by passenger count (guests)
-      if (intent.passengers || intent.passenger_count) {
-        const passengers = intent.passengers || intent.passenger_count;
-        query = query.gte('max_guests', passengers);
-      }
-
-      // Filter by budget
-      if (intent.budget) {
-        query = query.lte('daily_rate', intent.budget);
-      }
-
-      // Filter by location (if specified)
-      if (intent.from_location || intent.to_location) {
-        const location = intent.from_location || intent.to_location;
-        query = query.ilike('location', `%${location}%`);
-      }
-
-      const { data, error } = await query.limit(20);
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('Yachts query error:', error);
-      return [];
-    }
+    // Yachts not in database - return empty array
+    // Yacht charter requests are handled through conversational flow
+    return [];
   }
 
   /**

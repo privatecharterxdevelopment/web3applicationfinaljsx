@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUpRight, ArrowDownLeft, History, Wallet, MessageCircle, Shield, User, Award, Plus, X, ExternalLink, LogOut, RefreshCw, Coins, Plane, Leaf, Send, CheckCircle, Headphones, Camera, Loader2, Crown, ChevronRight, Clock } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, History, Wallet, MessageCircle, Shield, User, Award, Plus, X, ExternalLink, LogOut, RefreshCw, Coins, Plane, Leaf, Send, CheckCircle, Camera, Loader2, Crown, ChevronRight, Clock } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer, YAxis, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import { useAccount, useBalance, useChainId } from 'wagmi';
@@ -1291,7 +1291,7 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                 className="w-full p-3 flex items-center justify-between hover:bg-white/10 transition-all"
               >
                 <div className="flex items-center gap-2">
-                  <Headphones className="w-4 h-4 text-gray-600" />
+                  <MessageCircle className="w-4 h-4 text-gray-600" />
                   <span className="text-sm font-medium text-gray-900">My Support Tickets</span>
                   {supportTickets.length > 0 && (
                     <span className="px-2 py-0.5 bg-orange-500 text-white rounded-full text-xs">
@@ -2159,8 +2159,14 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
 
       {/* Support Inquiry Modal */}
       {showSupportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-8 sm:p-12 lg:p-16 bg-black/60 backdrop-blur-md">
+          <div
+            className="relative w-full max-w-lg bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden border border-white/20"
+            style={{ maxHeight: 'calc(100vh - 8rem)', margin: '2rem' }}
+          >
+            {/* Decorative gradient header */}
+            <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 opacity-95" />
+
             {/* Close button */}
             <button
               onClick={() => {
@@ -2168,94 +2174,101 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                 setSupportSent(false);
                 setSupportMessage('');
               }}
-              className="absolute top-4 right-4 z-10 p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className="absolute top-4 right-4 z-20 p-2.5 bg-white/10 hover:bg-white/20 rounded-full transition-all duration-200 group"
             >
-              <X className="w-5 h-5 text-gray-600" />
+              <X className="w-5 h-5 text-white group-hover:rotate-90 transition-transform duration-200" />
             </button>
 
             {/* Modal Content */}
-            <div className="p-6">
+            <div className="relative z-10 p-6 sm:p-8">
               {supportSent ? (
                 // Success State
-                <div className="text-center py-8">
-                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle className="w-10 h-10 text-green-600" />
+                <div className="text-center py-6">
+                  <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-500/30">
+                    <CheckCircle className="w-12 h-12 text-white" />
                   </div>
-                  <h3 className="text-xl font-semibold text-green-700 mb-2">Message Sent Successfully!</h3>
-                  <p className="text-gray-600 mb-2">
-                    Thank you for reaching out to us.
+                  <h3 className="text-2xl font-bold text-gray-900 mb-3">Message Sent!</h3>
+                  <p className="text-gray-600 mb-4 max-w-xs mx-auto">
+                    Thank you for reaching out. We've received your message.
                   </p>
-                  <p className="text-sm text-green-600 font-medium">
-                    Our team will respond within 5-60 minutes
-                  </p>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 rounded-full">
+                    <Clock className="w-4 h-4 text-green-600" />
+                    <p className="text-sm text-green-700 font-medium">
+                      Response within 5-60 minutes
+                    </p>
+                  </div>
                 </div>
               ) : (
                 // Form State
                 <>
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center">
-                      <Headphones className="w-5 h-5 text-white" />
+                  {/* Header */}
+                  <div className="flex items-center gap-4 mb-8 pt-2">
+                    <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-lg">
+                      <MessageCircle className="w-7 h-7 text-gray-900" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Contact Support</h3>
-                      <p className="text-sm text-gray-500">We'll respond within 24 hours</p>
+                      <h3 className="text-xl font-bold text-white">Get Support</h3>
+                      <p className="text-sm text-gray-300">We typically respond within 24 hours</p>
                     </div>
                   </div>
 
-                  {/* Category Selection */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      What do you need help with?
-                    </label>
-                    <select
-                      value={supportCategory}
-                      onChange={(e) => setSupportCategory(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
+                  {/* Form area with white background */}
+                  <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100">
+                    {/* Category Selection */}
+                    <div className="mb-5">
+                      <label className="block text-sm font-semibold text-gray-800 mb-2.5">
+                        What can we help you with?
+                      </label>
+                      <select
+                        value={supportCategory}
+                        onChange={(e) => setSupportCategory(e.target.value)}
+                        className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm font-medium text-gray-700 transition-all hover:border-gray-300"
+                      >
+                        <option value="general">General Inquiry</option>
+                        <option value="booking">Booking Issue</option>
+                        <option value="payment">Payment / Billing</option>
+                        <option value="account">Account Settings</option>
+                        <option value="technical">Technical Problem</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+
+                    {/* Message Input */}
+                    <div className="mb-6">
+                      <label className="block text-sm font-semibold text-gray-800 mb-2.5">
+                        Describe your issue
+                      </label>
+                      <textarea
+                        value={supportMessage}
+                        onChange={(e) => setSupportMessage(e.target.value)}
+                        placeholder="Please describe how we can help you..."
+                        rows={4}
+                        className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm resize-none transition-all hover:border-gray-300 placeholder:text-gray-400"
+                      />
+                    </div>
+
+                    {/* Submit Button */}
+                    <button
+                      onClick={handleSupportSubmit}
+                      disabled={!supportMessage.trim() || sendingSupport}
+                      className="w-full px-5 py-4 bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-xl hover:from-gray-800 hover:to-gray-700 transition-all text-sm font-semibold flex items-center justify-center gap-2.5 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed shadow-lg shadow-gray-900/20 hover:shadow-xl hover:shadow-gray-900/30 active:scale-[0.98]"
                     >
-                      <option value="general">General Inquiry</option>
-                      <option value="booking">Booking Issue</option>
-                      <option value="payment">Payment / Billing</option>
-                      <option value="account">Account Settings</option>
-                      <option value="technical">Technical Problem</option>
-                      <option value="other">Other</option>
-                    </select>
+                      {sendingSupport ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4" />
+                          Send Message
+                        </>
+                      )}
+                    </button>
                   </div>
 
-                  {/* Message Input */}
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Describe your issue
-                    </label>
-                    <textarea
-                      value={supportMessage}
-                      onChange={(e) => setSupportMessage(e.target.value)}
-                      placeholder="Please describe how we can help you..."
-                      rows={5}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm resize-none"
-                    />
-                  </div>
-
-                  {/* Submit Button */}
-                  <button
-                    onClick={handleSupportSubmit}
-                    disabled={!supportMessage.trim() || sendingSupport}
-                    className="w-full px-4 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium flex items-center justify-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  >
-                    {sendingSupport ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        Sending...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4" />
-                        Send Support Inquiry
-                      </>
-                    )}
-                  </button>
-
-                  <p className="text-xs text-gray-500 text-center mt-4">
-                    We'll contact you at {user?.email}
+                  <p className="text-xs text-gray-500 text-center mt-5">
+                    We'll respond to <span className="font-medium text-gray-700">{user?.email}</span>
                   </p>
                 </>
               )}

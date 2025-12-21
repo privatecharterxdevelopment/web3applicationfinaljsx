@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Car, Plane, FileText, Clock, Check, X, ChevronRight, Search, Filter, AlertTriangle, Download, Loader2 } from 'lucide-react';
+import { Car, Plane, FileText, Clock, Check, X, ChevronRight, Search, Filter, AlertTriangle, Download, Loader2, CreditCard, AlertCircle } from 'lucide-react';
 import { getUserRequests } from '../services/requests';
 import { formatDistanceToNow } from 'date-fns';
 import ReviewDisputeModal from './modals/ReviewDisputeModal';
@@ -101,6 +101,75 @@ const MyRequestsView = ({ user }) => {
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [generatingPDF, setGeneratingPDF] = useState(null);
+  const [processingPayment, setProcessingPayment] = useState(null);
+
+  // Handle crypto payment for empty leg requests
+  const handlePayEmptyLeg = async (request, price) => {
+    if (!user?.id || !price || price <= 0) {
+      alert('Unable to process payment. Please try again.');
+      return;
+    }
+
+    setProcessingPayment(request.id);
+    try {
+      // Parse request data
+      let data = request.data;
+      if (typeof data === 'string') {
+        try { data = JSON.parse(data); } catch (e) { data = {}; }
+      }
+      data = data || {};
+
+      // Extract empty leg details
+      const emptyLegItem = data.items?.find(i => i.type === 'empty_legs' || i.type === 'emptyleg') || data.items?.[0] || {};
+      const fromCity = data.from_city || emptyLegItem.from_city || emptyLegItem.from || '';
+      const toCity = data.to_city || emptyLegItem.to_city || emptyLegItem.to || '';
+      const aircraftType = data.aircraft_type || emptyLegItem.aircraft_type || emptyLegItem.model || 'Private Jet';
+      const departureDate = data.departure_date || emptyLegItem.departure_date || '';
+
+      // Create payment via CoinGate edge function
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-coingate-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          serviceType: 'empty_leg',
+          serviceId: data.empty_leg_id || emptyLegItem.id || request.id,
+          priceUSD: Math.round(price * 100) / 100,
+          email: user.email,
+          contactName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Customer',
+          serviceTitle: `Empty Leg: ${fromCity} → ${toCity}`,
+          serviceDescription: `${aircraftType} - ${departureDate ? new Date(departureDate).toLocaleDateString() : 'Date TBD'}`,
+          orderDescription: `Empty Leg Flight: ${fromCity} to ${toCity}`,
+          requestId: request.id,
+          cartItems: [{
+            id: data.empty_leg_id || emptyLegItem.id || request.id,
+            name: `${fromCity} → ${toCity}`,
+            type: 'empty_leg',
+            price: price,
+            quantity: 1
+          }]
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.paymentUrl) {
+        // Open payment page in new tab
+        window.open(result.paymentUrl, '_blank');
+        alert('Payment page opened in a new tab. Complete your crypto payment there.');
+      } else {
+        throw new Error(result.error || 'Failed to create payment');
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      alert(error.message || 'Failed to process payment. Please try again.');
+    } finally {
+      setProcessingPayment(null);
+    }
+  };
 
   // Handle PDF download for a request
   const handleDownloadPDF = async (request, e) => {
@@ -631,6 +700,38 @@ const MyRequestsView = ({ user }) => {
               )}
               {generatingPDF === request.id ? 'Generating PDF...' : 'Download PDF'}
             </button>
+
+            {/* Pay Now Button - Only for pending empty legs with valid price */}
+            {request.status === 'pending' && price > 0 && (
+              <div className="mt-3 space-y-2">
+                {/* Urgency Warning */}
+                <div className="flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
+                  <AlertCircle size={14} className="text-amber-600 flex-shrink-0" />
+                  <span className="text-xs text-amber-800 font-medium">
+                    Empty legs can expire quickly - secure your booking now
+                  </span>
+                </div>
+
+                {/* Pay Now Button */}
+                <button
+                  onClick={() => handlePayEmptyLeg(request, price)}
+                  disabled={processingPayment === request.id}
+                  className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg hover:from-emerald-700 hover:to-emerald-800 transition-all text-sm font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {processingPayment === request.id ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard size={16} />
+                      Pay Now - ${typeof price === 'number' ? price.toLocaleString() : price}
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

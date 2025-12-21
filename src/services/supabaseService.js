@@ -430,7 +430,8 @@ export const UnifiedSearchService = {
         helicoptersQ = heliQuery.limit(aircraftModel ? 50 : 10);
       }
 
-      const yachtsQ = searchYachts ? supabase.from('fixed_offers').select('*').limit(10) : Promise.resolve({ data: [], error: null });
+      // YACHTS: Not in database - always return empty (yacht requests are handled conversationally)
+      const yachtsQ = Promise.resolve({ data: [], error: null });
 
       // Luxury Cars query - from luxury_cars table (supercars, exotic rentals)
       const luxuryCarsQ = searchLuxuryCars ? supabase.from('luxury_cars').select('*').limit(10) : Promise.resolve({ data: [], error: null });

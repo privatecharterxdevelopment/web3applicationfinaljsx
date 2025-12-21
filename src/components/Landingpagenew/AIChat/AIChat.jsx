@@ -5070,7 +5070,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                             content: `I've added a reservation request for **${place.name}** to your cart. Our concierge team will arrange your booking once you checkout. Would you also like me to arrange a transfer to the restaurant?`
                           };
                           setChatHistory(prev => prev.map(c =>
-                            c.id === currentChatId
+                            c.id === activeChat
                               ? { ...c, messages: [...c.messages, confirmMessage] }
                               : c
                           ));
@@ -5130,7 +5130,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                   }
                                 };
                                 setChatHistory(prev => prev.map(c =>
-                                  c.id === currentChatId
+                                  c.id === activeChat
                                     ? { ...c, messages: [...c.messages, confirmMessage] }
                                     : c
                                 ));
@@ -5197,7 +5197,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                   }
                                 };
                                 setChatHistory(prev => prev.map(c =>
-                                  c.id === currentChatId
+                                  c.id === activeChat
                                     ? { ...c, messages: [...c.messages, confirmMessage] }
                                     : c
                                 ));
@@ -5591,17 +5591,226 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           contentLower.includes('you have selected') ||
                           contentLower.includes('i\'ve prepared') ||
                           contentLower.includes('i have prepared') ||
+                          contentLower.includes('i\'ve updated') ||
+                          contentLower.includes('i\'ve confirmed') ||
+                          contentLower.includes('no problem') ||
                           contentLower.includes('prepared this') ||
                           contentLower.includes('ready for you') ||
                           contentLower.includes('here\'s what') ||
-                          contentLower.includes('click add to cart') ||
+                          contentLower.includes('click') && contentLower.includes('add to cart') ||
                           contentLower.includes('use the button') ||
                           contentLower.includes('button below') ||
+                          contentLower.includes('secure your booking') ||
                           contentLower.includes('when you\'re ready') ||
-                          contentLower.includes('when ready');
+                          contentLower.includes('when ready') ||
+                          // Jet confirmation patterns
+                          (contentLower.includes('est. total') && contentLower.includes('passengers')) ||
+                          (contentLower.includes('arrival') && contentLower.includes('local time'));
 
                         // Only show button if: user confirmed OR AI is explicitly acknowledging a selection
                         if (!hasUserConfirmed && !isAIAcknowledgingConfirmation) return null;
+
+                        // SPECIAL HANDLER: Custom service booking confirmations
+                        // Detect service type from AI message content
+                        const detectServiceType = () => {
+                          // Aircraft patterns
+                          const jetPatterns = ['citation', 'gulfstream', 'challenger', 'falcon', 'phenom', 'learjet', 'global', 'legacy', 'hawker', 'embraer', 'bombardier', 'dassault', 'cessna', 'beechcraft', 'pilatus', 'private jet', 'charter flight'];
+                          const heliPatterns = ['bell', 'eurocopter', 'sikorsky', 'agusta', 'h125', 'h145', 'h130', 'h135', 'h155', 'h160', 'h175', 'h215', 'h225', 'ec130', 'ec135', 'ec145', 'ec155', 'ec175', 'aw109', 'aw139', 'aw169', 'aw189', 's-76', 's-92', 'r44', 'r66', 'helicopter', 'heli charter'];
+                          const yachtPatterns = ['yacht', 'catamaran', 'sailing', 'superyacht', 'motor yacht', 'gulet', 'crewed charter', 'bareboat', 'day charter', 'week charter'];
+                          const groundPatterns = ['mercedes', 'maybach', 'rolls-royce', 'bentley', 'limousine', 'sprinter', 'van', 'suv', 'sedan', 'transfer', 'airport pickup', 'ground transport', 'chauffeur'];
+                          const medevacPatterns = ['medevac', 'medical evacuation', 'air ambulance', 'medical transport', 'patient transport'];
+
+                          const isJet = jetPatterns.some(p => contentLower.includes(p));
+                          const isHeli = heliPatterns.some(p => contentLower.includes(p));
+                          const isYacht = yachtPatterns.some(p => contentLower.includes(p));
+                          const isGround = groundPatterns.some(p => contentLower.includes(p));
+                          const isMedevac = medevacPatterns.some(p => contentLower.includes(p));
+                          const isMultiLeg = contentLower.includes('multi-leg') || contentLower.includes('multi leg') || contentLower.includes('multiple stops') || contentLower.includes('itinerary');
+
+                          // Check for route indicator (→ or "to")
+                          const hasRoute = contentLower.includes('→') || content.match(/from\s+\w+.*to\s+\w+/i);
+                          // Check for booking indicators
+                          const hasBookingInfo = contentLower.includes('est.') || contentLower.includes('total') || contentLower.includes('passengers') || contentLower.includes('guests') || contentLower.includes('rate');
+
+                          if (!hasRoute && !hasBookingInfo) return null;
+
+                          if (isMedevac) return { type: 'medevac', emoji: '🏥', label: 'Medical Transport', icon: 'Plane' };
+                          if (isHeli) return { type: 'helicopters', emoji: '🚁', label: 'Helicopter Charter', icon: 'Plane' };
+                          if (isJet || isMultiLeg) return { type: 'jets', emoji: '✈️', label: 'Private Jet Charter', icon: 'Plane' };
+                          if (isYacht) return { type: 'yachts', emoji: '🛥️', label: 'Yacht Charter', icon: 'Anchor' };
+                          if (isGround) return { type: 'ground_transport', emoji: '🚗', label: 'Ground Transport', icon: 'Car' };
+
+                          return null;
+                        };
+
+                        const detectedService = detectServiceType();
+
+                        if (detectedService) {
+                          // Parse details from AI message
+                          const parseServiceDetails = () => {
+                            // Extract vehicle/vessel name (bold text or known patterns)
+                            const boldMatch = content.match(/\*\*([^*]+)\*\*/);
+                            let serviceName = boldMatch ? boldMatch[1] : detectedService.label;
+
+                            // Extract route (from → to)
+                            const routeMatch = content.match(/([A-Z][a-zA-Z\s]+(?:\([A-Z]{3}\))?)\s*[→]\s*([A-Z][a-zA-Z\s]+(?:\([A-Z]{3}\))?)/);
+                            const from = routeMatch ? routeMatch[1].trim() : '';
+                            const to = routeMatch ? routeMatch[2].trim() : '';
+
+                            // Extract passengers/guests
+                            const paxMatch = content.match(/(\d+)\s*(?:passengers?|pax|people|guests?)/i);
+                            const passengers = paxMatch ? parseInt(paxMatch[1]) : 0;
+
+                            // Extract duration
+                            const durationMatch = content.match(/(\d+)\s*h\s*(\d+)?\s*min/i) ||
+                                                  content.match(/(\d+(?:\.\d+)?)\s*hours?/i) ||
+                                                  content.match(/(\d+)\s*(?:days?|nights?)/i);
+                            let duration = '';
+                            if (durationMatch) {
+                              if (durationMatch[2]) {
+                                duration = `${durationMatch[1]}h ${durationMatch[2]}min`;
+                              } else if (content.match(/days?|nights?/i)) {
+                                duration = `${durationMatch[1]} days`;
+                              } else {
+                                duration = `${durationMatch[1]}h`;
+                              }
+                            }
+
+                            // Extract price (€ or $)
+                            const priceMatch = content.match(/(?:€|\$)\s*([\d,]+(?:\.\d{2})?)/g);
+                            let totalPrice = 0;
+                            if (priceMatch && priceMatch.length > 0) {
+                              const prices = priceMatch.map(p => parseFloat(p.replace(/[€$,]/g, '')));
+                              totalPrice = Math.max(...prices);
+                            }
+
+                            // Extract rate (hourly/daily)
+                            const rateMatch = content.match(/(?:€|\$)\s*([\d,]+)\s*\/\s*(?:h|hr|hour|day)/i);
+                            const rate = rateMatch ? parseFloat(rateMatch[1].replace(/,/g, '')) : 0;
+
+                            // Extract date/time
+                            const datePatterns = [
+                              /(?:Date|Departure|Pickup|Start):\s*\*?\*?([^,\n*]+)/i,
+                              /tomorrow[,\s]+(\d{1,2}:\d{2}\s*(?:AM|PM)?)/i,
+                              /(\d{1,2}:\d{2}\s*(?:AM|PM))/i
+                            ];
+                            let departureDate = '';
+                            for (const pattern of datePatterns) {
+                              const match = content.match(pattern);
+                              if (match) {
+                                departureDate = match[1].trim().replace(/\*+/g, '');
+                                break;
+                              }
+                            }
+
+                            return {
+                              serviceName,
+                              from,
+                              to,
+                              passengers,
+                              duration,
+                              totalPrice,
+                              rate,
+                              departureDate,
+                              serviceType: detectedService.type
+                            };
+                          };
+
+                          const details = parseServiceDetails();
+
+                          return (
+                            <div className="mt-4 border border-gray-200 rounded-lg bg-white overflow-hidden">
+                              {/* Header - Service Type & Aircraft */}
+                              <div className="px-4 py-3 border-b border-gray-100">
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wider font-medium">{detectedService.label}</p>
+                                <p className="text-sm font-medium text-gray-900 mt-0.5">{details.serviceName}</p>
+                              </div>
+
+                              {/* Route */}
+                              {details.from && details.to && (
+                                <div className="px-4 py-2.5 border-b border-gray-100 flex items-center justify-between">
+                                  <span className="text-xs text-gray-500">{details.from}</span>
+                                  <span className="text-[10px] text-gray-300 mx-2">→</span>
+                                  <span className="text-xs text-gray-500">{details.to}</span>
+                                </div>
+                              )}
+
+                              {/* Details Row */}
+                              <div className="px-4 py-2.5 flex items-center gap-4 text-[11px] text-gray-500 border-b border-gray-100">
+                                {details.passengers > 0 && (
+                                  <span>{details.passengers} pax</span>
+                                )}
+                                {details.duration && (
+                                  <span>{details.duration}</span>
+                                )}
+                                {details.departureDate && (
+                                  <span>{details.departureDate}</span>
+                                )}
+                              </div>
+
+                              {/* Price & Button */}
+                              <div className="px-4 py-3 flex items-center justify-between bg-gray-50/50">
+                                {details.totalPrice > 0 ? (
+                                  <div>
+                                    <p className="text-base font-semibold text-gray-900">${details.totalPrice.toLocaleString()}</p>
+                                    <p className="text-[10px] text-gray-400">est. total</p>
+                                  </div>
+                                ) : (
+                                  <div>
+                                    <p className="text-xs text-gray-500">Price on request</p>
+                                  </div>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    const cartItem = {
+                                      id: `${details.serviceType}-${Date.now()}`,
+                                      cartId: Date.now(),
+                                      type: details.serviceType,
+                                      name: details.serviceName,
+                                      title: `${details.serviceName}`,
+                                      aircraft_type: details.serviceName,
+                                      from: details.from,
+                                      to: details.to,
+                                      from_city: details.from,
+                                      to_city: details.to,
+                                      passengers: details.passengers,
+                                      pax: details.passengers,
+                                      flightDuration: details.duration,
+                                      estimatedDuration: details.duration,
+                                      departure_date: details.departureDate,
+                                      departureDate: details.departureDate,
+                                      hourlyRate: details.rate,
+                                      price: details.totalPrice,
+                                      basePrice: details.totalPrice,
+                                      totalWithFee: details.totalPrice > 0 ? details.totalPrice * 1.081 : 0,
+                                      estimatedPrice: details.totalPrice,
+                                      isEstimate: true,
+                                      requiresConfirmation: true,
+                                      conversationDetails: content,
+                                      addedAt: new Date().toISOString()
+                                    };
+                                    setCartItems(prev => [...prev, cartItem]);
+                                    setToast({ message: `${details.serviceName} added to cart`, type: 'cart' });
+                                    setChatHistory(prev => prev.map(c =>
+                                      c.id === activeChat
+                                        ? {
+                                            ...c,
+                                            messages: [...c.messages, {
+                                              role: 'assistant',
+                                              content: `Added ${details.serviceName} to your cart.${details.from && details.to ? ` Route: ${details.from} → ${details.to}.` : ''}${details.passengers > 0 ? ` ${details.passengers} passengers.` : ''}${details.totalPrice > 0 ? ` Est. $${details.totalPrice.toLocaleString()}.` : ''} Our team will confirm availability and final pricing.`
+                                            }]
+                                          }
+                                        : c
+                                    ));
+                                  }}
+                                  className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium rounded-lg transition-colors"
+                                >
+                                  Add to Cart
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        }
 
                         // Find the most recent search results from previous messages
                         // EXCLUDE: empty legs, private jets, helicopters, yachts, ground transport, wineries, delicacies tabs
@@ -5695,7 +5904,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                         }
 
                         // Detect service type from content for generic requests
-                        const detectServiceType = () => {
+                        const detectGenericServiceType = () => {
                           if (contentLower.includes('jet') || contentLower.includes('private flight')) return { type: 'jets', emoji: '✈️', name: 'Private Jet Charter' };
                           if (contentLower.includes('helicopter')) return { type: 'helicopters', emoji: '🚁', name: 'Helicopter Charter' };
                           if (contentLower.includes('yacht')) return { type: 'yachts', emoji: '🛥️', name: 'Yacht Charter' };
@@ -5712,7 +5921,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
                         // If no matched product from search results, show generic "Add Request to Cart" button
                         if (!matchedProduct) {
-                          const detectedService = detectServiceType();
+                          const detectedService = detectGenericServiceType();
 
                           return (
                             <div className="mt-3 pt-3 border-t border-gray-200/50">

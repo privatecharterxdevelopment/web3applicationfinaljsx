@@ -1139,31 +1139,45 @@ export async function searchHelicopters(params) {
 
 /**
  * Search for yachts and adventure packages
+ * NOTE: Yachts are NOT in the database - yacht charter requests are handled conversationally
+ * This function will NOT return yacht results to prevent showing wrong tabs
  */
 export async function searchYachtsAndAdventures(params) {
-  const serviceTypeObj = {};
-  if (params.type === 'yacht' || params.type === 'both' || !params.type) {
-    serviceTypeObj.yachts = true;
-  }
-  if (params.type === 'adventure' || params.type === 'both' || !params.type) {
-    serviceTypeObj.adventures = true;
+  // YACHTS: Not in database - always return empty for yachts
+  // Yacht charter requests are handled through the conversational flow in AIChat
+  // The AI will ask for budget, passengers, dates, destination, etc.
+
+  // Only search adventures if specifically requested (not for yacht queries)
+  if (params.type === 'adventure') {
+    const results = await UnifiedSearchService.searchAll({
+      q: params.location,
+      location: params.location,
+      passengers: params.guests,
+      serviceTypes: { adventures: true }
+    });
+
+    return {
+      success: true,
+      results: {
+        yachts: [], // Always empty - yachts not in database
+        adventures: results.adventures || []
+      },
+      total: results.adventures?.length || 0,
+      params,
+      note: 'Yacht charters are request-based. Our concierge will help find the perfect yacht for your needs.'
+    };
   }
 
-  const results = await UnifiedSearchService.searchAll({
-    q: params.location,
-    location: params.location,
-    passengers: params.guests,
-    serviceTypes: serviceTypeObj
-  });
-
+  // For yacht queries, return empty results with a helpful note
   return {
     success: true,
     results: {
-      yachts: results.yachts || [],
-      adventures: results.adventures || []
+      yachts: [], // Yachts not in database
+      adventures: []
     },
-    total: (results.yachts?.length || 0) + (results.adventures?.length || 0),
-    params
+    total: 0,
+    params,
+    note: 'Yacht charters are fully customizable and request-based. Our concierge will gather your requirements and find the perfect yacht.'
   };
 }
 
