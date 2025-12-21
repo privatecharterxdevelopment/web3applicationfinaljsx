@@ -3357,6 +3357,26 @@ Click **"Add to Route"** to confirm this stop, or provide corrections.`;
       }
     }
 
+    // YACHT CHARTER - DISABLED for launch, redirect to email IMMEDIATELY
+    // This must run BEFORE any Claude API calls
+    if (lowerMessage.match(/yacht|boat|vessel|sailing|catamaran|superyacht/) && !lowerMessage.match(/luxury\s*car/)) {
+      const yachtRedirectMessage = `For yacht charters, please contact our dedicated charter team directly:
+
+📧 **bookings@privatecharterx.com**
+
+They will personally arrange your perfect yacht experience with custom itineraries, crew selection, and all amenities tailored to your preferences.
+
+*AI-assisted yacht charter bookings coming Q1/2026*`;
+
+      setChatHistory(prev => prev.map(c =>
+        c.id === workingChatId
+          ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), { role: 'assistant', content: yachtRedirectMessage }] }
+          : c
+      ));
+      setIsProcessing(false);
+      return;
+    }
+
     // Build conversation history - handle new chat creation case
     let conversationHistory;
 
