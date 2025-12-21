@@ -137,7 +137,7 @@ const MyActivityView = ({ user, initialFilter, onBack }) => {
         };
       });
 
-      // Normalize chat_requests (AI cart submissions with payable items)
+      // Normalize chat_requests (AI cart submissions)
       const chatRequests = (chatRequestsRes.data || []).map(cr => {
         const expired = isPaymentExpired(cr);
         const cartItems = cr.cart_items || [];
@@ -146,6 +146,18 @@ const MyActivityView = ({ user, initialFilter, onBack }) => {
           ci.type?.includes('extra') || ci.type?.includes('champagne')
         );
         const payable = isPayableItem(cr) || payableItems.length > 0;
+
+        // Get activity type from first cart item
+        const firstItem = cartItems[0];
+        const itemType = (firstItem?.type || '').toLowerCase();
+        let activityType = 'cart';
+        if (itemType.includes('jet')) activityType = 'jet';
+        else if (itemType.includes('heli')) activityType = 'helicopter';
+        else if (itemType.includes('empty')) activityType = 'empty_leg';
+        else if (itemType.includes('ground') || itemType.includes('taxi') || itemType.includes('transfer')) activityType = 'car';
+        else if (itemType.includes('yacht')) activityType = 'yacht';
+        else if (itemType.includes('wine')) activityType = 'wine';
+
         return {
           ...cr,
           source: 'chat_request',
@@ -153,8 +165,8 @@ const MyActivityView = ({ user, initialFilter, onBack }) => {
           isPayable: payable,
           isExpired: expired,
           payableItems,
-          activityType: 'cart',
-          displayTitle: getChatRequestTitle(cr, payableItems),
+          activityType,
+          displayTitle: getChatRequestTitle(cr, cartItems), // Pass ALL items, not just payable
           displayRoute: getChatRequestRoute(cr, cartItems),
           displayPrice: cr.cart_total || cartItems.reduce((sum, i) => sum + (i.price || i.totalWithFee || 0), 0),
           displayDate: cr.created_at,
@@ -174,16 +186,72 @@ const MyActivityView = ({ user, initialFilter, onBack }) => {
     }
   };
 
-  // Get chat request title
-  const getChatRequestTitle = (cr, payableItems) => {
-    if (payableItems?.length > 0) {
-      const first = payableItems[0];
-      if (payableItems.length === 1) {
-        return first.name || first.title || first.aircraft_type || 'Payable Item';
+  // Service type labels for readable display
+  const serviceTypeLabels = {
+    'jet': 'Private Jet Charter',
+    'jets': 'Private Jet Charter',
+    'private_jet': 'Private Jet Charter',
+    'helicopter': 'Helicopter Charter',
+    'helicopters': 'Helicopter Charter',
+    'empty_leg': 'Empty Leg Flight',
+    'empty_legs': 'Empty Leg Flight',
+    'emptyleg': 'Empty Leg Flight',
+    'ground_transport': 'Ground Transport',
+    'taxi': 'Ground Transport',
+    'transfer': 'Ground Transport',
+    'yacht': 'Yacht Charter',
+    'yachts': 'Yacht Charter',
+    'wine': 'Wine Order',
+    'wines': 'Wine Order',
+    'concierge': 'Concierge Service',
+    'luxury_car': 'Luxury Car',
+    'luxury_cars': 'Luxury Car',
+    'adventure': 'Adventure Experience',
+    'fixed_offer': 'Fixed Offer'
+  };
+
+  // Get chat request title - extract actual service types from ALL items
+  const getChatRequestTitle = (cr, allItems) => {
+    const items = allItems || cr.cart_items || [];
+
+    if (items.length > 0) {
+      const first = items[0];
+      const type = (first.type || '').toLowerCase();
+
+      // Get readable label from type
+      let label = serviceTypeLabels[type];
+
+      // If no direct match, try to match partial
+      if (!label) {
+        for (const [key, val] of Object.entries(serviceTypeLabels)) {
+          if (type.includes(key)) {
+            label = val;
+            break;
+          }
+        }
       }
-      return `${first.name || first.title || 'Items'} +${payableItems.length - 1} more`;
+
+      // Fallback to item name or formatted type
+      if (!label) {
+        label = first.name || first.title || first.aircraft_type ||
+                type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Service';
+      }
+
+      // Add count if multiple items
+      if (items.length > 1) {
+        return `${label} +${items.length - 1} more`;
+      }
+
+      return label;
     }
-    return 'AI Concierge Request';
+
+    // Fallback to service_type field from chat_requests table
+    if (cr.service_type) {
+      return serviceTypeLabels[cr.service_type] ||
+             cr.service_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    return 'Concierge Request';
   };
 
   // Get chat request route
@@ -262,20 +330,39 @@ const MyActivityView = ({ user, initialFilter, onBack }) => {
     return { label: 'QUOTE PENDING', bgColor: 'bg-blue-50', textColor: 'text-blue-600', borderColor: 'border-blue-200' };
   };
 
-  // Get request type
+  // Get request type - extract from items if available
   const getRequestType = (request) => {
+    // First, try to get type from the actual items in data
+    let data = request.data;
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch (e) { data = {}; }
+    }
+    data = data || {};
+
+    const items = data.items || data.cart_items || [];
+    if (items.length > 0) {
+      const itemType = (items[0].type || '').toLowerCase();
+      if (itemType.includes('jet')) return 'jet';
+      if (itemType.includes('heli')) return 'helicopter';
+      if (itemType.includes('empty')) return 'empty_leg';
+      if (itemType.includes('ground') || itemType.includes('taxi') || itemType.includes('transfer')) return 'car';
+      if (itemType.includes('yacht')) return 'yacht';
+      if (itemType.includes('wine') || itemType.includes('cigar')) return 'wine';
+    }
+
+    // Fallback to request.type field
     const type = request.type || 'request';
-    if (type.includes('cart') || type.includes('ai_chat')) return 'cart';
     if (type.includes('empty_leg') || type.includes('emptyleg')) return 'empty_leg';
     if (type.includes('jet') || type.includes('aircraft')) return 'jet';
     if (type.includes('helicopter') || type.includes('heli')) return 'helicopter';
     if (type.includes('yacht')) return 'yacht';
     if (type.includes('car') || type.includes('transfer') || type.includes('taxi')) return 'car';
     if (type.includes('wine') || type.includes('cigar')) return 'wine';
+    if (type.includes('cart') || type.includes('ai_chat')) return 'cart';
     return type;
   };
 
-  // Get request title
+  // Get request title - extract actual service types from items
   const getRequestTitle = (request) => {
     let data = request.data;
     if (typeof data === 'string') {
@@ -283,15 +370,44 @@ const MyActivityView = ({ user, initialFilter, onBack }) => {
     }
     data = data || {};
 
-    if (request.type === 'ai_chat_bulk') return 'AI Concierge Request';
+    // For custom requests, use the provided name
     if (request.type === 'custom_request') return data.name || 'Custom Request';
 
+    // Extract items from various data structures
     const items = data.items || data.cart_items || [];
+
     if (items.length > 0) {
-      const firstItem = items[0];
-      return firstItem.title || firstItem.aircraft_type || firstItem.name || 'Service Request';
+      const first = items[0];
+      const type = (first.type || '').toLowerCase();
+
+      // Get readable label from type
+      let label = serviceTypeLabels[type];
+
+      // If no direct match, try to match partial
+      if (!label) {
+        for (const [key, val] of Object.entries(serviceTypeLabels)) {
+          if (type.includes(key)) {
+            label = val;
+            break;
+          }
+        }
+      }
+
+      // Fallback to item properties or formatted type
+      if (!label) {
+        label = first.title || first.aircraft_type || first.name ||
+                type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Service';
+      }
+
+      // Add count if multiple items
+      if (items.length > 1) {
+        return `${label} +${items.length - 1} more`;
+      }
+
+      return label;
     }
 
+    // Fallback to request type
     return request.type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Request';
   };
 
@@ -412,29 +528,28 @@ const MyActivityView = ({ user, initialFilter, onBack }) => {
     return true;
   });
 
-  // Separate into 4 sections as requested:
-  // 1. REQUESTS - Quote pending items (jets, helicopters, yachts - non-payable quote requests)
-  //    Status: QUOTE PENDING or IN PROGRESS (NOT from AI chat)
+  // Separate into 4 sections:
+  // 1. REQUESTS - Non-AI quote requests (jets, helicopters, yachts submitted via forms)
   const requestActivities = filteredActivities.filter(a =>
-    !a.isPayable &&
     !a.isFromAI &&
     ['QUOTE PENDING', 'IN PROGRESS'].includes(a.activityStatus.label)
   );
 
-  // 2. PENDING PAYMENTS - Payable items awaiting payment (empty legs + extras)
-  //    Status: PENDING PAYMENT or EXPIRED
+  // 2. PENDING PAYMENTS - Payable items NOT from AI chat (direct empty leg bookings)
+  //    AI cart items go to AI REQUESTS section instead
   const pendingPaymentActivities = filteredActivities.filter(a =>
+    !a.isFromAI &&
     a.isPayable &&
     ['PENDING PAYMENT', 'EXPIRED'].includes(a.activityStatus.label)
   );
 
-  // 3. PAID - Confirmed/paid items (from any source)
+  // 3. PAID - All paid/completed items from any source
   const paidActivities = filteredActivities.filter(a =>
     a.activityStatus.label === 'PAID' || a.activityStatus.label === 'COMPLETED'
   );
 
-  // 4. AI REQUESTS - Items submitted from AI chat (that are not paid)
-  //    Can include both payable and non-payable items from AI
+  // 4. AI REQUESTS - ALL items from AI chat that are not paid yet
+  //    This includes empty legs, wine, jets, etc - all cart submissions
   const aiRequestActivities = filteredActivities.filter(a =>
     a.isFromAI === true &&
     !['PAID', 'COMPLETED'].includes(a.activityStatus.label)
