@@ -4150,43 +4150,22 @@ Click **"Add to Route"** to confirm this stop, or provide corrections.`;
 
     // 3. PRIVATE JETS - Let AI handle the conversation naturally (removed hardcoded flow)
 
-    // 4. YACHT CHARTER - Always request-based, need budget and details
-    if (lowerMsg.match(/yacht|boat/) && !lowerMsg.match(/luxury\s*car/)) {
-      setAssistantTyping(true);
-      
-      try {
-        const systemPrompt = `You are Sphera, helping with yacht charter requests. Always ask for:
-1. Budget range (daily charter rates vary widely)
-2. Number of passengers/guests
-3. Preferred dates and duration
-4. Destination/cruising area
-5. Special requirements (crew, catering, water sports)
+    // 4. YACHT CHARTER - DISABLED for launch, redirect to email
+    if (lowerMsg.match(/yacht|boat|vessel|sailing|catamaran|superyacht/) && !lowerMsg.match(/luxury\s*car/)) {
+      // Show email redirect message - DO NOT collect details
+      const yachtRedirectMessage = `For yacht charters, please contact our dedicated charter team directly:
 
-Keep responses conversational and ask for 1-2 details at a time.`;
+📧 **bookings@privatecharterx.com**
 
-        claudeService.setSystemPrompt(systemPrompt);
+They will personally arrange your perfect yacht experience with custom itineraries, crew selection, and all amenities tailored to your preferences.
 
-        const aiResponse = await claudeService.sendMessage([
-          { role: 'user', content: `User is interested in yacht charter: "${message}". Ask for budget and passenger details.` }
-        ], {
-          maxTokens: 200,
-          temperature: 0.7
-        });
+*AI-assisted yacht charter bookings coming Q1/2026*`;
 
-        setChatHistory(prev => prev.map(c => 
-          c.id === workingChatId
-            ? { ...c, messages: [...c.messages, { role: 'assistant', content: withEmpathy(aiResponse) }] }
-            : c
-        ));
-      } catch (error) {
-        setChatHistory(prev => prev.map(c => 
-          c.id === workingChatId
-            ? { ...c, messages: [...c.messages, { role: 'assistant', content: withEmpathy('Excellent choice for yacht charter! I\'ll need to know your budget range, number of guests, and preferred cruising area to find the perfect yacht for you.') }] }
-            : c
-        ));
-      } finally {
-        setAssistantTyping(false);
-      }
+      setChatHistory(prev => prev.map(c =>
+        c.id === workingChatId
+          ? { ...c, messages: [...c.messages, { role: 'assistant', content: yachtRedirectMessage }] }
+          : c
+      ));
       return;
     }
 
