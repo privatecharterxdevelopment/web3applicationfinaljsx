@@ -5791,13 +5791,20 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                     };
                                     setCartItems(prev => [...prev, cartItem]);
                                     setToast({ message: `${details.serviceName} added to cart`, type: 'cart' });
+
+                                    // For jets and helicopters, ask about in-flight delicacies
+                                    const isFlightService = ['jets', 'helicopters', 'medevac'].includes(details.serviceType);
+                                    const delicaciesPrompt = isFlightService
+                                      ? `\n\nWould you like to add any in-flight delicacies? We offer premium wines, champagne, caviar, and gourmet catering tailored to your route${details.from ? ` from ${details.from}` : ''}.`
+                                      : '';
+
                                     setChatHistory(prev => prev.map(c =>
                                       c.id === activeChat
                                         ? {
                                             ...c,
                                             messages: [...c.messages, {
                                               role: 'assistant',
-                                              content: `Added ${details.serviceName} to your cart.${details.from && details.to ? ` Route: ${details.from} → ${details.to}.` : ''}${details.passengers > 0 ? ` ${details.passengers} passengers.` : ''}${details.totalPrice > 0 ? ` Est. $${details.totalPrice.toLocaleString()}.` : ''} Our team will confirm availability and final pricing.`
+                                              content: `Added ${details.serviceName} to your cart.${details.from && details.to ? ` Route: ${details.from} → ${details.to}.` : ''}${details.passengers > 0 ? ` ${details.passengers} passengers.` : ''}${details.totalPrice > 0 ? ` Est. $${details.totalPrice.toLocaleString()}.` : ''} Our team will confirm availability and final pricing.${delicaciesPrompt}`
                                             }]
                                           }
                                         : c
@@ -7013,37 +7020,6 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                   )}
                                 </div>
 
-                                {/* Catering Options - Monochromatic */}
-                                <div className="mt-3 pt-3 border-t border-gray-200">
-                                  <p className="text-xs font-medium text-gray-700 mb-2">Catering Options</p>
-                                  <div className="space-y-1.5">
-                                    {[
-                                      { id: 'standard', label: 'Standard (snacks & drinks)', price: 0 },
-                                      { id: 'premium', label: 'Premium dining', price: 350 },
-                                      { id: 'gourmet', label: 'Gourmet experience', price: 750 }
-                                    ].map(option => (
-                                      <label key={option.id} className="flex items-center gap-2 cursor-pointer group">
-                                        <input
-                                          type="radio"
-                                          name={`catering-${item.cartId || idx}`}
-                                          checked={(item.catering || 'standard') === option.id}
-                                          onChange={() => {
-                                            setCartItems(prev => prev.map((ci, i) =>
-                                              (ci.cartId === item.cartId || i === idx)
-                                                ? { ...ci, catering: option.id, cateringPrice: option.price }
-                                                : ci
-                                            ));
-                                          }}
-                                          className="w-3 h-3 text-gray-900 border-gray-400 focus:ring-gray-500 focus:ring-1"
-                                        />
-                                        <span className="text-xs text-gray-600 group-hover:text-gray-900">{option.label}</span>
-                                        {option.price > 0 && (
-                                          <span className="text-xs text-gray-500 ml-auto">+${option.price}</span>
-                                        )}
-                                      </label>
-                                    ))}
-                                  </div>
-                                </div>
                               </div>
                             )}
 
