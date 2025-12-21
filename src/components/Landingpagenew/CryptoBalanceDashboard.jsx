@@ -868,17 +868,28 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
     const items = data.items || [];
     const firstItem = items[0] || {};
 
+    // Helper to ensure we only return strings (not objects)
+    const safeString = (val) => {
+      if (val === null || val === undefined) return null;
+      if (typeof val === 'string') return val;
+      if (typeof val === 'number') return String(val);
+      // If it's an object, don't render it
+      return null;
+    };
+
     // Common fields extraction
-    const route = data.route || firstItem.route ||
-      (data.from && data.to ? `${data.from} → ${data.to}` : null) ||
-      (firstItem.from && firstItem.to ? `${firstItem.from} → ${firstItem.to}` : null) ||
-      (data.departure_airport && data.arrival_airport ? `${data.departure_airport} → ${data.arrival_airport}` : null);
+    const route = safeString(data.route) || safeString(firstItem.route) ||
+      (data.from && data.to ? `${safeString(data.from)} → ${safeString(data.to)}` : null) ||
+      (firstItem.from && firstItem.to ? `${safeString(firstItem.from)} → ${safeString(firstItem.to)}` : null) ||
+      (data.departure_airport && data.arrival_airport ? `${safeString(data.departure_airport)} → ${safeString(data.arrival_airport)}` : null);
 
     const price = data.total_price || data.total || data.price || data.estimatedPrice ||
       firstItem.total_price || firstItem.price || firstItem.estimatedPrice;
 
-    const aircraft = data.aircraft_model || data.aircraft || firstItem.aircraft_model ||
-      firstItem.model || firstItem.name;
+    // FIXED: Ensure aircraft and carName are strings, not objects
+    const aircraft = safeString(data.aircraft_model) || safeString(data.aircraft) ||
+      safeString(firstItem.aircraft_model) || safeString(firstItem.model) ||
+      safeString(firstItem.aircraft_type) || safeString(firstItem.title);
 
     const passengers = data.passenger_capacity || data.passengers || data.pax ||
       firstItem.max_passengers || firstItem.passengers;
@@ -886,7 +897,9 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
     const date = data.departure_date || data.date || data.pickupDate ||
       firstItem.departure_date || firstItem.date;
 
-    const carName = data.carName || firstItem.carName || firstItem.name;
+    // FIXED: Ensure carName is a string, not an object
+    const carName = safeString(data.carName) || safeString(firstItem.carName) ||
+      safeString(firstItem.vehicle_name) || safeString(firstItem.title);
     const carSeats = data.carSeats || firstItem.carSeats || firstItem.seats;
 
     return {
