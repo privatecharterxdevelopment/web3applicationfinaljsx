@@ -1520,7 +1520,24 @@ const AIChat = ({
       msg += `\n⏱️ Est. flight time: ${cartItem.estimatedDuration}`;
       msg += `\n💵 Est. total: ~$${cartItem.estimatedPrice.toLocaleString()}`;
     }
-    msg += `\n\nContinue browsing or say "send request" when ready.`;
+
+    // Cross-selling: For empty legs and flights, offer ground transport
+    const isEmptyLeg = item.type === 'empty_legs' || item.type === 'emptyleg';
+    const isFlightService = isEmptyLeg || item.type === 'jets' || item.type === 'jet' || item.type === 'helicopters' || item.type === 'helicopter';
+
+    if (isFlightService) {
+      const arrivalCity = item.to_city || item.to || item.destination || '';
+      const departureCity = item.from_city || item.from || item.origin || '';
+
+      if (arrivalCity || departureCity) {
+        msg += `\n\n✨ **Quick choice!** Would you like ground transport arranged?`;
+        if (arrivalCity) msg += `\n🚗 Airport transfer in **${arrivalCity}** (arrival)`;
+        if (departureCity && departureCity !== arrivalCity) msg += `\n🚗 Airport transfer in **${departureCity}** (departure)`;
+        msg += `\n\n_Just say "yes, arrange transfer" or continue browsing._`;
+      }
+    } else {
+      msg += `\n\nContinue browsing or say "send request" when ready.`;
+    }
 
     setChatHistory(prev => prev.map(c =>
       c.id === activeChat ? { ...c, messages: [...c.messages, { role: 'assistant', content: msg }] } : c
@@ -2791,20 +2808,9 @@ As their luxury travel consultant:
         });
       }
 
-      if (filteredResults.yachts?.length > 0) {
-        formattedTabs.push({
-          id: 'yachts',
-          title: 'Yachts',
-          count: filteredResults.yachts.length,
-          items: filteredResults.yachts.map(yacht => ({
-            ...yacht,
-            type: 'yachts',
-            price: yacht.daily_rate_eur,
-            images: ImageUtils.getAllImageUrls(yacht.images, 'yacht-images'),
-            primaryImage: ImageUtils.getPrimaryImage(yacht.images)
-          }))
-        });
-      }
+      // YACHT SEARCH REMOVED: Yachts are conversational only (Maritime Concierge handles)
+      // The searchYachtsAndAdventures function returns empty for yachts
+      // Yacht requests go through conversational flow → custom request
 
       // HIDDEN: Adventure packages - not shown in AI Chat
       // const adventures = filteredResults.adventures || [];
@@ -3472,24 +3478,8 @@ Click **"Add to Route"** to confirm this stop, or provide corrections.`;
                 requestedModel: toolResult.requestedModel,
                 alternativeMessage: toolResult.alternativeMessage
               });
-            } else if (toolUse.name === 'searchYachtsAndAdventures' && toolResult.results) {
-              if (toolResult.results.yachts && toolResult.results.yachts.length > 0) {
-                tabs.push({
-                  id: 'yachts',
-                  title: 'Yachts',
-                  count: toolResult.results.yachts.length,
-                  items: toolResult.results.yachts
-                });
-              }
-              // HIDDEN: Adventures not shown in AI Chat
-              // if (toolResult.results.adventures && toolResult.results.adventures.length > 0) {
-              //   tabs.push({
-              //     id: 'adventures',
-              //     title: 'Adventures',
-              //     count: toolResult.results.adventures.length,
-              //     items: toolResult.results.adventures
-              //   });
-              // }
+            // YACHT SEARCH REMOVED: Yachts handled conversationally by Maritime Concierge
+            // searchYachtsAndAdventures returns empty for yachts → custom request flow
             } else if (toolUse.name === 'searchLuxuryCars' && toolResult.results && toolResult.results.length > 0) {
               tabs.push({
                 id: 'luxury_cars',
