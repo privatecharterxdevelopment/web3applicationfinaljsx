@@ -908,7 +908,7 @@ const MyActivityView = ({ user, initialFilter, onBack }) => {
             </div>
           )}
 
-          {/* 4. AI REQUESTS - Submitted from AI chat */}
+          {/* 4. AI REQUESTS - Submitted from AI chat - Shows ALL cart items */}
           {aiRequestActivities.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -926,21 +926,19 @@ const MyActivityView = ({ user, initialFilter, onBack }) => {
                       </p>
                       <div className="space-y-2">
                         {dateActivities.map(activity => {
-                          const Icon = getActivityIcon(activity.activityType);
                           const isExpanded = expandedId === activity.id;
-                          const showPayNow = canPayNow(activity);
                           return (
-                            <ActivityCard
+                            <AIRequestCard
                               key={activity.id}
                               activity={activity}
-                              Icon={Icon}
                               isExpanded={isExpanded}
-                              showPayNow={showPayNow}
                               expandedId={expandedId}
                               setExpandedId={setExpandedId}
                               handlePayNow={handlePayNow}
                               processingPayment={processingPayment}
                               getTimeRemaining={getTimeRemaining}
+                              serviceTypeLabels={serviceTypeLabels}
+                              getActivityIcon={getActivityIcon}
                             />
                           );
                         })}
@@ -1134,6 +1132,169 @@ const ActivityCard = ({
   );
 };
 
+// AI Request Card - Shows ALL cart items individually
+const AIRequestCard = ({
+  activity, isExpanded, expandedId, setExpandedId, handlePayNow,
+  processingPayment, getTimeRemaining, serviceTypeLabels, getActivityIcon
+}) => {
+  // Extract items from activity data
+  let data = activity.data;
+  if (typeof data === 'string') {
+    try { data = JSON.parse(data); } catch (e) { data = {}; }
+  }
+  data = data || {};
+  const items = data.items || data.cart_items || activity.cart_items || [];
+
+  // Helper to get item label
+  const getItemLabel = (item) => {
+    const type = (item.type || '').toLowerCase();
+    let label = serviceTypeLabels[type];
+    if (!label) {
+      for (const [key, val] of Object.entries(serviceTypeLabels)) {
+        if (type.includes(key)) { label = val; break; }
+      }
+    }
+    return label || item.name || item.title || item.aircraft_type || 'Service';
+  };
+
+  // Helper to check if item is payable
+  const isPayableItem = (item) => {
+    const type = (item.type || '').toLowerCase();
+    return type.includes('empty_leg') || type.includes('wine') ||
+           type.includes('caviar') || type.includes('champagne') ||
+           type.includes('extra');
+  };
+
+  // Helper to get item icon
+  const getItemIcon = (item) => {
+    const type = (item.type || '').toLowerCase();
+    if (type.includes('jet')) return Plane;
+    if (type.includes('heli')) return Plane;
+    if (type.includes('empty')) return Plane;
+    if (type.includes('yacht')) return Anchor;
+    if (type.includes('car') || type.includes('ground') || type.includes('taxi') || type.includes('transfer')) return Car;
+    if (type.includes('wine') || type.includes('champagne') || type.includes('caviar')) return Wine;
+    return Package;
+  };
+
+  // Helper to get item route
+  const getItemRoute = (item) => {
+    const from = item.from || item.from_city || item.origin || item.departure_airport;
+    const to = item.to || item.to_city || item.destination || item.arrival_airport;
+    if (from && to) return `${from} → ${to}`;
+    return null;
+  };
+
+  return (
+    <div
+      className="bg-white/70 border border-gray-100/80 rounded-xl overflow-hidden hover:border-gray-200/80 transition-all"
+      style={{ backdropFilter: 'blur(10px)' }}
+    >
+      {/* Header - Click to expand */}
+      <div
+        className="px-4 py-3 flex items-center justify-between cursor-pointer border-b border-gray-100"
+        onClick={() => setExpandedId(isExpanded ? null : activity.id)}
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+            <MessageSquare size={14} className="text-purple-600" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-900">
+              AI Cart Request • {items.length} item{items.length !== 1 ? 's' : ''}
+            </p>
+            <p className="text-xs text-gray-500">
+              {formatDistanceToNow(parseISO(activity.created_at), { addSuffix: true })}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${activity.activityStatus.bgColor} ${activity.activityStatus.textColor}`}>
+            {activity.activityStatus.label}
+          </span>
+          <ChevronDown size={16} className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+        </div>
+      </div>
+
+      {/* Items List - Always visible */}
+      <div className="px-4 py-3 space-y-2">
+        {items.length > 0 ? (
+          items.map((item, idx) => {
+            const ItemIcon = getItemIcon(item);
+            const itemRoute = getItemRoute(item);
+            const payable = isPayableItem(item);
+            const itemPrice = item.price || item.totalWithFee || item.basePrice || 0;
+
+            return (
+              <div
+                key={idx}
+                className={`flex items-center justify-between p-3 rounded-lg border ${
+                  payable ? 'bg-amber-50/50 border-amber-200/50' : 'bg-gray-50/50 border-gray-200/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                    payable ? 'bg-amber-100' : 'bg-gray-100'
+                  }`}>
+                    <ItemIcon size={14} className={payable ? 'text-amber-600' : 'text-gray-500'} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{getItemLabel(item)}</p>
+                    {itemRoute && (
+                      <p className="text-xs text-gray-500">{itemRoute}</p>
+                    )}
+                    {item.departure_date && (
+                      <p className="text-xs text-gray-400">{item.departure_date}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right">
+                  {payable ? (
+                    itemPrice > 0 ? (
+                      <>
+                        <p className="text-sm font-semibold text-gray-900">${itemPrice.toLocaleString()}</p>
+                        <p className="text-[10px] text-amber-600">Payable</p>
+                      </>
+                    ) : (
+                      <p className="text-xs text-amber-600 font-medium">Payable</p>
+                    )
+                  ) : (
+                    <p className="text-xs text-blue-500 font-medium">Quote</p>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="text-center py-4 text-gray-400 text-sm">
+            No items in this request
+          </div>
+        )}
+      </div>
+
+      {/* Expanded Details */}
+      {isExpanded && (
+        <div className="px-4 pb-4 pt-2 border-t border-gray-100">
+          {/* Total if any */}
+          {activity.displayPrice > 0 && (
+            <div className="flex justify-between items-center py-2 mb-2">
+              <span className="text-sm text-gray-500">Total</span>
+              <span className="text-lg font-bold text-gray-900">${activity.displayPrice.toLocaleString()}</span>
+            </div>
+          )}
+
+          {/* Reference ID */}
+          <div className="flex items-center">
+            <span className="text-[10px] text-gray-300 font-mono">
+              Ref: {activity.id?.slice(0, 8)}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Activity Details component
 const ActivityDetails = ({ activity }) => {
   let data = activity.data;
@@ -1142,7 +1303,7 @@ const ActivityDetails = ({ activity }) => {
   }
   data = data || {};
 
-  const items = data.items || data.cart_items || [];
+  const items = data.items || data.cart_items || activity.cart_items || [];
 
   return (
     <div className="space-y-3">
