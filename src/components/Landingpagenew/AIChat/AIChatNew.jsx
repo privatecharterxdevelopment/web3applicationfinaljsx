@@ -497,11 +497,75 @@ const AIChatNew = ({
   // ==================================
   if (chat.activeChat === 'new' || chat.activeChat === null) {
     const msgLimits = getMessageLimit();
+    const newChatDisplayTier = subscription.userProfile?.subscription_tier?.toLowerCase() || 'explorer';
 
     return (
       <div className="h-full bg-transparent flex flex-col overflow-hidden">
         {/* Toast */}
         {modals.toast && <Toast message={modals.toast.message} type={modals.toast.type} onClose={() => modals.setToast(null)} />}
+
+        {/* Header with subscription badge */}
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-gray-200/50" style={{
+          background: 'rgba(255, 255, 255, 0.7)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+        }}>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setShowChatOverview?.(true)} className="p-2 hover:bg-gray-100/60 rounded-lg transition-colors">
+              <MessageSquare size={20} className="text-gray-600" />
+            </button>
+            <div className="flex flex-col">
+              <h1 className="font-semibold text-gray-900 text-sm">New Chat</h1>
+              {msgLimits.unlimited ? (
+                <span className="text-xs text-gray-500">Unlimited messages</span>
+              ) : (
+                <span className="text-xs text-gray-500">0/{msgLimits.limit} messages</span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => modals.setShowCartSidebar(true)} className="relative p-2 hover:bg-gray-100/60 rounded-lg transition-colors">
+              <ShoppingCart size={20} className="text-gray-600" />
+              {cart.cartItems.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-black text-white text-xs rounded-full flex items-center justify-center">
+                  {cart.cartItems.length}
+                </span>
+              )}
+            </button>
+            {/* Subscription Tier Badge */}
+            <button
+              onClick={() => modals.setShowSubscriptionModal(true)}
+              className="px-2.5 py-1.5 bg-white/40 hover:bg-white/60 rounded-xl text-xs font-medium text-gray-700 transition-all duration-200 flex items-center gap-1.5 border border-gray-200/40 hover:border-gray-300/50"
+              style={{ backdropFilter: 'blur(8px)' }}
+              title="Click to manage subscription"
+            >
+              {newChatDisplayTier === 'elite' || newChatDisplayTier === 'professional' ? (
+                <span className="flex items-center gap-1">
+                  <Crown size={12} className="text-amber-600" />
+                  <span className="text-gray-700">{newChatDisplayTier.charAt(0).toUpperCase() + newChatDisplayTier.slice(1)}</span>
+                  <span className="text-gray-300">•</span>
+                  <span className="text-gray-500">∞</span>
+                </span>
+              ) : newChatDisplayTier === 'traveller' ? (
+                <span className="flex items-center gap-1">
+                  <span className="text-gray-600">Traveller</span>
+                  <span className="text-gray-300">•</span>
+                  <span className="text-gray-500">0/25</span>
+                </span>
+              ) : newChatDisplayTier === 'explorer' ? (
+                <span className="flex items-center gap-1">
+                  <span className="text-gray-600">Explorer</span>
+                  <span className="text-gray-300">•</span>
+                  <span className="text-gray-500">0/10</span>
+                </span>
+              ) : (
+                <span className="flex items-center gap-1">
+                  <span className="text-gray-500">No Plan</span>
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
 
         {/* Messages area with welcome */}
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 flex flex-col justify-end">
@@ -647,6 +711,8 @@ const AIChatNew = ({
   // ==================================
   const msgLimits = getMessageLimit();
   const displayTier = subscription.userProfile?.subscription_tier?.toLowerCase() || 'explorer';
+  // Calculate actual message count from current chat (user messages only for limit tracking)
+  const actualMessageCount = chat.messages?.filter(m => m.role === 'user').length || 0;
 
   return (
     <div className="h-full bg-transparent flex flex-col overflow-hidden">
@@ -665,13 +731,16 @@ const AIChatNew = ({
           </button>
           <div className="flex flex-col">
             <h1 className="font-semibold text-gray-900 text-sm">{chat.currentChat?.title || 'New Chat'}</h1>
-            {/* Message count display */}
+            {/* Message count display - only show for tiers with limits */}
             {!msgLimits.unlimited && (
               <span className="text-xs text-gray-500">
-                <span className={chat.messageCount >= msgLimits.limit - 2 ? 'text-amber-500' : ''}>
-                  {chat.messageCount}/{msgLimits.limit} messages
+                <span className={actualMessageCount >= msgLimits.limit - 2 ? 'text-amber-500' : ''}>
+                  {actualMessageCount}/{msgLimits.limit} messages
                 </span>
               </span>
+            )}
+            {msgLimits.unlimited && (
+              <span className="text-xs text-gray-500">Unlimited messages</span>
             )}
           </div>
         </div>
@@ -687,35 +756,42 @@ const AIChatNew = ({
               </span>
             )}
           </button>
-          {subscription.userProfile?.subscription_tier && (
-            <button onClick={() => modals.setShowSubscriptionModal(true)} className="px-2.5 py-1.5 rounded-lg hover:opacity-90 transition-opacity" style={{
-              background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.1) 100%)',
-              border: '1px solid rgba(245, 158, 11, 0.2)'
-            }}>
-              <span className="text-xs font-medium text-amber-700 flex items-center gap-1">
-                <Crown size={12} />
-                {displayTier === 'traveller' ? (
-                  <span className="flex items-center gap-1">
-                    Traveller
-                    <span className="text-gray-300">·</span>
-                    <span className={chat.messageCount >= 20 ? 'text-red-500' : chat.messageCount >= 15 ? 'text-amber-500' : 'text-gray-500'}>
-                      {chat.messageCount}/25
-                    </span>
-                  </span>
-                ) : displayTier === 'explorer' ? (
-                  <span className="flex items-center gap-1">
-                    Explorer
-                    <span className="text-gray-300">·</span>
-                    <span className={chat.messageCount >= 8 ? 'text-red-500' : chat.messageCount >= 5 ? 'text-amber-500' : 'text-gray-500'}>
-                      {chat.messageCount}/10
-                    </span>
-                  </span>
-                ) : (
-                  subscription.userProfile.subscription_tier.charAt(0).toUpperCase() + subscription.userProfile.subscription_tier.slice(1)
-                )}
+          {/* Subscription Tier Badge - matches AIChat.jsx */}
+          <button
+            onClick={() => modals.setShowSubscriptionModal(true)}
+            className="px-2.5 py-1.5 bg-white/40 hover:bg-white/60 rounded-xl text-xs font-medium text-gray-700 transition-all duration-200 flex items-center gap-1.5 border border-gray-200/40 hover:border-gray-300/50"
+            style={{ backdropFilter: 'blur(8px)' }}
+            title="Click to manage subscription"
+          >
+            {displayTier === 'elite' || displayTier === 'professional' ? (
+              <span className="flex items-center gap-1">
+                <Crown size={12} className="text-amber-600" />
+                <span className="text-gray-700">{displayTier.charAt(0).toUpperCase() + displayTier.slice(1)}</span>
+                <span className="text-gray-300">•</span>
+                <span className="text-gray-500">∞</span>
               </span>
-            </button>
-          )}
+            ) : displayTier === 'traveller' ? (
+              <span className="flex items-center gap-1">
+                <span className="text-gray-600">Traveller</span>
+                <span className="text-gray-300">•</span>
+                <span className={`${actualMessageCount >= 20 ? 'text-red-500' : actualMessageCount >= 15 ? 'text-amber-500' : 'text-gray-500'}`}>
+                  {actualMessageCount}/25
+                </span>
+              </span>
+            ) : displayTier === 'explorer' ? (
+              <span className="flex items-center gap-1">
+                <span className="text-gray-600">Explorer</span>
+                <span className="text-gray-300">•</span>
+                <span className={`${actualMessageCount >= 8 ? 'text-red-500' : actualMessageCount >= 5 ? 'text-amber-500' : 'text-gray-500'}`}>
+                  {actualMessageCount}/10
+                </span>
+              </span>
+            ) : (
+              <span className="flex items-center gap-1">
+                <span className="text-gray-500">No Plan</span>
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
