@@ -762,27 +762,6 @@ function Homepage() {
         </AnimatedSection>
 
 
-        {/* CTA Section */}
-        <AnimatedSection animation="fade-in" delay={100}>
-          <section className="bg-gray-50 px-8 py-20 text-center">
-            <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-light text-gray-900 mb-4">Stay Ahead in Web3</h2>
-            <p className="text-gray-500 mb-12 max-w-2xl mx-auto leading-relaxed">
-              Join the future of private aviation. Get early access to our blockchain platform
-              and exclusive tokenized flight opportunities.
-            </p>
-            <div className="max-w-md mx-auto">
-              <NewsletterForm
-                compact
-                source="web"
-                placeholder="Enter your email address"
-                buttonText="Subscribe"
-              />
-            </div>
-            </div>
-          </section>
-        </AnimatedSection>
-
         {/* Footer */}
         <footer className="bg-gray-50 border-t border-gray-200" style={{ fontFamily: "'Satoshi', sans-serif", fontWeight: 300 }}>
           {/* Main Footer Content */}
