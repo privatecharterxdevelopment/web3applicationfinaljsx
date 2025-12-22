@@ -929,13 +929,17 @@ const AIChatNew = ({
             <Crown className="w-12 h-12 text-amber-500 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
               {modals.subscriptionBlockerReason === 'no_subscription' ? 'Subscription Required' :
-               modals.subscriptionBlockerReason === 'chat_limit' ? 'Chat Limit Reached' : 'Message Limit Reached'}
+               modals.subscriptionBlockerReason === 'chat_limit' ? 'Chat Limit Reached' :
+               modals.subscriptionBlockerReason === 'message_limit' ? 'Message Limit Reached' :
+               modals.subscriptionBlockerReason === 'feature_restricted' ? 'Upgrade Required' : 'Subscription Required'}
             </h3>
             <p className="text-gray-600 mb-6">
               {modals.subscriptionBlockerReason === 'chat_limit'
                 ? 'You\'ve reached your monthly chat limit. Upgrade to continue creating new conversations.'
                 : modals.subscriptionBlockerReason === 'message_limit'
                 ? 'You\'ve reached the message limit for this chat. Start a new chat or upgrade for more messages.'
+                : modals.subscriptionBlockerReason === 'feature_restricted'
+                ? 'This premium feature requires a higher subscription tier. Upgrade now to unlock access.'
                 : 'Upgrade your subscription to access this feature.'}
             </p>
             <div className="flex gap-3">

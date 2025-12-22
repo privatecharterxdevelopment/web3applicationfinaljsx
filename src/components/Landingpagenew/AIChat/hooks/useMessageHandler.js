@@ -11,6 +11,7 @@ import { chatService } from '../../../../services/chatService';
 import { subscriptionService } from '../../../../services/subscriptionService';
 import { getSystemPrompt } from '../../../../lib/aiKnowledgeBase';
 import { aiToolDefinitions, executeTool } from '../../../../services/aiTools';
+import { checkServiceAccess } from '../utils/constants';
 
 export const useMessageHandler = ({
   user,
@@ -393,6 +394,71 @@ Click **"Add to Route"** to confirm this stop, or provide corrections.`;
     // Check subscription limits for new chats
     // IMPORTANT: Handle both 'new' and null/undefined as new chat indicators
     const isNewChat = !activeChat || activeChat === 'new' || activeChat === 'null';
+
+    // MESSAGE LIMIT CHECK - Enforce per-chat message limits based on subscription tier
+    // Only check for existing chats (not new chats)
+    if (!isAdmin && !isNewChat && existingChat) {
+      const currentMsgCount = existingChat.messages?.filter(m => m.role === 'user').length || 0;
+      const tier = userProfile?.subscription_tier?.toLowerCase();
+      const tierMessageLimit = (tier === 'elite' || tier === 'professional') ? Infinity :
+                               tier === 'traveller' ? 25 : 10;
+
+      if (currentMsgCount >= tierMessageLimit) {
+        setMessageLimitReached(true);
+        // Add message explaining the limit
+        const limitMessage = {
+          role: 'assistant',
+          content: `You've reached the message limit for this chat (${tierMessageLimit} messages).\n\n${tier === 'explorer' || !tier ? 'Upgrade to Traveller for 25 messages per chat, or Elite for unlimited messages.' : 'Upgrade to Elite for unlimited messages per chat.'}`
+        };
+        setChatHistory(prev => prev.map(c =>
+          c.id === activeChat
+            ? { ...c, messages: [...c.messages, limitMessage] }
+            : c
+        ));
+        // Show subscription blocker popup
+        setSubscriptionBlockerReason('message_limit');
+        setShowSubscriptionBlocker(true);
+        setIsProcessing(false);
+        return;
+      }
+      setMessageCount(currentMsgCount + 1);
+    }
+
+    // FEATURE RESTRICTION CHECK - Check if user is requesting a service requiring higher tier
+    const currentTier = userProfile?.subscription_tier || null;
+    const serviceAccessCheck = checkServiceAccess(trimmedMessage, currentTier);
+
+    if (!serviceAccessCheck.hasAccess && !isAdmin) {
+      const tierDisplayName = serviceAccessCheck.requiredTier === 'elite' ? 'Elite Club' : 'Traveller';
+
+      // Add user message to chat
+      const userMessage = { role: 'user', content: trimmedMessage };
+      setChatHistory(prev => prev.map(c =>
+        c.id === activeChat
+          ? { ...c, messages: [...c.messages, userMessage] }
+          : c
+      ));
+
+      // Add assistant response explaining the upgrade requirement
+      setTimeout(() => {
+        const upgradeMessage = {
+          role: 'assistant',
+          content: `I'd love to help you with **${serviceAccessCheck.displayName}**, but this premium service requires a **${tierDisplayName}** subscription or higher.\n\nYour current plan: **${currentTier ? currentTier.charAt(0).toUpperCase() + currentTier.slice(1) : 'None'}**\n\nUpgrade now to unlock:\n• ${serviceAccessCheck.displayName}\n• ${serviceAccessCheck.requiredTier === 'elite' ? 'Unlimited chats & messages' : 'More chats & messages'}\n• Priority support`
+        };
+
+        setChatHistory(prev => prev.map(c =>
+          c.id === activeChat
+            ? { ...c, messages: [...c.messages, upgradeMessage] }
+            : c
+        ));
+
+        setSubscriptionBlockerReason('feature_restricted');
+        setShowSubscriptionBlocker(true);
+      }, 500);
+
+      setIsProcessing(false);
+      return;
+    }
 
     if (isNewChat) {
       if (user?.id && !isAdmin) {
