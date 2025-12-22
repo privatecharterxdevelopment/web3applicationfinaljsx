@@ -6,7 +6,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import { subscriptionService } from '../../../../services/subscriptionService';
 
-export const useSubscriptionNew = (userId) => {
+export const useSubscriptionNew = (user, isAdmin = false) => {
+  // Extract userId from user object or use directly if string
+  const userId = typeof user === 'string' ? user : user?.id;
+
   // User Profile & Subscription
   const [userProfile, setUserProfile] = useState(null);
   const [userSubscriptionLimits, setUserSubscriptionLimits] = useState(null);

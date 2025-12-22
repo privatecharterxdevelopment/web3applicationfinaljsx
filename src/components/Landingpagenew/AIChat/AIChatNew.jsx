@@ -937,7 +937,8 @@ const AIChatNew = ({
           onToast={({ message, type }) => modals.setToast({ message, type })}
         />
       )}
-      {modals.showSubscriptionBlocker && (
+      {/* Subscription Blocker Popup - Only for non-chat_limit reasons (chat_limit has inline banner) */}
+      {modals.showSubscriptionBlocker && modals.subscriptionBlockerReason !== 'chat_limit' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{
           background: 'rgba(0, 0, 0, 0.4)',
           backdropFilter: 'blur(8px)',
@@ -951,13 +952,12 @@ const AIChatNew = ({
             <Crown className="w-12 h-12 text-amber-500 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
               {modals.subscriptionBlockerReason === 'no_subscription' ? 'Subscription Required' :
-               modals.subscriptionBlockerReason === 'chat_limit' ? 'Chat Limit Reached' :
                modals.subscriptionBlockerReason === 'message_limit' ? 'Message Limit Reached' :
                modals.subscriptionBlockerReason === 'feature_restricted' ? 'Upgrade Required' : 'Subscription Required'}
             </h3>
             <p className="text-gray-600 mb-6">
-              {modals.subscriptionBlockerReason === 'chat_limit'
-                ? 'You\'ve reached your monthly chat limit. Upgrade to continue creating new conversations.'
+              {modals.subscriptionBlockerReason === 'no_subscription'
+                ? 'Subscribe to access Sphera AI and start planning your luxury travel experiences.'
                 : modals.subscriptionBlockerReason === 'message_limit'
                 ? 'You\'ve reached the message limit for this chat. Start a new chat or upgrade for more messages.'
                 : modals.subscriptionBlockerReason === 'feature_restricted'
