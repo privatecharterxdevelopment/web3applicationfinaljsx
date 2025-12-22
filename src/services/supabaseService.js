@@ -350,6 +350,26 @@ export const UnifiedSearchService = {
         if (low === 'switzerland' || low === 'ch') variants.push('Zurich', 'Geneva', 'Basel');
         if (low === 'italy' || low === 'it') variants.push('Milan', 'Rome', 'Naples');
         if (low === 'spain' || low === 'es') variants.push('Madrid', 'Barcelona', 'Ibiza', 'Mallorca');
+        // Continent mappings
+        if (low === 'europe' || low === 'european') variants.push(
+          'Germany', 'France', 'Italy', 'Spain', 'United Kingdom', 'Switzerland', 'Austria', 'Belgium',
+          'Netherlands', 'Portugal', 'Sweden', 'Norway', 'Denmark', 'Finland', 'Poland', 'Czechia', 'Czech Republic',
+          'Greece', 'Ireland', 'Luxembourg', 'Monaco', 'Liechtenstein', 'Malta', 'Cyprus', 'Croatia', 'Slovenia',
+          'Paris', 'London', 'Berlin', 'Munich', 'Frankfurt', 'Zurich', 'Geneva', 'Vienna', 'Amsterdam', 'Brussels',
+          'Milan', 'Rome', 'Madrid', 'Barcelona', 'Lisbon', 'Nice', 'Cannes', 'Monaco', 'Stockholm', 'Copenhagen'
+        );
+        if (low === 'middle east' || low === 'middleeast') variants.push(
+          'Dubai', 'Abu Dhabi', 'United Arab Emirates', 'UAE', 'Saudi Arabia', 'Qatar', 'Bahrain', 'Kuwait',
+          'Oman', 'Jordan', 'Israel', 'Tel Aviv', 'Riyadh', 'Jeddah', 'Doha'
+        );
+        if (low === 'asia' || low === 'asian') variants.push(
+          'Japan', 'Tokyo', 'Singapore', 'Hong Kong', 'Thailand', 'Bangkok', 'Malaysia', 'Kuala Lumpur',
+          'Indonesia', 'Vietnam', 'Philippines', 'Taiwan', 'South Korea', 'Seoul'
+        );
+        if (low === 'africa' || low === 'african') variants.push(
+          'South Africa', 'Johannesburg', 'Cape Town', 'Morocco', 'Egypt', 'Kenya', 'Nigeria', 'Tanzania',
+          'Mauritius', 'Seychelles', 'Mozambique'
+        );
         return variants;
       };
   const locationVariants = buildLocationVariants(location);

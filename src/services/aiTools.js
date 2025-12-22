@@ -124,7 +124,7 @@ async function calculateTransferDistanceMapbox(from, to) {
 export const aiToolDefinitions = [
   {
     name: "searchEmptyLegs",
-    description: "Search for empty leg flights (discounted repositioning flights). Use this when users ask about empty legs, cheap flights, or mention specific departure/arrival cities, IATA codes, countries, or dates. IMPORTANT: Do NOT use this tool if you already showed empty leg results in this conversation - just reference the options already displayed above.",
+    description: "Search for empty leg flights (discounted repositioning flights). ALWAYS use this tool when users ask about empty legs with a location (city, country, region like 'Europe', 'Middle East', etc.). Use 'location' parameter for general region searches (e.g., location='Europe' for European empty legs). If user asks about a DIFFERENT location than previous results, perform a NEW search with the new location. Only skip this tool if user is asking follow-up questions about results already shown without specifying a new location.",
     input_schema: {
       type: "object",
       properties: {
@@ -138,7 +138,7 @@ export const aiToolDefinitions = [
         },
         location: {
           type: "string",
-          description: "Generic location when 'from' or 'to' is ambiguous - can be city, IATA code, or country"
+          description: "Region, continent, or generic location. Use this for broad searches like 'Europe', 'Middle East', 'Asia', 'Africa', or when user doesn't specify from/to. Examples: 'Europe', 'European', 'Middle East', 'Dubai', 'Switzerland'"
         },
         country: {
           type: "string",

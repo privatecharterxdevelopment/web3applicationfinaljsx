@@ -81,6 +81,12 @@ export const chatService = {
    */
   async updateChatMessages(chatId, messages, userId) {
     try {
+      // Guard against null/undefined chatId
+      if (!chatId || chatId === 'new' || chatId === 'null' || chatId === 'undefined') {
+        console.warn('⚠️ Skipping chat update - invalid chatId:', chatId);
+        return { success: false, error: 'Invalid chatId' };
+      }
+
       // First try to update existing chat
       const { data, error } = await supabase
         .from('ai_chat_sessions')
