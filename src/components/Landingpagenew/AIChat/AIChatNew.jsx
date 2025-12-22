@@ -697,9 +697,20 @@ const AIChatNew = ({
         {modals.showSubscriptionModal && (
           <SubscriptionModal
             isOpen={modals.showSubscriptionModal}
-            onClose={() => modals.setShowSubscriptionModal(false)}
-            currentTier={subscription.userProfile?.subscription_tier}
-            userId={user?.id}
+            onClose={async () => {
+              modals.setShowSubscriptionModal(false);
+              // Refresh profile in case subscription was updated (webhook processed)
+              if (user?.id) {
+                await subscription.loadUserProfile();
+              }
+            }}
+            currentTier={subscription.userProfile?.subscription_tier || subscription.userSubscriptionLimits?.tier}
+            onUpgrade={async (tierId) => {
+              console.log('🎉 Plan selected:', tierId);
+              // The SubscriptionModal handles redirect to Stripe
+              // After returning, the useEffect will detect subscription=success
+            }}
+            onToast={({ message, type }) => modals.setToast({ message, type })}
           />
         )}
       </div>
@@ -910,9 +921,20 @@ const AIChatNew = ({
       {modals.showSubscriptionModal && (
         <SubscriptionModal
           isOpen={modals.showSubscriptionModal}
-          onClose={() => modals.setShowSubscriptionModal(false)}
-          currentTier={subscription.userProfile?.subscription_tier}
-          userId={user?.id}
+          onClose={async () => {
+            modals.setShowSubscriptionModal(false);
+            // Refresh profile in case subscription was updated (webhook processed)
+            if (user?.id) {
+              await subscription.loadUserProfile();
+            }
+          }}
+          currentTier={subscription.userProfile?.subscription_tier || subscription.userSubscriptionLimits?.tier}
+          onUpgrade={async (tierId) => {
+            console.log('🎉 Plan selected:', tierId);
+            // The SubscriptionModal handles redirect to Stripe
+            // After returning, the useEffect will detect subscription=success
+          }}
+          onToast={({ message, type }) => modals.setToast({ message, type })}
         />
       )}
       {modals.showSubscriptionBlocker && (

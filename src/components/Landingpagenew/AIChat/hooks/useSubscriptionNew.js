@@ -26,11 +26,16 @@ export const useSubscriptionNew = (userId) => {
     if (!userId) return null;
 
     try {
-      const { profile, error } = await subscriptionService.getUserProfile(userId);
-      if (error) {
-        console.error('Error loading user profile:', error);
-        return null;
-      }
+      // subscriptionService.getUserProfile returns the profile directly, NOT { profile, error }
+      const profile = await subscriptionService.getUserProfile(userId);
+
+      console.log('📦 Loaded user profile:', {
+        tier: profile?.subscription_tier,
+        status: profile?.subscription_status,
+        chatsUsed: profile?.chats_used,
+        chatsLimit: profile?.chats_limit,
+        userId
+      });
 
       setUserProfile(profile);
 
@@ -38,6 +43,22 @@ export const useSubscriptionNew = (userId) => {
       if (profile?.nft_holder) {
         setUserHasNFT(true);
         setUsedNFTBenefitThisYear(profile?.nft_benefit_used_this_year || false);
+      }
+
+      // Check if chat limit reached
+      const hasSubscription = profile?.subscription_tier && profile?.subscription_status === 'active';
+      const hasLimit = profile?.chats_limit !== null && profile?.chats_limit !== undefined;
+      const limitReached = hasLimit && profile?.chats_used >= profile?.chats_limit;
+
+      if (hasSubscription && limitReached) {
+        console.log('⚠️ Chat limit reached:', {
+          used: profile.chats_used,
+          limit: profile.chats_limit,
+          tier: profile.subscription_tier
+        });
+        setChatLimitReached(true);
+      } else {
+        setChatLimitReached(false);
       }
 
       return profile;
@@ -151,13 +172,46 @@ export const useSubscriptionNew = (userId) => {
     setMessageLimitReached(messageCount >= limit);
   }, [messageCount, userSubscriptionLimits]);
 
-  // Load profile on mount
+  // Load profile on mount + handle Stripe success redirect
   useEffect(() => {
     if (userId) {
       loadUserProfile();
       loadSubscriptionLimits();
     }
+
+    // Check if returning from Stripe subscription success
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('subscription') === 'success' && userId) {
+      console.log('🎉 Subscription success detected - refreshing profile');
+      // Remove the param from URL to prevent re-triggering
+      urlParams.delete('subscription');
+      const newUrl = window.location.pathname + (urlParams.toString() ? `?${urlParams.toString()}` : '');
+      window.history.replaceState({}, '', newUrl);
+
+      // Refresh profile after short delay to ensure Stripe webhook has processed
+      setTimeout(() => {
+        loadUserProfile();
+        loadSubscriptionLimits();
+      }, 1500);
+    }
   }, [userId, loadUserProfile, loadSubscriptionLimits]);
+
+  // Periodically refresh profile when chat limit is reached (to detect upgrades via webhook)
+  useEffect(() => {
+    if (!chatLimitReached || !userId) return;
+
+    console.log('🔄 Starting periodic profile refresh (checking for subscription updates)');
+
+    const refreshInterval = setInterval(async () => {
+      console.log('🔄 Checking for subscription updates...');
+      await loadUserProfile();
+    }, 30000); // Check every 30 seconds
+
+    return () => {
+      console.log('🔄 Stopping periodic profile refresh');
+      clearInterval(refreshInterval);
+    };
+  }, [chatLimitReached, userId, loadUserProfile]);
 
   return {
     // Profile
