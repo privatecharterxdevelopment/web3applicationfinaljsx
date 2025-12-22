@@ -1171,7 +1171,7 @@ const TokenizedAssetsGlassmorphic = () => {
     // Chat
     'chat': '/dashboard/chat',
     'chat-history': '/dashboard/chat-history',
-    'chat-support': '/dashboard/chat-support',
+    'chat-support': '/faqs',
 
     // Other
     'search-index': '/dashboard/search-index',
@@ -2141,7 +2141,7 @@ const TokenizedAssetsGlassmorphic = () => {
 
       // Other
       '/dashboard/search-index': 'search-index',
-      '/dashboard/chat-support': 'chat-support',
+      '/faqs': 'chat-support',
       '/dashboard/chat-history': 'chat-history',
       '/dashboard/profile': 'profile'
     };

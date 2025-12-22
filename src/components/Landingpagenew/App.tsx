@@ -455,7 +455,7 @@ function AppContent() {
               <Route path="/dashboard/referral" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
               <Route path="/dashboard/my-launches" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
               <Route path="/dashboard/search-index" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/chat-support" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/faqs" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
               <Route path="/dashboard/chat-history" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
               <Route path="/dashboard/profile" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
 
