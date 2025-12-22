@@ -731,6 +731,86 @@ export const aiToolDefinitions = [
       required: ["name", "segments"]
     }
   },
+  {
+    name: "createMedevacRequest",
+    description: "CRITICAL EMERGENCY TOOL: Use this tool when all MEDEVAC (Medical Evacuation) information has been collected. Creates an interactive MEDEVAC request card with 'Add to Cart' button for immediate processing. This is a life-saving emergency service - call this tool immediately after collecting: patient condition, urgency level, location, destination hospital, and number of patients/escorts. REQUIRED for Traveller and Elite tier users only. DO NOT just say 'request submitted' in text - you MUST call this tool to create the actionable card.",
+    input_schema: {
+      type: "object",
+      properties: {
+        urgencyLevel: {
+          type: "string",
+          enum: ["critical", "urgent", "standard"],
+          description: "Emergency urgency level: 'critical' = immediate life-threatening (cardiac arrest, stroke, severe trauma), 'urgent' = serious but stable (fractures, severe illness), 'standard' = non-emergency medical transport"
+        },
+        patientName: {
+          type: "string",
+          description: "Patient's full name"
+        },
+        patientAge: {
+          type: "number",
+          description: "Patient's age"
+        },
+        patientCondition: {
+          type: "string",
+          description: "Description of medical condition/emergency (e.g., 'cardiac event requiring immediate intervention', 'severe fracture from skiing accident')"
+        },
+        medicalNeeds: {
+          type: "string",
+          description: "Specific medical equipment or personnel needed (e.g., 'ventilator, cardiac monitor', 'orthopedic specialist')"
+        },
+        currentLocation: {
+          type: "string",
+          description: "Current location of patient - be specific (hospital name, city, or exact address)"
+        },
+        currentLocationDetails: {
+          type: "string",
+          description: "Additional location details (room number, building, coordinates if known)"
+        },
+        destinationHospital: {
+          type: "string",
+          description: "Target hospital or medical facility name and city"
+        },
+        destinationDetails: {
+          type: "string",
+          description: "Additional destination details (department, specialist awaiting)"
+        },
+        numberOfPatients: {
+          type: "number",
+          description: "Number of patients requiring transport (usually 1)"
+        },
+        medicalEscorts: {
+          type: "number",
+          description: "Number of medical personnel accompanying (doctors, nurses)"
+        },
+        familyEscorts: {
+          type: "number",
+          description: "Number of family members accompanying"
+        },
+        preferredDateTime: {
+          type: "string",
+          description: "Preferred departure time - for critical cases use 'ASAP' or 'Immediately'"
+        },
+        mobilityStatus: {
+          type: "string",
+          enum: ["ambulatory", "stretcher", "wheelchair", "intensive_care"],
+          description: "Patient mobility: 'ambulatory' = can walk, 'stretcher' = requires stretcher, 'wheelchair' = wheelchair bound, 'intensive_care' = requires full ICU setup"
+        },
+        insuranceInfo: {
+          type: "string",
+          description: "Insurance provider and policy number if available"
+        },
+        emergencyContact: {
+          type: "string",
+          description: "Emergency contact name and phone number"
+        },
+        additionalNotes: {
+          type: "string",
+          description: "Any additional critical information (allergies, current medications, special requirements)"
+        }
+      },
+      required: ["urgencyLevel", "patientCondition", "currentLocation", "destinationHospital"]
+    }
+  },
   // HOTEL TOOLS DISABLED - LiteAPI hotels temporarily removed
   // {
   //   name: "searchHotels",
@@ -810,6 +890,9 @@ export async function executeTool(toolName, input) {
 
       case 'createTripPackage':
         return createTripPackage(input);
+
+      case 'createMedevacRequest':
+        return createMedevacRequest(input);
 
       // HOTEL TOOLS DISABLED - LiteAPI hotels temporarily removed
       // case 'searchHotels':
@@ -3030,6 +3113,161 @@ ${segmentSummary}
       `${processedSegments.length} segments in this trip`,
       `Estimated total: €${estimatedTotal.toLocaleString()}`,
       'Click "Add Trip to Cart" to proceed'
+    ]
+  };
+}
+
+// ============================================
+// MEDEVAC (MEDICAL EVACUATION) REQUEST TOOL
+// ============================================
+
+/**
+ * Create a MEDEVAC request with all patient information
+ * Creates an interactive card with Add to Cart button for immediate processing
+ * CRITICAL: This is for life-threatening emergency medical transport
+ */
+function createMedevacRequest(params) {
+  const {
+    urgencyLevel = 'urgent',
+    patientName = '',
+    patientAge = null,
+    patientCondition = '',
+    medicalNeeds = '',
+    currentLocation = '',
+    currentLocationDetails = '',
+    destinationHospital = '',
+    destinationDetails = '',
+    numberOfPatients = 1,
+    medicalEscorts = 0,
+    familyEscorts = 0,
+    preferredDateTime = '',
+    mobilityStatus = 'stretcher',
+    insuranceInfo = '',
+    emergencyContact = '',
+    additionalNotes = ''
+  } = params;
+
+  // Validate required fields
+  if (!patientCondition || !currentLocation || !destinationHospital) {
+    return {
+      success: false,
+      error: 'Missing required MEDEVAC information: patient condition, current location, and destination hospital are required'
+    };
+  }
+
+  // Calculate total passengers
+  const totalPassengers = numberOfPatients + medicalEscorts + familyEscorts;
+
+  // Create the MEDEVAC request object
+  const medevacRequest = {
+    id: `medevac-${Date.now()}`,
+    type: 'medevac',
+    urgencyLevel,
+    createdAt: new Date().toISOString(),
+
+    // Patient Information
+    patient: {
+      name: patientName || 'Patient',
+      age: patientAge,
+      condition: patientCondition,
+      medicalNeeds,
+      mobilityStatus
+    },
+
+    // Route Information
+    route: {
+      origin: currentLocation,
+      originDetails: currentLocationDetails,
+      destination: destinationHospital,
+      destinationDetails
+    },
+
+    // Passenger Details
+    passengers: {
+      patients: numberOfPatients,
+      medicalEscorts,
+      familyEscorts,
+      total: totalPassengers
+    },
+
+    // Timing
+    timing: {
+      preferredDateTime: preferredDateTime || (urgencyLevel === 'critical' ? 'IMMEDIATE' : 'ASAP'),
+      isEmergency: urgencyLevel === 'critical' || urgencyLevel === 'urgent'
+    },
+
+    // Additional Info
+    insurance: insuranceInfo,
+    emergencyContact,
+    notes: additionalNotes,
+
+    // Cart/Pricing
+    requiresConfirmation: true,
+    isEstimate: true,
+    priceOnRequest: true // MEDEVAC pricing is always custom quoted
+  };
+
+  // Urgency styling info for the card
+  const urgencyStyles = {
+    critical: {
+      label: '🚨 CRITICAL EMERGENCY',
+      color: 'red',
+      description: 'Immediate life-threatening situation - Priority dispatch'
+    },
+    urgent: {
+      label: '⚠️ URGENT',
+      color: 'amber',
+      description: 'Serious medical situation - Expedited response'
+    },
+    standard: {
+      label: '🏥 MEDICAL TRANSPORT',
+      color: 'blue',
+      description: 'Non-emergency medical repatriation'
+    }
+  };
+
+  const urgencyInfo = urgencyStyles[urgencyLevel] || urgencyStyles.urgent;
+
+  // Build summary for display
+  const displayMessage = `## ${urgencyInfo.label}
+
+**Patient Condition:** ${patientCondition}
+${patientAge ? `**Patient Age:** ${patientAge} years` : ''}
+${mobilityStatus ? `**Mobility:** ${mobilityStatus.replace('_', ' ').toUpperCase()}` : ''}
+${medicalNeeds ? `**Medical Needs:** ${medicalNeeds}` : ''}
+
+### Transport Route
+**From:** ${currentLocation}${currentLocationDetails ? ` (${currentLocationDetails})` : ''}
+**To:** ${destinationHospital}${destinationDetails ? ` (${destinationDetails})` : ''}
+
+### Passengers
+- Patients: ${numberOfPatients}
+- Medical Escorts: ${medicalEscorts}
+- Family Members: ${familyEscorts}
+- **Total:** ${totalPassengers}
+
+${preferredDateTime ? `**Requested Time:** ${preferredDateTime}` : '**Requested Time:** ASAP'}
+
+${emergencyContact ? `**Emergency Contact:** ${emergencyContact}` : ''}
+${additionalNotes ? `\n**Notes:** ${additionalNotes}` : ''}
+
+---
+**⚡ Price on Request** - Our medical coordination team will contact you immediately with aircraft availability and pricing.
+
+*Click "Add MEDEVAC Request to Cart" to submit this request for immediate processing.*`;
+
+  return {
+    success: true,
+    action: 'SHOW_MEDEVAC_REQUEST',
+    message: `I've prepared your MEDEVAC request. Click "Add to Cart" to submit it for immediate processing.`,
+    medevacRequest,
+    urgencyInfo,
+    displayMessage,
+    notes: [
+      `Urgency: ${urgencyInfo.label}`,
+      `Route: ${currentLocation} → ${destinationHospital}`,
+      `${totalPassengers} passenger(s)`,
+      'Our team will contact you immediately after submission'
     ]
   };
 }

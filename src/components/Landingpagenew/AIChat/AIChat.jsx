@@ -50,6 +50,7 @@ import AdventureCard from '../../AdventureCard';
 import { JourneyBuilder, YachtJourneyBuilder, AirportTransferOffer } from './components/MultiStopJourney';
 import CartJourneyDisplay from './components/CartJourneyDisplay';
 import TripPackageCard from './components/TripPackageCard';
+import MedevacRequestCard from './components/MedevacRequestCard';
 
 // Extracted Components
 import { ChatHeader, InputArea, Modals, Toast, WeatherWidget, TypingAnimation, TypingText } from './components';
@@ -3705,6 +3706,25 @@ Then use searchCigars with appropriate filters. Keep it elegant and brief.`;
               ));
               setIsProcessing(false);
               return; // Exit early - TripPackageCard will handle adding to cart
+            } else if (toolUse.name === 'createMedevacRequest' && toolResult.action === 'SHOW_MEDEVAC_REQUEST' && toolResult.medevacRequest) {
+              // CRITICAL: Show MEDEVAC request card for emergency medical evacuation
+              console.log('🚨 MEDEVAC Request created:', toolResult.medevacRequest);
+
+              const medevacMessage = {
+                role: 'medevac_request',
+                content: toolResult.displayMessage || toolResult.message,
+                medevacRequest: toolResult.medevacRequest,
+                urgencyInfo: toolResult.urgencyInfo,
+                notes: toolResult.notes
+              };
+
+              setChatHistory(prev => prev.map(c =>
+                c.id === workingChatId
+                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), medevacMessage] }
+                  : c
+              ));
+              setIsProcessing(false);
+              return; // Exit early - MedevacRequestCard will handle adding to cart
             } else if (toolUse.name === 'lookupPlaceAddress' && toolResult.place) {
               // Show place card with rich Google Places data
               const placeMessage = {
@@ -5301,6 +5321,69 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           // Send message to adjust the trip
                           const editMessage = `I'd like to adjust my ${tripPkg.name} trip package. Can you help me modify the segments?`;
                           handleSendMessage(editMessage);
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              }
+
+              // Render MedevacRequestCard if this is a medevac_request message
+              if (msg.role === 'medevac_request' && msg.medevacRequest) {
+                return (
+                  <div key={idx} className="flex justify-start animate-fade-in w-full my-4">
+                    <div className="flex flex-col gap-2 ml-12 w-full" style={{ maxWidth: '450px' }}>
+                      <div className="flex items-center gap-2 px-2">
+                        <div className={`w-2 h-2 rounded-full animate-pulse ${
+                          msg.medevacRequest.urgencyLevel === 'critical' ? 'bg-red-600' : 'bg-amber-500'
+                        }`}></div>
+                        <span className="text-xs text-gray-600 font-medium">Sphera AI - Medical Coordination</span>
+                        <span className="text-xs text-gray-400">{timestamp}</span>
+                      </div>
+                      <MedevacRequestCard
+                        medevacRequest={msg.medevacRequest}
+                        urgencyInfo={msg.urgencyInfo}
+                        isInCart={cartItems.some(item => item.id === msg.medevacRequest.id)}
+                        onAddToCart={(medevacReq) => {
+                          // Add MEDEVAC request to cart with PRIORITY handling
+                          const cartItem = {
+                            ...medevacReq,
+                            cartId: `medevac-${Date.now()}`,
+                            type: 'medevac',
+                            name: `MEDEVAC: ${medevacReq.route?.origin} → ${medevacReq.route?.destination}`,
+                            title: 'Medical Evacuation Request',
+                            price: 0,
+                            priceOnRequest: true,
+                            isEstimate: true,
+                            requiresConfirmation: true,
+                            isPriority: medevacReq.urgencyLevel === 'critical' || medevacReq.urgencyLevel === 'urgent',
+                            addedAt: new Date().toISOString()
+                          };
+                          setCartItems(prev => [...prev, cartItem]);
+                          showToast(`MEDEVAC request submitted - Our team will contact you immediately!`, 'success');
+
+                          // Update message to show it's in cart
+                          setChatHistory(prev => prev.map(c =>
+                            c.id === workingChatId
+                              ? {
+                                  ...c,
+                                  messages: c.messages.map((m, i) =>
+                                    i === idx ? { ...m, medevacRequest: { ...m.medevacRequest, addedToCart: true } } : m
+                                  )
+                                }
+                              : c
+                          ));
+
+                          // Add confirmation message with next steps
+                          const confirmMessage = {
+                            role: 'assistant',
+                            content: `🚨 **MEDEVAC Request Submitted**\n\nYour medical evacuation request has been added to your cart and flagged as ${medevacReq.urgencyLevel === 'critical' ? 'CRITICAL PRIORITY' : 'URGENT'}.\n\n**What happens next:**\n1. Our medical coordination team will call you within 15 minutes\n2. We'll coordinate with medical facilities at both locations\n3. You'll receive aircraft options and pricing\n4. We handle all logistics for a seamless medical transport\n\nIs there anything else you need while we process this request?`
+                          };
+                          setChatHistory(prev => prev.map(c =>
+                            c.id === activeChat
+                              ? { ...c, messages: [...c.messages, confirmMessage] }
+                              : c
+                          ));
                         }}
                       />
                     </div>
