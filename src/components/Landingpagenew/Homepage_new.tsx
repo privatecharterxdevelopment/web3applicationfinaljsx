@@ -900,7 +900,14 @@ function Homepage() {
                 {/* Connect */}
                 <div>
                   <h4 className="text-sm font-medium text-gray-900 mb-4">Connect</h4>
-                  <div className="flex flex-wrap gap-3">
+                  {/* Logo */}
+                  <img
+                    src="https://i.ibb.co/DPF5g3Sk/iu42DU1.png"
+                    alt="PrivateCharterX"
+                    className="h-8 object-contain mb-4"
+                  />
+                  {/* Social Icons - 1 row, left aligned */}
+                  <div className="flex gap-3 justify-start">
                     {/* LinkedIn */}
                     <a href="https://linkedin.com/company/privatecharterx" target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
                       <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
@@ -929,7 +936,7 @@ function Homepage() {
                   {/* Payment Icons */}
                   <div className="mt-6">
                     <p className="text-xs text-gray-400 mb-2">We accept</p>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex gap-2">
                       <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-500">BTC</span>
                       <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-500">ETH</span>
                       <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-500">USDC</span>
