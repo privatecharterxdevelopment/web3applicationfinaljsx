@@ -788,7 +788,7 @@ function Homepage() {
           {/* Main Footer Content */}
           <div className="px-4 sm:px-8 py-12 sm:py-16">
             <div className="max-w-6xl mx-auto">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-8 sm:gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-6">
 
                 {/* Services */}
                 <div>
@@ -840,22 +840,6 @@ function Homepage() {
                   </div>
                 </div>
 
-                {/* Company */}
-                <div>
-                  <h4 className="text-sm font-medium text-gray-900 mb-4">Company</h4>
-                  <div className="space-y-2.5">
-                    <button onClick={() => navigate('/about')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      About Us
-                    </button>
-                    <button onClick={() => window.location.href = 'mailto:admin@privatecharterx.com?subject=Partner%20Inquiry'} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Become a Partner
-                    </button>
-                    <button onClick={() => window.location.href = 'mailto:admin@privatecharterx.com'} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Contact Us
-                    </button>
-                  </div>
-                </div>
-
                 {/* Support */}
                 <div>
                   <h4 className="text-sm font-medium text-gray-900 mb-4">Support</h4>
@@ -874,25 +858,6 @@ function Homepage() {
                     </button>
                     <button onClick={() => navigate('/dashboard/requests')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                       My Requests
-                    </button>
-                  </div>
-                </div>
-
-                {/* Legal */}
-                <div>
-                  <h4 className="text-sm font-medium text-gray-900 mb-4">Legal</h4>
-                  <div className="space-y-2.5">
-                    <button onClick={() => navigate('/terms')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Terms of Service
-                    </button>
-                    <button onClick={() => navigate('/privacy')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Privacy Policy
-                    </button>
-                    <button onClick={() => navigate('/cookies')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Cookie Policy
-                    </button>
-                    <button onClick={() => navigate('/imprint')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Imprint
                     </button>
                   </div>
                 </div>
@@ -949,7 +914,29 @@ function Homepage() {
             </div>
           </div>
 
-          {/* Bottom Bar */}
+          {/* Legal Links Bar */}
+          <div className="border-t border-gray-200 bg-gray-50">
+            <div className="px-4 sm:px-8 py-4">
+              <div className="max-w-6xl mx-auto">
+                <div className="flex flex-wrap justify-center gap-4 sm:gap-8">
+                  <button onClick={() => navigate('/terms')} className="text-xs text-gray-500 hover:text-gray-900 transition-colors">
+                    Terms of Service
+                  </button>
+                  <button onClick={() => navigate('/privacy')} className="text-xs text-gray-500 hover:text-gray-900 transition-colors">
+                    Privacy Policy
+                  </button>
+                  <button onClick={() => navigate('/cookies')} className="text-xs text-gray-500 hover:text-gray-900 transition-colors">
+                    Cookie Policy
+                  </button>
+                  <button onClick={() => navigate('/imprint')} className="text-xs text-gray-500 hover:text-gray-900 transition-colors">
+                    Imprint
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Company Info Bar */}
           <div className="border-t border-gray-200 bg-gray-100">
             <div className="px-4 sm:px-8 py-4">
               <div className="max-w-6xl mx-auto">
