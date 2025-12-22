@@ -783,174 +783,172 @@ function Homepage() {
           </section>
         </AnimatedSection>
 
-        {/* Divider Line */}
-        <div className="border-t border-gray-200"></div>
-
         {/* Footer */}
-        <footer className="bg-gray-50 px-4 sm:px-8 py-12 sm:py-16">
-          <div className="max-w-6xl mx-auto">
-            {/* Footer Content */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 sm:gap-8 mb-8 sm:mb-12">
-              {/* Logo and Description */}
-              <div className="col-span-2 sm:col-span-1 lg:col-span-1">
-                <button onClick={() => navigate('/')} className="mb-4">
-                  <img
-                    src="https://i.ibb.co/DPF5g3Sk/iu42DU1.png"
-                    alt="PrivateCharterX"
-                    className="h-12 w-auto hover:opacity-80 transition-opacity"
-                  />
-                </button>
-                <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
-                  Blockchain-powered private aviation platform revolutionizing luxury travel.
+        <footer className="bg-gray-50 border-t border-gray-200">
+          {/* Main Footer Content */}
+          <div className="px-4 sm:px-8 py-12 sm:py-16">
+            <div className="max-w-6xl mx-auto">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-8 sm:gap-6">
+
+                {/* Services */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-4">Services</h4>
+                  <div className="space-y-2.5">
+                    <button onClick={() => navigate('/dashboard/chat?query=private+jet')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Private Jets
+                    </button>
+                    <button onClick={() => navigate('/dashboard/chat?query=helicopter')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Helicopters
+                    </button>
+                    <button onClick={() => navigate('/dashboard/chat?query=empty+legs')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Empty Legs
+                    </button>
+                    <button onClick={() => navigate('/dashboard/chat?query=luxury+car')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Luxury Cars
+                    </button>
+                    <span className="block text-sm text-gray-400 text-left">
+                      Yacht Charters <span className="text-xs">(Q1/2026)</span>
+                    </span>
+                    <button onClick={() => navigate('/dashboard/chat?query=airport+transfer')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Ground Transport
+                    </button>
+                    <button onClick={() => navigate('/dashboard/chat?newChat=true')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Sphera AI
+                    </button>
+                  </div>
+                </div>
+
+                {/* Web3 & Tokenization */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-4">Web3</h4>
+                  <div className="space-y-2.5">
+                    <button onClick={() => navigate('/dashboard?tab=tokenize')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Tokenize Your Asset
+                    </button>
+                    <button onClick={() => navigate('/dashboard?tab=nfts')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      NFT Membership
+                    </button>
+                    <button onClick={() => navigate('/dashboard')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Crypto Payments
+                    </button>
+                    <button onClick={() => navigate('/dashboard')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Smart Contracts
+                    </button>
+                    <button onClick={() => navigate('/dashboard?tab=marketplace')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Digital Ownership
+                    </button>
+                  </div>
+                </div>
+
+                {/* Company */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-4">Company</h4>
+                  <div className="space-y-2.5">
+                    <button onClick={() => navigate('/about')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      About Us
+                    </button>
+                    <button onClick={() => window.location.href = 'mailto:admin@privatecharterx.com?subject=Partner%20Inquiry'} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Become a Partner
+                    </button>
+                    <button onClick={() => window.location.href = 'mailto:admin@privatecharterx.com'} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Contact Us
+                    </button>
+                  </div>
+                </div>
+
+                {/* Support */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-4">Support</h4>
+                  <div className="space-y-2.5">
+                    <button onClick={() => {
+                      const faqSection = document.querySelector('#faq');
+                      faqSection?.scrollIntoView({ behavior: 'smooth' });
+                    }} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      FAQ
+                    </button>
+                    <button onClick={() => window.location.href = 'mailto:support@privatecharterx.com'} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Help Center
+                    </button>
+                    <button onClick={() => navigate('/dashboard/subscription')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Manage Subscription
+                    </button>
+                    <button onClick={() => navigate('/dashboard/requests')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      My Requests
+                    </button>
+                  </div>
+                </div>
+
+                {/* Legal */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-4">Legal</h4>
+                  <div className="space-y-2.5">
+                    <button onClick={() => navigate('/terms')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Terms of Service
+                    </button>
+                    <button onClick={() => navigate('/privacy')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Privacy Policy
+                    </button>
+                    <button onClick={() => navigate('/cookies')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Cookie Policy
+                    </button>
+                    <button onClick={() => navigate('/imprint')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Imprint
+                    </button>
+                  </div>
+                </div>
+
+                {/* Connect */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-4">Connect</h4>
+                  <div className="flex flex-wrap gap-3">
+                    {/* LinkedIn */}
+                    <a href="https://linkedin.com/company/privatecharterx" target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
+                      <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                      </svg>
+                    </a>
+                    {/* X (Twitter) */}
+                    <a href="https://x.com/privatecharterx" target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
+                      <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                      </svg>
+                    </a>
+                    {/* Telegram */}
+                    <a href="https://t.me/privatecharterx" target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
+                      <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                      </svg>
+                    </a>
+                    {/* Email */}
+                    <a href="mailto:admin@privatecharterx.com" className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
+                      <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </a>
+                  </div>
+                  {/* Payment Icons */}
+                  <div className="mt-6">
+                    <p className="text-xs text-gray-400 mb-2">We accept</p>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-500">BTC</span>
+                      <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-500">ETH</span>
+                      <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-500">USDC</span>
+                      <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-500">USDT</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="border-t border-gray-200 bg-gray-100">
+            <div className="px-4 sm:px-8 py-4">
+              <div className="max-w-6xl mx-auto">
+                <p className="text-xs text-gray-500 text-center">
+                  PrivateCharterX LLC - 1000 Brickell Ave. 715 - 33131 Miami, Florida - United States of America - Registration Nr L24000299516
                 </p>
-              </div>
-
-              {/* Aviation Services */}
-              <div>
-                <h4 className="text-xs sm:text-sm font-medium text-gray-900 mb-3 sm:mb-4">Aviation Services</h4>
-                <div className="space-y-2 sm:space-y-3">
-                  <button
-                    onClick={() => navigate('/services')}
-                    className="block text-xs sm:text-sm text-gray-500 hover:text-gray-900 transition-colors text-left"
-                  >
-                    Private Jet Charter
-                  </button>
-                  <button
-                    onClick={() => navigate('/services')}
-                    className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
-                  >
-                    Group Charter
-                  </button>
-                  <button
-                    onClick={() => navigate('/aviation')}
-                    className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
-                  >
-                    Helicopter Charter
-                  </button>
-                  <button
-                    onClick={() => navigate('/aviation')}
-                    className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
-                  >
-                    eVTOL Flights
-                  </button>
-                  <button
-                    onClick={() => navigate('/services')}
-                    className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
-                  >
-                    Adventure Packages
-                  </button>
-                  <button
-                    onClick={() => navigate('/services')}
-                    className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
-                  >
-                    Empty Legs
-                  </button>
-                </div>
-              </div>
-
-              {/* Web3 & Digital */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-4">Web3 & Digital</h4>
-                <div className="space-y-3">
-                  <button
-                    onClick={() => navigate('/dashboard')}
-                    className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
-                  >
-                    Web3
-                  </button>
-                  <button
-                    onClick={() => navigate('/dashboard?tab=pvcx')}
-                    className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
-                  >
-                    PVCX Token
-                  </button>
-                  <button
-                    onClick={() => navigate('/dashboard?tab=nfts')}
-                    className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
-                  >
-                    NFT Aviation
-                  </button>
-                  <button
-                    onClick={() => navigate('/dashboard?tab=tokenize')}
-                    className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
-                  >
-                    Asset Licensing
-                  </button>
-                  <button
-                    onClick={() => navigate('/dashboard?tab=subscription-plans')}
-                    className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
-                  >
-                    JetCard Packages
-                  </button>
-                  <button
-                    onClick={() => navigate('/dashboard?tab=co2')}
-                    className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
-                  >
-                    CO2 Certificates
-                  </button>
-                  <button
-                    onClick={() => navigate('/dashboard?tab=marketplace')}
-                    className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
-                  >
-                    Marketplace
-                  </button>
-                </div>
-              </div>
-
-              {/* Partners & Press */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-4">Partners & Press</h4>
-                <div className="space-y-3">
-                  <button
-                    onClick={() => navigate('/services')}
-                    className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
-                  >
-                    Partner With Us
-                  </button>
-                  <button
-                    onClick={() => navigate('/services')}
-                    className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
-                  >
-                    Blog Posts
-                  </button>
-                  <button
-                    onClick={() => navigate('/services')}
-                    className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
-                  >
-                    Press Center
-                  </button>
-                </div>
-              </div>
-
-              {/* Quick Links */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-4">Quick Links</h4>
-                <div className="space-y-3">
-                  <button
-                    onClick={() => navigate('/')}
-                    className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
-                  >
-                    Home
-                  </button>
-                  <button
-                    onClick={() => navigate('/services')}
-                    className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
-                  >
-                    How It Works
-                  </button>
-                  <button
-                    onClick={() => navigate('/charter-a-jet')}
-                    className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
-                  >
-                    Charter a Jet
-                  </button>
-                  <button
-                    onClick={() => navigate('/services')}
-                    className="block text-sm text-gray-500 hover:text-gray-900 transition-colors"
-                  >
-                    Helpdesk
-                  </button>
-                </div>
               </div>
             </div>
           </div>
