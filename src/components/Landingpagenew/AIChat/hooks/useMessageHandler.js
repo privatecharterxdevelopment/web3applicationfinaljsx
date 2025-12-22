@@ -391,7 +391,10 @@ Click **"Add to Route"** to confirm this stop, or provide corrections.`;
     let workingChatId = activeChat;
 
     // Check subscription limits for new chats
-    if (activeChat === 'new') {
+    // IMPORTANT: Handle both 'new' and null/undefined as new chat indicators
+    const isNewChat = !activeChat || activeChat === 'new' || activeChat === 'null';
+
+    if (isNewChat) {
       if (user?.id && !isAdmin) {
         try {
           const { canStart, chatsUsed, chatsLimit } = await subscriptionService.canStartNewChat(user.id);
@@ -469,6 +472,20 @@ Click **"Add to Route"** to confirm this stop, or provide corrections.`;
       if (existingChat) {
         await chatService.updateChatMessages(activeChat, [...existingChat.messages, userMessage], user.id);
       }
+    }
+
+    // SAFEGUARD: Ensure workingChatId is never null/undefined before proceeding
+    if (!workingChatId || workingChatId === 'new' || workingChatId === 'null') {
+      console.error('❌ workingChatId is invalid after chat setup, creating temp chat');
+      workingChatId = `temp-${Date.now()}`;
+      const tempChat = {
+        id: workingChatId,
+        title: chatService.generateTitle({ content: trimmedMessage }),
+        date: 'Just now',
+        messages: [{ role: 'user', content: trimmedMessage }, { role: 'assistant', content: '...', isLoading: true }]
+      };
+      setChatHistory(prev => [tempChat, ...prev]);
+      setActiveChat(workingChatId);
     }
 
     setIsProcessing(true);

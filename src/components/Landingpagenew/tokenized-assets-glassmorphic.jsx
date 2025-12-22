@@ -1254,7 +1254,7 @@ const TokenizedAssetsGlassmorphic = () => {
 
   // AI Chat state
   const [showChatOverview, setShowChatOverview] = useState(false);
-  const [activeChat, setActiveChatState] = useState(null);
+  const [activeChat, setActiveChatState] = useState('new'); // Default to 'new', not null
   // Wrapper to keep activeChatRef in sync (for URL sync effect that can't have activeChat in deps)
   const setActiveChat = (value) => {
     activeChatRef.current = value;
@@ -3407,7 +3407,7 @@ const TokenizedAssetsGlassmorphic = () => {
       console.log('👤 User changed from', previousUserId, 'to', currentUserId);
       // Clear chat history immediately when user changes
       setChatHistory([]);
-      setActiveChat(null);
+      setActiveChat('new'); // Reset to 'new', not null
     }
 
     // Update the ref
@@ -3419,7 +3419,7 @@ const TokenizedAssetsGlassmorphic = () => {
     } else {
       // User logged out - clear everything
       setChatHistory([]);
-      setActiveChat(null);
+      setActiveChat('new'); // Reset to 'new', not null
     }
   }, [user?.id]);
 
