@@ -27,7 +27,7 @@ import UnifiedBookingFlow from '../../components/UnifiedBookingFlow';
 import TokenizeAssetFlow from './TokenizeAssetFlow';
 import SPVFormationFlow from '../SPVFormation/SPVFormationFlow_NEW';
 import TokenSwap from './TokenSwap';
-import AIChat from './AIChat';
+import AIChatNew from './AIChat/AIChatNew';
 import ChatRequestsView from '../ChatRequestsView';
 import CalendarView from '../Calendar/CalendarView';
 import FavouritesView from '../Favourites/FavouritesView';
@@ -1254,7 +1254,12 @@ const TokenizedAssetsGlassmorphic = () => {
 
   // AI Chat state
   const [showChatOverview, setShowChatOverview] = useState(false);
-  const [activeChat, setActiveChat] = useState(null);
+  const [activeChat, setActiveChatState] = useState(null);
+  // Wrapper to keep activeChatRef in sync (for URL sync effect that can't have activeChat in deps)
+  const setActiveChat = (value) => {
+    activeChatRef.current = value;
+    setActiveChatState(value);
+  };
   const [chatMessages, setChatMessages] = useState({});
   const [chatUsageCount, setChatUsageCount] = useState(0);
   const [chatLimit, setChatLimit] = useState(2); // Default for Explorer
@@ -1336,6 +1341,7 @@ const TokenizedAssetsGlassmorphic = () => {
   const [chatHistory, setChatHistory] = useState([]);
   const [chatHistoryExpanded, setChatHistoryExpanded] = useState(true); // Sidebar chat history collapsible
   const previousUserIdRef = useRef(null); // Track previous user to detect user changes
+  const activeChatRef = useRef(null); // Track activeChat without triggering effect re-runs
 
   // Ref to store pending URL params when user needs to log in first
   const pendingUrlParamsRef = useRef(null);
@@ -2193,7 +2199,14 @@ const TokenizedAssetsGlassmorphic = () => {
           if (assistantMessage) {
             setAiAssistantMessage(decodeURIComponent(assistantMessage));
           }
-          setActiveChat('new');
+          // IMPORTANT: Only set activeChat to 'new' if we don't already have an active chat
+          // This prevents resetting when user is already chatting and the URL sync runs
+          // Only force 'new' if there's a query param (intentional new chat with prefilled message)
+          // Use activeChatRef.current to get current value without adding to effect dependencies
+          const currentActiveChat = activeChatRef.current;
+          if (!currentActiveChat || currentActiveChat === 'new' || query || assistantMessage) {
+            setActiveChat('new');
+          }
           // Use setTimeout to ensure query state is set before switching category
           // This prevents AIChat from rendering with empty initialQuery
           setTimeout(() => {
@@ -11054,23 +11067,14 @@ const TokenizedAssetsGlassmorphic = () => {
 
           {/* AI CHAT VIEW */}
           {!isTransitioning && activeCategory === 'chat' && (
-            <AIChat
+            <AIChatNew
+              user={user}
               showChatOverview={showChatOverview}
               setShowChatOverview={setShowChatOverview}
               activeChat={activeChat}
               setActiveChat={setActiveChat}
               chatHistory={chatHistory}
               setChatHistory={setChatHistory}
-              currentMessage={currentMessage}
-              setCurrentMessage={setCurrentMessage}
-              isRecording={isRecording}
-              toggleRecording={toggleRecording}
-              speechSupported={speechSupported}
-              user={user}
-              walletAddress={address}
-              isWalletConnected={isConnected}
-              userNFTs={userNFTs}
-              onRequestWalletConnect={handleWalletConnect}
               initialQuery={aiChatQuery}
               onQueryProcessed={() => {
                 console.log('📭 onQueryProcessed called, clearing aiChatQuery');
@@ -11080,12 +11084,6 @@ const TokenizedAssetsGlassmorphic = () => {
               onAssistantMessageProcessed={() => setAiAssistantMessage('')}
               cartItems={cartItems}
               setCartItems={setCartItems}
-              onBack={() => {
-                setActiveChat(null);
-                setActiveCategory('chat-history');
-                // Update URL to dashboard to clear chat URL and prevent URL sync from overriding
-                window.history.replaceState({}, '', '/dashboard');
-              }}
             />
           )}
 

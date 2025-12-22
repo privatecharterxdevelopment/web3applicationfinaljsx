@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 // Typing Text Effect Component - Smooth word-by-word streaming like ChatGPT
-const TypingText = ({ text, speed = 30, onComplete }) => {
+const TypingText = ({ text, speed = 30, onComplete, renderAfterComplete }) => {
   const [displayedText, setDisplayedText] = useState('');
   const [isComplete, setIsComplete] = useState(false);
   const requestRef = useRef();
@@ -73,10 +73,13 @@ const TypingText = ({ text, speed = 30, onComplete }) => {
   }, [text, speed]); // Removed onComplete from dependencies
 
   return (
-    <p className="text-sm leading-relaxed whitespace-pre-line">
-      {displayedText}
-      {!isComplete && <span className="inline-block w-0.5 h-4 bg-gray-500 ml-0.5 animate-pulse" />}
-    </p>
+    <div className="text-sm leading-relaxed">
+      <p className="whitespace-pre-line">
+        {displayedText}
+        {!isComplete && <span className="inline-block w-0.5 h-4 bg-gray-500 ml-0.5 animate-pulse" />}
+      </p>
+      {isComplete && renderAfterComplete && renderAfterComplete()}
+    </div>
   );
 };
 

@@ -1,0 +1,947 @@
+/**
+ * AIChatNew - Clean Architecture Version
+ *
+ * This is the refactored AIChat component using modular hooks.
+ * All business logic is in hooks, this file is UI orchestration only.
+ */
+
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Send, X, Shield,
+  ShoppingCart, MessageSquare, Crown, AlertCircle,
+  Plane, Clock, Users, MapPin, Car, Route,
+  Loader2, Sparkles, Wine, Globe, Lock
+} from 'lucide-react';
+
+// Services
+import { chatService } from '../../../services/chatService';
+import { useAuth } from '../../../context/AuthContext';
+import { initializeExchangeRates } from '../../../services/currencyService';
+
+// Components
+import { supabase } from '../../../lib/supabase';
+import CreateEventModal from '../../Calendar/CreateEventModal';
+import ConsultationBookingModal from '../../modals/ConsultationBookingModal';
+import RequestAdjustmentModal from '../../modals/RequestAdjustmentModal';
+import WalletConnect from '../../WalletConnect';
+import SubscriptionModal from '../../SubscriptionModal';
+import CryptoPaymentModal from '../../Payment/CryptoPaymentModal';
+import BulkOrderInterface from '../../BulkOrderInterface';
+import PlaceCard from '../../PlaceCard';
+import HotelCard from '../../HotelCard';
+import SearchResults from '../../SearchResults';
+import { JourneyBuilder, YachtJourneyBuilder, AirportTransferOffer } from './components/MultiStopJourney';
+
+// Extracted Components
+import { Toast, TypingAnimation, TypingText, ReportIssueModal } from './components';
+import CartSidebar from './components/CartSidebar';
+
+// Extras catalog for cart
+const EXTRAS_CATALOG = [
+  { id: 'champagne', name: 'Dom Pérignon Vintage', category: 'champagne', price: 450, emoji: '🍾' },
+  { id: 'caviar', name: 'Beluga Caviar (50g)', category: 'delicatesse', price: 380, emoji: '🐟' },
+  { id: 'flowers', name: 'Luxury Flower Arrangement', category: 'flowers', price: 250, emoji: '💐' },
+  { id: 'cake', name: 'Custom Celebration Cake', category: 'cake', price: 180, emoji: '🎂' },
+  { id: 'photographer', name: 'Private Photographer (2hrs)', category: 'photography', price: 600, emoji: '📸' },
+  { id: 'musician', name: 'Live Musician', category: 'music', price: 800, emoji: '🎵' },
+];
+
+// ALL Hooks - Clean Architecture
+import {
+  useModals,
+  useSubscriptionNew,
+  useCartNew,
+  useChatNew,
+  useJourneyBuilder,
+  useMessageHandler,
+  useCartRenderer,
+  useBookingFlow,
+  useToolResults,
+  useFileUpload
+} from './hooks';
+
+// Utils
+import { checkServiceAccess } from './utils/constants';
+
+// Web3
+import { useAccount, useDisconnect } from 'wagmi';
+
+// Quick suggestion bubbles - matching original design
+const QUICK_SUGGESTIONS = [
+  { id: 'jets', label: 'Private Jets', prompt: 'I need to book a private jet' },
+  { id: 'sommelier', label: 'Sommelier', prompt: 'I would like wine recommendations' },
+  { id: 'restaurants', label: 'Restaurants', prompt: 'Find me a luxury restaurant' },
+  { id: 'transfer', label: 'Airport Transfer', prompt: 'I need an airport transfer' },
+  { id: 'emptylegs', label: 'Empty Legs', prompt: 'I want to find empty leg flights' },
+  { id: 'medevac', label: 'Medevac', prompt: 'I need medical evacuation services', requiresSubscription: ['elite', 'traveller', 'professional'] },
+];
+
+// ============================================
+// MAIN COMPONENT
+// ============================================
+const AIChatNew = ({
+  user: userProp,
+  initialQuery = '',
+  onQueryProcessed = () => {},
+  initialAssistantMessage = '',
+  onAssistantMessageProcessed = () => {},
+  cartItems: cartItemsProp,
+  setCartItems: setCartItemsProp,
+  activeChat: activeChatProp,
+  setActiveChat: setActiveChatProp,
+  chatHistory: chatHistoryProp,
+  setChatHistory: setChatHistoryProp,
+  showChatOverview,
+  setShowChatOverview
+}) => {
+  // Auth Context
+  const authContext = useAuth();
+  const user = userProp || authContext?.user || { name: 'Guest', id: null };
+  const isAdmin = authContext?.isAdmin || false;
+
+  // URL Routing
+  const { chatId: urlChatId } = useParams();
+  const navigate = useNavigate();
+
+  // Web3 Wallet
+  const { address: walletAddress, isConnected: isWalletConnected } = useAccount();
+  const { disconnect: disconnectWallet } = useDisconnect();
+
+  // ==================================
+  // HOOKS - Clean Architecture
+  // ==================================
+  const modals = useModals();
+  const subscription = useSubscriptionNew(user, isAdmin);
+  const cart = useCartNew(cartItemsProp, setCartItemsProp, subscription.userHasNFT);
+  const chat = useChatNew(user, isAdmin, chatHistoryProp, setChatHistoryProp, activeChatProp, setActiveChatProp);
+  const journey = useJourneyBuilder();
+  const toolResults = useToolResults();
+
+  // Cart Renderer Hook
+  const cartRenderer = useCartRenderer({
+    cartItems: cart.cartItems,
+    setCartItems: cart.setCartItems,
+    expandedCartItems: cart.expandedCartItems,
+    setExpandedCartItems: cart.setExpandedCartItems,
+    removeFromCart: cart.removeFromCart,
+    setShowCryptoPayment: modals.setShowCryptoPayment,
+    setSelectedPaymentItem: modals.setSelectedPaymentItem,
+    setShowCalendarModal: modals.setShowCalendarModal,
+    setSelectedItemForCalendar: modals.setSelectedItemForCalendar,
+    userHasNFT: subscription.userHasNFT,
+    setToast: modals.setToast,
+    setChatHistory: chat.setChatHistory,
+    activeChat: chat.activeChat
+  });
+
+  // Booking Flow Hook
+  const bookingFlow = useBookingFlow({
+    user,
+    cartItems: cart.cartItems,
+    setCartItems: cart.setCartItems,
+    setToast: modals.setToast,
+    setChatHistory: chat.setChatHistory,
+    activeChat: chat.activeChat,
+    userHasNFT: subscription.userHasNFT,
+    isAdmin,
+    userSubscriptionLimits: subscription.userSubscriptionLimits
+  });
+
+  // File Upload Hook
+  const fileUpload = useFileUpload({
+    user,
+    setToast: modals.setToast,
+    setChatHistory: chat.setChatHistory,
+    activeChat: chat.activeChat
+  });
+
+  // ==================================
+  // LOCAL STATE
+  // ==================================
+  const [currentMessage, setCurrentMessage] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [typingMessageIndex, setTypingMessageIndex] = useState(null);
+
+  // Report Issue
+  const [showReportIssueModal, setShowReportIssueModal] = useState(false);
+  const [reportIssueForm, setReportIssueForm] = useState({ message: '', rating: 0 });
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+
+  // Cart extras state
+  const [showInlineExtras, setShowInlineExtras] = useState(false);
+  const [selectedExtraCategory, setSelectedExtraCategory] = useState(null);
+  const [customExtraForm, setCustomExtraForm] = useState({ name: '', category: '', quantity: 1, notes: '' });
+
+  // ==================================
+  // MESSAGE HANDLER HOOK
+  // ==================================
+  const messageHandler = useMessageHandler({
+    user,
+    isAdmin,
+    chatHistory: chat.chatHistory,
+    setChatHistory: chat.setChatHistory,
+    activeChat: chat.activeChat,
+    setActiveChat: chat.setActiveChat,
+    userProfile: subscription.userProfile,
+    setToast: modals.setToast,
+    setIsProcessing,
+    setTypingMessageIndex,
+    setShowSubscriptionBlocker: modals.setShowSubscriptionBlocker,
+    setSubscriptionBlockerReason: modals.setSubscriptionBlockerReason,
+    setChatLimitReached: chat.setChatLimitReached,
+    setMessageCount: chat.setMessageCount,
+    setMessageLimitReached: chat.setMessageLimitReached,
+    multiLegChatMode: journey.multiLegChatMode,
+    setPendingLegData: journey.setPendingLegData,
+    cartItems: cart.cartItems,
+    setCartItems: cart.setCartItems,
+    checkCanSendMessage: subscription.checkCanSendMessage,
+    lastBlockReason: subscription.lastBlockReason,
+    createChat: chat.createChat,
+    addMessage: chat.addMessage,
+    replaceLoadingMessage: chat.replaceLoadingMessage,
+    setShowWelcomeMessage: chat.setShowWelcomeMessage,
+    messages: chat.messages
+  });
+
+  // ==================================
+  // EFFECTS
+  // ==================================
+  useEffect(() => { initializeExchangeRates(); }, []);
+
+  useEffect(() => {
+    if (user?.id) subscription.loadUserProfile();
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (urlChatId && urlChatId !== 'new' && user?.id) {
+      const loadChatFromUrl = async () => {
+        try {
+          const result = await chatService.loadChat(urlChatId, user.id);
+          if (result.success && result.chat) {
+            chat.setChatHistory(prev => {
+              const exists = prev.find(c => c.id === urlChatId);
+              if (exists) return prev;
+              return [...prev, { ...result.chat, date: new Date(result.chat.updated_at).toLocaleDateString() }];
+            });
+            chat.setActiveChat(urlChatId);
+          } else {
+            chat.setActiveChat('new');
+          }
+        } catch (err) {
+          chat.setActiveChat('new');
+        }
+      };
+      loadChatFromUrl();
+    }
+  }, [urlChatId, user?.id]);
+
+  useEffect(() => {
+    if (initialQuery && initialQuery.trim() && user?.id) {
+      if (chat.isQueryProcessed(initialQuery)) return;
+      chat.markQueryProcessed(initialQuery);
+      messageHandler.handleSendMessage(initialQuery);
+    }
+  }, [initialQuery, user?.id]);
+
+  // ==================================
+  // HELPERS
+  // ==================================
+  const getGreeting = useCallback(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  }, []);
+
+  const getMessageLimit = useCallback(() => {
+    const tier = subscription.userProfile?.subscription_tier?.toLowerCase() || 'explorer';
+    if (tier === 'elite' || tier === 'professional') return { limit: 100, unlimited: true };
+    if (tier === 'traveller') return { limit: 25, unlimited: false };
+    return { limit: 10, unlimited: false }; // explorer
+  }, [subscription.userProfile]);
+
+  // ==================================
+  // EVENT HANDLERS
+  // ==================================
+  const handleAddToCart = useCallback((item) => {
+    const cartId = cart.addToCart(item);
+    if (cartId) modals.setToast({ message: `Added ${item.name || 'item'} to cart`, type: 'cart' });
+  }, [cart, modals]);
+
+  const handleRemoveFromCart = useCallback((cartId) => {
+    cart.removeFromCart(cartId);
+    modals.setToast({ message: 'Item removed', type: 'info' });
+  }, [cart, modals]);
+
+  const handleSuggestionClick = useCallback((suggestion) => {
+    // Check subscription requirement
+    const userTier = subscription.userProfile?.subscription_tier?.toLowerCase() || 'explorer';
+    // Fix: Use exact match or check if userTier equals one of required tiers
+    const hasRequired = !suggestion.requiresSubscription ||
+      suggestion.requiresSubscription.some(tier => userTier === tier.toLowerCase());
+
+    if (suggestion.requiresSubscription && !hasRequired && !isAdmin) {
+      modals.setToast({
+        message: `${suggestion.label} requires Elite, Traveller, or Professional subscription. Upgrade to access.`,
+        type: 'warning'
+      });
+      return;
+    }
+
+    chat.setActiveChat('new');
+    messageHandler.handleSendMessage(suggestion.prompt);
+  }, [subscription.userProfile, modals, chat, messageHandler, isAdmin]);
+
+  const handleBuildJourney = useCallback((jet) => {
+    journey.openJetJourneyBuilder(jet);
+  }, [journey]);
+
+  // ==================================
+  // RENDER RESULT CARD
+  // ==================================
+  const renderResultCard = useCallback((item, index, type) => {
+    const badge = cartRenderer.getItemBadge({ ...item, type });
+    const isJet = type === 'jets';
+    const priceDisplay = cartRenderer.getItemPriceDisplay(item);
+
+    return (
+      <div key={index} className="p-4 bg-white rounded-xl border border-gray-200 hover:shadow-md transition-all">
+        {item.image_url && (
+          <div className="w-full h-32 rounded-lg overflow-hidden mb-3">
+            <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+          </div>
+        )}
+        <div className="flex items-start justify-between mb-2">
+          <div>
+            <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${badge.color}`}>
+              {badge.text}
+            </span>
+            <h4 className="font-semibold text-gray-900 mt-1">{item.name || item.model || item.aircraft_type}</h4>
+          </div>
+        </div>
+        {(item.from_city || item.from) && (
+          <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+            <MapPin size={14} className="text-gray-400" />
+            <span>{item.from_city || item.from} → {item.to_city || item.to}</span>
+          </div>
+        )}
+        {item.max_passengers && (
+          <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+            <Users size={14} className="text-gray-400" />
+            <span>Up to {item.max_passengers} passengers</span>
+          </div>
+        )}
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+          <p className={`text-lg font-bold ${priceDisplay.isEstimate ? 'text-gray-500 italic' : 'text-gray-900'}`}>
+            {priceDisplay.text}
+          </p>
+          <div className="flex gap-2">
+            {isJet && (
+              <button onClick={() => handleBuildJourney(item)} className="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs rounded-lg hover:bg-gray-200">
+                Build Route
+              </button>
+            )}
+            <button onClick={() => handleAddToCart(item)} className="px-3 py-1.5 bg-black text-white text-xs rounded-lg hover:bg-gray-800">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }, [handleAddToCart, handleBuildJourney, cartRenderer]);
+
+  // ==================================
+  // RENDER MESSAGE
+  // ==================================
+  const renderMessage = useCallback((msg, index) => {
+    if (msg.isLoading) {
+      return (
+        <div key={index} className="flex justify-start">
+          <div className="flex flex-col gap-2 ml-0 sm:ml-12" style={{ maxWidth: '85%' }}>
+            <div className="flex items-center gap-2 px-2">
+              <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
+              <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
+            </div>
+            <div className="px-5 py-4 bg-white/90 border border-gray-100 rounded-2xl shadow-sm">
+              <TypingAnimation />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (msg.role === 'user') {
+      return (
+        <div key={index} className="flex justify-end">
+          <div className="max-w-[80%] bg-black text-white rounded-2xl px-5 py-3">
+            <p className="text-sm leading-relaxed">{msg.content}</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (msg.tabs) {
+      return (
+        <div key={index} className="w-full my-4">
+          <SearchResults
+            tabs={msg.tabs}
+            onAddToCart={handleAddToCart}
+            onBookNow={handleAddToCart}
+            onBuildJourney={handleBuildJourney}
+            onBuildYachtJourney={(yacht) => {
+              // Handle yacht journey building
+              journey.setSelectedYacht(yacht);
+              journey.setShowYachtBuilder(true);
+            }}
+          />
+        </div>
+      );
+    }
+
+    if (msg.place) {
+      return (
+        <div key={index} className="flex justify-start">
+          <div className="max-w-[80%] ml-0 sm:ml-12">
+            <PlaceCard
+              place={msg.place}
+              onRequestTransfer={msg.canArrangeTransfer ? (place) => {
+                // Request transfer to this place
+                const transferRequest = `I'd like to arrange a luxury car transfer to ${place.name} at ${place.fullAddress}`;
+                messageHandler.handleSendMessage(transferRequest);
+              } : null}
+              onRequestReservation={(place) => {
+                // Add free reservation request to cart
+                const reservationItem = {
+                  id: `reservation-${Date.now()}`,
+                  cartId: `reservation-${Date.now()}`,
+                  type: 'concierge_request',
+                  serviceType: 'restaurant_reservation',
+                  name: `Reservation at ${place.name}`,
+                  description: `Restaurant reservation request for ${place.name}`,
+                  venue: place.name,
+                  address: place.fullAddress,
+                  phone: place.phone,
+                  category: place.category || 'Restaurant',
+                  rating: place.rating,
+                  price: 0, // Reservations are FREE
+                  price_usd: 0,
+                  isCustomRequest: true,
+                  requestDetails: {
+                    venueName: place.name,
+                    venueAddress: place.fullAddress,
+                    venuePhone: place.phone,
+                    venueRating: place.rating,
+                    googleMapsUrl: place.googleMapsUrl,
+                    note: 'Our concierge team will contact the venue to arrange your reservation. Please specify your preferred date, time, and party size.'
+                  }
+                };
+                handleAddToCart(reservationItem);
+                modals.setToast({ message: `Free reservation request for ${place.name} added to cart`, type: 'success' });
+              }}
+              alternatives={msg.alternatives}
+              showAlternatives={msg.alternatives?.length > 0}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    if (msg.hotels) {
+      return (
+        <div key={index} className="flex justify-start">
+          <div className="flex flex-col gap-2 ml-0 sm:ml-12" style={{ maxWidth: '90%' }}>
+            <div className="flex items-center gap-2 px-2">
+              <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
+              <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
+            </div>
+            <div className="space-y-3">
+              <p className="text-sm text-gray-600 px-2">{msg.content}</p>
+              {msg.hotels.slice(0, 3).map((hotel, i) => (
+                <HotelCard key={i} hotel={hotel} onBook={() => handleAddToCart(hotel)} />
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div key={index} className="flex justify-start">
+        <div className="flex flex-col gap-2 ml-0 sm:ml-12" style={{ maxWidth: '85%' }}>
+          <div className="flex items-center gap-2 px-2">
+            <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
+            <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
+          </div>
+          <div className="px-5 py-4 bg-white/90 text-gray-800 border border-gray-100 rounded-2xl shadow-sm">
+            <TypingText text={msg.content} speed={typingMessageIndex === index ? 15 : 0} onComplete={() => setTypingMessageIndex(null)} />
+            {msg.action === 'confirm_booking' && msg.bookingData && (
+              <div className="mt-4 flex gap-2">
+                <button onClick={() => handleAddToCart(msg.bookingData)} className="flex-1 px-4 py-2 bg-black text-white text-sm rounded-lg hover:bg-gray-800">
+                  Add to Cart
+                </button>
+                <button onClick={() => modals.setShowConsultationModal(true)} className="flex-1 px-4 py-2 bg-gray-100 text-gray-900 text-sm rounded-lg hover:bg-gray-200">
+                  Request Quote
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }, [typingMessageIndex, handleAddToCart, renderResultCard, modals, handleBuildJourney, journey, messageHandler]);
+
+  // ==================================
+  // NEW CHAT VIEW (Welcome)
+  // ==================================
+  if (chat.activeChat === 'new' || chat.activeChat === null) {
+    const msgLimits = getMessageLimit();
+
+    return (
+      <div className="h-full bg-transparent flex flex-col overflow-hidden">
+        {/* Toast */}
+        {modals.toast && <Toast message={modals.toast.message} type={modals.toast.type} onClose={() => modals.setToast(null)} />}
+
+        {/* Messages area with welcome */}
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 flex flex-col justify-end">
+          <div className="max-w-3xl mx-auto w-full space-y-4">
+            {/* Sphera Welcome Message */}
+            <div className="flex justify-start animate-fade-in">
+              <div className="flex flex-col gap-2 ml-0 sm:ml-12" style={{ maxWidth: '85%' }}>
+                <div className="flex items-center gap-2 px-2">
+                  <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
+                  <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
+                </div>
+                <div className="px-5 py-4 bg-white/90 text-gray-800 border border-gray-100 rounded-2xl shadow-sm">
+                  <p className="text-sm leading-relaxed">
+                    {getGreeting()}{user?.name ? `, ${user.name.split(' ')[0]}` : ''}! I'm Sphera, your luxury travel and Web3 concierge.
+                  </p>
+                  <p className="text-sm leading-relaxed mt-2 text-gray-600">
+                    I can help you book private jets, find restaurants, arrange transfers, explore tokenization, and much more. What would you like to do today?
+                  </p>
+                </div>
+
+                {/* Chat Limit Banner - Glassmorphic style */}
+                {chat.chatLimitReached && !isAdmin && subscription.userProfile?.chats_limit && (
+                  <div
+                    className="mt-3 px-4 py-3 rounded-2xl"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.6)',
+                      backdropFilter: 'blur(16px)',
+                      WebkitBackdropFilter: 'blur(16px)',
+                      border: '1px solid rgba(0, 0, 0, 0.06)',
+                    }}
+                  >
+                    <p className="text-[13px] text-gray-600 leading-relaxed">
+                      You've used all <span className="font-medium text-gray-800">{subscription.userProfile.chats_limit} chats</span> this month.
+                      Continue your existing conversations or upgrade for more.
+                    </p>
+                    <div className="flex items-center gap-2 mt-3">
+                      <button
+                        onClick={() => setShowChatOverview?.(true)}
+                        className="flex-1 py-2 px-3 text-[13px] font-medium text-gray-600 rounded-xl transition-all"
+                        style={{ background: 'rgba(0, 0, 0, 0.04)' }}
+                      >
+                        Continue chats
+                      </button>
+                      <button
+                        onClick={() => modals.setShowSubscriptionModal(true)}
+                        className="flex-1 py-2 px-3 text-[13px] font-medium text-white rounded-xl"
+                        style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)' }}
+                      >
+                        Upgrade
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Quick Suggestion Bubbles - Glassmorphic style */}
+                <div className="flex flex-wrap gap-2 mt-2 px-2">
+                  {QUICK_SUGGESTIONS.map((suggestion, index) => {
+                    const userTier = subscription.userProfile?.subscription_tier?.toLowerCase() || 'explorer';
+                    // Fix: Use exact match instead of includes
+                    const hasRequired = !suggestion.requiresSubscription ||
+                      suggestion.requiresSubscription.some(tier => userTier === tier.toLowerCase());
+                    const isLocked = suggestion.requiresSubscription && !hasRequired && !isAdmin;
+
+                    return (
+                      <button
+                        key={suggestion.id}
+                        onClick={() => handleSuggestionClick(suggestion)}
+                        className="group"
+                        style={{ animation: `fadeIn 0.3s ease-out ${0.1 + index * 0.05}s both` }}
+                      >
+                        <div className={`px-3 py-1.5 backdrop-blur-sm border rounded-full transition-all duration-200 hover:shadow-sm flex items-center gap-1.5 ${
+                          isLocked
+                            ? 'bg-gray-100/60 border-gray-200/40 cursor-not-allowed'
+                            : 'bg-white/40 border-gray-200/60 hover:bg-white/70 hover:border-gray-300'
+                        }`}>
+                          <span className={`text-xs font-medium transition-colors ${
+                            isLocked ? 'text-gray-400' : 'text-gray-500 group-hover:text-gray-700'
+                          }`}>
+                            {suggestion.label}
+                          </span>
+                          {isLocked && <Lock size={12} className="text-gray-400" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Input at bottom */}
+        <div className="flex-shrink-0 px-4 sm:px-6 pb-4 sm:pb-6">
+          <div className="max-w-3xl mx-auto">
+            <div className="flex items-center gap-3 bg-gray-50 border border-gray-300 rounded-xl px-4 py-3">
+              <input
+                type="text"
+                value={currentMessage}
+                onChange={(e) => setCurrentMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && currentMessage.trim()) {
+                    const msgToSend = currentMessage;
+                    setCurrentMessage('');
+                    messageHandler.handleSendMessage(msgToSend);
+                  }
+                }}
+                placeholder="Ask about jets, cars, wines, restaurants..."
+                className="flex-1 bg-transparent border-0 outline-none text-gray-800 placeholder-gray-400 text-sm"
+                disabled={isProcessing || chat.chatLimitReached}
+              />
+              <button
+                onClick={() => {
+                  if (currentMessage.trim()) {
+                    const msgToSend = currentMessage;
+                    setCurrentMessage('');
+                    messageHandler.handleSendMessage(msgToSend);
+                  }
+                }}
+                disabled={!currentMessage.trim() || isProcessing || chat.chatLimitReached}
+                className="p-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              >
+                {isProcessing ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Modals */}
+        {modals.showSubscriptionModal && (
+          <SubscriptionModal
+            isOpen={modals.showSubscriptionModal}
+            onClose={() => modals.setShowSubscriptionModal(false)}
+            currentTier={subscription.userProfile?.subscription_tier}
+            userId={user?.id}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // ==================================
+  // ACTIVE CHAT VIEW
+  // ==================================
+  const msgLimits = getMessageLimit();
+  const displayTier = subscription.userProfile?.subscription_tier?.toLowerCase() || 'explorer';
+
+  return (
+    <div className="h-full bg-transparent flex flex-col overflow-hidden">
+      {/* Toast */}
+      {modals.toast && <Toast message={modals.toast.message} type={modals.toast.type} onClose={() => modals.setToast(null)} />}
+
+      {/* Header with message count */}
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-gray-200/50" style={{
+        background: 'rgba(255, 255, 255, 0.7)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+      }}>
+        <div className="flex items-center gap-3">
+          <button onClick={() => setShowChatOverview?.(true)} className="p-2 hover:bg-gray-100/60 rounded-lg transition-colors">
+            <MessageSquare size={20} className="text-gray-600" />
+          </button>
+          <div className="flex flex-col">
+            <h1 className="font-semibold text-gray-900 text-sm">{chat.currentChat?.title || 'New Chat'}</h1>
+            {/* Message count display */}
+            {!msgLimits.unlimited && (
+              <span className="text-xs text-gray-500">
+                <span className={chat.messageCount >= msgLimits.limit - 2 ? 'text-amber-500' : ''}>
+                  {chat.messageCount}/{msgLimits.limit} messages
+                </span>
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowReportIssueModal(true)} className="p-2 hover:bg-gray-100/60 rounded-lg transition-colors" title="Report Issue">
+            <AlertCircle size={18} className="text-gray-400" />
+          </button>
+          <button onClick={() => modals.setShowCartSidebar(true)} className="relative p-2 hover:bg-gray-100/60 rounded-lg transition-colors">
+            <ShoppingCart size={20} className="text-gray-600" />
+            {cart.cartItems.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-black text-white text-xs rounded-full flex items-center justify-center">
+                {cart.cartItems.length}
+              </span>
+            )}
+          </button>
+          {subscription.userProfile?.subscription_tier && (
+            <button onClick={() => modals.setShowSubscriptionModal(true)} className="px-2.5 py-1.5 rounded-lg hover:opacity-90 transition-opacity" style={{
+              background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.1) 100%)',
+              border: '1px solid rgba(245, 158, 11, 0.2)'
+            }}>
+              <span className="text-xs font-medium text-amber-700 flex items-center gap-1">
+                <Crown size={12} />
+                {displayTier === 'traveller' ? (
+                  <span className="flex items-center gap-1">
+                    Traveller
+                    <span className="text-gray-300">·</span>
+                    <span className={chat.messageCount >= 20 ? 'text-red-500' : chat.messageCount >= 15 ? 'text-amber-500' : 'text-gray-500'}>
+                      {chat.messageCount}/25
+                    </span>
+                  </span>
+                ) : displayTier === 'explorer' ? (
+                  <span className="flex items-center gap-1">
+                    Explorer
+                    <span className="text-gray-300">·</span>
+                    <span className={chat.messageCount >= 8 ? 'text-red-500' : chat.messageCount >= 5 ? 'text-amber-500' : 'text-gray-500'}>
+                      {chat.messageCount}/10
+                    </span>
+                  </span>
+                ) : (
+                  subscription.userProfile.subscription_tier.charAt(0).toUpperCase() + subscription.userProfile.subscription_tier.slice(1)
+                )}
+              </span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
+        <div className="max-w-3xl mx-auto w-full space-y-4">
+          {chat.messages.map((msg, index) => renderMessage(msg, index))}
+          <div ref={chat.messagesEndRef} />
+        </div>
+      </div>
+
+      {/* Message Limit Warning */}
+      {chat.messageLimitReached && (
+        <div className="px-4 sm:px-6 pb-2">
+          <div className="max-w-3xl mx-auto">
+            <div className="px-4 py-3 rounded-xl" style={{
+              background: 'rgba(251, 191, 36, 0.1)',
+              border: '1px solid rgba(251, 191, 36, 0.2)'
+            }}>
+              <p className="text-sm text-amber-800">
+                Message limit reached for this chat.
+                <button onClick={() => modals.setShowSubscriptionModal(true)} className="font-medium underline ml-1">
+                  Upgrade for more
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Input */}
+      <div className="flex-shrink-0 px-4 sm:px-6 pb-4 sm:pb-6">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-center gap-3 bg-gray-50 border border-gray-300 rounded-xl px-4 py-3">
+            <input
+              type="text"
+              value={currentMessage}
+              onChange={(e) => setCurrentMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey && currentMessage.trim()) {
+                  e.preventDefault();
+                  const msgToSend = currentMessage;
+                  setCurrentMessage('');
+                  messageHandler.handleSendMessage(msgToSend);
+                }
+              }}
+              placeholder="Ask about jets, helicopters, cars, wines..."
+              className="flex-1 bg-transparent border-0 outline-none text-gray-800 placeholder-gray-400 text-sm"
+              disabled={isProcessing || chat.messageLimitReached}
+            />
+            <button
+              onClick={() => {
+                if (currentMessage.trim()) {
+                  const msgToSend = currentMessage;
+                  setCurrentMessage('');
+                  messageHandler.handleSendMessage(msgToSend);
+                }
+              }}
+              disabled={!currentMessage.trim() || isProcessing || chat.messageLimitReached}
+              className="p-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            >
+              {isProcessing ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Modals */}
+      {modals.showCartSidebar && (
+        <CartSidebar
+          isOpen={modals.showCartSidebar}
+          onClose={() => modals.setShowCartSidebar(false)}
+          cartItems={cart.cartItems}
+          setCartItems={cart.setCartItems}
+          cartTotal={cart.cartTotal}
+          user={user}
+          userHasNFT={subscription.userHasNFT}
+          onToast={modals.setToast}
+          onSendRequest={bookingFlow.submitCartRequest}
+          onOpenCalendar={(item) => { modals.setSelectedItemForCalendar(item); modals.setShowCalendarModal(true); }}
+          isProcessing={isProcessing}
+          isProcessingPayment={bookingFlow.isSubmitting}
+          setIsProcessingPayment={() => {}}
+          showRequestForm={bookingFlow.showRequestForm}
+          setShowRequestForm={bookingFlow.setShowRequestForm}
+          showInlineExtras={showInlineExtras}
+          setShowInlineExtras={setShowInlineExtras}
+          selectedExtraCategory={selectedExtraCategory}
+          setSelectedExtraCategory={setSelectedExtraCategory}
+          customExtraForm={customExtraForm}
+          setCustomExtraForm={setCustomExtraForm}
+          extrasCatalog={EXTRAS_CATALOG}
+        />
+      )}
+      {journey.showJourneyBuilder && journey.journeyBuilderJet && (
+        <JourneyBuilder
+          jet={journey.journeyBuilderJet}
+          onClose={journey.closeJetJourneyBuilder}
+          onAddToCart={(data) => { handleAddToCart(data); journey.closeJetJourneyBuilder(); }}
+        />
+      )}
+      {journey.showYachtJourneyBuilder && journey.journeyBuilderYacht && (
+        <YachtJourneyBuilder
+          yacht={journey.journeyBuilderYacht}
+          onClose={journey.closeYachtJourneyBuilder}
+          onAddToCart={(data) => { handleAddToCart(data); journey.closeYachtJourneyBuilder(); }}
+        />
+      )}
+      {journey.showTransferOffer && journey.lastAddedJourney && (
+        <AirportTransferOffer
+          journey={journey.lastAddedJourney}
+          onAccept={(t) => { handleAddToCart(t); journey.dismissTransferOffer(); }}
+          onDecline={journey.dismissTransferOffer}
+        />
+      )}
+      {modals.showSubscriptionModal && (
+        <SubscriptionModal
+          isOpen={modals.showSubscriptionModal}
+          onClose={() => modals.setShowSubscriptionModal(false)}
+          currentTier={subscription.userProfile?.subscription_tier}
+          userId={user?.id}
+        />
+      )}
+      {modals.showSubscriptionBlocker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{
+          background: 'rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+        }}>
+          <div className="bg-white rounded-2xl p-6 max-w-md mx-4 shadow-2xl text-center" style={{
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+          }}>
+            <Crown className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              {modals.subscriptionBlockerReason === 'no_subscription' ? 'Subscription Required' :
+               modals.subscriptionBlockerReason === 'chat_limit' ? 'Chat Limit Reached' : 'Message Limit Reached'}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {modals.subscriptionBlockerReason === 'chat_limit'
+                ? 'You\'ve reached your monthly chat limit. Upgrade to continue creating new conversations.'
+                : modals.subscriptionBlockerReason === 'message_limit'
+                ? 'You\'ve reached the message limit for this chat. Start a new chat or upgrade for more messages.'
+                : 'Upgrade your subscription to access this feature.'}
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => modals.setShowSubscriptionBlocker(false)} className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-900 rounded-xl hover:bg-gray-200 font-medium transition-colors">
+                Cancel
+              </button>
+              <button onClick={() => { modals.setShowSubscriptionBlocker(false); modals.setShowSubscriptionModal(true); }} className="flex-1 px-4 py-2.5 text-white rounded-xl font-medium transition-colors" style={{
+                background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)'
+              }}>
+                Upgrade
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {modals.showWalletConnect && (
+        <WalletConnect
+          onClose={() => modals.setShowWalletConnect(false)}
+          onConnect={(wallet) => { bookingFlow.handleWalletConnect(wallet); modals.setShowWalletConnect(false); }}
+        />
+      )}
+      {modals.showCalendarModal && modals.selectedItemForCalendar && (
+        <CreateEventModal
+          isOpen={modals.showCalendarModal}
+          onClose={() => { modals.setShowCalendarModal(false); modals.setSelectedItemForCalendar(null); }}
+          prefillData={modals.selectedItemForCalendar}
+        />
+      )}
+      {modals.showConsultationModal && (
+        <ConsultationBookingModal
+          isOpen={modals.showConsultationModal}
+          onClose={() => modals.setShowConsultationModal(false)}
+          topic={modals.consultationTopic}
+        />
+      )}
+      {modals.showCryptoPayment && modals.selectedPaymentItem && (
+        <CryptoPaymentModal
+          isOpen={modals.showCryptoPayment}
+          onClose={() => { modals.setShowCryptoPayment(false); modals.setSelectedPaymentItem(null); }}
+          item={modals.selectedPaymentItem}
+          onSuccess={(paymentData) => { bookingFlow.handleCryptoPaymentSuccess(paymentData); modals.setShowCryptoPayment(false); }}
+        />
+      )}
+      {modals.showBulkOrderInterface && (
+        <BulkOrderInterface
+          isOpen={modals.showBulkOrderInterface}
+          onClose={() => modals.setShowBulkOrderInterface(false)}
+          onAddToCart={(items) => {
+            items.forEach(item => handleAddToCart(item));
+            modals.setShowBulkOrderInterface(false);
+          }}
+          user={user}
+          userHasNFT={subscription.userHasNFT}
+        />
+      )}
+      {modals.showAdjustModal && modals.itemToAdjust && (
+        <RequestAdjustmentModal
+          isOpen={modals.showAdjustModal}
+          onClose={() => { modals.setShowAdjustModal(false); modals.setItemToAdjust(null); }}
+          item={modals.itemToAdjust}
+          onSave={(adjustedItem) => {
+            bookingFlow.handleSaveAdjustment(adjustedItem);
+            modals.setShowAdjustModal(false);
+            modals.setItemToAdjust(null);
+          }}
+        />
+      )}
+      {showReportIssueModal && (
+        <ReportIssueModal
+          show={showReportIssueModal}
+          onClose={() => setShowReportIssueModal(false)}
+          user={user}
+          currentChat={chat.currentChat}
+          reportIssueForm={reportIssueForm}
+          setReportIssueForm={setReportIssueForm}
+          isSubmittingReport={isSubmittingReport}
+          setIsSubmittingReport={setIsSubmittingReport}
+          setToast={modals.setToast}
+        />
+      )}
+    </div>
+  );
+};
+
+export default AIChatNew;

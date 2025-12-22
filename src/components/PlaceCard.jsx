@@ -294,14 +294,15 @@ const PlaceCard = ({ place, onRequestTransfer, onRequestReservation, showAlterna
               </button>
             )}
           </div>
-          {/* Reservation Button - for restaurants */}
+          {/* Reservation Button - for restaurants (FREE service) */}
           {onRequestReservation && (
             <button
               onClick={() => onRequestReservation(place)}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium rounded-lg transition-colors"
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-lg transition-colors"
             >
               <CalendarPlus size={12} />
               <span>Request Reservation</span>
+              <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-[10px]">FREE</span>
             </button>
           )}
         </div>

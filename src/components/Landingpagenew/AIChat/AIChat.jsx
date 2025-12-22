@@ -50,6 +50,9 @@ import AdventureCard from '../../AdventureCard';
 import { JourneyBuilder, YachtJourneyBuilder, AirportTransferOffer } from './components/MultiStopJourney';
 import CartJourneyDisplay from './components/CartJourneyDisplay';
 
+// Extracted Components
+import { ChatHeader, InputArea, Modals, Toast, WeatherWidget, TypingAnimation, TypingText } from './components';
+
 // PDF Generator
 import { generateRequestConfirmationPDF, downloadPDF, savePDFToStorage } from '../../../services/pdfGeneratorService';
 import { generateRequestConfirmationHTML, downloadHTMLAsPDF } from '../../../services/pdfHtmlGenerator';
@@ -58,158 +61,6 @@ import { generateRequestConfirmationHTML, downloadHTMLAsPDF } from '../../../ser
 import { useAccount, useDisconnect, useSignMessage } from 'wagmi';
 import { signAIChatRequest } from '../../../lib/web3';
 import { checkServiceAccess } from './utils/constants';
-
-// Weather Widget - Light gray design
-const WeatherWidget = ({ location, weather }) => {
-  if (!weather) return null;
-  return (
-    <div className="bg-gray-200 border border-gray-300 rounded-xl p-4 mb-3">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs text-gray-600 font-medium mb-0.5">{location}</p>
-          <p className="text-2xl font-semibold text-black">{weather.temp}°C</p>
-        </div>
-        <p className="text-sm text-gray-700">{weather.condition}</p>
-      </div>
-    </div>
-  );
-};
-
-// Toast notification component - minimalistic monochromatic design
-const Toast = ({ message, type = 'info', onClose }) => {
-  useEffect(() => {
-    // Cart notifications disappear faster (2s), others stay longer (4s)
-    const duration = type === 'cart' ? 2000 : 4000;
-    const timer = setTimeout(onClose, duration);
-    return () => clearTimeout(timer);
-  }, [onClose, type]);
-
-  // Minimalistic cart toast
-  if (type === 'cart') {
-    return (
-      <div className="fixed top-4 right-4 z-[9999] animate-slide-in">
-        <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded-lg shadow-lg">
-          <ShoppingCart size={16} />
-          <p className="text-sm">{message}</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="fixed top-4 right-4 z-[9999] animate-slide-in">
-      <div className={`flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border ${
-        type === 'warning'
-          ? 'bg-gray-100 border-gray-300 text-gray-900'
-          : type === 'error'
-          ? 'bg-gray-100 border-gray-300 text-gray-900'
-          : type === 'success'
-          ? 'bg-gray-900 text-white border-gray-700'
-          : 'bg-gray-50 border-gray-200 text-gray-900'
-      }`}>
-        <AlertCircle size={20} className={
-          type === 'warning' ? 'text-gray-600' : type === 'error' ? 'text-gray-600' : 'text-gray-400'
-        } />
-        <p className="text-sm font-medium">{message}</p>
-        <button onClick={onClose} className="ml-2 hover:opacity-70">
-          <X size={16} />
-        </button>
-      </div>
-    </div>
-  );
-};
-
-// Typing Animation Component
-const TypingAnimation = () => (
-  <div className="flex gap-1 py-2">
-    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-  </div>
-);
-
-// Typing Text Effect Component - Smooth word-by-word streaming like ChatGPT
-const TypingText = ({ text, speed = 30, onComplete, renderAfterComplete }) => {
-  const [displayedText, setDisplayedText] = useState('');
-  const [isComplete, setIsComplete] = useState(false);
-  const requestRef = useRef();
-  const startTimeRef = useRef();
-  const onCompleteRef = useRef(onComplete);
-  const hasCompletedRef = useRef(false);
-
-  // Keep onComplete ref updated without triggering re-animation
-  useEffect(() => {
-    onCompleteRef.current = onComplete;
-  }, [onComplete]);
-
-  useEffect(() => {
-    // Reset animation state when text changes
-    setDisplayedText('');
-    setIsComplete(false);
-    startTimeRef.current = null;
-    hasCompletedRef.current = false;
-
-    // Split text into words for smoother typing
-    const words = text.split(/(\s+)/); // Keep whitespace
-
-    const animate = (timestamp) => {
-      if (!startTimeRef.current) startTimeRef.current = timestamp;
-      const elapsed = timestamp - startTimeRef.current;
-
-      // Calculate how many characters should be shown based on elapsed time
-      const baseCharsToShow = Math.floor(elapsed / speed);
-
-      // Build the displayed text
-      let charsShown = 0;
-      let result = '';
-
-      for (let i = 0; i < words.length && charsShown < baseCharsToShow; i++) {
-        const word = words[i];
-        const remainingChars = baseCharsToShow - charsShown;
-
-        if (remainingChars >= word.length) {
-          result += word;
-          charsShown += word.length;
-        } else {
-          result += word.slice(0, remainingChars);
-          charsShown += remainingChars;
-        }
-      }
-
-      setDisplayedText(result);
-
-      if (result.length < text.length) {
-        requestRef.current = requestAnimationFrame(animate);
-      } else {
-        setDisplayedText(text);
-        setIsComplete(true);
-        // Only call onComplete once
-        if (!hasCompletedRef.current && onCompleteRef.current) {
-          hasCompletedRef.current = true;
-          setTimeout(() => onCompleteRef.current?.(), 100);
-        }
-      }
-    };
-
-    requestRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      if (requestRef.current) {
-        cancelAnimationFrame(requestRef.current);
-      }
-    };
-  }, [text, speed]); // Removed onComplete from dependencies
-
-  return (
-    <div className="text-sm leading-relaxed">
-      <p className="whitespace-pre-line">
-        {displayedText}
-        {!isComplete && <span className="inline-block w-0.5 h-4 bg-gray-500 ml-0.5 animate-pulse" />}
-      </p>
-      {isComplete && renderAfterComplete && renderAfterComplete()}
-    </div>
-  );
-};
 
 // Main Component
 const AIChat = ({
