@@ -784,7 +784,7 @@ function Homepage() {
         </AnimatedSection>
 
         {/* Footer */}
-        <footer className="bg-gray-50 border-t border-gray-200">
+        <footer className="bg-gray-50 border-t border-gray-200" style={{ fontFamily: "'Satoshi', sans-serif", fontWeight: 300 }}>
           {/* Main Footer Content */}
           <div className="px-4 sm:px-8 py-12 sm:py-16">
             <div className="max-w-6xl mx-auto">
@@ -796,26 +796,30 @@ function Homepage() {
                   <img
                     src="https://i.ibb.co/DPF5g3Sk/iu42DU1.png"
                     alt="PrivateCharterX"
-                    className="h-8 object-contain mb-4"
+                    className="h-12 object-contain mb-3"
                   />
+                  {/* Description */}
+                  <p className="text-sm text-gray-500 mb-4 font-light">
+                    Blockchain-powered private aviation platform revolutionizing luxury travel.
+                  </p>
                   {/* Social Icons - 1 row, left aligned */}
                   <div className="flex gap-3 justify-start">
                     {/* LinkedIn */}
-                    <a href="https://linkedin.com/company/privatecharterx" target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
+                    <a href="https://www.linkedin.com/company/privatecharterx" target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
                       <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
                       </svg>
                     </a>
                     {/* X (Twitter) */}
-                    <a href="https://x.com/privatecharterx" target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
+                    <a href="https://x.com/PrivatecharterX" target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
                       <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                       </svg>
                     </a>
-                    {/* Telegram */}
-                    <a href="https://t.me/privatecharterx" target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
+                    {/* OpenSea */}
+                    <a href="https://opensea.io/collection/privatecharterx-membership-card" target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
                       <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                        <path d="M12 0C5.374 0 0 5.374 0 12s5.374 12 12 12 12-5.374 12-12S18.629 0 12 0ZM5.92 12.403l.051-.081 3.123-4.884a.107.107 0 0 1 .187.014c.52 1.169.972 2.623.76 3.528-.088.372-.335.876-.614 1.342a2.405 2.405 0 0 1-.117.199.106.106 0 0 1-.09.045H6.013a.106.106 0 0 1-.091-.163Zm13.914 1.68a.109.109 0 0 1-.065.101c-.243.103-1.07.485-1.414.962-.878 1.222-1.548 2.97-3.048 2.97H9.053a4.019 4.019 0 0 1-4.013-4.028v-.072c0-.058.048-.106.108-.106h3.485c.07 0 .12.063.115.132-.026.226.017.459.125.67.206.42.636.682 1.099.682h1.726v-1.347H9.99a.11.11 0 0 1-.089-.173l.063-.09c.16-.231.391-.586.621-.992.156-.274.308-.566.43-.86.024-.052.043-.107.065-.16.033-.094.067-.182.091-.269a4.57 4.57 0 0 0 .065-.223c.057-.25.081-.514.081-.787 0-.108-.004-.221-.014-.327-.005-.117-.02-.235-.034-.352a3.415 3.415 0 0 0-.048-.312 6.494 6.494 0 0 0-.098-.468l-.014-.06c-.03-.108-.056-.21-.09-.317a11.824 11.824 0 0 0-.328-.972 5.212 5.212 0 0 0-.142-.355c-.072-.178-.146-.339-.213-.49a3.564 3.564 0 0 1-.094-.197 4.658 4.658 0 0 0-.103-.213c-.024-.053-.053-.104-.072-.152l-.211-.388c-.029-.053.019-.118.077-.101l1.32.357h.01l.173.05.192.054.07.019v-.783c0-.379.302-.686.679-.686a.66.66 0 0 1 .477.202.69.69 0 0 1 .2.484V6.65l.141.039c.01.005.022.01.031.017.034.024.084.062.147.11.05.038.103.086.165.137a10.351 10.351 0 0 1 .574.504c.214.199.454.432.684.691.065.074.127.146.192.226.062.079.132.156.19.232.079.104.16.212.235.324.033.053.074.108.105.161.096.142.178.288.257.435.034.067.067.141.096.213.089.197.159.396.202.598a.65.65 0 0 1 .024.169v.015c.007.074.01.149.003.224a1.813 1.813 0 0 1-.091.481 2.149 2.149 0 0 1-.127.325c-.034.082-.074.16-.113.243a2.872 2.872 0 0 1-.338.513 1.12 1.12 0 0 1-.113.149c-.036.046-.076.091-.112.141-.058.072-.117.149-.185.215l-.24.267c-.03.036-.07.072-.104.108l-.203.219a.105.105 0 0 1-.074.03h-1.05v1.348h1.323c.295 0 .576-.104.804-.298.075-.065.439-.381.875-.851a.094.094 0 0 1 .058-.03l3.83-1.106a.11.11 0 0 1 .137.103v.773Z"/>
                       </svg>
                     </a>
                     {/* Email */}
@@ -827,12 +831,12 @@ function Homepage() {
                   </div>
                   {/* Payment Icons */}
                   <div className="mt-6">
-                    <p className="text-xs text-gray-400 mb-2">We accept</p>
+                    <p className="text-xs text-gray-400 mb-2 font-light">We accept</p>
                     <div className="flex gap-2">
-                      <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-500">BTC</span>
-                      <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-500">ETH</span>
-                      <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-500">USDC</span>
-                      <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-500">USDT</span>
+                      <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-500 font-light">BTC</span>
+                      <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-500 font-light">ETH</span>
+                      <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-500 font-light">USDC</span>
+                      <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-500 font-light">USDT</span>
                     </div>
                   </div>
                 </div>
