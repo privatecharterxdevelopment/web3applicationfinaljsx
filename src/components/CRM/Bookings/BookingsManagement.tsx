@@ -183,6 +183,10 @@ export const BookingsManagement: React.FC = () => {
     if (user?.role !== 'admin') return;
 
     try {
+      // Find the booking to get user_id for notification
+      const booking = bookings.find(b => b.id === bookingId);
+      const previousStatus = booking?.status;
+
       const updateData: any = {
         status: newStatus,
         admin_id: user.id
@@ -198,7 +202,52 @@ export const BookingsManagement: React.FC = () => {
         .eq('id', bookingId);
 
       if (error) throw error;
-      
+
+      // Create notification for the user when status changes
+      if (booking?.user_id && previousStatus !== newStatus) {
+        const statusMessages: Record<string, { title: string; message: string }> = {
+          'in_progress': {
+            title: 'Request In Progress',
+            message: `Your ${booking.type || 'travel'} request is now being processed by our team.`
+          },
+          'confirmed': {
+            title: 'Request Confirmed!',
+            message: `Great news! Your ${booking.type || 'travel'} request has been confirmed.`
+          },
+          'completed': {
+            title: 'Request Completed',
+            message: `Your ${booking.type || 'travel'} request has been completed. Thank you for choosing PrivateCharterX!`
+          },
+          'cancelled': {
+            title: 'Request Cancelled',
+            message: `Your ${booking.type || 'travel'} request has been cancelled. Please contact support if you have questions.`
+          }
+        };
+
+        const notificationInfo = statusMessages[newStatus];
+        if (notificationInfo) {
+          try {
+            await supabase.from('notifications').insert({
+              user_id: booking.user_id,
+              type: 'booking_update',
+              title: notificationInfo.title,
+              message: notificationInfo.message,
+              data: {
+                booking_id: bookingId,
+                old_status: previousStatus,
+                new_status: newStatus,
+                booking_type: booking.type
+              },
+              read: false
+            });
+            console.log('✅ User notification created for status change:', newStatus);
+          } catch (notifError) {
+            console.warn('Failed to create user notification:', notifError);
+            // Don't block the status update if notification fails
+          }
+        }
+      }
+
       showSuccess('Success', `Booking status updated to ${newStatus}`);
       fetchBookings(); // Refresh the list
     } catch (err: any) {

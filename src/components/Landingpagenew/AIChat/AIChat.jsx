@@ -132,10 +132,64 @@ const AIChat = ({
   const [weather, setWeather] = useState(null);
   const [searchResults, setSearchResults] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
-  // Use props if provided, otherwise local state
-  const [localCartItems, setLocalCartItems] = useState([]);
+  // Per-chat cart items - each chat has its own cart
+  const [cartItemsPerChat, setCartItemsPerChat] = useState({});
+  const previousActiveChatRef = useRef(null);
+
+  // Get cart items for the current active chat
+  const getCartItemsForChat = useCallback((chatId) => {
+    if (!chatId) return [];
+    // For 'new' chats, also check the 'new' key in the map
+    return cartItemsPerChat[chatId] || [];
+  }, [cartItemsPerChat]);
+
+  // Set cart items for the current active chat
+  const setCartItemsForChat = useCallback((chatId, items) => {
+    if (!chatId) return;
+    setCartItemsPerChat(prev => ({
+      ...prev,
+      [chatId]: typeof items === 'function' ? items(prev[chatId] || []) : items
+    }));
+  }, []);
+
+  // Current cart items based on active chat
+  const localCartItems = getCartItemsForChat(activeChat);
+  const setLocalCartItems = useCallback((itemsOrUpdater) => {
+    if (activeChat === 'new') {
+      // For new chats, store temporarily with 'new' key until chat gets an ID
+      setCartItemsPerChat(prev => ({
+        ...prev,
+        new: typeof itemsOrUpdater === 'function' ? itemsOrUpdater(prev.new || []) : itemsOrUpdater
+      }));
+    } else {
+      setCartItemsForChat(activeChat, itemsOrUpdater);
+    }
+  }, [activeChat, setCartItemsForChat]);
+
+  // Use props if provided, otherwise use per-chat local state
   const cartItems = cartItemsProp !== undefined ? cartItemsProp : localCartItems;
   const setCartItems = setCartItemsProp !== undefined ? setCartItemsProp : setLocalCartItems;
+
+  // Transfer cart items from 'new' to actual chat ID when a new chat is created
+  useEffect(() => {
+    const prevChat = previousActiveChatRef.current;
+
+    // If we're switching from 'new' to an actual chat ID
+    if (prevChat === 'new' && activeChat && activeChat !== 'new') {
+      const newChatItems = cartItemsPerChat['new'] || [];
+      if (newChatItems.length > 0) {
+        console.log('🛒 Transferring cart items from new chat to:', activeChat, newChatItems.length, 'items');
+        setCartItemsPerChat(prev => ({
+          ...prev,
+          [activeChat]: newChatItems,
+          new: [] // Clear the 'new' cart
+        }));
+      }
+    }
+
+    previousActiveChatRef.current = activeChat;
+  }, [activeChat, cartItemsPerChat]);
+
   const [userHasNFT, setUserHasNFT] = useState(false);
   const [usedNFTBenefitThisYear, setUsedNFTBenefitThisYear] = useState(false);
   const [connectedWallet, setConnectedWallet] = useState(null);

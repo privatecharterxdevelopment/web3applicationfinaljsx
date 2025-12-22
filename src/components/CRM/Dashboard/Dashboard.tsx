@@ -429,12 +429,60 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab: externalActiveT
   // Update request status
   const handleRequestStatusUpdate = async (requestId: string, newStatus: string) => {
     try {
+      // Find the request to get user_id for notification
+      const request = userRequests.find(r => r.id === requestId);
+      const previousStatus = request?.status;
+
       const { error } = await supabaseAdmin
         .from('user_requests')
         .update({ status: newStatus, updated_at: new Date().toISOString() })
         .eq('id', requestId);
 
       if (error) throw error;
+
+      // Create notification for the user when status changes
+      if (request?.user_id && previousStatus !== newStatus) {
+        const statusMessages: Record<string, { title: string; message: string }> = {
+          'in_progress': {
+            title: 'Request In Progress',
+            message: `Your ${request.data?.serviceType || 'travel'} request is now being processed by our team.`
+          },
+          'confirmed': {
+            title: 'Request Confirmed!',
+            message: `Great news! Your ${request.data?.serviceType || 'travel'} request has been confirmed.`
+          },
+          'completed': {
+            title: 'Request Completed',
+            message: `Your ${request.data?.serviceType || 'travel'} request has been completed. Thank you for choosing PrivateCharterX!`
+          },
+          'cancelled': {
+            title: 'Request Cancelled',
+            message: `Your ${request.data?.serviceType || 'travel'} request has been cancelled. Please contact support if you have questions.`
+          }
+        };
+
+        const notificationInfo = statusMessages[newStatus];
+        if (notificationInfo) {
+          try {
+            await supabaseAdmin.from('notifications').insert({
+              user_id: request.user_id,
+              type: 'booking_update',
+              title: notificationInfo.title,
+              message: notificationInfo.message,
+              data: {
+                request_id: requestId,
+                old_status: previousStatus,
+                new_status: newStatus,
+                service_type: request.data?.serviceType
+              },
+              read: false
+            });
+          } catch (notifError) {
+            console.warn('Failed to create user notification:', notifError);
+          }
+        }
+      }
+
       showSuccess(`Request status updated to ${newStatus}`);
       fetchUserRequests();
     } catch (error) {
@@ -446,12 +494,60 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab: externalActiveT
   // Update booking status
   const handleBookingStatusUpdate = async (bookingId: string, newStatus: string) => {
     try {
+      // Find the booking to get user_id for notification
+      const booking = userBookings.find(b => b.id === bookingId);
+      const previousStatus = booking?.status;
+
       const { error } = await supabaseAdmin
         .from('user_bookings')
         .update({ status: newStatus, updated_at: new Date().toISOString() })
         .eq('id', bookingId);
 
       if (error) throw error;
+
+      // Create notification for the user when status changes
+      if (booking?.user_id && previousStatus !== newStatus) {
+        const statusMessages: Record<string, { title: string; message: string }> = {
+          'in_progress': {
+            title: 'Booking In Progress',
+            message: `Your ${booking.data?.serviceType || 'travel'} booking is now being processed by our team.`
+          },
+          'confirmed': {
+            title: 'Booking Confirmed!',
+            message: `Great news! Your ${booking.data?.serviceType || 'travel'} booking has been confirmed.`
+          },
+          'completed': {
+            title: 'Booking Completed',
+            message: `Your ${booking.data?.serviceType || 'travel'} booking has been completed. Thank you for choosing PrivateCharterX!`
+          },
+          'cancelled': {
+            title: 'Booking Cancelled',
+            message: `Your ${booking.data?.serviceType || 'travel'} booking has been cancelled. Please contact support if you have questions.`
+          }
+        };
+
+        const notificationInfo = statusMessages[newStatus];
+        if (notificationInfo) {
+          try {
+            await supabaseAdmin.from('notifications').insert({
+              user_id: booking.user_id,
+              type: 'booking_update',
+              title: notificationInfo.title,
+              message: notificationInfo.message,
+              data: {
+                booking_id: bookingId,
+                old_status: previousStatus,
+                new_status: newStatus,
+                service_type: booking.data?.serviceType
+              },
+              read: false
+            });
+          } catch (notifError) {
+            console.warn('Failed to create user notification:', notifError);
+          }
+        }
+      }
+
       showSuccess(`Booking status updated to ${newStatus}`);
       fetchUserBookings();
     } catch (error) {
