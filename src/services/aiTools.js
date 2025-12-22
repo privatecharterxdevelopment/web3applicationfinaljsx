@@ -124,21 +124,21 @@ async function calculateTransferDistanceMapbox(from, to) {
 export const aiToolDefinitions = [
   {
     name: "searchEmptyLegs",
-    description: "Search for empty leg flights (discounted repositioning flights). ALWAYS use this tool when users ask about empty legs with a location (city, country, region like 'Europe', 'Middle East', etc.). Use 'location' parameter for general region searches (e.g., location='Europe' for European empty legs). If user asks about a DIFFERENT location than previous results, perform a NEW search with the new location. Only skip this tool if user is asking follow-up questions about results already shown without specifying a new location.",
+    description: "Search for empty leg flights (discounted repositioning flights). CRITICAL: When user mentions ANY city name (like 'London', 'Dubai', 'Zurich'), IMMEDIATELY call this tool - do NOT ask follow-up questions first. Use 'location' parameter to show BOTH departures and arrivals for that city. Use 'from' for departures only, 'to' for arrivals only. Examples: User says 'London' → call with location='London'. User says 'from London' → call with from='London'. User says 'to Monaco' → call with to='Monaco'.",
     input_schema: {
       type: "object",
       properties: {
         from: {
           type: "string",
-          description: "Departure city, IATA code, or country (e.g., 'Zurich', 'ZRH', 'Switzerland', 'Dubai')"
+          description: "Departure city, IATA code, or country. Use when user says 'from [city]' or 'flying from [city]'. Shows only departures from this location."
         },
         to: {
           type: "string",
-          description: "Arrival city, IATA code, or country (e.g., 'London', 'LHR', 'UK', 'France')"
+          description: "Arrival city, IATA code, or country. Use when user says 'to [city]' or 'flying to [city]'. Shows only arrivals to this location."
         },
         location: {
           type: "string",
-          description: "Region, continent, or generic location. Use this for broad searches like 'Europe', 'Middle East', 'Asia', 'Africa', or when user doesn't specify from/to. Examples: 'Europe', 'European', 'Middle East', 'Dubai', 'Switzerland'"
+          description: "City, region, or country for general search. Use when user mentions a city without 'from' or 'to' prefix. This shows BOTH departures and arrivals for that location. Examples: 'London', 'Dubai', 'Europe', 'Switzerland'"
         },
         country: {
           type: "string",
