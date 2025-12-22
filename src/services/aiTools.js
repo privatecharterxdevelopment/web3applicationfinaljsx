@@ -634,6 +634,103 @@ export const aiToolDefinitions = [
       required: ["serviceType", "name"]
     }
   },
+  {
+    name: "createTripPackage",
+    description: "CRITICAL: Use this tool when the user CONFIRMS a multi-service trip (says 'yes', 'sounds great', 'perfect', 'book it', 'proceed', 'finalize', etc.). Creates an interactive trip package card with 'Add to Cart' button. Use for: wedding travel, honeymoon trips, multi-city journeys, events with multiple transport needs, trips requiring jet + ground transport + other services. DO NOT just say 'added to cart' in text - you MUST call this tool to actually create the card. Calculate estimated prices for each segment based on typical rates.",
+    input_schema: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          description: "Name for the trip package (e.g., 'Wedding Trip - Lake Como', 'Monaco Grand Prix Experience', 'Swiss Alps Adventure')"
+        },
+        description: {
+          type: "string",
+          description: "Brief description of the trip"
+        },
+        occasion: {
+          type: "string",
+          description: "Occasion or purpose (e.g., 'Wedding', 'Business', 'Anniversary', 'Event', 'Vacation')"
+        },
+        passengers: {
+          type: "number",
+          description: "Default number of passengers for the trip"
+        },
+        dateRange: {
+          type: "string",
+          description: "Date range for the trip (e.g., '15-18 June 2025')"
+        },
+        segments: {
+          type: "array",
+          description: "Array of trip segments in order",
+          items: {
+            type: "object",
+            properties: {
+              type: {
+                type: "string",
+                enum: ["jet", "helicopter", "ground_transfer", "car", "yacht", "activity", "other"],
+                description: "Type of segment"
+              },
+              name: {
+                type: "string",
+                description: "Name/description of this segment"
+              },
+              from: {
+                type: "string",
+                description: "Starting location"
+              },
+              to: {
+                type: "string",
+                description: "Destination"
+              },
+              date: {
+                type: "string",
+                description: "Date for this segment"
+              },
+              time: {
+                type: "string",
+                description: "Time for this segment"
+              },
+              duration: {
+                type: "string",
+                description: "Duration (e.g., '2h', '3 hours', '45 min')"
+              },
+              passengers: {
+                type: "number",
+                description: "Passengers for this segment (if different from default)"
+              },
+              aircraft: {
+                type: "string",
+                description: "Specific aircraft/helicopter model if applicable"
+              },
+              vehicle: {
+                type: "string",
+                description: "Vehicle type for ground transport"
+              },
+              estimatedPrice: {
+                type: "number",
+                description: "Estimated price in EUR for this segment"
+              },
+              priceNote: {
+                type: "string",
+                description: "Note about pricing (e.g., 'Based on 2h flight', 'Includes waiting')"
+              },
+              notes: {
+                type: "string",
+                description: "Special notes for this segment"
+              }
+            },
+            required: ["type", "name"]
+          }
+        },
+        notes: {
+          type: "string",
+          description: "Overall notes or special requests for the trip"
+        }
+      },
+      required: ["name", "segments"]
+    }
+  },
   // HOTEL TOOLS DISABLED - LiteAPI hotels temporarily removed
   // {
   //   name: "searchHotels",
@@ -710,6 +807,9 @@ export async function executeTool(toolName, input) {
 
       case 'addToCart':
         return addToCart(input);
+
+      case 'createTripPackage':
+        return createTripPackage(input);
 
       // HOTEL TOOLS DISABLED - LiteAPI hotels temporarily removed
       // case 'searchHotels':
@@ -2836,6 +2936,101 @@ Just let me know what you need!`,
       estimatedPrice ? `Est. total: €${estimatedPrice.toLocaleString()}` : null,
       'Final pricing confirmed upon booking'
     ].filter(Boolean)
+  };
+}
+
+/**
+ * Create a custom trip package with multiple segments
+ * Bundles multiple services (flights, transfers, activities) into one package
+ */
+function createTripPackage(params) {
+  const {
+    name = 'Custom Trip',
+    description = '',
+    occasion = '',
+    passengers = 1,
+    dateRange = '',
+    segments = [],
+    notes = ''
+  } = params;
+
+  if (!segments || segments.length === 0) {
+    return {
+      success: false,
+      error: 'At least one segment is required for a trip package'
+    };
+  }
+
+  // Calculate total estimated price from all segments
+  let estimatedTotal = 0;
+  const processedSegments = segments.map((segment, index) => {
+    const price = segment.estimatedPrice || 0;
+    estimatedTotal += price;
+
+    return {
+      ...segment,
+      order: index + 1,
+      estimatedPrice: price,
+      passengers: segment.passengers || passengers
+    };
+  });
+
+  // Create the trip package object
+  const tripPackage = {
+    id: `trip-${Date.now()}`,
+    type: 'trip_package',
+    name,
+    description,
+    occasion,
+    passengers,
+    dateRange,
+    segments: processedSegments,
+    estimatedTotal,
+    currency: 'EUR',
+    notes,
+    createdAt: new Date().toISOString(),
+    requiresConfirmation: true,
+    isEstimate: true
+  };
+
+  // Build a summary message
+  const segmentSummary = processedSegments.map((seg, idx) => {
+    const typeLabel = {
+      jet: '✈️ Private Jet',
+      helicopter: '🚁 Helicopter',
+      ground_transfer: '🚗 Ground Transfer',
+      car: '🚘 Chauffeur Service',
+      yacht: '🛥️ Yacht',
+      activity: '⭐ Activity',
+      other: '📍 Service'
+    }[seg.type] || '📍 Service';
+
+    const route = seg.from && seg.to ? `${seg.from} → ${seg.to}` : seg.name;
+    const price = seg.estimatedPrice ? `€${seg.estimatedPrice.toLocaleString()}` : 'TBD';
+
+    return `${idx + 1}. ${typeLabel}: ${route} - ${price}`;
+  }).join('\n');
+
+  return {
+    success: true,
+    action: 'SHOW_TRIP_PACKAGE',
+    message: `I've created your ${occasion ? occasion + ' ' : ''}trip package!`,
+    tripPackage,
+    displayMessage: `## ${name}
+
+${description ? description + '\n\n' : ''}${occasion ? `**Occasion:** ${occasion}\n` : ''}${passengers ? `**Passengers:** ${passengers}\n` : ''}${dateRange ? `**Dates:** ${dateRange}\n` : ''}
+### Trip Segments:
+${segmentSummary}
+
+---
+**Estimated Total: €${estimatedTotal.toLocaleString()}**
+
+*Final pricing confirmed after review by our team*`,
+    notes: [
+      `${processedSegments.length} segments in this trip`,
+      `Estimated total: €${estimatedTotal.toLocaleString()}`,
+      'Click "Add Trip to Cart" to proceed'
+    ]
   };
 }
 

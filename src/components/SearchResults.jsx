@@ -139,17 +139,19 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                   {/* No images for luxury cars - show icon instead */}
                   {item.type === 'luxury_cars' ? (
                     <span className="text-sm">🏎️</span>
-                  ) : (item.primaryImage || item.image_url || item.image_url_1 || item.image) ? (
+                  ) : (item.primaryImage || item.image_url || item.image_url_1 || item.image || (item.images && item.images[0])) ? (
                     <img
-                      src={item.primaryImage || item.image_url || item.image_url_1 || item.image}
+                      src={item.primaryImage || item.image_url || item.image_url_1 || item.image || (item.images && item.images[0])}
                       alt={item.name || item.title || 'Service'}
                       className="w-full h-full object-cover"
-                      onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3l14 9-14 9V3z"/></svg>'; }}
+                      onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = item.type === 'helicopters' ? '<span class="text-sm">🚁</span>' : '<svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3l14 9-14 9V3z"/></svg>'; }}
                     />
                   ) : item.type === 'wines' ? (
                     <Wine size={14} className="text-gray-500" />
                   ) : item.type === 'delicatesse' || item.type === 'cigars' ? (
                     <span className="text-sm">🎁</span>
+                  ) : item.type === 'helicopters' ? (
+                    <span className="text-sm">🚁</span>
                   ) : (
                     <Plane size={14} />
                   )}
@@ -227,7 +229,21 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
 
                     {/* Helicopters */}
                     {item.type === 'helicopters' && (
-                      <span>{item.max_passengers} pax</span>
+                      <>
+                        <span>{item.max_passengers || item.pax_capacity || '?'} pax</span>
+                        {item.range_km && (
+                          <>
+                            <span>•</span>
+                            <span>{item.range_km} km range</span>
+                          </>
+                        )}
+                        {item.speed_kmh && (
+                          <>
+                            <span>•</span>
+                            <span>{item.speed_kmh} km/h</span>
+                          </>
+                        )}
+                      </>
                     )}
 
                     {/* Yachts */}
@@ -350,7 +366,7 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                         'Quote')
                     )}
                     {item.type === 'empty_legs' && `$${(item.price_usd || item.price || 0).toLocaleString()}`}
-                    {item.type === 'helicopters' && item.price && `€${item.price.toLocaleString()}/hr`}
+                    {item.type === 'helicopters' && (item.price || item.hourly_rate_eur) && `€${(item.price || item.hourly_rate_eur).toLocaleString()}/hr`}
                     {item.type === 'yachts' && item.price && `€${item.price.toLocaleString()}/day`}
                     {item.type === 'luxury_cars' && (item.daily_rate_eur || item.price) && `€${(item.daily_rate_eur || item.price).toLocaleString()}/day`}
                     {(item.type === 'ground_transport' || item.type === 'transfer' || item.type === 'taxi') && item.price && `€${item.price.toLocaleString()}`}
@@ -507,22 +523,10 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                                   e.stopPropagation();
                                   onBuildJourney && onBuildJourney(item);
                                 }}
-                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg font-medium transition-colors text-sm border border-blue-200"
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium transition-colors text-sm"
                               >
                                 <MapPin size={16} />
                                 Build Multi-Stop
-                              </button>
-
-                              {/* Send Request */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onBookNow && onBookNow(item);
-                                }}
-                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium transition-colors text-sm"
-                              >
-                                <CreditCard size={16} />
-                                Send Request
                               </button>
                             </div>
                           </div>
@@ -609,18 +613,103 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
 
                       {item.type === 'helicopters' && (
                         <>
+                          {/* Helicopter Image - Full width */}
+                          {(item.primaryImage || item.image_url || item.image_url_1 || item.image || (item.images && item.images[0])) && (
+                            <div className="col-span-2 md:col-span-4 mb-3">
+                              <img
+                                src={item.primaryImage || item.image_url || item.image_url_1 || item.image || (item.images && item.images[0])}
+                                alt={item.name || item.model || 'Helicopter'}
+                                className="w-full h-48 object-cover rounded-lg"
+                                onError={(e) => { e.target.style.display = 'none'; }}
+                              />
+                            </div>
+                          )}
+
+                          {/* Helicopter specifications grid */}
+                          <div>
+                            <p className="text-xs text-gray-500">Model</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.name || item.model || '—'}</p>
+                          </div>
                           <div>
                             <p className="text-xs text-gray-500">Passengers</p>
-                            <p className="text-sm font-semibold text-gray-900">{item.max_passengers || '—'}</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.max_passengers || item.pax_capacity || '—'}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Range</p>
                             <p className="text-sm font-semibold text-gray-900">{item.range_km ? `${item.range_km} km` : '—'}</p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500">Hourly Rate</p>
-                            <p className="text-sm font-semibold text-gray-900">€{item.hourly_rate_eur?.toLocaleString() || '—'}/hr</p>
+                            <p className="text-xs text-gray-500">Cruise Speed</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.speed_kmh ? `${item.speed_kmh} km/h` : item.cruise_speed ? `${item.cruise_speed} km/h` : '—'}</p>
                           </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Hourly Rate</p>
+                            <p className="text-sm font-semibold text-emerald-600">
+                              {(item.hourly_rate_eur || item.price)
+                                ? `€${(item.hourly_rate_eur || item.price).toLocaleString()}/hr`
+                                : 'Quote on request'}
+                            </p>
+                          </div>
+                          {item.category && (
+                            <div>
+                              <p className="text-xs text-gray-500">Category</p>
+                              <p className="text-sm font-semibold text-gray-900">{item.category}</p>
+                            </div>
+                          )}
+                          {item.manufacturer && (
+                            <div>
+                              <p className="text-xs text-gray-500">Manufacturer</p>
+                              <p className="text-sm font-semibold text-gray-900">{item.manufacturer}</p>
+                            </div>
+                          )}
+                          {item.year_of_manufacture && (
+                            <div>
+                              <p className="text-xs text-gray-500">Year</p>
+                              <p className="text-sm font-semibold text-gray-900">{item.year_of_manufacture}</p>
+                            </div>
+                          )}
+
+                          {/* Description if available */}
+                          {item.description && (
+                            <div className="col-span-2 md:col-span-4 mt-2">
+                              <p className="text-xs text-gray-500 mb-1">Description</p>
+                              <p className="text-sm text-gray-700 leading-relaxed">{item.description}</p>
+                            </div>
+                          )}
+
+                          {/* Ideal For section */}
+                          <div className="col-span-2 md:col-span-4 mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p className="font-semibold text-blue-900 mb-2">🚁 Ideal For</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-blue-800">
+                              <div className="flex items-center gap-2">
+                                <span className="text-blue-500">✓</span>
+                                <span>City-to-city transfers</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-blue-500">✓</span>
+                                <span>Airport connections</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-blue-500">✓</span>
+                                <span>Scenic tours</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-blue-500">✓</span>
+                                <span>Event transportation</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Pricing estimate */}
+                          {(item.hourly_rate_eur || item.price) && (
+                            <div className="col-span-2 md:col-span-4 mt-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                              <p className="font-semibold text-emerald-900 mb-1">Pricing</p>
+                              <div className="text-sm text-emerald-800">
+                                <p>Hourly rate: <span className="font-bold">€{(item.hourly_rate_eur || item.price).toLocaleString()}/hr</span></p>
+                                <p className="text-xs text-emerald-600 mt-1">Minimum booking: 1 hour. Final price based on route and duration.</p>
+                              </div>
+                            </div>
+                          )}
 
                           {/* Action Buttons for Helicopters */}
                           <div className="col-span-2 md:col-span-4 mt-4 pt-4 border-t border-gray-200">

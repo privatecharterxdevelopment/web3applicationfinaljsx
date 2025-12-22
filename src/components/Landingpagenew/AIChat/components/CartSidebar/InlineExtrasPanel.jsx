@@ -1,120 +1,225 @@
-// InlineExtrasPanel - Quick add extras within cart sidebar
-import React from 'react';
-import { X, Plus, Wine, Package } from 'lucide-react';
+// InlineExtrasPanel - Add in-flight extras within cart sidebar
+// Full catalog with pricing for champagne, cigars, caviar, flowers, catering, spirits
+import React, { useState } from 'react';
+import { X, Plus, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 
-const EXTRA_CATEGORIES = [
-  { id: 'wine', label: 'Wine & Champagne', icon: '🍷' },
-  { id: 'cigars', label: 'Premium Cigars', icon: '🚬' },
-  { id: 'catering', label: 'Catering', icon: '🍽️' },
-  { id: 'flowers', label: 'Flowers', icon: '💐' },
-  { id: 'other', label: 'Other', icon: '✨' }
+// Extras categories
+const EXTRAS_CATEGORIES = [
+  { id: 'champagne', label: 'Champagne', icon: '🍾', description: 'Premium champagnes & sparkling wines' },
+  { id: 'cigars', label: 'Premium Cigars', icon: '🚬', description: 'Cuban & premium cigars', warning: '+$2,000 aircraft cleaning fee' },
+  { id: 'caviar', label: 'Caviar', icon: '🥄', description: 'Finest caviars & accompaniments' },
+  { id: 'flowers', label: 'Flowers', icon: '💐', description: 'Fresh arrangements & cabin decoration' },
+  { id: 'catering', label: 'Catering', icon: '🍽️', description: 'Gourmet meals & snacks' },
+  { id: 'spirits', label: 'Spirits', icon: '🥃', description: 'Premium whisky, cognac & vodka' }
 ];
+
+// Full extras catalog with pricing
+const EXTRAS_CATALOG = {
+  champagne: [
+    { name: 'Moët & Chandon Brut', price: 120, description: 'Classic brut champagne' },
+    { name: 'Veuve Clicquot Yellow Label', price: 150, description: 'Rich and full-bodied' },
+    { name: 'Krug Grande Cuvée', price: 350, description: 'Multi-vintage prestige' },
+    { name: 'Louis Roederer Cristal', price: 450, description: 'Iconic prestige cuvée' },
+    { name: 'Dom Pérignon Rosé', price: 550, description: 'Vintage rosé champagne' },
+    { name: 'Bollinger La Grande Année', price: 280, description: 'Vintage prestige cuvée' },
+    { name: 'Perrier-Jouët Belle Epoque', price: 380, description: 'Floral prestige cuvée' },
+    { name: 'Armand de Brignac Brut Gold', price: 650, description: 'Ace of Spades' }
+  ],
+  cigars: [
+    { name: 'Cohiba Behike BHK 52', price: 150, description: 'Per stick - Ultra premium' },
+    { name: 'Cohiba Behike BHK 54', price: 180, description: 'Per stick - Rare & exclusive' },
+    { name: 'Montecristo No. 2', price: 80, description: 'Per stick - Torpedo classic' },
+    { name: 'Davidoff Churchill', price: 60, description: 'Per stick - Smooth & refined' },
+    { name: 'Romeo y Julieta Churchill', price: 45, description: 'Per stick - Medium-bodied' },
+    { name: 'Partagás Serie D No. 4', price: 55, description: 'Per stick - Full-bodied Cuban' },
+    { name: 'Box of 5 Cohiba Robustos', price: 350, description: 'Premium gift box' },
+    { name: 'Smoking Lounge Setup', price: 500, description: 'Humidor, cutter, lighter + cleaning' }
+  ],
+  caviar: [
+    { name: 'Beluga Caviar 50g', price: 400, description: 'Huso huso - The finest' },
+    { name: 'Beluga Caviar 125g', price: 950, description: 'Huso huso - For larger groups' },
+    { name: 'Oscietra Caviar 50g', price: 250, description: 'Nutty & complex flavor' },
+    { name: 'Oscietra Caviar 125g', price: 580, description: 'For larger groups' },
+    { name: 'Sevruga Caviar 50g', price: 180, description: 'Intense & delicate' },
+    { name: 'Kaluga Queen 50g', price: 300, description: 'River Beluga alternative' },
+    { name: 'Caviar Tasting Set', price: 450, description: '3x 30g with blinis & crème fraîche' },
+    { name: 'Caviar Service Setup', price: 650, description: 'Mother of pearl spoons, ice bed, full service' }
+  ],
+  flowers: [
+    { name: 'Red Roses Bouquet (12)', price: 150, description: 'Classic romantic arrangement' },
+    { name: 'White Orchids Arrangement', price: 200, description: 'Elegant phalaenopsis' },
+    { name: 'Mixed Seasonal Bouquet', price: 120, description: 'Fresh seasonal selection' },
+    { name: 'Luxury Arrangement', price: 350, description: 'Designer custom arrangement' },
+    { name: 'Cabin Rose Petals', price: 180, description: 'Romantic cabin decoration' },
+    { name: 'Full Cabin Decoration', price: 500, description: 'Flowers, candles, ambiance setup' },
+    { name: 'Wedding/Proposal Setup', price: 750, description: 'Complete romantic setup' },
+    { name: 'Anniversary Package', price: 400, description: 'Flowers + champagne setup' }
+  ],
+  catering: [
+    { name: 'Light Snacks & Drinks', price: 100, description: 'Nuts, fruits, soft drinks' },
+    { name: 'Continental Breakfast', price: 150, description: 'Pastries, coffee, juice' },
+    { name: 'Gourmet Lunch Box', price: 200, description: 'Premium sandwiches & salads' },
+    { name: 'Hot Meal Service', price: 350, description: 'Chef-prepared hot dishes' },
+    { name: 'Premium Dinner Service', price: 450, description: '3-course gourmet dinner' },
+    { name: 'Michelin-Star Menu', price: 750, description: 'Curated by partner chefs' },
+    { name: 'Sushi & Sashimi Platter', price: 300, description: 'Fresh premium selection' },
+    { name: 'Custom Menu Request', price: 0, description: 'Price on request - Bespoke menu' }
+  ],
+  spirits: [
+    { name: 'Macallan 18 Year', price: 350, description: 'Single malt Scotch whisky' },
+    { name: 'Macallan 25 Year', price: 850, description: 'Rare aged single malt' },
+    { name: 'Hennessy XO', price: 280, description: 'Prestige cognac' },
+    { name: 'Rémy Martin Louis XIII', price: 3500, description: 'Ultra-premium cognac' },
+    { name: 'Grey Goose Vodka', price: 80, description: 'Premium French vodka' },
+    { name: 'Beluga Noble Vodka', price: 120, description: 'Russian luxury vodka' },
+    { name: 'Whisky Tasting Set', price: 250, description: '4x premium whiskies' },
+    { name: 'Cognac Tasting Set', price: 350, description: '3x prestige cognacs' }
+  ]
+};
 
 const InlineExtrasPanel = ({
   selectedCategory,
   setSelectedCategory,
   customExtraForm,
   setCustomExtraForm,
-  extrasCatalog = [],
   onAddExtra,
   onClose
 }) => {
+  const [expandedCategory, setExpandedCategory] = useState(selectedCategory);
+
   // Get items for selected category
-  const categoryItems = selectedCategory
-    ? extrasCatalog.filter(item =>
-        item.category?.toLowerCase() === selectedCategory ||
-        item.type?.toLowerCase() === selectedCategory
-      )
-    : [];
+  const categoryItems = expandedCategory ? EXTRAS_CATALOG[expandedCategory] || [] : [];
+  const categoryInfo = EXTRAS_CATEGORIES.find(c => c.id === expandedCategory);
+
+  const handleAddItem = (item) => {
+    onAddExtra({
+      ...item,
+      id: `extra-${Date.now()}`,
+      cartId: `extra-${Date.now()}`,
+      type: 'custom_extra',
+      category: expandedCategory,
+      unitPrice: item.price,
+      quantity: 1,
+      addedAt: new Date().toISOString()
+    });
+  };
 
   return (
-    <div className="border-b border-gray-200 bg-white">
+    <div className="border-b border-gray-200 bg-gradient-to-br from-purple-50 to-pink-50">
       {/* Header */}
-      <div className="p-3 border-b border-gray-100 flex justify-between items-center">
-        <h4 className="text-sm font-medium text-gray-900">Add Extras</h4>
+      <div className="p-3 border-b border-purple-200 flex justify-between items-center bg-white/50">
+        <div>
+          <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+            ✨ In-Flight Extras
+          </h4>
+          <p className="text-[10px] text-gray-500">Add champagne, cigars, caviar & more</p>
+        </div>
         <button
           onClick={onClose}
-          className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <X size={16} className="text-gray-500" />
         </button>
       </div>
 
       {/* Category Selection */}
-      {!selectedCategory && (
+      {!expandedCategory && (
         <div className="p-3 grid grid-cols-2 gap-2">
-          {EXTRA_CATEGORIES.map(cat => (
+          {EXTRAS_CATEGORIES.map(cat => (
             <button
               key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className="p-3 bg-gray-50 hover:bg-gray-100 rounded-lg text-left transition-colors border border-gray-200 hover:border-gray-300"
+              onClick={() => {
+                setExpandedCategory(cat.id);
+                setSelectedCategory(cat.id);
+              }}
+              className="p-3 bg-white hover:bg-purple-50 rounded-xl text-left transition-all border border-gray-200 hover:border-purple-300 hover:shadow-sm"
             >
-              <span className="text-xl">{cat.icon}</span>
-              <p className="text-xs font-medium text-gray-700 mt-1">{cat.label}</p>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xl">{cat.icon}</span>
+                <span className="text-xs font-semibold text-gray-800">{cat.label}</span>
+              </div>
+              <p className="text-[10px] text-gray-500 leading-tight">{cat.description}</p>
+              {cat.warning && (
+                <p className="text-[9px] text-amber-600 mt-1 flex items-center gap-1">
+                  <AlertTriangle size={10} />
+                  {cat.warning}
+                </p>
+              )}
             </button>
           ))}
         </div>
       )}
 
       {/* Category Items */}
-      {selectedCategory && (
+      {expandedCategory && (
         <div className="p-3">
+          {/* Back button */}
           <button
-            onClick={() => setSelectedCategory(null)}
-            className="text-xs text-gray-500 hover:text-gray-700 mb-3 flex items-center gap-1"
+            onClick={() => {
+              setExpandedCategory(null);
+              setSelectedCategory(null);
+            }}
+            className="text-xs text-gray-600 hover:text-gray-800 mb-3 flex items-center gap-1 font-medium"
           >
             ← Back to categories
           </button>
 
-          {categoryItems.length > 0 ? (
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {categoryItems.slice(0, 5).map((item, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-gray-800 truncate">
-                      {item.name || item.title}
-                    </p>
-                    {item.price && (
-                      <p className="text-[10px] text-gray-500">
-                        ${item.price.toLocaleString()}
-                      </p>
-                    )}
-                  </div>
+          {/* Category header */}
+          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-purple-200">
+            <span className="text-2xl">{categoryInfo?.icon}</span>
+            <div>
+              <h5 className="font-semibold text-gray-900 text-sm">{categoryInfo?.label}</h5>
+              <p className="text-[10px] text-gray-500">{categoryInfo?.description}</p>
+            </div>
+          </div>
+
+          {/* Cigars warning */}
+          {expandedCategory === 'cigars' && (
+            <div className="mb-3 p-2 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
+              <AlertTriangle size={14} className="text-amber-600 flex-shrink-0 mt-0.5" />
+              <p className="text-[10px] text-amber-800">
+                <strong>Note:</strong> A $2,000 aircraft cleaning fee applies for smoking on board. This will be added to your final invoice.
+              </p>
+            </div>
+          )}
+
+          {/* Items list */}
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {categoryItems.map((item, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-gray-200 hover:border-purple-300 transition-colors"
+              >
+                <div className="flex-1 min-w-0 pr-2">
+                  <p className="text-xs font-medium text-gray-800">{item.name}</p>
+                  <p className="text-[10px] text-gray-500">{item.description}</p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-xs font-semibold text-gray-900">
+                    {item.price > 0 ? `$${item.price.toLocaleString()}` : 'Quote'}
+                  </span>
                   <button
-                    onClick={() => {
-                      onAddExtra({
-                        ...item,
-                        cartId: `extra-${Date.now()}`,
-                        type: 'custom_extra',
-                        addedAt: new Date().toISOString()
-                      });
-                    }}
-                    className="px-2 py-1 bg-gray-900 text-white text-[10px] font-medium rounded hover:bg-gray-800 transition-colors"
+                    onClick={() => handleAddItem(item)}
+                    className="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-medium rounded-lg transition-colors flex items-center gap-1"
                   >
+                    <Plus size={12} />
                     Add
                   </button>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-gray-500 text-center py-4">
-              No items in this category
-            </p>
-          )}
+              </div>
+            ))}
+          </div>
 
           {/* Custom Request */}
-          <div className="pt-3 mt-3 border-t border-gray-200">
-            <p className="text-[10px] text-gray-500 mb-2">Or add a custom request:</p>
+          <div className="pt-3 mt-3 border-t border-purple-200">
+            <p className="text-[10px] text-gray-600 mb-2 font-medium">Custom Request:</p>
             <div className="flex items-center gap-2">
               <input
                 type="text"
                 value={customExtraForm?.name || ''}
                 onChange={(e) => setCustomExtraForm(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Custom item name..."
-                className="flex-1 px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs focus:ring-1 focus:ring-gray-900 focus:border-transparent"
+                placeholder="Describe your custom request..."
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
               <button
                 onClick={() => {
@@ -123,7 +228,7 @@ const InlineExtrasPanel = ({
                     id: `custom-${Date.now()}`,
                     name: customExtraForm.name,
                     type: 'custom_extra',
-                    category: selectedCategory,
+                    category: expandedCategory,
                     price: 0,
                     isEstimate: true,
                     isCustomRequest: true,
@@ -133,13 +238,13 @@ const InlineExtrasPanel = ({
                   setCustomExtraForm({ name: '', category: '', quantity: 1, notes: '' });
                 }}
                 disabled={!customExtraForm?.name?.trim()}
-                className="px-3 py-1.5 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1"
+                className="px-3 py-2 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1"
               >
                 <Plus size={12} />
                 Add
               </button>
             </div>
-            <p className="text-[9px] text-gray-400 mt-1">Price on request</p>
+            <p className="text-[9px] text-gray-400 mt-1">Custom items are priced on request</p>
           </div>
         </div>
       )}

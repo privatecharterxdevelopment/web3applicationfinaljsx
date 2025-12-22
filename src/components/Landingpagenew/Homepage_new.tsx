@@ -254,35 +254,220 @@ function Homepage() {
         {/* Philosophy Text Section */}
         <AnimatedSection animation="fade-in" delay={100}>
           <section className="px-4 sm:px-8 py-12 sm:py-16 max-w-4xl mx-auto">
-            <div className="space-y-6">
-              <p className="text-center text-base sm:text-lg text-gray-800 leading-relaxed">
-                Real flights. Real assets. Real returns. All backed by <span className="bg-gray-200 px-2 py-1 rounded">licensed tokenization</span> under SEC regulations.
-              </p>
-              <p className="text-center text-base sm:text-lg text-gray-800 leading-relaxed">
-                PrivateCharterX is the world's first <span className="bg-gray-200 px-2 py-1 rounded">Web3 and AI-powered</span> luxury travel platform.
-                Jets, helicopters, empty legs, luxury rentals, transfers, curated adventures—searchable by AI, bookable 24/7 with <span className="bg-gray-200 px-2 py-1 rounded">70+ cryptocurrencies</span> via CoinGate. Human support standing by.
-              </p>
-              <p className="text-center text-base sm:text-lg text-gray-800 leading-relaxed">
-                Our <span className="bg-gray-200 px-2 py-1 rounded">tokenization services</span> transforms aircraft, hangars, and airfields into
-                income-generating digital assets while staying operational. NFT holders unlock <span className="bg-gray-200 px-2 py-1 rounded">free empty legs</span>,
-                10% discounts, and priority access.
-              </p>
-            </div>
+            <p className="text-center text-base sm:text-lg text-gray-800 leading-relaxed">
+              Real flights. Real assets. Real returns. All backed by <span className="bg-gray-200 px-2 py-1 rounded">licensed tokenization</span> under SEC regulations. PrivateCharterX is the world's first <span className="bg-gray-200 px-2 py-1 rounded">Web3 and AI-powered</span> luxury travel platform. Jets, helicopters, empty legs, luxury rentals, transfers, curated adventures—searchable by AI, bookable 24/7 with <span className="bg-gray-200 px-2 py-1 rounded">70+ cryptocurrencies</span> via CoinGate. Human support standing by. Our <span className="bg-gray-200 px-2 py-1 rounded">tokenization services</span> transforms aircraft, hangars, and airfields into income-generating digital assets while staying operational. NFT holders unlock <span className="bg-gray-200 px-2 py-1 rounded">free empty legs</span>, 10% discounts, and priority access.
+            </p>
           </section>
         </AnimatedSection>
 
+        {/* Animated AI Prompts Marquee */}
+        <section className="py-8 sm:py-12 overflow-hidden">
+          <style>{`
+            @keyframes scrollLeft {
+              0% { transform: translateX(0); }
+              100% { transform: translateX(-50%); }
+            }
+            @keyframes scrollRight {
+              0% { transform: translateX(-50%); }
+              100% { transform: translateX(0); }
+            }
+            .animate-scroll-left {
+              animation: scrollLeft 180s linear infinite;
+            }
+            .animate-scroll-right {
+              animation: scrollRight 180s linear infinite;
+            }
+            .marquee-row:hover .animate-scroll-left,
+            .marquee-row:hover .animate-scroll-right {
+              animation-play-state: paused;
+            }
+            .prompt-card {
+              transition: all 0.2s ease;
+            }
+            .prompt-card:hover {
+              transform: scale(1.02);
+              box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            }
+            .prompt-card:active {
+              transform: scale(0.98);
+            }
+            .prompt-card .plus-icon {
+              transition: transform 0.3s ease;
+            }
+            .prompt-card:hover .plus-icon {
+              transform: rotate(90deg);
+            }
+          `}</style>
+
+          <div className="space-y-4">
+            {/* Row 1 - Left to Right */}
+            <div className="marquee-row relative">
+              <div className="animate-scroll-left flex gap-3 w-max">
+                {[...Array(2)].map((_, setIndex) => (
+                  <div key={setIndex} className="flex gap-3">
+                    {[
+                      { prompt: "I need a private jet from Zurich to London", tier: "explorer" },
+                      { prompt: "Book a light jet from Geneva to Nice", tier: "explorer" },
+                      { prompt: "Show me available jets for Paris to Ibiza", tier: "explorer" },
+                      { prompt: "Find me a heavy jet for 12 passengers", tier: "explorer" },
+                      { prompt: "What's the cheapest jet to Barcelona?", tier: "explorer" },
+                      { prompt: "Empty legs from London", tier: "explorer" },
+                      { prompt: "Show me empty legs to Monaco", tier: "explorer" },
+                      { prompt: "Group charter for 20 passengers", tier: "elite" },
+                      { prompt: "Helicopter transfer Nice to Monaco", tier: "explorer" },
+                      { prompt: "Alpine scenic helicopter tour", tier: "explorer" },
+                      { prompt: "Ground transport from Schiphol", tier: "explorer" },
+                      { prompt: "Luxury car pickup Geneva airport", tier: "explorer" },
+                      { prompt: "Yacht charter Mediterranean", tier: "traveller" },
+                      { prompt: "Superyacht Monaco Grand Prix", tier: "traveller" },
+                      { prompt: "Free airport transfer included", tier: "elite" },
+                      { prompt: "VIP event access Monaco Grand Prix", tier: "elite" },
+                      { prompt: "MembershipX card benefits", tier: "elite" }
+                    ].map((item, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => navigate(`/dashboard/chat?query=${encodeURIComponent(item.prompt)}&newChat=true`)}
+                        className="prompt-card group relative flex-shrink-0 flex items-center gap-3 pl-3 pr-4 py-4 rounded-2xl text-xs whitespace-nowrap cursor-pointer border border-gray-200/40"
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.7)',
+                          backdropFilter: 'blur(12px)',
+                          WebkitBackdropFilter: 'blur(12px)',
+                        }}
+                      >
+                        <span
+                          className="absolute -top-2 left-3 px-2 py-0.5 rounded-full text-[10px] font-medium border text-gray-600"
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.9)',
+                            backdropFilter: 'blur(8px)',
+                            borderColor: 'rgba(0,0,0,0.08)'
+                          }}
+                        >
+                          {item.tier === 'elite' ? 'Elite' : item.tier === 'traveller' ? 'Traveller' : 'Explorer'}
+                        </span>
+                        <span className="text-gray-800">{item.prompt}</span>
+                        <span className="plus-icon ml-auto text-gray-400 text-lg font-light">+</span>
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Row 2 - Right to Left */}
+            <div className="marquee-row relative">
+              <div className="animate-scroll-right flex gap-3 w-max">
+                {[...Array(2)].map((_, setIndex) => (
+                  <div key={setIndex} className="flex gap-3">
+                    {[
+                      { prompt: "I'd like a Barolo red wine for my flight", tier: "explorer" },
+                      { prompt: "Do you have Dom Pérignon?", tier: "explorer" },
+                      { prompt: "Show me your champagne selection", tier: "explorer" },
+                      { prompt: "Château Margaux 2015 please", tier: "explorer" },
+                      { prompt: "Wine recommendations for celebration", tier: "explorer" },
+                      { prompt: "Order Krug Grande Cuvée", tier: "explorer" },
+                      { prompt: "Cuban cigars for my flight", tier: "explorer" },
+                      { prompt: "Do you have Cohiba Behike?", tier: "explorer" },
+                      { prompt: "Premium cigar selection", tier: "explorer" },
+                      { prompt: "Montecristo No. 2 box", tier: "explorer" },
+                      { prompt: "Michelin star restaurant Zurich", tier: "explorer" },
+                      { prompt: "Rooftop restaurant in Monaco", tier: "explorer" },
+                      { prompt: "Best Italian near my hotel Milan", tier: "explorer" },
+                      { prompt: "VIP catering experience on board", tier: "elite" },
+                      { prompt: "Full meal catering on my jet", tier: "explorer" },
+                      { prompt: "Concierge book dinner for 8", tier: "traveller" },
+                      { prompt: "Event booking private venue", tier: "traveller" }
+                    ].map((item, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => navigate(`/dashboard/chat?query=${encodeURIComponent(item.prompt)}&newChat=true`)}
+                        className="prompt-card group relative flex-shrink-0 flex items-center gap-3 pl-3 pr-4 py-4 rounded-2xl text-xs whitespace-nowrap cursor-pointer border border-gray-200/40"
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.7)',
+                          backdropFilter: 'blur(12px)',
+                          WebkitBackdropFilter: 'blur(12px)',
+                        }}
+                      >
+                        <span
+                          className="absolute -top-2 left-3 px-2 py-0.5 rounded-full text-[10px] font-medium border text-gray-600"
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.9)',
+                            backdropFilter: 'blur(8px)',
+                            borderColor: 'rgba(0,0,0,0.08)'
+                          }}
+                        >
+                          {item.tier === 'elite' ? 'Elite' : item.tier === 'traveller' ? 'Traveller' : 'Explorer'}
+                        </span>
+                        <span className="text-gray-800">{item.prompt}</span>
+                        <span className="plus-icon ml-auto text-gray-400 text-lg font-light">+</span>
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Row 3 - Left to Right */}
+            <div className="marquee-row relative">
+              <div className="animate-scroll-left flex gap-3 w-max" style={{ animationDuration: '160s' }}>
+                {[...Array(2)].map((_, setIndex) => (
+                  <div key={setIndex} className="flex gap-3">
+                    {[
+                      { prompt: "Helicopter Zurich to Gstaad", tier: "explorer" },
+                      { prompt: "Wedding helicopter Lake Como", tier: "explorer" },
+                      { prompt: "Airport transfers Geneva", tier: "explorer" },
+                      { prompt: "Swiss Alps helicopter tour", tier: "explorer" },
+                      { prompt: "Luxury van for 6 to Cannes", tier: "explorer" },
+                      { prompt: "Last-minute Zurich to St. Moritz", tier: "explorer" },
+                      { prompt: "Jets with bedroom capability", tier: "explorer" },
+                      { prompt: "Yacht week Croatia", tier: "traveller" },
+                      { prompt: "Round trip to Dubai", tier: "explorer" },
+                      { prompt: "MEDEVAC flight Greece to Switzerland", tier: "elite" },
+                      { prompt: "Concierge services Monaco", tier: "traveller" },
+                      { prompt: "Break the price on competitor quote", tier: "traveller" },
+                      { prompt: "Empty legs Zurich departing", tier: "explorer" },
+                      { prompt: "Show all Geneva empty legs", tier: "explorer" },
+                      { prompt: "Vintage Bordeaux for my jet", tier: "explorer" },
+                      { prompt: "Cigars for a 3-hour flight", tier: "explorer" }
+                    ].map((item, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => navigate(`/dashboard/chat?query=${encodeURIComponent(item.prompt)}&newChat=true`)}
+                        className="prompt-card group relative flex-shrink-0 flex items-center gap-3 pl-3 pr-4 py-4 rounded-2xl text-xs whitespace-nowrap cursor-pointer border border-gray-200/40"
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.7)',
+                          backdropFilter: 'blur(12px)',
+                          WebkitBackdropFilter: 'blur(12px)',
+                        }}
+                      >
+                        <span
+                          className="absolute -top-2 left-3 px-2 py-0.5 rounded-full text-[10px] font-medium border text-gray-600"
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.9)',
+                            backdropFilter: 'blur(8px)',
+                            borderColor: 'rgba(0,0,0,0.08)'
+                          }}
+                        >
+                          {item.tier === 'elite' ? 'Elite' : item.tier === 'traveller' ? 'Traveller' : 'Explorer'}
+                        </span>
+                        <span className="text-gray-800">{item.prompt}</span>
+                        <span className="plus-icon ml-auto text-gray-400 text-lg font-light">+</span>
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Service Cards - 4 Cards in Single Row */}
-        <section className="px-4 sm:px-8 py-12 sm:py-16 max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <section className="px-4 sm:px-8 pt-8 sm:pt-12 pb-2 sm:pb-3 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Global Fleet */}
             <div
               onClick={handleGetStarted}
               className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
             >
-              {/* Header Image/Video Space */}
-              <div className="w-full h-32 bg-gray-100 border-b border-gray-200">
-                {/* Space for image/video - to be added manually */}
-              </div>
               <div className="p-6">
                 <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
                   Global Fleet
@@ -305,10 +490,6 @@ function Homepage() {
               onClick={handleGetStarted}
               className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
             >
-              {/* Header Image/Video Space */}
-              <div className="w-full h-32 bg-gray-100 border-b border-gray-200">
-                {/* Space for image/video - to be added manually */}
-              </div>
               <div className="p-6">
                 <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
                   Web3 Integration
@@ -331,10 +512,6 @@ function Homepage() {
               onClick={handleGetStarted}
               className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
             >
-              {/* Header Image/Video Space */}
-              <div className="w-full h-32 bg-gray-100 border-b border-gray-200">
-                {/* Space for image/video - to be added manually */}
-              </div>
               <div className="p-6">
                 <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
                   Tokenized Assets
@@ -352,25 +529,21 @@ function Homepage() {
               </div>
             </div>
 
-            {/* Licensed Partners */}
+            {/* Sphera AI */}
             <div
-              onClick={handleGetStarted}
+              onClick={() => navigate('/dashboard/chat?newChat=true')}
               className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
             >
-              {/* Header Image/Video Space */}
-              <div className="w-full h-32 bg-gray-100 border-b border-gray-200">
-                {/* Space for image/video - to be added manually */}
-              </div>
               <div className="p-6">
                 <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
-                  Licensed Partners
+                  Sphera AI
                   <br />
-                  <span className="text-gray-400 text-sm">Verified Network</span>
+                  <span className="text-gray-400 text-sm">v1.0 Travel Intelligence</span>
                 </h3>
-                <p className="text-gray-600 text-sm leading-snug mb-3">Verified operators and premium service providers worldwide.</p>
+                <p className="text-gray-600 text-sm leading-snug mb-3">The most intelligent travel AI. Empty legs, private jets, wines, delicacies, smart cart.</p>
                 <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Verified</span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Premium</span>
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">AI-Powered</span>
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">24/7</span>
                 </div>
                 <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
                   +
@@ -380,35 +553,24 @@ function Homepage() {
           </div>
         </section>
 
-        {/* Tokenize Your Business Section */}
-        <section className="px-4 sm:px-8 py-12 sm:py-16 max-w-6xl mx-auto">
-          <div className="space-y-4 sm:space-y-6">
-            {/* Ground Transport - Large Card */}
+        {/* Three Cards Section - Ground Transport, Tokenize, Partner */}
+        <section className="px-4 sm:px-8 pt-1 sm:pt-1 pb-8 sm:pb-12 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+            {/* Ground Transport */}
             <div
               onClick={handleGetStarted}
               className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
             >
-              {/* Header Image */}
-              <div
-                className="w-full h-48 bg-gray-100 border-b border-gray-200 bg-cover bg-center"
-                style={{ backgroundImage: 'url(https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/serviceImagesVector/Privatecharterx,map.png)' }}
-              >
-              </div>
-              <div className="p-8">
-                <h3 className="text-2xl font-light text-gray-900 mb-2 leading-tight">
+              <div className="p-6">
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
                   Ground Transport
                   <br />
-                  <span className="text-gray-400 text-base">Move Smarter</span>
+                  <span className="text-gray-400 text-sm">Move Smarter</span>
                 </h3>
-                <p className="text-gray-600 text-base leading-relaxed mb-4 max-w-2xl">
-                  Complete end-to-end ground transportation services. Luxury cars, helicopters, and concierge support
-                  integrated directly into your flight booking experience.
-                </p>
-                <div className="flex flex-wrap gap-2 mb-6">
-                  <span className="bg-gray-200 px-3 py-1 rounded-full text-xs text-gray-700">Luxury Cars</span>
-                  <span className="bg-gray-200 px-3 py-1 rounded-full text-xs text-gray-700">Helicopters</span>
-                  <span className="bg-gray-200 px-3 py-1 rounded-full text-xs text-gray-700">Concierge</span>
-                  <span className="bg-gray-200 px-3 py-1 rounded-full text-xs text-gray-700">24/7 Support</span>
+                <p className="text-gray-600 text-sm leading-snug mb-3">End-to-end ground transportation. Luxury cars, helicopters, and concierge support.</p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Luxury Cars</span>
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">24/7</span>
                 </div>
                 <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
                   +
@@ -416,65 +578,46 @@ function Homepage() {
               </div>
             </div>
 
-            {/* Two Cards Below */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              {/* Tokenize Your Business */}
-              <div
-                onClick={handleGetStarted}
-                className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
-              >
-                {/* Header Image/Video Space */}
-                <div
-                  className="w-full h-32 bg-gray-100 border-b border-gray-200 bg-contain bg-center bg-no-repeat"
-                  style={{ backgroundImage: 'url(https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/serviceImagesVector/ethereum-logoprivatecharterx-dots.svg)', backgroundSize: '60%' }}
-                >
+            {/* Tokenize Your Business */}
+            <div
+              onClick={handleGetStarted}
+              className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+            >
+              <div className="p-6">
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
+                  Tokenize Your Business
+                  <br />
+                  <span className="text-gray-400 text-sm">Get Instant Liquidity</span>
+                </h3>
+                <p className="text-gray-600 text-sm leading-snug mb-3">Transform your company into a tokenized entity with fractional ownership and equity tokens.</p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Smart Contracts</span>
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Liquidity</span>
                 </div>
-                <div className="p-6">
-                  <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
-                    Tokenize Your Business
-                    <br />
-                    <span className="text-gray-400 text-sm">Get Instant Liquidity</span>
-                  </h3>
-                  <p className="text-gray-600 text-sm leading-snug mb-3">Transform your company into a tokenized entity with fractional ownership and equity tokens.</p>
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Fractional Ownership</span>
-                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Smart Contracts</span>
-                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Liquidity</span>
-                  </div>
-                  <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-                    +
-                  </div>
+                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+                  +
                 </div>
               </div>
+            </div>
 
-              {/* Become a Partner */}
-              <div
-                onClick={handleGetStarted}
-                className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
-              >
-                {/* Header Image */}
-                <div
-                  className="w-full h-32 bg-gray-100 border-b border-gray-200 bg-cover bg-center"
-                  style={{ backgroundImage: 'url(https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/serviceImagesVector/privatecharterxbannergrey.png)' }}
-                >
+            {/* Become a Partner */}
+            <div
+              onClick={() => window.location.href = 'mailto:admin@privatecharterx.com?subject=Partner%20Inquiry&body=Hello%2C%0A%0AI%20am%20interested%20in%20becoming%20a%20partner%20with%20PrivateCharterX.%0A%0APlease%20contact%20me%20to%20discuss%20the%20partnership%20opportunities.%0A%0ABest%20regards'}
+              className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+            >
+              <div className="p-6">
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
+                  Become a Partner
+                  <br />
+                  <span className="text-gray-400 text-sm">Expand Your Business</span>
+                </h3>
+                <p className="text-gray-600 text-sm leading-snug mb-3">List your services on our platform. Luxury cars, taxis, adventure packages, limousines.</p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Global Exposure</span>
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Secure</span>
                 </div>
-                <div className="p-6">
-                  <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
-                    Become a Partner
-                    <br />
-                    <span className="text-gray-400 text-sm">Expand Your Business</span>
-                  </h3>
-                  <p className="text-gray-600 text-sm leading-snug mb-3">
-                    List your services on our platform. Offer luxury cars, taxis, adventure packages, or limousine services to our global clientele.
-                  </p>
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Global Exposure</span>
-                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Secure Payments</span>
-                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Easy Management</span>
-                  </div>
-                  <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-                    +
-                  </div>
+                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+                  +
                 </div>
               </div>
             </div>
@@ -486,6 +629,50 @@ function Homepage() {
 
         {/* Fractional Ownership - HIDDEN */}
         {/* Section removed as per request */}
+
+        {/* Yachts Coming Soon Banner */}
+        <AnimatedSection animation="slide-up" delay={100}>
+          <section className="px-4 sm:px-8 py-8 sm:py-12 max-w-6xl mx-auto">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden">
+              <div className="grid grid-cols-1 md:grid-cols-2">
+                {/* Left - Text Content */}
+                <div className="p-6 flex flex-col justify-center">
+                  <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
+                    Yachting and Boats
+                    <br />
+                    <span className="text-gray-400 text-sm">Maritime Luxury</span>
+                  </h3>
+                  <p className="text-gray-600 text-sm leading-snug mb-3">
+                    19,000+ yachts, superyachts, and boats available for direct booking in Q1/2026. From day cruises to week-long adventures—searchable via Sphera AI. KYC required.
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Sphera AI</span>
+                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Global Fleet</span>
+                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">KYC Required</span>
+                  </div>
+                </div>
+                {/* Right - Video with overlay */}
+                <div className="h-48 md:h-auto min-h-[200px] overflow-hidden bg-gradient-to-br from-blue-50 to-cyan-100 relative">
+                  <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                    poster="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/pngwing.com-2.png"
+                  >
+                    <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/13151265-hd_1280_720_25fps.mov" type="video/mp4" />
+                    <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/13151265-hd_1280_720_25fps.mov" type="video/quicktime" />
+                  </video>
+                  {/* Text overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                    <span className="text-white text-2xl md:text-3xl font-light tracking-wide">Q1 / 2026</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </AnimatedSection>
 
         {/* All-in-one Global Mobility Platform */}
         <AnimatedSection animation="slide-up" delay={150}>
@@ -514,7 +701,6 @@ function Homepage() {
         {/* What does digital ownership mean in Web3 - HIDDEN */}
         {/* Section removed as per request */}
 
-
         {/* FAQ Section */}
         <AnimatedSection animation="slide-up" delay={100}>
           <section className="px-4 sm:px-8 py-12 sm:py-20 max-w-6xl mx-auto">
@@ -526,36 +712,36 @@ function Homepage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[
                 {
-                  question: "How does tokenized flight booking work?",
-                  answer: "Every flight booking is converted into a digital token on the blockchain. This token represents your booking rights and can be securely transferred, traded, or redeemed. Smart contracts automatically handle payment processing, verification, and fulfillment."
+                  question: "What services does PrivateCharterX offer?",
+                  answer: "We offer private jet charter, helicopter transfers, empty leg flights, luxury car rentals, yacht charters, ground transportation, and curated adventure packages. All bookable 24/7 through our AI assistant Sphera or with human support."
                 },
                 {
                   question: "What cryptocurrencies do you accept?",
-                  answer: "We accept major cryptocurrencies including ETH, BTC, USDC, USDT, and our native CharterToken (PVCX). All payments are processed securely through our blockchain infrastructure with instant confirmation and transparent transaction records."
+                  answer: "We accept 70+ cryptocurrencies via CoinGate including BTC, ETH, USDC, and USDT. Traditional payment methods are also available."
                 },
                 {
-                  question: "Is my flight data secure on the blockchain?",
-                  answer: "Absolutely. All sensitive data is encrypted and stored using advanced cryptographic methods. Only essential booking information is recorded on-chain, while personal details remain private and protected in compliance with global data protection regulations."
+                  question: "What is Sphera AI?",
+                  answer: "Sphera AI is our intelligent travel assistant that helps you search flights, compare options, build multi-stop journeys, and manage your cart. Available 24/7 with instant responses and human support standing by when needed."
                 },
                 {
-                  question: "Can I trade my flight tokens with others?",
-                  answer: "Yes. Flight tokens are fully transferable on our secondary marketplace. You can list your booking for sale, transfer it to another wallet, or trade it peer-to-peer. All transfers are validated by smart contracts to ensure security and authenticity."
+                  question: "How do empty leg flights work?",
+                  answer: "Empty legs are one-way repositioning flights offered at significant discounts (up to 75% off). They have fixed routes and dates. Instant payment via crypto checkout available for immediate booking confirmation."
                 },
                 {
-                  question: "How do NFT memberships work?",
-                  answer: "NFT memberships grant you exclusive access to premium benefits, priority bookings, and special rates. Each membership tier (Bronze, Silver, Gold, Platinum) is represented by a unique NFT that proves ownership and unlocks specific perks within the ecosystem."
+                  question: "What is NFT Membership?",
+                  answer: "Our NFT Membership (0.5 ETH) gives you 10% off all bookings, one free empty leg per year, priority access to deals, and exclusive VIP experiences. Benefits are verifiable on-chain and transferable."
                 },
                 {
-                  question: "What are the benefits of fractional ownership?",
-                  answer: "Fractional ownership allows you to invest in high-value aviation assets with lower capital requirements. You receive proportional returns, voting rights in asset decisions, and can trade your shares on the secondary market for liquidity."
+                  question: "What subscription plans are available?",
+                  answer: "Explorer ($49/mo), Traveller ($99/mo), and Elite ($399/mo with unlimited AI chats). Each tier unlocks commission discounts on bookings. Annual plans available."
                 },
                 {
-                  question: "How are asset valuations determined?",
-                  answer: "Asset valuations are conducted by certified third-party appraisers using industry-standard methodologies. Factors include aircraft age, condition, market demand, maintenance history, and comparable sales data. Valuations are updated quarterly and published transparently."
+                  question: "What is asset tokenization?",
+                  answer: "We help aircraft, hangar, and airfield owners tokenize their assets into income-generating digital securities under SEC regulations. Assets stay operational while owners gain liquidity through fractional ownership tokens."
                 },
                 {
-                  question: "What happens if I want to sell my tokens?",
-                  answer: "You can list your tokens on our integrated marketplace or transfer them to any compatible Web3 wallet. Liquidity is enhanced through our automated market maker (AMM) pools, and all transactions are settled instantly on-chain with minimal fees."
+                  question: "Do you offer carbon offset options?",
+                  answer: "Yes. CO2 certificates are included with every booking at no extra cost and may qualify for tax benefits. SAF (Sustainable Aviation Fuel) certificates are available on request with blockchain verification for up to 80% carbon reduction."
                 }
               ].map((faq, index) => (
                 <FAQCard key={index} question={faq.question} answer={faq.answer} />

@@ -200,6 +200,23 @@ function mapEmptyLeg(leg) {
 }
 
 function mapHelicopter(heli) {
+  // DEBUG: Log ALL raw helicopter fields to identify correct column names
+  console.log('🚁 RAW HELICOPTER FROM DB:', {
+    id: heli.id,
+    name: heli.name,
+    model: heli.model,
+    // Price columns - check all variations
+    price: heli.price,
+    hourly_rate: heli.hourly_rate,
+    hourly_rate_eur: heli.hourly_rate_eur,
+    price_range: heli.price_range,
+    price_per_hour: heli.price_per_hour,
+    rate: heli.rate,
+    cost: heli.cost,
+    // All keys for inspection
+    allKeys: Object.keys(heli)
+  });
+
   // Collect images from multiple possible columns
   const allImages = [];
   if (heli.image_url) allImages.push(heli.image_url);
@@ -214,8 +231,20 @@ function mapHelicopter(heli) {
   // Parse capacity from string or number
   const capacity = parseCapacity(heli.capacity) || parseCapacity(heli.passenger_capacity) || parseCapacity(heli.max_passengers) || null;
 
-  // Parse hourly rate
-  const hourlyRate = parsePrice(heli.price_range) || parsePrice(heli.hourly_rate) || parsePrice(heli.price_per_hour) || heli.hourly_rate_eur || null;
+  // Parse hourly rate - 'helicopters' table uses 'hourly_rate' column
+  // Try direct numeric value first, then parse strings
+  const hourlyRate =
+    heli.hourly_rate ||      // 'helicopters' table uses this column
+    heli.hourly_rate_eur ||
+    heli.price ||
+    heli.rate ||
+    parsePrice(heli.hourly_rate) ||
+    parsePrice(heli.price_range) ||
+    parsePrice(heli.price_per_hour) ||
+    parsePrice(heli.cost) ||
+    null;
+
+  console.log('🚁 PARSED hourlyRate for', heli.name, ':', hourlyRate);
 
   // Parse range
   const rangeKm = parseRange(heli.range) || parseRange(heli.range_km) || null;
@@ -223,7 +252,7 @@ function mapHelicopter(heli) {
   // Parse speed
   const speedKmh = parseSpeed(heli.speed) || parseSpeed(heli.speed_kmh) || null;
 
-  return {
+  const mappedHeli = {
     id: heli.id,
     name: heli.name || heli.model || heli.aircraft_model || 'Helicopter',
     model: heli.model || heli.aircraft_model || heli.name,
@@ -233,15 +262,20 @@ function mapHelicopter(heli) {
     range_km: rangeKm,
     speed_kmh: speedKmh,
     hourly_rate_eur: hourlyRate,
+    hourly_rate: hourlyRate,  // Keep original column name too
     price: hourlyRate,
     category: heli.category || heli.aircraft_category || 'Helicopter',
     manufacturer: heli.manufacturer || null,
+    year_of_manufacture: heli.year_of_manufacture || heli.year || null,
     // operator: HIDDEN - never expose operator to users
     base_location: heli.base_location || heli.location || null,
     description: heli.description || null,
     images: allImages,
     primaryImage: allImages[0] || null
   };
+
+  console.log('🚁 MAPPED helicopter:', mappedHeli.name, 'price:', mappedHeli.hourly_rate_eur);
+  return mappedHeli;
 }
 
 function mapYacht(yacht) {
@@ -433,21 +467,20 @@ export const UnifiedSearchService = {
           .order('departure_date', { ascending: true });
       }
 
-      // Helicopters query - filter by passengers only (location columns may not exist)
-      // Note: helicopter_charters table may use different column names
+      // Helicopters query - use 'helicopters' table (has hourly_rate column)
       let helicoptersQ = Promise.resolve({ data: [], error: null });
       if (searchHelicopters) {
-        let heliQuery = supabase.from('helicopter_charters').select('*');
+        // Use 'helicopters' table which has correct schema with hourly_rate
+        let heliQuery = supabase.from('helicopters').select('*');
 
         // Filter by specific helicopter model if provided (e.g., "EC135", "AS350", "AW139")
         if (aircraftModel) {
           // Try to match against name, model, or aircraft_model columns
-          // Using OR filter to check multiple possible column names
           heliQuery = heliQuery.or(`name.ilike.%${aircraftModel}%,model.ilike.%${aircraftModel}%,aircraft_model.ilike.%${aircraftModel}%`);
         }
 
         // Increase limit when searching for specific model
-        helicoptersQ = heliQuery.limit(aircraftModel ? 50 : 10);
+        helicoptersQ = heliQuery.limit(aircraftModel ? 50 : 15);
       }
 
       // YACHTS: Not in database - always return empty (yacht requests are handled conversationally)
@@ -471,7 +504,14 @@ export const UnifiedSearchService = {
       // Handle errors individually and map data to UI shapes
       if (jetsRes.error) console.error('Supabase jets error:', jetsRes.error);
       if (emptyLegsRes.error) console.error('Supabase EmptyLegs_ error:', emptyLegsRes.error);
-      if (helicoptersRes.error) console.error('Supabase helicopter_charters error:', helicoptersRes.error);
+      if (helicoptersRes.error) console.error('Supabase helicopters table error:', helicoptersRes.error);
+      // DEBUG: Log raw helicopter data from database
+      if (helicoptersRes.data?.length > 0) {
+        console.log('🚁 RAW helicoptersRes.data (first item):', helicoptersRes.data[0]);
+        console.log('🚁 Helicopter columns:', Object.keys(helicoptersRes.data[0]));
+      } else {
+        console.log('🚁 No helicopters found in database');
+      }
       if (yachtsRes.error) console.error('Supabase fixed_offers (yachts) error:', yachtsRes.error);
       if (luxuryCarsRes.error) console.error('Supabase luxury_cars error:', luxuryCarsRes.error);
       if (groundTransportRes.error) console.error('Supabase taxi_cars (ground transport) error:', groundTransportRes.error);

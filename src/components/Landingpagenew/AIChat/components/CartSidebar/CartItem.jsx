@@ -2,7 +2,7 @@
 import React from 'react';
 import {
   Trash2, Plus, Minus, Clock, Plane, Car, ChevronDown, ChevronUp,
-  Calendar, MapPin, Users, Briefcase, Wine, Anchor, Package
+  Calendar, MapPin, Users, Briefcase, Wine, Anchor, Package, Sparkles, Route
 } from 'lucide-react';
 
 const CartItem = ({
@@ -24,6 +24,7 @@ const CartItem = ({
   const isLuxuryCar = item.type === 'luxury_cars' || item.type === 'luxury_car';
   const isWine = item.type === 'wines' || item.type === 'wine';
   const isCustomExtra = item.type === 'custom_extra';
+  const isTripPackage = item.type === 'trip_package';
   const canDirectCheckout = isEmptyLeg || isAdventure || isWine;
 
   // Get item icon
@@ -33,6 +34,7 @@ const CartItem = ({
     if (isYacht) return <Anchor size={14} className="text-gray-500" />;
     if (isLuxuryCar || isTransfer) return <Car size={14} className="text-gray-500" />;
     if (isWine) return <Wine size={14} className="text-gray-500" />;
+    if (isTripPackage) return <Route size={14} className="text-gray-500" />;
     return <Package size={14} className="text-gray-500" />;
   };
 
@@ -136,6 +138,169 @@ const CartItem = ({
               <p className="text-xs text-gray-500">Est.</p>
               <p className="text-sm font-bold text-gray-900">~{formatPrice(price)}</p>
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Trip Package - Special multi-segment layout
+  if (isTripPackage) {
+    const segments = item.segments || [];
+    return (
+      <div className="bg-gradient-to-br from-gray-50 to-purple-50 rounded-xl p-3 border border-purple-200 animate-fade-in hover:border-purple-400 transition-all duration-300">
+        {/* Header */}
+        <div className="flex items-start gap-3 mb-2">
+          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r from-gray-900 to-gray-700 flex items-center justify-center">
+            <Sparkles size={16} className="text-amber-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-purple-100 text-purple-700">
+                TRIP PACKAGE
+              </span>
+              {item.occasion && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-gray-200 text-gray-600">
+                  {item.occasion}
+                </span>
+              )}
+            </div>
+            <p className="text-sm font-semibold text-gray-900 truncate">{itemName}</p>
+            {item.dateRange && (
+              <p className="text-xs text-gray-500">{item.dateRange}</p>
+            )}
+          </div>
+          <button
+            onClick={onRemove}
+            className="p-1 hover:bg-gray-200 text-gray-400 hover:text-gray-600 rounded transition-all"
+          >
+            <Trash2 size={12} />
+          </button>
+        </div>
+
+        {/* Segments Summary */}
+        <div className="border-t border-purple-200 pt-2 mt-2">
+          <button
+            onClick={onToggleExpand}
+            className="w-full flex items-center justify-between text-xs text-gray-600 hover:text-gray-900"
+          >
+            <span>{segments.length} segments</span>
+            {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+
+          {isExpanded && (
+            <div className="mt-3 space-y-2">
+              {/* Trip Description */}
+              {item.description && (
+                <p className="text-[11px] text-gray-600 italic pb-2 border-b border-purple-100">
+                  {item.description}
+                </p>
+              )}
+
+              {/* Segments Detail */}
+              {segments.map((seg, idx) => {
+                const segIcon = {
+                  jet: '✈️',
+                  helicopter: '🚁',
+                  ground_transfer: '🚗',
+                  car: '🚘',
+                  yacht: '🛥️',
+                  activity: '⭐',
+                  hotel: '🏨',
+                  other: '📍'
+                }[seg.type] || '📍';
+
+                const typeLabel = {
+                  jet: 'Private Jet',
+                  helicopter: 'Helicopter',
+                  ground_transfer: 'Ground Transfer',
+                  car: 'Chauffeur Service',
+                  yacht: 'Yacht Charter',
+                  activity: 'Activity',
+                  hotel: 'Accommodation',
+                  other: 'Service'
+                }[seg.type] || 'Service';
+
+                return (
+                  <div key={idx} className="bg-white rounded-lg p-2.5 border border-gray-100">
+                    {/* Segment Header */}
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-base">{segIcon}</span>
+                        <div>
+                          <p className="text-[10px] text-gray-400 uppercase tracking-wide">
+                            {idx + 1}. {typeLabel}
+                          </p>
+                          <p className="text-xs font-medium text-gray-800">
+                            {seg.name || `${seg.from} → ${seg.to}`}
+                          </p>
+                        </div>
+                      </div>
+                      {seg.estimatedPrice > 0 && (
+                        <span className="text-xs font-semibold text-gray-700">
+                          €{seg.estimatedPrice.toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Segment Details */}
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-gray-500">
+                      {seg.from && seg.to && (
+                        <span>{seg.from} → {seg.to}</span>
+                      )}
+                      {seg.date && (
+                        <span className="flex items-center gap-0.5">
+                          <Calendar size={10} />
+                          {seg.date}
+                        </span>
+                      )}
+                      {seg.time && <span>{seg.time}</span>}
+                      {seg.duration && (
+                        <span className="flex items-center gap-0.5">
+                          <Clock size={10} />
+                          {seg.duration}
+                        </span>
+                      )}
+                      {seg.passengers && (
+                        <span className="flex items-center gap-0.5">
+                          <Users size={10} />
+                          {seg.passengers} pax
+                        </span>
+                      )}
+                      {seg.aircraft && <span>{seg.aircraft}</span>}
+                      {seg.vehicle && <span>{seg.vehicle}</span>}
+                    </div>
+
+                    {/* Segment Notes */}
+                    {seg.notes && (
+                      <p className="text-[10px] text-gray-400 italic mt-1.5 pt-1.5 border-t border-gray-50">
+                        {seg.notes}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Trip Notes */}
+              {item.notes && (
+                <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-200">
+                  <p className="text-[10px] text-amber-700">
+                    <strong>Note:</strong> {item.notes}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Total */}
+        <div className="flex items-center justify-between mt-3 pt-2 border-t border-purple-200">
+          <div className="text-xs text-gray-500">
+            {item.passengers && <span>{item.passengers} pax</span>}
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] text-gray-500">Est. Total</p>
+            <p className="text-base font-bold text-gray-900">€{(item.estimatedTotal || price).toLocaleString()}</p>
           </div>
         </div>
       </div>

@@ -49,6 +49,7 @@ import HotelCard from '../../HotelCard';
 import AdventureCard from '../../AdventureCard';
 import { JourneyBuilder, YachtJourneyBuilder, AirportTransferOffer } from './components/MultiStopJourney';
 import CartJourneyDisplay from './components/CartJourneyDisplay';
+import TripPackageCard from './components/TripPackageCard';
 
 // Extracted Components
 import { ChatHeader, InputArea, Modals, Toast, WeatherWidget, TypingAnimation, TypingText } from './components';
@@ -2656,13 +2657,32 @@ As their luxury travel consultant:
           id: 'helicopters',
           title: 'Helicopters',
           count: filteredResults.helicopters.length,
-          items: filteredResults.helicopters.map(heli => ({
-            ...heli,
-            type: 'helicopters',
-            images: ImageUtils.getAllImageUrls(heli.images, 'helicopter-images'),
-            primaryImage: ImageUtils.getPrimaryImage(heli.images),
-            price: heli.hourly_rate_eur
-          }))
+          items: filteredResults.helicopters.map(heli => {
+            // Debug: Log helicopter data to verify images/price
+            console.log('🚁 Helicopter data:', {
+              name: heli.name,
+              images: heli.images,
+              primaryImage: heli.primaryImage,
+              image_url: heli.image_url,
+              hourly_rate_eur: heli.hourly_rate_eur,
+              price: heli.price
+            });
+
+            // Use already-mapped images from mapHelicopter, fallback to image_url columns
+            const images = heli.images?.length > 0
+              ? heli.images
+              : [heli.image_url, heli.image_url_1, heli.image_url_2, heli.image_url_3].filter(Boolean);
+
+            return {
+              ...heli,
+              type: 'helicopters',
+              images: images,
+              primaryImage: heli.primaryImage || images[0] || null,
+              // Use hourly_rate_eur, fallback to price
+              price: heli.hourly_rate_eur || heli.price || null,
+              hourly_rate_eur: heli.hourly_rate_eur || heli.price || null
+            };
+          })
         });
       }
 
@@ -3208,20 +3228,24 @@ Click **"Add to Route"** to confirm this stop, or provide corrections.`;
       }
     }
 
-    // YACHT CHARTER - DISABLED for launch, redirect to email IMMEDIATELY
+    // YACHT CHARTER - Show email + Add Request to Cart button
     // This must run BEFORE any Claude API calls
     if (lowerMessage.match(/yacht|boat|vessel|sailing|catamaran|superyacht/) && !lowerMessage.match(/luxury\s*car/)) {
-      const yachtRedirectMessage = `For yacht charters, please contact our dedicated charter team directly:
+      const yachtRequestMessage = {
+        role: 'yacht_request',
+        content: `For yacht charters, please contact our dedicated charter team directly:
 
 📧 **bookings@privatecharterx.com**
 
 They will personally arrange your perfect yacht experience with custom itineraries, crew selection, and all amenities tailored to your preferences.
 
-*AI-assisted yacht charter bookings coming Q1/2026*`;
+*AI-assisted yacht charter bookings coming Q1/2026*`,
+        originalRequest: message
+      };
 
       setChatHistory(prev => prev.map(c =>
         c.id === workingChatId
-          ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), { role: 'assistant', content: yachtRedirectMessage }] }
+          ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), yachtRequestMessage] }
           : c
       ));
       setIsProcessing(false);
@@ -3267,7 +3291,215 @@ They will personally arrange your perfect yacht experience with custom itinerari
 
       // Claude handles ALL searches including wines - same as empty legs, jets, etc.
       console.log('🔧 Tools being sent to Claude:', aiToolDefinitions.map(t => t.name));
-      console.log('🔧 searchWines tool definition:', aiToolDefinitions.find(t => t.name === 'searchWines'));
+
+      // Check if user is confirming a multi-service trip
+      const lastUserMsg = (message || '').toLowerCase().trim();
+
+      // User confirmation phrases
+      const tripConfirmationPhrases = [
+        'yes', 'perfect', 'sounds great', 'sounds good', 'sounds amazing', 'book it',
+        'proceed', 'let\'s do it', 'finalize', 'confirm', 'go ahead', 'yes please',
+        'that\'s perfect', 'love it', 'amazing', 'ja', 'ja bitte', 'genau', 'perfekt',
+        'i\'ll take it', 'let\'s book', 'make it happen', 'add to cart', 'add it'
+      ];
+      const isConfirming = tripConfirmationPhrases.some(phrase =>
+        lastUserMsg === phrase || lastUserMsg.startsWith(phrase + ' ') || lastUserMsg.startsWith(phrase + '!') || lastUserMsg.endsWith(' ' + phrase)
+      );
+
+      // Check if recent messages contain multi-service trip context
+      // Look at last 5 messages (both user and assistant) for better context
+      const recentMessages = claudeMessages.slice(-5).map(m => (m.content || '').toLowerCase()).join(' ');
+
+      // Trip package indicators (more flexible - needs 2+ of these)
+      const tripIndicators = [
+        recentMessages.includes('private jet') || recentMessages.includes('jet charter'),
+        recentMessages.includes('helicopter'),
+        recentMessages.includes('transfer') || recentMessages.includes('ground transport') || recentMessages.includes('chauffeur'),
+        recentMessages.includes('yacht') || recentMessages.includes('boat'),
+        recentMessages.includes('hotel') || recentMessages.includes('accommodation'),
+        recentMessages.includes('itinerary') || recentMessages.includes('trip') || recentMessages.includes('journey'),
+        recentMessages.includes('day 1') || recentMessages.includes('day 2') || recentMessages.includes('segment'),
+        recentMessages.includes('wedding') || recentMessages.includes('honeymoon') || recentMessages.includes('anniversary'),
+        recentMessages.includes('multi-city') || recentMessages.includes('round trip') || recentMessages.includes('multi-stop'),
+        recentMessages.includes('total') || recentMessages.includes('budget') || recentMessages.includes('€') || recentMessages.includes('eur')
+      ];
+
+      // Need at least 2 trip indicators to consider it a multi-service trip
+      const tripIndicatorCount = tripIndicators.filter(Boolean).length;
+      const hasTripContext = tripIndicatorCount >= 2;
+
+      // Also check if user explicitly asks for a package/bundle
+      const explicitPackageRequest = [
+        'create package', 'create a package', 'create trip package', 'make it a package',
+        'bundle', 'bundle this', 'bundle it', 'as a package', 'trip package',
+        'package it', 'put it together', 'combine these', 'full trip'
+      ].some(phrase => lastUserMsg.includes(phrase));
+
+      const shouldForceCreateTripPackage = (isConfirming && hasTripContext) || explicitPackageRequest;
+
+      if (shouldForceCreateTripPackage) {
+        console.log('🎯 Trip confirmation detected!', {
+          indicators: tripIndicatorCount,
+          userMessage: lastUserMsg,
+          explicitRequest: explicitPackageRequest
+        });
+      }
+
+      // WINE DETECTION - Differentiate between GENERIC (needs consultation) and SPECIFIC (search immediately)
+      // Generic = user just mentions "wine" → AI should consult like a sommelier
+      // Specific = user mentions a specific wine/brand → search immediately
+      // Only truly generic = just "wine" with no type specified
+      const wineGenericKeywords = ['wine', 'wines', 'wein', 'weine'];
+      // Specific = user already indicated type or brand → search immediately
+      const wineSpecificKeywords = [
+        // Types (user already chose)
+        'red wine', 'white wine', 'rosé', 'rose wine', 'sparkling', 'rotwein', 'weisswein',
+        'champagne', 'champagner', 'prosecco', 'cava',
+        // Brands
+        'dom perignon', 'dom pérignon', 'krug', 'cristal', 'veuve clicquot',
+        'moët', 'moet', 'bollinger', 'taittinger', 'ruinart', 'pol roger',
+        // Varietals/Regions (specific enough)
+        'barolo', 'brunello', 'bordeaux', 'burgundy', 'bourgogne',
+        'château', 'chateau', 'pinot noir', 'chardonnay', 'cabernet', 'merlot',
+        'riesling', 'sauvignon blanc', 'vintage', 'grand cru', 'premier cru',
+        'amarone', 'chianti', 'rioja', 'malbec', 'syrah', 'shiraz'
+      ];
+      const hasGenericWine = wineGenericKeywords.some(kw => lastUserMsg.includes(kw));
+      const hasSpecificWine = wineSpecificKeywords.some(kw => lastUserMsg.includes(kw));
+
+      // DELICACIES DETECTION - Generic vs Specific
+      const delicatesseGenericKeywords = ['catering', 'food', 'meal', 'meals', 'essen', 'speisen', 'verpflegung', 'in-flight meal', 'onboard meal'];
+      const delicatesseSpecificKeywords = [
+        'caviar', 'kaviar', 'truffle', 'trüffel', 'foie gras',
+        'lobster', 'hummer', 'oyster', 'austern', 'wagyu', 'sashimi', 'sushi',
+        'prosciutto', 'jamón', 'iberico', 'beluga', 'oscietra', 'sevruga'
+      ];
+      const hasGenericFood = delicatesseGenericKeywords.some(kw => lastUserMsg.includes(kw));
+      const hasSpecificFood = delicatesseSpecificKeywords.some(kw => lastUserMsg.includes(kw));
+
+      // CIGARS DETECTION - Generic vs Specific
+      const cigarGenericKeywords = ['cigar', 'cigars', 'zigarre', 'zigarren'];
+      const cigarSpecificKeywords = [
+        'cohiba', 'montecristo', 'davidoff', 'partagas', 'romeo y julieta',
+        'bolivar', 'hoyo de monterrey', 'h upmann', 'punch', 'trinidad',
+        'behike', 'siglo', 'esplendido', 'robusto', 'torpedo'
+      ];
+      const hasGenericCigar = cigarGenericKeywords.some(kw => lastUserMsg.includes(kw));
+      const hasSpecificCigar = cigarSpecificKeywords.some(kw => lastUserMsg.includes(kw));
+
+      // Determine which tool to force (only for SPECIFIC requests)
+      let forcedTool = null;
+      let forcedToolMessage = '';
+      let consultationMode = null; // For generic requests that need advice first
+
+      if (shouldForceCreateTripPackage) {
+        forcedTool = 'createTripPackage';
+        forcedToolMessage = `\n\n🎯 CRITICAL - CREATE TRIP PACKAGE NOW!
+The user has CONFIRMED their trip. You MUST call the createTripPackage tool IMMEDIATELY.
+
+Extract ALL trip details from the conversation and structure them as segments:
+- name: Give the trip a name (e.g., "Wedding Journey - Lake Como")
+- occasion: Wedding, Business, Vacation, Anniversary, etc.
+- passengers: Number of people
+- dateRange: "15-18 June 2025" format
+- segments: Array of services in order:
+  [
+    { type: "jet", from: "Zurich", to: "Milan", date: "15 June", estimatedPrice: 12000 },
+    { type: "ground_transfer", from: "Milan Airport", to: "Lake Como Hotel", estimatedPrice: 250 },
+    { type: "helicopter", from: "Lake Como", to: "Monaco", estimatedPrice: 8000 }
+  ]
+
+ESTIMATE PRICES based on typical rates:
+- Light jet: €8,000-15,000/hour
+- Heavy jet: €15,000-30,000/hour
+- Helicopter: €2,000-5,000/hour
+- Ground transfer: €150-500
+- Yacht day: €5,000-50,000
+
+DO NOT output any text. CALL THE TOOL NOW.`;
+        console.log('🎯 Forcing createTripPackage tool');
+      } else if (hasSpecificWine) {
+        // User knows what they want → search immediately
+        forcedTool = 'searchWines';
+        forcedToolMessage = '\n\nCRITICAL: User requested a SPECIFIC wine/champagne. Call searchWines tool NOW with the appropriate type filter to show matching products.';
+        console.log('🍷 Forcing searchWines (specific request)');
+      } else if (hasGenericWine && !hasSpecificWine) {
+        // User just said "wine" → consult like a sommelier
+        consultationMode = 'wine';
+        forcedToolMessage = `\n\n🍷 SOMMELIER MODE: The user mentioned wine but didn't specify a type. Act as their personal sommelier:
+- Ask about the occasion (celebration, business, romantic dinner?)
+- Ask about preference (red, white, rosé, champagne?)
+- Ask about taste (dry, fruity, bold, light?)
+- Then use searchWines with the right filters (type: 'red'/'white'/'champagne', etc.)
+Keep it elegant and brief - 2-3 quick questions max.`;
+        console.log('🍷 Wine consultation mode (generic request)');
+      } else if (hasSpecificFood) {
+        // User knows what they want → search immediately
+        forcedTool = 'searchDelicatesse';
+        forcedToolMessage = '\n\nCRITICAL: User requested SPECIFIC delicacies. Call searchDelicatesse tool NOW to show matching products.';
+        console.log('🍽️ Forcing searchDelicatesse (specific request)');
+      } else if (hasGenericFood && !hasSpecificFood) {
+        // User just said "catering/food" → consult
+        consultationMode = 'food';
+        forcedToolMessage = `\n\n🍽️ CATERING CONCIERGE MODE: The user wants in-flight catering but hasn't specified preferences. Ask:
+- Flight duration? (affects meal complexity)
+- Number of guests?
+- Dietary restrictions? (vegetarian, halal, kosher, allergies?)
+- Preference: light snacks, full meal, or gourmet experience?
+Then use searchDelicatesse with appropriate filters. Keep it brief - 2-3 questions.`;
+        console.log('🍽️ Food consultation mode (generic request)');
+      } else if (hasSpecificCigar) {
+        // User knows what they want → search immediately
+        forcedTool = 'searchCigars';
+        forcedToolMessage = '\n\nCRITICAL: User requested a SPECIFIC cigar brand. Call searchCigars tool NOW to show matching products.';
+        console.log('🚬 Forcing searchCigars (specific request)');
+      } else if (hasGenericCigar && !hasSpecificCigar) {
+        // User just said "cigars" → consult
+        consultationMode = 'cigars';
+        forcedToolMessage = `\n\n🚬 CIGAR CONCIERGE MODE: The user wants cigars but hasn't specified. Ask:
+- Flight duration? (affects cigar length/ring gauge recommendation)
+- Experience level? (mild, medium, full-bodied?)
+- Preference: Cuban classics or premium alternatives?
+Then use searchCigars with appropriate filters. Keep it elegant and brief.`;
+        console.log('🚬 Cigar consultation mode (generic request)');
+      }
+
+      // Build cart context for AI to know actual cart state
+      const cartContextForAI = cartItems.length > 0
+        ? `\n\n📦 CURRENT CART STATE (${cartItems.length} items):\n${cartItems.map((item, i) => `  ${i + 1}. ${item.name || item.title || 'Unnamed item'} - ${item.type || 'service'}`).join('\n')}\nTotal: $${cartTotal.toLocaleString()}`
+        : '\n\n📦 CURRENT CART STATE: EMPTY (0 items)';
+
+      // Check if last shown results are in cart
+      const lastResultsMessage = [...conversationHistory].reverse().find(m => m.role === 'results' && m.tabs);
+      let lastResultsContext = '';
+      if (lastResultsMessage && lastResultsMessage.tabs) {
+        const allShownItems = lastResultsMessage.tabs.flatMap(tab => tab.items || []);
+        const itemsInCart = allShownItems.filter(item =>
+          cartItems.some(ci => ci.id === item.id || ci.name === item.name || ci.title === item.name)
+        );
+        const itemsNotInCart = allShownItems.filter(item =>
+          !cartItems.some(ci => ci.id === item.id || ci.name === item.name || ci.title === item.name)
+        );
+
+        if (allShownItems.length > 0) {
+          lastResultsContext = `\n\n🔍 LAST SHOWN RESULTS STATUS:`;
+          if (itemsInCart.length > 0) {
+            lastResultsContext += `\n✅ IN CART: ${itemsInCart.map(i => i.name || i.title).join(', ')}`;
+          }
+          if (itemsNotInCart.length > 0) {
+            lastResultsContext += `\n❌ NOT IN CART: ${itemsNotInCart.slice(0, 5).map(i => i.name || i.title).join(', ')}${itemsNotInCart.length > 5 ? ` (+${itemsNotInCart.length - 5} more)` : ''}`;
+          }
+          lastResultsContext += `\n→ If user expects item in cart but it's NOT, tell them to click "Add to Cart" button on the result card.`;
+        }
+      }
+
+      const cartInstructions = `
+⚠️ TOOL USAGE RULES:
+1. When user mentions WINE/CHAMPAGNE → call searchWines immediately
+2. When user mentions FOOD/CATERING/DELICACIES → call searchDelicatesse immediately
+3. When user mentions CIGARS → call searchCigars immediately
+4. NEVER just describe products in text - ALWAYS show actual database results!
+5. Text responses NEVER add to cart - only tools do`;
 
       const response = await claudeEdgeService.messages.create({
         model: 'claude-sonnet-4-20250514',
@@ -3275,7 +3507,7 @@ They will personally arrange your perfect yacht experience with custom itinerari
         system: [
           {
             type: "text",
-            text: systemPrompt,
+            text: systemPrompt + cartContextForAI + lastResultsContext + cartInstructions + forcedToolMessage,
             cache_control: { type: "ephemeral" }
           }
         ],
@@ -3285,15 +3517,19 @@ They will personally arrange your perfect yacht experience with custom itinerari
             ? { ...tool, cache_control: { type: "ephemeral" } }
             : tool
         ),
-        tool_choice: { type: "auto" }
+        tool_choice: forcedTool
+          ? { type: "tool", name: forcedTool }
+          : { type: "auto" }
       });
 
       console.log('🤖 Claude response:', response);
 
       if (response.stop_reason === 'tool_use') {
         // FIRST: Check if Claude sent any text message BEFORE the tool call
+        // BUT: If a tool was FORCED, suppress the text - user wants results, not descriptions
         const textBlock = response.content.find(block => block.type === 'text');
-        if (textBlock && textBlock.text && textBlock.text.trim()) {
+        if (textBlock && textBlock.text && textBlock.text.trim() && !forcedTool) {
+          // Only show text if NO tool was forced (natural conversation)
           const initialMessage = { role: 'assistant', content: textBlock.text };
 
           // Remove loading message and add actual response
@@ -3304,6 +3540,8 @@ They will personally arrange your perfect yacht experience with custom itinerari
           ));
 
           await chatService.updateChatMessages(workingChatId, [...conversationHistory, initialMessage], user.id);
+        } else if (forcedTool) {
+          console.log('🔇 Suppressing AI text - tool was forced:', forcedTool);
         }
         // NOTE: Keep loading message visible - it will be removed when follow-up response is added
 
@@ -3451,6 +3689,22 @@ They will personally arrange your perfect yacht experience with custom itinerari
               ));
               setIsProcessing(false);
               return; // Exit early - don't continue to AI follow-up
+            } else if (toolUse.name === 'createTripPackage' && toolResult.action === 'SHOW_TRIP_PACKAGE' && toolResult.tripPackage) {
+              // Show trip package card for complex multi-segment trips
+              const tripPackageMessage = {
+                role: 'trip_package',
+                content: toolResult.displayMessage || toolResult.message,
+                tripPackage: toolResult.tripPackage,
+                notes: toolResult.notes
+              };
+
+              setChatHistory(prev => prev.map(c =>
+                c.id === workingChatId
+                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), tripPackageMessage] }
+                  : c
+              ));
+              setIsProcessing(false);
+              return; // Exit early - TripPackageCard will handle adding to cart
             } else if (toolUse.name === 'lookupPlaceAddress' && toolResult.place) {
               // Show place card with rich Google Places data
               const placeMessage = {
@@ -3634,13 +3888,18 @@ They will personally arrange your perfect yacht experience with custom itinerari
           }
 
           // Get AI response about results - MUST use proper tool_result format
+          // If tool was forced, add instruction for short response
+          const followUpSystemPrompt = forcedTool
+            ? systemPrompt + '\n\nIMPORTANT: The user just asked about products and I showed them the results. Give a VERY SHORT response (1-2 sentences max) like "Here are the available options - click any item to add it to your cart." DO NOT describe the products in detail - they can SEE them.'
+            : systemPrompt;
+
           const followUp = await claudeEdgeService.messages.create({
             model: 'claude-sonnet-4-20250514',
-            max_tokens: 1024,
+            max_tokens: forcedTool ? 256 : 1024,
             system: [
               {
                 type: "text",
-                text: systemPrompt,
+                text: followUpSystemPrompt,
                 cache_control: { type: "ephemeral" }
               }
             ],
@@ -3684,7 +3943,41 @@ They will personally arrange your perfect yacht experience with custom itinerari
         }
       } else {
         const textBlock = response.content.find(block => block.type === 'text');
-        const aiMessage = { role: 'assistant', content: textBlock?.text || 'How can I help?' };
+        let aiText = textBlock?.text || 'How can I help?';
+
+        // FALLBACK: Detect fake cart text and strip it - AI should use tools not text
+        const fakeCartPatterns = [
+          /\[VIEW FULL ITINERARY\]/gi,
+          /\[SEND REQUEST\]/gi,
+          /\[EDIT\]/gi,
+          /\[ADD TO CART\]/gi,
+          /\[PROCEED\]/gi,
+          /Request ID:\s*[\w-]+/gi,
+          /═{3,}/g,  // Box drawing characters
+          /─{3,}/g,
+          /│/g,
+          /🛒\s*TRAVEL REQUEST ADDED TO CART/gi,
+        ];
+
+        let hasFakeCart = fakeCartPatterns.some(pattern => pattern.test(aiText));
+
+        if (hasFakeCart) {
+          console.log('⚠️ Detected fake cart text - cleaning up');
+          // Clean up the fake cart elements
+          fakeCartPatterns.forEach(pattern => {
+            aiText = aiText.replace(pattern, '');
+          });
+
+          // Clean up excess whitespace
+          aiText = aiText.replace(/\n{3,}/g, '\n\n').trim();
+
+          // Add note about adding to cart
+          if (aiText && !aiText.includes('Add Trip to Cart') && !aiText.includes('Add to Cart')) {
+            aiText += '\n\n**Ready to proceed?** Click "Add to Cart" on the option you prefer to add it to your cart.';
+          }
+        }
+
+        const aiMessage = { role: 'assistant', content: aiText };
 
         // Remove loading message and add actual response
         let newMessageIndex = 0;
@@ -4963,6 +5256,58 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 );
               }
 
+              // Render TripPackageCard if this is a trip_package message
+              if (msg.role === 'trip_package' && msg.tripPackage) {
+                return (
+                  <div key={idx} className="flex justify-start animate-fade-in w-full my-4">
+                    <div className="flex flex-col gap-2 ml-12 w-full" style={{ maxWidth: '450px' }}>
+                      <div className="flex items-center gap-2 px-2">
+                        <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
+                        <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
+                        <span className="text-xs text-gray-400">{timestamp}</span>
+                      </div>
+                      <TripPackageCard
+                        tripPackage={msg.tripPackage}
+                        isInCart={cartItems.some(item => item.id === msg.tripPackage.id)}
+                        onAddToCart={(tripPkg) => {
+                          // Add trip package to cart
+                          const cartItem = {
+                            ...tripPkg,
+                            cartId: `trip-${Date.now()}`,
+                            type: 'trip_package',
+                            price: tripPkg.estimatedTotal || 0,
+                            basePrice: tripPkg.estimatedTotal || 0,
+                            totalWithFee: tripPkg.estimatedTotal || 0,
+                            isEstimate: true,
+                            requiresConfirmation: true,
+                            addedAt: new Date().toISOString()
+                          };
+                          setCartItems(prev => [...prev, cartItem]);
+                          showToast(`${tripPkg.name} added to cart`, 'cart');
+
+                          // Update message to show it's in cart
+                          setChatHistory(prev => prev.map(c =>
+                            c.id === workingChatId
+                              ? {
+                                  ...c,
+                                  messages: c.messages.map((m, i) =>
+                                    i === idx ? { ...m, tripPackage: { ...m.tripPackage, addedToCart: true } } : m
+                                  )
+                                }
+                              : c
+                          ));
+                        }}
+                        onEditSegment={(tripPkg) => {
+                          // Send message to adjust the trip
+                          const editMessage = `I'd like to adjust my ${tripPkg.name} trip package. Can you help me modify the segments?`;
+                          handleSendMessage(editMessage);
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              }
+
               // Render HotelCard if this is a hotels message
               if (msg.role === 'hotels' && msg.hotels?.length > 0) {
                 return (
@@ -5098,6 +5443,48 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 );
               }
 
+              // Render Yacht Request - same as assistant but with Add to Cart button
+              if (msg.role === 'yacht_request') {
+                const isInCart = cartItems.some(item => item.type === 'yacht_request');
+                return (
+                  <div key={idx} className="flex justify-start animate-fade-in w-full">
+                    <div className="items-start ml-12 flex flex-col gap-1" style={{ maxWidth: '75%' }}>
+                      <div className="flex items-center gap-2 px-2">
+                        <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
+                        <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
+                        <span className="text-xs text-gray-400">{timestamp}</span>
+                      </div>
+                      <div className="px-4 py-3 rounded-2xl bg-white/40 backdrop-blur-sm text-black border border-gray-200/50">
+                        <div className="prose prose-sm max-w-none text-sm leading-relaxed text-gray-800">
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
+                        {/* Add Request to Cart Button */}
+                        <div className="mt-4">
+                          {isInCart ? (
+                            <span className="text-emerald-600 text-sm">✓ Added to cart</span>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setCartItems(prev => [...prev, {
+                                  cartId: `yacht-${Date.now()}`,
+                                  type: 'yacht_request',
+                                  name: 'Yacht Charter Request',
+                                  price: 0
+                                }]);
+                                showToast('Yacht request added', 'cart');
+                              }}
+                              className="flex items-center gap-2 py-2 px-4 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-sm"
+                            >
+                              🛒 Add Request to Cart
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
               // Render regular messages
               return (
                 <div
@@ -5115,7 +5502,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       <span className="text-xs text-gray-400">{timestamp}</span>
                     </div>
                     <div
-                      className={`px-4 py-3 rounded-2xl transition-all duration-300 ${
+                      className={`px-4 py-3 rounded-2xl transition-all duration-300 overflow-hidden ${
                         msg.role === 'user'
                           ? 'bg-black text-white'
                           : 'bg-white/40 backdrop-blur-sm text-black border border-gray-200/50'
@@ -5208,8 +5595,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                               .replace('[UPGRADE_BUTTON]', '')
                               .trim();
                             return (
-                              <div className="text-sm leading-relaxed">
-                                <p className="whitespace-pre-line">{cleanContent}</p>
+                              <div className="text-sm leading-relaxed overflow-hidden">
+                                <p className="whitespace-pre-line break-words">{cleanContent}</p>
                                 <button
                                   onClick={() => setShowSubscriptionModal(true)}
                                   className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-white/60 hover:bg-white/80 text-gray-700 text-sm font-medium rounded-xl transition-all border border-gray-200/50 hover:border-gray-300/60"
@@ -5221,7 +5608,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                               </div>
                             );
                           }
-                          return <p className="text-sm leading-relaxed whitespace-pre-line">{content}</p>;
+                          return <p className="text-sm leading-relaxed whitespace-pre-line break-words overflow-hidden">{content}</p>;
                         })()
                       )}
 
