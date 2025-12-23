@@ -674,10 +674,36 @@ const AIChat = ({
         tier: userProfile.subscription_tier
       });
       setChatLimitReached(true);
+    } else if (!hasSubscription) {
+      // User has NO subscription at all
+      console.log('⚠️ No active subscription');
+      setChatLimitReached(true);
     } else {
       setChatLimitReached(false);
     }
   }, [userProfile, isAdmin]);
+
+  // 🚨 BLOCK NEW CHAT if limit reached - Show blocker immediately when trying to start new chat
+  useEffect(() => {
+    if (isAdmin || !userProfile) return;
+
+    // Only check when user is on the "new" chat screen
+    if (activeChat === 'new') {
+      const hasSubscription = userProfile.subscription_tier && userProfile.subscription_status === 'active';
+      const hasLimit = userProfile.chats_limit !== null && userProfile.chats_limit !== undefined;
+      const limitReached = hasLimit && userProfile.chats_used >= userProfile.chats_limit;
+
+      if (!hasSubscription) {
+        console.log('🚫 Blocking new chat - no subscription');
+        setSubscriptionBlockerReason('no_subscription');
+        setShowSubscriptionBlocker(true);
+      } else if (limitReached) {
+        console.log('🚫 Blocking new chat - limit reached:', userProfile.chats_used, '/', userProfile.chats_limit);
+        setSubscriptionBlockerReason('chat_limit');
+        setShowSubscriptionBlocker(true);
+      }
+    }
+  }, [activeChat, userProfile, isAdmin]);
 
   // Periodically refresh profile when chat limit is reached (to detect upgrades via webhook)
   useEffect(() => {
@@ -969,17 +995,45 @@ const AIChat = ({
           const systemPrompt = getSystemPrompt(userProfile?.subscription_tier);
           const claudeUserMessage = { role: 'user', content: queryToProcess };
 
+          // 🚨 MEDEVAC DETECTION FOR INITIAL QUERIES
+          const queryLower = queryToProcess.toLowerCase();
+          const medevacTriggers = [
+            'medevac', 'air ambulance', 'medical evacuation', 'hospital transfer', 'patient transport',
+            'medical transport', 'emergency flight', 'medical flight', 'ambulance flight',
+            'organ failure', 'internal bleeding', 'coma', 'cardiac arrest', 'sepsis', 'blood poisoning',
+            'heart attack', 'stroke', 'aneurysm', 'respiratory failure', 'kidney failure', 'liver failure',
+            'icu transfer', 'intensive care', 'stretcher flight', 'medical repatriation', 'life support',
+            'chest pain', 'heavy bleeding', 'collapsed', 'unconscious', 'seizure', 'paralyzed',
+            'overdose', 'poisoning', 'vomiting blood', 'no pulse',
+            'broken leg', 'broken arm', 'broken back', 'broken neck', 'fracture', 'head injury',
+            'spinal injury', 'gunshot', 'stabbed', 'car crash', 'drowning',
+            'notfall', 'krankenhaus', 'rettungsflug', 'herzinfarkt', 'schlaganfall',
+            'emergenza medica', 'ambulanza aerea', 'trasporto medico',
+            'stranded abroad', 'stuck in hospital', 'critically ill', 'urgent repatriation',
+            'too sick to fly', 'stretcher required', 'hospital abroad'
+          ];
+          const hasMedevacTrigger = medevacTriggers.some(kw => queryLower.includes(kw));
+
+          // Force MEDEVAC tool if trigger detected
+          const initialToolChoice = hasMedevacTrigger
+            ? { type: "tool", name: "createMedevacRequest" }
+            : { type: "auto" };
+
+          if (hasMedevacTrigger) {
+            console.log('🚨 MEDEVAC trigger detected in initial query, forcing tool');
+          }
+
           const response = await claudeEdgeService.messages.create({
             model: 'claude-sonnet-4-20250514',
             max_tokens: 4096,
-            system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
+            system: [{ type: "text", text: systemPrompt + (hasMedevacTrigger ? '\n\n🚨 EMERGENCY: User needs MEDEVAC. Call createMedevacRequest tool IMMEDIATELY with whatever info you can extract. Use defaults for missing fields.' : ''), cache_control: { type: "ephemeral" } }],
             messages: [claudeUserMessage],
             tools: aiToolDefinitions.map((tool, index) =>
               index === aiToolDefinitions.length - 1
                 ? { ...tool, cache_control: { type: "ephemeral" } }
                 : tool
             ),
-            tool_choice: { type: "auto" }
+            tool_choice: initialToolChoice
           });
 
           console.log('🤖 Claude response for initial query:', response);
@@ -990,6 +1044,27 @@ const AIChat = ({
             if (toolUse) {
               console.log('🔧 Tool used:', toolUse.name, toolUse.input);
               const toolResult = await executeTool(toolUse.name, toolUse.input);
+
+              // 🚨 HANDLE MEDEVAC REQUEST - Show card with Add to Cart button
+              if (toolUse.name === 'createMedevacRequest' && toolResult.action === 'SHOW_MEDEVAC_REQUEST' && toolResult.medevacRequest) {
+                console.log('🚨 MEDEVAC Request created in initial query:', toolResult.medevacRequest);
+
+                const medevacMessage = {
+                  role: 'medevac_request',
+                  content: toolResult.displayMessage || toolResult.message,
+                  medevacRequest: toolResult.medevacRequest,
+                  urgencyInfo: toolResult.urgencyInfo,
+                  notes: toolResult.notes
+                };
+
+                setChatHistory(prev => prev.map(c =>
+                  c.id === chatId
+                    ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), medevacMessage] }
+                    : c
+                ));
+                setIsProcessing(false);
+                return; // Exit early - MedevacRequestCard will handle adding to cart
+              }
 
               // Get AI follow-up response
               const followUp = await claudeEdgeService.messages.create({
@@ -2344,6 +2419,14 @@ Your quote has been received and will be reviewed within 12 hours.`;
         // Calculate grand total from detailed items
         const grandTotal = detailedItems.reduce((sum, item) => sum + (item.total_price || 0), 0);
 
+        // DEBUG: Check if conversation is available
+        console.log('🚀 SUBMITTING CART - Conversation check:', {
+          currentChatExists: !!currentChat,
+          currentChatId: currentChat?.id,
+          messagesCount: currentChat?.messages?.length || 0,
+          firstMessage: currentChat?.messages?.[0]?.content?.slice(0, 50)
+        });
+
         const payload = {
           user_id: userId,
           type: toType(),
@@ -2367,6 +2450,8 @@ Your quote has been received and will be reviewed within 12 hours.`;
           },
           status: 'pending'
         };
+
+        console.log('📤 Payload conversation length:', payload.data.conversation.length);
         const { data: insertedRequest, error: insertError } = await supabase
           .from('user_requests')
           .insert([payload])
@@ -3465,12 +3550,147 @@ They will personally arrange your perfect yacht experience with custom itinerari
       const hasGenericCigar = cigarGenericKeywords.some(kw => lastUserMsg.includes(kw));
       const hasSpecificCigar = cigarSpecificKeywords.some(kw => lastUserMsg.includes(kw));
 
+      // 🚨 MEDEVAC DETECTION - Force tool when user has provided enough info
+      const medevacKeywords = [
+        // CORE TERMS
+        'medevac', 'air ambulance', 'medical evacuation', 'hospital transfer', 'patient transport',
+        'medical transport', 'emergency flight', 'medical flight', 'ambulance flight', 'rescue flight',
+        'aeromedical', 'flying doctors', 'medical jet', 'air rescue', 'emergency transport',
+
+        // CRITICAL CONDITIONS
+        'organ failure', 'internal bleeding', 'coma', 'cardiac arrest', 'sepsis', 'blood poisoning',
+        'heart attack', 'stroke', 'aneurysm', 'embolism', 'pulmonary embolism', 'brain hemorrhage',
+        'spinal cord injury', 'traumatic brain injury', 'multiple trauma', 'polytrauma',
+        'severe burns', 'third degree burns', 'kidney failure', 'liver failure', 'respiratory failure',
+        'pneumothorax', 'tension pneumothorax', 'hemothorax', 'ruptured spleen', 'perforated bowel',
+        'acute pancreatitis', 'diabetic coma', 'hypoglycemic shock', 'anaphylactic shock',
+        'septic shock', 'hypovolemic shock', 'cardiogenic shock', 'guillain barre', 'meningitis',
+        'encephalitis', 'necrotizing fasciitis', 'toxic shock', 'acute liver failure',
+
+        // MEDICAL NEEDS
+        'icu transfer', 'intensive care', 'critical care transport', 'stretcher flight', 'bed-to-bed',
+        'medical repatriation', 'emergency surgery', 'urgent medical care', 'life support',
+        'ventilator transport', 'ecmo transport', 'dialysis transport', 'neonatal transport',
+        'premature baby', 'medical escort', 'flying nurse', 'medical team', 'doctor on board',
+        'paramedic flight', 'critical care team', 'trauma team', 'mobile icu',
+
+        // SYMPTOMS & URGENCY
+        'chest pain', 'heavy bleeding', 'severe bleeding', 'massive bleeding', 'hemorrhage',
+        "can't breathe", 'difficulty breathing', 'shortness of breath', 'respiratory distress',
+        'collapsed', 'unconscious', 'unresponsive', 'not waking up', 'seizure', 'convulsions',
+        'paralyzed', "can't move", 'severe pain', 'excruciating pain', 'unbearable pain',
+        'overdose', 'poisoning', 'intoxication', 'vomiting blood', 'coughing blood',
+        'blue lips', 'turning blue', 'no pulse', 'weak pulse', 'irregular heartbeat',
+        'disoriented', 'confused', 'delirious', 'hallucinating', 'suicidal',
+
+        // INJURIES
+        'broken leg', 'broken arm', 'broken back', 'broken neck', 'broken spine', 'fracture',
+        'compound fracture', 'open fracture', 'head injury', 'head trauma', 'skull fracture',
+        'spinal injury', 'spine injury', 'neck injury', 'crushed', 'amputated', 'severed limb',
+        'gunshot', 'stabbed', 'knife wound', 'motorcycle accident', 'car crash', 'diving accident',
+        'drowning', 'near drowning', 'electrocution', 'lightning strike', 'snake bite', 'shark attack',
+
+        // GERMAN
+        'notfall', 'medizinischer notfall', 'krankenhaus', 'krankenhaustransfer', 'rettungsflug',
+        'luftrettung', 'ambulanzflug', 'intensivstation', 'intensivtransport', 'notarzt',
+        'rettungsdienst', 'schwer verletzt', 'lebensgefahr', 'bewusstlos', 'herzinfarkt',
+        'schlaganfall', 'innere blutung', 'organversagen', 'reanimation',
+        'kritischer zustand', 'lebensbedrohlich', 'dringend', 'sofort', 'eilig',
+
+        // ITALIAN
+        'emergenza medica', 'ambulanza aerea', 'trasporto medico', 'evacuazione medica',
+        'volo di emergenza', 'ospedale', 'terapia intensiva', 'rianimazione', 'infarto',
+        'ictus', 'emorragia', 'insufficienza', 'incosciente', 'grave', 'critico',
+        'urgente', 'immediato', 'soccorso aereo', 'barella volante',
+
+        // FRENCH
+        'urgence médicale', 'ambulance aérienne', 'évacuation médicale', 'transport médical',
+        "vol d'urgence", 'hôpital', 'soins intensifs', 'réanimation', 'crise cardiaque',
+        'avc', 'hémorragie', 'inconscient', 'critique',
+
+        // CONTEXT PHRASES
+        'stranded abroad', 'stuck in hospital', 'stuck overseas', 'need to get home',
+        'family member sick', 'family member injured', 'relative in hospital', 'critically ill',
+        'urgent repatriation', 'medical complications', 'medical emergency abroad',
+        'travel insurance', 'insurance evacuation', 'need medical flight', 'emergency evacuation',
+        "can't travel commercial", 'too sick to fly', 'unfit to fly', 'stretcher required',
+        'wheelchair flight', 'oxygen required', 'medical equipment', 'hospital in thailand',
+        'hospital in bali', 'hospital in phuket', 'hospital abroad', 'foreign hospital',
+        'bring home', 'get back home', 'return home urgent', 'medical emergency return',
+
+        // INSURANCE/ADMIN
+        'travel insurance claim', 'emergency assistance', 'sos international', 'allianz assistance',
+        'insurance approved', 'insurance evacuation', 'covered by insurance', 'medical coverage',
+
+        // HIGH RISK LOCATIONS
+        'hospital in bangkok', 'hospital phuket', 'hospital samui', 'hospital bali',
+        'hospital philippines', 'hospital vietnam', 'hospital cambodia', 'hospital myanmar',
+        'hospital maldives', 'hospital sri lanka', 'hospital india', 'hospital nepal',
+
+        // COVID/PANDEMIC
+        'covid complications', 'severe covid', 'pneumonia', 'lung infection', 'oxygen saturation',
+        'ventilator needed', 'icu covid', 'covid critical'
+      ];
+      const hasMedevacKeyword = medevacKeywords.some(kw => lastUserMsg.includes(kw));
+
+      // Check BOTH current message AND history for medevac info
+      // This ensures we catch cases where user provides all info in one message
+      const allMedevacContext = lastUserMsg + ' ' + recentMessages;
+
+      // Check if we have the minimum required info: condition + from + to
+      // Check in BOTH current message AND conversation history
+      const hasConditionInfo = medevacKeywords.some(kw => allMedevacContext.includes(kw));
+
+      // Location detection - check both current message and history
+      const locationFromRegex = /from\s+\w+|currently\s+in\s+\w+|located\s+in\s+\w+|i'?m\s+in\s+\w+|patient\s+in\s+\w+|stuck\s+in\s+\w+|dallas|new york|nyc|la|los angeles|miami|chicago|houston|boston|seattle|london|paris|dubai|zurich|geneva|bangkok|bali|phuket|singapore|hong kong|tokyo|sydney|melbourne/i;
+      const locationToRegex = /to\s+\w+|going\s+to\s+\w+|destination|hospital\s+in\s+\w+|hospital\s+\w+|fly\s+to\s+\w+|transfer\s+to\s+\w+|nyc|new york|la|los angeles|miami|chicago|houston|boston|seattle|london|paris|dubai|zurich|geneva|home|back\s+home/i;
+
+      const hasLocationFrom = locationFromRegex.test(allMedevacContext);
+      const hasLocationTo = locationToRegex.test(allMedevacContext);
+
+      // Force MEDEVAC if we have keyword AND at least one location (from OR to)
+      const hasSufficientMedevacInfo = hasConditionInfo && (hasLocationFrom || hasLocationTo);
+      const shouldForceMedevac = hasMedevacKeyword && hasSufficientMedevacInfo;
+
+      // Also force if user has medevac keyword and conversation already has medevac context
+      const medevacContextExists = recentMessages.includes('medevac') || recentMessages.includes('medical evacuation') ||
+                                   recentMessages.includes('stretcher') || recentMessages.includes('patient') ||
+                                   recentMessages.includes('hospital transfer');
+      const shouldForceMedevacFromContext = hasMedevacKeyword && medevacContextExists;
+
+      console.log('🚨 MEDEVAC Detection:', { hasMedevacKeyword, hasConditionInfo, hasLocationFrom, hasLocationTo, shouldForceMedevac, shouldForceMedevacFromContext });
+
       // Determine which tool to force (only for SPECIFIC requests)
       let forcedTool = null;
       let forcedToolMessage = '';
       let consultationMode = null; // For generic requests that need advice first
 
-      if (shouldForceCreateTripPackage) {
+      // 🚨 MEDEVAC FIRST - Emergency takes priority over everything!
+      if (shouldForceMedevac || shouldForceMedevacFromContext || hasMedevacKeyword) {
+        // 🚨 MEDEVAC - Force the tool for ANY medevac keyword - emergency!
+        forcedTool = 'createMedevacRequest';
+        forcedToolMessage = `\n\n🚨🚨🚨 CRITICAL EMERGENCY - CALL MEDEVAC TOOL NOW 🚨🚨🚨
+The user is requesting medical evacuation. This is an EMERGENCY.
+You MUST call createMedevacRequest tool IMMEDIATELY - do NOT output text first!
+
+Extract from the conversation:
+- patientCondition: Any medical issue mentioned (broken leg, blood poisoning, stroke, etc.)
+- currentLocation: Where is the patient? Use city name if given, otherwise use "Location to be confirmed"
+- destinationHospital: Where do they need to go? Use "Hospital to be confirmed" if not specified
+- urgencyLevel: "critical" if life-threatening keywords, otherwise "urgent"
+- mobilityStatus: Assume "stretcher" unless stated otherwise
+
+DEFAULTS TO USE:
+- urgencyLevel: "urgent"
+- mobilityStatus: "stretcher"
+- numberOfPatients: 1
+- medicalEscorts: 0
+- familyEscorts: 0
+
+⚠️ DO NOT OUTPUT TEXT - CALL THE TOOL NOW!
+The Add to Cart button ONLY appears when you call this tool.`;
+        console.log('🚨 Forcing createMedevacRequest tool - EMERGENCY PRIORITY');
+      } else if (shouldForceCreateTripPackage) {
         forcedTool = 'createTripPackage';
         forcedToolMessage = `\n\n🎯 CRITICAL - CREATE TRIP PACKAGE NOW!
 The user has CONFIRMED their trip. You MUST call the createTripPackage tool IMMEDIATELY.
@@ -3541,6 +3761,7 @@ Then use searchDelicatesse with appropriate filters. Keep it brief - 2-3 questio
 Then use searchCigars with appropriate filters. Keep it elegant and brief.`;
         console.log('🚬 Cigar consultation mode (generic request)');
       }
+      // NOTE: MEDEVAC check moved to TOP of chain (line 3593) - emergency priority!
 
       // Build cart context for AI to know actual cart state
       const cartContextForAI = cartItems.length > 0
@@ -4896,7 +5117,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     </p>
                     <div className="flex items-center gap-2 mt-3">
                       <button
-                        onClick={() => navigate('/chat-history')}
+                        onClick={() => navigate('/dashboard/chat-history')}
                         className="flex-1 py-2 px-3 text-[13px] font-medium text-gray-600 rounded-xl transition-all"
                         style={{ background: 'rgba(0, 0, 0, 0.04)' }}
                       >
@@ -5075,9 +5296,24 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             >
               <ArrowLeft size={16} />
             </button>
-            {/* New Chat button - desktop only */}
+            {/* Back to chat overview button - desktop only */}
             <button
-              onClick={() => {
+              onClick={async () => {
+                // Check chat limit before allowing new chat
+                if (user?.id && !isAdmin) {
+                  const { canStart, requiresSubscription } = await subscriptionService.canStartNewChat(user.id);
+                  if (requiresSubscription) {
+                    setSubscriptionBlockerReason('no_subscription');
+                    setShowSubscriptionBlocker(true);
+                    return;
+                  }
+                  if (!canStart) {
+                    setChatLimitReached(true);
+                    setSubscriptionBlockerReason('chat_limit');
+                    setShowSubscriptionBlocker(true);
+                    return;
+                  }
+                }
                 setActiveChat('new');
                 setWeather(null);
                 setCartItems([]);
@@ -5202,10 +5438,18 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           onClick={async () => {
                             setShowChatSessions(false);
                             // Check if user can start new chat
-                            if (user?.id) {
-                              const { canStart } = await subscriptionService.canStartNewChat(user.id);
+                            if (user?.id && !isAdmin) {
+                              const { canStart, requiresSubscription, chatsUsed, chatsLimit } = await subscriptionService.canStartNewChat(user.id);
+                              console.log('📊 New Chat button - limit check:', { canStart, requiresSubscription, chatsUsed, chatsLimit });
+                              if (requiresSubscription) {
+                                setSubscriptionBlockerReason('no_subscription');
+                                setShowSubscriptionBlocker(true);
+                                return;
+                              }
                               if (!canStart) {
-                                setShowSubscriptionModal(true);
+                                setChatLimitReached(true);
+                                setSubscriptionBlockerReason('chat_limit');
+                                setShowSubscriptionBlocker(true);
                                 return;
                               }
                             }
@@ -9997,8 +10241,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       )}
 
 
-      {/* Subscription Blocker Popup - Clean minimal design (for non chat_limit reasons) */}
-      {showSubscriptionBlocker && subscriptionBlockerReason !== 'chat_limit' && (
+      {/* Subscription Blocker Popup - Clean minimal design (for ALL subscription reasons including chat_limit) */}
+      {showSubscriptionBlocker && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
           {/* Backdrop */}
           <div
@@ -10029,6 +10273,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               />
               <h2 className="text-lg font-light text-gray-900 mb-1">
                 {subscriptionBlockerReason === 'no_subscription' && 'Subscription Required'}
+                {subscriptionBlockerReason === 'chat_limit' && 'Chat Limit Reached'}
                 {subscriptionBlockerReason === 'message_limit' && 'Message Limit Reached'}
                 {subscriptionBlockerReason === 'feature_restricted' && 'Upgrade Required'}
                 {!subscriptionBlockerReason && 'Subscription Required'}
@@ -10036,6 +10281,8 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               <p className="text-xs font-light text-gray-400">
                 {subscriptionBlockerReason === 'no_subscription' &&
                   'Subscribe to access Sphera AI and start planning your luxury travel experiences.'}
+                {subscriptionBlockerReason === 'chat_limit' &&
+                  `You've used all your chats for this month. Continue existing conversations or upgrade for more chats.`}
                 {subscriptionBlockerReason === 'message_limit' &&
                   `You've reached your message limit for this chat. Continue on another chat or upgrade.`}
                 {subscriptionBlockerReason === 'feature_restricted' &&

@@ -2073,6 +2073,9 @@ const TokenizedAssetsGlassmorphic = () => {
 
     // Handle service category routes - map URL paths to internal activeCategory values
     const serviceRoutes = {
+      // Base dashboard - goes to overview
+      '/dashboard': 'overview',
+
       // Aviation & Transport
       '/dashboard/jets': 'jets',
       '/dashboard/helis': 'helicopter',
@@ -2930,7 +2933,14 @@ const TokenizedAssetsGlassmorphic = () => {
             destination: { code: destinationCode, name: destinationName }
           });
         }
-        setActiveCategory(targetTab); // This will also update the URL
+        // Special handling for profile - uses dashboard + dashboardView
+        if (targetTab === 'profile') {
+          setActiveCategoryInternal('dashboard');
+          setDashboardView('profile');
+          window.history.replaceState({}, '', '/dashboard/profile');
+        } else {
+          setActiveCategory(targetTab); // This will also update the URL
+        }
         setShowDashboard(true);
         // URL is now updated by setActiveCategory, no need to navigate
       } else if (tabNeedsAuth && login) {
@@ -2976,9 +2986,17 @@ const TokenizedAssetsGlassmorphic = () => {
       if (newChat && targetTab === 'chat') {
         setActiveChat('new');
       }
+      // Special handling for profile - uses dashboard + dashboardView
+      if (targetTab === 'profile') {
+        setActiveCategoryInternal('dashboard');
+        setDashboardView('profile');
+        window.history.replaceState({}, '', '/dashboard/profile');
+        setShowDashboard(true);
+        pendingUrlParamsRef.current = null;
+      }
       // Use setTimeout to ensure query state is set before switching category
       // This prevents AIChat from rendering with empty initialQuery
-      if (query && targetTab === 'chat') {
+      else if (query && targetTab === 'chat') {
         setTimeout(() => {
           setActiveCategory(targetTab);
           setShowDashboard(true);

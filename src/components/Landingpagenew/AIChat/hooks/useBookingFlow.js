@@ -62,6 +62,7 @@ export const useBookingFlow = ({
   cartItems,
   setCartItems,
   setToast,
+  chatHistory,
   setChatHistory,
   activeChat,
   userHasNFT,
@@ -310,6 +311,16 @@ export const useBookingFlow = ({
 
       // Build request payload
       const requestId = `REQ-${Date.now()}`;
+
+      // Get current chat's conversation history
+      const currentChat = chatHistory?.find(c => c.id === activeChat);
+      const conversationMessages = currentChat?.messages?.filter(m =>
+        m.role === 'user' || m.role === 'assistant'
+      ).map(m => ({
+        role: m.role,
+        content: m.content || m.text || ''
+      })) || [];
+
       const payload = {
         user_id: user.id,
         type: requestType,
@@ -325,7 +336,7 @@ export const useBookingFlow = ({
           payment_method: selectedPaymentMethod,
           wallet_address: connectedWallet,
           notes: additionalNotes,
-          conversation: [], // Could include chat context
+          conversation: conversationMessages,
           created_at: new Date().toISOString()
         },
         status: 'pending'

@@ -55,7 +55,8 @@ export default function LandingHeader({ onGetStarted, showInfoButton = true }: L
     { path: '/services', label: 'Services' },
     { path: '/technology', label: 'Technology' },
     { path: '/aviation', label: 'Aviation' },
-    { path: '/tokenized', label: 'Tokenized' },
+    { path: '/tokenized', label: 'RWA Tokenization' },
+    { path: '/sphera-ai', label: 'Sphera AI' },
   ];
 
   return (

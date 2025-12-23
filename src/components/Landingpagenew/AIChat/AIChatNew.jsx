@@ -141,6 +141,7 @@ const AIChatNew = ({
     cartItems: cart.cartItems,
     setCartItems: cart.setCartItems,
     setToast: modals.setToast,
+    chatHistory: chat.chatHistory,
     setChatHistory: chat.setChatHistory,
     activeChat: chat.activeChat,
     userHasNFT: subscription.userHasNFT,
@@ -196,7 +197,7 @@ const AIChatNew = ({
     setPendingLegData: journey.setPendingLegData,
     cartItems: cart.cartItems,
     setCartItems: cart.setCartItems,
-    checkCanSendMessage: subscription.checkCanSendMessage,
+    checkCanSendMessage: subscription.canSendMessage,
     lastBlockReason: subscription.lastBlockReason,
     createChat: chat.createChat,
     addMessage: chat.addMessage,
@@ -213,6 +214,28 @@ const AIChatNew = ({
   useEffect(() => {
     if (user?.id) subscription.loadUserProfile();
   }, [user?.id]);
+
+  // Show subscription blocker when on "new" chat and chat limit reached
+  useEffect(() => {
+    if (isAdmin || !subscription.userProfile) return;
+
+    // Only check when user is on the "new" chat screen
+    if (chat.activeChat === 'new') {
+      const hasSubscription = subscription.userProfile.subscription_tier && subscription.userProfile.subscription_status === 'active';
+      const hasLimit = subscription.userProfile.chats_limit !== null && subscription.userProfile.chats_limit !== undefined;
+      const limitReached = hasLimit && subscription.userProfile.chats_used >= subscription.userProfile.chats_limit;
+
+      if (!hasSubscription) {
+        console.log('🚫 Blocking new chat - no subscription');
+        modals.setSubscriptionBlockerReason('no_subscription');
+        modals.setShowSubscriptionBlocker(true);
+      } else if (limitReached) {
+        console.log('🚫 Blocking new chat - limit reached:', subscription.userProfile.chats_used, '/', subscription.userProfile.chats_limit);
+        modals.setSubscriptionBlockerReason('chat_limit');
+        modals.setShowSubscriptionBlocker(true);
+      }
+    }
+  }, [chat.activeChat, subscription.userProfile, isAdmin]);
 
   useEffect(() => {
     if (urlChatId && urlChatId !== 'new' && user?.id) {
@@ -516,8 +539,12 @@ const AIChatNew = ({
             </button>
             <div className="flex flex-col">
               <h1 className="font-semibold text-gray-900 text-sm">New Chat</h1>
-              {msgLimits.unlimited ? (
-                <span className="text-xs text-gray-500">Unlimited messages</span>
+              {subscription.userProfile?.chats_limit === null ? (
+                <span className="text-xs text-gray-500">Unlimited chats</span>
+              ) : subscription.userProfile?.chats_limit ? (
+                <span className={`text-xs ${subscription.chatLimitReached ? 'text-red-500' : 'text-gray-500'}`}>
+                  {subscription.userProfile.chats_used || 0}/{subscription.userProfile.chats_limit} chats
+                </span>
               ) : (
                 <span className="text-xs text-gray-500">0/{msgLimits.limit} messages</span>
               )}
@@ -550,13 +577,17 @@ const AIChatNew = ({
                 <span className="flex items-center gap-1">
                   <span className="text-gray-600">Traveller</span>
                   <span className="text-gray-300">•</span>
-                  <span className="text-gray-500">0/25</span>
+                  <span className={`${subscription.chatLimitReached ? 'text-red-500' : 'text-gray-500'}`}>
+                    {subscription.userProfile?.chats_used || 0}/{subscription.userProfile?.chats_limit || 10}
+                  </span>
                 </span>
               ) : newChatDisplayTier === 'explorer' ? (
                 <span className="flex items-center gap-1">
                   <span className="text-gray-600">Explorer</span>
                   <span className="text-gray-300">•</span>
-                  <span className="text-gray-500">0/10</span>
+                  <span className={`${subscription.chatLimitReached ? 'text-red-500' : 'text-gray-500'}`}>
+                    {subscription.userProfile?.chats_used || 0}/{subscription.userProfile?.chats_limit || 5}
+                  </span>
                 </span>
               ) : (
                 <span className="flex items-center gap-1">
@@ -587,7 +618,7 @@ const AIChatNew = ({
                 </div>
 
                 {/* Chat Limit Banner - Glassmorphic style */}
-                {chat.chatLimitReached && !isAdmin && subscription.userProfile?.chats_limit && (
+                {subscription.chatLimitReached && !isAdmin && subscription.userProfile?.chats_limit && (
                   <div
                     className="mt-3 px-4 py-3 rounded-2xl"
                     style={{
@@ -603,7 +634,7 @@ const AIChatNew = ({
                     </p>
                     <div className="flex items-center gap-2 mt-3">
                       <button
-                        onClick={() => setShowChatOverview?.(true)}
+                        onClick={() => navigate('/dashboard/chat-history')}
                         className="flex-1 py-2 px-3 text-[13px] font-medium text-gray-600 rounded-xl transition-all"
                         style={{ background: 'rgba(0, 0, 0, 0.04)' }}
                       >
@@ -674,7 +705,7 @@ const AIChatNew = ({
                 }}
                 placeholder="Ask about jets, cars, wines, restaurants..."
                 className="flex-1 bg-transparent border-0 outline-none text-gray-800 placeholder-gray-400 text-sm"
-                disabled={isProcessing || chat.chatLimitReached}
+                disabled={isProcessing || subscription.chatLimitReached}
               />
               <button
                 onClick={() => {
@@ -684,7 +715,7 @@ const AIChatNew = ({
                     messageHandler.handleSendMessage(msgToSend);
                   }
                 }}
-                disabled={!currentMessage.trim() || isProcessing || chat.chatLimitReached}
+                disabled={!currentMessage.trim() || isProcessing || subscription.chatLimitReached}
                 className="p-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
               >
                 {isProcessing ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
@@ -712,6 +743,116 @@ const AIChatNew = ({
             }}
             onToast={({ message, type }) => modals.setToast({ message, type })}
           />
+        )}
+
+        {/* Subscription Blocker Popup - Clean minimal design (for ALL subscription reasons including chat_limit) */}
+        {modals.showSubscriptionBlocker && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/20 pointer-events-auto"
+              onClick={() => modals.setShowSubscriptionBlocker(false)}
+            />
+
+            {/* Popup Card */}
+            <div
+              className="relative w-full max-w-md bg-white/95 rounded-2xl shadow-xl border border-gray-200/60 overflow-hidden pointer-events-auto"
+              style={{ backdropFilter: 'blur(20px)' }}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => modals.setShowSubscriptionBlocker(false)}
+                className="absolute top-3 right-3 p-1.5 hover:bg-gray-100/60 rounded-lg transition-all z-10"
+              >
+                <X size={18} className="text-gray-400" />
+              </button>
+
+              {/* Header */}
+              <div className="pt-6 pb-4 px-6 text-center">
+                {/* Logo */}
+                <img
+                  src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/PrivatecharterX_logo_vectorized.glb.png"
+                  alt="PrivateCharterX"
+                  className="w-10 h-10 mx-auto mb-3 object-contain"
+                />
+                <h2 className="text-lg font-light text-gray-900 mb-1">
+                  {modals.subscriptionBlockerReason === 'no_subscription' && 'Subscription Required'}
+                  {modals.subscriptionBlockerReason === 'chat_limit' && 'Chat Limit Reached'}
+                  {modals.subscriptionBlockerReason === 'message_limit' && 'Message Limit Reached'}
+                  {modals.subscriptionBlockerReason === 'feature_restricted' && 'Upgrade Required'}
+                  {!modals.subscriptionBlockerReason && 'Subscription Required'}
+                </h2>
+                <p className="text-xs font-light text-gray-400">
+                  {modals.subscriptionBlockerReason === 'no_subscription' &&
+                    'Subscribe to access Sphera AI and start planning your luxury travel experiences.'}
+                  {modals.subscriptionBlockerReason === 'chat_limit' &&
+                    `You've used all your chats for this month. Continue existing conversations or upgrade for more chats.`}
+                  {modals.subscriptionBlockerReason === 'message_limit' &&
+                    `You've reached your message limit for this chat. Continue on another chat or upgrade.`}
+                  {modals.subscriptionBlockerReason === 'feature_restricted' &&
+                    'This feature requires a higher subscription tier.'}
+                  {!modals.subscriptionBlockerReason &&
+                    'Subscribe to access Sphera AI and start planning your luxury travel experiences.'}
+                </p>
+              </div>
+
+              {/* Plans - Horizontal row */}
+              <div className="px-5 pb-4">
+                <div className="flex gap-2">
+                  {[
+                    { id: 'explorer', tier: 'Explorer', price: 49, chats: '5 chats' },
+                    { id: 'traveller', tier: 'Traveller', price: 99, chats: '10 chats', popular: true },
+                    { id: 'elite', tier: 'Elite', price: 399, chats: 'Unlimited' }
+                  ].map((plan) => (
+                    <button
+                      key={plan.tier}
+                      onClick={() => {
+                        modals.setShowSubscriptionBlocker(false);
+                        navigate('/subscriptions/plans');
+                      }}
+                      className={`flex-1 p-3 rounded-xl border text-center transition-all hover:border-gray-300 ${
+                        plan.popular
+                          ? 'bg-gray-50/80 border-gray-300'
+                          : 'bg-white/60 border-gray-200'
+                      }`}
+                    >
+                      {plan.popular && (
+                        <span className="text-[8px] font-medium text-gray-500 uppercase tracking-wider">Popular</span>
+                      )}
+                      <p className="text-[10px] font-light text-gray-500 uppercase tracking-wide">{plan.tier}</p>
+                      <p className="text-xl font-extralight text-gray-900">${plan.price}</p>
+                      <p className="text-[9px] font-light text-gray-400">{plan.chats}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="px-5 pb-5 space-y-2">
+                <button
+                  onClick={() => {
+                    modals.setShowSubscriptionBlocker(false);
+                    navigate('/subscriptions/plans');
+                  }}
+                  className="w-full py-2.5 bg-gray-900 text-white rounded-xl text-sm font-light hover:bg-gray-800 transition-colors"
+                >
+                  Upgrade
+                </button>
+                <button
+                  onClick={() => {
+                    modals.setShowSubscriptionBlocker(false);
+                    navigate('/dashboard/chat-history');
+                  }}
+                  className="w-full py-2.5 bg-white text-gray-700 rounded-xl text-sm font-light hover:bg-gray-100 transition-colors border border-gray-200"
+                >
+                  Continue chats
+                </button>
+                <p className="text-[10px] font-light text-gray-400 text-center mt-3">
+                  Cancel anytime • Instant access • 24/7 AI concierge
+                </p>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     );
@@ -937,42 +1078,111 @@ const AIChatNew = ({
           onToast={({ message, type }) => modals.setToast({ message, type })}
         />
       )}
-      {/* Subscription Blocker Popup - Only for non-chat_limit reasons (chat_limit has inline banner) */}
-      {modals.showSubscriptionBlocker && modals.subscriptionBlockerReason !== 'chat_limit' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{
-          background: 'rgba(0, 0, 0, 0.4)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-        }}>
-          <div className="bg-white rounded-2xl p-6 max-w-md mx-4 shadow-2xl text-center" style={{
-            background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-          }}>
-            <Crown className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              {modals.subscriptionBlockerReason === 'no_subscription' ? 'Subscription Required' :
-               modals.subscriptionBlockerReason === 'message_limit' ? 'Message Limit Reached' :
-               modals.subscriptionBlockerReason === 'feature_restricted' ? 'Upgrade Required' : 'Subscription Required'}
-            </h3>
-            <p className="text-gray-600 mb-6">
-              {modals.subscriptionBlockerReason === 'no_subscription'
-                ? 'Subscribe to access Sphera AI and start planning your luxury travel experiences.'
-                : modals.subscriptionBlockerReason === 'message_limit'
-                ? 'You\'ve reached the message limit for this chat. Start a new chat or upgrade for more messages.'
-                : modals.subscriptionBlockerReason === 'feature_restricted'
-                ? 'This premium feature requires a higher subscription tier. Upgrade now to unlock access.'
-                : 'Upgrade your subscription to access this feature.'}
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => modals.setShowSubscriptionBlocker(false)} className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-900 rounded-xl hover:bg-gray-200 font-medium transition-colors">
-                Cancel
-              </button>
-              <button onClick={() => { modals.setShowSubscriptionBlocker(false); modals.setShowSubscriptionModal(true); }} className="flex-1 px-4 py-2.5 text-white rounded-xl font-medium transition-colors" style={{
-                background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)'
-              }}>
+      {/* Subscription Blocker Popup - Clean minimal design (for ALL subscription reasons including chat_limit) */}
+      {modals.showSubscriptionBlocker && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/20 pointer-events-auto"
+            onClick={() => modals.setShowSubscriptionBlocker(false)}
+          />
+
+          {/* Popup Card */}
+          <div
+            className="relative w-full max-w-md bg-white/95 rounded-2xl shadow-xl border border-gray-200/60 overflow-hidden pointer-events-auto"
+            style={{ backdropFilter: 'blur(20px)' }}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => modals.setShowSubscriptionBlocker(false)}
+              className="absolute top-3 right-3 p-1.5 hover:bg-gray-100/60 rounded-lg transition-all z-10"
+            >
+              <X size={18} className="text-gray-400" />
+            </button>
+
+            {/* Header */}
+            <div className="pt-6 pb-4 px-6 text-center">
+              {/* Logo */}
+              <img
+                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/PrivatecharterX_logo_vectorized.glb.png"
+                alt="PrivateCharterX"
+                className="w-10 h-10 mx-auto mb-3 object-contain"
+              />
+              <h2 className="text-lg font-light text-gray-900 mb-1">
+                {modals.subscriptionBlockerReason === 'no_subscription' && 'Subscription Required'}
+                {modals.subscriptionBlockerReason === 'chat_limit' && 'Chat Limit Reached'}
+                {modals.subscriptionBlockerReason === 'message_limit' && 'Message Limit Reached'}
+                {modals.subscriptionBlockerReason === 'feature_restricted' && 'Upgrade Required'}
+                {!modals.subscriptionBlockerReason && 'Subscription Required'}
+              </h2>
+              <p className="text-xs font-light text-gray-400">
+                {modals.subscriptionBlockerReason === 'no_subscription' &&
+                  'Subscribe to access Sphera AI and start planning your luxury travel experiences.'}
+                {modals.subscriptionBlockerReason === 'chat_limit' &&
+                  `You've used all your chats for this month. Continue existing conversations or upgrade for more chats.`}
+                {modals.subscriptionBlockerReason === 'message_limit' &&
+                  `You've reached your message limit for this chat. Continue on another chat or upgrade.`}
+                {modals.subscriptionBlockerReason === 'feature_restricted' &&
+                  'This feature requires a higher subscription tier.'}
+                {!modals.subscriptionBlockerReason &&
+                  'Subscribe to access Sphera AI and start planning your luxury travel experiences.'}
+              </p>
+            </div>
+
+            {/* Plans - Horizontal row */}
+            <div className="px-5 pb-4">
+              <div className="flex gap-2">
+                {[
+                  { id: 'explorer', tier: 'Explorer', price: 49, chats: '5 chats' },
+                  { id: 'traveller', tier: 'Traveller', price: 99, chats: '10 chats', popular: true },
+                  { id: 'elite', tier: 'Elite', price: 399, chats: 'Unlimited' }
+                ].map((plan) => (
+                  <button
+                    key={plan.tier}
+                    onClick={() => {
+                      modals.setShowSubscriptionBlocker(false);
+                      navigate('/subscriptions/plans');
+                    }}
+                    className={`flex-1 p-3 rounded-xl border text-center transition-all hover:border-gray-300 ${
+                      plan.popular
+                        ? 'bg-gray-50/80 border-gray-300'
+                        : 'bg-white/60 border-gray-200'
+                    }`}
+                  >
+                    {plan.popular && (
+                      <span className="text-[8px] font-medium text-gray-500 uppercase tracking-wider">Popular</span>
+                    )}
+                    <p className="text-[10px] font-light text-gray-500 uppercase tracking-wide">{plan.tier}</p>
+                    <p className="text-xl font-extralight text-gray-900">${plan.price}</p>
+                    <p className="text-[9px] font-light text-gray-400">{plan.chats}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="px-5 pb-5 space-y-2">
+              <button
+                onClick={() => {
+                  modals.setShowSubscriptionBlocker(false);
+                  navigate('/subscriptions/plans');
+                }}
+                className="w-full py-2.5 bg-gray-900 text-white rounded-xl text-sm font-light hover:bg-gray-800 transition-colors"
+              >
                 Upgrade
               </button>
+              <button
+                onClick={() => {
+                  modals.setShowSubscriptionBlocker(false);
+                  navigate('/dashboard/chat-history');
+                }}
+                className="w-full py-2.5 bg-white text-gray-700 rounded-xl text-sm font-light hover:bg-gray-100 transition-colors border border-gray-200"
+              >
+                Continue chats
+              </button>
+              <p className="text-[10px] font-light text-gray-400 text-center mt-3">
+                Cancel anytime • Instant access • 24/7 AI concierge
+              </p>
             </div>
           </div>
         </div>

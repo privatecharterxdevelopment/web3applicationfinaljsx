@@ -61,6 +61,9 @@ export const useModals = () => {
   const [showCart, setShowCart] = useState(false);
   const [showCartWidget, setShowCartWidget] = useState(false);
 
+  // Toast notifications
+  const [toast, setToast] = useState(null);
+
   // Close all modals
   const closeAllModals = useCallback(() => {
     setShowCalendarModal(false);
@@ -196,6 +199,10 @@ export const useModals = () => {
     setShowCart,
     showCartWidget,
     setShowCartWidget,
+
+    // Toast
+    toast,
+    setToast,
 
     // Utils
     closeAllModals

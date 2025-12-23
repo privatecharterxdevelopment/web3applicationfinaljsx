@@ -26,7 +26,6 @@ const SubscriptionSuccessPage = () => {
       price: '$49',
       chats: '5 AI Chats',
       messages: '10 messages per chat',
-      color: 'from-blue-500 to-cyan-500',
       icon: '✈️'
     },
     traveller: {
@@ -34,7 +33,6 @@ const SubscriptionSuccessPage = () => {
       price: '$99',
       chats: '10 AI Chats',
       messages: '25 messages per chat',
-      color: 'from-purple-500 to-pink-500',
       icon: '🌍'
     },
     elite: {
@@ -42,7 +40,6 @@ const SubscriptionSuccessPage = () => {
       price: '$399',
       chats: 'Unlimited Chats',
       messages: 'Unlimited messages',
-      color: 'from-amber-500 to-orange-500',
       icon: '👑'
     }
   };
@@ -174,152 +171,159 @@ const SubscriptionSuccessPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
-      <div className="max-w-lg w-full">
-        {/* Success Card */}
-        <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-8 text-center relative overflow-hidden">
-          {/* Gradient overlay */}
-          <div className={`absolute inset-0 bg-gradient-to-br ${currentTier.color} opacity-10 pointer-events-none`} />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center p-4">
+      <div className="max-w-md w-full">
+        {/* Success Card - Glassmorphic Light Style */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-200/60 shadow-xl p-8 text-center relative overflow-hidden">
+
+          {/* Logo */}
+          <div className="flex justify-center mb-6">
+            <img
+              src="/PCX_logo.png"
+              alt="PrivateCharterX"
+              className="h-8 object-contain"
+              onError={(e) => {
+                e.target.style.display = 'none';
+              }}
+            />
+          </div>
 
           {/* Success Icon */}
-          <div className="relative">
-            <div className="w-24 h-24 mx-auto mb-6 relative">
-              <div className={`absolute inset-0 bg-gradient-to-br ${currentTier.color} opacity-20 rounded-full animate-ping`} />
-              <div className={`relative w-full h-full bg-gradient-to-br ${currentTier.color} rounded-full flex items-center justify-center`}>
-                <Check className="w-12 h-12 text-white" />
+          <div className="w-16 h-16 mx-auto mb-4 relative">
+            <div className="absolute inset-0 bg-emerald-100 rounded-full animate-ping opacity-50" />
+            <div className="relative w-full h-full bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+              <Check className="w-8 h-8 text-white" strokeWidth={3} />
+            </div>
+          </div>
+
+          <h1 className="text-2xl font-light text-gray-900 mb-2">Welcome to {currentTier.name}!</h1>
+          <p className="text-gray-500 font-light text-sm mb-6">
+            {verificationStatus === 'verifying' ? 'Activating your subscription...' : 'Your subscription is now active'}
+          </p>
+
+          {/* Verification Status */}
+          {verificationStatus === 'verifying' && (
+            <div className="flex items-center justify-center gap-2 mb-4 text-gray-500">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm font-light">Verifying payment...</span>
+            </div>
+          )}
+
+          {verificationStatus === 'error' && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
+              <div className="flex items-center gap-2 text-red-600">
+                <AlertCircle className="w-4 h-4" />
+                <span className="text-sm font-light">Verification issue - please contact support</span>
+              </div>
+              {verificationError && (
+                <p className="text-red-400 text-xs mt-1 font-light">{verificationError}</p>
+              )}
+            </div>
+          )}
+
+          {verificationStatus === 'success' && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4">
+              <div className="flex items-center justify-center gap-2 text-emerald-600">
+                <Check className="w-4 h-4" />
+                <span className="text-sm font-light">Payment verified successfully!</span>
               </div>
             </div>
+          )}
 
-            <h1 className="text-3xl font-bold text-white mb-2">Welcome to {currentTier.name}!</h1>
-            <p className="text-white/60 mb-6">
-              {verificationStatus === 'verifying' ? 'Activating your subscription...' : 'Your subscription is now active'}
-            </p>
+          {/* Plan Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900 mb-6">
+            <span className="text-lg">{currentTier.icon}</span>
+            <span className="text-white font-medium text-sm">{currentTier.name} Member</span>
+          </div>
 
-            {/* Verification Status */}
-            {verificationStatus === 'verifying' && (
-              <div className="flex items-center justify-center gap-2 mb-4 text-white/70">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">Verifying payment with Stripe...</span>
-              </div>
-            )}
+          {/* Subscription Details */}
+          {loading ? (
+            <div className="flex items-center justify-center py-6">
+              <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+            </div>
+          ) : (
+            <div className="bg-gray-50/80 rounded-xl p-4 mb-6 text-left border border-gray-100">
+              <h3 className="font-medium text-gray-900 mb-3 text-center text-sm">Your Plan Includes</h3>
 
-            {verificationStatus === 'error' && (
-              <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3 mb-4">
-                <div className="flex items-center gap-2 text-red-400">
-                  <AlertCircle className="w-4 h-4" />
-                  <span className="text-sm">Verification issue - please contact support if your subscription is not active</span>
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center">
+                    <MessageSquare className="w-3.5 h-3.5 text-gray-600" />
+                  </div>
+                  <div>
+                    <p className="text-gray-900 font-medium text-sm">{currentTier.chats}</p>
+                    <p className="text-gray-400 text-xs font-light">{currentTier.messages}</p>
+                  </div>
                 </div>
-                {verificationError && (
-                  <p className="text-red-300/60 text-xs mt-1">{verificationError}</p>
+
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="text-gray-900 font-medium text-sm">AI Travel Concierge</p>
+                    <p className="text-gray-400 text-xs font-light">Jets, yachts, cars & more</p>
+                  </div>
+                </div>
+
+                {subscription?.current_period_end && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center">
+                      <Calendar className="w-3.5 h-3.5 text-emerald-500" />
+                    </div>
+                    <div>
+                      <p className="text-gray-900 font-medium text-sm">Next billing</p>
+                      <p className="text-emerald-600 text-xs font-light">{formatDate(subscription.current_period_end)}</p>
+                    </div>
+                  </div>
                 )}
               </div>
-            )}
 
-            {verificationStatus === 'success' && (
-              <div className="bg-emerald-500/20 border border-emerald-500/30 rounded-lg p-3 mb-4">
-                <div className="flex items-center justify-center gap-2 text-emerald-400">
-                  <Check className="w-4 h-4" />
-                  <span className="text-sm">Payment verified and subscription activated!</span>
-                </div>
+              {/* Price Summary */}
+              <div className="mt-3 pt-3 border-t border-gray-200 flex justify-between items-center">
+                <span className="text-gray-500 text-sm font-light">Monthly</span>
+                <span className="text-gray-900 font-semibold">{currentTier.price}/mo</span>
               </div>
-            )}
-
-            {/* Plan Badge */}
-            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r ${currentTier.color} mb-6`}>
-              <Crown className="w-5 h-5 text-white" />
-              <span className="text-white font-semibold">{currentTier.name} Member</span>
             </div>
+          )}
 
-            {/* Subscription Details */}
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-8 h-8 text-white/60 animate-spin" />
-              </div>
-            ) : (
-              <div className="bg-white/5 rounded-xl p-5 mb-6 text-left">
-                <h3 className="font-semibold text-white mb-4 text-center">Your Plan Includes</h3>
+          {/* Info Text */}
+          <p className="text-gray-400 text-xs font-light mb-6">
+            A confirmation email has been sent to your inbox.
+          </p>
 
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
-                      <MessageSquare className="w-4 h-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-white font-medium">{currentTier.chats}</p>
-                      <p className="text-white/50 text-xs">{currentTier.messages}</p>
-                    </div>
-                  </div>
+          {/* Action Buttons */}
+          <div className="space-y-2.5">
+            <Link
+              to="/dashboard/chat"
+              className="w-full py-3 px-6 bg-gray-900 text-white font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors text-sm"
+            >
+              <MessageSquare className="w-4 h-4" />
+              Start Chatting
+              <ArrowRight className="w-4 h-4" />
+            </Link>
 
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
-                      <Sparkles className="w-4 h-4 text-amber-400" />
-                    </div>
-                    <div>
-                      <p className="text-white font-medium">AI-Powered Travel Concierge</p>
-                      <p className="text-white/50 text-xs">Book jets, yachts, cars & more</p>
-                    </div>
-                  </div>
+            <Link
+              to="/dashboard"
+              className="w-full py-3 px-6 bg-white border border-gray-200 text-gray-700 font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors text-sm"
+            >
+              <Home className="w-4 h-4" />
+              Go to Dashboard
+            </Link>
 
-                  {subscription?.current_period_end && (
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
-                        <Calendar className="w-4 h-4 text-emerald-400" />
-                      </div>
-                      <div>
-                        <p className="text-white font-medium">Next billing date</p>
-                        <p className="text-emerald-400 text-xs">{formatDate(subscription.current_period_end)}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Price Summary */}
-                <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
-                  <span className="text-white/60">Monthly subscription</span>
-                  <span className="text-white font-bold text-lg">{currentTier.price}/mo</span>
-                </div>
-              </div>
-            )}
-
-            {/* Info Text */}
-            <p className="text-white/50 text-sm mb-6">
-              A confirmation email has been sent to your email address.
-              You can manage your subscription anytime from your dashboard.
-            </p>
-
-            {/* Action Buttons */}
-            <div className="space-y-3">
-              <Link
-                to="/dashboard/chat"
-                className={`w-full py-3 px-6 bg-gradient-to-r ${currentTier.color} text-white font-semibold rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity`}
-              >
-                <MessageSquare className="w-5 h-5" />
-                Start Chatting with AI
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-
-              <Link
-                to="/dashboard"
-                className="w-full py-3 px-6 bg-white/10 text-white font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-white/20 transition-colors"
-              >
-                <Home className="w-5 h-5" />
-                Go back to Dashboard
-              </Link>
-
-              <Link
-                to="/subscriptions/manage"
-                className="w-full py-3 px-6 bg-transparent text-white/70 font-medium rounded-xl flex items-center justify-center gap-2 hover:text-white transition-colors"
-              >
-                <Crown className="w-5 h-5" />
-                Manage Subscription
-              </Link>
-            </div>
+            <Link
+              to="/subscriptions/manage"
+              className="w-full py-2.5 px-6 bg-transparent text-gray-400 font-light rounded-xl flex items-center justify-center gap-2 hover:text-gray-600 transition-colors text-sm"
+            >
+              <Crown className="w-4 h-4" />
+              Manage Subscription
+            </Link>
           </div>
         </div>
 
         {/* Support Link */}
-        <p className="text-center text-white/40 text-sm mt-6">
-          Need help? <a href="mailto:support@privatecharterx.com" className="text-white/60 hover:text-white underline">Contact Support</a>
+        <p className="text-center text-gray-400 text-xs font-light mt-6">
+          Need help? <a href="mailto:support@privatecharterx.com" className="text-gray-600 hover:text-gray-900 underline">Contact Support</a>
         </p>
       </div>
     </div>

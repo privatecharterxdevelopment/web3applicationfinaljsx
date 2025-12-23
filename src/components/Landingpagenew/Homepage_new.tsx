@@ -697,22 +697,187 @@ function Homepage() {
           </section>
         </AnimatedSection>
 
-        {/* All-in-one Global Mobility Platform */}
+        {/* All-in-one Global Mobility Platform - ChatGPT Style */}
         <AnimatedSection animation="slide-up" delay={150}>
-          <section className="px-4 sm:px-8 py-12 sm:py-20 max-w-6xl mx-auto">
-            <div className="bg-white rounded-2xl px-8 py-12 border border-gray-200 shadow-sm">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-light mb-4">
-                  All-in-one global mobility platform
-                </h2>
-                <p className="text-gray-600 text-sm md:text-base max-w-2xl mx-auto">
-                  Experience seamless travel with blockchain-powered booking, tokenized assets, and premium services all in one platform.
-                </p>
-              </div>
+          <section className="px-4 sm:px-8 py-8 sm:py-12 max-w-6xl mx-auto">
+            {/* Gradient Background Container */}
+            <div
+              className="relative rounded-3xl overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #dee2e6 50%, #ced4da 75%, #adb5bd 100%)',
+                minHeight: '600px'
+              }}
+            >
+              {/* Subtle Pattern Overlay */}
+              <div
+                className="absolute inset-0 opacity-20"
+                style={{
+                  backgroundImage: 'radial-gradient(circle at 20% 80%, rgba(255,255,255,0.5) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.4) 0%, transparent 50%)'
+                }}
+              />
 
-              {/* Video content area - white space for video to be added */}
-              <div className="min-h-96 bg-white rounded-lg">
-                {/* Video will be added here */}
+              {/* Content */}
+              <div className="relative z-10 px-6 sm:px-12 py-12 sm:py-16">
+                {/* Header */}
+                <div className="text-center mb-10">
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-light text-gray-900 mb-3">
+                    Your AI-Powered Travel Concierge
+                  </h2>
+                  <p className="text-gray-700 text-sm md:text-base max-w-xl mx-auto font-light">
+                    Meet Sphera AI — book jets, discover wines, arrange transfers, and more through natural conversation.
+                  </p>
+                </div>
+
+                {/* Floating Chat Window Mockup */}
+                <div className="max-w-4xl mx-auto">
+                  <div
+                    className="bg-white/95 rounded-2xl shadow-2xl overflow-hidden border border-white/50"
+                    style={{ backdropFilter: 'blur(20px)' }}
+                  >
+                    {/* Browser Chrome */}
+                    <div className="flex items-center gap-2 px-4 py-3 bg-gray-100/80 border-b border-gray-200/60">
+                      <div className="flex gap-1.5">
+                        <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                        <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                        <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                      </div>
+                      <div className="flex-1 flex justify-center">
+                        <div className="px-4 py-1 bg-white/60 rounded-md text-xs text-gray-500 font-light">
+                          privatecharterx.com/dashboard/chat
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Chat Interface */}
+                    <div className="flex" style={{ height: '420px' }}>
+                      {/* Sidebar */}
+                      <div className="w-48 bg-gray-50/80 border-r border-gray-200/60 p-3 hidden sm:block relative">
+                        <div className="flex items-center mb-4">
+                          <img
+                            src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/PrivatecharterX_logo_vectorized.glb.png"
+                            alt="PrivateCharterX"
+                            className="h-7 w-auto object-contain"
+                          />
+                        </div>
+                        <button className="w-full flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-gray-200 text-xs text-gray-700 mb-3">
+                          <span>+</span> New Chat
+                        </button>
+                        <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-2 px-1">History</div>
+                        <div className="space-y-1">
+                          <div className="px-2 py-1.5 bg-gray-100/80 rounded text-[11px] text-gray-600 truncate">Wine recommendations</div>
+                          <div className="px-2 py-1.5 text-[11px] text-gray-500 truncate">Private jet to Monaco</div>
+                          <div className="px-2 py-1.5 text-[11px] text-gray-500 truncate">Airport transfer LAX</div>
+                        </div>
+                        <div className="absolute bottom-4 left-3 right-3 hidden sm:block">
+                          <div className="flex items-center gap-2 px-2 py-1.5 text-[11px] text-gray-500">
+                            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span>
+                            0.000 $PVCX
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Chat Area */}
+                      <div className="flex-1 flex flex-col bg-white">
+                        {/* Chat Header */}
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-800">Wine recommendations</span>
+                            <span className="text-[10px] text-gray-400">Unlimited messages</span>
+                          </div>
+                          <span className="px-2 py-0.5 bg-gray-100 rounded text-[10px] text-gray-600">Elite</span>
+                        </div>
+
+                        {/* Messages */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                          {/* User Message */}
+                          <div className="flex justify-end">
+                            <div className="bg-gray-900 text-white px-4 py-2 rounded-2xl text-sm max-w-xs">
+                              I'd like to get a wine from France instead
+                            </div>
+                          </div>
+
+                          {/* AI Response */}
+                          <div className="flex justify-start">
+                            <div className="flex flex-col gap-1.5 max-w-sm">
+                              <div className="flex items-center gap-1.5 px-1">
+                                <div className="w-1.5 h-1.5 bg-gray-600 rounded-full"></div>
+                                <span className="text-[10px] text-gray-500 font-medium">Sphera AI</span>
+                              </div>
+                              <div className="bg-gray-50 px-4 py-3 rounded-2xl text-sm text-gray-700">
+                                Perfect! French wines are the epitome of elegance. Let me show you our exceptional French selection.
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Wine Results */}
+                          <div className="flex justify-start">
+                            <div className="max-w-sm space-y-2">
+                              <span className="inline-block px-2 py-0.5 bg-gray-900 text-white text-[10px] rounded">Wines · 20</span>
+                              <div className="space-y-2">
+                                {[
+                                  { name: 'Moët & Chandon Grand Vintage 2015', region: 'Champagne, France', price: '65-95' },
+                                  { name: 'Château Rieussec 2017', region: 'Sauternes, Bordeaux', price: '50-120' },
+                                  { name: 'Egly-Ouriet Grand Cru Brut NV', region: 'Champagne, France', price: '80-120' }
+                                ].map((wine, i) => (
+                                  <div key={i} className="flex items-center justify-between px-3 py-2 bg-white border border-gray-100 rounded-xl hover:border-gray-200 transition-colors">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-gray-400">🍷</span>
+                                      <div>
+                                        <p className="text-xs font-medium text-gray-800">{wine.name}</p>
+                                        <p className="text-[10px] text-gray-400">{wine.region}</p>
+                                      </div>
+                                    </div>
+                                    <span className="text-xs font-medium text-gray-600">${wine.price}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Input */}
+                        <div className="p-3 border-t border-gray-100">
+                          <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-xl border border-gray-200">
+                            <input
+                              type="text"
+                              placeholder="Ask about jets, helicopters, cars, wines..."
+                              className="flex-1 bg-transparent text-xs text-gray-600 outline-none"
+                              disabled
+                            />
+                            <div className="w-7 h-7 bg-gray-900 rounded-lg flex items-center justify-center">
+                              <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CTA */}
+                <div className="text-center mt-10">
+                  <button
+                    onClick={() => {
+                      const dashboardSection = document.getElementById('dashboard-access');
+                      if (dashboardSection) {
+                        dashboardSection.scrollIntoView({ behavior: 'smooth' });
+                      } else {
+                        window.location.href = '/dashboard/chat';
+                      }
+                    }}
+                    className="px-8 py-3 rounded-xl text-sm font-medium transition-all duration-200 border border-white/40 hover:border-white/60 hover:shadow-lg"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.25)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      color: '#374151'
+                    }}
+                  >
+                    Chat with Sphera AI
+                  </button>
+                </div>
               </div>
             </div>
           </section>

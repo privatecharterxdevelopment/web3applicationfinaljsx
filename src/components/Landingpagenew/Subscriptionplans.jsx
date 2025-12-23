@@ -101,8 +101,8 @@ const PricingPackages = ({ onClose, onBack }) => {
   const [processingPlan, setProcessingPlan] = useState(null);
 
   const STRIPE_PAYMENT_LINKS = {
-    explorer: import.meta.env.VITE_STRIPE_EXPLORER_PAYMENT_LINK || '',
-    traveller: import.meta.env.VITE_STRIPE_TRAVELLER_PAYMENT_LINK || '',
+    explorer: import.meta.env.VITE_STRIPE_EXPLORER_PAYMENT_LINK || import.meta.env.VITE_STRIPE_STARTER_PAYMENT_LINK || '',
+    traveller: import.meta.env.VITE_STRIPE_TRAVELLER_PAYMENT_LINK || import.meta.env.VITE_STRIPE_PRO_PAYMENT_LINK || '',
     elite: import.meta.env.VITE_STRIPE_ELITE_PAYMENT_LINK || ''
   };
 
@@ -203,6 +203,7 @@ const PricingPackages = ({ onClose, onBack }) => {
     setProcessingPlan(plan.id);
 
     try {
+      // Use Payment Links first (they work on Vercel)
       const paymentLink = STRIPE_PAYMENT_LINKS[plan.id];
 
       if (paymentLink) {
@@ -210,7 +211,8 @@ const PricingPackages = ({ onClose, onBack }) => {
         url.searchParams.set('client_reference_id', user.id);
         url.searchParams.set('prefilled_email', user.email || '');
         window.location.href = url.toString();
-      } else {
+      } else if (plan.stripePriceId) {
+        // Fallback to Checkout Sessions if no payment link
         const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
           body: {
             priceId: plan.stripePriceId,
@@ -229,6 +231,8 @@ const PricingPackages = ({ onClose, onBack }) => {
         } else {
           throw new Error('No checkout URL returned');
         }
+      } else {
+        throw new Error('No payment method configured');
       }
     } catch (error) {
       console.error('Error starting checkout:', error);

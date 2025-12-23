@@ -216,48 +216,74 @@ const CRMDashboard = ({ onClose }) => {
 
       console.log('Users after sort (newest first):', paginatedUsers.slice(0, 3).map(u => ({ email: u.email, created_at: u.created_at })));
 
-      // Enrich with public users data and other tables
+      // Enrich with public users data and other tables (with error handling per user)
       const enrichedUsers = await Promise.all(paginatedUsers.map(async (authUser) => {
-        const [
-          { data: publicUser },
-          { data: bookings },
-          { data: requests },
-          { data: aiChats },
-          { data: supportTickets },
-          { data: profile }
-        ] = await Promise.all([
-          supabaseAdmin.from('users').select('*').eq('id', authUser.id).single(),
-          supabaseAdmin.from('user_bookings').select('*').eq('user_id', authUser.id),
-          supabaseAdmin.from('user_requests').select('*').eq('user_id', authUser.id),
-          supabaseAdmin.from('ai_chat_sessions').select('*').eq('user_id', authUser.id),
-          supabaseAdmin.from('support_tickets').select('*').eq('user_id', authUser.id),
-          supabaseAdmin.from('user_profiles').select('avatar_url, phone, city, country, wallet_address, pvcx_balance, subscription_tier, nft_holder').eq('user_id', authUser.id).single()
-        ]);
+        try {
+          const [
+            { data: publicUser },
+            { data: bookings },
+            { data: requests },
+            { data: aiChats },
+            { data: supportTickets },
+            { data: profile }
+          ] = await Promise.all([
+            supabaseAdmin.from('users').select('*').eq('id', authUser.id).maybeSingle(),
+            supabaseAdmin.from('user_bookings').select('*').eq('user_id', authUser.id),
+            supabaseAdmin.from('user_requests').select('*').eq('user_id', authUser.id),
+            supabaseAdmin.from('ai_chat_sessions').select('*').eq('user_id', authUser.id),
+            supabaseAdmin.from('support_tickets').select('*').eq('user_id', authUser.id),
+            supabaseAdmin.from('user_profiles').select('avatar_url, phone, city, country, wallet_address, pvcx_balance, subscription_tier, nft_holder').eq('user_id', authUser.id).maybeSingle()
+          ]);
 
-        // Merge auth user data with public user data
-        return {
-          id: authUser.id,
-          email: authUser.email,
-          created_at: authUser.created_at, // Use auth.users created_at - this is the REAL registration time
-          last_sign_in_at: authUser.last_sign_in_at,
-          email_confirmed_at: authUser.email_confirmed_at,
-          phone: authUser.phone,
-          // From user_metadata
-          name: authUser.user_metadata?.name || publicUser?.name,
-          first_name: authUser.user_metadata?.first_name || publicUser?.first_name,
-          last_name: authUser.user_metadata?.last_name || publicUser?.last_name,
-          avatar_url: authUser.user_metadata?.avatar_url || profile?.avatar_url,
-          // From public.users table
-          is_admin: publicUser?.is_admin,
-          user_role: publicUser?.user_role,
-          is_active: publicUser?.is_active,
-          // Related data
-          bookings: bookings || [],
-          requests: requests || [],
-          aiChats: aiChats || [],
-          supportTickets: supportTickets || [],
-          profile: profile || {}
-        };
+          // Merge auth user data with public user data
+          return {
+            id: authUser.id,
+            email: authUser.email,
+            created_at: authUser.created_at, // Use auth.users created_at - this is the REAL registration time
+            last_sign_in_at: authUser.last_sign_in_at,
+            email_confirmed_at: authUser.email_confirmed_at,
+            // Phone: check users table first, then user_profiles, then auth.users
+            phone: publicUser?.phone || profile?.phone || authUser.phone || null,
+            // From user_metadata
+            name: authUser.user_metadata?.name || publicUser?.name,
+            first_name: authUser.user_metadata?.first_name || publicUser?.first_name,
+            last_name: authUser.user_metadata?.last_name || publicUser?.last_name,
+            avatar_url: authUser.user_metadata?.avatar_url || profile?.avatar_url,
+            // From public.users table
+            is_admin: publicUser?.is_admin,
+            user_role: publicUser?.user_role,
+            is_active: publicUser?.is_active !== false, // Default to true if not set
+            // Related data
+            bookings: bookings || [],
+            requests: requests || [],
+            aiChats: aiChats || [],
+            supportTickets: supportTickets || [],
+            profile: profile || {}
+          };
+        } catch (err) {
+          console.error('Error enriching user:', authUser.id, err);
+          // Return basic user data even if enrichment fails
+          return {
+            id: authUser.id,
+            email: authUser.email,
+            created_at: authUser.created_at,
+            last_sign_in_at: authUser.last_sign_in_at,
+            email_confirmed_at: authUser.email_confirmed_at,
+            phone: authUser.phone,
+            name: authUser.user_metadata?.name,
+            first_name: authUser.user_metadata?.first_name,
+            last_name: authUser.user_metadata?.last_name,
+            avatar_url: authUser.user_metadata?.avatar_url,
+            is_admin: false,
+            user_role: 'user',
+            is_active: true,
+            bookings: [],
+            requests: [],
+            aiChats: [],
+            supportTickets: [],
+            profile: {}
+          };
+        }
       }));
 
       setCustomers(enrichedUsers);
@@ -294,13 +320,19 @@ const CRMDashboard = ({ onClose }) => {
       .select('user_id, subscription_tier, subscription_status, nft_holder, kyc_verified, phone, address, city, country, company_name')
       .in('user_id', userIds);
 
-    // Also try auth.users for emails (fallback)
-    let authEmails = {};
+    // Also try auth.users for emails AND user metadata (first_name, last_name from registration)
+    let authUserData = {};
     try {
       const { data: authData } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
       (authData?.users || []).forEach(u => {
         if (userIds.includes(u.id)) {
-          authEmails[u.id] = u.email;
+          // Extract user metadata where first_name/last_name are stored during signup
+          const meta = u.user_metadata || {};
+          authUserData[u.id] = {
+            email: u.email,
+            first_name: meta.first_name || meta.firstName || null,
+            last_name: meta.last_name || meta.lastName || null
+          };
         }
       });
     } catch (e) { /* ignore auth errors */ }
@@ -315,16 +347,23 @@ const CRMDashboard = ({ onClose }) => {
       const userId = item[userIdField];
       const userData = userMap[userId] || {};
       const profileData = profileMap[userId] || {};
-      const authEmail = authEmails[userId];
+      const authMeta = authUserData[userId] || {};
+
+      // Priority: users table > auth metadata > fallback
+      const firstName = userData.first_name || authMeta.first_name || '';
+      const lastName = userData.last_name || authMeta.last_name || '';
+      const fullName = `${firstName} ${lastName}`.trim();
 
       return {
         ...item,
         users: {
           ...userData,
           ...profileData,
-          email: userData.email || authEmail || item.client_email || null,
-          name: userData.name || `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || profileData.company_name || null,
-          full_name: `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || userData.name || null,
+          email: userData.email || authMeta.email || item.client_email || null,
+          first_name: firstName || null,
+          last_name: lastName || null,
+          name: fullName || userData.name || profileData.company_name || null,
+          full_name: fullName || userData.name || null,
           phone: userData.phone || profileData.phone || null,
           address: userData.address || profileData.address || null,
           city: profileData.city || null,
@@ -373,7 +412,8 @@ const CRMDashboard = ({ onClose }) => {
   const fetchAllAiChats = useCallback(async () => {
     setRefreshing(true);
     try {
-      const { data, error } = await supabaseAdmin.from('ai_chat_sessions').select('*').order('created_at', { ascending: false }).limit(100);
+      // Fetch ALL AI chat sessions (no limit - admin needs to see all)
+      const { data, error } = await supabaseAdmin.from('ai_chat_sessions').select('*').order('created_at', { ascending: false });
       if (error) console.error('AI chats fetch error:', error);
       const enriched = await enrichWithUserData(data || []);
       setAllAiChats(enriched);
@@ -417,13 +457,75 @@ const CRMDashboard = ({ onClose }) => {
     finally { setRefreshing(false); }
   }, []);
 
-  // Fetch all AI chat requests (cart items sent by users)
+  // Fetch all AI chat requests (cart items sent by users) - from BOTH tables
   const fetchAllChatRequests = useCallback(async () => {
     setRefreshing(true);
     try {
-      const { data, error } = await supabaseAdmin.from('chat_requests').select('*').order('created_at', { ascending: false }).limit(200);
-      if (error) console.error('Chat requests fetch error:', error);
-      const enriched = await enrichWithUserData(data || []);
+      // Fetch from chat_requests (legacy) - NO LIMIT for admin
+      const { data: chatReqData, error: chatReqError } = await supabaseAdmin
+        .from('chat_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (chatReqError) console.error('Chat requests fetch error:', chatReqError);
+
+      // Fetch from user_requests where source is ai_chat (new submissions) - NO LIMIT for admin
+      const { data: userReqData, error: userReqError } = await supabaseAdmin
+        .from('user_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (userReqError) console.error('User requests fetch error:', userReqError);
+
+      // Filter user_requests to include AI chat submissions
+      // Check multiple indicators: source field, has conversation, or has cart items in data
+      const aiChatUserRequests = (userReqData || []).filter(r =>
+        r.data?.source === 'ai_chat' ||
+        r.data?.conversation?.length > 0 ||
+        r.data?.items?.length > 0 ||
+        r.data?.created_via === 'sphera_ai_assistant'
+      );
+
+      console.log('AI Chat User Requests found:', aiChatUserRequests.length, aiChatUserRequests.map(r => ({
+        id: r.id,
+        type: r.type,
+        hasConversation: r.data?.conversation?.length || 0,
+        hasItems: r.data?.items?.length || 0,
+        source: r.data?.source
+      })));
+
+      // Normalize data structure - map user_requests to match chat_requests format
+      const normalizedUserRequests = aiChatUserRequests.map(r => {
+        // Parse data if it's a string (shouldn't be, but just in case)
+        let data = r.data;
+        if (typeof data === 'string') {
+          try { data = JSON.parse(data); } catch (e) { data = {}; }
+        }
+
+        const convLen = data?.conversation?.length || 0;
+        const itemsLen = data?.items?.length || 0;
+        console.log(`📦 Request ${r.id?.slice(0,8)}: ${convLen} messages, ${itemsLen} items, keys: ${data ? Object.keys(data).join(',') : 'no data'}`);
+
+        return {
+          ...r,
+          data: data, // Keep parsed data
+          cart_items: data?.items || data?.cart_items || [],
+          cart_total: data?.total || data?.cart_total || 0,
+          conversation_history: data?.conversation || [],
+          query: data?.notes || data?.query || '',
+          service_type: r.type
+        };
+      });
+
+      // Combine both sources, remove duplicates by id
+      const combined = [...(chatReqData || []), ...normalizedUserRequests];
+      const uniqueById = combined.filter((item, index, self) =>
+        index === self.findIndex(t => t.id === item.id)
+      );
+
+      // Sort by date
+      uniqueById.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      // Enrich ALL requests - no limit for admin CRM
+      const enriched = await enrichWithUserData(uniqueById);
       setAllChatRequests(enriched);
     } catch (err) { console.error('Error fetching chat requests:', err); }
     finally { setRefreshing(false); }
@@ -707,8 +809,8 @@ const CRMDashboard = ({ onClose }) => {
     { id: 'dashboard', icon: Home, label: 'Dashboard', count: null },
     { id: 'customers', icon: Users, label: 'Customers', count: sidebarCounts.customers },
     { id: 'activity', icon: Activity, label: 'Customer Activity', count: (sidebarCounts.bookings || 0) + (sidebarCounts.requests || 0) + (sidebarCounts.chatRequests || 0) },
-    { id: 'ai-requests', icon: ShoppingCart, label: 'AI Chat Requests', count: sidebarCounts.chatRequests },
-    { id: 'ai-chats', icon: Sparkles, label: 'AI Conversations', count: sidebarCounts.aiChats },
+    { id: 'ai-chats', icon: Sparkles, label: 'AI Chats', count: sidebarCounts.aiChats },
+    { id: 'invoice-generator', icon: FileText, label: 'Invoice Generator', count: null },
     { id: 'support', icon: Ticket, label: 'Support', count: sidebarCounts.support },
     { id: 'transactions', icon: CreditCard, label: 'Transactions', count: sidebarCounts.transactions },
     { id: 'inventory', icon: Package, label: 'Inventory', count: (sidebarCounts.emptyLegsTable || 0) + (sidebarCounts.wines || 0) + (sidebarCounts.cigars || 0) },
@@ -792,7 +894,7 @@ const CRMDashboard = ({ onClose }) => {
         <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-30">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-semibold text-gray-900 capitalize">
-              {activeSection === 'ai-chats' ? 'AI Conversations' :
+              {activeSection === 'ai-chats' ? 'AI Chats' :
                activeSection === 'activity' ? 'Customer Activity' :
                activeSection === 'inventory' ? 'Inventory' :
                activeSection.replace('-', ' ')}
@@ -925,17 +1027,23 @@ const CRMDashboard = ({ onClose }) => {
               onRefreshChatRequests={fetchAllChatRequests}
               supabaseAdmin={supabaseAdmin}
               sidebarCounts={sidebarCounts}
+              currentAdminEmail={user?.email}
             />
           )}
 
-          {/* AI Chats Section */}
+          {/* AI Conversations Section - from ai_chat_sessions */}
           {activeSection === 'ai-chats' && (
-            <AiChatsSection chats={allAiChats} refreshing={refreshing} onRefresh={fetchAllAiChats} />
+            <AiChatsSection chats={allAiChats} requests={allChatRequests} refreshing={refreshing} onRefresh={() => { fetchAllAiChats(); fetchAllChatRequests(); }} supabaseAdmin={supabaseAdmin} currentAdminEmail={user?.email} />
+          )}
+
+          {/* Invoice Generator Section */}
+          {activeSection === 'invoice-generator' && (
+            <InvoiceGeneratorSection customers={customers} supabaseAdmin={supabaseAdmin} />
           )}
 
           {/* Support Section */}
           {activeSection === 'support' && (
-            <SupportSection tickets={allSupport} refreshing={refreshing} onRefresh={fetchAllSupport} supabaseAdmin={supabaseAdmin} />
+            <SupportSection tickets={allSupport} refreshing={refreshing} onRefresh={fetchAllSupport} supabaseAdmin={supabaseAdmin} currentAdminEmail={user?.email} />
           )}
 
           {/* Transactions Section */}
@@ -954,16 +1062,6 @@ const CRMDashboard = ({ onClose }) => {
               onRefreshWines={fetchAllWines}
               onRefreshCigars={fetchAllCigars}
               sidebarCounts={sidebarCounts}
-            />
-          )}
-
-          {/* AI Chat Requests Section - Cart items from AI Chat */}
-          {activeSection === 'ai-requests' && (
-            <AiChatRequestsSection
-              requests={allChatRequests}
-              refreshing={refreshing}
-              onRefresh={fetchAllChatRequests}
-              supabaseAdmin={supabaseAdmin}
             />
           )}
 
@@ -2593,44 +2691,183 @@ const ChatMessagesSection = ({ messages, refreshing, onRefresh }) => {
 };
 
 // ============================================
-// AI CHATS SECTION - WITH FULL CONVERSATIONS
+// AI CHATS SECTION - UNIFIED: CONVERSATIONS + LINKED REQUESTS
 // ============================================
-const AiChatsSection = ({ chats, refreshing, onRefresh }) => {
+const AiChatsSection = ({ chats, requests, refreshing, onRefresh, supabaseAdmin, currentAdminEmail }) => {
   const [expandedChat, setExpandedChat] = useState(null);
+  const [filter, setFilter] = useState('all'); // 'all', 'with_requests', 'no_requests'
+  const [markingViewed, setMarkingViewed] = useState(null);
+
+  // Mark chat as viewed by admin
+  const markAsViewed = async (chatId, currentMetadata) => {
+    if (!supabaseAdmin || !currentAdminEmail) return;
+    // Skip if already viewed
+    if (currentMetadata?._viewed_by) return;
+
+    try {
+      setMarkingViewed(chatId);
+      const updatedMetadata = {
+        ...(currentMetadata || {}),
+        _viewed_by: currentAdminEmail,
+        _viewed_at: new Date().toISOString()
+      };
+
+      await supabaseAdmin
+        .from('ai_chat_sessions')
+        .update({ metadata: updatedMetadata })
+        .eq('id', chatId);
+
+      onRefresh();
+    } catch (err) {
+      console.error('Error marking chat as viewed:', err);
+    } finally {
+      setMarkingViewed(null);
+    }
+  };
+
+  // Check if chat is new (unviewed)
+  const isNewChat = (c) => !c.metadata?._viewed_by;
+
+  // Find requests that match a conversation (same user, created after conversation)
+  const findLinkedRequests = (chat) => {
+    if (!requests || !chat.user_id) return [];
+    const chatTime = new Date(chat.created_at).getTime();
+    return requests.filter(r => {
+      const reqTime = new Date(r.created_at).getTime();
+      // Same user AND request was created within 24 hours after conversation started
+      return r.user_id === chat.user_id && reqTime >= chatTime && reqTime - chatTime < 24 * 60 * 60 * 1000;
+    });
+  };
+
+  // Pre-calculate which chats have requests for filtering (with original index for numbering)
+  const chatsWithRequestStatus = chats.map((c, idx) => ({
+    ...c,
+    hasRequests: findLinkedRequests(c).length > 0,
+    originalNumber: chats.length - idx
+  }));
+
+  // Filter chats based on selected filter
+  const filteredChats = chatsWithRequestStatus.filter(c => {
+    if (filter === 'with_requests') return c.hasRequests;
+    if (filter === 'no_requests') return !c.hasRequests;
+    return true; // 'all'
+  });
+
+  // Count for filter badges
+  const withRequestsCount = chatsWithRequestStatus.filter(c => c.hasRequests).length;
+  const noRequestsCount = chatsWithRequestStatus.filter(c => !c.hasRequests).length;
+
+  // Get service type info
+  const getServiceInfo = (type) => {
+    if (!type) return { label: 'Request', color: 'bg-gray-100 text-gray-700' };
+    const t = type.toLowerCase();
+    if (t.includes('jet') || t.includes('flight')) return { label: 'Private Jet', color: 'bg-blue-100 text-blue-700' };
+    if (t.includes('helicopter')) return { label: 'Helicopter', color: 'bg-orange-100 text-orange-700' };
+    if (t.includes('yacht')) return { label: 'Yacht', color: 'bg-cyan-100 text-cyan-700' };
+    if (t.includes('car') || t.includes('ground')) return { label: 'Luxury Car', color: 'bg-purple-100 text-purple-700' };
+    if (t.includes('empty')) return { label: 'Empty Leg', color: 'bg-green-100 text-green-700' };
+    if (t.includes('medevac')) return { label: 'MEDEVAC', color: 'bg-red-100 text-red-700' };
+    return { label: type.replace(/_/g, ' '), color: 'bg-gray-100 text-gray-700' };
+  };
 
   return (
     <>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-medium text-gray-900">AI Conversations ({chats.length})</h2>
+        <h2 className="text-lg font-medium text-gray-900">AI Conversations & Requests ({chats.length})</h2>
         <button onClick={onRefresh} disabled={refreshing} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
           <RefreshCcw size={16} className={`text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
+      {/* Filter Buttons */}
+      <div className="flex items-center gap-2 mb-4">
+        <button
+          onClick={() => setFilter('all')}
+          className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+            filter === 'all'
+              ? 'bg-indigo-600 text-white'
+              : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          All ({chats.length})
+        </button>
+        <button
+          onClick={() => setFilter('with_requests')}
+          className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+            filter === 'with_requests'
+              ? 'bg-green-600 text-white'
+              : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          With Requests ({withRequestsCount})
+        </button>
+        <button
+          onClick={() => setFilter('no_requests')}
+          className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+            filter === 'no_requests'
+              ? 'bg-gray-600 text-white'
+              : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          No Requests ({noRequestsCount})
+        </button>
+      </div>
+
       {refreshing ? (
         <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div>
-      ) : chats.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border"><Sparkles className="w-12 h-12 text-gray-300 mb-3" /><p className="text-gray-500">No AI conversations found</p></div>
+      ) : filteredChats.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border"><Sparkles className="w-12 h-12 text-gray-300 mb-3" /><p className="text-gray-500">{filter === 'all' ? 'No AI conversations found' : filter === 'with_requests' ? 'No conversations with requests' : 'All conversations have requests'}</p></div>
       ) : (
         <div className="space-y-3">
-          {chats.map((c, i) => {
+          {filteredChats.map((c, i) => {
             const isExpanded = expandedChat === c.id;
             const messages = c.messages || [];
             const messageCount = Array.isArray(messages) ? messages.length : 0;
+            const chatNumber = c.originalNumber;
+            const linkedRequests = findLinkedRequests(c);
+            const isNew = isNewChat(c);
+            const viewedBy = c.metadata?._viewed_by;
 
             return (
-              <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div key={i} className={`bg-white rounded-xl border overflow-hidden ${isNew ? 'border-blue-300 ring-1 ring-blue-200' : 'border-gray-200'}`}>
                 <div
                   className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-gray-50"
-                  onClick={() => setExpandedChat(isExpanded ? null : c.id)}
+                  onClick={() => {
+                    if (isNew) markAsViewed(c.id, c.metadata);
+                    setExpandedChat(isExpanded ? null : c.id);
+                  }}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                      <Sparkles size={18} className="text-indigo-600" />
+                    <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-sm relative">
+                      #{chatNumber}
+                      {isNew && (
+                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
+                      )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{c.title || 'AI Conversation'}</p>
-                      <p className="text-xs text-gray-500">{c.users?.email || c.user_id?.slice(0, 8)}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded font-mono">
+                          {c.id?.slice(0, 8).toUpperCase()}
+                        </span>
+                        {isNew && (
+                          <span className="px-1.5 py-0.5 bg-blue-500 text-white text-[10px] font-bold rounded">NEW</span>
+                        )}
+                        <p className="text-sm font-medium text-gray-900">{c.title || 'AI Conversation'}</p>
+                        {viewedBy && (
+                          <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full flex items-center gap-1">
+                            <Eye size={10} /> {viewedBy.split('@')[0]}
+                          </span>
+                        )}
+                        {linkedRequests.length > 0 && (
+                          <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded">
+                            {linkedRequests.length} REQUEST{linkedRequests.length > 1 ? 'S' : ''}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        <span className="font-medium text-gray-700">{c.users?.full_name || c.users?.name || c.users?.email?.split('@')[0] || 'Unknown'}</span>
+                        {' • '}{c.users?.email || c.user_id?.slice(0, 8)}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
@@ -2644,24 +2881,79 @@ const AiChatsSection = ({ chats, refreshing, onRefresh }) => {
 
                 {isExpanded && (
                   <div className="px-4 py-4 border-t border-gray-100 bg-gray-50">
-                    <p className="text-xs font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                      <MessageSquare size={14} /> FULL CONVERSATION
+                    {/* CONVERSATION */}
+                    <p className="text-xs font-semibold text-indigo-700 mb-3 flex items-center gap-2">
+                      <MessageSquare size={14} /> CONVERSATION ({messageCount} messages)
                     </p>
-                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                    <div className="space-y-2 max-h-64 overflow-y-auto mb-4 bg-white rounded-lg border p-3">
                       {Array.isArray(messages) && messages.length > 0 ? messages.map((msg, idx) => (
-                        <div key={idx} className={`p-3 rounded-lg ${msg.role === 'user' ? 'bg-blue-50 border border-blue-200' : 'bg-white border border-gray-200'}`}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className={`text-xs font-semibold ${msg.role === 'user' ? 'text-blue-700' : 'text-gray-700'}`}>
-                              {msg.role === 'user' ? 'USER' : 'AI ASSISTANT'}
-                            </span>
-                            {msg.timestamp && <span className="text-xs text-gray-400">{new Date(msg.timestamp).toLocaleString()}</span>}
-                          </div>
-                          <p className="text-sm text-gray-800 whitespace-pre-wrap">{msg.content || msg.text || msg.message || JSON.stringify(msg)}</p>
+                        <div key={idx} className={`p-2 rounded-lg text-sm ${msg.role === 'user' ? 'bg-blue-50 border-l-4 border-blue-400' : 'bg-gray-50 border-l-4 border-gray-300'}`}>
+                          <span className={`text-[10px] font-bold uppercase ${msg.role === 'user' ? 'text-blue-600' : 'text-gray-500'}`}>
+                            {msg.role === 'user' ? 'USER' : 'AI'}:
+                          </span>
+                          <span className="ml-2 text-gray-800">{(msg.content || msg.text || '').slice(0, 300)}{(msg.content || msg.text || '').length > 300 ? '...' : ''}</span>
                         </div>
                       )) : (
-                        <p className="text-sm text-gray-500 italic">No messages in this conversation</p>
+                        <p className="text-sm text-gray-500 italic">No messages</p>
                       )}
                     </div>
+
+                    {/* LINKED REQUESTS */}
+                    {linkedRequests.length > 0 && (
+                      <>
+                        <p className="text-xs font-semibold text-green-700 mb-3 flex items-center gap-2">
+                          <ShoppingCart size={14} /> SUBMITTED REQUESTS ({linkedRequests.length})
+                        </p>
+                        <div className="space-y-2">
+                          {linkedRequests.map((req, idx) => {
+                            const items = req.cart_items || req.data?.items || [];
+                            const serviceInfo = getServiceInfo(req.type || req.service_type);
+                            return (
+                              <div key={idx} className="bg-white rounded-lg border-2 border-green-200 p-3">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${serviceInfo.color}`}>
+                                      {serviceInfo.label}
+                                    </span>
+                                    <span className="text-xs text-gray-500">
+                                      {new Date(req.created_at).toLocaleString()}
+                                    </span>
+                                  </div>
+                                  <StatusBadge status={req.status} />
+                                </div>
+                                {items.length > 0 && (
+                                  <div className="space-y-1">
+                                    {items.slice(0, 3).map((item, iidx) => (
+                                      <div key={iidx} className="text-sm text-gray-700 flex justify-between">
+                                        <span>{item.name || item.title || item.type || 'Item'}</span>
+                                        <span className="font-medium">{item.total_price ? `$${item.total_price.toLocaleString()}` : '-'}</span>
+                                      </div>
+                                    ))}
+                                    {items.length > 3 && (
+                                      <p className="text-xs text-gray-400">+{items.length - 3} more items</p>
+                                    )}
+                                  </div>
+                                )}
+                                {req.cart_total || req.data?.total ? (
+                                  <div className="mt-2 pt-2 border-t flex justify-between">
+                                    <span className="text-sm font-medium">Total</span>
+                                    <span className="text-sm font-bold text-green-700">
+                                      ${(req.cart_total || req.data?.total || 0).toLocaleString()}
+                                    </span>
+                                  </div>
+                                ) : null}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+
+                    {linkedRequests.length === 0 && (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-700">
+                        No request submitted from this conversation yet
+                      </div>
+                    )}
 
                     {/* Reply Button */}
                     <div className="mt-4">
@@ -2686,9 +2978,40 @@ const AiChatsSection = ({ chats, refreshing, onRefresh }) => {
 // ============================================
 // SUPPORT SECTION - WITH FULL MESSAGE CONTENT & STATUS MANAGEMENT
 // ============================================
-const SupportSection = ({ tickets, refreshing, onRefresh, supabaseAdmin }) => {
+const SupportSection = ({ tickets, refreshing, onRefresh, supabaseAdmin, currentAdminEmail }) => {
   const [expandedTicket, setExpandedTicket] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(null);
+  const [markingViewed, setMarkingViewed] = useState(null);
+
+  // Mark ticket as viewed by admin
+  const markAsViewed = async (ticketId, ticketData) => {
+    if (!supabaseAdmin || !currentAdminEmail) return;
+    // Skip if already viewed
+    if (ticketData?._viewed_by) return;
+
+    try {
+      setMarkingViewed(ticketId);
+      const updatedData = {
+        ...(ticketData || {}),
+        _viewed_by: currentAdminEmail,
+        _viewed_at: new Date().toISOString()
+      };
+
+      await supabaseAdmin
+        .from('support_tickets')
+        .update({ ticket_data: updatedData })
+        .eq('id', ticketId);
+
+      onRefresh();
+    } catch (err) {
+      console.error('Error marking ticket as viewed:', err);
+    } finally {
+      setMarkingViewed(null);
+    }
+  };
+
+  // Check if ticket is new (unviewed)
+  const isNewTicket = (t) => !t.ticket_data?._viewed_by;
 
   const getPriorityColor = (priority) => {
     const colors = {
@@ -2764,19 +3087,37 @@ const SupportSection = ({ tickets, refreshing, onRefresh, supabaseAdmin }) => {
           {tickets.map((t, i) => {
             const isExpanded = expandedTicket === t.id;
             const clientName = getClientName(t);
+            const isNew = isNewTicket(t);
+            const viewedBy = t.ticket_data?._viewed_by;
 
             return (
-              <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div key={i} className={`bg-white rounded-xl border overflow-hidden ${isNew ? 'border-blue-300 ring-1 ring-blue-200' : 'border-gray-200'}`}>
                 <div
                   className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-gray-50"
-                  onClick={() => setExpandedTicket(isExpanded ? null : t.id)}
+                  onClick={() => {
+                    if (isNew) markAsViewed(t.id, t.ticket_data);
+                    setExpandedTicket(isExpanded ? null : t.id);
+                  }}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center relative">
                       <Ticket size={18} className="text-orange-600" />
+                      {isNew && (
+                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
+                      )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{t.subject || 'No Subject'}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-gray-900">{t.subject || 'No Subject'}</p>
+                        {isNew && (
+                          <span className="px-1.5 py-0.5 bg-blue-500 text-white text-[10px] font-bold rounded">NEW</span>
+                        )}
+                        {viewedBy && (
+                          <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full flex items-center gap-1">
+                            <Eye size={10} /> {viewedBy.split('@')[0]}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-500">
                         <span className="font-medium text-gray-700">{clientName}</span> • {t.users?.email || '-'} • {t.type || 'general'}
                       </p>
@@ -4129,10 +4470,77 @@ const UnifiedActivitySection = ({
   onRefreshRequests,
   onRefreshChatRequests,
   supabaseAdmin,
-  sidebarCounts
+  sidebarCounts,
+  currentAdminEmail
 }) => {
   const [activeTab, setActiveTab] = useState('all');
   const [expandedItem, setExpandedItem] = useState(null);
+  const [markingViewed, setMarkingViewed] = useState(null);
+
+  // Mark an entry as viewed by the current admin
+  const markAsViewed = async (item) => {
+    if (!supabaseAdmin || !currentAdminEmail) return;
+
+    // Determine table and data field based on source
+    let table, dataField, currentData;
+    if (item._source === 'booking') {
+      table = 'user_bookings';
+      dataField = 'booking_data';
+      currentData = item.booking_data || {};
+    } else if (item._source === 'request') {
+      table = 'user_requests';
+      dataField = 'data';
+      currentData = item.data || {};
+    } else if (item._source === 'cart') {
+      table = 'chat_requests';
+      dataField = 'data';
+      currentData = item.data || {};
+    } else {
+      return;
+    }
+
+    // Skip if already viewed
+    if (currentData._viewed_by) return;
+
+    try {
+      setMarkingViewed(item.id);
+      const updatedData = {
+        ...currentData,
+        _viewed_by: currentAdminEmail,
+        _viewed_at: new Date().toISOString()
+      };
+
+      await supabaseAdmin
+        .from(table)
+        .update({ [dataField]: updatedData })
+        .eq('id', item.id);
+
+      // Refresh the appropriate data
+      if (item._source === 'booking') onRefreshBookings();
+      else if (item._source === 'request') onRefreshRequests();
+      else if (item._source === 'cart') onRefreshChatRequests();
+    } catch (err) {
+      console.error('Error marking entry as viewed:', err);
+    } finally {
+      setMarkingViewed(null);
+    }
+  };
+
+  // Check if item is new (unviewed)
+  const isNewItem = (item) => {
+    if (item._source === 'booking') return !item.booking_data?._viewed_by;
+    if (item._source === 'request') return !item.data?._viewed_by;
+    if (item._source === 'cart') return !item.data?._viewed_by;
+    return false;
+  };
+
+  // Get who viewed the item
+  const getViewedBy = (item) => {
+    if (item._source === 'booking') return item.booking_data?._viewed_by;
+    if (item._source === 'request') return item.data?._viewed_by;
+    if (item._source === 'cart') return item.data?._viewed_by;
+    return null;
+  };
 
   // Refresh all data
   const handleRefreshAll = () => {
@@ -4309,20 +4717,36 @@ const UnifiedActivitySection = ({
             const statusBadge = getStatusBadge(item);
             const sourceBadge = getSourceBadge(item._source);
             const info = getDisplayInfo(item);
+            const isNew = isNewItem(item);
+            const viewedBy = getViewedBy(item);
 
             return (
-              <div key={item.id || idx} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div key={item.id || idx} className={`bg-white rounded-xl border overflow-hidden ${isNew ? 'border-blue-300 ring-1 ring-blue-200' : 'border-gray-200'}`}>
                 <div
                   className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-gray-50"
-                  onClick={() => setExpandedItem(isExpanded ? null : (item.id || idx))}
+                  onClick={() => {
+                    if (isNew) markAsViewed(item);
+                    setExpandedItem(isExpanded ? null : (item.id || idx));
+                  }}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-gradient-to-br from-gray-700 to-gray-900 rounded-lg flex items-center justify-center">
+                    <div className="w-10 h-10 bg-gradient-to-br from-gray-700 to-gray-900 rounded-lg flex items-center justify-center relative">
                       <Icon size={18} className="text-white" />
+                      {isNew && (
+                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
+                      )}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium text-gray-900">{info.title}</p>
+                        {isNew && (
+                          <span className="px-1.5 py-0.5 bg-blue-500 text-white text-[10px] font-bold rounded">NEW</span>
+                        )}
+                        {viewedBy && (
+                          <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full flex items-center gap-1">
+                            <Eye size={10} /> {viewedBy.split('@')[0]}
+                          </span>
+                        )}
                         {info.from !== '-' && info.to !== '-' && (
                           <span className="text-xs text-gray-500">{info.from} → {info.to}</span>
                         )}
@@ -4406,6 +4830,7 @@ const UnifiedInventorySection = ({
 }) => {
   const [activeTab, setActiveTab] = useState('empty-legs');
   const [searchTerm, setSearchTerm] = useState('');
+  const [expandedItem, setExpandedItem] = useState(null);
 
   // Refresh all data
   const handleRefreshAll = () => {
@@ -4505,40 +4930,227 @@ const UnifiedInventorySection = ({
           <Package className="w-12 h-12 text-gray-300 mb-3" />
           <p className="text-gray-500">No items found</p>
         </div>
+      ) : activeTab === 'empty-legs' ? (
+        // Empty Legs - Detailed List View
+        <div className="space-y-3">
+          {currentData.slice(0, 50).map((item, idx) => {
+            const isExpanded = expandedItem === (item.id || idx);
+            return (
+              <div key={item.id || idx} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                {/* Header Row - Always visible */}
+                <div
+                  className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-gray-50"
+                  onClick={() => setExpandedItem(isExpanded ? null : (item.id || idx))}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Plane size={18} className="text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-gray-900">
+                          {item.from_city || item.from || 'Origin'} → {item.to_city || item.to || 'Destination'}
+                        </p>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                          item.status === 'available' ? 'bg-green-100 text-green-700' :
+                          item.status === 'booked' ? 'bg-blue-100 text-blue-700' :
+                          item.status === 'expired' ? 'bg-red-100 text-red-700' :
+                          'bg-green-100 text-green-700'
+                        }`}>
+                          {item.status?.toUpperCase() || 'AVAILABLE'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {item.aircraft_type || item.aircraft || 'Aircraft'} • {item.category || 'Jet'}
+                        {item.operator && <span className="ml-2 text-blue-600 font-medium">• {item.operator}</span>}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-gray-900">
+                        ${Number(item.price_usd || item.price || 0).toLocaleString()}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {item.departure_date ? new Date(item.departure_date).toLocaleDateString() : '-'}
+                      </p>
+                    </div>
+                    <ChevronDown size={16} className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+
+                {/* Expanded Details */}
+                {isExpanded && (
+                  <div className="px-4 py-4 border-t border-gray-100 bg-gray-50">
+                    <div className="grid grid-cols-4 gap-4 mb-4">
+                      {/* Route Details */}
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-[10px] uppercase text-gray-500 font-medium mb-2">Route</p>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">From:</span>
+                            <span className="font-medium text-gray-900">{item.from_city || item.from || '-'}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">IATA:</span>
+                            <span className="font-medium text-gray-900">{item.from_iata || '-'}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Country:</span>
+                            <span className="font-medium text-gray-900">{item.from_country || '-'}</span>
+                          </div>
+                          <div className="border-t border-gray-100 my-2" />
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">To:</span>
+                            <span className="font-medium text-gray-900">{item.to_city || item.to || '-'}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">IATA:</span>
+                            <span className="font-medium text-gray-900">{item.to_iata || '-'}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Country:</span>
+                            <span className="font-medium text-gray-900">{item.to_country || '-'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Aircraft Details */}
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-[10px] uppercase text-gray-500 font-medium mb-2">Aircraft</p>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Type:</span>
+                            <span className="font-medium text-gray-900">{item.aircraft_type || '-'}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Model:</span>
+                            <span className="font-medium text-gray-900">{item.aircraft_model || item.aircraft || '-'}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Category:</span>
+                            <span className="font-medium text-gray-900">{item.category || item.aircraft_category || '-'}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Capacity:</span>
+                            <span className="font-medium text-gray-900">{item.capacity || item.pax || '-'} pax</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">YOM:</span>
+                            <span className="font-medium text-gray-900">{item.yom || item.year_of_manufacture || '-'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Schedule Details */}
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-[10px] uppercase text-gray-500 font-medium mb-2">Schedule</p>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Date:</span>
+                            <span className="font-medium text-gray-900">
+                              {item.departure_date ? new Date(item.departure_date).toLocaleDateString() : '-'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Departure:</span>
+                            <span className="font-medium text-gray-900">{item.departure_time || '-'}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Arrival:</span>
+                            <span className="font-medium text-gray-900">{item.arrival_time || '-'}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Flight Time:</span>
+                            <span className="font-medium text-gray-900">{item.flight_time || item.duration || '-'}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Valid Until:</span>
+                            <span className="font-medium text-gray-900">
+                              {item.valid_until ? new Date(item.valid_until).toLocaleDateString() : '-'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Pricing & Operator */}
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-[10px] uppercase text-gray-500 font-medium mb-2">Pricing & Operator</p>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Price USD:</span>
+                            <span className="font-bold text-green-600">${Number(item.price_usd || item.price || 0).toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Original Price:</span>
+                            <span className="font-medium text-gray-900">
+                              {item.currency || 'EUR'} {Number(item.price || item.price_eur || 0).toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="border-t border-gray-100 my-2" />
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Operator:</span>
+                            <span className="font-bold text-blue-600">{item.operator || '-'}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Source:</span>
+                            <span className="font-medium text-gray-900">{item.source || '-'}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">ID:</span>
+                            <span className="font-mono text-[10px] text-gray-500">{item.id?.slice(0, 8) || '-'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Additional Info Row */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-[10px] uppercase text-gray-500 font-medium mb-2">Regions</p>
+                        <div className="flex gap-4">
+                          <div className="text-xs">
+                            <span className="text-gray-500">From Continent: </span>
+                            <span className="font-medium">{item.from_continent || '-'}</span>
+                          </div>
+                          <div className="text-xs">
+                            <span className="text-gray-500">To Continent: </span>
+                            <span className="font-medium">{item.to_continent || '-'}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-[10px] uppercase text-gray-500 font-medium mb-2">Metadata</p>
+                        <div className="flex gap-4">
+                          <div className="text-xs">
+                            <span className="text-gray-500">Created: </span>
+                            <span className="font-medium">{item.created_at ? new Date(item.created_at).toLocaleDateString() : '-'}</span>
+                          </div>
+                          <div className="text-xs">
+                            <span className="text-gray-500">Updated: </span>
+                            <span className="font-medium">{item.updated_at ? new Date(item.updated_at).toLocaleDateString() : '-'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Notes if available */}
+                    {(item.notes || item.description || item.special_notes) && (
+                      <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <p className="text-xs text-amber-800">
+                          <strong>Notes:</strong> {item.notes || item.description || item.special_notes}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       ) : (
         <div className="grid grid-cols-3 gap-4">
           {currentData.slice(0, 30).map((item, idx) => {
-            // Empty Legs Card
-            if (activeTab === 'empty-legs') {
-              return (
-                <div key={item.id || idx} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-                  <div className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <Plane size={18} className="text-blue-600" />
-                      </div>
-                      <span className={`px-2 py-1 rounded-full text-[10px] font-medium ${
-                        item.status === 'available' ? 'bg-green-100 text-green-700' :
-                        item.status === 'booked' ? 'bg-blue-100 text-blue-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
-                        {item.status?.toUpperCase() || 'AVAILABLE'}
-                      </span>
-                    </div>
-                    <p className="text-sm font-medium text-gray-900 mb-1">
-                      {item.from_city || item.origin} → {item.to_city || item.destination}
-                    </p>
-                    <p className="text-xs text-gray-500 mb-2">{item.aircraft_type || 'Aircraft'}</p>
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>{item.departure_date ? new Date(item.departure_date).toLocaleDateString() : '-'}</span>
-                      <span className="font-semibold text-gray-900">
-                        ${Number(item.price_usd || item.price || 0).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            }
 
             // Wines Card
             if (activeTab === 'wines') {
@@ -4608,9 +5220,40 @@ const UnifiedInventorySection = ({
 // ============================================
 // AI CHAT REQUESTS SECTION - Cart items from AI Chat
 // ============================================
-const AiChatRequestsSection = ({ requests, refreshing, onRefresh, supabaseAdmin }) => {
+const AiChatRequestsSection = ({ requests, refreshing, onRefresh, supabaseAdmin, currentAdminEmail }) => {
   const [expandedRequest, setExpandedRequest] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(null);
+  const [markingViewed, setMarkingViewed] = useState(null);
+
+  // Mark request as viewed by admin
+  const markAsViewed = async (requestId, currentData) => {
+    if (!supabaseAdmin || !currentAdminEmail) return;
+    // Skip if already viewed
+    if (currentData?._viewed_by) return;
+
+    try {
+      setMarkingViewed(requestId);
+      const updatedData = {
+        ...(currentData || {}),
+        _viewed_by: currentAdminEmail,
+        _viewed_at: new Date().toISOString()
+      };
+
+      await supabaseAdmin
+        .from('chat_requests')
+        .update({ data: updatedData })
+        .eq('id', requestId);
+
+      onRefresh();
+    } catch (err) {
+      console.error('Error marking request as viewed:', err);
+    } finally {
+      setMarkingViewed(null);
+    }
+  };
+
+  // Check if request is new (unviewed)
+  const isNewRequest = (r) => !r.data?._viewed_by;
 
   const updateRequestStatus = async (requestId, newStatus) => {
     if (!supabaseAdmin) return;
@@ -4682,7 +5325,7 @@ const AiChatRequestsSection = ({ requests, refreshing, onRefresh, supabaseAdmin 
   return (
     <>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-medium text-gray-900">AI Chat Requests ({requests.length})</h2>
+        <h2 className="text-lg font-medium text-gray-900">AI Chats ({requests.length})</h2>
         <button onClick={onRefresh} disabled={refreshing} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
           <RefreshCcw size={16} className={`text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
         </button>
@@ -4700,6 +5343,7 @@ const AiChatRequestsSection = ({ requests, refreshing, onRefresh, supabaseAdmin 
           {requests.map((r, i) => {
             const isExpanded = expandedRequest === r.id;
             const cartItems = r.cart_items || [];
+            const requestNumber = requests.length - i; // Reverse numbering so newest is highest
 
             // Get service type - first from main field, then from cart items
             const mainServiceInfo = getServiceInfo(r.service_type);
@@ -4712,23 +5356,44 @@ const AiChatRequestsSection = ({ requests, refreshing, onRefresh, supabaseAdmin 
             const userName = getUserDisplayName(r.users);
             const userEmail = r.users?.email || '';
 
+            // View tracking
+            const isNew = isNewRequest(r);
+            const viewedBy = r.data?._viewed_by;
+
             return (
-              <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div key={i} className={`bg-white rounded-xl border overflow-hidden ${isNew ? 'border-blue-300 ring-1 ring-blue-200' : 'border-gray-200'}`}>
                 <div
                   className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-gray-50"
-                  onClick={() => setExpandedRequest(isExpanded ? null : r.id)}
+                  onClick={() => {
+                    if (isNew) markAsViewed(r.id, r.data);
+                    setExpandedRequest(isExpanded ? null : r.id);
+                  }}
                 >
                   <div className="flex items-center gap-4">
-                    {/* Service Type Icon */}
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${serviceColor.split(' ')[0]}`}>
-                      <ServiceIcon size={18} className={serviceColor.split(' ')[1]} />
+                    {/* Request Number Badge */}
+                    <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center text-white font-bold text-sm relative">
+                      #{requestNumber}
+                      {isNew && (
+                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
+                      )}
                     </div>
                     <div>
-                      {/* Service Type Label - Clear and prominent */}
+                      {/* Request ID + Service Type Label */}
                       <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded font-mono">
+                          {r.id?.slice(0, 8).toUpperCase()}
+                        </span>
+                        {isNew && (
+                          <span className="px-1.5 py-0.5 bg-blue-500 text-white text-[10px] font-bold rounded">NEW</span>
+                        )}
                         <span className={`px-2 py-0.5 rounded text-xs font-semibold ${serviceColor}`}>
                           {primaryServiceLabel}
                         </span>
+                        {viewedBy && (
+                          <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full flex items-center gap-1">
+                            <Eye size={10} /> {viewedBy.split('@')[0]}
+                          </span>
+                        )}
                         {cartServiceTypes.length > 1 && (
                           <span className="text-xs text-gray-400">+{cartServiceTypes.length - 1} more</span>
                         )}
@@ -4795,17 +5460,51 @@ const AiChatRequestsSection = ({ requests, refreshing, onRefresh, supabaseAdmin 
                       </div>
                     </div>
 
-                    {/* User's Query */}
-                    {r.query && (
-                      <div className="bg-white p-4 rounded-lg border-2 border-indigo-200 mb-4">
-                        <p className="text-xs font-semibold text-indigo-700 mb-2 flex items-center gap-2">
-                          <MessageSquare size={14} /> USER'S REQUEST
-                        </p>
-                        <div className="text-sm text-gray-800 whitespace-pre-wrap bg-indigo-50 p-3 rounded-lg">
-                          {r.query}
+                    {/* Conversation History - Full chat that led to this request */}
+                    {(() => {
+                      // Get conversation from multiple possible sources
+                      const conversation = r.conversation_history || r.data?.conversation || [];
+                      const hasConversation = conversation?.length > 0;
+                      const query = r.query || r.data?.notes;
+
+                      // Debug: log what we have
+                      console.log('📋 Request conversation check:', r.id?.slice(0,8), {
+                        'r.data exists': !!r.data,
+                        'r.data keys': r.data ? Object.keys(r.data) : 'no data',
+                        'r.conversation_history': r.conversation_history?.length || 0,
+                        'r.data.conversation': r.data?.conversation?.length || 0,
+                        'final conversation': conversation?.length || 0
+                      });
+
+                      if (!hasConversation && !query) return null;
+
+                      return (
+                        <div className="bg-white p-4 rounded-lg border-2 border-indigo-200 mb-4">
+                          <p className="text-xs font-semibold text-indigo-700 mb-3 flex items-center gap-2">
+                            <MessageSquare size={14} /> CONVERSATION HISTORY ({conversation?.length || 0} messages)
+                          </p>
+                          <div className="space-y-2 max-h-80 overflow-y-auto">
+                            {hasConversation ? (
+                              conversation.filter(msg => msg.role === 'user' || msg.role === 'assistant').map((msg, idx) => (
+                                <div key={idx} className={`p-3 rounded-lg ${msg.role === 'user' ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 border border-gray-200'}`}>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className={`text-[10px] font-bold uppercase ${msg.role === 'user' ? 'text-blue-700' : 'text-gray-600'}`}>
+                                      {msg.role === 'user' ? 'USER' : 'AI'}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-gray-800 whitespace-pre-wrap">{msg.content || msg.text || msg.message}</p>
+                                </div>
+                              ))
+                            ) : query ? (
+                              <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                                <span className="text-[10px] font-bold uppercase text-blue-700">USER REQUEST</span>
+                                <p className="text-sm text-gray-800 whitespace-pre-wrap mt-1">{query}</p>
+                              </div>
+                            ) : null}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* Cart Items - THE MAIN FEATURE */}
                     {cartItems.length > 0 && (
@@ -6017,7 +6716,7 @@ const SubscriptionsSection = ({ subscriptions, refreshing, onRefresh, supabaseAd
 };
 
 // ============================================
-// PVCX TOKENS SECTION - Only eltesto can send tokens
+// PVCX TOKENS SECTION - All admins can send tokens
 // ============================================
 const PVCXSection = ({ balances, transactions, refreshing, onRefresh, supabaseAdmin, currentAdminEmail, customers }) => {
   const [showSendModal, setShowSendModal] = useState(false);
@@ -6028,10 +6727,8 @@ const PVCXSection = ({ balances, transactions, refreshing, onRefresh, supabaseAd
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('balances');
 
-  // Check if current admin is eltesto (the only one who can send tokens)
-  const isEltesto = currentAdminEmail?.toLowerCase().includes('eltesto') ||
-                    currentAdminEmail?.toLowerCase() === 'eltesto@privatecharterx.com' ||
-                    currentAdminEmail?.toLowerCase() === 'admin@privatecharterx.com';
+  // All admins can send tokens (CRM is already admin-only)
+  const canSendTokens = true;
 
   const formatDate = (date) => {
     if (!date) return '-';
@@ -6147,7 +6844,7 @@ const PVCXSection = ({ balances, transactions, refreshing, onRefresh, supabaseAd
           <p className="text-xs text-gray-500">Track and distribute PVCX tokens to users</p>
         </div>
         <div className="flex items-center gap-3">
-          {isEltesto && (
+          {canSendTokens && (
             <button
               onClick={() => setShowSendModal(true)}
               className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 flex items-center gap-2"
@@ -6463,17 +7160,956 @@ const PVCXSection = ({ balances, transactions, refreshing, onRefresh, supabaseAd
         </div>
       )}
 
-      {/* Not Authorized Message */}
-      {!isEltesto && (
-        <div className="mt-4 p-4 bg-yellow-50 rounded-xl border border-yellow-200 flex items-center gap-3">
-          <AlertCircle size={20} className="text-yellow-600" />
-          <div>
-            <p className="text-sm font-medium text-yellow-800">View Only Access</p>
-            <p className="text-xs text-yellow-700">Only eltesto can send PVCX tokens. You can view balances and transactions.</p>
+    </>
+  );
+};
+
+// ============================================
+// INVOICE GENERATOR SECTION
+// Comprehensive invoice/quote creation tool
+// ============================================
+const InvoiceGeneratorSection = ({ customers, supabaseAdmin }) => {
+  const [documentType, setDocumentType] = useState('invoice'); // 'invoice' or 'quote'
+  const [customerMode, setCustomerMode] = useState('select'); // 'select' or 'manual'
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [manualCustomer, setManualCustomer] = useState({ name: '', email: '', phone: '', company: '', address: '' });
+  const [services, setServices] = useState([]);
+  const [notes, setNotes] = useState('');
+  const [validUntil, setValidUntil] = useState('');
+  const [paymentTerms, setPaymentTerms] = useState('Due upon receipt');
+  const [discount, setDiscount] = useState({ type: 'fixed', value: 0 });
+  const [taxRate, setTaxRate] = useState(0);
+  const [generating, setGenerating] = useState(false);
+  const [invoiceNumber, setInvoiceNumber] = useState('');
+
+  // Service type configurations
+  const SERVICE_TYPES = [
+    { id: 'private_jet', label: 'Private Jet Charter', icon: Plane, color: 'bg-blue-100 text-blue-700' },
+    { id: 'empty_leg', label: 'Empty Leg Flight', icon: Plane, color: 'bg-green-100 text-green-700' },
+    { id: 'helicopter', label: 'Helicopter Charter', icon: Zap, color: 'bg-orange-100 text-orange-700' },
+    { id: 'ground_transport', label: 'Ground Transport', icon: Car, color: 'bg-purple-100 text-purple-700' },
+    { id: 'yacht', label: 'Yacht Charter', icon: Ship, color: 'bg-cyan-100 text-cyan-700' },
+    { id: 'travel_package', label: 'Travel Package (Multi-Leg)', icon: Globe, color: 'bg-indigo-100 text-indigo-700' },
+    { id: 'adventure', label: 'Adventure / Experience', icon: Star, color: 'bg-amber-100 text-amber-700' },
+    { id: 'concierge', label: 'Concierge Service', icon: Building2, color: 'bg-pink-100 text-pink-700' },
+    { id: 'wine', label: 'Wine & Spirits', icon: Wine, color: 'bg-rose-100 text-rose-700' },
+    { id: 'custom', label: 'Custom Service', icon: FileText, color: 'bg-gray-100 text-gray-700' }
+  ];
+
+  // Initialize
+  useEffect(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 14);
+    setValidUntil(date.toISOString().split('T')[0]);
+    setInvoiceNumber(`INV-${Date.now().toString(36).toUpperCase()}`);
+  }, []);
+
+  // Filter customers for search
+  const filteredCustomers = customerSearch.length > 1
+    ? (customers || []).filter(c =>
+        c.email?.toLowerCase().includes(customerSearch.toLowerCase()) ||
+        c.name?.toLowerCase().includes(customerSearch.toLowerCase()) ||
+        c.first_name?.toLowerCase().includes(customerSearch.toLowerCase()) ||
+        c.last_name?.toLowerCase().includes(customerSearch.toLowerCase())
+      ).slice(0, 10)
+    : [];
+
+  // Add service
+  const addService = (typeId = 'private_jet') => {
+    const serviceType = SERVICE_TYPES.find(s => s.id === typeId) || SERVICE_TYPES[0];
+    const newService = {
+      id: Date.now(),
+      type: serviceType.id,
+      description: '',
+      // Route info
+      legs: [{ from: '', to: '', date: '', time: '', aircraft: '', operator: '' }], // For multi-leg support
+      // Details
+      passengers: '',
+      aircraftModel: '',
+      operator: '',
+      duration: '',
+      // Pricing
+      quantity: 1,
+      unitPrice: 0,
+      // Extra details
+      details: ''
+    };
+    setServices(prev => [...prev, newService]);
+  };
+
+  // Update service
+  const updateService = (id, field, value) => {
+    setServices(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
+  };
+
+  // Update leg in service
+  const updateLeg = (serviceId, legIndex, field, value) => {
+    setServices(prev => prev.map(s => {
+      if (s.id === serviceId) {
+        const newLegs = [...s.legs];
+        newLegs[legIndex] = { ...newLegs[legIndex], [field]: value };
+        return { ...s, legs: newLegs };
+      }
+      return s;
+    }));
+  };
+
+  // Add leg to service
+  const addLeg = (serviceId) => {
+    setServices(prev => prev.map(s => {
+      if (s.id === serviceId) {
+        return { ...s, legs: [...s.legs, { from: '', to: '', date: '', time: '', aircraft: '', operator: '' }] };
+      }
+      return s;
+    }));
+  };
+
+  // Remove leg from service
+  const removeLeg = (serviceId, legIndex) => {
+    setServices(prev => prev.map(s => {
+      if (s.id === serviceId && s.legs.length > 1) {
+        const newLegs = s.legs.filter((_, i) => i !== legIndex);
+        return { ...s, legs: newLegs };
+      }
+      return s;
+    }));
+  };
+
+  // Remove service
+  const removeService = (id) => {
+    setServices(prev => prev.filter(s => s.id !== id));
+  };
+
+  // Calculate totals
+  const subtotal = services.reduce((sum, s) => sum + (s.quantity * s.unitPrice), 0);
+  const discountAmount = discount.type === 'percent' ? (subtotal * discount.value / 100) : discount.value;
+  const afterDiscount = Math.max(0, subtotal - discountAmount);
+  const taxAmount = afterDiscount * (taxRate / 100);
+  const total = afterDiscount + taxAmount;
+
+  // Get customer info
+  const getCustomerInfo = () => {
+    if (customerMode === 'select' && selectedCustomer) {
+      return {
+        name: selectedCustomer.name || `${selectedCustomer.first_name || ''} ${selectedCustomer.last_name || ''}`.trim() || 'Client',
+        email: selectedCustomer.email || '',
+        phone: selectedCustomer.phone || selectedCustomer.profile?.phone || '',
+        company: selectedCustomer.profile?.company_name || '',
+        address: selectedCustomer.profile?.address || ''
+      };
+    }
+    return manualCustomer;
+  };
+
+  // Generate PDF
+  const handleGeneratePDF = async () => {
+    const customerInfo = getCustomerInfo();
+    if (!customerInfo.name && !customerInfo.email) {
+      alert('Please select or enter customer information');
+      return;
+    }
+    if (services.length === 0) {
+      alert('Please add at least one service');
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      // Build invoice data
+      const invoiceData = {
+        type: documentType,
+        number: invoiceNumber,
+        date: new Date().toISOString(),
+        validUntil: documentType === 'quote' ? validUntil : null,
+        paymentTerms: documentType === 'invoice' ? paymentTerms : null,
+        client: customerInfo,
+        services: services.map(s => {
+          const sType = SERVICE_TYPES.find(t => t.id === s.type);
+          return {
+            type: s.type,
+            typeLabel: sType?.label || s.type,
+            description: s.description || sType?.label || 'Service',
+            legs: s.legs,
+            passengers: s.passengers,
+            aircraftModel: s.aircraftModel,
+            operator: s.operator,
+            duration: s.duration,
+            details: s.details,
+            quantity: s.quantity,
+            unitPrice: s.unitPrice,
+            total: s.quantity * s.unitPrice
+          };
+        }),
+        subtotal,
+        discount: discountAmount > 0 ? { type: discount.type, value: discount.value, amount: discountAmount } : null,
+        tax: taxRate > 0 ? { rate: taxRate, amount: taxAmount } : null,
+        total,
+        notes,
+        currency: 'USD'
+      };
+
+      // Generate HTML for PDF
+      const html = generateInvoiceHTML(invoiceData);
+
+      // Download as PDF using html2pdf
+      const filename = `PrivateCharterX_${invoiceData.number}.pdf`;
+
+      // Use the existing PDF generator from pdfHtmlGenerator
+      const { downloadHTMLAsPDF } = await import('../../services/pdfHtmlGenerator');
+      await downloadHTMLAsPDF(html, filename);
+
+      alert('Invoice generated successfully!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // Generate Invoice HTML
+  const generateInvoiceHTML = (data) => {
+    const servicesHTML = data.services.map(s => {
+      let legsHTML = '';
+      if (s.legs && s.legs.length > 0) {
+        legsHTML = s.legs.map((leg, i) => `
+          <div style="font-size: 11px; color: #666; margin-left: 10px; padding: 4px 0; border-left: 2px solid #e5e7eb; padding-left: 8px;">
+            ${s.legs.length > 1 ? `<strong>Leg ${i + 1}:</strong> ` : ''}
+            ${leg.from || '-'} → ${leg.to || '-'}
+            ${leg.date ? ` • ${leg.date}` : ''}
+            ${leg.time ? ` at ${leg.time}` : ''}
+            ${leg.aircraft ? ` • ${leg.aircraft}` : ''}
+            ${leg.operator ? ` • Op: ${leg.operator}` : ''}
+          </div>
+        `).join('');
+      }
+
+      return `
+        <tr>
+          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">
+            <strong style="color: #111827;">${s.description || s.typeLabel}</strong>
+            ${legsHTML}
+            ${s.passengers ? `<div style="font-size: 11px; color: #666;">Passengers: ${s.passengers}</div>` : ''}
+            ${s.aircraftModel ? `<div style="font-size: 11px; color: #666;">Aircraft: ${s.aircraftModel}</div>` : ''}
+            ${s.operator ? `<div style="font-size: 11px; color: #666;">Operator: ${s.operator}</div>` : ''}
+            ${s.duration ? `<div style="font-size: 11px; color: #666;">Duration: ${s.duration}</div>` : ''}
+            ${s.details ? `<div style="font-size: 11px; color: #888; margin-top: 4px;">${s.details}</div>` : ''}
+          </td>
+          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${s.quantity}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${Number(s.unitPrice).toLocaleString()}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">$${Number(s.total).toLocaleString()}</td>
+        </tr>
+      `;
+    }).join('');
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #333; line-height: 1.5; }
+          .container { max-width: 800px; margin: 0 auto; padding: 40px; }
+          .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 2px solid #111; }
+          .logo { font-size: 24px; font-weight: 700; color: #111; }
+          .logo span { color: #666; font-weight: 400; }
+          .doc-info { text-align: right; }
+          .doc-type { font-size: 28px; font-weight: 700; color: #111; text-transform: uppercase; }
+          .doc-number { font-size: 14px; color: #666; margin-top: 4px; }
+          .parties { display: flex; justify-content: space-between; margin-bottom: 30px; }
+          .party { flex: 1; }
+          .party-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 8px; }
+          .party-name { font-size: 16px; font-weight: 600; color: #111; }
+          .party-detail { font-size: 12px; color: #666; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+          th { background: #f9fafb; padding: 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #666; border-bottom: 2px solid #e5e7eb; }
+          .totals { margin-left: auto; width: 280px; }
+          .total-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
+          .total-row.final { font-size: 18px; font-weight: 700; border-top: 2px solid #111; padding-top: 12px; margin-top: 8px; }
+          .notes { background: #f9fafb; padding: 16px; border-radius: 8px; margin-top: 30px; }
+          .notes-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 8px; }
+          .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 11px; color: #999; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div>
+              <div class="logo">PrivateCharterX<span> Aviation</span></div>
+              <div style="font-size: 12px; color: #666; margin-top: 8px;">
+                Luxury Aviation Services<br>
+                hello@privatecharterx.com<br>
+                +1 (888) PCX-JETS
+              </div>
+            </div>
+            <div class="doc-info">
+              <div class="doc-type">${data.type}</div>
+              <div class="doc-number">#${data.number}</div>
+              <div style="font-size: 12px; color: #666; margin-top: 8px;">
+                Date: ${new Date(data.date).toLocaleDateString()}<br>
+                ${data.validUntil ? `Valid Until: ${new Date(data.validUntil).toLocaleDateString()}` : ''}
+                ${data.paymentTerms ? `Payment: ${data.paymentTerms}` : ''}
+              </div>
+            </div>
+          </div>
+
+          <div class="parties">
+            <div class="party">
+              <div class="party-label">Bill To</div>
+              <div class="party-name">${data.client.name || 'Client'}</div>
+              ${data.client.company ? `<div class="party-detail">${data.client.company}</div>` : ''}
+              <div class="party-detail">${data.client.email || ''}</div>
+              ${data.client.phone ? `<div class="party-detail">${data.client.phone}</div>` : ''}
+              ${data.client.address ? `<div class="party-detail">${data.client.address}</div>` : ''}
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 50%;">Service Description</th>
+                <th style="width: 10%; text-align: center;">Qty</th>
+                <th style="width: 20%; text-align: right;">Unit Price</th>
+                <th style="width: 20%; text-align: right;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${servicesHTML}
+            </tbody>
+          </table>
+
+          <div class="totals">
+            <div class="total-row">
+              <span>Subtotal</span>
+              <span>$${data.subtotal.toLocaleString()}</span>
+            </div>
+            ${data.discount ? `
+              <div class="total-row" style="color: #dc2626;">
+                <span>Discount ${data.discount.type === 'percent' ? `(${data.discount.value}%)` : ''}</span>
+                <span>-$${data.discount.amount.toLocaleString()}</span>
+              </div>
+            ` : ''}
+            ${data.tax ? `
+              <div class="total-row">
+                <span>Tax (${data.tax.rate}%)</span>
+                <span>$${data.tax.amount.toLocaleString()}</span>
+              </div>
+            ` : ''}
+            <div class="total-row final">
+              <span>Total ${data.currency}</span>
+              <span>$${data.total.toLocaleString()}</span>
+            </div>
+          </div>
+
+          ${data.notes ? `
+            <div class="notes">
+              <div class="notes-label">Notes & Terms</div>
+              <div style="font-size: 12px; color: #666; white-space: pre-wrap;">${data.notes}</div>
+            </div>
+          ` : ''}
+
+          <div class="footer">
+            <p>Thank you for choosing PrivateCharterX</p>
+            <p style="margin-top: 4px;">This ${data.type} was generated on ${new Date().toLocaleDateString()}</p>
           </div>
         </div>
-      )}
-    </>
+      </body>
+      </html>
+    `;
+  };
+
+  const getServiceIcon = (typeId) => {
+    const service = SERVICE_TYPES.find(s => s.id === typeId);
+    const Icon = service?.icon || FileText;
+    return Icon;
+  };
+
+  const getServiceColor = (typeId) => {
+    const service = SERVICE_TYPES.find(s => s.id === typeId);
+    return service?.color || 'bg-gray-100 text-gray-700';
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">Invoice Generator</h2>
+          <p className="text-sm text-gray-500">Create professional invoices and quotes</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={invoiceNumber}
+            onChange={(e) => setInvoiceNumber(e.target.value)}
+            className="px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono"
+            placeholder="Invoice #"
+          />
+        </div>
+      </div>
+
+      {/* Document Type Toggle */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setDocumentType('invoice')}
+          className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all ${
+            documentType === 'invoice'
+              ? 'bg-gray-900 text-white shadow-lg'
+              : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+          }`}
+        >
+          <FileText size={16} className="inline mr-2" />
+          Invoice (Final Bill)
+        </button>
+        <button
+          onClick={() => setDocumentType('quote')}
+          className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all ${
+            documentType === 'quote'
+              ? 'bg-gray-900 text-white shadow-lg'
+              : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+          }`}
+        >
+          <FileCheck size={16} className="inline mr-2" />
+          Quote (Proposal)
+        </button>
+      </div>
+
+      {/* Customer Section */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+            <User size={16} />
+            Customer Information
+          </h3>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCustomerMode('select')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg ${
+                customerMode === 'select' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'
+              }`}
+            >
+              Select Existing
+            </button>
+            <button
+              onClick={() => setCustomerMode('manual')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg ${
+                customerMode === 'manual' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'
+              }`}
+            >
+              Manual Entry
+            </button>
+          </div>
+        </div>
+
+        {customerMode === 'select' ? (
+          <div className="space-y-3">
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={customerSearch}
+                onChange={(e) => { setCustomerSearch(e.target.value); setSelectedCustomer(null); }}
+                placeholder="Search customers by name or email..."
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gray-900"
+              />
+            </div>
+            {filteredCustomers.length > 0 && !selectedCustomer && (
+              <div className="border border-gray-200 rounded-lg divide-y divide-gray-100 max-h-48 overflow-y-auto">
+                {filteredCustomers.map(c => {
+                  const customerPhone = c.phone || c.profile?.phone || null;
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => { setSelectedCustomer(c); setCustomerSearch(''); }}
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3"
+                    >
+                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-xs font-medium">
+                        {(c.email?.[0] || '?').toUpperCase()}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">
+                          {c.name || `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.email?.split('@')[0]}
+                        </p>
+                        <p className="text-xs text-gray-500">{c.email}</p>
+                      </div>
+                      {customerPhone && (
+                        <span className="text-xs text-gray-400 flex items-center gap-1">
+                          <Phone size={12} />
+                          {customerPhone}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {selectedCustomer && (() => {
+              const displayPhone = selectedCustomer.phone || selectedCustomer.profile?.phone || null;
+              return (
+                <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gray-900 text-white rounded-full flex items-center justify-center font-medium">
+                      {(selectedCustomer.email?.[0] || '?').toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {selectedCustomer.name || `${selectedCustomer.first_name || ''} ${selectedCustomer.last_name || ''}`.trim() || 'Client'}
+                      </p>
+                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                        <Mail size={12} /> {selectedCustomer.email}
+                      </p>
+                      {displayPhone && (
+                        <p className="text-xs text-gray-500 flex items-center gap-1">
+                          <Phone size={12} /> {displayPhone}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <button onClick={() => setSelectedCustomer(null)} className="p-1 hover:bg-gray-200 rounded">
+                    <X size={16} className="text-gray-400" />
+                  </button>
+                </div>
+              );
+            })()}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Full Name *</label>
+              <input
+                type="text"
+                value={manualCustomer.name}
+                onChange={(e) => setManualCustomer(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="John Doe"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Email *</label>
+              <input
+                type="email"
+                value={manualCustomer.email}
+                onChange={(e) => setManualCustomer(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="john@example.com"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Phone</label>
+              <input
+                type="text"
+                value={manualCustomer.phone}
+                onChange={(e) => setManualCustomer(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="+1 234 567 8900"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Company</label>
+              <input
+                type="text"
+                value={manualCustomer.company}
+                onChange={(e) => setManualCustomer(prev => ({ ...prev, company: e.target.value }))}
+                placeholder="Company Name"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-gray-500 mb-1">Address</label>
+              <input
+                type="text"
+                value={manualCustomer.address}
+                onChange={(e) => setManualCustomer(prev => ({ ...prev, address: e.target.value }))}
+                placeholder="123 Main St, City, Country"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Services Section */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+            <ShoppingCart size={16} />
+            Services
+          </h3>
+          <div className="flex items-center gap-2">
+            <select
+              onChange={(e) => { if (e.target.value) addService(e.target.value); e.target.value = ''; }}
+              className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
+              defaultValue=""
+            >
+              <option value="" disabled>+ Add Service</option>
+              {SERVICE_TYPES.map(t => (
+                <option key={t.id} value={t.id}>{t.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {services.length === 0 ? (
+          <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+            <Package size={32} className="mx-auto text-gray-300 mb-3" />
+            <p className="text-sm text-gray-500 mb-2">No services added yet</p>
+            <p className="text-xs text-gray-400">Select a service type from the dropdown above</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {services.map((service, sIndex) => {
+              const ServiceIcon = getServiceIcon(service.type);
+              const serviceColor = getServiceColor(service.type);
+              const isMultiLeg = service.type === 'travel_package';
+
+              return (
+                <div key={service.id} className="border border-gray-200 rounded-xl overflow-hidden">
+                  {/* Service Header */}
+                  <div className="bg-gray-50 px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${serviceColor}`}>
+                        <ServiceIcon size={16} />
+                      </div>
+                      <select
+                        value={service.type}
+                        onChange={(e) => updateService(service.id, 'type', e.target.value)}
+                        className="text-sm font-medium bg-transparent border-none focus:ring-0 cursor-pointer"
+                      >
+                        {SERVICE_TYPES.map(t => (
+                          <option key={t.id} value={t.id}>{t.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      onClick={() => removeService(service.id)}
+                      className="p-1.5 hover:bg-red-100 text-gray-400 hover:text-red-500 rounded-lg"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  {/* Service Details */}
+                  <div className="p-4 space-y-4">
+                    <input
+                      type="text"
+                      value={service.description}
+                      onChange={(e) => updateService(service.id, 'description', e.target.value)}
+                      placeholder="Service description (e.g., London to Paris Private Jet Charter)"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                    />
+
+                    {/* Legs Section */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-gray-500">
+                          {isMultiLeg ? 'Itinerary Legs' : 'Route Details'}
+                        </span>
+                        {isMultiLeg && (
+                          <button
+                            onClick={() => addLeg(service.id)}
+                            className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                          >
+                            + Add Leg
+                          </button>
+                        )}
+                      </div>
+                      {service.legs.map((leg, legIndex) => (
+                        <div key={legIndex} className="bg-gray-50 rounded-lg p-3 space-y-2">
+                          {isMultiLeg && service.legs.length > 1 && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-medium text-gray-700">Leg {legIndex + 1}</span>
+                              <button
+                                onClick={() => removeLeg(service.id, legIndex)}
+                                className="text-xs text-red-500 hover:text-red-600"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          )}
+                          <div className="grid grid-cols-4 gap-2">
+                            <div className="relative">
+                              <MapPin size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
+                              <input
+                                type="text"
+                                value={leg.from}
+                                onChange={(e) => updateLeg(service.id, legIndex, 'from', e.target.value)}
+                                placeholder="From"
+                                className="w-full pl-7 pr-2 py-1.5 border border-gray-200 rounded text-xs"
+                              />
+                            </div>
+                            <div className="relative">
+                              <MapPin size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
+                              <input
+                                type="text"
+                                value={leg.to}
+                                onChange={(e) => updateLeg(service.id, legIndex, 'to', e.target.value)}
+                                placeholder="To"
+                                className="w-full pl-7 pr-2 py-1.5 border border-gray-200 rounded text-xs"
+                              />
+                            </div>
+                            <input
+                              type="date"
+                              value={leg.date}
+                              onChange={(e) => updateLeg(service.id, legIndex, 'date', e.target.value)}
+                              className="px-2 py-1.5 border border-gray-200 rounded text-xs"
+                            />
+                            <input
+                              type="text"
+                              value={leg.time}
+                              onChange={(e) => updateLeg(service.id, legIndex, 'time', e.target.value)}
+                              placeholder="Time"
+                              className="px-2 py-1.5 border border-gray-200 rounded text-xs"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              type="text"
+                              value={leg.aircraft}
+                              onChange={(e) => updateLeg(service.id, legIndex, 'aircraft', e.target.value)}
+                              placeholder="Aircraft/Vehicle"
+                              className="px-2 py-1.5 border border-gray-200 rounded text-xs"
+                            />
+                            <input
+                              type="text"
+                              value={leg.operator}
+                              onChange={(e) => updateLeg(service.id, legIndex, 'operator', e.target.value)}
+                              placeholder="Operator"
+                              className="px-2 py-1.5 border border-gray-200 rounded text-xs"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Additional Details */}
+                    <div className="grid grid-cols-4 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Passengers</label>
+                        <input
+                          type="text"
+                          value={service.passengers}
+                          onChange={(e) => updateService(service.id, 'passengers', e.target.value)}
+                          placeholder="4"
+                          className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Aircraft Model</label>
+                        <input
+                          type="text"
+                          value={service.aircraftModel}
+                          onChange={(e) => updateService(service.id, 'aircraftModel', e.target.value)}
+                          placeholder="Citation XLS"
+                          className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Operator</label>
+                        <input
+                          type="text"
+                          value={service.operator}
+                          onChange={(e) => updateService(service.id, 'operator', e.target.value)}
+                          placeholder="NetJets"
+                          className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Duration</label>
+                        <input
+                          type="text"
+                          value={service.duration}
+                          onChange={(e) => updateService(service.id, 'duration', e.target.value)}
+                          placeholder="2h 30m"
+                          className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <textarea
+                      value={service.details}
+                      onChange={(e) => updateService(service.id, 'details', e.target.value)}
+                      placeholder="Additional details, amenities, special requests..."
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none"
+                    />
+
+                    {/* Pricing */}
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-gray-500">Qty:</label>
+                          <input
+                            type="number"
+                            value={service.quantity}
+                            onChange={(e) => updateService(service.id, 'quantity', parseInt(e.target.value) || 1)}
+                            min="1"
+                            className="w-16 px-2 py-1.5 border border-gray-200 rounded text-sm text-center"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-gray-500">× Price:</label>
+                          <div className="relative">
+                            <DollarSign size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input
+                              type="number"
+                              value={service.unitPrice}
+                              onChange={(e) => updateService(service.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                              min="0"
+                              step="0.01"
+                              className="w-32 pl-7 pr-2 py-1.5 border border-gray-200 rounded text-sm"
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-lg font-bold text-gray-900">
+                          ${(service.quantity * service.unitPrice).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Totals & Options */}
+      <div className="grid grid-cols-2 gap-6">
+        {/* Options */}
+        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <h3 className="text-sm font-semibold text-gray-900">Options</h3>
+
+          {/* Discount */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-600">Discount</span>
+            <div className="flex items-center gap-2">
+              <select
+                value={discount.type}
+                onChange={(e) => setDiscount(prev => ({ ...prev, type: e.target.value }))}
+                className="px-2 py-1.5 border border-gray-200 rounded text-sm"
+              >
+                <option value="fixed">$ Fixed</option>
+                <option value="percent">% Percent</option>
+              </select>
+              <input
+                type="number"
+                value={discount.value}
+                onChange={(e) => setDiscount(prev => ({ ...prev, value: parseFloat(e.target.value) || 0 }))}
+                min="0"
+                className="w-20 px-2 py-1.5 border border-gray-200 rounded text-sm text-right"
+              />
+            </div>
+          </div>
+
+          {/* Tax */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-600">Tax Rate (%)</span>
+            <input
+              type="number"
+              value={taxRate}
+              onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
+              min="0"
+              max="100"
+              step="0.1"
+              className="w-20 px-2 py-1.5 border border-gray-200 rounded text-sm text-right"
+            />
+          </div>
+
+          {/* Valid Until / Payment Terms */}
+          {documentType === 'quote' ? (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Valid Until</span>
+              <input
+                type="date"
+                value={validUntil}
+                onChange={(e) => setValidUntil(e.target.value)}
+                className="px-2 py-1.5 border border-gray-200 rounded text-sm"
+              />
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Payment Terms</span>
+              <select
+                value={paymentTerms}
+                onChange={(e) => setPaymentTerms(e.target.value)}
+                className="px-2 py-1.5 border border-gray-200 rounded text-sm"
+              >
+                <option value="Due upon receipt">Due upon receipt</option>
+                <option value="Net 7">Net 7 days</option>
+                <option value="Net 15">Net 15 days</option>
+                <option value="Net 30">Net 30 days</option>
+                <option value="50% upfront">50% upfront</option>
+              </select>
+            </div>
+          )}
+
+          {/* Notes */}
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">Notes & Terms</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Payment instructions, terms and conditions..."
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none"
+            />
+          </div>
+        </div>
+
+        {/* Summary */}
+        <div className="bg-gray-900 rounded-xl p-5 text-white">
+          <h3 className="text-sm font-semibold mb-4">Summary</h3>
+
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Subtotal</span>
+              <span>${subtotal.toLocaleString()}</span>
+            </div>
+            {discountAmount > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">
+                  Discount {discount.type === 'percent' ? `(${discount.value}%)` : ''}
+                </span>
+                <span className="text-red-400">-${discountAmount.toLocaleString()}</span>
+              </div>
+            )}
+            {taxRate > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Tax ({taxRate}%)</span>
+                <span>${taxAmount.toLocaleString()}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-xl font-bold pt-3 border-t border-gray-700">
+              <span>Total</span>
+              <span>${total.toLocaleString()} USD</span>
+            </div>
+          </div>
+
+          <button
+            onClick={handleGeneratePDF}
+            disabled={generating || services.length === 0}
+            className="w-full mt-6 py-3 bg-white text-gray-900 rounded-xl font-semibold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+          >
+            {generating ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <FileText size={18} />
+                Generate {documentType === 'invoice' ? 'Invoice' : 'Quote'} PDF
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 

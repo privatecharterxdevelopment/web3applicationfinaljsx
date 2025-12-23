@@ -32,7 +32,7 @@ export const useMessageHandler = ({
   multiLegChatMode,
   setPendingLegData,
   cartItems,
-  setCart
+  setCartItems
 }) => {
   // Refs
   const toolResultsRef = useRef([]);
@@ -284,8 +284,8 @@ export const useMessageHandler = ({
 
   // Handle addHotelToCart tool result
   const handleAddHotelToCartTool = useCallback((toolResult, workingChatId) => {
-    if (toolResult.cartItem && setCart) {
-      setCart(prev => [...prev, toolResult.cartItem]);
+    if (toolResult.cartItem && setCartItems) {
+      setCartItems(prev => [...prev, toolResult.cartItem]);
     }
 
     const confirmMessage = {
@@ -302,7 +302,7 @@ export const useMessageHandler = ({
         : c
     ));
     return true;
-  }, [setChatHistory, setCart]);
+  }, [setChatHistory, setCartItems]);
 
   // Handle Multi-Leg Chat Mode
   const handleMultiLegChatMode = useCallback((message, workingChatId) => {
@@ -783,7 +783,7 @@ They will personally arrange your perfect yacht experience with custom itinerari
     setMessageCount, setMessageLimitReached, multiLegChatMode, setPendingLegData,
     checkForConfirmation, handleMultiLegChatMode, processToolResultsToTabs,
     handleAddToCartTool, handleAddCustomExtraTool, handleLookupLuxuryItemTool,
-    handleLookupPlaceTool, handleSearchHotelsTool, handleAddHotelToCartTool, setCart
+    handleLookupPlaceTool, handleSearchHotelsTool, handleAddHotelToCartTool, setCartItems
   ]);
 
   return {

@@ -96,6 +96,7 @@ import Technology from './Technology';
 import Aviation from './Aviation';
 import Tokenized from './Tokenized';
 import Helpdesk from './Helpdesk';
+import SpheraAI from './SpheraAI';
 
 // Import your complete dashboard
 import TokenizedAssetsGlassmorphic from './tokenized-assets-glassmorphic.jsx';
@@ -371,6 +372,7 @@ function AppContent() {
               <Route path="/technology" element={<Technology setCurrentPage={() => {}} />} />
               <Route path="/aviation" element={<Aviation setCurrentPage={() => {}} />} />
               <Route path="/tokenized" element={<Tokenized setCurrentPage={() => {}} />} />
+              <Route path="/sphera-ai" element={<SpheraAI setCurrentPage={() => {}} />} />
               <Route path="/helpdesk" element={<Helpdesk setCurrentPage={() => {}} />} />
               <Route path="/tokenswap" element={<TokenSwapPage />} />
 
