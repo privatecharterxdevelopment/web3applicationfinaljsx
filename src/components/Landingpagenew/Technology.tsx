@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import LandingHeader from './LandingHeader';
 import Footer from './Footer';
 import { 
@@ -41,6 +41,16 @@ interface TechnologyProps {
 }
 
 function Technology({ setCurrentPage }: TechnologyProps) {
+  // Add noindex meta tag for this hidden page
+  useEffect(() => {
+    const meta = document.createElement('meta');
+    meta.name = 'robots';
+    meta.content = 'noindex, nofollow';
+    document.head.appendChild(meta);
+    return () => {
+      document.head.removeChild(meta);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100 px-4 py-4">

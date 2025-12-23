@@ -1,0 +1,26 @@
+# robots.txt for PrivateCharterX
+# https://privatecharterx.com
+
+User-agent: *
+Allow: /
+Allow: /services
+Allow: /aviation
+Allow: /tokenized
+Allow: /sphera-ai
+Allow: /helpdesk
+Allow: /terms
+Allow: /privacy
+Allow: /cookies
+Allow: /imprint
+
+# Disallow hidden/internal pages
+Disallow: /technology
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /login
+Disallow: /register
+Disallow: /api
+Disallow: /*.json$
+
+# Sitemap
+Sitemap: https://privatecharterx.com/sitemap.xml

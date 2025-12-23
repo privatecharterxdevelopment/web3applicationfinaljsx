@@ -79,7 +79,7 @@ dist
 
 # Gatsby files
 .cache/
-public
+# public - removed: Vite uses public folder for static assets
 
 # Vite
 .vite/
