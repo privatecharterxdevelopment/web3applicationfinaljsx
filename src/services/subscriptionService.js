@@ -1,5 +1,21 @@
 import { supabase } from '../lib/supabase';
 
+// Tier-specific message limits per chat
+const TIER_MESSAGE_LIMITS = {
+  explorer: 10,
+  traveller: 25,
+  elite: null, // null = unlimited
+  professional: null // Professional tier (if used) = unlimited
+};
+
+// Tier-specific chat limits per month
+const TIER_CHAT_LIMITS = {
+  explorer: 5,
+  traveller: 10,
+  elite: null, // null = unlimited
+  professional: null
+};
+
 class SubscriptionService {
   /**
    * Get user's subscription profile
@@ -221,6 +237,82 @@ class SubscriptionService {
   }
 
   /**
+   * Get subscription limits for a user
+   * Returns tier, message limits, chat limits, and renewal info
+   */
+  async getSubscriptionLimits(userId) {
+    try {
+      const profile = await this.getUserProfile(userId);
+
+      if (!profile || !profile.subscription_tier || profile.subscription_status !== 'active') {
+        return {
+          tier: null,
+          hasSubscription: false,
+          chatsLimit: 0,
+          chatsUsed: 0,
+          chatsRemaining: 0,
+          messagesPerChat: 0,
+          unlimitedChats: false,
+          unlimitedMessages: false,
+          resetDate: null,
+          isExpired: true
+        };
+      }
+
+      const tier = profile.subscription_tier.toLowerCase();
+      const messagesPerChat = TIER_MESSAGE_LIMITS[tier] ?? 10;
+      const chatsLimit = profile.chats_limit; // Could be null for unlimited
+      const chatsUsed = profile.chats_used || 0;
+
+      // Check if subscription needs renewal (past reset date)
+      const resetDate = profile.chats_reset_date ? new Date(profile.chats_reset_date) : null;
+      const now = new Date();
+      const needsRenewal = resetDate && now > resetDate;
+
+      // If past reset date, the webhook should have already reset usage
+      // But we'll return info for the UI to handle
+
+      return {
+        tier: profile.subscription_tier,
+        hasSubscription: true,
+        chatsLimit: chatsLimit,
+        chatsUsed: chatsUsed,
+        chatsRemaining: chatsLimit === null ? null : Math.max(0, chatsLimit - chatsUsed),
+        messagesPerChat: messagesPerChat,
+        unlimitedChats: chatsLimit === null,
+        unlimitedMessages: messagesPerChat === null,
+        resetDate: profile.chats_reset_date,
+        currentPeriodEnd: profile.current_period_end,
+        needsRenewal: needsRenewal,
+        breakThePriceAccess: ['traveller', 'elite', 'professional'].includes(tier),
+        status: profile.subscription_status
+      };
+    } catch (error) {
+      console.error('Error getting subscription limits:', error);
+      return {
+        tier: null,
+        hasSubscription: false,
+        chatsLimit: 0,
+        chatsUsed: 0,
+        chatsRemaining: 0,
+        messagesPerChat: 0,
+        unlimitedChats: false,
+        unlimitedMessages: false,
+        resetDate: null,
+        error: true
+      };
+    }
+  }
+
+  /**
+   * Get message limit for a specific tier
+   */
+  getMessageLimitForTier(tier) {
+    if (!tier) return 10;
+    return TIER_MESSAGE_LIMITS[tier.toLowerCase()] ?? 10;
+  }
+
+  /**
    * Increment chat usage when user starts a new chat
    */
   async incrementChatUsage(userId) {
@@ -310,54 +402,102 @@ class SubscriptionService {
   /**
    * Get message count for a chat session
    * Returns the current message count and if limit is reached
+   * Now tier-aware: Explorer=10, Traveller=25, Elite=unlimited
    */
-  async getMessageCount(sessionId) {
+  async getMessageCount(sessionId, userId = null) {
     try {
       const { data, error } = await supabase
         .from('chat_usage')
-        .select('message_count')
+        .select('message_count, user_id')
         .eq('chat_session_id', sessionId)
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
 
       const count = data?.message_count || 0;
-      const MAX_MESSAGES_PER_CHAT = 20;
+      const chatUserId = userId || data?.user_id;
+
+      // Get user's tier to determine message limit
+      let maxMessages = 10; // Default for explorer
+      let isUnlimited = false;
+
+      if (chatUserId) {
+        try {
+          const profile = await this.getUserProfile(chatUserId);
+          const tier = profile?.subscription_tier?.toLowerCase();
+
+          if (tier === 'elite' || tier === 'professional') {
+            isUnlimited = true;
+            maxMessages = null;
+          } else if (tier === 'traveller') {
+            maxMessages = 25;
+          } else {
+            maxMessages = 10; // Explorer or default
+          }
+        } catch (profileError) {
+          console.warn('Could not fetch user profile for message limit:', profileError);
+        }
+      }
 
       return {
         messageCount: count,
-        maxMessages: MAX_MESSAGES_PER_CHAT,
-        limitReached: count >= MAX_MESSAGES_PER_CHAT,
-        messagesRemaining: MAX_MESSAGES_PER_CHAT - count
+        maxMessages: maxMessages,
+        unlimited: isUnlimited,
+        limitReached: !isUnlimited && count >= maxMessages,
+        messagesRemaining: isUnlimited ? null : Math.max(0, maxMessages - count)
       };
     } catch (error) {
       console.error('Error getting message count:', error);
       // Return default values on error
       return {
         messageCount: 0,
-        maxMessages: 20,
+        maxMessages: 10,
+        unlimited: false,
         limitReached: false,
-        messagesRemaining: 20
+        messagesRemaining: 10
       };
     }
   }
 
   /**
    * Increment message count for a chat session
+   * Now tier-aware: Explorer=10, Traveller=25, Elite=unlimited
    */
-  async incrementMessageCount(sessionId) {
+  async incrementMessageCount(sessionId, userId = null) {
     try {
-      // First get current count
+      // First get current count and user_id
       const { data: current, error: fetchError } = await supabase
         .from('chat_usage')
-        .select('message_count')
+        .select('message_count, user_id')
         .eq('chat_session_id', sessionId)
         .single();
 
       if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
 
       const newCount = (current?.message_count || 0) + 1;
-      const MAX_MESSAGES_PER_CHAT = 20;
+      const chatUserId = userId || current?.user_id;
+
+      // Get user's tier to determine message limit
+      let maxMessages = 10;
+      let isUnlimited = false;
+
+      if (chatUserId) {
+        try {
+          const profile = await this.getUserProfile(chatUserId);
+          const tier = profile?.subscription_tier?.toLowerCase();
+
+          if (tier === 'elite' || tier === 'professional') {
+            isUnlimited = true;
+            maxMessages = null;
+          } else if (tier === 'traveller') {
+            maxMessages = 25;
+          } else {
+            maxMessages = 10;
+          }
+        } catch (profileError) {
+          console.warn('Could not fetch user profile for message limit:', profileError);
+        }
+      }
 
       // Update message count
       const { data, error } = await supabase
@@ -374,9 +514,10 @@ class SubscriptionService {
 
       return {
         messageCount: newCount,
-        maxMessages: MAX_MESSAGES_PER_CHAT,
-        limitReached: newCount >= MAX_MESSAGES_PER_CHAT,
-        messagesRemaining: MAX_MESSAGES_PER_CHAT - newCount
+        maxMessages: maxMessages,
+        unlimited: isUnlimited,
+        limitReached: !isUnlimited && newCount >= maxMessages,
+        messagesRemaining: isUnlimited ? null : Math.max(0, maxMessages - newCount)
       };
     } catch (error) {
       console.error('Error incrementing message count:', error);
@@ -694,6 +835,73 @@ class SubscriptionService {
     } catch (error) {
       console.error('Error recording transaction:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Reset chat usage for a new billing period (called on subscription renewal)
+   * Also updates the reset date to next month
+   */
+  async resetChatUsageOnRenewal(userId) {
+    try {
+      const profile = await this.getUserProfile(userId);
+      if (!profile) throw new Error('User profile not found');
+
+      const tier = profile.subscription_tier?.toLowerCase();
+      const newChatsLimit = TIER_CHAT_LIMITS[tier] ?? 5;
+
+      const now = new Date();
+      const nextMonth = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .update({
+          chats_used: 0,
+          chats_limit: newChatsLimit,
+          chats_reset_date: nextMonth.toISOString(),
+          current_period_start: now.toISOString(),
+          current_period_end: nextMonth.toISOString(),
+          updated_at: now.toISOString()
+        })
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log(`✅ Chat usage reset for user ${userId}: 0/${newChatsLimit} chats`);
+      return data;
+    } catch (error) {
+      console.error('Error resetting chat usage:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if user's subscription period has ended and needs renewal reset
+   * Returns true if reset was performed
+   */
+  async checkAndResetIfNeeded(userId) {
+    try {
+      const profile = await this.getUserProfile(userId);
+      if (!profile || !profile.subscription_tier) return false;
+
+      // Check if subscription is active
+      if (profile.subscription_status !== 'active') return false;
+
+      // Check if past reset date
+      const resetDate = profile.chats_reset_date ? new Date(profile.chats_reset_date) : null;
+      const now = new Date();
+
+      if (!resetDate || now <= resetDate) return false;
+
+      // Past reset date and subscription is active - reset usage
+      console.log(`📅 Subscription period ended for user ${userId}, resetting chat usage...`);
+      await this.resetChatUsageOnRenewal(userId);
+      return true;
+    } catch (error) {
+      console.error('Error checking/resetting chat usage:', error);
+      return false;
     }
   }
 

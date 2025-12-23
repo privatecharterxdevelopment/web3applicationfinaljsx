@@ -43,6 +43,7 @@ export default function TokenizationRequestManagement() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   const tokenizationTypes = [
+    'tokenization',           // Main tokenization type from TokenizeAssetFlow
     'tokenization_request',
     'asset_tokenization',
     'rwa_tokenization',
@@ -147,13 +148,20 @@ export default function TokenizationRequestManagement() {
   const getAssetInfo = (request: TokenizationRequest) => {
     const data = request.data || {};
     return {
-      name: data.assetName || data.asset_name || data.name || 'Unnamed Asset',
-      type: data.assetType || data.asset_type || data.type || request.type.replace(/_/g, ' '),
-      value: data.estimatedValue || data.estimated_value || data.value || 0,
-      currency: data.currency || 'EUR',
-      location: data.location || data.address || data.city || '-',
-      description: data.description || data.details || '-',
-      documents: data.documents || data.files || []
+      name: data.asset_name || data.assetName || data.name || 'Unnamed Asset',
+      type: data.token_type || data.assetType || data.asset_type || data.type || request.type.replace(/_/g, ' '),
+      value: data.asset_value || data.estimatedValue || data.estimated_value || data.value || 0,
+      currency: data.currency || 'USD',
+      location: data.asset_location || data.location || data.address || data.city || '-',
+      description: data.asset_description || data.description || data.details || '-',
+      documents: data.documents || data.files || [],
+      // Additional tokenization-specific fields
+      tokenSymbol: data.token_symbol || '-',
+      totalSupply: data.total_supply || 0,
+      pricePerToken: data.price_per_token || 0,
+      jurisdiction: data.jurisdiction || '-',
+      walletAddress: data.issuer_wallet_address || data.signer_address || '-',
+      membershipPackage: data.membership_package || '-'
     };
   };
 
@@ -372,25 +380,52 @@ export default function TokenizationRequestManagement() {
                       <div className="flex items-start gap-2">
                         <Building2 size={14} className="text-gray-400 mt-0.5" />
                         <div>
-                          <p className="text-xs text-gray-500">Asset Type</p>
-                          <p className="text-sm text-gray-900 capitalize">{assetInfo.type}</p>
+                          <p className="text-xs text-gray-500">Token Type</p>
+                          <p className="text-sm text-gray-900 capitalize">{assetInfo.type === 'utility' ? 'UTO (Utility Token)' : assetInfo.type === 'security' ? 'STO (Security Token)' : assetInfo.type}</p>
                         </div>
                       </div>
                       <div className="flex items-start gap-2">
                         <DollarSign size={14} className="text-gray-400 mt-0.5" />
                         <div>
-                          <p className="text-xs text-gray-500">Estimated Value</p>
+                          <p className="text-xs text-gray-500">Asset Value</p>
                           <p className="text-sm text-gray-900">
                             {assetInfo.value > 0 ? formatCurrency(assetInfo.value, assetInfo.currency) : '-'}
                           </p>
                         </div>
                       </div>
+                      {assetInfo.tokenSymbol !== '-' && (
+                        <div className="flex items-start gap-2">
+                          <Coins size={14} className="text-gray-400 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-gray-500">Token Symbol</p>
+                            <p className="text-sm text-gray-900 font-mono">${assetInfo.tokenSymbol}</p>
+                          </div>
+                        </div>
+                      )}
+                      {assetInfo.totalSupply > 0 && (
+                        <div className="flex items-start gap-2">
+                          <FileText size={14} className="text-gray-400 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-gray-500">Total Supply</p>
+                            <p className="text-sm text-gray-900">{assetInfo.totalSupply.toLocaleString()}</p>
+                          </div>
+                        </div>
+                      )}
                       {assetInfo.location !== '-' && (
                         <div className="flex items-start gap-2">
                           <MapPin size={14} className="text-gray-400 mt-0.5" />
                           <div>
                             <p className="text-xs text-gray-500">Location</p>
                             <p className="text-sm text-gray-900">{assetInfo.location}</p>
+                          </div>
+                        </div>
+                      )}
+                      {assetInfo.jurisdiction !== '-' && (
+                        <div className="flex items-start gap-2">
+                          <FileText size={14} className="text-gray-400 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-gray-500">Jurisdiction</p>
+                            <p className="text-sm text-gray-900">{assetInfo.jurisdiction}</p>
                           </div>
                         </div>
                       )}
@@ -401,10 +436,33 @@ export default function TokenizationRequestManagement() {
                           <p className="text-sm text-gray-900">{formatDate(selectedRequest.created_at)}</p>
                         </div>
                       </div>
+                      {assetInfo.membershipPackage !== '-' && (
+                        <div className="flex items-start gap-2">
+                          <CheckCircle size={14} className="text-gray-400 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-gray-500">Package</p>
+                            <p className="text-sm text-gray-900 capitalize">{assetInfo.membershipPackage}</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
               </div>
+
+              {/* Wallet Info */}
+              {(() => {
+                const assetInfo = getAssetInfo(selectedRequest);
+                if (assetInfo.walletAddress !== '-') {
+                  return (
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <h3 className="text-sm font-medium text-gray-900 mb-2">Wallet Address</h3>
+                      <p className="text-xs font-mono text-gray-600 break-all">{assetInfo.walletAddress}</p>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
               {/* Description */}
               {getAssetInfo(selectedRequest).description !== '-' && (

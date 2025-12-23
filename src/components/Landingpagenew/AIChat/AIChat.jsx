@@ -51,6 +51,7 @@ import { JourneyBuilder, YachtJourneyBuilder, AirportTransferOffer } from './com
 import CartJourneyDisplay from './components/CartJourneyDisplay';
 import TripPackageCard from './components/TripPackageCard';
 import MedevacRequestCard from './components/MedevacRequestCard';
+import VisaRequestCard from './components/VisaRequestCard';
 
 // Extracted Components
 import { ChatHeader, InputArea, Modals, Toast, WeatherWidget, TypingAnimation, TypingText } from './components';
@@ -2244,6 +2245,8 @@ Your quote has been received and will be reviewed within 12 hours.`;
         // if (only === 'hotels' || only === 'hotel') return 'hotel_booking';
         if (only === 'fixed_offer' || only === 'fixed_offers') return 'fixed_offer';
         if (only === 'yachts' || only === 'yacht') return 'yacht_charter';
+        if (only === 'visa') return 'express_visa';
+        if (only === 'medevac') return 'medevac';
         return 'booking';
       };
 
@@ -2315,7 +2318,27 @@ Your quote has been received and will be reviewed within 12 hours.`;
           fuelIncluded: item.fuelIncluded !== false, // Default true
           priceCalculation: item.priceCalculation,
           // Linked items (for transfers linked to journeys)
-          linkedJourneyId: item.linkedJourneyId
+          linkedJourneyId: item.linkedJourneyId,
+          // Visa-specific fields
+          destinationCountry: item.destinationCountry,
+          travelers: item.travelers,
+          numberOfTravelers: item.numberOfTravelers,
+          purposeOfVisit: item.purposeOfVisit,
+          travelDate: item.travelDate,
+          hasMinors: item.hasMinors,
+          minorCount: item.minorCount,
+          hasExistingEvisaApplication: item.hasExistingEvisaApplication,
+          existingApplicationCodes: item.existingApplicationCodes,
+          // MEDEVAC-specific fields
+          patientInfo: item.patientInfo,
+          urgencyLevel: item.urgencyLevel,
+          medicalCondition: item.medicalCondition,
+          mobilityStatus: item.mobilityStatus,
+          requiresOxygen: item.requiresOxygen,
+          requiresStretcher: item.requiresStretcher,
+          medicalEquipment: item.medicalEquipment,
+          emergencyContact: item.emergencyContact,
+          insuranceInfo: item.insuranceInfo
         }));
 
         // Calculate grand total from detailed items
@@ -3779,6 +3802,23 @@ Then use searchCigars with appropriate filters. Keep it elegant and brief.`;
               ));
               setIsProcessing(false);
               return; // Exit early - MedevacRequestCard will handle adding to cart
+            } else if (toolUse.name === 'createVisaRequest' && toolResult.action === 'SHOW_VISA_REQUEST' && toolResult.visaRequest) {
+              // Show Express Visa Service request card
+              console.log('🛂 Visa Request created:', toolResult.visaRequest);
+
+              const visaMessage = {
+                role: 'visa_request',
+                content: toolResult.displayMessage || toolResult.message,
+                visaRequest: toolResult.visaRequest
+              };
+
+              setChatHistory(prev => prev.map(c =>
+                c.id === workingChatId
+                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), visaMessage] }
+                  : c
+              ));
+              setIsProcessing(false);
+              return; // Exit early - VisaRequestCard will handle adding to cart
             } else if (toolUse.name === 'lookupPlaceAddress' && toolResult.place) {
               // Show place card with rich Google Places data
               const placeMessage = {
@@ -5432,6 +5472,66 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           const confirmMessage = {
                             role: 'assistant',
                             content: `🚨 **MEDEVAC Request Submitted**\n\nYour medical evacuation request has been added to your cart and flagged as ${medevacReq.urgencyLevel === 'critical' ? 'CRITICAL PRIORITY' : 'URGENT'}.\n\n**What happens next:**\n1. Our medical coordination team will call you within 15 minutes\n2. We'll coordinate with medical facilities at both locations\n3. You'll receive aircraft options and pricing\n4. We handle all logistics for a seamless medical transport\n\nIs there anything else you need while we process this request?`
+                          };
+                          setChatHistory(prev => prev.map(c =>
+                            c.id === activeChat
+                              ? { ...c, messages: [...c.messages, confirmMessage] }
+                              : c
+                          ));
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              }
+
+              // Render VisaRequestCard if this is a visa_request message
+              if (msg.role === 'visa_request' && msg.visaRequest) {
+                return (
+                  <div key={idx} className="flex justify-start animate-fade-in w-full my-4">
+                    <div className="flex flex-col gap-2 ml-12 w-full" style={{ maxWidth: '450px' }}>
+                      <div className="flex items-center gap-2 px-2">
+                        <div className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse"></div>
+                        <span className="text-xs text-gray-600 font-medium">Sphera AI - Visa Services</span>
+                        <span className="text-xs text-gray-400">{timestamp}</span>
+                      </div>
+                      <VisaRequestCard
+                        visaRequest={msg.visaRequest}
+                        isInCart={cartItems.some(item => item.id === msg.visaRequest.id)}
+                        onAddToCart={(visaReq) => {
+                          // Add visa request to cart
+                          const cartItem = {
+                            ...visaReq,
+                            cartId: `visa-${Date.now()}`,
+                            type: 'visa',
+                            name: `Express Visa: ${visaReq.destinationCountry} (${visaReq.numberOfTravelers} traveler${visaReq.numberOfTravelers > 1 ? 's' : ''})`,
+                            title: 'Express Visa Service',
+                            price: visaReq.totalPrice,
+                            currency: visaReq.currency || 'USD',
+                            priceOnRequest: false,
+                            isEstimate: false,
+                            requiresConfirmation: true,
+                            addedAt: new Date().toISOString()
+                          };
+                          setCartItems(prev => [...prev, cartItem]);
+                          showToast(`Express Visa service added to cart - ${visaReq.numberOfTravelers} traveler(s) for ${visaReq.destinationCountry}!`, 'success');
+
+                          // Update message to show it's in cart
+                          setChatHistory(prev => prev.map(c =>
+                            c.id === workingChatId
+                              ? {
+                                  ...c,
+                                  messages: c.messages.map((m, i) =>
+                                    i === idx ? { ...m, visaRequest: { ...m.visaRequest, addedToCart: true } } : m
+                                  )
+                                }
+                              : c
+                          ));
+
+                          // Add confirmation message
+                          const confirmMessage = {
+                            role: 'assistant',
+                            content: `🛂 **Express Visa Service Added**\n\nYour visa processing request has been added to your cart.\n\n**Details:**\n- Destination: ${visaReq.destinationCountry}\n- Travelers: ${visaReq.numberOfTravelers}\n- Total: $${visaReq.totalPrice} USD\n\n**Our Guarantee:**\n✓ 24-hour processing in 95% of countries\n✓ Direct government contacts & verified agent network\n✓ Full documentation support\n\nOur visa specialists will begin processing once you complete checkout. Is there anything else you need help with?`
                           };
                           setChatHistory(prev => prev.map(c =>
                             c.id === activeChat

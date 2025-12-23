@@ -31,7 +31,7 @@ import { submitDraft, saveDraft } from '../../services/tokenizationService';
 import { useAccount } from 'wagmi';
 import { supabase } from '../../lib/supabase';
 
-const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
+const TokenizeAssetFlow = ({ onBack, draftToLoad = null, user = null }) => {
   const { address } = useAccount();
   const [currentStep, setCurrentStep] = useState(draftToLoad?.current_step || 0);
   const [tokenType, setTokenType] = useState(draftToLoad?.token_type || null); // 'utility' or 'security'
@@ -201,21 +201,47 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
     setUploadingDoc(null);
   };
 
-  // Remove uploaded file
-  const removeFile = (field, index = null) => {
-    if (index !== null) {
-      // Remove from array (images)
-      const updated = [...formData[field]];
-      updated.splice(index, 1);
-      updateFormData(field, updated);
-    } else {
-      // Remove single file
-      updateFormData(field, null);
+  // Remove uploaded file and delete from storage
+  const removeFile = async (field, index = null) => {
+    try {
+      if (index !== null) {
+        // Remove from array (images)
+        const fileToRemove = formData[field]?.[index];
+        if (fileToRemove?.path) {
+          // Delete from Supabase storage
+          await supabase.storage.from('uploads').remove([fileToRemove.path]);
+        }
+        const updated = [...formData[field]];
+        updated.splice(index, 1);
+        updateFormData(field, updated);
+      } else {
+        // Remove single file
+        const fileToRemove = formData[field];
+        if (fileToRemove?.path) {
+          // Delete from Supabase storage
+          await supabase.storage.from('uploads').remove([fileToRemove.path]);
+        }
+        updateFormData(field, null);
+      }
+    } catch (error) {
+      console.error('Error removing file:', error);
+      // Still remove from state even if storage delete fails
+      if (index !== null) {
+        const updated = [...formData[field]];
+        updated.splice(index, 1);
+        updateFormData(field, updated);
+      } else {
+        updateFormData(field, null);
+      }
     }
   };
 
   // Handle final submission - save draft and open terms modal
   const handleSubmitApplication = async () => {
+    if (!user?.id) {
+      alert('Please sign in to submit your tokenization request.');
+      return;
+    }
     if (!address) {
       alert('Please connect your wallet to submit.');
       return;
@@ -228,7 +254,8 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null }) => {
         .from('tokenization_drafts')
         .upsert({
           id: currentDraftId || undefined,
-          user_id: address,
+          user_id: user?.id, // Use authenticated user ID (UUID), not wallet address
+          wallet_address: address, // Store wallet address separately
           token_type: tokenType,
           asset_category: assetCategory,
           current_step: currentStep,

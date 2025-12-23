@@ -106,20 +106,20 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <div>
               <h4 className="text-sm font-medium text-gray-900 mb-4">Web3</h4>
               <div className="space-y-2.5">
-                <button onClick={() => handleNavigate('/dashboard?tab=tokenize')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
+                <button onClick={() => handleNavigate('/dashboard/web3/tokenization')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
                   Tokenize Your Asset
                 </button>
-                <button onClick={() => handleNavigate('/dashboard?tab=nfts')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
+                <button onClick={() => handleNavigate('/dashboard/web3/nft-marketplace')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
                   NFT Membership
                 </button>
-                <button onClick={() => handleNavigate('/dashboard')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
-                  Crypto Payments
+                <button onClick={() => handleNavigate('/dashboard/web3/pvcx-token')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
+                  PVCX Token
                 </button>
-                <button onClick={() => handleNavigate('/dashboard')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
-                  Smart Contracts
+                <button onClick={() => handleNavigate('/dashboard/web3/launchpad')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
+                  Launchpad
                 </button>
-                <button onClick={() => handleNavigate('/dashboard?tab=marketplace')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
-                  Digital Ownership
+                <button onClick={() => handleNavigate('/dashboard/web3/marketplace')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
+                  Marketplace
                 </button>
               </div>
             </div>
@@ -137,8 +137,8 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 <button onClick={() => handleNavigate('/dashboard/subscription')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
                   Manage Subscription
                 </button>
-                <button onClick={() => handleNavigate('/dashboard/requests')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
-                  My Requests
+                <button onClick={() => handleNavigate('/dashboard/chat?query=Express%20Visa%20Service&newChat=true')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
+                  Visa Services
                 </button>
               </div>
             </div>

@@ -29,7 +29,13 @@ export const useSubscriptionNew = (user, isAdmin = false) => {
     if (!userId) return null;
 
     try {
-      // subscriptionService.getUserProfile returns the profile directly, NOT { profile, error }
+      // First check if chat usage needs to be reset (past reset date)
+      const wasReset = await subscriptionService.checkAndResetIfNeeded(userId);
+      if (wasReset) {
+        console.log('🔄 Chat usage was reset due to subscription renewal');
+      }
+
+      // Now get the (possibly updated) profile
       const profile = await subscriptionService.getUserProfile(userId);
 
       console.log('📦 Loaded user profile:', {
@@ -37,6 +43,7 @@ export const useSubscriptionNew = (user, isAdmin = false) => {
         status: profile?.subscription_status,
         chatsUsed: profile?.chats_used,
         chatsLimit: profile?.chats_limit,
+        resetDate: profile?.chats_reset_date,
         userId
       });
 

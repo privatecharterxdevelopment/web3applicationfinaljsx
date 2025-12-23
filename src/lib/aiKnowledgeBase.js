@@ -1799,20 +1799,27 @@ const TIER_FEATURES = {
   explorer: {
     name: 'Explorer',
     price: 49,
-    features: ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'catering', 'custom_travel_org'],
-    restricted: ['medevac', 'concierge', 'group_charter', 'vip_events', 'airport_transfers', 'membershipx_card']
+    chatsPerMonth: 5,
+    messagesPerChat: 10,
+    features: ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'catering', 'custom_travel_org', 'visa_services'],
+    restricted: ['medevac', 'concierge', 'group_charter', 'vip_events', 'airport_transfers', 'membershipx_card', 'break_the_price']
   },
   traveller: {
     name: 'Traveller',
     price: 99,
-    features: ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'catering', 'custom_travel_org', 'medevac', 'concierge', 'group_charter', 'reservations', 'event_booking'],
+    chatsPerMonth: 10,
+    messagesPerChat: 25,
+    features: ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'catering', 'custom_travel_org', 'medevac', 'concierge', 'group_charter', 'reservations', 'event_booking', 'visa_services', 'break_the_price'],
     restricted: ['vip_events', 'airport_transfers', 'membershipx_card']
   },
   elite: {
     name: 'Elite Club',
     price: 399,
-    features: ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'vip_catering', 'custom_travel_org', 'medevac', 'concierge', 'group_charter', 'reservations', 'event_booking', 'airport_transfers', 'membershipx_card', 'vip_events'],
-    restricted: []
+    chatsPerMonth: 'unlimited',
+    messagesPerChat: 'unlimited',
+    features: ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'vip_catering', 'custom_travel_org', 'medevac', 'concierge', 'group_charter', 'reservations', 'event_booking', 'airport_transfers', 'membershipx_card', 'vip_events', 'visa_services', 'break_the_price'],
+    restricted: [],
+    extras: ['2 free airport transfers/month', 'MembershipX Card', 'VIP Event Invites']
   }
 };
 
@@ -1822,7 +1829,16 @@ function generateSubscriptionContext(userTier) {
     return `Current user: NO ACTIVE SUBSCRIPTION
 - User must subscribe to use premium features
 - When user requests ANY tier-restricted feature (MEDEVAC, concierge, etc.), respond with upgrade prompt including [UPGRADE_BUTTON]
-- Direct user to subscription plans for full access`;
+- Direct user to subscription plans for full access
+
+SUBSCRIPTION PLANS OVERVIEW (when asked):
+• Explorer ($49/mo): 5 chats/month, 10 messages/chat, Empty legs, Ground transport, Restaurants, Visa services
+• Traveller ($99/mo): 10 chats/month, 25 messages/chat, + MEDEVAC, Concierge, Break the Price
+• Elite Club ($399/mo): Unlimited chats & messages, + Free airport transfers, MembershipX Card, VIP Events
+
+EXPRESS VISA SERVICE: $250/person (available to ALL subscribers)
+- 24-hour guaranteed processing for 95% of countries
+- Full documentation handling by verified agent network`;
   }
 
   const tierInfo = TIER_FEATURES[userTier];
@@ -1837,13 +1853,27 @@ function generateSubscriptionContext(userTier) {
     ? tierInfo.restricted.map(f => f.replace(/_/g, ' ')).join(', ')
     : 'None - full access';
 
+  const chatsInfo = tierInfo.chatsPerMonth === 'unlimited' ? 'Unlimited chats' : `${tierInfo.chatsPerMonth} chats/month`;
+  const messagesInfo = tierInfo.messagesPerChat === 'unlimited' ? 'Unlimited messages/chat' : `${tierInfo.messagesPerChat} messages/chat`;
+  const extrasInfo = tierInfo.extras ? `\nEXTRAS: ${tierInfo.extras.join(', ')}` : '';
+
   return `Current user subscription: ${tierInfo.name.toUpperCase()} ($${tierInfo.price}/month)
+USAGE LIMITS: ${chatsInfo}, ${messagesInfo}${extrasInfo}
 
 ACCESSIBLE FEATURES for this user:
 ${accessibleFeatures}
 
 RESTRICTED FEATURES (require upgrade):
 ${restrictedFeatures}
+
+EXPRESS VISA SERVICE: $250/person (AVAILABLE to this user)
+- 24-hour guaranteed processing for 95% of countries
+- When user asks about visa/entry requirements, offer Express Visa Service
+
+SUBSCRIPTION PLANS (when asked about upgrades):
+• Explorer ($49/mo): 5 chats/month, 10 messages/chat
+• Traveller ($99/mo): 10 chats/month, 25 messages/chat, + MEDEVAC, Concierge, Break the Price
+• Elite Club ($399/mo): Unlimited everything, + Free airport transfers, MembershipX Card, VIP Events
 
 ENFORCEMENT RULES:
 - If user requests a RESTRICTED feature, politely explain it's not available on their plan
@@ -2132,6 +2162,76 @@ AFTER COLLECTING INFO - CRITICAL ACTION REQUIRED:
 DO NOT just say "added to cart" in text - you MUST call the createMedevacRequest tool to create the interactive card with "Add to Cart" button. This is CRITICAL for processing the emergency request.
 
 The tool will create a MEDEVAC request card that the user can click to submit. After submission, say: "Our MEDEVAC coordination team will contact you within [timeframe based on urgency]. For immediate assistance, our 24/7 emergency line is available."
+
+═══════════════════════════════════════════════════════════════════════════════
+EXPRESS VISA SERVICE - $250/PERSON (ALL SUBSCRIPTION TIERS)
+═══════════════════════════════════════════════════════════════════════════════
+WHEN USER ASKS ABOUT VISA, ENTRY REQUIREMENTS, OR TRAVEL DOCUMENTATION:
+
+1. INITIAL RESPONSE - Offer Express Visa Service:
+   "I can help with visa information! We offer an Express Visa Service for $250 USD per person with a 24-hour guarantee in 95% of countries.
+
+   Would you like us to handle the visa process for you? Our verified agent network handles all paperwork and ensures hassle-free travel."
+
+2. IF USER SAYS YES OR WANTS EXPRESS VISA - Collect Information Step by Step:
+
+   Step 1 - Destination:
+   "Which country do you need a visa for?"
+
+   Step 2 - Travel Date:
+   "When do you plan to travel? (This helps us prioritize processing)"
+
+   Step 3 - Number of Travelers:
+   "How many travelers need visas?"
+
+   Step 4 - Purpose of Visit:
+   "What is the purpose of your visit? (Tourism, Business, Medical, Other)"
+
+   Step 5 - For EACH Traveler, collect:
+   - Full legal name (as on passport)
+   - Nationality
+   - Passport number
+   - Date of birth
+   - Is this traveler under 12 years old?
+
+   Step 6 - Minor Check (if any travelers under 12):
+   "For travelers under 12, additional documentation may be required. I've noted this for special processing."
+
+   Step 7 - Existing E-Visa Applications:
+   "Have any travelers already started an e-visa application? If so, please provide the application reference codes."
+
+   Step 8 - Additional Notes:
+   "Any additional information we should know? (Special requirements, tight deadlines, etc.)"
+
+3. ONCE ALL INFO COLLECTED - CALL createVisaRequest TOOL:
+   Required fields:
+   - destinationCountry: string
+   - travelDate: string (optional)
+   - purposeOfVisit: string (Tourism, Business, Medical, etc.)
+   - numberOfTravelers: number
+   - travelers: array of objects with { fullName, nationality, passportNumber, dateOfBirth, isUnder12 }
+   - hasMinors: boolean (true if any traveler is under 12)
+   - minorCount: number (how many under 12)
+   - hasExistingEvisaApplication: boolean
+   - existingApplicationCodes: array of strings (if applicable)
+   - additionalNotes: string (optional)
+
+   DO NOT just say "added to cart" - you MUST call the createVisaRequest tool to create the interactive card with "Add to Cart" button.
+
+4. PRICING:
+   - $250 USD per person
+   - totalPrice = pricePerPerson × numberOfTravelers
+   - All prices in USD
+
+5. SERVICE FEATURES TO MENTION:
+   - 24-hour processing guarantee
+   - Available in 95% of countries
+   - Direct government contacts
+   - Verified agent network worldwide
+   - Full documentation support
+   - Travel risk-free without disappointments
+
+The tool will create an Express Visa request card that the user can click to add to cart. After adding, confirm: "Your Express Visa request has been added to cart. Our visa specialists will begin processing once you complete checkout."
 
 ═══════════════════════════════════════════════════════════════════════════════
 WEB3 & BLOCKCHAIN SERVICES (INFORMATIONAL ONLY - NO SEARCH/TABS/BUTTONS)

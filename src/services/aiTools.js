@@ -811,6 +811,85 @@ export const aiToolDefinitions = [
       required: ["urgencyLevel", "patientCondition", "currentLocation", "destinationHospital"]
     }
   },
+  {
+    name: "createVisaRequest",
+    description: "Use this tool when all Express Visa Service information has been collected. Creates an interactive visa request card with 'Add to Cart' button. IMPORTANT: Only call this AFTER collecting ALL required information: destination country, number of travelers, personal details for EACH traveler (name, passport number, nationality, date of birth), whether any travelers are under 12, and if they have existing e-visa applications. Price is $250 USD per person. Service includes 24h guarantee in 95% of countries through direct government contacts or verified agent network.",
+    input_schema: {
+      type: "object",
+      properties: {
+        destinationCountry: {
+          type: "string",
+          description: "The country the travelers need visa for"
+        },
+        numberOfTravelers: {
+          type: "number",
+          description: "Total number of travelers requiring visa"
+        },
+        travelers: {
+          type: "array",
+          description: "Array of traveler details",
+          items: {
+            type: "object",
+            properties: {
+              fullName: {
+                type: "string",
+                description: "Traveler's full name as shown on passport"
+              },
+              passportNumber: {
+                type: "string",
+                description: "Passport number"
+              },
+              nationality: {
+                type: "string",
+                description: "Current nationality/citizenship"
+              },
+              dateOfBirth: {
+                type: "string",
+                description: "Date of birth (DD/MM/YYYY or any clear format)"
+              },
+              passportExpiry: {
+                type: "string",
+                description: "Passport expiry date"
+              },
+              isUnder12: {
+                type: "boolean",
+                description: "Whether this traveler is under 12 years old"
+              }
+            },
+            required: ["fullName", "nationality"]
+          }
+        },
+        hasMinors: {
+          type: "boolean",
+          description: "Whether any travelers are under 12 years old"
+        },
+        hasExistingEvisaApplication: {
+          type: "boolean",
+          description: "Whether any travelers have already applied for e-visa"
+        },
+        existingApplicationCodes: {
+          type: "array",
+          description: "List of existing e-visa application codes if any",
+          items: {
+            type: "string"
+          }
+        },
+        travelDate: {
+          type: "string",
+          description: "Planned travel/arrival date"
+        },
+        purposeOfVisit: {
+          type: "string",
+          description: "Purpose of visit (tourism, business, transit, etc.)"
+        },
+        additionalNotes: {
+          type: "string",
+          description: "Any additional notes or special requirements"
+        }
+      },
+      required: ["destinationCountry", "numberOfTravelers", "travelers"]
+    }
+  },
   // HOTEL TOOLS DISABLED - LiteAPI hotels temporarily removed
   // {
   //   name: "searchHotels",
@@ -893,6 +972,9 @@ export async function executeTool(toolName, input) {
 
       case 'createMedevacRequest':
         return createMedevacRequest(input);
+
+      case 'createVisaRequest':
+        return createVisaRequest(input);
 
       // HOTEL TOOLS DISABLED - LiteAPI hotels temporarily removed
       // case 'searchHotels':
@@ -3268,6 +3350,138 @@ ${additionalNotes ? `\n**Notes:** ${additionalNotes}` : ''}
       `Route: ${currentLocation} → ${destinationHospital}`,
       `${totalPassengers} passenger(s)`,
       'Our team will contact you immediately after submission'
+    ]
+  };
+}
+
+// ============================================
+// EXPRESS VISA SERVICE TOOL
+// ============================================
+
+/**
+ * Create an Express Visa Request with all traveler information
+ * Creates an interactive card with Add to Cart button
+ * Price: $250 USD per person, 24h guarantee in 95% of countries
+ */
+function createVisaRequest(params) {
+  const {
+    destinationCountry = '',
+    numberOfTravelers = 1,
+    travelers = [],
+    hasMinors = false,
+    hasExistingEvisaApplication = false,
+    existingApplicationCodes = [],
+    travelDate = '',
+    purposeOfVisit = 'Tourism',
+    additionalNotes = ''
+  } = params;
+
+  // Validate required fields
+  if (!destinationCountry || travelers.length === 0) {
+    return {
+      success: false,
+      error: 'Missing required visa information: destination country and traveler details are required'
+    };
+  }
+
+  // Price calculation
+  const pricePerPerson = 250;
+  const totalPrice = numberOfTravelers * pricePerPerson;
+
+  // Process travelers
+  const processedTravelers = travelers.map((traveler, index) => ({
+    ...traveler,
+    index: index + 1,
+    isUnder12: traveler.isUnder12 || false
+  }));
+
+  // Count minors
+  const minorCount = processedTravelers.filter(t => t.isUnder12).length;
+  const adultCount = processedTravelers.length - minorCount;
+
+  // Create the visa request object
+  const visaRequest = {
+    id: `visa-${Date.now()}`,
+    type: 'express_visa',
+    createdAt: new Date().toISOString(),
+
+    // Destination
+    destinationCountry,
+    travelDate,
+    purposeOfVisit,
+
+    // Travelers
+    numberOfTravelers,
+    travelers: processedTravelers,
+    hasMinors,
+    minorCount,
+    adultCount,
+
+    // Existing applications
+    hasExistingEvisaApplication,
+    existingApplicationCodes,
+
+    // Notes
+    additionalNotes,
+
+    // Pricing
+    pricePerPerson,
+    totalPrice,
+    currency: 'USD',
+
+    // Service info
+    serviceGuarantee: '24h processing in 95% of countries',
+    serviceNetwork: 'Direct government contacts & verified agent network',
+
+    // Cart flags
+    requiresConfirmation: true,
+    isEstimate: false // Fixed price
+  };
+
+  // Build traveler summary
+  const travelerSummary = processedTravelers.map((t, idx) => {
+    const under12Tag = t.isUnder12 ? ' (Under 12)' : '';
+    return `${idx + 1}. **${t.fullName || 'Traveler ' + (idx + 1)}**${under12Tag}\n   - Nationality: ${t.nationality || 'Not provided'}\n   - Passport: ${t.passportNumber || 'To be provided'}`;
+  }).join('\n\n');
+
+  // Build display message
+  const displayMessage = `## 🛂 Express Visa Service
+
+**Destination:** ${destinationCountry}
+${travelDate ? `**Travel Date:** ${travelDate}` : ''}
+**Purpose:** ${purposeOfVisit}
+
+### Travelers (${numberOfTravelers})
+${travelerSummary}
+
+${hasMinors ? `\n⚠️ **Note:** ${minorCount} traveler(s) under 12 years old - special processing included` : ''}
+
+${hasExistingEvisaApplication ? `\n📋 **Existing E-Visa Applications:** ${existingApplicationCodes.join(', ') || 'Codes to be verified'}` : ''}
+
+${additionalNotes ? `\n**Additional Notes:** ${additionalNotes}` : ''}
+
+---
+### Service Details
+✅ **24h Guarantee** in 95% of countries
+✅ **Direct government contacts** or verified agent network
+✅ **Travel risk-free** without any disappointments
+
+### Pricing
+**$${pricePerPerson} USD × ${numberOfTravelers} = $${totalPrice.toLocaleString()} USD**
+
+*Click "Add Express Visa to Cart" to submit your request.*`;
+
+  return {
+    success: true,
+    action: 'SHOW_VISA_REQUEST',
+    message: `I've prepared your Express Visa request for ${destinationCountry}. Click "Add to Cart" to submit.`,
+    visaRequest,
+    displayMessage,
+    notes: [
+      `Destination: ${destinationCountry}`,
+      `${numberOfTravelers} traveler(s)`,
+      `Total: $${totalPrice.toLocaleString()} USD`,
+      '24h processing guarantee'
     ]
   };
 }

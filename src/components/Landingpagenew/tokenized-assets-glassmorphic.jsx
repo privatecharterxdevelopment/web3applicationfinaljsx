@@ -1127,24 +1127,16 @@ const TokenizedAssetsGlassmorphic = () => {
     'luxury-cars': '/dashboard/luxury-cars',
     'hotels': '/dashboard/hotels',
 
-    // SPV Routes
-    'spv-formation': '/dashboard/spv',
-    'my-spvs': '/dashboard/spv/my-spvs',
-
-    // RWA Routes
-    'tokenization': '/dashboard/tokenization',
-    'my-tokenized-assets': '/dashboard/my-tokenized-assets',
-
-    // Web3 Routes
-    'launchpad': '/dashboard/launchpad',
-    'nft-marketplace': '/dashboard/nft-marketplace',
-    'marketplace': '/dashboard/marketplace',
-    'p2p-trading': '/dashboard/p2p-trading',
-    'dao': '/dashboard/dao',
-    'escrow': '/dashboard/escrow',
-    'sto-utl': '/dashboard/sto-utl',
-    'swap': '/dashboard/swap',
-    'pvcx-token': '/dashboard/pvcx-token',
+    // Web3 Routes (all under /dashboard/web3/)
+    'spv-formation': '/dashboard/web3/spv-formation',
+    'my-spvs': '/dashboard/web3/my-tokenized-assets',
+    'tokenize-asset': '/dashboard/web3/tokenize-asset',
+    'tokenization': '/dashboard/web3/tokenization',
+    'my-tokenized-assets': '/dashboard/web3/my-tokenized-assets',
+    'launchpad': '/dashboard/web3/launchpad',
+    'nft-marketplace': '/dashboard/web3/nft-marketplace',
+    'marketplace': '/dashboard/web3/marketplace',
+    'pvcx-token': '/dashboard/web3/pvcx-token',
 
     // CO2/SAF
     'co2-saf': '/dashboard/co2-saf',
@@ -1187,7 +1179,16 @@ const TokenizedAssetsGlassmorphic = () => {
 
     // Update URL to match the category (unless skipUrlUpdate is true)
     if (!skipUrlUpdate && categoryToUrl[validCategory]) {
-      const newUrl = categoryToUrl[validCategory];
+      let newUrl = categoryToUrl[validCategory];
+
+      // For 'overview' category, check if we're in Web3 mode
+      if (validCategory === 'overview') {
+        const isCurrentlyWeb3 = window.location.pathname.startsWith('/dashboard/web3');
+        if (isCurrentlyWeb3) {
+          newUrl = '/dashboard/web3';
+        }
+      }
+
       // Only update if different from current path to avoid unnecessary history entries
       if (window.location.pathname !== newUrl) {
         window.history.pushState({}, '', newUrl);
@@ -2094,28 +2095,17 @@ const TokenizedAssetsGlassmorphic = () => {
       '/dashboard/tokenization': 'tokenization',
       '/dashboard/my-tokenized-assets': 'my-tokenized-assets',
 
-      // Web3 Routes (with /dashboard/web3/ prefix)
+      // Web3 Routes (all under /dashboard/web3/ prefix)
       '/dashboard/web3': 'overview',
       '/dashboard/web3/marketplace': 'marketplace',
       '/dashboard/web3/tokenization': 'tokenization',
+      '/dashboard/web3/tokenize-asset': 'tokenize-asset',
       '/dashboard/web3/nft-marketplace': 'nft-marketplace',
       '/dashboard/web3/launchpad': 'launchpad',
-      '/dashboard/web3/p2p-trading': 'p2p-trading',
-      '/dashboard/web3/dao': 'dao',
-      '/dashboard/web3/escrow': 'escrow',
-      '/dashboard/web3/swap': 'swap',
       '/dashboard/web3/pvcx-token': 'pvcx-token',
-
-      // Legacy Web3 Routes (without /web3/ prefix - for backwards compatibility)
-      '/dashboard/launchpad': 'launchpad',
-      '/dashboard/nft-marketplace': 'nft-marketplace',
-      '/dashboard/marketplace': 'marketplace',
-      '/dashboard/p2p-trading': 'p2p-trading',
-      '/dashboard/dao': 'dao',
-      '/dashboard/escrow': 'escrow',
-      '/dashboard/sto-utl': 'sto-utl',
-      '/dashboard/swap': 'swap',
-      '/dashboard/pvcx-token': 'pvcx-token',
+      '/dashboard/web3/spv-formation': 'spv-formation',
+      '/dashboard/web3/my-tokenized-assets': 'my-tokenized-assets',
+      '/dashboard/web3/my-spvs': 'my-spvs',
 
       // CO2/SAF Routes
       '/dashboard/co2-saf': 'co2-saf',
@@ -2150,6 +2140,9 @@ const TokenizedAssetsGlassmorphic = () => {
     const isWeb3Route = currentPath.startsWith('/dashboard/web3');
     if (isWeb3Route && webMode !== 'web3') {
       setWebMode('web3');
+    } else if (currentPath.startsWith('/dashboard') && !isWeb3Route && webMode === 'web3') {
+      // Switch back to RWS mode if on a non-web3 dashboard route
+      setWebMode('rws');
     }
 
     // Check if current path matches any service route
@@ -4036,12 +4029,12 @@ const TokenizedAssetsGlassmorphic = () => {
     // Show loading screen with transition: 1200ms total
     setTimeout(() => {
       setWebMode(mode);
-      // Always reset to overview page when switching modes
-      setActiveCategory('overview');
-      // Update URL based on mode
+      // Reset to default page for each mode
       if (mode === 'web3') {
+        setActiveCategory('overview');
         navigate('/dashboard/web3');
       } else {
+        setActiveCategory('overview');
         navigate('/dashboard');
       }
       setTimeout(() => {
@@ -4125,10 +4118,10 @@ const TokenizedAssetsGlassmorphic = () => {
   // User menu - for sidebar navigation (dashboard-related items)
   const userMenuBase = [
     { id: 'overview', label: 'Overview', icon: Home, category: 'overview' },
-    { id: 'profile', label: 'Profile', icon: User, category: 'dashboard', dashboardTab: 'profile' },
+    { id: 'profile', label: 'Profile', icon: User, category: 'dashboard', dashboardTab: 'profile', rwsOnly: true },
     // { id: 'calendar', label: 'Calendar', icon: Calendar, category: 'calendar' }, // Hidden - not needed for now
     // UNIFIED: Single "My Activity" tab replaces My Bookings + My Requests
-    { id: 'activity', label: 'My Activity', icon: Activity, category: 'my-activity' },
+    { id: 'activity', label: 'My Activity', icon: Activity, category: 'my-activity', rwsOnly: true },
     // OLD ITEMS (kept for backwards compatibility, redirect to my-activity)
     // { id: 'bookings', label: 'My Bookings', icon: CreditCard, category: 'bookings' },
     // { id: 'requests', label: 'My Requests', icon: FolderOpen, category: 'requests' },
@@ -4137,6 +4130,7 @@ const TokenizedAssetsGlassmorphic = () => {
       label: 'Subscriptions',
       icon: Crown,
       category: 'subscriptions',
+      rwsOnly: true,
       submenu: [
         { id: 'subscription-overview', label: 'Manage Plan', icon: Crown, category: 'subscriptions' },
         { id: 'subscription-plans', label: 'Plans & Pricing', icon: CreditCard, category: 'subscription-plans' }
@@ -6711,7 +6705,7 @@ const TokenizedAssetsGlassmorphic = () => {
 
           {/* Tokenize Asset Flow */}
           {!isTransitioning && activeCategory === 'tokenization' && (
-            <TokenizeAssetFlow onBack={() => setActiveCategory('overview')} />
+            <TokenizeAssetFlow onBack={() => setActiveCategory('overview')} user={user} />
           )}
 
           {/* My Tokenized Assets View */}

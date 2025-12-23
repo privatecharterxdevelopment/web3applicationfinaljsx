@@ -374,6 +374,15 @@ function AppContent() {
               <Route path="/helpdesk" element={<Helpdesk setCurrentPage={() => {}} />} />
               <Route path="/tokenswap" element={<TokenSwapPage />} />
 
+              {/* ===== LEGACY WEB3 REDIRECTS - Must be before /dashboard catch-all ===== */}
+              <Route path="/dashboard/launchpad" element={<Navigate to="/dashboard/web3/launchpad" replace />} />
+              <Route path="/dashboard/nft-marketplace" element={<Navigate to="/dashboard/web3/nft-marketplace" replace />} />
+              <Route path="/dashboard/marketplace" element={<Navigate to="/dashboard/web3/marketplace" replace />} />
+              <Route path="/dashboard/pvcx-token" element={<Navigate to="/dashboard/web3/pvcx-token" replace />} />
+              <Route path="/dashboard/sto-utl" element={<Navigate to="/dashboard/web3/launchpad" replace />} />
+              <Route path="/dashboard/tokenization" element={<Navigate to="/dashboard/web3/tokenization" replace />} />
+              <Route path="/dashboard/my-tokenized-assets" element={<Navigate to="/dashboard/web3/my-tokenized-assets" replace />} />
+
               {/* Dashboard Route - Glassmorphic Dashboard with Empty Legs & RWS */}
               <Route path="/dashboard" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
 
@@ -397,10 +406,10 @@ function AppContent() {
               <Route path="/dashboard/transfer" element={<Navigate to="/dashboard?tab=ground-transport" replace />} />
               <Route path="/ground-transport" element={<Navigate to="/dashboard/ground-transport" replace />} />
 
-              {/* SPV routes */}
-              <Route path="/dashboard/spv" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/spv/create" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/spv/my-spvs" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              {/* SPV routes - redirect to Web3 */}
+              <Route path="/dashboard/spv" element={<Navigate to="/dashboard/web3/spv-formation" replace />} />
+              <Route path="/dashboard/spv/create" element={<Navigate to="/dashboard/web3/spv-formation" replace />} />
+              <Route path="/dashboard/spv/my-spvs" element={<Navigate to="/dashboard/web3/my-tokenized-assets" replace />} />
 
               {/* Dashboard sub-routes - All render within the dashboard */}
               <Route path="/dashboard/helicopter" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
@@ -408,12 +417,10 @@ function AppContent() {
               <Route path="/dashboard/luxury-cars" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
               <Route path="/dashboard/hotels" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
 
-              {/* RWA Dashboard Routes */}
-              <Route path="/dashboard/rwa" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/rwa/tokenize" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/rwa/assets" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/tokenization" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/my-tokenized-assets" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              {/* RWA Dashboard Routes - redirect to Web3 */}
+              <Route path="/dashboard/rwa" element={<Navigate to="/dashboard/web3/tokenization" replace />} />
+              <Route path="/dashboard/rwa/tokenize" element={<Navigate to="/dashboard/web3/tokenize-asset" replace />} />
+              <Route path="/dashboard/rwa/assets" element={<Navigate to="/dashboard/web3/my-tokenized-assets" replace />} />
 
               {/* Web3 Dashboard Routes - with /dashboard/web3/ prefix */}
               <Route path="/dashboard/web3" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
@@ -421,25 +428,11 @@ function AppContent() {
               <Route path="/dashboard/web3/tokenization" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
               <Route path="/dashboard/web3/nft-marketplace" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
               <Route path="/dashboard/web3/launchpad" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
-              <Route path="/dashboard/web3/p2p-trading" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
-              <Route path="/dashboard/web3/dao" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
-              <Route path="/dashboard/web3/escrow" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
-              <Route path="/dashboard/web3/swap" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
               <Route path="/dashboard/web3/pvcx-token" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
-              {/* Legacy Web3 routes (without /web3/ prefix) - redirect to new paths */}
-              <Route path="/dashboard/launchpad" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/nft-marketplace" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/marketplace" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/p2p-trading" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/dao" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/escrow" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/sto-utl" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/swap" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/pvcx-token" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-
-              {/* CO2/SAF Dashboard Routes */}
-              <Route path="/dashboard/co2-saf" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/co2-certificates" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/web3/tokenize-asset" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
+              <Route path="/dashboard/web3/spv-formation" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
+              <Route path="/dashboard/web3/my-tokenized-assets" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
+              <Route path="/dashboard/web3/my-spvs" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
 
               {/* User Dashboard Routes */}
               <Route path="/dashboard/requests" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
@@ -495,31 +488,24 @@ function AppContent() {
               {/* Charter a Jet Route - Redirect to AI Chat with prefilled message */}
               <Route path="/charter-a-jet" element={<Navigate to="/dashboard/chat?query=I%20want%20to%20charter%20a%20private%20jet" replace />} />
 
-              {/* Launchpad Route */}
-              <Route path="/web3/launchpad" element={<LaunchpadPageNew />} />
+              {/* ===== SPV Routes - redirect to Web3 ===== */}
+              <Route path="/spv" element={<Navigate to="/dashboard/web3/spv-formation" replace />} />
+              <Route path="/spv/create" element={<Navigate to="/dashboard/web3/spv-formation" replace />} />
+              <Route path="/spv/my-spvs" element={<Navigate to="/dashboard/web3/my-tokenized-assets" replace />} />
+              <Route path="/spv-formation" element={<Navigate to="/dashboard/web3/spv-formation" replace />} />
 
-              {/* ===== SPV Routes ===== */}
-              <Route path="/spv" element={<Navigate to="/dashboard/spv" replace />} />
-              <Route path="/spv/create" element={<SPVFormationFlow onBack={() => window.history.back()} />} />
-              <Route path="/spv/my-spvs" element={<MySPVs />} />
-              <Route path="/spv-formation" element={<SPVFormationFlow onBack={() => window.history.back()} />} />
+              {/* ===== RWA Routes - redirect to Web3 ===== */}
+              <Route path="/rwa" element={<Navigate to="/dashboard/web3/tokenization" replace />} />
+              <Route path="/rwa/tokenize" element={<Navigate to="/dashboard/web3/tokenize-asset" replace />} />
+              <Route path="/rwa/assets" element={<Navigate to="/dashboard/web3/my-tokenized-assets" replace />} />
+              <Route path="/rwa/marketplace" element={<Navigate to="/dashboard/web3/marketplace" replace />} />
 
-              {/* ===== RWA (Real World Assets) Routes ===== */}
-              <Route path="/rwa" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/rwa/tokenize" element={<TokenizeAssetFlow onBack={() => window.history.back()} />} />
-              <Route path="/rwa/assets" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/rwa/marketplace" element={<Marketplace />} />
-
-              {/* ===== Web3 Routes ===== */}
-              <Route path="/web3" element={<Navigate to="/web3/launchpad" replace />} />
-              <Route path="/web3/ico" element={<ICO />} />
-              <Route path="/web3/nft" element={<NFTCollection />} />
-              <Route path="/web3/nft-collection" element={<NFTCollection />} />
-              <Route path="/web3/carbon" element={<CarbonCertificates />} />
-              <Route path="/web3/carbon-certificates" element={<CarbonCertificates />} />
-              <Route path="/web3/dao" element={<DAODrivenTokenizedAssetLicensing />} />
-              <Route path="/web3/tokenswap" element={<TokenSwapPage />} />
-              <Route path="/web3/flight-tracker" element={<FlightTracker />} />
+              {/* ===== Web3 Routes - Redirect to /dashboard/web3/* ===== */}
+              <Route path="/web3" element={<Navigate to="/dashboard/web3" replace />} />
+              <Route path="/web3/ico" element={<Navigate to="/dashboard/web3/launchpad" replace />} />
+              <Route path="/web3/nft" element={<Navigate to="/dashboard/web3/nft-marketplace" replace />} />
+              <Route path="/web3/nft-collection" element={<Navigate to="/dashboard/web3/nft-marketplace" replace />} />
+              <Route path="/web3/launchpad" element={<Navigate to="/dashboard/web3/launchpad" replace />} />
 
               {/* ===== Subscriptions Routes ===== */}
               <Route path="/subscriptions" element={<Navigate to="/subscriptions/plans" replace />} />

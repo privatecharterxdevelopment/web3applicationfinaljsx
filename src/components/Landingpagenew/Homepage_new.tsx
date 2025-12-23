@@ -422,6 +422,7 @@ function Homepage() {
                       { prompt: "Yacht week Croatia", tier: "traveller" },
                       { prompt: "Round trip to Dubai", tier: "explorer" },
                       { prompt: "MEDEVAC flight Greece to Switzerland", tier: "elite" },
+                      { prompt: "Express Visa for Thailand", tier: "explorer" },
                       { prompt: "Concierge services Monaco", tier: "traveller" },
                       { prompt: "Break the price on competitor quote", tier: "traveller" },
                       { prompt: "Empty legs Zurich departing", tier: "explorer" },
@@ -553,9 +554,9 @@ function Homepage() {
           </div>
         </section>
 
-        {/* Three Cards Section - Ground Transport, Tokenize, Partner */}
+        {/* Four Cards Section - Ground Transport, Tokenize, Visa, Partner */}
         <section className="px-4 sm:px-8 pt-1 sm:pt-1 pb-8 sm:pb-12 max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Ground Transport */}
             <div
               onClick={handleGetStarted}
@@ -593,6 +594,28 @@ function Homepage() {
                 <div className="flex flex-wrap gap-2 mb-4">
                   <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Smart Contracts</span>
                   <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Liquidity</span>
+                </div>
+                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
+                  +
+                </div>
+              </div>
+            </div>
+
+            {/* Express Visa Service */}
+            <div
+              onClick={() => navigate('/dashboard/chat?query=Express%20Visa%20Service&newChat=true')}
+              className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+            >
+              <div className="p-6">
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
+                  Express Visa
+                  <br />
+                  <span className="text-gray-400 text-sm">24h Guarantee</span>
+                </h3>
+                <p className="text-gray-600 text-sm leading-snug mb-3">Hassle-free visa processing in 95% of countries. $250/person with verified agent network.</p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">24h Processing</span>
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">95% Coverage</span>
                 </div>
                 <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
                   +
@@ -852,20 +875,20 @@ function Homepage() {
                 <div>
                   <h4 className="text-sm font-medium text-gray-900 mb-4">Web3</h4>
                   <div className="space-y-2.5">
-                    <button onClick={() => navigate('/dashboard?tab=tokenize')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                    <button onClick={() => navigate('/dashboard/web3/tokenization')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                       Tokenize Your Asset
                     </button>
-                    <button onClick={() => navigate('/dashboard?tab=nfts')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                    <button onClick={() => navigate('/dashboard/web3/nft-marketplace')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                       NFT Membership
                     </button>
-                    <button onClick={() => navigate('/dashboard')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Crypto Payments
+                    <button onClick={() => navigate('/dashboard/web3/pvcx-token')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      PVCX Token
                     </button>
-                    <button onClick={() => navigate('/dashboard')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Smart Contracts
+                    <button onClick={() => navigate('/dashboard/web3/launchpad')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Launchpad
                     </button>
-                    <button onClick={() => navigate('/dashboard?tab=marketplace')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Digital Ownership
+                    <button onClick={() => navigate('/dashboard/web3/marketplace')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Marketplace
                     </button>
                   </div>
                 </div>
