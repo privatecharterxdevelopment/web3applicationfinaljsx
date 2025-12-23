@@ -1305,19 +1305,22 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
               >
                 <div className="flex items-center gap-2">
                   <MessageCircle className="w-4 h-4 text-gray-600" />
-                  <span className="text-sm font-medium text-gray-900">My Support Tickets</span>
+                  <span className="text-sm font-medium text-gray-900">Support</span>
                   {supportTickets.length > 0 && (
                     <span className="px-2 py-0.5 bg-orange-500 text-white rounded-full text-xs">
                       {supportTickets.length}
                     </span>
                   )}
+                  <span className="text-[10px] text-gray-400 ml-1">24/7</span>
                 </div>
                 <Plus className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${activeSection === 'support' ? 'rotate-45' : ''}`} />
               </button>
               <div className={`transition-all duration-300 ease-in-out overflow-hidden ${activeSection === 'support' ? 'max-h-[600px] overflow-y-auto' : 'max-h-0'}`}>
                 <div className="p-4 bg-white/10 space-y-3">
+                  {/* Ticket History */}
                   {supportTickets.length > 0 ? (
                     <>
+                      <p className="text-xs text-gray-500 font-medium">My Tickets</p>
                       {supportTickets.slice(0, 5).map((ticket) => {
                         const statusColors = {
                           open: 'bg-blue-100 text-blue-700',
@@ -1370,25 +1373,19 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                           +{supportTickets.length - 5} more tickets
                         </p>
                       )}
-                      {/* New Support Request Button */}
-                      <button
-                        onClick={() => setShowSupportModal(true)}
-                        className="w-full py-2 text-xs text-gray-600 hover:text-gray-900 transition-colors text-center border border-dashed border-gray-300 rounded-lg hover:border-gray-400"
-                      >
-                        + New Support Request
-                      </button>
                     </>
                   ) : (
-                    <div className="text-center py-4">
-                      <p className="text-sm text-gray-500 mb-3">No support tickets yet</p>
-                      <button
-                        onClick={() => setShowSupportModal(true)}
-                        className="px-4 py-2 text-xs bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
-                      >
-                        Create Support Ticket
-                      </button>
-                    </div>
+                    <p className="text-xs text-gray-500 text-center py-2">No tickets yet</p>
                   )}
+
+                  {/* Contact Support Button - Always visible at bottom */}
+                  <button
+                    onClick={() => setShowSupportModal(true)}
+                    className="w-full py-2.5 bg-black hover:bg-gray-800 text-white rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-2"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    Contact Support
+                  </button>
                 </div>
               </div>
             </div>
@@ -1505,30 +1502,6 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
               </div>
             </div>
 
-            {/* Support Section */}
-            <div className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl overflow-hidden">
-              <button
-                onClick={() => toggleSection('support')}
-                className="w-full p-3 flex items-center justify-between hover:bg-white/10 transition-all"
-              >
-                <div className="flex items-center gap-2">
-                  <MessageCircle className="w-4 h-4 text-gray-600" />
-                  <span className="text-sm font-medium text-gray-900">Support</span>
-                </div>
-                <Plus className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${activeSection === 'support' ? 'rotate-45' : ''}`} />
-              </button>
-              <div className={`transition-all duration-300 ease-in-out overflow-hidden ${activeSection === 'support' ? 'max-h-96' : 'max-h-0'}`}>
-                <div className="p-4 bg-white/10">
-                  <p className="text-sm text-gray-500 mb-2">Support available 24/7</p>
-                  <button
-                    onClick={() => setShowSupportModal(true)}
-                    className="w-full py-2 bg-black hover:bg-gray-800 text-white rounded-lg text-xs font-medium transition-all"
-                  >
-                    Contact Support
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Right Column */}

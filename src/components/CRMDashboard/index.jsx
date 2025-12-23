@@ -10,7 +10,8 @@ import {
   TrendingUp, TrendingDown, Loader2, ShieldAlert, ChevronDown,
   Home, BarChart3, Briefcase, Tag, Globe, Zap,
   Building2, Sparkles, Ticket, Clock, Package, AlertCircle,
-  ArrowRight, Star, Leaf, Percent, Wine, Cigarette
+  ArrowRight, Star, Leaf, Percent, Wine, Cigarette,
+  Coins, ShoppingCart, FileCheck, Crown, RotateCcw, Bell, UserCheck2, User
 } from 'lucide-react';
 import QuoteInvoiceModal from './QuoteInvoiceModal';
 
@@ -50,7 +51,14 @@ const CRMDashboard = ({ onClose }) => {
   const [allEmptyLegsFromTable, setAllEmptyLegsFromTable] = useState([]);
   const [allWines, setAllWines] = useState([]);
   const [allCigars, setAllCigars] = useState([]);
+  const [allSPVFormations, setAllSPVFormations] = useState([]);
+  const [allTokenizationDrafts, setAllTokenizationDrafts] = useState([]);
+  const [allSubscriptions, setAllSubscriptions] = useState([]);
+  const [allPVCXBalances, setAllPVCXBalances] = useState([]);
+  const [allPVCXTransactions, setAllPVCXTransactions] = useState([]);
   const [sidebarCounts, setSidebarCounts] = useState({});
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   const [stats, setStats] = useState({ total: 0, new: 0, repeat: 0, churned: 0, active: 0 });
   const [currentPage, setCurrentPage] = useState(1);
@@ -102,7 +110,10 @@ const CRMDashboard = ({ onClose }) => {
         { count: emptyLegBookingsCount },
         { count: emptyLegsTableCount },
         { count: winesCount },
-        { count: cigarsCount }
+        { count: cigarsCount },
+        { count: spvFormationsCount },
+        { count: tokenizationDraftsCount },
+        { count: subscriptionsCount }
       ] = await Promise.all([
         supabaseAdmin.from('user_bookings').select('*', { count: 'exact', head: true }),
         supabaseAdmin.from('user_requests').select('*', { count: 'exact', head: true }),
@@ -118,10 +129,13 @@ const CRMDashboard = ({ onClose }) => {
         supabaseAdmin.from('user_bookings').select('*', { count: 'exact', head: true }).eq('booking_type', 'empty_leg'),
         supabaseAdmin.from('EmptyLegs_').select('*', { count: 'exact', head: true }),
         supabaseAdmin.from('wines').select('*', { count: 'exact', head: true }),
-        supabaseAdmin.from('premium_cigars').select('*', { count: 'exact', head: true })
+        supabaseAdmin.from('premium_cigars').select('*', { count: 'exact', head: true }),
+        supabaseAdmin.from('user_requests').select('*', { count: 'exact', head: true }).eq('type', 'spv_formation'),
+        supabaseAdmin.from('tokenization_drafts').select('*', { count: 'exact', head: true }),
+        supabaseAdmin.from('user_profiles').select('*', { count: 'exact', head: true }).not('subscription_tier', 'is', null)
       ]);
       setSidebarCounts({
-        customers: authUsersCount, // Use auth.users count - the REAL number of registered users
+        customers: authUsersCount,
         bookings: bookingsCount || 0,
         requests: requestsCount || 0,
         aiChats: aiChatsCount || 0,
@@ -136,7 +150,10 @@ const CRMDashboard = ({ onClose }) => {
         emptyLegBookings: emptyLegBookingsCount || 0,
         emptyLegsTable: emptyLegsTableCount || 0,
         wines: winesCount || 0,
-        cigars: cigarsCount || 0
+        cigars: cigarsCount || 0,
+        spvFormations: spvFormationsCount || 0,
+        tokenizationDrafts: tokenizationDraftsCount || 0,
+        subscriptions: subscriptionsCount || 0
       });
     } catch (err) { console.error('Error fetching counts:', err); }
   }, []);
@@ -214,7 +231,7 @@ const CRMDashboard = ({ onClose }) => {
           supabaseAdmin.from('user_requests').select('*').eq('user_id', authUser.id),
           supabaseAdmin.from('ai_chat_sessions').select('*').eq('user_id', authUser.id),
           supabaseAdmin.from('support_tickets').select('*').eq('user_id', authUser.id),
-          supabaseAdmin.from('user_profiles').select('avatar_url, phone, city, country, wallet_address').eq('user_id', authUser.id).single()
+          supabaseAdmin.from('user_profiles').select('avatar_url, phone, city, country, wallet_address, pvcx_balance, subscription_tier, nft_holder').eq('user_id', authUser.id).single()
         ]);
 
         // Merge auth user data with public user data
@@ -265,18 +282,61 @@ const CRMDashboard = ({ onClose }) => {
     const userIds = [...new Set(items.map(item => item[userIdField]).filter(Boolean))];
     if (userIds.length === 0) return items;
 
+    // Fetch from users table
     const { data: users } = await supabaseAdmin
       .from('users')
-      .select('id, email, name, first_name, last_name')
+      .select('id, email, name, first_name, last_name, phone, address, country, created_at')
       .in('id', userIds);
+
+    // Also fetch from user_profiles for additional details
+    const { data: profiles } = await supabaseAdmin
+      .from('user_profiles')
+      .select('user_id, subscription_tier, subscription_status, nft_holder, kyc_verified, phone, address, city, country, company_name')
+      .in('user_id', userIds);
+
+    // Also try auth.users for emails (fallback)
+    let authEmails = {};
+    try {
+      const { data: authData } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+      (authData?.users || []).forEach(u => {
+        if (userIds.includes(u.id)) {
+          authEmails[u.id] = u.email;
+        }
+      });
+    } catch (e) { /* ignore auth errors */ }
 
     const userMap = {};
     (users || []).forEach(u => { userMap[u.id] = u; });
 
-    return items.map(item => ({
-      ...item,
-      users: userMap[item[userIdField]] || null
-    }));
+    const profileMap = {};
+    (profiles || []).forEach(p => { profileMap[p.user_id] = p; });
+
+    return items.map(item => {
+      const userId = item[userIdField];
+      const userData = userMap[userId] || {};
+      const profileData = profileMap[userId] || {};
+      const authEmail = authEmails[userId];
+
+      return {
+        ...item,
+        users: {
+          ...userData,
+          ...profileData,
+          email: userData.email || authEmail || item.client_email || null,
+          name: userData.name || `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || profileData.company_name || null,
+          full_name: `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || userData.name || null,
+          phone: userData.phone || profileData.phone || null,
+          address: userData.address || profileData.address || null,
+          city: profileData.city || null,
+          country: userData.country || profileData.country || null,
+          company_name: profileData.company_name || null,
+          subscription_tier: profileData.subscription_tier || null,
+          subscription_status: profileData.subscription_status || null,
+          nft_holder: profileData.nft_holder || false,
+          kyc_verified: profileData.kyc_verified || false
+        }
+      };
+    });
   };
 
   // Fetch all bookings
@@ -445,6 +505,166 @@ const CRMDashboard = ({ onClose }) => {
     finally { setRefreshing(false); }
   }, []);
 
+  // Fetch SPV Formation requests from user_requests table
+  const fetchSPVFormations = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('user_requests')
+        .select('*')
+        .eq('type', 'spv_formation')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (error) console.error('SPV formations fetch error:', error);
+      const enriched = await enrichWithUserData(data || []);
+      console.log('SPV formations fetched:', enriched?.length, 'records');
+      setAllSPVFormations(enriched);
+    } catch (err) { console.error('Error fetching SPV formations:', err); }
+    finally { setRefreshing(false); }
+  }, []);
+
+  // Fetch Tokenization Drafts from tokenization_drafts table
+  const fetchTokenizationDrafts = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // First try to fetch all drafts (including any status)
+      let query = supabaseAdmin.from('tokenization_drafts').select('*');
+
+      // Try with order first
+      const { data, error } = await query.order('created_at', { ascending: false }).limit(100);
+
+      if (error) {
+        console.error('Tokenization drafts fetch error:', error);
+        // Try without order if that fails
+        const { data: fallbackData, error: fallbackError } = await supabaseAdmin
+          .from('tokenization_drafts')
+          .select('*')
+          .limit(100);
+        if (fallbackError) {
+          console.error('Tokenization drafts fallback fetch error:', fallbackError);
+          setAllTokenizationDrafts([]);
+        } else {
+          console.log('Tokenization drafts (fallback) fetched:', fallbackData?.length, 'records');
+          const enriched = await enrichWithUserData(fallbackData || []);
+          setAllTokenizationDrafts(enriched);
+        }
+      } else {
+        console.log('Tokenization drafts fetched:', data?.length, 'records', data);
+        const enriched = await enrichWithUserData(data || []);
+        setAllTokenizationDrafts(enriched);
+      }
+    } catch (err) {
+      console.error('Error fetching tokenization drafts:', err);
+      setAllTokenizationDrafts([]);
+    }
+    finally { setRefreshing(false); }
+  }, []);
+
+  // Fetch ALL subscriptions from user_profiles - shows subscription data
+  const fetchAllSubscriptions = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('user_profiles')
+        .select('*')
+        .not('subscription_tier', 'is', null)
+        .order('created_at', { ascending: false });
+      if (error) console.error('Subscriptions fetch error:', error);
+      const enriched = await enrichWithUserData(data || []);
+      console.log('Subscriptions fetched:', enriched?.length, 'records');
+      setAllSubscriptions(enriched);
+    } catch (err) { console.error('Error fetching subscriptions:', err); }
+    finally { setRefreshing(false); }
+  }, []);
+
+  // Fetch PVCX token balances and transactions
+  const fetchPVCXData = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // Try to fetch from pvcx_balances table (will create if doesn't exist via upsert)
+      const { data: balances, error: balError } = await supabaseAdmin
+        .from('pvcx_balances')
+        .select('*')
+        .order('balance', { ascending: false });
+
+      if (balError) {
+        console.log('PVCX balances table may not exist, checking user_profiles for pvcx_balance field');
+        // Fallback: fetch from user_profiles if pvcx_balances table doesn't exist
+        const { data: profiles } = await supabaseAdmin
+          .from('user_profiles')
+          .select('user_id, pvcx_balance')
+          .not('pvcx_balance', 'is', null)
+          .order('pvcx_balance', { ascending: false });
+
+        const enrichedProfiles = await enrichWithUserData(profiles || [], 'user_id');
+        setAllPVCXBalances(enrichedProfiles);
+      } else {
+        const enriched = await enrichWithUserData(balances || [], 'user_id');
+        setAllPVCXBalances(enriched);
+      }
+
+      // Try to fetch transactions
+      const { data: txns, error: txError } = await supabaseAdmin
+        .from('pvcx_transactions')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (!txError) {
+        const enrichedTxns = await enrichWithUserData(txns || [], 'user_id');
+        setAllPVCXTransactions(enrichedTxns);
+      } else {
+        console.log('PVCX transactions table may not exist yet');
+        setAllPVCXTransactions([]);
+      }
+    } catch (err) { console.error('Error fetching PVCX data:', err); }
+    finally { setRefreshing(false); }
+  }, []);
+
+  // Fetch recent notifications (latest entries across all tables)
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const now = new Date();
+      const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000).toISOString();
+
+      // Fetch recent items from multiple tables in parallel
+      const [bookingsRes, requestsRes, supportRes, spvRes, tokenRes, subsRes] = await Promise.all([
+        supabaseAdmin.from('user_bookings').select('id, user_id, service_type, created_at').gte('created_at', oneDayAgo).order('created_at', { ascending: false }).limit(5),
+        supabaseAdmin.from('user_requests').select('id, user_id, type, created_at').gte('created_at', oneDayAgo).order('created_at', { ascending: false }).limit(5),
+        supabaseAdmin.from('support_tickets').select('id, user_id, subject, created_at').gte('created_at', oneDayAgo).order('created_at', { ascending: false }).limit(5),
+        supabaseAdmin.from('user_requests').select('id, user_id, data, created_at').eq('type', 'spv_formation').gte('created_at', oneDayAgo).order('created_at', { ascending: false }).limit(5),
+        supabaseAdmin.from('tokenization_drafts').select('id, user_id, asset_name, created_at').gte('created_at', oneDayAgo).order('created_at', { ascending: false }).limit(5),
+        supabaseAdmin.from('user_profiles').select('user_id, subscription_tier, created_at').not('subscription_tier', 'is', null).gte('created_at', oneDayAgo).order('created_at', { ascending: false }).limit(5),
+      ]);
+
+      // Combine and format notifications
+      const allNotifs = [
+        ...(bookingsRes.data || []).map(b => ({ id: `booking-${b.id}`, type: 'booking', label: `New ${b.service_type?.replace('_', ' ') || 'booking'}`, created_at: b.created_at, section: 'activity' })),
+        ...(requestsRes.data || []).filter(r => r.type !== 'spv_formation').map(r => ({ id: `request-${r.id}`, type: 'request', label: `New ${r.type?.replace('_', ' ') || 'request'}`, created_at: r.created_at, section: 'activity' })),
+        ...(supportRes.data || []).map(s => ({ id: `support-${s.id}`, type: 'support', label: `Support: ${s.subject?.slice(0, 30) || 'New ticket'}`, created_at: s.created_at, section: 'support' })),
+        ...(spvRes.data || []).map(s => ({ id: `spv-${s.id}`, type: 'spv', label: `SPV Formation: ${s.data?.spv_name || 'New request'}`, created_at: s.created_at, section: 'spv-formation' })),
+        ...(tokenRes.data || []).map(t => ({ id: `token-${t.id}`, type: 'tokenization', label: `Tokenization: ${t.asset_name || 'New draft'}`, created_at: t.created_at, section: 'tokenization' })),
+        ...(subsRes.data || []).map(s => ({ id: `sub-${s.user_id}`, type: 'subscription', label: `New ${s.subscription_tier} subscription`, created_at: s.created_at, section: 'subscriptions' })),
+      ];
+
+      // Sort by date and take top 15
+      const sorted = allNotifs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 15);
+      setNotifications(sorted);
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    }
+  }, []);
+
+  // Fetch notifications on mount
+  useEffect(() => {
+    if (isAdmin) {
+      fetchNotifications();
+      // Refresh notifications every 2 minutes
+      const interval = setInterval(fetchNotifications, 2 * 60 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [isAdmin, fetchNotifications]);
+
   // Effect to fetch data based on active section
   useEffect(() => {
     if (!isAdmin) return;
@@ -459,17 +679,22 @@ const CRMDashboard = ({ onClose }) => {
       case 'helicopters': fetchAllBookings('helicopter'); break;
       case 'requests': fetchAllRequests(); break;
       case 'ai-chats': fetchAllAiChats(); break;
+      case 'ai-requests': fetchAllChatRequests(); break;
       case 'support': fetchAllSupport(); break;
       case 'transactions': fetchAllTransactions(); break;
+      case 'subscriptions': fetchAllSubscriptions(); break;
       case 'chat-messages': fetchAllChatMessages(); break;
       case 'chat-requests': fetchAllChatRequests(); break;
       case 'empty-legs': fetchEmptyLegBookings(); break;
       case 'emptylegs-table': fetchEmptyLegsFromTable(); break;
       case 'wines': fetchAllWines(); break;
       case 'cigars': fetchAllCigars(); break;
+      case 'spv-formation': fetchSPVFormations(); break;
+      case 'tokenization': fetchTokenizationDrafts(); break;
+      case 'pvcx': fetchPVCXData(); break;
       default: fetchCustomers();
     }
-  }, [isAdmin, activeSection, fetchCustomers, fetchAllBookings, fetchAllRequests, fetchAllAiChats, fetchAllSupport, fetchAllTransactions, fetchAllChatMessages, fetchAllChatRequests, fetchEmptyLegBookings, fetchEmptyLegsFromTable, fetchAllWines, fetchAllCigars, fetchSidebarCounts]);
+  }, [isAdmin, activeSection, fetchCustomers, fetchAllBookings, fetchAllRequests, fetchAllAiChats, fetchAllSupport, fetchAllTransactions, fetchAllChatMessages, fetchAllChatRequests, fetchEmptyLegBookings, fetchEmptyLegsFromTable, fetchAllWines, fetchAllCigars, fetchSPVFormations, fetchTokenizationDrafts, fetchAllSubscriptions, fetchPVCXData, fetchSidebarCounts]);
 
   const getUserName = (c) => c?.name || `${c?.first_name || ''} ${c?.last_name || ''}`.trim() || c?.email?.split('@')[0] || 'Unknown';
   const getUserRole = (c) => c?.user_role || (c?.bookings?.length > 5 ? 'VIP' : c?.bookings?.length > 0 ? 'Active' : 'New');
@@ -477,15 +702,20 @@ const CRMDashboard = ({ onClose }) => {
   const copyToClipboard = (text) => navigator.clipboard.writeText(text);
 
   // Sidebar menu items
-  // SIMPLIFIED MENU - 7 items instead of 16
+  // ENHANCED MENU - includes Web3 sections
   const menuItems = [
     { id: 'dashboard', icon: Home, label: 'Dashboard', count: null },
     { id: 'customers', icon: Users, label: 'Customers', count: sidebarCounts.customers },
     { id: 'activity', icon: Activity, label: 'Customer Activity', count: (sidebarCounts.bookings || 0) + (sidebarCounts.requests || 0) + (sidebarCounts.chatRequests || 0) },
+    { id: 'ai-requests', icon: ShoppingCart, label: 'AI Chat Requests', count: sidebarCounts.chatRequests },
     { id: 'ai-chats', icon: Sparkles, label: 'AI Conversations', count: sidebarCounts.aiChats },
     { id: 'support', icon: Ticket, label: 'Support', count: sidebarCounts.support },
     { id: 'transactions', icon: CreditCard, label: 'Transactions', count: sidebarCounts.transactions },
     { id: 'inventory', icon: Package, label: 'Inventory', count: (sidebarCounts.emptyLegsTable || 0) + (sidebarCounts.wines || 0) + (sidebarCounts.cigars || 0) },
+    { id: 'subscriptions', icon: Crown, label: 'Subscriptions', count: sidebarCounts.subscriptions },
+    { id: 'spv-formation', icon: Building2, label: 'SPV Formation', count: sidebarCounts.spvFormations },
+    { id: 'tokenization', icon: Coins, label: 'Tokenized Assets', count: sidebarCounts.tokenizationDrafts },
+    { id: 'pvcx', icon: Zap, label: 'PVCX Tokens', count: allPVCXBalances.length || null },
   ];
 
   if (loading) {
@@ -578,6 +808,75 @@ const CRMDashboard = ({ onClose }) => {
                   className="pl-10 pr-4 py-2 w-64 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
                 />
               </div>
+              {/* Notification Bell */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="p-2 hover:bg-gray-100 rounded-lg relative"
+                >
+                  <Bell size={18} className="text-gray-500" />
+                  {notifications.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
+                      {notifications.length > 9 ? '9+' : notifications.length}
+                    </span>
+                  )}
+                </button>
+                {/* Notification Dropdown */}
+                {showNotifications && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-200 z-50 max-h-[400px] overflow-hidden">
+                    <div className="p-3 border-b border-gray-100 flex items-center justify-between">
+                      <h3 className="font-semibold text-gray-900">Recent Activity</h3>
+                      <span className="text-xs text-gray-500">Last 24 hours</span>
+                    </div>
+                    <div className="overflow-y-auto max-h-[320px]">
+                      {notifications.length === 0 ? (
+                        <div className="p-6 text-center text-gray-500 text-sm">No recent activity</div>
+                      ) : (
+                        notifications.map((n) => (
+                          <button
+                            key={n.id}
+                            onClick={() => { setActiveSection(n.section); setShowNotifications(false); }}
+                            className="w-full px-4 py-3 hover:bg-gray-50 border-b border-gray-50 text-left flex items-start gap-3"
+                          >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                              n.type === 'booking' ? 'bg-blue-100' :
+                              n.type === 'support' ? 'bg-orange-100' :
+                              n.type === 'spv' ? 'bg-purple-100' :
+                              n.type === 'tokenization' ? 'bg-indigo-100' :
+                              n.type === 'subscription' ? 'bg-yellow-100' :
+                              'bg-gray-100'
+                            }`}>
+                              {n.type === 'booking' && <Plane size={14} className="text-blue-600" />}
+                              {n.type === 'support' && <Ticket size={14} className="text-orange-600" />}
+                              {n.type === 'spv' && <Building2 size={14} className="text-purple-600" />}
+                              {n.type === 'tokenization' && <Coins size={14} className="text-indigo-600" />}
+                              {n.type === 'subscription' && <Crown size={14} className="text-yellow-600" />}
+                              {n.type === 'request' && <ShoppingCart size={14} className="text-gray-600" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-900 truncate">{n.label}</p>
+                              <p className="text-xs text-gray-500">
+                                {new Date(n.created_at).toLocaleString('en-US', {
+                                  month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                            <ArrowRight size={14} className="text-gray-400 flex-shrink-0 mt-1" />
+                          </button>
+                        ))
+                      )}
+                    </div>
+                    <div className="p-2 border-t border-gray-100">
+                      <button
+                        onClick={() => { fetchNotifications(); }}
+                        className="w-full py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg flex items-center justify-center gap-2"
+                      >
+                        <RefreshCcw size={14} /> Refresh
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
               <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
                 <X size={18} className="text-gray-500" />
               </button>
@@ -636,7 +935,7 @@ const CRMDashboard = ({ onClose }) => {
 
           {/* Support Section */}
           {activeSection === 'support' && (
-            <SupportSection tickets={allSupport} refreshing={refreshing} onRefresh={fetchAllSupport} />
+            <SupportSection tickets={allSupport} refreshing={refreshing} onRefresh={fetchAllSupport} supabaseAdmin={supabaseAdmin} />
           )}
 
           {/* Transactions Section */}
@@ -655,6 +954,61 @@ const CRMDashboard = ({ onClose }) => {
               onRefreshWines={fetchAllWines}
               onRefreshCigars={fetchAllCigars}
               sidebarCounts={sidebarCounts}
+            />
+          )}
+
+          {/* AI Chat Requests Section - Cart items from AI Chat */}
+          {activeSection === 'ai-requests' && (
+            <AiChatRequestsSection
+              requests={allChatRequests}
+              refreshing={refreshing}
+              onRefresh={fetchAllChatRequests}
+              supabaseAdmin={supabaseAdmin}
+            />
+          )}
+
+          {/* SPV Formation Section */}
+          {activeSection === 'spv-formation' && (
+            <SPVFormationSection
+              formations={allSPVFormations}
+              refreshing={refreshing}
+              onRefresh={fetchSPVFormations}
+              supabaseAdmin={supabaseAdmin}
+              currentAdminEmail={user?.email}
+            />
+          )}
+
+          {/* Tokenization Section */}
+          {activeSection === 'tokenization' && (
+            <TokenizationSection
+              drafts={allTokenizationDrafts}
+              refreshing={refreshing}
+              onRefresh={fetchTokenizationDrafts}
+              supabaseAdmin={supabaseAdmin}
+              currentAdminEmail={user?.email}
+            />
+          )}
+
+          {/* Subscriptions Section */}
+          {activeSection === 'subscriptions' && (
+            <SubscriptionsSection
+              subscriptions={allSubscriptions}
+              refreshing={refreshing}
+              onRefresh={fetchAllSubscriptions}
+              supabaseAdmin={supabaseAdmin}
+            />
+          )}
+
+          {/* PVCX Tokens Section - Only eltesto can send tokens */}
+          {activeSection === 'pvcx' && (
+            <PVCXSection
+              balances={allPVCXBalances}
+              transactions={allPVCXTransactions}
+              refreshing={refreshing}
+              onRefresh={fetchPVCXData}
+              supabaseAdmin={supabaseAdmin}
+              currentAdminEmail={user?.email}
+              customers={customers}
             />
           )}
         </div>
@@ -2330,10 +2684,11 @@ const AiChatsSection = ({ chats, refreshing, onRefresh }) => {
 };
 
 // ============================================
-// SUPPORT SECTION - WITH FULL MESSAGE CONTENT
+// SUPPORT SECTION - WITH FULL MESSAGE CONTENT & STATUS MANAGEMENT
 // ============================================
-const SupportSection = ({ tickets, refreshing, onRefresh }) => {
+const SupportSection = ({ tickets, refreshing, onRefresh, supabaseAdmin }) => {
   const [expandedTicket, setExpandedTicket] = useState(null);
+  const [updatingStatus, setUpdatingStatus] = useState(null);
 
   const getPriorityColor = (priority) => {
     const colors = {
@@ -2344,6 +2699,52 @@ const SupportSection = ({ tickets, refreshing, onRefresh }) => {
     };
     return colors[priority?.toLowerCase()] || 'bg-gray-100 text-gray-700';
   };
+
+  // Get client display name
+  const getClientName = (t) => {
+    return t.users?.full_name || t.users?.name || t.ticket_data?.user_name ||
+           `${t.users?.first_name || ''} ${t.users?.last_name || ''}`.trim() ||
+           t.users?.email?.split('@')[0] || 'Unknown Client';
+  };
+
+  const updateTicketStatus = async (ticketId, newStatus) => {
+    if (!supabaseAdmin) {
+      console.error('supabaseAdmin not available');
+      return;
+    }
+    try {
+      setUpdatingStatus(ticketId);
+
+      // Build update object - only include status field as the minimum
+      const updateData = { status: newStatus };
+
+      // Try to update with just status first (most reliable)
+      const { error } = await supabaseAdmin
+        .from('support_tickets')
+        .update(updateData)
+        .eq('id', ticketId);
+
+      if (error) {
+        console.error('Support ticket update error:', error);
+        throw error;
+      }
+
+      onRefresh(); // Refresh the list
+    } catch (err) {
+      console.error('Error updating ticket status:', err);
+      alert(`Failed to update ticket status: ${err.message || 'Unknown error'}`);
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
+  // Using standard status values that match support_tickets_status_check constraint
+  const statusOptions = [
+    { value: 'open', label: 'Open', color: 'bg-yellow-100 text-yellow-700' },
+    { value: 'pending', label: 'Pending', color: 'bg-blue-100 text-blue-700' },
+    { value: 'resolved', label: 'Resolved', color: 'bg-green-100 text-green-700' },
+    { value: 'closed', label: 'Closed', color: 'bg-gray-100 text-gray-700' }
+  ];
 
   return (
     <>
@@ -2362,6 +2763,7 @@ const SupportSection = ({ tickets, refreshing, onRefresh }) => {
         <div className="space-y-3">
           {tickets.map((t, i) => {
             const isExpanded = expandedTicket === t.id;
+            const clientName = getClientName(t);
 
             return (
               <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -2375,7 +2777,9 @@ const SupportSection = ({ tickets, refreshing, onRefresh }) => {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-900">{t.subject || 'No Subject'}</p>
-                      <p className="text-xs text-gray-500">{t.users?.email || t.user_id?.slice(0, 8)} - {t.type || 'general'}</p>
+                      <p className="text-xs text-gray-500">
+                        <span className="font-medium text-gray-700">{clientName}</span> • {t.users?.email || '-'} • {t.type || 'general'}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -2417,6 +2821,27 @@ const SupportSection = ({ tickets, refreshing, onRefresh }) => {
                       </p>
                       <div className="text-sm text-gray-800 whitespace-pre-wrap bg-orange-50 p-3 rounded-lg">
                         {t.description || 'No description provided'}
+                      </div>
+                    </div>
+
+                    {/* Status Management */}
+                    <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
+                      <p className="text-xs font-semibold text-gray-700 mb-3">Update Ticket Status</p>
+                      <div className="flex flex-wrap gap-2">
+                        {statusOptions.map(opt => (
+                          <button
+                            key={opt.value}
+                            onClick={(e) => { e.stopPropagation(); updateTicketStatus(t.id, opt.value); }}
+                            disabled={updatingStatus === t.id || t.status === opt.value}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                              t.status === opt.value
+                                ? `${opt.color} ring-2 ring-offset-1 ring-gray-400`
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            } ${updatingStatus === t.id ? 'opacity-50 cursor-wait' : ''}`}
+                          >
+                            {updatingStatus === t.id ? '...' : opt.label}
+                          </button>
+                        ))}
                       </div>
                     </div>
 
@@ -2800,7 +3225,7 @@ const CustomerCard = ({ customer, getUserName, getUserRole, isRepeatCustomer, co
       </div>
     </div>
 
-    <div className="grid grid-cols-3 gap-2 mb-3 text-center">
+    <div className="grid grid-cols-4 gap-2 mb-3 text-center">
       <div className="p-2 bg-gray-50 rounded-lg">
         <p className="text-lg font-semibold text-gray-900">{customer.bookings?.length || 0}</p>
         <p className="text-[10px] text-gray-500">Bookings</p>
@@ -2812,6 +3237,10 @@ const CustomerCard = ({ customer, getUserName, getUserRole, isRepeatCustomer, co
       <div className="p-2 bg-gray-50 rounded-lg">
         <p className="text-lg font-semibold text-gray-900">{customer.aiChats?.length || 0}</p>
         <p className="text-[10px] text-gray-500">AI Chats</p>
+      </div>
+      <div className="p-2 bg-purple-50 rounded-lg">
+        <p className="text-lg font-semibold text-purple-600">{(customer.profile?.pvcx_balance || 0).toLocaleString()}</p>
+        <p className="text-[10px] text-purple-500">PVCX</p>
       </div>
     </div>
     <div className="flex items-center gap-2">
@@ -2833,6 +3262,7 @@ const CustomerTable = ({ customers, getUserName, getUserRole, isRepeatCustomer, 
           <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Joined</th>
           <th className="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase">Bookings</th>
           <th className="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase">Requests</th>
+          <th className="text-center px-4 py-3 text-xs font-medium text-purple-500 uppercase">PVCX</th>
           <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
         </tr>
       </thead>
@@ -2858,6 +3288,7 @@ const CustomerTable = ({ customers, getUserName, getUserRole, isRepeatCustomer, 
             <td className="px-4 py-3 text-sm text-gray-600">{new Date(c.created_at).toLocaleDateString()}</td>
             <td className="px-4 py-3 text-center"><span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">{c.bookings?.length || 0}</span></td>
             <td className="px-4 py-3 text-center"><span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full">{c.requests?.length || 0}</span></td>
+            <td className="px-4 py-3 text-center"><span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full">{(c.profile?.pvcx_balance || 0).toLocaleString()}</span></td>
             <td className="px-4 py-3 text-right"><button onClick={() => onViewDetails(c)} className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">View</button></td>
           </tr>
         ))}
@@ -4127,7 +4558,9 @@ const UnifiedInventorySection = ({
                     <div className="flex items-center justify-between text-xs text-gray-500">
                       <span>{item.vintage || item.year || '-'}</span>
                       <span className="font-semibold text-gray-900">
-                        ${Number(item.price || 0).toLocaleString()}
+                        {item.typical_price_eur || item.price_range_eur
+                          ? `€${Number(item.typical_price_eur || 0).toLocaleString()}`
+                          : item.price ? `€${Number(item.price).toLocaleString()}` : 'Price on request'}
                       </span>
                     </div>
                   </div>
@@ -4156,7 +4589,7 @@ const UnifiedInventorySection = ({
                     <div className="flex items-center justify-between text-xs text-gray-500">
                       <span>{item.size || item.wrapper || '-'}</span>
                       <span className="font-semibold text-gray-900">
-                        ${Number(item.price || 0).toLocaleString()}
+                        {item.price_usd ? `$${Number(item.price_usd).toLocaleString()}` : item.price ? `$${Number(item.price).toLocaleString()}` : 'Price on request'}
                       </span>
                     </div>
                   </div>
@@ -4169,6 +4602,1878 @@ const UnifiedInventorySection = ({
         </div>
       )}
     </div>
+  );
+};
+
+// ============================================
+// AI CHAT REQUESTS SECTION - Cart items from AI Chat
+// ============================================
+const AiChatRequestsSection = ({ requests, refreshing, onRefresh, supabaseAdmin }) => {
+  const [expandedRequest, setExpandedRequest] = useState(null);
+  const [updatingStatus, setUpdatingStatus] = useState(null);
+
+  const updateRequestStatus = async (requestId, newStatus) => {
+    if (!supabaseAdmin) return;
+    try {
+      setUpdatingStatus(requestId);
+      const { error } = await supabaseAdmin
+        .from('chat_requests')
+        .update({
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', requestId);
+
+      if (error) throw error;
+      onRefresh();
+    } catch (err) {
+      console.error('Error updating request status:', err);
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
+  // Map service types to display labels and icons
+  const getServiceInfo = (type) => {
+    if (!type) return { label: 'Service Request', icon: Plane, color: 'bg-gray-100 text-gray-700' };
+    const t = type.toLowerCase();
+    if (t.includes('jet') || t.includes('private_jet') || t.includes('flight')) {
+      return { label: 'Private Jet', icon: Plane, color: 'bg-blue-100 text-blue-700' };
+    }
+    if (t.includes('helicopter') || t.includes('heli')) {
+      return { label: 'Helicopter', icon: Zap, color: 'bg-orange-100 text-orange-700' };
+    }
+    if (t.includes('yacht') || t.includes('boat')) {
+      return { label: 'Yacht Charter', icon: Ship, color: 'bg-cyan-100 text-cyan-700' };
+    }
+    if (t.includes('car') || t.includes('transfer') || t.includes('ground') || t.includes('luxury_car')) {
+      return { label: 'Luxury Car', icon: Car, color: 'bg-purple-100 text-purple-700' };
+    }
+    if (t.includes('empty') || t.includes('leg')) {
+      return { label: 'Empty Leg', icon: Plane, color: 'bg-green-100 text-green-700' };
+    }
+    return { label: type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), icon: Plane, color: 'bg-gray-100 text-gray-700' };
+  };
+
+  // Extract service types from cart items
+  const getServiceTypesFromCart = (cartItems) => {
+    const types = new Set();
+    cartItems.forEach(item => {
+      const itemType = item.type || item.service_type || item.category;
+      if (itemType) {
+        const info = getServiceInfo(itemType);
+        types.add(info.label);
+      }
+    });
+    return Array.from(types);
+  };
+
+  // Get user display name
+  const getUserDisplayName = (userData) => {
+    if (!userData) return null;
+    if (userData.name && userData.name.trim()) return userData.name.trim();
+    if (userData.full_name && userData.full_name.trim()) return userData.full_name.trim();
+    if (userData.first_name || userData.last_name) {
+      return `${userData.first_name || ''} ${userData.last_name || ''}`.trim();
+    }
+    return null;
+  };
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-medium text-gray-900">AI Chat Requests ({requests.length})</h2>
+        <button onClick={onRefresh} disabled={refreshing} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+          <RefreshCcw size={16} className={`text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
+
+      {refreshing ? (
+        <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div>
+      ) : requests.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border">
+          <ShoppingCart className="w-12 h-12 text-gray-300 mb-3" />
+          <p className="text-gray-500">No AI chat requests found</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {requests.map((r, i) => {
+            const isExpanded = expandedRequest === r.id;
+            const cartItems = r.cart_items || [];
+
+            // Get service type - first from main field, then from cart items
+            const mainServiceInfo = getServiceInfo(r.service_type);
+            const cartServiceTypes = getServiceTypesFromCart(cartItems);
+            const primaryServiceLabel = r.service_type ? mainServiceInfo.label : (cartServiceTypes[0] || 'Service Request');
+            const ServiceIcon = mainServiceInfo.icon;
+            const serviceColor = mainServiceInfo.color;
+
+            // Get user name
+            const userName = getUserDisplayName(r.users);
+            const userEmail = r.users?.email || '';
+
+            return (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div
+                  className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-gray-50"
+                  onClick={() => setExpandedRequest(isExpanded ? null : r.id)}
+                >
+                  <div className="flex items-center gap-4">
+                    {/* Service Type Icon */}
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${serviceColor.split(' ')[0]}`}>
+                      <ServiceIcon size={18} className={serviceColor.split(' ')[1]} />
+                    </div>
+                    <div>
+                      {/* Service Type Label - Clear and prominent */}
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded text-xs font-semibold ${serviceColor}`}>
+                          {primaryServiceLabel}
+                        </span>
+                        {cartServiceTypes.length > 1 && (
+                          <span className="text-xs text-gray-400">+{cartServiceTypes.length - 1} more</span>
+                        )}
+                      </div>
+                      {/* User Name (prominent) + Email (secondary) */}
+                      <div className="flex items-center gap-2 mt-1">
+                        {userName ? (
+                          <>
+                            <p className="text-sm font-medium text-gray-900">{userName}</p>
+                            <span className="text-xs text-gray-400">({userEmail})</span>
+                          </>
+                        ) : (
+                          <p className="text-sm text-gray-600">{userEmail || r.user_id?.slice(0, 8)}</p>
+                        )}
+                        <span className="text-xs text-gray-400">• {cartItems.length} item{cartItems.length !== 1 ? 's' : ''}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <StatusBadge status={r.status} />
+                    {r.cart_total && (
+                      <span className="px-2 py-1 text-xs rounded-full font-medium bg-green-100 text-green-700">
+                        ${Number(r.cart_total).toLocaleString()}
+                      </span>
+                    )}
+                    <span className="text-xs text-gray-500">{new Date(r.created_at).toLocaleDateString()}</span>
+                    <ChevronDown size={16} className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div className="px-4 py-4 border-t border-gray-100 bg-gray-50">
+                    {/* Request Details */}
+                    <div className="grid grid-cols-4 gap-4 mb-4">
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Customer</p>
+                        <p className="text-sm font-bold text-gray-900">{userName || 'Unknown'}</p>
+                        <p className="text-xs text-gray-500">{userEmail}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Service Type</p>
+                        <div className="flex flex-wrap gap-1">
+                          {cartServiceTypes.length > 0 ? (
+                            cartServiceTypes.map((type, idx) => (
+                              <span key={idx} className={`px-2 py-0.5 rounded text-xs font-semibold ${getServiceInfo(type).color}`}>
+                                {type}
+                              </span>
+                            ))
+                          ) : (
+                            <span className={`px-2 py-0.5 rounded text-xs font-semibold ${serviceColor}`}>{primaryServiceLabel}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Route</p>
+                        <p className="text-sm font-medium text-gray-900">{r.from_location || '-'} → {r.to_location || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Dates</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {r.date_start ? new Date(r.date_start).toLocaleDateString() : '-'}
+                          {r.date_end && ` - ${new Date(r.date_end).toLocaleDateString()}`}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* User's Query */}
+                    {r.query && (
+                      <div className="bg-white p-4 rounded-lg border-2 border-indigo-200 mb-4">
+                        <p className="text-xs font-semibold text-indigo-700 mb-2 flex items-center gap-2">
+                          <MessageSquare size={14} /> USER'S REQUEST
+                        </p>
+                        <div className="text-sm text-gray-800 whitespace-pre-wrap bg-indigo-50 p-3 rounded-lg">
+                          {r.query}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Cart Items - THE MAIN FEATURE */}
+                    {cartItems.length > 0 && (
+                      <div className="bg-white p-4 rounded-lg border-2 border-green-200 mb-4">
+                        <p className="text-xs font-semibold text-green-700 mb-3 flex items-center gap-2">
+                          <ShoppingCart size={14} /> CART ITEMS ({cartItems.length})
+                        </p>
+                        <div className="space-y-2">
+                          {cartItems.map((item, idx) => {
+                            const itemInfo = getServiceInfo(item.type || item.service_type);
+                            const ItemIcon = itemInfo.icon;
+                            return (
+                              <div key={idx} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100">
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${itemInfo.color.split(' ')[0]}`}>
+                                    <ItemIcon size={14} className={itemInfo.color.split(' ')[1]} />
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${itemInfo.color}`}>
+                                        {itemInfo.label}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm font-medium text-gray-900 mt-0.5">
+                                      {item.displayTitle || item.name || item.title || 'Service Request'}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      {item.from || item.origin || ''} {item.to || item.destination ? `→ ${item.to || item.destination}` : ''}
+                                      {item.date && ` • ${new Date(item.date).toLocaleDateString()}`}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-sm font-semibold text-gray-900">
+                                    {item.price || item.totalWithFee ? `$${Number(item.totalWithFee || item.price || 0).toLocaleString()}` : '-'}
+                                  </p>
+                                  {item.passengers && (
+                                    <p className="text-xs text-gray-500">{item.passengers} pax</p>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {r.cart_total && (
+                          <div className="flex justify-between items-center mt-3 pt-3 border-t border-green-200">
+                            <span className="text-sm font-medium text-gray-700">Total</span>
+                            <span className="text-lg font-bold text-green-700">${Number(r.cart_total).toLocaleString()}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Status Actions */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {['pending', 'contacted', 'quoted', 'confirmed', 'completed', 'cancelled'].map(status => (
+                        <button
+                          key={status}
+                          onClick={(e) => { e.stopPropagation(); updateRequestStatus(r.id, status); }}
+                          disabled={updatingStatus === r.id || r.status === status}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                            r.status === status
+                              ? 'bg-indigo-100 text-indigo-700 ring-2 ring-offset-1 ring-indigo-400'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          } ${updatingStatus === r.id ? 'opacity-50 cursor-wait' : ''}`}
+                        >
+                          {status.charAt(0).toUpperCase() + status.slice(1)}
+                        </button>
+                      ))}
+                      <a
+                        href={`mailto:${r.users?.email}?subject=Your PrivatecharterX Request`}
+                        className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 ml-auto"
+                      >
+                        <Mail size={14} /> Email User
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+};
+
+// ============================================
+// SPV FORMATION SECTION - Full user details + Claim feature
+// ============================================
+const SPVFormationSection = ({ formations, refreshing, onRefresh, supabaseAdmin, currentAdminEmail }) => {
+  const [expandedFormation, setExpandedFormation] = useState(null);
+  const [updatingStatus, setUpdatingStatus] = useState(null);
+  const [claimingId, setClaimingId] = useState(null);
+
+  const updateStatus = async (id, newStatus) => {
+    if (!supabaseAdmin) {
+      alert('Database connection not available');
+      return;
+    }
+    try {
+      setUpdatingStatus(id);
+      // Only update status field - most reliable
+      const { error } = await supabaseAdmin
+        .from('user_requests')
+        .update({ status: newStatus })
+        .eq('id', id);
+
+      if (error) {
+        console.error('SPV status update error:', error);
+        alert(`Failed to update status: ${error.message}`);
+        return;
+      }
+      onRefresh();
+    } catch (err) {
+      console.error('Error updating status:', err);
+      alert(`Error: ${err.message}`);
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
+  // Claim/Accept a case - stores in data JSON field since claimed_by column may not exist
+  const claimCase = async (id, adminEmail) => {
+    if (!supabaseAdmin) {
+      alert('Database connection not available');
+      return;
+    }
+    if (!adminEmail) {
+      alert('Admin email not available');
+      return;
+    }
+    try {
+      setClaimingId(id);
+
+      // First get the current data to merge with
+      const { data: current, error: fetchError } = await supabaseAdmin
+        .from('user_requests')
+        .select('data')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching current data:', fetchError);
+      }
+
+      // Merge claim info into the data JSON field
+      const updatedData = {
+        ...(current?.data || {}),
+        _claimed_by: adminEmail,
+        _claimed_at: new Date().toISOString()
+      };
+
+      const { error } = await supabaseAdmin
+        .from('user_requests')
+        .update({
+          status: 'processing',
+          data: updatedData
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.error('SPV claim error:', error);
+        alert(`Failed to claim case: ${error.message}`);
+        return;
+      }
+      onRefresh();
+    } catch (err) {
+      console.error('Error claiming case:', err);
+      alert(`Error: ${err.message}`);
+    } finally {
+      setClaimingId(null);
+    }
+  };
+
+  // Get client display name - uses ACTUAL form field names
+  const getClientName = (f) => {
+    const data = f.data || {};
+    // Try directors first for the main contact
+    const firstDirector = data.directors?.[0];
+    const directorName = firstDirector?.fullName || '';
+    return f.users?.full_name || f.users?.name || directorName ||
+           f.users?.email?.split('@')[0] || 'Unknown Client';
+  };
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-medium text-gray-900">SPV Formation Requests ({formations.length})</h2>
+        <button onClick={onRefresh} disabled={refreshing} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+          <RefreshCcw size={16} className={`text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
+
+      {refreshing ? (
+        <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div>
+      ) : formations.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border">
+          <Building2 className="w-12 h-12 text-gray-300 mb-3" />
+          <p className="text-gray-500">No SPV formation requests found</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {formations.map((f, i) => {
+            const isExpanded = expandedFormation === f.id;
+            const data = f.data || {};
+            const clientName = getClientName(f);
+            // Get jurisdiction details
+            const jurisdictionDetails = data.jurisdictionDetails || {};
+
+            return (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div
+                  className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-gray-50"
+                  onClick={() => setExpandedFormation(isExpanded ? null : f.id)}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Building2 size={18} className="text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-gray-900">
+                          {data.companyName || 'SPV Formation Request'}
+                        </p>
+                        {data.selectedTier && (
+                          <span className={`px-2 py-0.5 text-xs rounded-full ${
+                            data.selectedTier === 'premium' ? 'bg-purple-100 text-purple-700' :
+                            data.selectedTier === 'budget' ? 'bg-green-100 text-green-700' :
+                            'bg-blue-100 text-blue-700'
+                          }`}>
+                            {data.selectedTier?.toUpperCase()}
+                          </span>
+                        )}
+                        {(f.claimed_by || data._claimed_by) && (
+                          <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full flex items-center gap-1">
+                            <UserCheck2 size={10} /> {(f.claimed_by || data._claimed_by).split('@')[0]}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        <span className="font-medium text-gray-700">{clientName}</span> • {f.users?.email || f.client_email || '-'} • {data.jurisdiction || '-'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <StatusBadge status={f.status} />
+                    <span className="text-xs text-gray-500">{new Date(f.created_at).toLocaleDateString()}</span>
+                    <ChevronDown size={16} className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div className="px-4 py-4 border-t border-gray-100 bg-gray-50">
+                    {/* CLIENT/CONTACT INFO */}
+                    <div className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
+                      <h3 className="text-sm font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                        <User size={14} /> Client & Contact Information
+                      </h3>
+                      <div className="grid grid-cols-4 gap-4">
+                        <div>
+                          <p className="text-xs text-gray-500">Contact Email</p>
+                          <p className="text-sm font-medium text-gray-900">{data.contactEmail || f.users?.email || f.client_email || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Contact Phone</p>
+                          <p className="text-sm text-gray-900">{data.contactPhone || f.users?.phone || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Preferred Contact</p>
+                          <p className="text-sm text-gray-900 capitalize">{data.preferredContactMethod || 'Email'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Preferred Language</p>
+                          <p className="text-sm text-gray-900 capitalize">{data.preferredLanguage || 'English'}</p>
+                        </div>
+                        {f.users?.subscription_tier && (
+                          <div>
+                            <p className="text-xs text-gray-500">Subscription</p>
+                            <p className="text-sm text-gray-900 capitalize">{f.users.subscription_tier}</p>
+                          </div>
+                        )}
+                        {(f.users?.kyc_verified || f.users?.nft_holder) && (
+                          <div className="flex items-center gap-3">
+                            {f.users?.kyc_verified && (
+                              <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">KYC</span>
+                            )}
+                            {f.users?.nft_holder && (
+                              <span className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded-full">NFT</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* SPV COMPANY DETAILS - USING CORRECT FIELD NAMES */}
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Company Name</p>
+                        <p className="text-sm font-medium text-gray-900">{data.companyName || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Jurisdiction</p>
+                        <p className="text-sm font-medium text-gray-900">{data.jurisdiction || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Service Tier</p>
+                        <p className="text-sm font-medium text-gray-900 capitalize">{data.selectedTier || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Business Activity</p>
+                        <p className="text-sm font-medium text-gray-900">{data.businessActivity || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Est. Annual Revenue</p>
+                        <p className="text-sm font-medium text-gray-900">{data.estimatedAnnualRevenue || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Formation Duration</p>
+                        <p className="text-sm font-medium text-gray-900">{jurisdictionDetails.duration || '-'}</p>
+                      </div>
+                    </div>
+
+                    {/* Jurisdiction Details */}
+                    {jurisdictionDetails && (
+                      <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div className="bg-white p-3 rounded-lg border border-gray-200">
+                          <p className="text-xs text-gray-500 mb-1">Tax Rate</p>
+                          <p className="text-sm font-medium text-gray-900">{jurisdictionDetails.tax || '-'}</p>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg border border-gray-200 col-span-2">
+                          <p className="text-xs text-gray-500 mb-1">Jurisdiction Description</p>
+                          <p className="text-sm text-gray-900">{jurisdictionDetails.description || '-'}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Company Description */}
+                    {data.companyDescription && (
+                      <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
+                        <p className="text-xs font-semibold text-gray-700 mb-2">Company Description</p>
+                        <p className="text-sm text-gray-600 whitespace-pre-wrap">{data.companyDescription}</p>
+                      </div>
+                    )}
+
+                    {/* DIRECTORS - USING CORRECT FIELD NAMES */}
+                    {data.directors && data.directors.length > 0 && (
+                      <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
+                        <p className="text-xs font-semibold text-gray-700 mb-3">Directors ({data.directors.length})</p>
+                        <div className="space-y-3">
+                          {data.directors.map((d, idx) => (
+                            <div key={idx} className="p-3 bg-gray-50 rounded-lg">
+                              <div className="grid grid-cols-3 gap-3">
+                                <div>
+                                  <p className="text-xs text-gray-500">Full Name</p>
+                                  <p className="text-sm font-medium text-gray-900">{d.fullName || '-'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500">Nationality</p>
+                                  <p className="text-sm text-gray-900">{d.nationality || '-'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500">Residency</p>
+                                  <p className="text-sm text-gray-900">{d.residency || '-'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500">Email</p>
+                                  <p className="text-sm text-gray-900">{d.email || '-'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500">Phone</p>
+                                  <p className="text-sm text-gray-900">{d.phone || '-'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500">Passport No.</p>
+                                  <p className="text-sm text-gray-900">{d.passportNumber || '-'}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SHAREHOLDERS - USING CORRECT FIELD NAMES */}
+                    {data.shareholders && data.shareholders.length > 0 && (
+                      <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
+                        <p className="text-xs font-semibold text-gray-700 mb-3">Shareholders ({data.shareholders.length})</p>
+                        <div className="space-y-3">
+                          {data.shareholders.map((s, idx) => (
+                            <div key={idx} className="p-3 bg-gray-50 rounded-lg">
+                              <div className="grid grid-cols-3 gap-3">
+                                <div>
+                                  <p className="text-xs text-gray-500">Full Name</p>
+                                  <p className="text-sm font-medium text-gray-900">{s.fullName || '-'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500">Nationality</p>
+                                  <p className="text-sm text-gray-900">{s.nationality || '-'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500">Ownership %</p>
+                                  <p className="text-sm font-medium text-blue-600">{s.ownership ? `${s.ownership}%` : '-'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500">Email</p>
+                                  <p className="text-sm text-gray-900">{s.email || '-'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500">Phone</p>
+                                  <p className="text-sm text-gray-900">{s.phone || '-'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500">Passport No.</p>
+                                  <p className="text-sm text-gray-900">{s.passportNumber || '-'}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ADDITIONAL SERVICES */}
+                    <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
+                      <p className="text-xs font-semibold text-gray-700 mb-3">Additional Services Requested</p>
+                      <div className="flex flex-wrap gap-2">
+                        {data.needsNomineeDirector && <span className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">Nominee Director</span>}
+                        {data.needsNomineeShareholder && <span className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">Nominee Shareholder</span>}
+                        {data.needsBankAccountGuarantee && <span className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-full">Bank Account Guarantee</span>}
+                        {data.needsAccounting && <span className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-full">Accounting</span>}
+                        {data.needsSubstancePackage && <span className="px-3 py-1 text-xs bg-orange-100 text-orange-700 rounded-full">Substance Package</span>}
+                        {data.needsVATRegistration && <span className="px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full">VAT Registration</span>}
+                        {data.needsExpressService && <span className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded-full">Express Service</span>}
+                        {data.needsStrategySession && <span className="px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded-full">Strategy Session</span>}
+                        {data.needsDueDiligence && <span className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">Due Diligence</span>}
+                        {data.needsLegalConsulting && <span className="px-3 py-1 text-xs bg-pink-100 text-pink-700 rounded-full">Legal Consulting ({data.legalConsultingHours}h)</span>}
+                        {data.planningToTokenizeAssets && <span className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-full">Tokenization Planned</span>}
+                        {!data.needsNomineeDirector && !data.needsNomineeShareholder && !data.needsBankAccountGuarantee && !data.needsAccounting &&
+                         !data.needsSubstancePackage && !data.needsVATRegistration && !data.needsExpressService && !data.needsStrategySession &&
+                         !data.needsDueDiligence && !data.needsLegalConsulting && !data.planningToTokenizeAssets && (
+                          <span className="text-xs text-gray-500">No additional services selected</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Full Data (Debug) */}
+                    <details className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
+                      <summary className="text-xs font-semibold text-gray-700 cursor-pointer">Full Form Data (Debug - Click to expand)</summary>
+                      <pre className="mt-2 text-xs text-gray-600 overflow-x-auto bg-gray-50 p-3 rounded-lg max-h-60 overflow-y-auto">
+                        {JSON.stringify(data, null, 2)}
+                      </pre>
+                    </details>
+
+                    {/* Claim/Accept Case */}
+                    {!(f.claimed_by || data._claimed_by) && (
+                      <div className="bg-yellow-50 rounded-lg p-3 mb-4 border border-yellow-200 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle size={16} className="text-yellow-600" />
+                          <span className="text-sm text-yellow-800">This case is not yet assigned to anyone</span>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); claimCase(f.id, currentAdminEmail); }}
+                          disabled={claimingId === f.id}
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 flex items-center gap-2 disabled:opacity-50"
+                        >
+                          <UserCheck2 size={14} /> {claimingId === f.id ? 'Claiming...' : 'Accept / Take Case'}
+                        </button>
+                      </div>
+                    )}
+
+                    {(f.claimed_by || data._claimed_by) && (
+                      <div className="bg-green-50 rounded-lg p-3 mb-4 border border-green-200 flex items-center gap-2">
+                        <UserCheck2 size={16} className="text-green-600" />
+                        <span className="text-sm text-green-800">
+                          Claimed by <span className="font-medium">{f.claimed_by || data._claimed_by}</span>
+                          {(f.claimed_at || data._claimed_at) && <span className="text-green-600"> on {new Date(f.claimed_at || data._claimed_at).toLocaleDateString()}</span>}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Status Actions - using values allowed by user_requests_status_check constraint */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {['pending', 'processing', 'completed', 'cancelled'].map(status => (
+                        <button
+                          key={status}
+                          onClick={(e) => { e.stopPropagation(); updateStatus(f.id, status); }}
+                          disabled={updatingStatus === f.id || f.status === status}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                            f.status === status
+                              ? 'bg-blue-100 text-blue-700 ring-2 ring-offset-1 ring-blue-400'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          } ${updatingStatus === f.id ? 'opacity-50 cursor-wait' : ''}`}
+                        >
+                          {status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </button>
+                      ))}
+                      <a
+                        href={`mailto:${f.users?.email || f.client_email}?subject=Your SPV Formation Request`}
+                        className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 ml-auto"
+                      >
+                        <Mail size={14} /> Email User
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+};
+
+// ============================================
+// TOKENIZATION SECTION - Full form data + Claim feature
+// ============================================
+const TokenizationSection = ({ drafts, refreshing, onRefresh, supabaseAdmin, currentAdminEmail }) => {
+  const [expandedDraft, setExpandedDraft] = useState(null);
+  const [updatingStatus, setUpdatingStatus] = useState(null);
+  const [claimingId, setClaimingId] = useState(null);
+
+  const updateStatus = async (id, newStatus) => {
+    if (!supabaseAdmin) {
+      alert('Database connection not available');
+      return;
+    }
+    try {
+      setUpdatingStatus(id);
+      // Only update status field - most reliable
+      const { error } = await supabaseAdmin
+        .from('tokenization_drafts')
+        .update({ status: newStatus })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Tokenization status update error:', error);
+        alert(`Failed to update status: ${error.message}`);
+        return;
+      }
+      onRefresh();
+    } catch (err) {
+      console.error('Error updating status:', err);
+      alert(`Error: ${err.message}`);
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
+  // Claim/Accept a case - stores in form_data JSON field since claimed_by column may not exist
+  const claimCase = async (id, adminEmail) => {
+    if (!supabaseAdmin) {
+      alert('Database connection not available');
+      return;
+    }
+    if (!adminEmail) {
+      alert('Admin email not available');
+      return;
+    }
+    try {
+      setClaimingId(id);
+
+      // First get the current form_data to merge with
+      const { data: current, error: fetchError } = await supabaseAdmin
+        .from('tokenization_drafts')
+        .select('form_data')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching current data:', fetchError);
+      }
+
+      // Merge claim info into the form_data JSON field
+      const updatedFormData = {
+        ...(current?.form_data || {}),
+        _claimed_by: adminEmail,
+        _claimed_at: new Date().toISOString()
+      };
+
+      const { error } = await supabaseAdmin
+        .from('tokenization_drafts')
+        .update({
+          status: 'processing',
+          form_data: updatedFormData
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Tokenization claim error:', error);
+        alert(`Failed to claim case: ${error.message}`);
+        return;
+      }
+      onRefresh();
+    } catch (err) {
+      console.error('Error claiming case:', err);
+      alert(`Error: ${err.message}`);
+    } finally {
+      setClaimingId(null);
+    }
+  };
+
+  // Get client display name
+  const getClientName = (d) => {
+    return d.users?.full_name || d.users?.name ||
+           d.users?.email?.split('@')[0] || 'Unknown Client';
+  };
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-medium text-gray-900">Tokenization Requests ({drafts.length})</h2>
+        <button onClick={onRefresh} disabled={refreshing} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+          <RefreshCcw size={16} className={`text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
+
+      {refreshing ? (
+        <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div>
+      ) : drafts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border">
+          <Coins className="w-12 h-12 text-gray-300 mb-3" />
+          <p className="text-gray-500">No tokenization requests found</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {drafts.map((d, i) => {
+            const isExpanded = expandedDraft === d.id;
+            const clientName = getClientName(d);
+
+            return (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div
+                  className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-gray-50"
+                  onClick={() => setExpandedDraft(isExpanded ? null : d.id)}
+                >
+                  <div className="flex items-center gap-4">
+                    {d.logo_url ? (
+                      <img src={d.logo_url} alt="" className="w-10 h-10 rounded-lg object-cover border border-gray-200" />
+                    ) : (
+                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <Coins size={18} className="text-purple-600" />
+                      </div>
+                    )}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-gray-900">
+                          {d.asset_name || 'Unnamed Asset'}
+                          {d.token_symbol && <span className="ml-2 text-xs font-mono text-gray-500">${d.token_symbol}</span>}
+                        </p>
+                        {(d.claimed_by || d.form_data?._claimed_by) && (
+                          <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full flex items-center gap-1">
+                            <UserCheck2 size={10} /> {(d.claimed_by || d.form_data?._claimed_by).split('@')[0]}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        <span className="font-medium text-gray-700">{clientName}</span> • {d.users?.email || '-'} • {d.asset_category || d.token_type || '-'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <StatusBadge status={d.status} />
+                    {d.asset_value && (
+                      <span className="px-2 py-1 text-xs rounded-full font-medium bg-purple-100 text-purple-700">
+                        €{Number(d.asset_value).toLocaleString()}
+                      </span>
+                    )}
+                    <span className="text-xs text-gray-500">{new Date(d.created_at).toLocaleDateString()}</span>
+                    <ChevronDown size={16} className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div className="px-4 py-4 border-t border-gray-100 bg-gray-50">
+                    {/* Header Image */}
+                    {d.header_image_url && (
+                      <div className="rounded-lg overflow-hidden border border-gray-200 mb-4">
+                        <img src={d.header_image_url} alt="" className="w-full h-32 object-cover" />
+                      </div>
+                    )}
+
+                    {/* CLIENT INFO - PROMINENT */}
+                    <div className="bg-purple-50 rounded-xl p-4 mb-4 border border-purple-200">
+                      <h3 className="text-sm font-semibold text-purple-800 mb-3 flex items-center gap-2">
+                        <User size={14} /> Client Information
+                      </h3>
+                      <div className="grid grid-cols-4 gap-4">
+                        <div>
+                          <p className="text-xs text-gray-500">Full Name</p>
+                          <p className="text-sm font-medium text-gray-900">{clientName}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Email</p>
+                          <p className="text-sm text-gray-900">{d.users?.email || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Phone</p>
+                          <p className="text-sm text-gray-900">{d.users?.phone || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Country</p>
+                          <p className="text-sm text-gray-900">{d.users?.country || d.jurisdiction || '-'}</p>
+                        </div>
+                        {d.users?.subscription_tier && (
+                          <div>
+                            <p className="text-xs text-gray-500">Subscription</p>
+                            <p className="text-sm text-gray-900 capitalize">{d.users.subscription_tier}</p>
+                          </div>
+                        )}
+                        {(d.users?.kyc_verified || d.users?.nft_holder) && (
+                          <div className="flex items-center gap-3">
+                            {d.users?.kyc_verified && (
+                              <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">KYC Verified</span>
+                            )}
+                            {d.users?.nft_holder && (
+                              <span className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded-full">NFT Holder</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Claim/Accept Case */}
+                    {!(d.claimed_by || d.form_data?._claimed_by) && (
+                      <div className="bg-yellow-50 rounded-lg p-3 mb-4 border border-yellow-200 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle size={16} className="text-yellow-600" />
+                          <span className="text-sm text-yellow-800">This case is not yet assigned to anyone</span>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); claimCase(d.id, currentAdminEmail); }}
+                          disabled={claimingId === d.id}
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 flex items-center gap-2 disabled:opacity-50"
+                        >
+                          <UserCheck2 size={14} /> {claimingId === d.id ? 'Claiming...' : 'Accept / Take Case'}
+                        </button>
+                      </div>
+                    )}
+
+                    {(d.claimed_by || d.form_data?._claimed_by) && (
+                      <div className="bg-green-50 rounded-lg p-3 mb-4 border border-green-200 flex items-center gap-2">
+                        <UserCheck2 size={16} className="text-green-600" />
+                        <span className="text-sm text-green-800">
+                          Claimed by <span className="font-medium">{d.claimed_by || d.form_data?._claimed_by}</span>
+                          {(d.claimed_at || d.form_data?._claimed_at) && <span className="text-green-600"> on {new Date(d.claimed_at || d.form_data?._claimed_at).toLocaleDateString()}</span>}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Asset Info Grid */}
+                    <div className="grid grid-cols-4 gap-4 mb-4">
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Asset Name</p>
+                        <p className="text-sm font-medium text-gray-900">{d.asset_name || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Category</p>
+                        <p className="text-sm font-medium text-gray-900 capitalize">{d.asset_category || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Asset Value</p>
+                        <p className="text-sm font-medium text-gray-900">{d.asset_value ? `€${Number(d.asset_value).toLocaleString()}` : '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Location</p>
+                        <p className="text-sm font-medium text-gray-900">{d.asset_location || '-'}</p>
+                      </div>
+                    </div>
+
+                    {/* Token Config Grid */}
+                    <div className="grid grid-cols-4 gap-4 mb-4">
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Token Type</p>
+                        <p className="text-sm font-medium text-gray-900 capitalize">
+                          {d.token_type === 'utility' ? 'UTO' : d.token_type === 'security' ? 'STO' : d.token_type || '-'}
+                        </p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Token Symbol</p>
+                        <p className="text-sm font-mono font-medium text-gray-900">${d.token_symbol || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Total Supply</p>
+                        <p className="text-sm font-medium text-gray-900">{d.total_supply ? Number(d.total_supply).toLocaleString() : '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Price per Token</p>
+                        <p className="text-sm font-medium text-gray-900">{d.price_per_token ? `€${Number(d.price_per_token).toLocaleString()}` : '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Expected APY</p>
+                        <p className="text-sm font-medium text-green-600">{d.expected_apy ? `${d.expected_apy}%` : '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Lockup Period</p>
+                        <p className="text-sm font-medium text-gray-900">{d.lockup_period ? `${d.lockup_period} months` : '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Jurisdiction</p>
+                        <p className="text-sm font-medium text-gray-900">{d.jurisdiction || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Package</p>
+                        <p className="text-sm font-medium text-gray-900 capitalize">{d.membership_package || '-'}</p>
+                      </div>
+                    </div>
+
+                    {/* Wallet Verification */}
+                    {d.wallet_signature && (
+                      <div className="bg-green-50 p-4 rounded-lg border border-green-200 mb-4">
+                        <p className="text-xs font-semibold text-green-700 mb-2 flex items-center gap-2">
+                          <FileCheck size={14} /> WALLET VERIFIED
+                        </p>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs text-gray-500">Issuer Wallet</p>
+                            <p className="text-xs font-mono text-gray-700 break-all">{d.issuer_wallet_address || '-'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Signer</p>
+                            <p className="text-xs font-mono text-gray-700 break-all">{d.signer_address || '-'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Description */}
+                    {d.asset_description && (
+                      <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
+                        <p className="text-xs font-semibold text-gray-700 mb-2">Asset Description</p>
+                        <p className="text-sm text-gray-600 whitespace-pre-wrap">{d.asset_description}</p>
+                      </div>
+                    )}
+
+                    {/* Documents from form_data */}
+                    {d.form_data && (
+                      <details className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
+                        <summary className="text-xs font-semibold text-gray-700 cursor-pointer">Documents & Full Form Data</summary>
+                        <div className="mt-3 space-y-2">
+                          {d.form_data.prospectus?.url && (
+                            <a href={d.form_data.prospectus.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 hover:underline">
+                              <FileText size={14} /> Prospectus
+                            </a>
+                          )}
+                          {d.form_data.legalOpinion?.url && (
+                            <a href={d.form_data.legalOpinion.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 hover:underline">
+                              <FileText size={14} /> Legal Opinion
+                            </a>
+                          )}
+                          {d.form_data.ownershipProof?.url && (
+                            <a href={d.form_data.ownershipProof.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 hover:underline">
+                              <FileText size={14} /> Ownership Proof
+                            </a>
+                          )}
+                          {d.form_data.insurance?.url && (
+                            <a href={d.form_data.insurance.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 hover:underline">
+                              <FileText size={14} /> Insurance
+                            </a>
+                          )}
+                        </div>
+                        <pre className="mt-3 text-xs text-gray-600 overflow-x-auto bg-gray-50 p-3 rounded-lg">
+                          {JSON.stringify(d.form_data, null, 2)}
+                        </pre>
+                      </details>
+                    )}
+
+                    {/* Status Actions */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {['draft', 'submitted', 'in_progress', 'approved', 'rejected'].map(status => (
+                        <button
+                          key={status}
+                          onClick={(e) => { e.stopPropagation(); updateStatus(d.id, status); }}
+                          disabled={updatingStatus === d.id || d.status === status}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                            d.status === status
+                              ? 'bg-purple-100 text-purple-700 ring-2 ring-offset-1 ring-purple-400'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          } ${updatingStatus === d.id ? 'opacity-50 cursor-wait' : ''}`}
+                        >
+                          {status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </button>
+                      ))}
+                      <a
+                        href={`mailto:${d.users?.email}?subject=Your Tokenization Request - ${d.asset_name || 'Asset'}`}
+                        className="inline-flex items-center gap-2 px-4 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 ml-auto"
+                      >
+                        <Mail size={14} /> Email User
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+};
+
+// ============================================
+// SUBSCRIPTIONS SECTION - All user subscriptions
+// ============================================
+const SubscriptionsSection = ({ subscriptions, refreshing, onRefresh, supabaseAdmin }) => {
+  const [expandedSub, setExpandedSub] = useState(null);
+  const [filterTier, setFilterTier] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+
+  const getTierColor = (tier) => {
+    const t = tier?.toLowerCase();
+    if (t === 'elite' || t === 'professional') return 'bg-purple-100 text-purple-700';
+    if (t === 'traveller') return 'bg-blue-100 text-blue-700';
+    if (t === 'explorer') return 'bg-green-100 text-green-700';
+    return 'bg-gray-100 text-gray-700';
+  };
+
+  const getStatusColor = (status) => {
+    const s = status?.toLowerCase();
+    if (s === 'active') return 'bg-green-100 text-green-700';
+    if (s === 'cancelled' || s === 'expired') return 'bg-red-100 text-red-700';
+    if (s === 'past_due') return 'bg-yellow-100 text-yellow-700';
+    return 'bg-gray-100 text-gray-700';
+  };
+
+  const formatDate = (date) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
+  const getDaysUntilRenewal = (resetDate) => {
+    if (!resetDate) return null;
+    const reset = new Date(resetDate);
+    const now = new Date();
+    const diff = Math.ceil((reset - now) / (1000 * 60 * 60 * 24));
+    return diff;
+  };
+
+  // Filter subscriptions
+  const filteredSubs = subscriptions.filter(s => {
+    if (filterTier !== 'all' && s.subscription_tier?.toLowerCase() !== filterTier) return false;
+    if (filterStatus !== 'all' && s.subscription_status?.toLowerCase() !== filterStatus) return false;
+    return true;
+  });
+
+  // Stats
+  const stats = {
+    total: subscriptions.length,
+    active: subscriptions.filter(s => s.subscription_status === 'active').length,
+    elite: subscriptions.filter(s => s.subscription_tier?.toLowerCase() === 'elite').length,
+    traveller: subscriptions.filter(s => s.subscription_tier?.toLowerCase() === 'traveller').length,
+    explorer: subscriptions.filter(s => s.subscription_tier?.toLowerCase() === 'explorer').length
+  };
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-medium text-gray-900">Subscriptions ({subscriptions.length})</h2>
+        <div className="flex items-center gap-3">
+          <select
+            value={filterTier}
+            onChange={(e) => setFilterTier(e.target.value)}
+            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900"
+          >
+            <option value="all">All Tiers</option>
+            <option value="elite">Elite</option>
+            <option value="traveller">Traveller</option>
+            <option value="explorer">Explorer</option>
+          </select>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900"
+          >
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="past_due">Past Due</option>
+          </select>
+          <button onClick={onRefresh} disabled={refreshing} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+            <RefreshCcw size={16} className={`text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-5 gap-4 mb-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+              <Crown size={18} className="text-gray-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+              <p className="text-xs text-gray-500">Total</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+              <Activity size={18} className="text-green-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-green-600">{stats.active}</p>
+              <p className="text-xs text-gray-500">Active</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+              <Star size={18} className="text-purple-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-purple-600">{stats.elite}</p>
+              <p className="text-xs text-gray-500">Elite</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <Plane size={18} className="text-blue-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-blue-600">{stats.traveller}</p>
+              <p className="text-xs text-gray-500">Traveller</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+              <Globe size={18} className="text-green-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-green-600">{stats.explorer}</p>
+              <p className="text-xs text-gray-500">Explorer</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {refreshing ? (
+        <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div>
+      ) : filteredSubs.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border">
+          <Crown className="w-12 h-12 text-gray-300 mb-3" />
+          <p className="text-gray-500">No subscriptions found</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredSubs.map((s, i) => {
+            const isExpanded = expandedSub === s.user_id;
+            const daysUntilRenewal = getDaysUntilRenewal(s.chats_reset_date);
+
+            return (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div
+                  className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-gray-50"
+                  onClick={() => setExpandedSub(isExpanded ? null : s.user_id)}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      s.subscription_tier?.toLowerCase() === 'elite' ? 'bg-purple-100' :
+                      s.subscription_tier?.toLowerCase() === 'traveller' ? 'bg-blue-100' : 'bg-green-100'
+                    }`}>
+                      <Crown size={18} className={
+                        s.subscription_tier?.toLowerCase() === 'elite' ? 'text-purple-600' :
+                        s.subscription_tier?.toLowerCase() === 'traveller' ? 'text-blue-600' : 'text-green-600'
+                      } />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {s.users?.email || s.name || s.user_id?.slice(0, 8)}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Subscribed {formatDate(s.subscription_started_at || s.created_at)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`px-2 py-1 text-xs rounded-full font-medium ${getTierColor(s.subscription_tier)}`}>
+                      {s.subscription_tier?.toUpperCase() || 'FREE'}
+                    </span>
+                    <span className={`px-2 py-1 text-xs rounded-full font-medium ${getStatusColor(s.subscription_status)}`}>
+                      {s.subscription_status?.replace(/_/g, ' ').toUpperCase() || 'INACTIVE'}
+                    </span>
+                    {daysUntilRenewal !== null && daysUntilRenewal > 0 && daysUntilRenewal <= 7 && (
+                      <span className="px-2 py-1 text-xs rounded-full font-medium bg-yellow-100 text-yellow-700 flex items-center gap-1">
+                        <RotateCcw size={10} /> {daysUntilRenewal}d
+                      </span>
+                    )}
+                    <ChevronDown size={16} className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div className="px-4 py-4 border-t border-gray-100 bg-gray-50">
+                    {/* Subscription Details */}
+                    <div className="grid grid-cols-4 gap-4 mb-4">
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">User Email</p>
+                        <p className="text-sm font-medium text-gray-900">{s.users?.email || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Subscription Tier</p>
+                        <p className="text-sm font-medium text-gray-900 capitalize">{s.subscription_tier || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Status</p>
+                        <p className="text-sm font-medium text-gray-900 capitalize">{s.subscription_status?.replace(/_/g, ' ') || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Stripe Customer</p>
+                        <p className="text-xs font-mono text-gray-700">{s.stripe_customer_id || '-'}</p>
+                      </div>
+                    </div>
+
+                    {/* Dates */}
+                    <div className="grid grid-cols-4 gap-4 mb-4">
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Started</p>
+                        <p className="text-sm font-medium text-gray-900">{formatDate(s.subscription_started_at || s.created_at)}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Current Period Start</p>
+                        <p className="text-sm font-medium text-gray-900">{formatDate(s.current_period_start)}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Current Period End</p>
+                        <p className="text-sm font-medium text-gray-900">{formatDate(s.current_period_end)}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Next Renewal</p>
+                        <p className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                          {formatDate(s.chats_reset_date)}
+                          {daysUntilRenewal !== null && daysUntilRenewal > 0 && (
+                            <span className={`text-xs ${daysUntilRenewal <= 7 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                              ({daysUntilRenewal} days)
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Usage Stats */}
+                    <div className="grid grid-cols-4 gap-4 mb-4">
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Chats Used</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {s.chats_used || 0} / {s.chats_limit === null ? '∞' : s.chats_limit}
+                        </p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">NFT Holder</p>
+                        <p className="text-sm font-medium text-gray-900">{s.nft_holder ? 'Yes' : 'No'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">KYC Verified</p>
+                        <p className="text-sm font-medium text-gray-900">{s.kyc_verified ? 'Yes' : 'No'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Last Updated</p>
+                        <p className="text-sm font-medium text-gray-900">{formatDate(s.updated_at)}</p>
+                      </div>
+                    </div>
+
+                    {/* Stripe Subscription ID */}
+                    {s.stripe_subscription_id && (
+                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
+                        <p className="text-xs font-semibold text-blue-700 mb-2 flex items-center gap-2">
+                          <CreditCard size={14} /> Stripe Subscription
+                        </p>
+                        <p className="text-xs font-mono text-blue-800">{s.stripe_subscription_id}</p>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-3">
+                      <a
+                        href={`mailto:${s.users?.email}?subject=Your PrivatecharterX Subscription`}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+                      >
+                        <Mail size={14} /> Email User
+                      </a>
+                      {s.stripe_subscription_id && (
+                        <a
+                          href={`https://dashboard.stripe.com/subscriptions/${s.stripe_subscription_id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200"
+                        >
+                          <CreditCard size={14} /> View in Stripe
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+};
+
+// ============================================
+// PVCX TOKENS SECTION - Only eltesto can send tokens
+// ============================================
+const PVCXSection = ({ balances, transactions, refreshing, onRefresh, supabaseAdmin, currentAdminEmail, customers }) => {
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [sendAmount, setSendAmount] = useState('');
+  const [sendNote, setSendNote] = useState('');
+  const [sending, setSending] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('balances');
+
+  // Check if current admin is eltesto (the only one who can send tokens)
+  const isEltesto = currentAdminEmail?.toLowerCase().includes('eltesto') ||
+                    currentAdminEmail?.toLowerCase() === 'eltesto@privatecharterx.com' ||
+                    currentAdminEmail?.toLowerCase() === 'admin@privatecharterx.com';
+
+  const formatDate = (date) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Send PVCX tokens to a user
+  const sendTokens = async () => {
+    if (!supabaseAdmin || !selectedUser || !sendAmount) {
+      alert('Please select a user and enter an amount');
+      return;
+    }
+
+    const amount = parseFloat(sendAmount);
+    if (isNaN(amount) || amount <= 0) {
+      alert('Please enter a valid positive amount');
+      return;
+    }
+
+    try {
+      setSending(true);
+
+      // Get user's current balance from user_profiles
+      const { data: profile, error: profileError } = await supabaseAdmin
+        .from('user_profiles')
+        .select('pvcx_balance')
+        .eq('user_id', selectedUser.id)
+        .single();
+
+      const currentBalance = profile?.pvcx_balance || 0;
+      const newBalance = currentBalance + amount;
+
+      // Update user_profiles with new balance
+      const { error: updateError } = await supabaseAdmin
+        .from('user_profiles')
+        .upsert({
+          user_id: selectedUser.id,
+          pvcx_balance: newBalance,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+
+      if (updateError) {
+        console.error('Error updating balance:', updateError);
+        alert(`Failed to update balance: ${updateError.message}`);
+        return;
+      }
+
+      // Try to record transaction (table may not exist yet)
+      try {
+        await supabaseAdmin
+          .from('pvcx_transactions')
+          .insert({
+            user_id: selectedUser.id,
+            amount: amount,
+            type: 'credit',
+            note: sendNote || `Token transfer from ${currentAdminEmail}`,
+            admin_email: currentAdminEmail,
+            balance_after: newBalance,
+            created_at: new Date().toISOString()
+          });
+      } catch (txErr) {
+        console.log('Could not record transaction (table may not exist):', txErr);
+      }
+
+      // Try to create notification for user
+      try {
+        await supabaseAdmin
+          .from('notifications')
+          .insert({
+            user_id: selectedUser.id,
+            type: 'pvcx_received',
+            title: 'PVCX Tokens Received',
+            message: `You received ${amount.toLocaleString()} PVCX tokens. New balance: ${newBalance.toLocaleString()} PVCX`,
+            read: false,
+            created_at: new Date().toISOString()
+          });
+      } catch (notifErr) {
+        console.log('Could not create notification (table may not exist):', notifErr);
+      }
+
+      alert(`Successfully sent ${amount.toLocaleString()} PVCX to ${selectedUser.email || selectedUser.name || 'user'}`);
+      setShowSendModal(false);
+      setSelectedUser(null);
+      setSendAmount('');
+      setSendNote('');
+      onRefresh();
+    } catch (err) {
+      console.error('Error sending tokens:', err);
+      alert(`Error: ${err.message}`);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  // Calculate totals
+  const totalSupply = balances.reduce((sum, b) => sum + (b.pvcx_balance || b.balance || 0), 0);
+  const holdersCount = balances.filter(b => (b.pvcx_balance || b.balance || 0) > 0).length;
+
+  // Filter customers for send modal
+  const filteredCustomers = customers.filter(c => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (c.email?.toLowerCase().includes(term) ||
+            c.name?.toLowerCase().includes(term) ||
+            c.user_metadata?.name?.toLowerCase().includes(term));
+  }).slice(0, 20);
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-lg font-medium text-gray-900">PVCX Token Management</h2>
+          <p className="text-xs text-gray-500">Track and distribute PVCX tokens to users</p>
+        </div>
+        <div className="flex items-center gap-3">
+          {isEltesto && (
+            <button
+              onClick={() => setShowSendModal(true)}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 flex items-center gap-2"
+            >
+              <Zap size={16} /> Send Tokens
+            </button>
+          )}
+          <button onClick={onRefresh} disabled={refreshing} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+            <RefreshCcw size={16} className={`text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl p-5 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-purple-200 text-sm">Total Supply</p>
+              <p className="text-3xl font-bold mt-1">{totalSupply.toLocaleString()}</p>
+              <p className="text-purple-200 text-xs mt-1">PVCX</p>
+            </div>
+            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+              <Coins size={28} className="text-white" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-500 text-sm">Token Holders</p>
+              <p className="text-3xl font-bold text-gray-900 mt-1">{holdersCount}</p>
+              <p className="text-gray-500 text-xs mt-1">Users with balance</p>
+            </div>
+            <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center">
+              <Users size={28} className="text-blue-600" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-500 text-sm">Transactions</p>
+              <p className="text-3xl font-bold text-gray-900 mt-1">{transactions.length}</p>
+              <p className="text-gray-500 text-xs mt-1">All time</p>
+            </div>
+            <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center">
+              <Activity size={28} className="text-green-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2 mb-4">
+        <button
+          onClick={() => setActiveTab('balances')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeTab === 'balances' ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+          }`}
+        >
+          Balances ({balances.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('transactions')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeTab === 'transactions' ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+          }`}
+        >
+          Transactions ({transactions.length})
+        </button>
+      </div>
+
+      {/* Balances Tab */}
+      {activeTab === 'balances' && (
+        <>
+          {refreshing ? (
+            <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div>
+          ) : balances.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border">
+              <Coins className="w-12 h-12 text-gray-300 mb-3" />
+              <p className="text-gray-500">No PVCX holders yet</p>
+              {isEltesto && (
+                <button
+                  onClick={() => setShowSendModal(true)}
+                  className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700"
+                >
+                  Send First Tokens
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">User</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Email</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">Balance</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">% of Supply</th>
+                    {isEltesto && <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600">Actions</th>}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {balances.map((b, i) => {
+                    const balance = b.pvcx_balance || b.balance || 0;
+                    const percentage = totalSupply > 0 ? ((balance / totalSupply) * 100).toFixed(2) : 0;
+                    return (
+                      <tr key={i} className="hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white text-xs font-medium">
+                              {(b.users?.name?.[0] || b.users?.email?.[0] || '?').toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">{b.users?.name || b.users?.full_name || '-'}</p>
+                              <p className="text-xs text-gray-500">{b.user_id?.slice(0, 8)}...</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{b.users?.email || '-'}</td>
+                        <td className="px-4 py-3 text-right">
+                          <span className="text-sm font-semibold text-purple-600">{balance.toLocaleString()}</span>
+                          <span className="text-xs text-gray-500 ml-1">PVCX</span>
+                        </td>
+                        <td className="px-4 py-3 text-right text-sm text-gray-600">{percentage}%</td>
+                        {isEltesto && (
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              onClick={() => {
+                                setSelectedUser({ id: b.user_id, email: b.users?.email, name: b.users?.name });
+                                setShowSendModal(true);
+                              }}
+                              className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-medium hover:bg-purple-200"
+                            >
+                              + Send More
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Transactions Tab */}
+      {activeTab === 'transactions' && (
+        <>
+          {refreshing ? (
+            <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div>
+          ) : transactions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border">
+              <Activity className="w-12 h-12 text-gray-300 mb-3" />
+              <p className="text-gray-500">No transactions yet</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {transactions.map((tx, i) => (
+                <div key={i} className="bg-white rounded-xl border border-gray-200 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        tx.type === 'credit' ? 'bg-green-100' : 'bg-red-100'
+                      }`}>
+                        {tx.type === 'credit' ? (
+                          <TrendingUp size={18} className="text-green-600" />
+                        ) : (
+                          <TrendingDown size={18} className="text-red-600" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {tx.type === 'credit' ? '+' : '-'}{tx.amount?.toLocaleString()} PVCX
+                        </p>
+                        <p className="text-xs text-gray-500">{tx.note || 'Token transfer'}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-600">{tx.users?.email || tx.user_id?.slice(0, 8) + '...'}</p>
+                      <p className="text-xs text-gray-500">{formatDate(tx.created_at)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Send Modal */}
+      {showSendModal && isEltesto && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Send PVCX Tokens</h2>
+                <p className="text-xs text-gray-500">Transfer tokens to a user's balance</p>
+              </div>
+              <button onClick={() => setShowSendModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* User Search */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Select User</label>
+                {selectedUser ? (
+                  <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs font-medium">
+                        {(selectedUser.name?.[0] || selectedUser.email?.[0] || '?').toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{selectedUser.name || selectedUser.email}</p>
+                        <p className="text-xs text-gray-500">{selectedUser.email}</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setSelectedUser(null)} className="text-purple-600 text-sm hover:underline">
+                      Change
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Search by email or name..."
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                    {searchTerm && (
+                      <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
+                        {filteredCustomers.length === 0 ? (
+                          <div className="p-3 text-sm text-gray-500 text-center">No users found</div>
+                        ) : (
+                          filteredCustomers.map((c, i) => (
+                            <button
+                              key={i}
+                              onClick={() => {
+                                setSelectedUser({
+                                  id: c.id,
+                                  email: c.email,
+                                  name: c.user_metadata?.name || c.name || c.email?.split('@')[0]
+                                });
+                                setSearchTerm('');
+                              }}
+                              className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 text-left"
+                            >
+                              <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-xs font-medium">
+                                {(c.email?.[0] || '?').toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">{c.user_metadata?.name || c.email?.split('@')[0]}</p>
+                                <p className="text-xs text-gray-500">{c.email}</p>
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Amount */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Amount (PVCX)</label>
+                <input
+                  type="number"
+                  value={sendAmount}
+                  onChange={(e) => setSendAmount(e.target.value)}
+                  placeholder="Enter amount..."
+                  min="1"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Note */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Note (optional)</label>
+                <input
+                  type="text"
+                  value={sendNote}
+                  onChange={(e) => setSendNote(e.target.value)}
+                  placeholder="Reason for transfer..."
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={() => setShowSendModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={sendTokens}
+                disabled={sending || !selectedUser || !sendAmount}
+                className="px-6 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {sending ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
+                {sending ? 'Sending...' : 'Send Tokens'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Not Authorized Message */}
+      {!isEltesto && (
+        <div className="mt-4 p-4 bg-yellow-50 rounded-xl border border-yellow-200 flex items-center gap-3">
+          <AlertCircle size={20} className="text-yellow-600" />
+          <div>
+            <p className="text-sm font-medium text-yellow-800">View Only Access</p>
+            <p className="text-xs text-yellow-700">Only eltesto can send PVCX tokens. You can view balances and transactions.</p>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
