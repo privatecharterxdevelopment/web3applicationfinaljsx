@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import footerLogo from './Screenshot 2025-12-24 at 1.02.13.png';
 
 interface FooterProps {
   onNavigate?: (path: string) => void;
@@ -17,7 +18,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   };
 
   return (
-    <footer className="bg-gray-50 border-t border-gray-200" style={{ fontFamily: "'Satoshi', sans-serif", fontWeight: 300 }}>
+    <footer className="bg-white border-t border-gray-200" style={{ fontFamily: "'Satoshi', sans-serif", fontWeight: 300 }}>
       {/* Main Footer Content */}
       <div className="px-4 sm:px-8 py-12 sm:py-16">
         <div className="max-w-6xl mx-auto">
@@ -27,9 +28,9 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <div>
               {/* Logo */}
               <img
-                src="https://i.ibb.co/DPF5g3Sk/iu42DU1.png"
+                src={footerLogo}
                 alt="PrivateCharterX"
-                className="h-12 object-contain mb-3"
+                className="h-8 object-contain mb-3"
               />
               {/* Description */}
               <p className="text-sm text-gray-500 mb-4 font-light">
@@ -148,7 +149,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
       </div>
 
       {/* Legal Links Bar */}
-      <div className="border-t border-gray-200 bg-gray-50">
+      <div className="border-t border-gray-200 bg-white">
         <div className="px-4 sm:px-8 py-4">
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-wrap justify-center gap-4 sm:gap-8">
@@ -170,7 +171,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
       </div>
 
       {/* Company Info Bar */}
-      <div className="border-t border-gray-200 bg-gray-100">
+      <div className="border-t border-gray-200 bg-white">
         <div className="px-4 sm:px-8 py-4">
           <div className="max-w-6xl mx-auto">
             <p className="text-xs text-gray-500 text-center font-light">

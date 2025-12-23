@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import LandingHeader from './LandingHeader';
 import Footer from './Footer';
 import {
@@ -64,7 +64,8 @@ import {
   Zap as Lightning,
   Battery,
   Fuel,
-  Recycle
+  Recycle,
+  Activity
 } from 'lucide-react';
 
 interface TokenizedProps {
@@ -72,942 +73,553 @@ interface TokenizedProps {
 }
 
 function Tokenized({ setCurrentPage }: TokenizedProps) {
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+
   const handleGetStarted = () => {
     setCurrentPage('dashboard');
+  };
+
+  const toggleCard = (cardId: string) => {
+    setExpandedCard(expandedCard === cardId ? null : cardId);
   };
 
   return (
     <div className="min-h-screen bg-gray-100 px-4 py-4">
       <LandingHeader />
 
-      {/* Hero Section - Direct on background, no white floating component */}
-      <section className="px-4 sm:px-8 py-12 sm:py-24 max-w-6xl mx-auto">
+      {/* Hero Section */}
+      <section className="px-4 sm:px-8 py-12 sm:py-16 max-w-7xl mx-auto mb-6 sm:mb-8">
         <div className="text-center">
-          <div className="mb-8">
-            <span className="bg-gray-900 text-white px-4 py-2 rounded-full text-xs font-medium tracking-wide uppercase">
-              Asset Tokenization Ecosystem
+          <div className="mb-6">
+            <span className="bg-gray-900/80 backdrop-blur-sm text-white px-3 sm:px-4 py-2 rounded-full text-xs font-medium tracking-wide uppercase border border-gray-800">
+              Real World Asset Tokenization
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light text-gray-900 mb-6 sm:mb-8 leading-tight tracking-tight">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light text-gray-900 mb-4 sm:mb-6 leading-tight tracking-tight">
             Tokenize the world of<br />
-            <span className="text-gray-400">luxury travel & sustainability</span>
+            <span className="text-gray-500">luxury travel & sustainability</span>
           </h1>
-          <p className="text-base sm:text-lg text-gray-600 mb-8 sm:mb-12 leading-relaxed max-w-4xl mx-auto">
-            Transform real-world luxury assets into digital tokens. From private jets and yachts to 
-            limousine fleets and helicopter operations - unlock fractional ownership, generate yield, 
+          <p className="text-sm sm:text-base lg:text-lg text-gray-700 max-w-3xl mx-auto leading-relaxed px-4">
+            Transform real-world luxury assets into digital tokens. From private jets and yachts to
+            limousine fleets and helicopter operations — unlock fractional ownership, generate yield,
             and trade sustainability certificates on the blockchain.
           </p>
-          
-          {/* Key Metrics Row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <div className="text-lg sm:text-2xl font-light text-gray-900 mb-2">$2.8B+</div>
-              <h3 className="text-base font-light text-gray-900 mb-2">Assets Under Management</h3>
-              <p className="text-xs sm:text-sm text-gray-400">Total tokenized value</p>
+        </div>
+      </section>
+
+      {/* Apple-Style Cards Section */}
+      <section className="px-4 sm:px-8 py-8 sm:py-12 max-w-7xl mx-auto">
+        {/* Cards Grid - 4 Cards in Single Row (Apple Style) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Card 1 - For Asset Owners */}
+            <div
+              onClick={() => toggleCard('owners')}
+              className="group bg-white/90 backdrop-blur-sm border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+            >
+              <div className="p-6">
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
+                  For Asset Owners
+                  <br />
+                  <span className="text-gray-400 text-sm">Unlock Liquidity</span>
+                </h3>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">SEC Compliant</span>
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Global Access</span>
+                </div>
+                <div className={`w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 ${expandedCard === 'owners' ? 'rotate-45' : 'group-hover:rotate-90'}`}>
+                  +
+                </div>
+                {/* Expandable Content */}
+                <div className={`overflow-hidden transition-all duration-300 ${expandedCard === 'owners' ? 'max-h-64 mt-4 pt-4 border-t border-gray-100' : 'max-h-0'}`}>
+                  <p className="text-gray-600 text-sm leading-snug mb-3">Transform your jets, yachts, and fleets into tradeable digital securities.</p>
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-gray-600" />
+                      <span>Raise capital without selling</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-gray-600" />
+                      <span>Maintain operational control</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <div className="text-2xl font-light text-gray-900 mb-2">847</div>
-              <h3 className="text-base font-light text-gray-900 mb-2">Tokenized Assets</h3>
-              <p className="text-sm text-gray-400">Across all categories</p>
+            {/* Card 2 - For Investors */}
+            <div
+              onClick={() => toggleCard('investors')}
+              className="group bg-white/90 backdrop-blur-sm border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+            >
+              <div className="p-6">
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
+                  For Investors
+                  <br />
+                  <span className="text-gray-400 text-sm">Fractional Ownership</span>
+                </h3>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">From $10'000</span>
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Passive Income</span>
+                </div>
+                <div className={`w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 ${expandedCard === 'investors' ? 'rotate-45' : 'group-hover:rotate-90'}`}>
+                  +
+                </div>
+                {/* Expandable Content */}
+                <div className={`overflow-hidden transition-all duration-300 ${expandedCard === 'investors' ? 'max-h-64 mt-4 pt-4 border-t border-gray-100' : 'max-h-0'}`}>
+                  <p className="text-gray-600 text-sm leading-snug mb-3">Access luxury assets from $10'000 with 8-15% projected APY returns.</p>
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-gray-600" />
+                      <span>Trade on secondary markets</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-gray-600" />
+                      <span>Blockchain-verified ownership</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <div className="text-2xl font-light text-gray-900 mb-2">12.4%</div>
-              <h3 className="text-base font-light text-gray-900 mb-2">Average APY</h3>
-              <p className="text-sm text-gray-400">Annual percentage yield</p>
+            {/* Card 3 - Blockchain Verified */}
+            <div
+              onClick={() => toggleCard('blockchain')}
+              className="group bg-white/90 backdrop-blur-sm border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+            >
+              <div className="p-6">
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
+                  Blockchain Verified
+                  <br />
+                  <span className="text-gray-400 text-sm">100% Transparent</span>
+                </h3>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Smart Contracts</span>
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Audited</span>
+                </div>
+                <div className={`w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 ${expandedCard === 'blockchain' ? 'rotate-45' : 'group-hover:rotate-90'}`}>
+                  +
+                </div>
+                {/* Expandable Content */}
+                <div className={`overflow-hidden transition-all duration-300 ${expandedCard === 'blockchain' ? 'max-h-64 mt-4 pt-4 border-t border-gray-100' : 'max-h-0'}`}>
+                  <p className="text-gray-600 text-sm leading-snug mb-3">Every transaction recorded on-chain with immutable ownership records.</p>
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-gray-600" />
+                      <span>Base & Ethereum networks</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-gray-600" />
+                      <span>Real-time auditing</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <div className="text-2xl font-light text-gray-900 mb-2">45,000+</div>
-              <h3 className="text-base font-light text-gray-900 mb-2">Token Holders</h3>
-              <p className="text-sm text-gray-400">Global investor community</p>
+            {/* Card 4 - Secondary Markets */}
+            <div
+              onClick={() => toggleCard('markets')}
+              className="group bg-white/90 backdrop-blur-sm border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+            >
+              <div className="p-6">
+                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
+                  Secondary Markets
+                  <br />
+                  <span className="text-gray-400 text-sm">24/7 Trading</span>
+                </h3>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Liquid Exit</span>
+                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">No Lock-up</span>
+                </div>
+                <div className={`w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 ${expandedCard === 'markets' ? 'rotate-45' : 'group-hover:rotate-90'}`}>
+                  +
+                </div>
+                {/* Expandable Content */}
+                <div className={`overflow-hidden transition-all duration-300 ${expandedCard === 'markets' ? 'max-h-64 mt-4 pt-4 border-t border-gray-100' : 'max-h-0'}`}>
+                  <p className="text-gray-600 text-sm leading-snug mb-3">Trade your tokens anytime on our integrated secondary marketplace.</p>
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-gray-600" />
+                      <span>Instant liquidity</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-gray-600" />
+                      <span>Price discovery</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
-            <button 
-              onClick={handleGetStarted}
-              className="bg-gray-900 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-md text-sm hover:bg-gray-800 transition-colors"
-            >
-              Start Tokenization Process
-            </button>
-            <button 
-              onClick={handleGetStarted}
-              className="border border-gray-300 text-gray-700 px-6 sm:px-8 py-3 sm:py-4 rounded-md text-sm hover:bg-gray-50 transition-colors"
-            >
-              Browse Tokenized Assets
-            </button>
+        {/* 2 Wider Cards Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          {/* Wide Card 1 - Complete Tokenization Process */}
+          <div
+            onClick={() => toggleCard('process')}
+            className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+          >
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-light text-gray-900 mb-2 leading-tight">
+                    Complete Tokenization Process
+                    <br />
+                    <span className="text-gray-400 text-sm">From Asset to Token in Days</span>
+                  </h3>
+                  <p className="text-gray-600 text-sm leading-snug">
+                    Our end-to-end tokenization framework handles everything — legal structure, smart contracts,
+                    compliance, and distribution — so you can focus on your business.
+                  </p>
+                </div>
+                <div className={`w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 flex-shrink-0 ml-4 ${expandedCard === 'process' ? 'rotate-45' : 'group-hover:rotate-90'}`}>
+                  +
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">SPV Setup</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Smart Contracts</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Legal Framework</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Distribution</span>
+              </div>
+              {/* Expandable Content */}
+              <div className={`overflow-hidden transition-all duration-300 ${expandedCard === 'process' ? 'max-h-64 pt-4 border-t border-gray-100' : 'max-h-0'}`}>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <ul className="space-y-2 text-sm text-gray-700">
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-gray-600" />
+                        <span>Asset valuation & due diligence</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-gray-600" />
+                        <span>Legal entity structuring</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-gray-600" />
+                        <span>Regulatory compliance</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <div>
+                    <ul className="space-y-2 text-sm text-gray-700">
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-gray-600" />
+                        <span>Smart contract deployment</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-gray-600" />
+                        <span>Token minting & KYC</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-gray-600" />
+                        <span>Secondary market listing</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Wide Card 2 - Yield Generation */}
+          <div
+            onClick={() => toggleCard('yield')}
+            className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+          >
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-light text-gray-900 mb-2 leading-tight">
+                    Yield Generation & Returns
+                    <br />
+                    <span className="text-gray-400 text-sm">8-15% Projected APY</span>
+                  </h3>
+                  <p className="text-gray-600 text-sm leading-snug">
+                    Earn passive income from real-world asset operations. Our tokenized assets generate
+                    yield through charter operations, rentals, and appreciation.
+                  </p>
+                </div>
+                <div className={`w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 flex-shrink-0 ml-4 ${expandedCard === 'yield' ? 'rotate-45' : 'group-hover:rotate-90'}`}>
+                  +
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Charter Revenue</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Rental Income</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Asset Appreciation</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Quarterly Dividends</span>
+              </div>
+              {/* Expandable Content */}
+              <div className={`overflow-hidden transition-all duration-300 ${expandedCard === 'yield' ? 'max-h-64 pt-4 border-t border-gray-100' : 'max-h-0'}`}>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <ul className="space-y-2 text-sm text-gray-700">
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-gray-600" />
+                        <span>Automated dividend distribution</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-gray-600" />
+                        <span>Real-time revenue tracking</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-gray-600" />
+                        <span>Transparent fee structure</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <div>
+                    <ul className="space-y-2 text-sm text-gray-700">
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-gray-600" />
+                        <span>Historical performance data</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-gray-600" />
+                        <span>Portfolio diversification</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-gray-600" />
+                        <span>Tax-efficient structures</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 1 Bigger Card - Full Width */}
+        <div className="mt-4">
+          <div
+            onClick={() => toggleCard('ecosystem')}
+            className="group bg-gray-200/60 backdrop-blur-md border border-gray-300 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
+          >
+            <div className="p-8">
+              <div className="flex items-start justify-between mb-6">
+                <div className="max-w-3xl">
+                  <h3 className="text-xl sm:text-2xl font-light text-gray-900 leading-tight">
+                    The Complete RWA Ecosystem
+                    <br />
+                    <span className="text-gray-600 text-base">From Private Jets to Carbon Credits — All on One Platform</span>
+                  </h3>
+                </div>
+                <div className={`w-8 h-8 flex items-center justify-center text-gray-900 text-2xl font-light transition-transform duration-300 flex-shrink-0 ml-6 ${expandedCard === 'ecosystem' ? 'rotate-45' : 'group-hover:rotate-90'}`}>
+                  +
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 mb-6">
+                <span className="bg-gray-900/80 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs text-white border border-gray-800">Aviation</span>
+                <span className="bg-gray-900/80 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs text-white border border-gray-800">Maritime</span>
+                <span className="bg-gray-900/80 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs text-white border border-gray-800">Ground Transport</span>
+                <span className="bg-gray-900/80 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs text-white border border-gray-800">Carbon Credits</span>
+                <span className="bg-gray-900/80 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs text-white border border-gray-800">SAF</span>
+                <span className="bg-gray-900/80 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs text-white border border-gray-800">Real Estate</span>
+              </div>
+              {/* Expandable Content */}
+              <div className={`overflow-hidden transition-all duration-300 ${expandedCard === 'ecosystem' ? 'max-h-[500px] pt-6 border-t border-gray-300' : 'max-h-0'}`}>
+                <p className="text-gray-700 text-sm sm:text-base leading-relaxed mb-6">
+                  Privatecharterx's tokenization solutions brings together luxury travel assets, sustainability certificates,
+                  and innovative mobility solutions. Whether you're tokenizing your fleet or investing in fractional
+                  ownership, our ecosystem provides institutional-grade infrastructure with retail accessibility.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  <div>
+                    <h4 className="text-gray-900 font-medium mb-3">For Asset Owners</h4>
+                    <ul className="space-y-2 text-sm text-gray-700">
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-gray-600" />
+                        <span>Unlock capital without selling</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-gray-600" />
+                        <span>Maintain operational control</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-gray-600" />
+                        <span>Global investor access</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="text-gray-900 font-medium mb-3">For Investors</h4>
+                    <ul className="space-y-2 text-sm text-gray-700">
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-gray-600" />
+                        <span>Start from $10'000 minimum</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-gray-600" />
+                        <span>Earn passive yields</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-gray-600" />
+                        <span>Trade on secondary markets</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="text-gray-900 font-medium mb-3">Platform Features</h4>
+                    <ul className="space-y-2 text-sm text-gray-700">
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-gray-600" />
+                        <span>Blockchain verified ownership</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-gray-600" />
+                        <span>Institutional custody</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-gray-600" />
+                        <span>Real-time reporting</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200">
-        {/* Blockchain Certificates Section */}
-        <section className="px-8 py-20 max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-light text-gray-900 mb-6 leading-tight">
-              Blockchain Sustainability Certificates<br />
-              <span className="font-medium">CO2 & SAF Verification on Chain</span>
-            </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              Revolutionary blockchain-based certification system for carbon emissions and 
-              Sustainable Aviation Fuel usage. Immutable, transparent, and tradeable.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-            {/* CO2 Certificates */}
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-8 rounded-2xl border border-green-200">
-              <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center mb-6">
-                <Leaf className="w-8 h-8 text-green-600" />
-              </div>
-              <h3 className="text-xl font-medium text-gray-900 mb-4">CO2 Certificates</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                Blockchain-verified carbon emission certificates for every flight. Track, offset, 
-                and trade carbon credits with full transparency and immutable records.
-              </p>
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center">
-                  <Check className="w-4 h-4 text-green-600 mr-3" />
-                  <span className="text-sm text-gray-700">Real-time emission tracking</span>
-                </div>
-                <div className="flex items-center">
-                  <Check className="w-4 h-4 text-green-600 mr-3" />
-                  <span className="text-sm text-gray-700">Automatic offset calculations</span>
-                </div>
-                <div className="flex items-center">
-                  <Check className="w-4 h-4 text-green-600 mr-3" />
-                  <span className="text-sm text-gray-700">Tradeable carbon credits</span>
-                </div>
-                <div className="flex items-center">
-                  <Check className="w-4 h-4 text-green-600 mr-3" />
-                  <span className="text-sm text-gray-700">Regulatory compliance</span>
-                </div>
-              </div>
-              <button 
-                onClick={() => setCurrentPage('helpdesk')}
-                className="bg-green-600 text-white px-6 py-3 rounded-md text-sm hover:bg-green-700 transition-colors"
-              >
-                Generate CO2 Certificate
-              </button>
-            </div>
-
-            {/* SAF Certificates */}
-            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-8 rounded-2xl border border-blue-200">
-              <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mb-6">
-                <Fuel className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-medium text-gray-900 mb-4">SAF Certificates</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                Sustainable Aviation Fuel usage verification through blockchain technology. 
-                Prove your commitment to sustainable aviation with immutable SAF certificates.
-              </p>
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center">
-                  <Check className="w-4 h-4 text-blue-600 mr-3" />
-                  <span className="text-sm text-gray-700">SAF usage verification</span>
-                </div>
-                <div className="flex items-center">
-                  <Check className="w-4 h-4 text-blue-600 mr-3" />
-                  <span className="text-sm text-gray-700">Supply chain transparency</span>
-                </div>
-                <div className="flex items-center">
-                  <Check className="w-4 h-4 text-blue-600 mr-3" />
-                  <span className="text-sm text-gray-700">Sustainability scoring</span>
-                </div>
-                <div className="flex items-center">
-                  <Check className="w-4 h-4 text-blue-600 mr-3" />
-                  <span className="text-sm text-gray-700">Premium market access</span>
-                </div>
-              </div>
-              <button 
-                onClick={() => setCurrentPage('helpdesk')}
-                className="bg-blue-600 text-white px-6 py-3 rounded-md text-sm hover:bg-blue-700 transition-colors"
-              >
-                Verify SAF Usage
-              </button>
-            </div>
-          </div>
-
-          {/* Certificate Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="text-2xl font-light text-gray-900 mb-2">156,847</div>
-              <p className="text-sm text-gray-400">CO2 Certificates Issued</p>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-light text-gray-900 mb-2">89,234</div>
-              <p className="text-sm text-gray-400">SAF Certificates Generated</p>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-light text-gray-900 mb-2">2.4M</div>
-              <p className="text-sm text-gray-400">Tons CO2 Offset</p>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-light text-gray-900 mb-2">67%</div>
-              <p className="text-sm text-gray-400">Flights with SAF</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Tokenization Process */}
-        <section className="px-8 py-20 max-w-6xl mx-auto border-t border-gray-100">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-light text-gray-900 mb-6 leading-tight">
-              Complete Tokenization Process<br />
-              <span className="font-medium">From Asset to Token in 6 Steps</span>
-            </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              Our comprehensive tokenization framework transforms luxury travel assets into 
-              digital securities with full regulatory compliance and institutional-grade custody.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Step 1 */}
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center text-lg font-light mx-auto mb-6">
-                1
-              </div>
-              <h3 className="text-lg font-light text-gray-900 mb-4">Initial Consultation</h3>
-              <p className="text-sm text-gray-600 leading-snug mb-4">
-                Asset evaluation, tokenization strategy, regulatory assessment, and market analysis
-                to determine optimal token structure and investment potential.
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center">
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  Asset valuation
-                </div>
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  Legal review
-                </div>
-              </div>
-            </div>
-
-            {/* Step 2 */}
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center text-lg font-light mx-auto mb-6">
-                2
-              </div>
-              <h3 className="text-lg font-light text-gray-900 mb-4">SPV Setup & Structure</h3>
-              <p className="text-sm text-gray-600 leading-snug mb-4">
-                Special Purpose Vehicle creation, asset allocation framework, governance structure,
-                and regulatory compliance setup for institutional-grade tokenization.
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center">
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  Legal entity
-                </div>
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  Asset custody
-                </div>
-              </div>
-            </div>
-
-            {/* Step 3 */}
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center text-lg font-light mx-auto mb-6">
-                3
-              </div>
-              <h3 className="text-lg font-light text-gray-900 mb-4">Smart Contract Development</h3>
-              <p className="text-sm text-gray-600 leading-snug mb-4">
-                Custom smart contract creation on Ethereum or Base, with options for ERC-20 utility
-                tokens, ERC-1400 security tokens, or hybrid tokenomics models.
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center">
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  ERC-20/1400
-                </div>
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  Multi-chain
-                </div>
-              </div>
-            </div>
-
-            {/* Step 4 */}
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center text-lg font-light mx-auto mb-6">
-                4
-              </div>
-              <h3 className="text-lg font-light text-gray-900 mb-4">Token Minting & Distribution</h3>
-              <p className="text-sm text-gray-600 leading-snug mb-4">
-                Professional token minting process with institutional custody, KYC/AML compliance,
-                and secure distribution to qualified investors through our platform.
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center">
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  KYC/AML
-                </div>
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  Secure minting
-                </div>
-              </div>
-            </div>
-
-            {/* Step 5 */}
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center text-lg font-light mx-auto mb-6">
-                5
-              </div>
-              <h3 className="text-lg font-light text-gray-900 mb-4">Custody & Vault Management</h3>
-              <p className="text-sm text-gray-600 leading-snug mb-4">
-                Institutional-grade custody through our trusted partners, secure vault storage,
-                insurance coverage, and professional asset management services.
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center">
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  Institutional custody
-                </div>
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  Insurance
-                </div>
-              </div>
-            </div>
-
-            {/* Step 6 */}
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center text-lg font-light mx-auto mb-6">
-                6
-              </div>
-              <h3 className="text-lg font-light text-gray-900 mb-4">Trading & Yield Generation</h3>
-              <p className="text-sm text-gray-600 leading-snug mb-4">
-                Secondary market trading, yield distribution, governance participation, and ongoing
-                asset management with transparent reporting and blockchain verification.
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center">
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  Secondary trading
-                </div>
-                <div className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  Yield distribution
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Asset Categories */}
-        <section className="px-8 py-20 max-w-6xl mx-auto border-t border-gray-100">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-light text-gray-900 mb-6 leading-tight">
-              Tokenizable Asset Categories<br />
-              <span className="font-medium">Luxury Travel & Transportation Ecosystem</span>
-            </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              From private aviation to luxury ground transportation, we tokenize the entire 
-              spectrum of premium travel assets for fractional ownership and yield generation.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Aviation Assets */}
-            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
-              {/* Header Image */}
-              <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
-                <Plane className="w-12 h-12 text-gray-500" />
-              </div>
-              <div className="p-6">
-                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Aviation Assets</h3>
-                <p className="text-gray-600 text-sm leading-snug mb-3">
-                  Private jets, helicopters, eVTOLs, and aviation operators ready for tokenization.
-                </p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Private jet fleets
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Helicopter operations
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    eVTOL manufacturers
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Charter operators
-                  </span>
-                </div>
-                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
-              </div>
-            </div>
-
-            {/* Ground Transportation */}
-            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
-              {/* Header Image */}
-              <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
-                <Car className="w-12 h-12 text-gray-500" />
-              </div>
-              <div className="p-6">
-                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Ground Transportation</h3>
-                <p className="text-gray-600 text-sm leading-snug mb-3">
-                  Luxury car fleets, limousine services, and premium ground transportation companies.
-                </p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Limousine companies
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Luxury car fleets
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Chauffeur services
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Executive transport
-                  </span>
-                </div>
-                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
-              </div>
-            </div>
-
-            {/* Maritime Assets */}
-            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
-              {/* Header Image */}
-              <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
-                <Anchor className="w-12 h-12 text-gray-500" />
-              </div>
-              <div className="p-6">
-                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Maritime Assets</h3>
-                <p className="text-gray-600 text-sm leading-snug mb-3">
-                  Luxury yachts, charter operations, and maritime hospitality services.
-                </p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Luxury yacht charters
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Superyacht ownership
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Marina operations
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Maritime services
-                  </span>
-                </div>
-                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
-              </div>
-            </div>
-
-            {/* Hospitality & Experiences */}
-            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
-              {/* Header Image */}
-              <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
-                <Crown className="w-12 h-12 text-gray-500" />
-              </div>
-              <div className="p-6">
-                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Hospitality & Experiences</h3>
-                <p className="text-gray-600 text-sm leading-snug mb-3">
-                  Luxury hotels, exclusive experiences, and premium hospitality services.
-                </p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Luxury resort properties
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Exclusive experiences
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Concierge services
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    VIP memberships
-                  </span>
-                </div>
-                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
-              </div>
-            </div>
-
-            {/* Real Estate */}
-            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
-              {/* Header Image */}
-              <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
-                <Building className="w-12 h-12 text-gray-500" />
-              </div>
-              <div className="p-6">
-                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Travel Real Estate</h3>
-                <p className="text-gray-600 text-sm leading-snug mb-3">
-                  Airports, hangars, terminals, and travel-related real estate infrastructure.
-                </p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Private hangars
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Airport terminals
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    FBO facilities
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Travel hubs
-                  </span>
-                </div>
-                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
-              </div>
-            </div>
-
-            {/* Technology & Innovation */}
-            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
-              {/* Header Image */}
-              <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
-                <Rocket className="w-12 h-12 text-gray-500" />
-              </div>
-              <div className="p-6">
-                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Technology & Innovation</h3>
-                <p className="text-gray-600 text-sm leading-snug mb-3">
-                  Travel tech companies, mobility platforms, and innovative transportation solutions.
-                </p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Mobility platforms
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Travel tech startups
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Innovation projects
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Future mobility
-                  </span>
-                </div>
-                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {/* Upcoming Tokenized Assets */}
-      <section className="px-8 py-20 max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-light text-gray-900 mb-6 leading-tight">
-            Upcoming Tokenized Assets<br />
-            <span className="font-medium">Future Investment Opportunities</span>
+      {/* Asset Categories - Moved below RWA Ecosystem */}
+      <section className="px-4 sm:px-8 pt-16 sm:pt-20 pb-12 max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-10">
+          <h2 className="text-2xl sm:text-3xl font-light text-gray-900 leading-tight">
+            Tokenizable Asset Categories<br />
+            <span className="font-medium">Luxury Travel & Transportation Ecosystem</span>
           </h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Explore upcoming tokenization opportunities across luxury travel assets with 
-            projected yields, transparent metrics, and institutional-grade management.
+          <p className="text-gray-600 text-sm sm:text-base max-w-md text-left md:text-right leading-relaxed">
+            From private aviation to luxury ground transportation, we tokenize the entire
+            spectrum of premium travel assets for fractional ownership and yield generation.
           </p>
         </div>
 
-        <div className="space-y-8">
-          {/* Private Jet Example */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Aviation Assets */}
           <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
-            <div className="p-8">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  {/* Asset Image */}
-                  <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center mr-6">
-                    <div className="text-center">
-                      <Plane className="w-8 h-8 text-gray-500 mx-auto mb-1" />
-                      <span className="text-xs text-gray-400">Image</span>
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-light text-gray-900">Gulfstream G650ER</h3>
-                    <p className="text-sm text-gray-400">Ultra-Long Range Business Jet</p>
-                  </div>
-                </div>
-
-                {/* Metrics Row */}
-                <div className="flex items-center space-x-8">
-                  <div className="text-center">
-                    <div className="text-2xl font-light text-gray-900 mb-1">8.7%</div>
-                    <p className="text-sm text-gray-400">Projected APY</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-light text-gray-900 mb-1">$1,250</div>
-                    <p className="text-sm text-gray-400">Token Price</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-light text-gray-900 mb-1">2,500</div>
-                    <p className="text-sm text-gray-400">Max Holders</p>
-                  </div>
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={() => setCurrentPage('helpdesk')}
-                      className="bg-gray-900 text-white px-6 py-3 rounded-md text-sm hover:bg-gray-800 transition-colors"
-                    >
-                      Join Waitlist
-                    </button>
-                    <button className="border border-gray-200 text-gray-700 px-6 py-3 rounded-md text-sm hover:bg-gray-50 transition-colors">
-                      Read More
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Expandable Details */}
-              <div className="mt-6 pt-6 border-t border-gray-100">
-                <details className="group">
-                  <summary className="flex items-center justify-between cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900">
-                    <span>Asset Details & Investment Information</span>
-                    <ChevronDown className="w-4 h-4 group-open:rotate-180 transition-transform" />
-                  </summary>
-                  <div className="mt-4 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-3">Aircraft Specifications</h4>
-                        <div className="space-y-2 text-sm text-gray-600">
-                          <div className="flex justify-between">
-                            <span>Range:</span>
-                            <span>7,500 nautical miles</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Max Passengers:</span>
-                            <span>19</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Max Speed:</span>
-                            <span>Mach 0.925</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Year:</span>
-                            <span>2019</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-3">Investment Details</h4>
-                        <div className="space-y-2 text-sm text-gray-600">
-                          <div className="flex justify-between">
-                            <span>Total Asset Value:</span>
-                            <span>$65,000,000</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Token Supply:</span>
-                            <span>52,000 tokens</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Min Investment:</span>
-                            <span>$1,250 (1 token)</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Expected Launch:</span>
-                            <span>Q2 2024</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </details>
+            <div className="w-full h-40 overflow-hidden">
+              <img
+                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/tokenization-images/Whisk_3750a44ec051d509e9d4a7e31ebf8489dr.png"
+                alt="Aviation Assets"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+            <div className="p-6">
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Aviation Assets</h3>
+              <p className="text-gray-600 text-sm leading-snug mb-3">
+                Private jets, helicopters, eVTOLs, and aviation operators ready for tokenization.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Private jet fleets</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Helicopter operations</span>
               </div>
             </div>
           </div>
 
-          {/* Luxury Car Fleet */}
+          {/* Ground Transportation */}
           <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
-            <div className="p-8">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  {/* Asset Image */}
-                  <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center mr-6">
-                    <div className="text-center">
-                      <Car className="w-8 h-8 text-gray-500 mx-auto mb-1" />
-                      <span className="text-xs text-gray-400">Image</span>
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-light text-gray-900">Elite Limousine Fleet</h3>
-                    <p className="text-sm text-gray-400">Premium Ground Transportation</p>
-                  </div>
-                </div>
-
-                {/* Metrics Row */}
-                <div className="flex items-center space-x-8">
-                  <div className="text-center">
-                    <div className="text-2xl font-light text-gray-900 mb-1">12.3%</div>
-                    <p className="text-sm text-gray-400">Projected APY</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-light text-gray-900 mb-1">$850</div>
-                    <p className="text-sm text-gray-400">Token Price</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-light text-gray-900 mb-1">5,000</div>
-                    <p className="text-sm text-gray-400">Max Holders</p>
-                  </div>
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={() => setCurrentPage('helpdesk')}
-                      className="bg-gray-900 text-white px-6 py-3 rounded-md text-sm hover:bg-gray-800 transition-colors"
-                    >
-                      Join Waitlist
-                    </button>
-                    <button className="border border-gray-200 text-gray-700 px-6 py-3 rounded-md text-sm hover:bg-gray-50 transition-colors">
-                      Read More
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Expandable Details */}
-              <div className="mt-6 pt-6 border-t border-gray-100">
-                <details className="group">
-                  <summary className="flex items-center justify-between cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900">
-                    <span>Fleet Details & Investment Information</span>
-                    <ChevronDown className="w-4 h-4 group-open:rotate-180 transition-transform" />
-                  </summary>
-                  <div className="mt-4 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-3">Fleet Specifications</h4>
-                        <div className="space-y-2 text-sm text-gray-600">
-                          <div className="flex justify-between">
-                            <span>Fleet Size:</span>
-                            <span>50 vehicles</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Vehicle Types:</span>
-                            <span>Luxury sedans, SUVs</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Service Areas:</span>
-                            <span>5 major cities</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Average Age:</span>
-                            <span>2.5 years</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-3">Investment Details</h4>
-                        <div className="space-y-2 text-sm text-gray-600">
-                          <div className="flex justify-between">
-                            <span>Total Fleet Value:</span>
-                            <span>$12,500,000</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Token Supply:</span>
-                            <span>14,706 tokens</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Min Investment:</span>
-                            <span>$850 (1 token)</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Expected Launch:</span>
-                            <span>Q3 2024</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </details>
+            <div className="w-full h-40 overflow-hidden">
+              <img
+                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/tokenization-images/Whisk_a36d4ca9db3e7489277401374f9f8db5dr.png"
+                alt="Ground Transportation"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+            <div className="p-6">
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Ground Transportation</h3>
+              <p className="text-gray-600 text-sm leading-snug mb-3">
+                Luxury car fleets, limousine services, and premium ground transportation companies.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Limousine companies</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Luxury car fleets</span>
               </div>
             </div>
           </div>
 
-          {/* Helicopter Operation */}
+          {/* Maritime Assets */}
           <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
-            <div className="p-8">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  {/* Asset Image */}
-                  <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center mr-6">
-                    <div className="text-center">
-                      <Settings className="w-8 h-8 text-gray-500 mx-auto mb-1" />
-                      <span className="text-xs text-gray-400">Image</span>
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-light text-gray-900">Coastal Helicopter Tours</h3>
-                    <p className="text-sm text-gray-400">Tourism & Charter Operations</p>
-                  </div>
-                </div>
-
-                {/* Metrics Row */}
-                <div className="flex items-center space-x-8">
-                  <div className="text-center">
-                    <div className="text-2xl font-light text-gray-900 mb-1">15.2%</div>
-                    <p className="text-sm text-gray-400">Projected APY</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-light text-gray-900 mb-1">$650</div>
-                    <p className="text-sm text-gray-400">Token Price</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-light text-gray-900 mb-1">3,000</div>
-                    <p className="text-sm text-gray-400">Max Holders</p>
-                  </div>
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={() => setCurrentPage('helpdesk')}
-                      className="bg-gray-900 text-white px-6 py-3 rounded-md text-sm hover:bg-gray-800 transition-colors"
-                    >
-                      Join Waitlist
-                    </button>
-                    <button className="border border-gray-200 text-gray-700 px-6 py-3 rounded-md text-sm hover:bg-gray-50 transition-colors">
-                      Read More
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Expandable Details */}
-              <div className="mt-6 pt-6 border-t border-gray-100">
-                <details className="group">
-                  <summary className="flex items-center justify-between cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900">
-                    <span>Operation Details & Investment Information</span>
-                    <ChevronDown className="w-4 h-4 group-open:rotate-180 transition-transform" />
-                  </summary>
-                  <div className="mt-4 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-3">Operation Specifications</h4>
-                        <div className="space-y-2 text-sm text-gray-600">
-                          <div className="flex justify-between">
-                            <span>Fleet Size:</span>
-                            <span>8 helicopters</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Service Type:</span>
-                            <span>Tourism & Charter</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Operating Locations:</span>
-                            <span>3 coastal cities</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Annual Flights:</span>
-                            <span>2,400+</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-3">Investment Details</h4>
-                        <div className="space-y-2 text-sm text-gray-600">
-                          <div className="flex justify-between">
-                            <span>Total Operation Value:</span>
-                            <span>$8,200,000</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Token Supply:</span>
-                            <span>12,615 tokens</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Min Investment:</span>
-                            <span>$650 (1 token)</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Expected Launch:</span>
-                            <span>Q4 2024</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </details>
+            <div className="w-full h-40 overflow-hidden">
+              <img
+                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/tokenization-images/Whisk_fb36353cc5e7e88939945cb4b6af252cdr.png"
+                alt="Maritime Assets"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+            <div className="p-6">
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Maritime Assets</h3>
+              <p className="text-gray-600 text-sm leading-snug mb-3">
+                Luxury yachts, charter operations, and maritime hospitality services.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Luxury yacht charters</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Superyacht ownership</span>
               </div>
             </div>
           </div>
 
-          {/* eVTOL Future Mobility */}
+          {/* Hospitality & Experiences */}
           <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
-            <div className="p-8">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  {/* Asset Image */}
-                  <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center mr-6">
-                    <div className="text-center">
-                      <Zap className="w-8 h-8 text-gray-500 mx-auto mb-1" />
-                      <span className="text-xs text-gray-400">Image</span>
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-light text-gray-900">Urban eVTOL Network</h3>
-                    <p className="text-sm text-gray-400">Future Urban Air Mobility</p>
-                  </div>
-                </div>
-
-                {/* Metrics Row */}
-                <div className="flex items-center space-x-8">
-                  <div className="text-center">
-                    <div className="text-2xl font-light text-gray-900 mb-1">TBD</div>
-                    <p className="text-sm text-gray-400">Projected Yield</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-light text-gray-900 mb-1">$2,100</div>
-                    <p className="text-sm text-gray-400">Token Price</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-light text-gray-900 mb-1">10,000</div>
-                    <p className="text-sm text-gray-400">Max Holders</p>
-                  </div>
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={() => setCurrentPage('dashboard')}
-                      className="bg-gray-900 text-white px-6 py-3 rounded-md text-sm hover:bg-gray-800 transition-colors"
-                    >
-                      Get Started
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage('helpdesk')}
-                      className="border border-gray-200 text-gray-700 px-6 py-3 rounded-md text-sm hover:bg-gray-50 transition-colors"
-                    >
-                      Learn More
-                    </button>
-                  </div>
-                </div>
+            <div className="w-full h-40 overflow-hidden">
+              <img
+                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/tokenization-images/Whisk_6c429fa1160c265a7da453ef3ab118fedr.png"
+                alt="Hospitality & Experiences"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+            <div className="p-6">
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Hospitality & Experiences</h3>
+              <p className="text-gray-600 text-sm leading-snug mb-3">
+                Luxury hotels, exclusive experiences, and premium hospitality services.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Luxury resort properties</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Exclusive experiences</span>
               </div>
-              
-              {/* Expandable Details */}
-              <div className="mt-6 pt-6 border-t border-gray-100">
-                <details className="group">
-                  <summary className="flex items-center justify-between cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900">
-                    <span>Future Mobility Details & Investment Information</span>
-                    <ChevronDown className="w-4 h-4 group-open:rotate-180 transition-transform" />
-                  </summary>
-                  <div className="mt-4 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-3">Network Specifications</h4>
-                        <div className="space-y-2 text-sm text-gray-600">
-                          <div className="flex justify-between">
-                            <span>Vehicle Type:</span>
-                            <span>Electric VTOL</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Passenger Capacity:</span>
-                            <span>4 passengers</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Range:</span>
-                            <span>60 miles</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Target Cities:</span>
-                            <span>10 urban areas</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-3">Investment Details</h4>
-                        <div className="space-y-2 text-sm text-gray-600">
-                          <div className="flex justify-between">
-                            <span>Total Network Value:</span>
-                            <span>$45,000,000</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Token Supply:</span>
-                            <span>21,429 tokens</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Min Investment:</span>
-                            <span>$2,100 (1 token)</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Expected Launch:</span>
-                            <span>2025-2026</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </details>
+            </div>
+          </div>
+
+          {/* Real Estate */}
+          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
+            <div className="w-full h-40 overflow-hidden">
+              <img
+                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/tokenization-images/Whisk_2e43ce3d5799c1183784fed02bb80b67dr.png"
+                alt="Travel Real Estate"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+            <div className="p-6">
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Travel Real Estate</h3>
+              <p className="text-gray-600 text-sm leading-snug mb-3">
+                Airports, hangars, terminals, and travel-related real estate infrastructure.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Private hangars</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Airport terminals</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Technology & Innovation */}
+          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
+            <div className="w-full h-40 overflow-hidden">
+              <img
+                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/tokenization-images/Whisk_e206f96362f7c8f8aa7419000dd4a313dr.png"
+                alt="Technology & Innovation"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+            <div className="p-6">
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Technology & Innovation</h3>
+              <p className="text-gray-600 text-sm leading-snug mb-3">
+                Travel tech companies, mobility platforms, and innovative transportation solutions.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Mobility platforms</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Travel tech startups</span>
               </div>
             </div>
           </div>
@@ -1015,21 +627,23 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
       </section>
 
       {/* CTA Section */}
-      <section className="px-8 py-20 max-w-4xl mx-auto text-center">
-        <h2 className="text-3xl font-light text-gray-900 mb-4">Ready to Tokenize Your Assets?</h2>
-        <p className="text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed">
-          Join the future of asset ownership with blockchain-powered tokenization.
-          From consultation to trading, we handle the entire process.
+      <section className="px-4 sm:px-8 py-16 sm:py-20 max-w-4xl mx-auto text-center">
+        <h2 className="text-3xl font-light text-gray-900 mb-4">How RWA Tokenization Benefits Global Economy</h2>
+        <p className="text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
+          Real World Assets (RWA) are physical or tangible assets — such as private jets, real estate,
+          luxury vehicles, carbon credits, and commodities — that are converted into digital tokens on the blockchain.
+          RWA tokenization bridges traditional finance with decentralized technology, enabling fractional ownership,
+          24/7 global trading, and unprecedented transparency.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
-          <button 
+          <button
             onClick={handleGetStarted}
             className="bg-gray-900 text-white px-8 py-3 rounded-md text-sm hover:bg-gray-800 transition-colors flex items-center justify-center"
           >
             Start Tokenization
             <ArrowRight className="w-4 h-4 ml-2" />
           </button>
-          <button 
+          <button
             onClick={handleGetStarted}
             className="border border-gray-200 text-gray-700 px-8 py-3 rounded-md text-sm hover:bg-gray-50 transition-colors"
           >

@@ -53,7 +53,6 @@ export default function LandingHeader({ onGetStarted, showInfoButton = true }: L
 
   const navItems = [
     { path: '/services', label: 'Services' },
-    { path: '/technology', label: 'Technology' },
     { path: '/aviation', label: 'Aviation' },
     { path: '/tokenized', label: 'RWA Tokenization' },
     { path: '/sphera-ai', label: 'Sphera AI' },

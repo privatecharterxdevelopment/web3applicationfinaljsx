@@ -127,21 +127,21 @@ export default function FloatingSearchModal() {
     setShowDestinationDropdown(false);
   };
 
-  // Handle charter jet submission
+  // Handle charter jet submission - triggers AI chat with departure/destination
   const handleCharterJetSubmit = () => {
     if (departureAirport && destinationAirport) {
-      // Navigate to dashboard private-jet tab with pre-filled data
+      // Create a natural language query for the AI chat
+      const query = `I need a private jet from ${departureAirport.city} (${departureAirport.code}) to ${destinationAirport.city} (${destinationAirport.code})`;
+
+      // Navigate to AI chat with the query and newChat flag
       const params = new URLSearchParams({
-        tab: 'private-jet',
-        departure: departureAirport.code,
-        departureName: `${departureAirport.city} (${departureAirport.code})`,
-        destination: destinationAirport.code,
-        destinationName: `${destinationAirport.city} (${destinationAirport.code})`
+        query: query,
+        newChat: 'true'
       });
       if (!isAuthenticated) {
         params.append('login', 'true');
       }
-      navigate(`/dashboard?${params.toString()}`);
+      navigate(`/dashboard/chat?${params.toString()}`);
     }
   };
 

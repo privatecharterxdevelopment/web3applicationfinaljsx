@@ -1,31 +1,29 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import LandingHeader from './LandingHeader';
 import Footer from './Footer';
 import {
   Plane,
-  Shield,
-  Coins,
-  Clock,
+  Car,
+  Ship,
+  Wine,
+  MapPin,
+  Hotel,
+  UtensilsCrossed,
+  Cigarette,
+  Package,
+  HeartPulse,
+  FileText,
   Globe,
-  Star,
-  Users,
-  Zap,
+  Clock,
+  Shield,
+  Sparkles,
   ChevronDown,
   ArrowRight,
   Check,
-  Layers,
-  Database,
-  Code,
-  Smartphone,
-  Headphones,
-  Award,
-  Lock,
-  Cpu,
-  Network,
-  Settings,
-  FileText,
-  Briefcase,
-  Info
+  Navigation,
+  Users,
+  Star
 } from 'lucide-react';
 
 interface ServicesProps {
@@ -33,635 +31,455 @@ interface ServicesProps {
 }
 
 function Services({ setCurrentPage }: ServicesProps) {
+  const navigate = useNavigate();
   const [expandedFaq, setExpandedFaq] = React.useState<string | null>(null);
+
+  // Set page meta
+  useEffect(() => {
+    document.title = 'Services | PrivateCharterX - Private Jets, Yachts, Luxury Cars & More';
+
+    // Update meta description
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Discover PrivateCharterX luxury travel services: private jet charter, empty legs, helicopter transfers, yacht charters, luxury car rentals, fine wines, gourmet experiences, and 24/7 concierge.');
+    } else {
+      const meta = document.createElement('meta');
+      meta.name = 'description';
+      meta.content = 'Discover PrivateCharterX luxury travel services: private jet charter, empty legs, helicopter transfers, yacht charters, luxury car rentals, fine wines, gourmet experiences, and 24/7 concierge.';
+      document.head.appendChild(meta);
+    }
+
+    // Update meta keywords
+    const metaKeywords = document.querySelector('meta[name="keywords"]');
+    if (metaKeywords) {
+      metaKeywords.setAttribute('content', 'private jet charter, empty legs, helicopter transfer, yacht charter, luxury car rental, chauffeur service, wine sommelier, MEDEVAC, visa assistance, luxury travel, VIP concierge');
+    } else {
+      const meta = document.createElement('meta');
+      meta.name = 'keywords';
+      meta.content = 'private jet charter, empty legs, helicopter transfer, yacht charter, luxury car rental, chauffeur service, wine sommelier, MEDEVAC, visa assistance, luxury travel, VIP concierge';
+      document.head.appendChild(meta);
+    }
+
+    return () => {
+      document.title = 'privatecharterx©';
+    };
+  }, []);
 
   const toggleFaq = (faqId: string) => {
     setExpandedFaq(expandedFaq === faqId ? null : faqId);
   };
 
+  const mainServices = [
+    {
+      icon: Plane,
+      title: 'Private Jets',
+      subtitle: 'Global Fleet Access',
+      description: 'Charter private jets from light jets to ultra-long-range aircraft. Access our global network of 5,000+ aircraft with real-time availability and instant quotes.',
+      features: ['Light jets to heavy jets', 'One-way & round trips', 'Instant price quotes'],
+      query: 'I want to charter a private jet'
+    },
+    {
+      icon: Navigation,
+      title: 'Empty Legs',
+      subtitle: 'Up to 75% Savings',
+      description: 'Book discounted one-way flights on repositioning jets. Real-time empty leg inventory updated daily with significant savings on luxury travel.',
+      features: ['Live availability', 'Up to 75% off', 'Last-minute deals'],
+      query: 'Show me empty legs'
+    },
+    {
+      icon: Ship,
+      title: 'Yachts & Adventures',
+      subtitle: 'Maritime Experiences',
+      description: 'Discover yacht charters from day cruises to week-long adventures. Access superyachts, sailing experiences, and curated maritime journeys worldwide.',
+      features: ['Day charters', 'Weekly rentals', 'Crewed yachts'],
+      query: 'I want to charter a yacht'
+    },
+    {
+      icon: Car,
+      title: 'Luxury & Sports Cars',
+      subtitle: 'Premium Vehicles',
+      description: 'Rent Ferraris, Lamborghinis, Rolls-Royces, and premium vehicles in any city. Professional chauffeur services and airport transfers available.',
+      features: ['Sports & supercars', 'Chauffeur service', 'Airport transfers'],
+      query: 'I need a luxury car rental'
+    }
+  ];
+
+  const additionalServices = [
+    {
+      icon: Sparkles,
+      title: 'Helicopters',
+      description: 'City-to-city transfers, scenic tours, and airport connections.',
+      query: 'Helicopter transfer'
+    },
+    {
+      icon: Hotel,
+      title: 'Luxury Hotels',
+      description: '5-star hotels, resorts, and exclusive accommodations worldwide.',
+      query: 'Find luxury hotel'
+    },
+    {
+      icon: Wine,
+      title: 'Wine & Sommelier',
+      description: 'Personalized wine recommendations, rare vintages, and champagnes.',
+      query: 'Wine recommendations'
+    },
+    {
+      icon: UtensilsCrossed,
+      title: 'Gourmet & Delicatessen',
+      description: 'Premium caviar, truffles, foie gras, and luxury food items.',
+      query: 'Gourmet food selection'
+    },
+    {
+      icon: Cigarette,
+      title: 'Fine Cigars',
+      description: 'Curated Cuban cigars, rare tobaccos, and premium accessories.',
+      query: 'Cuban cigars'
+    },
+    {
+      icon: MapPin,
+      title: 'Restaurant Reservations',
+      description: 'Michelin-starred restaurants and exclusive dining experiences.',
+      query: 'Restaurant reservation'
+    },
+    {
+      icon: Package,
+      title: 'Trip Packages',
+      description: 'Complete multi-leg journeys with flights, cars, and hotels.',
+      query: 'Build trip package'
+    },
+    {
+      icon: FileText,
+      title: 'Visa Assistance',
+      description: 'Express visa processing in 95% of countries within 24 hours.',
+      query: 'Express visa service'
+    }
+  ];
+
+  const eliteServices = [
+    {
+      icon: HeartPulse,
+      title: 'MEDEVAC Services',
+      description: 'Emergency medical evacuation, air ambulance, and repatriation services. Available exclusively for Elite members.',
+      exclusive: true
+    },
+    {
+      icon: Globe,
+      title: 'VIP Concierge',
+      description: 'Custom requests, event planning, exclusive access, and personalized experiences. 24/7 dedicated support.',
+      exclusive: true
+    }
+  ];
+
+  const faqs = [
+    {
+      id: 'booking',
+      question: 'How do I book a private jet?',
+      answer: 'Simply chat with Sphera AI and describe your travel needs - departure city, destination, date, and number of passengers. Our AI will search real-time inventory and provide instant quotes. You can also use our quick search on the homepage.'
+    },
+    {
+      id: 'empty-legs',
+      question: 'What are empty legs and how much can I save?',
+      answer: 'Empty legs are one-way flights when jets reposition without passengers. You can save up to 75% compared to regular charter prices. Our inventory is updated daily with last-minute deals available.'
+    },
+    {
+      id: 'payment',
+      question: 'What payment methods do you accept?',
+      answer: 'We accept all major credit cards, wire transfers, and 70+ cryptocurrencies including BTC, ETH, USDC, and USDT through our CoinGate integration.'
+    },
+    {
+      id: 'subscription',
+      question: 'Do I need a subscription to use your services?',
+      answer: 'Basic browsing is free. To chat with Sphera AI and make bookings, you need a subscription: Explorer ($49/mo), Traveller ($99/mo), or Elite ($399/mo). Each tier offers different chat limits and exclusive features.'
+    },
+    {
+      id: 'cancellation',
+      question: 'What is your cancellation policy?',
+      answer: 'Cancellation policies vary by service type and timing. Private jet charters typically allow free cancellation up to 48 hours before departure. Our team will clearly explain terms before you confirm any booking.'
+    },
+    {
+      id: 'coverage',
+      question: 'What destinations do you cover?',
+      answer: 'We operate globally with access to 5,000+ aircraft, yacht charters in major maritime destinations, and luxury car rentals in 50+ countries. Our network covers private airports, FBOs, and exclusive venues worldwide.'
+    }
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-100 px-4 py-4">
+    <div className="min-h-screen bg-gray-50 font-satoshi">
       <LandingHeader />
 
-      {/* Hero Section - Direct on background, no white floating component */}
-      <section className="px-4 sm:px-8 py-12 sm:py-24 max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          {/* Left side - Content */}
-          <div>
-            <div className="mb-8">
-              <span className="bg-gray-900 text-white px-4 py-2 rounded-full text-xs font-medium tracking-wide uppercase">
-                Web3 Blockchain Infrastructure
-              </span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light text-gray-900 mb-6 sm:mb-8 leading-tight tracking-tight">
-              Build the future with<br />
-              <span className="text-gray-400">decentralized technology</span>
-            </h1>
-            <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 leading-relaxed">
-              From smart contracts to full-scale DeFi protocols, we provide comprehensive
-              blockchain development services that power the next generation of Web3 applications.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <button
-                onClick={() => setCurrentPage('dashboard')}
-                className="bg-gray-900 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-md text-sm hover:bg-gray-800 transition-colors"
-              >
-                Start Your Project
-              </button>
-              <button
-                onClick={() => setCurrentPage('dashboard')}
-                className="border border-gray-300 text-gray-700 px-6 sm:px-8 py-3 sm:py-4 rounded-md text-sm hover:bg-gray-50 transition-colors"
-              >
-                View Portfolio
-              </button>
-            </div>
-          </div>
-
-          {/* Right side - Stats/Features */}
-          <div className="space-y-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <Code className="w-6 h-6 text-gray-700" />
-                </div>
-                <span className="text-2xl font-light text-gray-900">500+</span>
-              </div>
-              <h3 className="text-base font-medium text-gray-900 mb-2">Smart Contracts Deployed</h3>
-              <p className="text-sm text-gray-500">Across multiple blockchain networks</p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <Users className="w-6 h-6 text-gray-700" />
-                </div>
-                <span className="text-2xl font-light text-gray-900">150+</span>
-              </div>
-              <h3 className="text-base font-medium text-gray-900 mb-2">Projects Delivered</h3>
-              <p className="text-sm text-gray-500">From startups to enterprise solutions</p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-gray-700" />
-                </div>
-                <span className="text-2xl font-light text-gray-900">100%</span>
-              </div>
-              <h3 className="text-base font-medium text-gray-900 mb-2">Security Audited</h3>
-              <p className="text-sm text-gray-500">Every contract thoroughly tested</p>
-            </div>
+      {/* Hero Section */}
+      <section className="px-4 sm:px-8 py-16 sm:py-24 max-w-6xl mx-auto">
+        <div className="text-center max-w-3xl mx-auto">
+          <span className="inline-flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-full text-xs font-medium tracking-wide uppercase mb-8">
+            <Sparkles className="w-3.5 h-3.5" />
+            Luxury Travel Services
+          </span>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-light text-gray-900 mb-6 leading-tight tracking-tight">
+            Your Gateway to
+            <br />
+            <span className="text-gray-400">Luxury Travel</span>
+          </h1>
+          <p className="text-base sm:text-lg text-gray-600 mb-10 leading-relaxed max-w-2xl mx-auto">
+            Private jets, yachts, luxury cars, fine wines, and 24/7 concierge — all accessible
+            through natural conversation with Sphera AI.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => navigate('/dashboard/chat?newChat=true')}
+              className="bg-gray-900 text-white px-8 py-4 rounded-xl text-sm font-medium hover:bg-gray-800 transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              Chat with Sphera AI
+            </button>
+            <button
+              onClick={() => navigate('/subscriptions/plans')}
+              className="border border-gray-200 text-gray-700 px-8 py-4 rounded-xl text-sm font-medium hover:bg-white hover:border-gray-300 transition-all duration-200"
+            >
+              View Plans
+            </button>
           </div>
         </div>
       </section>
 
-      {/* Core Services - More detailed with descriptions */}
-      <section className="px-4 sm:px-8 py-12 sm:py-20 max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-2xl sm:text-3xl font-light text-gray-900 mb-6 leading-tight">
-            What Web3 Services Do We Provide?
+      {/* Trust Indicators */}
+      <section className="px-4 sm:px-8 py-8 max-w-6xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { value: '5,000+', label: 'Aircraft Available', icon: Plane },
+            { value: '50+', label: 'Countries Covered', icon: Globe },
+            { value: '24/7', label: 'Concierge Support', icon: Clock },
+            { value: '100%', label: 'Secure Transactions', icon: Shield }
+          ].map((stat, i) => (
+            <div key={i} className="bg-white rounded-2xl p-5 border border-gray-100 text-center">
+              <stat.icon className="w-5 h-5 text-gray-400 mx-auto mb-2" />
+              <div className="text-2xl font-light text-gray-900 mb-1">{stat.value}</div>
+              <div className="text-xs text-gray-500">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Main Services */}
+      <section className="px-4 sm:px-8 py-16 sm:py-20 max-w-6xl mx-auto">
+        <div className="text-center mb-12">
+          <h2 className="text-2xl sm:text-3xl font-light text-gray-900 mb-4">
+            Core Services
           </h2>
-          <p className="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed px-4">
-            Comprehensive blockchain infrastructure and development services designed to power
-            the next generation of decentralized applications and digital economies.
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Premium transportation and travel experiences at your fingertips
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
-            {/* Header Image */}
-            <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
-              <Code className="w-12 h-12 text-gray-500" />
-            </div>
-            <div className="p-6">
-              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
-                Smart Contract Development
-                <br />
-                <span className="text-gray-400 text-sm">Solidity & Rust Experts</span>
-              </h3>
-              <p className="text-gray-600 text-sm leading-snug mb-3">
-                Custom smart contracts built with Solidity, Rust, or other blockchain languages.
-                We handle everything from simple token contracts to complex DeFi protocols with
-                comprehensive testing and optimization.
-              </p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  ERC-20, ERC-721, ERC-1400 tokens
-                </span>
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  Multi-sig wallets
-                </span>
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  Governance contracts
-                </span>
-              </div>
-              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-                +
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {mainServices.map((service, index) => (
+            <div
+              key={index}
+              onClick={() => navigate(`/dashboard/chat?query=${encodeURIComponent(service.query)}&newChat=true`)}
+              className="group bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-gray-200 hover:shadow-xl transition-all duration-300 cursor-pointer"
+            >
+              <div className="p-8">
+                <div className="flex items-start justify-between mb-6">
+                  <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center group-hover:bg-gray-100 transition-colors">
+                    <service.icon className="w-7 h-7 text-gray-700" />
+                  </div>
+                  <div className="w-8 h-8 flex items-center justify-center text-gray-400 text-2xl font-light transition-transform duration-300 group-hover:rotate-45">
+                    +
+                  </div>
+                </div>
+                <h3 className="text-xl font-medium text-gray-900 mb-1">{service.title}</h3>
+                <p className="text-sm text-gray-400 mb-4">{service.subtitle}</p>
+                <p className="text-sm text-gray-600 leading-relaxed mb-6">{service.description}</p>
+                <div className="flex flex-wrap gap-2">
+                  {service.features.map((feature, i) => (
+                    <span key={i} className="px-3 py-1.5 bg-gray-50 rounded-full text-xs text-gray-600">
+                      {feature}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-
-          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
-            {/* Header Image */}
-            <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
-              <Layers className="w-12 h-12 text-gray-500" />
-            </div>
-            <div className="p-6">
-              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
-                DeFi Protocol Development
-                <br />
-                <span className="text-gray-400 text-sm">AMMs & Yield Farming</span>
-              </h3>
-              <p className="text-gray-600 text-sm leading-snug mb-3">
-                Build sophisticated decentralized finance applications including DEXs, lending
-                platforms, yield farming protocols, and automated market makers with advanced
-                tokenomics and liquidity management.
-              </p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  Automated Market Makers (AMM)
-                </span>
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  Lending protocols
-                </span>
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  Yield farming strategies
-                </span>
-              </div>
-              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-                +
-              </div>
-            </div>
-          </div>
-
-          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
-            {/* Header Image */}
-            <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
-              <Users className="w-12 h-12 text-gray-500" />
-            </div>
-            <div className="p-6">
-              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
-                DAO & Governance Systems
-                <br />
-                <span className="text-gray-400 text-sm">Decentralized Organizations</span>
-              </h3>
-              <p className="text-gray-600 text-sm leading-snug mb-3">
-                Create decentralized autonomous organizations with sophisticated governance
-                mechanisms, voting systems, treasury management, and proposal execution
-                frameworks for community-driven decision making.
-              </p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  Governance token design
-                </span>
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  Voting mechanisms
-                </span>
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  Treasury management
-                </span>
-              </div>
-              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-                +
-              </div>
-            </div>
-          </div>
-
-          <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
-            {/* Header Image */}
-            <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
-              <Network className="w-12 h-12 text-gray-500" />
-            </div>
-            <div className="p-6">
-              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
-                Cross-Chain Solutions
-                <br />
-                <span className="text-gray-400 text-sm">Bridge Protocols</span>
-              </h3>
-              <p className="text-gray-600 text-sm leading-snug mb-3">
-                Enable seamless interoperability between different blockchain networks with
-                bridge protocols, cross-chain messaging, and multi-chain asset management
-                for maximum flexibility and reach.
-              </p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  Asset bridge protocols
-                </span>
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  Cross-chain messaging
-                </span>
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                  Multi-chain deployment
-                </span>
-              </div>
-              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-                +
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* Service Grid - Additional Services */}
-      <section className="px-8 py-12 max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h3 className="text-2xl font-light text-gray-900 mb-4">Additional Blockchain Services</h3>
-          <p className="text-gray-600">Specialized services to complete your Web3 ecosystem</p>
+      {/* Additional Services Grid */}
+      <section className="px-4 sm:px-8 py-16 sm:py-20 max-w-6xl mx-auto">
+        <div className="text-center mb-12">
+          <h2 className="text-2xl sm:text-3xl font-light text-gray-900 mb-4">
+            Lifestyle & Concierge
+          </h2>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Enhance your journey with curated experiences and premium services
+          </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="group bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6">
-            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-              <Shield className="w-5 h-5 text-gray-600" />
-            </div>
-            <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Security Audits</h3>
-            <p className="text-gray-600 text-sm leading-snug mb-4">Comprehensive smart contract security assessments and vulnerability testing.</p>
-            <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-              +
-            </div>
-          </div>
 
-          <div className="group bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6">
-            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-              <Database className="w-5 h-5 text-gray-600" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {additionalServices.map((service, index) => (
+            <div
+              key={index}
+              onClick={() => navigate(`/dashboard/chat?query=${encodeURIComponent(service.query)}&newChat=true`)}
+              className="group bg-white rounded-2xl p-6 border border-gray-100 hover:border-gray-200 hover:shadow-lg transition-all duration-300 cursor-pointer"
+            >
+              <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-4 group-hover:bg-gray-100 transition-colors">
+                <service.icon className="w-5 h-5 text-gray-600" />
+              </div>
+              <h3 className="text-base font-medium text-gray-900 mb-2">{service.title}</h3>
+              <p className="text-xs text-gray-500 leading-relaxed mb-4">{service.description}</p>
+              <div className="w-5 h-5 flex items-center justify-center text-gray-400 text-lg font-light transition-transform duration-300 group-hover:rotate-90">
+                +
+              </div>
             </div>
-            <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">IPFS Integration</h3>
-            <p className="text-gray-600 text-sm leading-snug mb-4">Decentralized storage solutions for your dApp's data and media files.</p>
-            <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-              +
-            </div>
-          </div>
-
-          <div className="group bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6">
-            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-              <Cpu className="w-5 h-5 text-gray-600" />
-            </div>
-            <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Node Infrastructure</h3>
-            <p className="text-gray-600 text-sm leading-snug mb-4">Managed blockchain nodes and RPC endpoints for reliable connectivity.</p>
-            <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-              +
-            </div>
-          </div>
-
-          <div className="group bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer p-6">
-            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-              <Smartphone className="w-5 h-5 text-gray-600" />
-            </div>
-            <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Mobile dApp Development</h3>
-            <p className="text-gray-600 text-sm leading-snug mb-4">Native mobile applications with Web3 wallet integration and blockchain connectivity.</p>
-            <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-              +
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
-        {/* How Our Web3 Development Process Works - Timeline Map */}
-        <section className="px-8 py-20 max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-light text-gray-900 mb-6 leading-tight">
-              How Our Web3<br />
-              <span className="font-medium">Development Process Works</span>
+      {/* Elite Services */}
+      <section className="px-4 sm:px-8 py-16 sm:py-20 max-w-6xl mx-auto">
+        <div className="bg-gray-900 rounded-3xl p-8 sm:p-12">
+          <div className="text-center mb-10">
+            <span className="inline-flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-full text-xs font-medium tracking-wide uppercase mb-6">
+              Elite Exclusive
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-light text-white mb-4">
+              Premium Elite Services
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              From initial consultation to post-launch support, our proven methodology
-              ensures successful Web3 project delivery.
+            <p className="text-gray-400 max-w-xl mx-auto">
+              Exclusive services available only to Elite members ($399/month)
             </p>
           </div>
 
-          {/* Modern Timeline */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-medium mx-auto mb-4">
-                01
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {eliteServices.map((service, index) => (
+              <div
+                key={index}
+                className="bg-white/5 backdrop-blur rounded-2xl p-6 border border-white/10"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center">
+                    <service.icon className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-medium text-white mb-2">{service.title}</h3>
+                    <p className="text-sm text-gray-400 leading-relaxed">{service.description}</p>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-base font-medium text-gray-900 mb-3">Discovery & Strategy</h3>
-              <p className="text-sm text-gray-500 mb-3 leading-relaxed">
-                Requirements analysis and technical architecture design.
-              </p>
-              <span className="text-xs text-gray-400">1-2 weeks</span>
-            </div>
-
-            <div className="text-center">
-              <div className="w-12 h-12 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-medium mx-auto mb-4">
-                02
-              </div>
-              <h3 className="text-base font-medium text-gray-900 mb-3">Development & Testing</h3>
-              <p className="text-sm text-gray-500 mb-3 leading-relaxed">
-                Smart contract development with comprehensive testing.
-              </p>
-              <span className="text-xs text-gray-400">4-12 weeks</span>
-            </div>
-
-            <div className="text-center">
-              <div className="w-12 h-12 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-medium mx-auto mb-4">
-                03
-              </div>
-              <h3 className="text-base font-medium text-gray-900 mb-3">Security & Audit</h3>
-              <p className="text-sm text-gray-500 mb-3 leading-relaxed">
-                Thorough security audits and vulnerability assessments.
-              </p>
-              <span className="text-xs text-gray-400">1-3 weeks</span>
-            </div>
-
-            <div className="text-center">
-              <div className="w-12 h-12 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-medium mx-auto mb-4">
-                04
-              </div>
-              <h3 className="text-base font-medium text-gray-900 mb-3">Launch & Scale</h3>
-              <p className="text-sm text-gray-500 mb-3 leading-relaxed">
-                Mainnet deployment with ongoing monitoring and support.
-              </p>
-              <span className="text-xs text-gray-400">Ongoing</span>
-            </div>
+            ))}
           </div>
-        </section>
-      </div>
 
-      {/* Service Packages */}
-      <section className="px-8 py-20 max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-light text-gray-900 mb-4 leading-tight">
-            Choose Your Development Package
+          <div className="text-center mt-10">
+            <button
+              onClick={() => navigate('/subscriptions/plans')}
+              className="bg-white text-gray-900 px-8 py-4 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors inline-flex items-center gap-2"
+            >
+              Upgrade to Elite
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="px-4 sm:px-8 py-16 sm:py-20 max-w-6xl mx-auto">
+        <div className="text-center mb-12">
+          <h2 className="text-2xl sm:text-3xl font-light text-gray-900 mb-4">
+            How It Works
           </h2>
-          <p className="text-gray-500 max-w-2xl mx-auto leading-relaxed">
-            Flexible service packages designed to meet your Web3 development needs,
-            from simple smart contracts to complex DeFi protocols.
+          <p className="text-gray-600 max-w-xl mx-auto">
+            Book luxury travel in three simple steps
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Starter Tier */}
-          <div className="bg-white border border-gray-100 rounded-xl p-8 hover:shadow-lg transition-shadow duration-300">
-            <div className="text-center mb-8">
-              <h3 className="text-xl font-medium text-gray-900 mb-2">Starter</h3>
-              <p className="text-gray-400 text-sm mb-6">Perfect for simple projects</p>
-              <div className="text-3xl font-light text-gray-900 mb-2">$5K - $15K</div>
-              <p className="text-xs text-gray-400">One-time project fee</p>
+          {[
+            {
+              step: '01',
+              title: 'Chat with Sphera AI',
+              description: 'Describe your travel needs in natural language. Our AI understands context and preferences.'
+            },
+            {
+              step: '02',
+              title: 'Review Options',
+              description: 'Get real-time availability, instant quotes, and curated recommendations tailored to you.'
+            },
+            {
+              step: '03',
+              title: 'Book & Travel',
+              description: 'Add to cart, confirm your booking, and enjoy a seamless luxury travel experience.'
+            }
+          ].map((item, index) => (
+            <div key={index} className="text-center">
+              <div className="w-14 h-14 bg-gray-900 text-white rounded-2xl flex items-center justify-center text-sm font-medium mx-auto mb-6">
+                {item.step}
+              </div>
+              <h3 className="text-base font-medium text-gray-900 mb-3">{item.title}</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">{item.description}</p>
             </div>
-            <div className="space-y-4 mb-8">
-              <div className="flex items-center">
-                <Check className="w-4 h-4 text-green-500 mr-3" />
-                <span className="text-sm text-gray-600">Basic smart contract</span>
-              </div>
-              <div className="flex items-center">
-                <Check className="w-4 h-4 text-green-500 mr-3" />
-                <span className="text-sm text-gray-600">Token creation (ERC-20)</span>
-              </div>
-              <div className="flex items-center">
-                <Check className="w-4 h-4 text-green-500 mr-3" />
-                <span className="text-sm text-gray-600">Basic security audit</span>
-              </div>
-              <div className="flex items-center">
-                <Check className="w-4 h-4 text-green-500 mr-3" />
-                <span className="text-sm text-gray-600">Testnet deployment</span>
-              </div>
-            </div>
-            <button className="w-full border border-gray-200 text-gray-700 py-3 rounded-md text-sm hover:bg-gray-50 transition-colors">
-              <span onClick={() => setCurrentPage('dashboard')}>Get Started</span>
-            </button>
-          </div>
-
-          {/* Professional Tier */}
-          <div className="bg-gray-900 text-white rounded-xl p-8 relative overflow-hidden">
-            <div className="absolute top-4 right-4 bg-white text-gray-900 px-3 py-1 rounded-full text-xs font-medium">
-              Most Popular
-            </div>
-            <div className="text-center mb-8">
-              <h3 className="text-xl font-medium mb-2">Professional</h3>
-              <p className="text-gray-400 text-sm mb-6">For complex dApps</p>
-              <div className="text-3xl font-light mb-2">$25K - $75K</div>
-              <p className="text-xs text-gray-400">Full development cycle</p>
-            </div>
-            <div className="space-y-4 mb-8">
-              <div className="flex items-center">
-                <Check className="w-4 h-4 text-green-400 mr-3" />
-                <span className="text-sm">Complex smart contracts</span>
-              </div>
-              <div className="flex items-center">
-                <Check className="w-4 h-4 text-green-400 mr-3" />
-                <span className="text-sm">Full dApp development</span>
-              </div>
-              <div className="flex items-center">
-                <Check className="w-4 h-4 text-green-400 mr-3" />
-                <span className="text-sm">Comprehensive audit</span>
-              </div>
-              <div className="flex items-center">
-                <Check className="w-4 h-4 text-green-400 mr-3" />
-                <span className="text-sm">Multi-chain deployment</span>
-              </div>
-              <div className="flex items-center">
-                <Check className="w-4 h-4 text-green-400 mr-3" />
-                <span className="text-sm">3 months support</span>
-              </div>
-            </div>
-            <button className="w-full bg-white text-gray-900 py-3 rounded-md text-sm hover:bg-gray-100 transition-colors">
-              <span onClick={() => setCurrentPage('dashboard')}>Start Project</span>
-            </button>
-          </div>
-
-          {/* Enterprise Tier */}
-          <div className="bg-white border border-gray-100 rounded-xl p-8 hover:shadow-lg transition-shadow duration-300">
-            <div className="text-center mb-8">
-              <h3 className="text-xl font-medium text-gray-900 mb-2">Enterprise</h3>
-              <p className="text-gray-400 text-sm mb-6">Custom blockchain solutions</p>
-              <div className="text-3xl font-light text-gray-900 mb-2">$100K+</div>
-              <p className="text-xs text-gray-400">Tailored solutions</p>
-            </div>
-            <div className="space-y-4 mb-8">
-              <div className="flex items-center">
-                <Check className="w-4 h-4 text-green-500 mr-3" />
-                <span className="text-sm text-gray-600">Custom blockchain</span>
-              </div>
-              <div className="flex items-center">
-                <Check className="w-4 h-4 text-green-500 mr-3" />
-                <span className="text-sm text-gray-600">DeFi protocol development</span>
-              </div>
-              <div className="flex items-center">
-                <Check className="w-4 h-4 text-green-500 mr-3" />
-                <span className="text-sm text-gray-600">Advanced security</span>
-              </div>
-              <div className="flex items-center">
-                <Check className="w-4 h-4 text-green-500 mr-3" />
-                <span className="text-sm text-gray-600">Dedicated team</span>
-              </div>
-              <div className="flex items-center">
-                <Check className="w-4 h-4 text-green-500 mr-3" />
-                <span className="text-sm text-gray-600">Ongoing support</span>
-              </div>
-            </div>
-            <button className="w-full border border-gray-200 text-gray-700 py-3 rounded-md text-sm hover:bg-gray-50 transition-colors">
-              <span onClick={() => setCurrentPage('dashboard')}>Contact Sales</span>
-            </button>
-          </div>
+          ))}
         </div>
       </section>
 
       {/* FAQ Section */}
-      <section className="px-8 py-20 max-w-3xl mx-auto">
+      <section className="px-4 sm:px-8 py-16 sm:py-20 max-w-3xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-light text-gray-900 mb-2">Web3 Development Questions?</h2>
-          <h3 className="text-xl font-light text-gray-500">We Have Answers</h3>
+          <h2 className="text-2xl sm:text-3xl font-light text-gray-900 mb-2">
+            Frequently Asked Questions
+          </h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* FAQ 1 */}
-          <div
-            onClick={() => toggleFaq('faq1')}
-            className="bg-white border border-gray-100 p-6 rounded-lg cursor-pointer hover:shadow-md transition-all"
-          >
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-light text-gray-900">What blockchain networks do you support?</h4>
-              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedFaq === 'faq1' ? 'rotate-180' : ''}`} />
-            </div>
-            {expandedFaq === 'faq1' && (
-              <p className="mt-3 text-xs text-gray-600 leading-relaxed">
-                We support Ethereum, Polygon, Binance Smart Chain, Solana, Avalanche, and custom EVM-compatible networks.
-              </p>
-            )}
-          </div>
 
-          {/* FAQ 2 */}
-          <div
-            onClick={() => toggleFaq('faq2')}
-            className="bg-white border border-gray-100 p-6 rounded-lg cursor-pointer hover:shadow-md transition-all"
-          >
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-light text-gray-900">How long does smart contract development take?</h4>
-              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedFaq === 'faq2' ? 'rotate-180' : ''}`} />
+        <div className="space-y-3">
+          {faqs.map((faq) => (
+            <div
+              key={faq.id}
+              onClick={() => toggleFaq(faq.id)}
+              className="bg-white border border-gray-100 rounded-2xl overflow-hidden cursor-pointer hover:border-gray-200 transition-all"
+            >
+              <div className="flex items-center justify-between p-5">
+                <h4 className="text-sm font-medium text-gray-900 pr-4">{faq.question}</h4>
+                <ChevronDown className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform duration-200 ${expandedFaq === faq.id ? 'rotate-180' : ''}`} />
+              </div>
+              {expandedFaq === faq.id && (
+                <div className="px-5 pb-5 pt-0">
+                  <p className="text-sm text-gray-600 leading-relaxed">{faq.answer}</p>
+                </div>
+              )}
             </div>
-            {expandedFaq === 'faq2' && (
-              <p className="mt-3 text-xs text-gray-600 leading-relaxed">
-                Simple contracts take 2-4 weeks, while complex DeFi protocols can take 2-4 months including testing and audits.
-              </p>
-            )}
-          </div>
-
-          {/* FAQ 3 */}
-          <div
-            onClick={() => toggleFaq('faq3')}
-            className="bg-white border border-gray-100 p-6 rounded-lg cursor-pointer hover:shadow-md transition-all"
-          >
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-light text-gray-900">Do you provide ongoing maintenance and support?</h4>
-              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedFaq === 'faq3' ? 'rotate-180' : ''}`} />
-            </div>
-            {expandedFaq === 'faq3' && (
-              <p className="mt-3 text-xs text-gray-600 leading-relaxed">
-                Yes, all packages include post-launch support. Professional tier includes 3 months, Enterprise includes ongoing support.
-              </p>
-            )}
-          </div>
-
-          {/* FAQ 4 */}
-          <div
-            onClick={() => toggleFaq('faq4')}
-            className="bg-white border border-gray-100 p-6 rounded-lg cursor-pointer hover:shadow-md transition-all"
-          >
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-light text-gray-900">What's included in a security audit?</h4>
-              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedFaq === 'faq4' ? 'rotate-180' : ''}`} />
-            </div>
-            {expandedFaq === 'faq4' && (
-              <p className="mt-3 text-xs text-gray-600 leading-relaxed">
-                Comprehensive code review, vulnerability assessment, gas optimization analysis, and detailed security report with recommendations.
-              </p>
-            )}
-          </div>
-
-          {/* FAQ 5 */}
-          <div
-            onClick={() => toggleFaq('faq5')}
-            className="bg-white border border-gray-100 p-6 rounded-lg cursor-pointer hover:shadow-md transition-all"
-          >
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-light text-gray-900">Can you integrate with existing systems?</h4>
-              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedFaq === 'faq5' ? 'rotate-180' : ''}`} />
-            </div>
-            {expandedFaq === 'faq5' && (
-              <p className="mt-3 text-xs text-gray-600 leading-relaxed">
-                Absolutely. We can integrate blockchain functionality with your existing web2 infrastructure, databases, and APIs.
-              </p>
-            )}
-          </div>
-
-          {/* FAQ 6 */}
-          <div
-            onClick={() => toggleFaq('faq6')}
-            className="bg-white border border-gray-100 p-6 rounded-lg cursor-pointer hover:shadow-md transition-all"
-          >
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-light text-gray-900">What are your development methodologies?</h4>
-              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedFaq === 'faq6' ? 'rotate-180' : ''}`} />
-            </div>
-            {expandedFaq === 'faq6' && (
-              <p className="mt-3 text-xs text-gray-600 leading-relaxed">
-                We follow Agile development with sprint-based delivery, continuous testing, and regular client communication throughout the project.
-              </p>
-            )}
-          </div>
-
-          {/* FAQ 7 */}
-          <div
-            onClick={() => toggleFaq('faq7')}
-            className="bg-white border border-gray-100 p-6 rounded-lg cursor-pointer hover:shadow-md transition-all"
-          >
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-light text-gray-900">Do you offer training for our team?</h4>
-              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedFaq === 'faq7' ? 'rotate-180' : ''}`} />
-            </div>
-            {expandedFaq === 'faq7' && (
-              <p className="mt-3 text-xs text-gray-600 leading-relaxed">
-                Yes, we provide comprehensive training and documentation to help your team understand and maintain the blockchain solutions.
-              </p>
-            )}
-          </div>
-
-          {/* FAQ 8 */}
-          <div
-            onClick={() => toggleFaq('faq8')}
-            className="bg-white border border-gray-100 p-6 rounded-lg cursor-pointer hover:shadow-md transition-all"
-          >
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-light text-gray-900">How do you handle regulatory compliance?</h4>
-              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedFaq === 'faq8' ? 'rotate-180' : ''}`} />
-            </div>
-            {expandedFaq === 'faq8' && (
-              <p className="mt-3 text-xs text-gray-600 leading-relaxed">
-                We work with legal experts to ensure compliance with relevant regulations including KYC/AML, securities laws, and data protection.
-              </p>
-            )}
-          </div>
+          ))}
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="px-8 py-20 max-w-4xl mx-auto text-center">
-        <h2 className="text-3xl font-light text-gray-900 mb-4">Ready to Build the Future?</h2>
-        <p className="text-gray-500 mb-12 max-w-2xl mx-auto leading-relaxed">
-          Join the Web3 revolution with our expert blockchain development services.
-          Let's build something amazing together.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
-          <button
-            onClick={() => setCurrentPage('dashboard')}
-            className="bg-gray-900 text-white px-8 py-3 rounded-md text-sm hover:bg-gray-800 transition-colors flex items-center justify-center"
-          >
-            Start Your Project
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </button>
-          <button
-            onClick={() => setCurrentPage('dashboard')}
-            className="border border-gray-200 text-gray-700 px-8 py-3 rounded-md text-sm hover:bg-gray-50 transition-colors"
-          >
-            Schedule Consultation
-          </button>
+      <section className="px-4 sm:px-8 py-16 sm:py-20 max-w-4xl mx-auto">
+        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 sm:p-12 text-center">
+          <h2 className="text-2xl sm:text-3xl font-light text-white mb-4">
+            Ready to Experience Luxury Travel?
+          </h2>
+          <p className="text-gray-400 mb-10 max-w-xl mx-auto">
+            Start a conversation with Sphera AI and discover a new way to travel.
+            Your journey begins with a simple message.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => navigate('/dashboard/chat?newChat=true')}
+              className="bg-white text-gray-900 px-8 py-4 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors inline-flex items-center justify-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              Start Chatting
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => navigate('/sphera-ai')}
+              className="border border-white/20 text-white px-8 py-4 rounded-xl text-sm font-medium hover:bg-white/10 transition-colors"
+            >
+              Learn More
+            </button>
+          </div>
         </div>
       </section>
 
-      {/* Footer */}
       <Footer />
     </div>
-  )
+  );
 }
 
 export default Services;
