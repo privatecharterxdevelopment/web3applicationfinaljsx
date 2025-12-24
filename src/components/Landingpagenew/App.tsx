@@ -383,6 +383,12 @@ function AppContent() {
               <Route path="/helpdesk" element={<Helpdesk setCurrentPage={() => {}} />} />
               <Route path="/tokenswap" element={<TokenSwapPage />} />
 
+              {/* ===== LEGAL PAGES ===== */}
+              <Route path="/terms" element={<TermsConditions />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/imprint" element={<Impressum />} />
+              <Route path="/cookies" element={<PrivacyPolicy />} />
+
               {/* ===== LEGACY WEB3 REDIRECTS - Must be before /dashboard catch-all ===== */}
               <Route path="/dashboard/launchpad" element={<Navigate to="/dashboard/web3/launchpad" replace />} />
               <Route path="/dashboard/nft-marketplace" element={<Navigate to="/dashboard/web3/nft-marketplace" replace />} />
