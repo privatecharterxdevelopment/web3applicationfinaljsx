@@ -6057,6 +6057,65 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                             );
                           }
 
+                          // Check for MEDEVAC coordination message - show inline Add to Cart button after typing
+                          const isMedevacCoordination = content.toLowerCase().includes('coordinate') &&
+                            (content.toLowerCase().includes('medical evacuation') ||
+                             content.toLowerCase().includes('medevac') ||
+                             content.toLowerCase().includes('medical transport'));
+
+                          if (isMedevacCoordination) {
+                            return (
+                              <TypingText
+                                text={content}
+                                speed={5}
+                                onComplete={() => setTypingMessageIndex(null)}
+                                renderAfterComplete={() => {
+                                  const currentChat = chatHistory.find(c => c.id === (activeChat || urlChatId));
+                                  const medevacMsg = currentChat?.messages?.find(m => m.role === 'medevac_request' && m.medevacRequest);
+                                  const medevacRequest = medevacMsg?.medevacRequest;
+                                  const isAlreadyInCart = medevacRequest && cartItems.some(item => item.id === medevacRequest.id);
+
+                                  if (medevacRequest && !isAlreadyInCart) {
+                                    return (
+                                      <button
+                                        onClick={() => {
+                                          const cartItem = {
+                                            ...medevacRequest,
+                                            cartId: `medevac-${Date.now()}`,
+                                            type: 'medevac',
+                                            name: `MEDEVAC: ${medevacRequest.route?.origin} → ${medevacRequest.route?.destination}`,
+                                            title: 'Medical Evacuation Request',
+                                            price: 0,
+                                            priceOnRequest: true,
+                                            isEstimate: true,
+                                            requiresConfirmation: true,
+                                            isPriority: medevacRequest.urgencyLevel === 'critical' || medevacRequest.urgencyLevel === 'urgent',
+                                            addedAt: new Date().toISOString()
+                                          };
+                                          setCartItems(prev => [...prev, cartItem]);
+                                          showToast(`MEDEVAC request added to cart - Our team will contact you immediately!`, 'success');
+                                        }}
+                                        className="mt-3 inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-xl transition-all shadow-lg animate-pulse"
+                                      >
+                                        <ShoppingCart size={16} />
+                                        Add MEDEVAC Request to Cart
+                                      </button>
+                                    );
+                                  }
+                                  if (isAlreadyInCart) {
+                                    return (
+                                      <div className="mt-3 inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-100 text-emerald-700 text-sm font-medium rounded-xl">
+                                        <Check size={16} />
+                                        MEDEVAC Request Added to Cart
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                }}
+                              />
+                            );
+                          }
+
                           return (
                             <TypingText
                               text={content}
@@ -6089,6 +6148,58 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                               </div>
                             );
                           }
+
+                          // Check for MEDEVAC coordination message - show inline Add to Cart button
+                          const isMedevacCoordination = content.toLowerCase().includes('coordinate') &&
+                            (content.toLowerCase().includes('medical evacuation') ||
+                             content.toLowerCase().includes('medevac') ||
+                             content.toLowerCase().includes('medical transport'));
+
+                          if (isMedevacCoordination) {
+                            // Find the most recent medevacRequest from chat history
+                            const currentChat = chatHistory.find(c => c.id === (activeChat || urlChatId));
+                            const medevacMsg = currentChat?.messages?.find(m => m.role === 'medevac_request' && m.medevacRequest);
+                            const medevacRequest = medevacMsg?.medevacRequest;
+                            const isAlreadyInCart = medevacRequest && cartItems.some(item => item.id === medevacRequest.id);
+
+                            return (
+                              <div className="text-sm leading-relaxed overflow-hidden">
+                                <p className="whitespace-pre-line break-words">{content}</p>
+                                {medevacRequest && !isAlreadyInCart && (
+                                  <button
+                                    onClick={() => {
+                                      const cartItem = {
+                                        ...medevacRequest,
+                                        cartId: `medevac-${Date.now()}`,
+                                        type: 'medevac',
+                                        name: `MEDEVAC: ${medevacRequest.route?.origin} → ${medevacRequest.route?.destination}`,
+                                        title: 'Medical Evacuation Request',
+                                        price: 0,
+                                        priceOnRequest: true,
+                                        isEstimate: true,
+                                        requiresConfirmation: true,
+                                        isPriority: medevacRequest.urgencyLevel === 'critical' || medevacRequest.urgencyLevel === 'urgent',
+                                        addedAt: new Date().toISOString()
+                                      };
+                                      setCartItems(prev => [...prev, cartItem]);
+                                      showToast(`MEDEVAC request added to cart - Our team will contact you immediately!`, 'success');
+                                    }}
+                                    className="mt-3 inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-xl transition-all shadow-lg animate-pulse"
+                                  >
+                                    <ShoppingCart size={16} />
+                                    Add MEDEVAC Request to Cart
+                                  </button>
+                                )}
+                                {isAlreadyInCart && (
+                                  <div className="mt-3 inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-100 text-emerald-700 text-sm font-medium rounded-xl">
+                                    <Check size={16} />
+                                    MEDEVAC Request Added to Cart
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }
+
                           return <p className="text-sm leading-relaxed whitespace-pre-line break-words overflow-hidden">{content}</p>;
                         })()
                       )}
