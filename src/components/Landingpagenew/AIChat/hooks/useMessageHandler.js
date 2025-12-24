@@ -17,6 +17,9 @@ import {
   hasUnlimitedAccess
 } from '../utils/constants';
 
+// Debug: Check if aiToolDefinitions was imported correctly
+console.log('📦 aiToolDefinitions imported:', aiToolDefinitions?.length || 0, 'tools');
+
 export const useMessageHandler = ({
   user,
   isAdmin,
@@ -655,16 +658,21 @@ They will personally arrange your perfect yacht experience with custom itinerari
         .filter(msg => !uiOnlyRoles.includes(msg.role) && !msg.isLoading)
         .map(msg => ({ role: msg.role, content: msg.content }));
 
+      // Prepare tools with cache control on last item
+      const toolsWithCache = aiToolDefinitions?.map((tool, index) =>
+        index === aiToolDefinitions.length - 1
+          ? { ...tool, cache_control: { type: "ephemeral" } }
+          : tool
+      ) || [];
+
+      console.log('🔧 Tools count:', toolsWithCache.length, 'Tool names:', toolsWithCache.map(t => t.name));
+
       const response = await claudeEdgeService.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4096,
         system: [{ type: "text", text: systemPrompt + forcedToolMessage, cache_control: { type: "ephemeral" } }],
         messages: claudeMessages,
-        tools: aiToolDefinitions.map((tool, index) =>
-          index === aiToolDefinitions.length - 1
-            ? { ...tool, cache_control: { type: "ephemeral" } }
-            : tool
-        ),
+        tools: toolsWithCache,
         tool_choice: forcedTool
           ? { type: "tool", name: forcedTool }
           : { type: "auto" }
