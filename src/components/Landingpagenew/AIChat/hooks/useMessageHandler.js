@@ -610,6 +610,39 @@ They will personally arrange your perfect yacht experience with custom itinerari
     try {
       const systemPrompt = getSystemPrompt(userProfile?.subscription_tier);
 
+      // ═══════════════════════════════════════════════════════════════════════════
+      // FORCED TOOL DETECTION - Force specific tools for certain keywords
+      // ═══════════════════════════════════════════════════════════════════════════
+      let forcedTool = null;
+      let forcedToolMessage = '';
+
+      // MEDEVAC - Force tool for urgent medical requests
+      if (lowerMessage.match(/medevac|medical evacuation|emergency evacuation|air ambulance|medical transport/)) {
+        forcedTool = 'createMedevacRequest';
+        forcedToolMessage = '\n\n🚨 MEDEVAC REQUEST DETECTED - You MUST call createMedevacRequest tool.';
+      }
+
+      // WINE/CHAMPAGNE - Force searchWines tool
+      if (lowerMessage.match(/\bwine\b|champagne|bordeaux|burgundy|sommelier|krug|dom\s*p[eé]rignon|cristal|petrus|margaux|mouton|lafite|latour/i)) {
+        forcedTool = 'searchWines';
+        forcedToolMessage = '\n\n🍷 WINE REQUEST - You MUST call searchWines tool immediately.';
+        console.log('🍷 Forcing searchWines tool for:', trimmedMessage);
+      }
+
+      // DELICACIES/FOOD - Force searchDelicatesse tool
+      if (lowerMessage.match(/caviar|truffle|foie\s*gras|delicatesse|delicacy|delicacies|gourmet|beluga|ossetra/i)) {
+        forcedTool = 'searchDelicatesse';
+        forcedToolMessage = '\n\n🍽️ DELICACY REQUEST - You MUST call searchDelicatesse tool immediately.';
+        console.log('🍽️ Forcing searchDelicatesse tool for:', trimmedMessage);
+      }
+
+      // CIGARS - Force searchCigars tool
+      if (lowerMessage.match(/\bcigar\b|\bcigars\b|cohiba|montecristo|partagas|davidoff|romeo\s*y\s*julieta/i)) {
+        forcedTool = 'searchCigars';
+        forcedToolMessage = '\n\n🚬 CIGAR REQUEST - You MUST call searchCigars tool immediately.';
+        console.log('🚬 Forcing searchCigars tool for:', trimmedMessage);
+      }
+
       // Filter to valid Claude roles
       const uiOnlyRoles = ['results', 'place', 'hotels', 'adventures', 'confirm_booking', 'loading'];
       const claudeMessages = conversationHistory
@@ -619,22 +652,26 @@ They will personally arrange your perfect yacht experience with custom itinerari
       const response = await claudeEdgeService.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4096,
-        system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
+        system: [{ type: "text", text: systemPrompt + forcedToolMessage, cache_control: { type: "ephemeral" } }],
         messages: claudeMessages,
         tools: aiToolDefinitions.map((tool, index) =>
           index === aiToolDefinitions.length - 1
             ? { ...tool, cache_control: { type: "ephemeral" } }
             : tool
         ),
-        tool_choice: { type: "auto" }
+        tool_choice: forcedTool
+          ? { type: "tool", name: forcedTool }
+          : { type: "auto" }
       });
 
       console.log('🤖 Claude response:', response);
 
       if (response.stop_reason === 'tool_use') {
         // Check for initial text before tool call
+        // BUT: If a tool was FORCED, suppress the text - user wants results, not descriptions
         const textBlock = response.content.find(block => block.type === 'text');
-        if (textBlock?.text?.trim()) {
+        if (textBlock?.text?.trim() && !forcedTool) {
+          // Only show text if NO tool was forced (natural conversation)
           const initialMessage = { role: 'assistant', content: textBlock.text };
           setChatHistory(prev => prev.map(c =>
             c.id === workingChatId
@@ -642,6 +679,14 @@ They will personally arrange your perfect yacht experience with custom itinerari
               : c
           ));
           await chatService.updateChatMessages(workingChatId, [...conversationHistory, initialMessage], user.id);
+        } else if (forcedTool) {
+          console.log('🔇 Suppressing AI text - tool was forced:', forcedTool);
+          // Remove loading message since tool results will replace it
+          setChatHistory(prev => prev.map(c =>
+            c.id === workingChatId
+              ? { ...c, messages: c.messages.filter(m => !m.isLoading) }
+              : c
+          ));
         }
 
         const toolUse = response.content.find(block => block.type === 'tool_use');

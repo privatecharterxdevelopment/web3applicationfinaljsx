@@ -1168,12 +1168,12 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
             Start Tokenization
             <ArrowRight className="w-4 h-4 ml-2" />
           </button>
-          <button
-            onClick={handleGetStarted}
+          <a
+            href="mailto:admin@privatecharterx.com?subject=RWA%20Tokenization%20Consultation%20Request"
             className="border border-gray-200 text-gray-700 px-8 py-3 rounded-md text-sm hover:bg-gray-50 transition-colors"
           >
             Schedule Consultation
-          </button>
+          </a>
         </div>
       </section>
 
