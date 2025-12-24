@@ -218,7 +218,7 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
           />
 
           {/* Content */}
-          <div className="relative z-10 px-6 sm:px-12 py-12 sm:py-16">
+          <div className="relative px-6 sm:px-12 py-12 sm:py-16">
             {/* Header - Centered */}
             <div className="text-center mb-10">
               <span className="inline-flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-full text-xs font-medium tracking-wide uppercase mb-6">

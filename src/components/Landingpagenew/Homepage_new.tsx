@@ -717,7 +717,7 @@ function Homepage() {
               />
 
               {/* Content */}
-              <div className="relative z-10 px-6 sm:px-12 py-12 sm:py-16">
+              <div className="relative px-6 sm:px-12 py-12 sm:py-16">
                 {/* Header */}
                 <div className="text-center mb-10">
                   <h2 className="text-2xl sm:text-3xl md:text-4xl font-light text-gray-900 mb-3">

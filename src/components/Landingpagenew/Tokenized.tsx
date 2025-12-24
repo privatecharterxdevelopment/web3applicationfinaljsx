@@ -74,6 +74,8 @@ interface TokenizedProps {
 
 function Tokenized({ setCurrentPage }: TokenizedProps) {
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [assetCardTab, setAssetCardTab] = useState<'tokenomics' | 'details'>('tokenomics');
+  const [assetType, setAssetType] = useState<'jet' | 'yacht'>('jet');
 
   const handleGetStarted = () => {
     setCurrentPage('dashboard');
@@ -104,6 +106,403 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
             limousine fleets and helicopter operations — unlock fractional ownership, generate yield,
             and trade sustainability certificates on the blockchain.
           </p>
+        </div>
+      </section>
+
+      {/* Example Tokenized Asset Card - Sphera AI Style */}
+      <section className="px-4 sm:px-8 pb-12 max-w-7xl mx-auto">
+        <div
+          className="relative rounded-3xl overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #dee2e6 50%, #ced4da 75%, #adb5bd 100%)'
+          }}
+        >
+          {/* Pattern overlay */}
+          <div
+            className="absolute inset-0 opacity-30"
+            style={{
+              backgroundImage: `radial-gradient(circle at 20% 50%, rgba(0, 0, 0, 0.03) 0%, transparent 50%),
+                               radial-gradient(circle at 80% 50%, rgba(0, 0, 0, 0.03) 0%, transparent 50%),
+                               radial-gradient(circle at 40% 20%, rgba(0, 0, 0, 0.02) 0%, transparent 30%)`
+            }}
+          />
+
+          <div className="relative px-6 sm:px-10 py-10 sm:py-14">
+            {/* Header */}
+            <div className="text-center mb-8">
+              {/* Asset Type Switcher */}
+              <div className="inline-flex gap-1 p-1 bg-white/60 rounded-full border border-gray-200/50" style={{ backdropFilter: 'blur(10px)' }}>
+                <button
+                  onClick={() => { setAssetType('jet'); setAssetCardTab('tokenomics'); }}
+                  className={`px-5 py-2 text-[11px] font-light tracking-wide rounded-full transition-all flex items-center gap-2 ${
+                    assetType === 'jet'
+                      ? 'bg-gray-900 text-white'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <Plane size={13} />
+                  Private Jet
+                </button>
+                <button
+                  onClick={() => { setAssetType('yacht'); setAssetCardTab('tokenomics'); }}
+                  className={`px-5 py-2 text-[11px] font-light tracking-wide rounded-full transition-all flex items-center gap-2 ${
+                    assetType === 'yacht'
+                      ? 'bg-gray-900 text-white'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <Anchor size={13} />
+                  Yacht
+                </button>
+              </div>
+            </div>
+
+            {/* Floating Card with Glassmorphism */}
+            <div
+              className="bg-white/95 rounded-2xl overflow-hidden shadow-2xl border border-white/50 max-w-5xl mx-auto"
+              style={{ backdropFilter: 'blur(20px)' }}
+            >
+              <div className="grid grid-cols-1 lg:grid-cols-2">
+                {/* Left Side - Image & Badge */}
+                <div className="relative h-64 lg:h-auto min-h-[320px]">
+                  <img
+                    src={assetType === 'jet'
+                      ? "https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/tokenization-images/Whisk_d27057e0071a05888b847b5b9559a9f3eg.png"
+                      : "https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/tokenization-images/Whisk_c35b6e2a9c636d9916b49ddc61a97532dr.jpeg"
+                    }
+                    alt={assetType === 'jet' ? "Gulfstream G650ER Token" : "Sunseeker 95 Yacht Token"}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+                    <span
+                      className="text-white px-3 py-1.5 rounded-full text-[11px] font-light tracking-wide flex items-center gap-1.5 border border-white/30"
+                      style={{ background: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(10px)' }}
+                    >
+                      <Clock size={11} />
+                      Soon on Marketplace
+                    </span>
+                    <span
+                      className="text-white px-2.5 py-1.5 rounded-full text-[10px] font-light tracking-wide border border-white/30"
+                      style={{ background: 'rgba(99, 102, 241, 0.4)', backdropFilter: 'blur(10px)' }}
+                    >
+                      Reg-D
+                    </span>
+                  </div>
+                  <div className="absolute bottom-4 left-4 right-4 text-white">
+                    <p className="text-[11px] text-white/60 uppercase tracking-widest font-light mb-1">
+                      {assetType === 'jet' ? 'Security Token • Aviation' : 'Security Token • Maritime'}
+                    </p>
+                    <h3 className="text-2xl font-light tracking-tight">
+                      {assetType === 'jet' ? 'Gulfstream G650ER' : 'Sunseeker 95 Yacht'}
+                    </h3>
+                    <p className="text-sm text-white/70 font-light mt-1">Fractional Ownership Token</p>
+                  </div>
+                </div>
+
+                {/* Right Side - Details & Chart */}
+                <div className="p-6 lg:p-8">
+                  {/* Tab Switcher */}
+                  <div className="flex gap-1 p-1 bg-gray-100/80 rounded-lg mb-6 border border-gray-200/50">
+                    <button
+                      onClick={() => setAssetCardTab('tokenomics')}
+                      className={`flex-1 py-2 px-3 text-[11px] font-light tracking-wide rounded-md transition-all ${
+                        assetCardTab === 'tokenomics'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      Tokenomics
+                    </button>
+                    <button
+                      onClick={() => setAssetCardTab('details')}
+                      className={`flex-1 py-2 px-3 text-[11px] font-light tracking-wide rounded-md transition-all ${
+                        assetCardTab === 'details'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      Asset Details
+                    </button>
+                  </div>
+
+                  {assetCardTab === 'tokenomics' ? (
+                    <>
+                      {/* Token Price & Change */}
+                      <div className="flex items-start justify-between mb-6">
+                        <div>
+                          <p className="text-[10px] text-gray-400 font-light uppercase tracking-widest mb-1">Token Price</p>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-3xl font-medium text-gray-900">
+                              {assetType === 'jet' ? '$1,250' : '€430'}
+                            </span>
+                            <span className="text-sm font-light text-green-600 flex items-center gap-0.5">
+                              <TrendingUp size={14} />
+                              {assetType === 'jet' ? '+12.4%' : '+4.9%'}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-gray-400 font-light mt-1">
+                            {assetType === 'jet' ? 'Since launch (6 months)' : 'Since launch (3 months)'}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] text-gray-400 font-light uppercase tracking-widest mb-1">APY</p>
+                          <span className="text-2xl font-medium text-green-600">
+                            {assetType === 'jet' ? '14.2%' : '9.6%'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Mini Chart */}
+                      <div className="mb-6 p-4 bg-gray-50/80 rounded-xl border border-gray-100">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-[11px] font-light text-gray-500 tracking-wide">Token Performance</span>
+                          <div className="flex gap-2">
+                            <button className="text-[10px] px-2 py-1 rounded bg-gray-900 text-white">6M</button>
+                            <button className="text-[10px] px-2 py-1 rounded text-gray-500 hover:bg-gray-200">1Y</button>
+                            <button className="text-[10px] px-2 py-1 rounded text-gray-500 hover:bg-gray-200">ALL</button>
+                          </div>
+                        </div>
+                        {/* SVG Chart */}
+                        <div className="h-24 w-full">
+                          <svg viewBox="0 0 400 100" className="w-full h-full" preserveAspectRatio="none">
+                            <defs>
+                              <linearGradient id="chartGradientJet" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stopColor="#22c55e" stopOpacity="0.3" />
+                                <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
+                              </linearGradient>
+                              <linearGradient id="chartGradientYacht" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3" />
+                                <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
+                              </linearGradient>
+                            </defs>
+                            {/* Area fill */}
+                            <path
+                              d={assetType === 'jet'
+                                ? "M0,80 L30,75 L60,70 L90,65 L120,60 L150,55 L180,45 L210,50 L240,40 L270,35 L300,30 L330,25 L360,20 L400,15 L400,100 L0,100 Z"
+                                : "M0,82 L80,80 L160,78 L240,75 L320,72 L400,68 L400,100 L0,100 Z"
+                              }
+                              fill={assetType === 'jet' ? "url(#chartGradientJet)" : "url(#chartGradientYacht)"}
+                            />
+                            {/* Line */}
+                            <path
+                              d={assetType === 'jet'
+                                ? "M0,80 L30,75 L60,70 L90,65 L120,60 L150,55 L180,45 L210,50 L240,40 L270,35 L300,30 L330,25 L360,20 L400,15"
+                                : "M0,82 L80,80 L160,78 L240,75 L320,72 L400,68"
+                              }
+                              fill="none"
+                              stroke={assetType === 'jet' ? "#22c55e" : "#6366f1"}
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            {/* Current point */}
+                            <circle cx="400" cy={assetType === 'jet' ? 15 : 68} r="4" fill={assetType === 'jet' ? "#22c55e" : "#6366f1"} />
+                          </svg>
+                        </div>
+                        <div className="flex justify-between text-[10px] text-gray-400 mt-2">
+                          <span>Jun</span>
+                          <span>Jul</span>
+                          <span>Aug</span>
+                          <span>Sep</span>
+                          <span>Oct</span>
+                          <span>Nov</span>
+                          <span>Dec</span>
+                        </div>
+                      </div>
+
+                      {/* Stats Grid */}
+                      <div className="grid grid-cols-3 gap-3 mb-4">
+                        <div className="text-center p-3 bg-gray-50/80 rounded-lg border border-gray-100">
+                          <p className="text-[10px] text-gray-400 font-light uppercase tracking-wide mb-1">Total Value</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {assetType === 'jet' ? '$16M' : '€4.3M'}
+                          </p>
+                        </div>
+                        <div className="text-center p-3 bg-gray-50/80 rounded-lg border border-gray-100">
+                          <p className="text-[10px] text-gray-400 font-light uppercase tracking-wide mb-1">Token Holders</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {assetType === 'jet' ? '847' : '156'}
+                          </p>
+                        </div>
+                        <div className="text-center p-3 bg-gray-50/80 rounded-lg border border-gray-100">
+                          <p className="text-[10px] text-gray-400 font-light uppercase tracking-wide mb-1">Min. Investment</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {assetType === 'jet' ? '$10\'000' : '€10\'000'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Progress Bar - Tokens Sold */}
+                      <div className="mb-4">
+                        <div className="flex justify-between text-[11px] mb-2">
+                          <span className="text-gray-400 font-light tracking-wide">Tokens Sold</span>
+                          <span className="text-gray-700 font-medium">
+                            {assetType === 'jet' ? '42,350 / 52,000 (81.4%)' : '3,910 / 10,000 (39.1%)'}
+                          </span>
+                        </div>
+                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${assetType === 'jet' ? 'bg-gradient-to-r from-green-500 to-emerald-400' : 'bg-gradient-to-r from-blue-500 to-indigo-400'}`}
+                            style={{ width: assetType === 'jet' ? '81.4%' : '39.1%' }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Disclaimer */}
+                      <p className="text-[9px] text-gray-400 font-light leading-relaxed mb-4">
+                        This is not financial advice. Past performance does not guarantee future results.
+                        Securities offered through PrivatecharterX and its licensed SEC partner.
+                        Investment involves risk including potential loss of principal.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      {/* Asset Details Tab */}
+                      <div className="space-y-4">
+                        {/* Asset Info Grid */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="p-3 bg-gray-50/80 rounded-lg border border-gray-100">
+                            <p className="text-[10px] text-gray-400 font-light uppercase tracking-widest mb-1">
+                              {assetType === 'jet' ? 'Current Location' : 'Registration'}
+                            </p>
+                            <p className="text-sm font-medium text-gray-900 flex items-center gap-1.5">
+                              <Globe size={14} className="text-gray-400" />
+                              {assetType === 'jet' ? 'Asia' : 'Malta'}
+                            </p>
+                          </div>
+                          <div className="p-3 bg-gray-50/80 rounded-lg border border-gray-100">
+                            <p className="text-[10px] text-gray-400 font-light uppercase tracking-widest mb-1">Home Base</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {assetType === 'jet' ? 'Asia Pacific' : 'Mediterranean'}
+                            </p>
+                          </div>
+                          <div className="p-3 bg-gray-50/80 rounded-lg border border-gray-100">
+                            <p className="text-[10px] text-gray-400 font-light uppercase tracking-widest mb-1">
+                              {assetType === 'jet' ? 'Total Flight Hours' : 'Engine Hours'}
+                            </p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {assetType === 'jet' ? '2,847 hrs' : '1,240 hrs'}
+                            </p>
+                          </div>
+                          <div className="p-3 bg-gray-50/80 rounded-lg border border-gray-100">
+                            <p className="text-[10px] text-gray-400 font-light uppercase tracking-widest mb-1">
+                              {assetType === 'jet' ? 'Cycles' : 'Flag State'}
+                            </p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {assetType === 'jet' ? '1,423' : 'Malta'}
+                            </p>
+                          </div>
+                          <div className="p-3 bg-gray-50/80 rounded-lg border border-gray-100">
+                            <p className="text-[10px] text-gray-400 font-light uppercase tracking-widest mb-1">Year Built</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {assetType === 'jet' ? '2019' : '2018'}
+                            </p>
+                          </div>
+                          <div className="p-3 bg-gray-50/80 rounded-lg border border-gray-100">
+                            <p className="text-[10px] text-gray-400 font-light uppercase tracking-widest mb-1">Last Inspection</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {assetType === 'jet' ? 'Nov 2024' : 'Oct 2024'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Charter Operator */}
+                        <div
+                          className="p-3 rounded-lg border border-white/30"
+                          style={{ background: 'rgba(99, 102, 241, 0.08)', backdropFilter: 'blur(10px)' }}
+                        >
+                          <p className="text-[10px] text-indigo-500 font-light uppercase tracking-widest mb-1">
+                            {assetType === 'jet' ? 'Charter Operator' : 'Charter Manager'}
+                          </p>
+                          <p className="text-sm font-medium text-gray-900">To be announced</p>
+                          <p className="text-[11px] text-gray-500 font-light mt-1">
+                            {assetType === 'jet'
+                              ? 'Available for charter requests via platform'
+                              : 'To be announced'
+                            }
+                          </p>
+                        </div>
+
+                        {/* Next Maintenance */}
+                        <div
+                          className="p-3 rounded-lg border border-white/30"
+                          style={{ background: 'rgba(245, 158, 11, 0.08)', backdropFilter: 'blur(10px)' }}
+                        >
+                          <p className="text-[10px] text-amber-500 font-light uppercase tracking-widest mb-1">
+                            {assetType === 'jet' ? 'Next Scheduled Maintenance' : 'Next Haul-Out'}
+                          </p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {assetType === 'jet' ? 'Q2 2025 - C-Check' : 'Q1 2026 - Annual Survey'}
+                          </p>
+                        </div>
+
+                        {/* Specs Summary */}
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div>
+                            <p className="text-lg font-medium text-gray-900">
+                              {assetType === 'jet' ? '19' : '12'}
+                            </p>
+                            <p className="text-[10px] text-gray-400 font-light">
+                              {assetType === 'jet' ? 'Passengers' : 'Guests'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-lg font-medium text-gray-900">
+                              {assetType === 'jet' ? '7,500' : '95'}
+                            </p>
+                            <p className="text-[10px] text-gray-400 font-light">
+                              {assetType === 'jet' ? 'Range (nm)' : 'Length (ft)'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-lg font-medium text-gray-900">
+                              {assetType === 'jet' ? 'Mach 0.925' : '24 kts'}
+                            </p>
+                            <p className="text-[10px] text-gray-400 font-light">Max Speed</p>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* CTA Buttons - Glassmorphism style */}
+                  <div className="flex gap-3 mt-4">
+                    <a
+                      href={`mailto:admin@privatecharterx.com?subject=Investment%20Inquiry%20-%20${assetType === 'jet' ? 'Gulfstream%20G650ER' : 'Sunseeker%2095%20Yacht'}%20Token`}
+                      className="flex-1 bg-gray-900 text-white py-3 rounded-xl text-[12px] font-light tracking-wide hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Wallet size={15} />
+                      Invest Now
+                    </a>
+                    <button
+                      className="px-4 py-3 rounded-xl text-gray-600 transition-colors border border-gray-200/50"
+                      style={{ background: 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(10px)' }}
+                    >
+                      <Info size={15} />
+                    </button>
+                  </div>
+
+                  {/* Trust badges */}
+                  <div className="flex flex-wrap items-center justify-center gap-3 mt-4 pt-4 border-t border-gray-100">
+                    <span className="flex items-center gap-1.5 text-[10px] text-gray-400 font-light tracking-wide">
+                      <Fingerprint size={11} className="text-gray-300" />
+                      KYC Required
+                    </span>
+                    <span className="flex items-center gap-1.5 text-[10px] text-gray-400 font-light tracking-wide">
+                      <Shield size={11} className="text-gray-300" />
+                      SEC Partner
+                    </span>
+                    <span className="flex items-center gap-1.5 text-[10px] text-gray-400 font-light tracking-wide">
+                      <Lock size={11} className="text-gray-300" />
+                      Audited
+                    </span>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
