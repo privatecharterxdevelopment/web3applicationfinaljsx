@@ -427,15 +427,20 @@ export const UnifiedSearchService = {
       // Jets query - no location filter (jets table doesn't have location column)
       // Jets are shown based on capacity, user specifies route in request
       // Note: jets table uses 'capacity' column (as string like "8")
-      // IMPORTANT: Exclude Turboprops and Cessna Caravan - only show proper jets
+      // Search jets from database - include all aircraft when user requests specific model
       let jetsQ = Promise.resolve({ data: [], error: null });
       if (searchJets) {
-        let query = supabase.from('jets').select('*')
-          .neq('aircraft_category', 'Turboprop')  // Exclude turboprops
-          .not('aircraft_model', 'ilike', '%caravan%')  // Exclude Cessna Caravan
-          .not('aircraft_model', 'ilike', '%king air%');  // Exclude King Air turboprops
+        let query = supabase.from('jets').select('*');
 
-        // Filter by specific aircraft model if provided (e.g., "Gulfstream G650", "Citation X")
+        // If user is searching for a specific aircraft model, don't exclude anything
+        // ALL aircraft are available upon operator confirmation
+        if (!aircraftModel) {
+          // Only exclude low-priority aircraft when doing general browsing
+          query = query
+            .not('aircraft_model', 'ilike', '%caravan%');  // Exclude Cessna Caravan from general results
+        }
+
+        // Filter by specific aircraft model if provided (e.g., "Gulfstream G650", "Citation X", "PC-12")
         if (aircraftModel) {
           // Use ilike for case-insensitive partial matching
           query = query.ilike('aircraft_model', `%${aircraftModel}%`);

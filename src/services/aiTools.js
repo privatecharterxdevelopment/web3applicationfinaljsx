@@ -1223,10 +1223,24 @@ export async function searchPrivateJets(params) {
   let showingAlternatives = false;
   let alternativeMessage = null;
 
-  // If a specific model was requested but no results found, fetch alternatives
+  // If a specific model was requested but no results found, offer custom request + alternatives
+  let canCreateCustomRequest = false;
+  let customRequestDetails = null;
+
   if (requestedModel && (!results.aircraft || results.aircraft.length === 0)) {
     showingAlternatives = true;
-    alternativeMessage = `The ${requestedModel} is not currently available in our fleet. Here are similar aircraft alternatives:`;
+    canCreateCustomRequest = true;
+
+    // Create details for custom request - ALL aircraft available upon operator confirmation
+    customRequestDetails = {
+      model: requestedModel,
+      from: params.from || null,
+      to: params.to || null,
+      passengers: params.passengers || null,
+      category: params.category || null
+    };
+
+    alternativeMessage = `I can arrange a ${requestedModel} for you! Our operators will confirm availability within 2-4 hours. Would you like to add this to your cart? Here are also some alternatives from our fleet:`;
 
     // Fetch all available jets as alternatives (without model filter)
     results = await UnifiedSearchService.searchAll({
@@ -1302,7 +1316,10 @@ export async function searchPrivateJets(params) {
     // Include alternative info if specific model wasn't available
     showingAlternatives,
     requestedModel: requestedModel || null,
-    alternativeMessage
+    alternativeMessage,
+    // Custom request info - allows user to request specific aircraft not in database
+    canCreateCustomRequest,
+    customRequestDetails
   };
 }
 
@@ -1323,10 +1340,23 @@ export async function searchHelicopters(params) {
   let showingAlternatives = false;
   let alternativeMessage = null;
 
-  // If a specific model was requested but no results found, fetch alternatives
+  // If a specific model was requested but no results found, offer custom request + alternatives
+  let canCreateCustomRequest = false;
+  let customRequestDetails = null;
+
   if (requestedModel && (!results.helicopters || results.helicopters.length === 0)) {
     showingAlternatives = true;
-    alternativeMessage = `The ${requestedModel} helicopter is not currently available in our fleet. Here are similar helicopter alternatives:`;
+    canCreateCustomRequest = true;
+
+    // Create details for custom request - ALL helicopters available upon operator confirmation
+    customRequestDetails = {
+      model: requestedModel,
+      from: params.from || null,
+      to: params.to || null,
+      passengers: params.passengers || null
+    };
+
+    alternativeMessage = `I can arrange a ${requestedModel} for you! Our operators will confirm availability within 2-4 hours. Would you like to add this to your cart? Here are also some alternatives:`;
 
     // Fetch all available helicopters as alternatives (without model filter)
     results = await UnifiedSearchService.searchAll({
@@ -1398,7 +1428,10 @@ export async function searchHelicopters(params) {
     // Include alternative info if specific model wasn't available
     showingAlternatives,
     requestedModel: requestedModel || null,
-    alternativeMessage
+    alternativeMessage,
+    // Custom request info - allows user to request specific helicopter not in database
+    canCreateCustomRequest,
+    customRequestDetails
   };
 }
 

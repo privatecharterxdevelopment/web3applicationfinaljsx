@@ -102,21 +102,38 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
         ))}
       </div>
 
-      {/* Alternative Notice Banner - when showing alternatives for unavailable model */}
-      {currentTabData?.showingAlternatives && currentTabData?.alternativeMessage && (
-        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
-          <div className="w-6 h-6 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-            <svg className="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      {/* Custom Request Banner - when specific model was requested */}
+      {currentTabData?.showingAlternatives && currentTabData?.requestedModel && (
+        <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-3">
+          <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+            <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <div>
-            <p className="text-sm text-amber-800 font-medium">
-              {currentTabData.requestedModel} not available
+          <div className="flex-1">
+            <p className="text-sm text-emerald-800 font-medium">
+              {currentTabData.requestedModel} available on request!
             </p>
-            <p className="text-xs text-amber-600 mt-0.5">
-              Here are similar aircraft from our fleet that you might like
+            <p className="text-xs text-emerald-600 mt-0.5">
+              Our operators will confirm availability within 2-4 hours. Here are also some alternatives from our fleet:
             </p>
+            {currentTabData?.canCreateCustomRequest && onAddToCart && (
+              <button
+                onClick={() => onAddToCart({
+                  type: 'jet',
+                  name: currentTabData.requestedModel,
+                  isCustomRequest: true,
+                  requiresConfirmation: true,
+                  ...currentTabData.customRequestDetails
+                })}
+                className="mt-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Request {currentTabData.requestedModel}
+              </button>
+            )}
           </div>
         </div>
       )}
