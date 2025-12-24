@@ -878,6 +878,19 @@ export const aiToolDefinitions = [
           type: "string",
           description: "Planned travel/arrival date"
         },
+        intendedEntryPort: {
+          type: "string",
+          description: "Intended port/city of entry (airport, land border, or seaport)"
+        },
+        intendedExitPort: {
+          type: "string",
+          description: "Intended port/city of exit (airport, land border, or seaport)"
+        },
+        processingTime: {
+          type: "string",
+          enum: ["standard", "express"],
+          description: "Processing speed: standard (5-7 business days, $100 admin fee), express (24-48h, $100 + $150 = $250 total)"
+        },
         purposeOfVisit: {
           type: "string",
           description: "Purpose of visit (tourism, business, transit, etc.)"
@@ -887,7 +900,7 @@ export const aiToolDefinitions = [
           description: "Any additional notes or special requirements"
         }
       },
-      required: ["destinationCountry", "numberOfTravelers", "travelers"]
+      required: ["destinationCountry", "numberOfTravelers", "travelers", "intendedEntryPort"]
     }
   },
   // HOTEL TOOLS DISABLED - LiteAPI hotels temporarily removed
@@ -3405,6 +3418,9 @@ function createVisaRequest(params) {
     hasExistingEvisaApplication = false,
     existingApplicationCodes = [],
     travelDate = '',
+    intendedEntryPort = '',
+    intendedExitPort = '',
+    processingTime = 'standard',
     purposeOfVisit = 'Tourism',
     additionalNotes = ''
   } = params;
@@ -3417,9 +3433,20 @@ function createVisaRequest(params) {
     };
   }
 
+  // Processing time pricing - Additional fees for expedited service (excl. visa application fees)
+  const processingFees = {
+    standard: { fee: 0, label: 'Standard (5-7 business days)', duration: '5-7 business days' },
+    express: { fee: 150, label: 'Express (24-48h) +$150', duration: '24-48 hours' }
+  };
+  const selectedProcessing = processingFees[processingTime] || processingFees.standard;
+
   // Price calculation
-  const pricePerPerson = 250;
-  const totalPrice = numberOfTravelers * pricePerPerson;
+  // $100 = administration fee per person (our service fee)
+  // Express = additional $150 for 24-48h processing
+  const pricePerPerson = 100;
+  const processingFeePerPerson = selectedProcessing.fee;
+  const totalPerPerson = pricePerPerson + processingFeePerPerson;
+  const totalPrice = numberOfTravelers * totalPerPerson;
 
   // Process travelers
   const processedTravelers = travelers.map((traveler, index) => ({
@@ -3443,6 +3470,16 @@ function createVisaRequest(params) {
     travelDate,
     purposeOfVisit,
 
+    // Entry/Exit ports
+    intendedEntryPort,
+    intendedExitPort,
+
+    // Processing
+    processingTime,
+    processingLabel: selectedProcessing.label,
+    processingDuration: selectedProcessing.duration,
+    processingFeePerPerson,
+
     // Travelers
     numberOfTravelers,
     travelers: processedTravelers,
@@ -3459,11 +3496,12 @@ function createVisaRequest(params) {
 
     // Pricing
     pricePerPerson,
+    totalPerPerson,
     totalPrice,
     currency: 'USD',
 
     // Service info
-    serviceGuarantee: '24h processing in 95% of countries',
+    serviceGuarantee: selectedProcessing.duration + ' processing',
     serviceNetwork: 'Direct government contacts & verified agent network',
 
     // Cart flags
@@ -3477,12 +3515,24 @@ function createVisaRequest(params) {
     return `${idx + 1}. **${t.fullName || 'Traveler ' + (idx + 1)}**${under12Tag}\n   - Nationality: ${t.nationality || 'Not provided'}\n   - Passport: ${t.passportNumber || 'To be provided'}`;
   }).join('\n\n');
 
+  // Build pricing breakdown
+  const pricingBreakdown = processingFeePerPerson > 0
+    ? `**$${pricePerPerson} + $${processingFeePerPerson} (${processingTime}) = $${totalPerPerson}/person × ${numberOfTravelers} = $${totalPrice.toLocaleString()} USD**`
+    : `**$${pricePerPerson} USD × ${numberOfTravelers} = $${totalPrice.toLocaleString()} USD**`;
+
   // Build display message
   const displayMessage = `## 🛂 Express Visa Service
 
 **Destination:** ${destinationCountry}
 ${travelDate ? `**Travel Date:** ${travelDate}` : ''}
 **Purpose:** ${purposeOfVisit}
+
+### Travel Ports
+🛬 **Entry:** ${intendedEntryPort || 'To be confirmed'}
+🛫 **Exit:** ${intendedExitPort || 'Same as entry'}
+
+### Processing Time
+⏱️ **${selectedProcessing.label}**
 
 ### Travelers (${numberOfTravelers})
 ${travelerSummary}
@@ -3495,12 +3545,12 @@ ${additionalNotes ? `\n**Additional Notes:** ${additionalNotes}` : ''}
 
 ---
 ### Service Details
-✅ **24h Guarantee** in 95% of countries
+✅ **${selectedProcessing.duration}** processing time
 ✅ **Direct government contacts** or verified agent network
 ✅ **Travel risk-free** without any disappointments
 
 ### Pricing
-**$${pricePerPerson} USD × ${numberOfTravelers} = $${totalPrice.toLocaleString()} USD**
+${pricingBreakdown}
 
 *Click "Add Express Visa to Cart" to submit your request.*`;
 
@@ -3512,9 +3562,10 @@ ${additionalNotes ? `\n**Additional Notes:** ${additionalNotes}` : ''}
     displayMessage,
     notes: [
       `Destination: ${destinationCountry}`,
+      `Entry: ${intendedEntryPort || 'TBC'}`,
       `${numberOfTravelers} traveler(s)`,
-      `Total: $${totalPrice.toLocaleString()} USD`,
-      '24h processing guarantee'
+      `Processing: ${selectedProcessing.duration}`,
+      `Total: $${totalPrice.toLocaleString()} USD`
     ]
   };
 }

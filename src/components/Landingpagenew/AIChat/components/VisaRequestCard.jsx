@@ -43,7 +43,14 @@ const VisaRequestCard = ({
     hasExistingEvisaApplication,
     existingApplicationCodes = [],
     additionalNotes,
+    intendedEntryPort,
+    intendedExitPort,
+    processingTime = 'standard',
+    processingLabel,
+    processingDuration,
+    processingFeePerPerson = 0,
     pricePerPerson = 250,
+    totalPerPerson,
     totalPrice,
     currency = 'USD'
   } = visaRequest;
@@ -101,7 +108,7 @@ const VisaRequestCard = ({
         <div className="flex flex-wrap gap-2">
           <span className="flex items-center gap-1 text-xs text-indigo-700 bg-white px-2 py-1 rounded-full">
             <Clock size={12} />
-            24h Guarantee
+            {processingDuration || '24h Guarantee'}
           </span>
           <span className="flex items-center gap-1 text-xs text-indigo-700 bg-white px-2 py-1 rounded-full">
             <Globe size={12} />
@@ -113,6 +120,51 @@ const VisaRequestCard = ({
           </span>
         </div>
       </div>
+
+      {/* Entry/Exit Ports */}
+      {(intendedEntryPort || intendedExitPort) && (
+        <div className="p-4 border-b border-gray-100">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <span className="text-lg">🛬</span>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Entry Port</p>
+                <p className="text-sm font-semibold text-gray-900">{intendedEntryPort || 'TBC'}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                <span className="text-lg">🛫</span>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Exit Port</p>
+                <p className="text-sm font-semibold text-gray-900">{intendedExitPort || 'Same as entry'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Processing Time */}
+      {processingLabel && (
+        <div className="px-4 py-3 bg-blue-50 border-b border-blue-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock size={16} className="text-blue-600" />
+              <span className="text-sm font-medium text-blue-800">Processing Time</span>
+            </div>
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+              processingTime === 'urgent' ? 'bg-red-100 text-red-700' :
+              processingTime === 'express' ? 'bg-amber-100 text-amber-700' :
+              'bg-green-100 text-green-700'
+            }`}>
+              {processingLabel}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Travel Details */}
       {travelDate && (
@@ -231,13 +283,24 @@ const VisaRequestCard = ({
         {/* Pricing breakdown */}
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-xs text-gray-500 uppercase font-medium">Service Total</p>
+            <p className="text-xs text-gray-500 uppercase font-medium">Service Fee</p>
             <div className="flex items-baseline gap-2">
               <p className="text-2xl font-bold text-gray-900">{formatPrice(totalPrice)}</p>
               <p className="text-xs text-gray-500">
-                ({formatPrice(pricePerPerson)} × {numberOfTravelers})
+                {processingFeePerPerson > 0
+                  ? `(${formatPrice(pricePerPerson)} + ${formatPrice(processingFeePerPerson)} admin) × ${numberOfTravelers}`
+                  : `(${formatPrice(pricePerPerson)} × ${numberOfTravelers})`
+                }
               </p>
             </div>
+            {processingFeePerPerson > 0 && (
+              <p className="text-[10px] text-amber-600 mt-1">
+                +{formatPrice(processingFeePerPerson)}/person admin fee for {processingTime} processing
+              </p>
+            )}
+            <p className="text-[10px] text-gray-400 mt-0.5">
+              Excl. visa application fees (paid directly to embassy/consulate)
+            </p>
           </div>
 
           {isInCart ? (

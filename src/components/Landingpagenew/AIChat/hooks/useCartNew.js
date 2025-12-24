@@ -4,6 +4,8 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
+import { calculateDistance } from '../utils/priceCalculator';
+import { formatDuration, kmToNm, calculateMultiStopRoute } from '../utils/routeCalculator';
 
 // Constants
 const NFT_DISCOUNT_PERCENT = 10;
@@ -41,13 +43,21 @@ export const useCartNew = (cartItemsProp, setCartItemsProp, userHasNFT = false) 
   const calculateItemPrice = useCallback((item) => {
     if (!item) return 0;
 
+    // Pre-calculated estimated price (from AI or route calculator)
+    if (item.estimatedPrice && item.estimatedPrice > 0) {
+      return item.estimatedPrice;
+    }
+
     // Fixed price items
     if (item.price_usd) return item.price_usd;
     if (item.price && typeof item.price === 'number') return item.price;
 
-    // Calculate based on hourly rate and flight hours
-    if (item.hourly_rate && item.estimatedFlightHours) {
-      return item.hourly_rate * item.estimatedFlightHours;
+    // Calculate based on hourly rate and billed/flight hours
+    const hourlyRate = item.hourly_rate_eur || item.hourly_rate || item.pricePerHour || 0;
+    const hours = item.billedHours || item.flightTimeHours || item.flightHours || item.estimatedFlightHours || 0;
+
+    if (hourlyRate && hours) {
+      return Math.round(hourlyRate * hours);
     }
 
     return 0;
@@ -62,6 +72,18 @@ export const useCartNew = (cartItemsProp, setCartItemsProp, userHasNFT = false) 
   // Add item to cart
   const addToCart = useCallback((item) => {
     if (!item) return;
+
+    console.log('🛒 addToCart called with:', {
+      type: item.type,
+      name: item.name || item.aircraft_model,
+      hourly_rate_eur: item.hourly_rate_eur,
+      estimatedPrice: item.estimatedPrice,
+      billedHours: item.billedHours,
+      flightHours: item.flightHours,
+      route: item.route,
+      from: item.from || item.from_city,
+      to: item.to || item.to_city
+    });
 
     const cartId = item.cartId || `cart-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -80,16 +102,145 @@ export const useCartNew = (cartItemsProp, setCartItemsProp, userHasNFT = false) 
       return existingItem.cartId;
     }
 
-    // Calculate price
-    let price = calculateItemPrice(item);
+    // Check if this is a jet or helicopter that needs route calculation
+    const isJet = item.type === 'jet' || item.type === 'aircraft' || item.category === 'jets';
+    const isHelicopter = item.type === 'helicopter' || item.category === 'helicopters';
+    // Support both hourly_rate_eur (from database) and hourlyRate (from AI addToCart tool)
+    const hourlyRateValue = item.hourly_rate_eur || item.hourlyRate || item.hourly_rate || 0;
+    const needsRouteCalculation = (isJet || isHelicopter) && hourlyRateValue;
+
+    let cartItem = { ...item };
+
+    // Calculate route details for jets/helicopters
+    if (needsRouteCalculation) {
+      // Get coordinates
+      const originLat = item.originLat || item.from_lat || 0;
+      const originLng = item.originLng || item.from_lng || 0;
+      const destLat = item.destLat || item.to_lat || 0;
+      const destLng = item.destLng || item.to_lng || 0;
+
+      // Check if we have multi-stop route data already calculated
+      if (item.stops && item.stops.length > 0 && item.legs) {
+        // Multi-stop route - use existing calculated data
+        const totalDistance = item.totalDistance || 0;
+        const flightTimeHours = item.flightTimeHours || item.billedHours || 0;
+        const billedHours = item.billedHours || Math.ceil(flightTimeHours);
+        const estimatedPrice = billedHours * hourlyRateValue;
+
+        cartItem = {
+          ...cartItem,
+          // Route details
+          flightDistanceNm: kmToNm(totalDistance),
+          flightDistanceKm: totalDistance,
+          flightTimeHours,
+          estimatedDuration: item.estimatedDuration || formatDuration(flightTimeHours),
+          billedHours,
+          // Price
+          estimatedPrice,
+          price: estimatedPrice,
+          basePrice: estimatedPrice,
+          totalWithFee: estimatedPrice,
+          priceCalculation: `${billedHours}h × €${hourlyRateValue.toLocaleString()}/hr`,
+          // Route string
+          route: item.route || `${item.from || item.origin} → ${item.to || item.destination}`,
+          isMultiStop: true
+        };
+      } else if (originLat && originLng && destLat && destLng) {
+        // Direct route - calculate from coordinates
+        const origin = { lat: originLat, lng: originLng };
+        const destination = { lat: destLat, lng: destLng };
+
+        const distanceKm = calculateDistance(origin, destination);
+        const distanceNm = kmToNm(distanceKm);
+
+        // Get speed (convert knots to km/h if needed)
+        const speedKts = item.speed_kts || item.speed || 450;
+        const speedKmh = speedKts * 1.852;
+
+        // Calculate flight time
+        const flightTimeHours = distanceKm > 0 ? distanceKm / speedKmh : 0;
+        const billedHours = Math.max(1, Math.ceil(flightTimeHours)); // Minimum 1 hour
+
+        // Calculate price
+        const estimatedPrice = billedHours * hourlyRateValue;
+
+        cartItem = {
+          ...cartItem,
+          // Coordinates
+          originLat,
+          originLng,
+          destLat,
+          destLng,
+          // Route details
+          flightDistanceNm: Math.round(distanceNm),
+          flightDistanceKm: Math.round(distanceKm),
+          flightTimeHours,
+          estimatedDuration: formatDuration(flightTimeHours),
+          billedHours,
+          // Price
+          estimatedPrice,
+          price: estimatedPrice,
+          basePrice: estimatedPrice,
+          totalWithFee: estimatedPrice,
+          priceCalculation: `${billedHours}h × €${hourlyRateValue.toLocaleString()}/hr`,
+          // Route string
+          route: `${item.from || item.origin || 'Origin'} → ${item.to || item.destination || 'Destination'}`,
+          isMultiStop: false
+        };
+      } else if (item.estimatedPrice && item.estimatedPrice > 0) {
+        // Use pre-calculated values from AI response
+        cartItem = {
+          ...cartItem,
+          flightDistanceNm: item.flightDistance || item.flightDistanceNm,
+          flightTimeHours: item.flightHours || item.billedHours,
+          estimatedDuration: item.estimatedDuration || item.flightDuration || formatDuration(item.flightHours || item.billedHours || 0),
+          billedHours: item.billedHours || item.flightHours,
+          estimatedPrice: item.estimatedPrice || item.price,
+          price: item.estimatedPrice || item.price,
+          basePrice: item.estimatedPrice || item.price,
+          totalWithFee: item.estimatedPrice || item.price,
+          priceCalculation: item.priceCalculation || `${item.billedHours || Math.ceil(item.flightHours) || 1}h × €${hourlyRateValue.toLocaleString()}/hr`,
+          route: item.route || `${item.from || item.origin} → ${item.to || item.destination}`
+        };
+      } else if (item.price && item.price > 0) {
+        // Use pre-calculated price from AI addToCart tool
+        cartItem = {
+          ...cartItem,
+          flightTimeHours: item.flightHours,
+          estimatedDuration: item.flightDuration || formatDuration(item.flightHours || 0),
+          billedHours: item.flightHours ? Math.ceil(item.flightHours) : null,
+          estimatedPrice: item.price,
+          price: item.price,
+          basePrice: item.basePrice || item.price,
+          totalWithFee: item.price,
+          priceCalculation: item.priceCalculation,
+          route: item.route || (item.from && item.to ? `${item.from} → ${item.to}` : null)
+        };
+      }
+
+      console.log('✈️ Route calculation result:', {
+        hourlyRateUsed: hourlyRateValue,
+        flightDistanceNm: cartItem.flightDistanceNm,
+        flightTimeHours: cartItem.flightTimeHours,
+        estimatedDuration: cartItem.estimatedDuration,
+        billedHours: cartItem.billedHours,
+        estimatedPrice: cartItem.estimatedPrice,
+        priceCalculation: cartItem.priceCalculation,
+        route: cartItem.route,
+        isMultiStop: cartItem.isMultiStop
+      });
+    }
+
+    // Calculate price (use route-calculated price or fallback)
+    let price = cartItem.estimatedPrice || cartItem.price || calculateItemPrice(item);
     if (userHasNFT) {
       price = applyNFTDiscount(price);
     }
 
     const newItem = {
-      ...item,
+      ...cartItem,
       cartId,
-      price: price || item.price || 0,
+      price: price || cartItem.price || 0,
       quantity: item.quantity || 1,
       addedAt: new Date().toISOString()
     };
