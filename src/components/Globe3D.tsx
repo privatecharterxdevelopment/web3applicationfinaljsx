@@ -43,18 +43,12 @@ const Globe3D: React.FC = () => {
       { name: 'Dubai', lat: 25.2048, lon: 55.2708 },
       { name: 'Singapore', lat: 1.3521, lon: 103.8198 },
       { name: 'Sydney', lat: -33.8688, lon: 151.2093 },
-      { name: 'Monaco', lat: 43.7384, lon: 7.4246 },
       { name: 'Shanghai', lat: 31.2304, lon: 121.4737 },
-      { name: 'Beijing', lat: 39.9042, lon: 116.4074 },
       { name: 'São Paulo', lat: -23.5505, lon: -46.6333 },
       { name: 'Mumbai', lat: 19.0760, lon: 72.8777 },
-      { name: 'Toronto', lat: 43.6532, lon: -79.3832 },
       { name: 'Seoul', lat: 37.5665, lon: 126.9780 },
-      { name: 'Mexico City', lat: 19.4326, lon: -99.1332 },
       { name: 'Vancouver', lat: 49.2827, lon: -123.1207 },
       { name: 'Cape Town', lat: -33.9249, lon: 18.4241 },
-      { name: 'Melbourne', lat: -37.8136, lon: 144.9631 },
-      { name: 'San Francisco', lat: 37.7749, lon: -122.4194 }
     ];
 
     function latLonToVector3(lat: number, lon: number, radius: number): THREE.Vector3 {
@@ -178,10 +172,8 @@ const Globe3D: React.FC = () => {
         ['Singapore', 'Sydney'],
         ['Dubai', 'Hong Kong'],
         ['New York', 'Miami'],
-        ['Tokyo', 'San Francisco'],
         ['Singapore', 'Bangkok'],
         ['Dubai', 'Mumbai'],
-        ['New York', 'Toronto'],
         ['Hong Kong', 'Singapore'],
         ['Dubai', 'Cape Town'],
         ['Seoul', 'Tokyo'],

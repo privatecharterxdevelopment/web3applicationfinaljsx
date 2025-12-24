@@ -702,21 +702,16 @@ function Homepage() {
           <section className="px-4 sm:px-8 py-8 sm:py-12 max-w-6xl mx-auto">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden">
               <div className="grid grid-cols-1 md:grid-cols-2 md:h-[300px]">
-                {/* Left - Video with overlay */}
+                {/* Left - Image with overlay */}
                 <div className="h-56 md:h-full overflow-hidden bg-gradient-to-br from-gray-100 to-gray-300 relative order-2 md:order-1">
-                  <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
+                  <img
+                    src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/tokenization-images/Privatecharterx_aircraft_sales.jpeg"
+                    alt="Private Jet Buy/Sell"
                     className="w-full h-full object-cover"
-                    poster="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/pngwing.com-2.png"
-                  >
-                    <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/3129671-uhd_3840_2160_25fps.mp4" type="video/mp4" />
-                  </video>
+                  />
                   {/* Text overlay */}
                   <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                    <span className="text-white text-2xl md:text-3xl font-light tracking-wide">Coming Soon</span>
+                    <span className="text-white text-2xl md:text-3xl font-light tracking-wide">Q1 / 2026</span>
                   </div>
                 </div>
                 {/* Right - Text Content */}
