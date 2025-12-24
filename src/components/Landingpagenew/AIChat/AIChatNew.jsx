@@ -1038,6 +1038,132 @@ const AIChatNew = ({
           extrasCatalog={EXTRAS_CATALOG}
         />
       )}
+
+      {/* Request Form Modal */}
+      {bookingFlow.showRequestForm && cart.cartItems.length > 0 && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-[60] animate-fade-in" onClick={() => bookingFlow.setShowRequestForm(false)} />
+          <div className="fixed inset-0 flex items-center justify-center z-[70] p-4 animate-fade-in">
+            <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-hidden animate-scale-in flex flex-col">
+              {/* Header */}
+              <div className="flex justify-between items-center p-6 pb-4 border-b border-gray-100">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Confirm Your Request</h3>
+                  <p className="text-sm text-gray-500 mt-0.5">{cart.cartItems.length} service{cart.cartItems.length > 1 ? 's' : ''} in your cart</p>
+                </div>
+                <button onClick={() => bookingFlow.setShowRequestForm(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                  <X size={18} className="text-gray-500" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {/* Services List */}
+                <div className="space-y-3">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Services</p>
+                  {cart.cartItems.map((item, idx) => {
+                    const isEmptyLeg = item.type === 'empty_legs' || item.type === 'emptyleg';
+                    const isJet = item.type === 'jets' || item.type === 'jet';
+                    const isTransfer = item.type === 'taxi' || item.type === 'transfer' || item.type === 'ground_transport';
+                    const isYacht = item.type === 'yachts' || item.type === 'yacht';
+                    const itemPrice = item.totalWithFee || item.price || item.basePrice || item.estimatedPrice || 0;
+                    const isQuoteItem = isTransfer || isJet || isYacht;
+
+                    return (
+                      <div key={idx} className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
+                                isEmptyLeg ? 'bg-emerald-100 text-emerald-700' :
+                                isJet ? 'bg-gray-800 text-white' :
+                                isTransfer ? 'bg-gray-400 text-white' :
+                                isYacht ? 'bg-blue-100 text-blue-700' :
+                                'bg-gray-200 text-gray-600'
+                              }`}>
+                                {isEmptyLeg ? 'EMPTY LEG' : isJet ? 'CHARTER' : isTransfer ? 'TRANSFER' : isYacht ? 'YACHT' : 'SERVICE'}
+                              </span>
+                              {item.isMultiStop && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-blue-100 text-blue-700">MULTI-STOP</span>
+                              )}
+                            </div>
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {item.name || item.title || item.aircraft_model || 'Service'}
+                            </p>
+                            {item.route && (
+                              <p className="text-xs text-gray-500 mt-0.5 font-mono">{item.route}</p>
+                            )}
+                            {item.departure_date && (
+                              <p className="text-xs text-gray-400 mt-0.5">
+                                {item.departure_date} {item.departure_time && `at ${item.departure_time}`}
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            {isQuoteItem && itemPrice === 0 ? (
+                              <p className="text-xs font-medium text-gray-500 italic">On Request</p>
+                            ) : (
+                              <p className="text-sm font-semibold text-gray-900">
+                                ${itemPrice.toLocaleString()}
+                                {item.isEstimate && <span className="text-[9px] text-gray-400 block">estimate</span>}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Total */}
+                <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                  <span className="text-sm font-medium text-gray-700">Estimated Total</span>
+                  <span className="text-lg font-bold text-gray-900">${cart.cartTotal.toLocaleString()}</span>
+                </div>
+
+                {/* Info notice */}
+                <p className="text-xs text-gray-500 text-center">
+                  Our team will contact you within 2-4 hours to confirm availability and details.
+                </p>
+              </div>
+
+              {/* Footer */}
+              <div className="p-6 pt-4 border-t border-gray-100 bg-gray-50 space-y-3">
+                <p className="text-[10px] text-gray-400 text-center leading-relaxed">
+                  By submitting this request you agree to our{' '}
+                  <a href="/terms" target="_blank" className="text-gray-600 underline hover:text-gray-800">Terms of Service</a>
+                  {' '}and{' '}
+                  <a href="/privacy" target="_blank" className="text-gray-600 underline hover:text-gray-800">Privacy Policy</a>
+                </p>
+                <button
+                  onClick={async () => {
+                    const success = await bookingFlow.submitCartRequest();
+                    if (success) {
+                      bookingFlow.setShowRequestForm(false);
+                      modals.setShowCartSidebar(false);
+                      modals.setToast({ message: 'Request submitted successfully!', type: 'success' });
+                    }
+                  }}
+                  disabled={bookingFlow.isSubmitting}
+                  className="w-full py-3.5 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {bookingFlow.isSubmitting ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <Send size={18} />
+                      Submit Request
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
       {journey.showJourneyBuilder && journey.journeyBuilderJet && (
         <JourneyBuilder
           jet={journey.journeyBuilderJet}
