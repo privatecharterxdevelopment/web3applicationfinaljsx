@@ -771,7 +771,7 @@ They will personally arrange your perfect yacht experience with custom itinerari
             }
           }
 
-          // Get AI follow-up response
+          // Get AI follow-up response (include tools so AI can chain tool calls)
           const followUp = await claudeEdgeService.messages.create({
             model: 'claude-sonnet-4-20250514',
             max_tokens: 1024,
@@ -780,7 +780,9 @@ They will personally arrange your perfect yacht experience with custom itinerari
               ...claudeMessages,
               { role: 'assistant', content: response.content },
               { role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUse.id, content: JSON.stringify(toolResult) }] }
-            ]
+            ],
+            tools: toolsWithCache,
+            tool_choice: { type: "auto" }
           });
 
           const aiText = followUp.content.find(block => block.type === 'text')?.text || 'Found results!';
