@@ -3339,12 +3339,12 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   };
 
-  // Load SPVs when viewing My SPVs page
+  // Load SPVs when viewing My SPVs page or on Web3 overview
   useEffect(() => {
-    if (activeCategory === 'my-spvs' && user?.id) {
+    if ((activeCategory === 'my-spvs' || (activeCategory === 'overview' && webMode === 'web3')) && user?.id) {
       fetchUserSPVs();
     }
-  }, [activeCategory, user?.id]);
+  }, [activeCategory, webMode, user?.id]);
 
   // Load tokenizations when viewing My Tokenized Assets page
   useEffect(() => {
@@ -6698,19 +6698,19 @@ const TokenizedAssetsGlassmorphic = () => {
                         </div>
                       </button>
 
-                      {/* Card #11 - Notifications - Hidden on mobile since bell is in header */}
+                      {/* Card #11 - My SPVs */}
                       <button
-                        onClick={() => setShowNotifications(true)}
+                        onClick={() => setActiveCategory('my-spvs')}
                         className="hidden md:block border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
                         style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                       >
                         <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-900 truncate">
-                          Notifications
+                          My SPVs
                         </h4>
-                        <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-1">Unread messages</p>
+                        <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-1">Formed companies</p>
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-medium text-gray-900">
-                            {notificationCount} new
+                            {loadingSPVs ? '...' : `${userSPVs.length} submitted`}
                           </span>
                         </div>
                       </button>
