@@ -85,18 +85,15 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 <button onClick={() => handleNavigate('/dashboard/chat?query=helicopter')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
                   Helicopters
                 </button>
-                <button onClick={() => handleNavigate('/dashboard/chat?query=empty+legs')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
+                <button onClick={() => handleNavigate('/dashboard/empty-legs')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
                   Empty Legs
                 </button>
-                <button onClick={() => handleNavigate('/dashboard/chat?query=luxury+car')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
-                  Luxury Cars
+                <button onClick={() => handleNavigate('/dashboard/ground-transport')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
+                  Ground Transport
                 </button>
                 <span className="block text-sm text-gray-400 text-left font-light">
                   Yacht Charters <span className="text-xs">(Q1/2026)</span>
                 </span>
-                <button onClick={() => handleNavigate('/dashboard/chat?query=airport+transfer')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
-                  Ground Transport
-                </button>
                 <button onClick={() => handleNavigate('/dashboard/chat?newChat=true')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
                   Sphera AI
                 </button>
@@ -132,11 +129,11 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 <button onClick={() => handleNavigate('/faqs')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
                   FAQ
                 </button>
-                <button onClick={() => window.location.href = 'mailto:support@privatecharterx.com'} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
+                <button onClick={() => handleNavigate('/helpdesk')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
                   Help Center
                 </button>
-                <button onClick={() => handleNavigate('/dashboard/subscription')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
-                  Manage Subscription
+                <button onClick={() => handleNavigate('/sphera-ai#pricing')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
+                  Subscriptions
                 </button>
                 <button onClick={() => handleNavigate('/dashboard/chat?query=Express%20Visa%20Service&newChat=true')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
                   Visa Services

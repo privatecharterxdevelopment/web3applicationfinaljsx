@@ -1,5 +1,5 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import LandingHeader from './LandingHeader';
 import Footer from './Footer';
 import {
@@ -37,7 +37,20 @@ interface SpheraAIProps {
 
 function SpheraAI({ setCurrentPage }: SpheraAIProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [expandedFaq, setExpandedFaq] = React.useState<string | null>(null);
+
+  // Scroll to pricing section if hash is #pricing
+  useEffect(() => {
+    if (location.hash === '#pricing') {
+      setTimeout(() => {
+        const pricingSection = document.getElementById('pricing');
+        if (pricingSection) {
+          pricingSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  }, [location.hash]);
 
   const toggleFaq = (faqId: string) => {
     setExpandedFaq(expandedFaq === faqId ? null : faqId);
@@ -409,7 +422,7 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
 
 
       {/* Pricing Preview */}
-      <section className="px-4 sm:px-8 py-12 sm:py-20 max-w-6xl mx-auto">
+      <section id="pricing" className="px-4 sm:px-8 py-12 sm:py-20 max-w-6xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-2xl sm:text-3xl font-light text-gray-900 mb-4">
             Simple, Transparent Pricing
