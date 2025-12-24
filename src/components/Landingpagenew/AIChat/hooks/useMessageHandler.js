@@ -751,6 +751,51 @@ They will personally arrange your perfect yacht experience with custom itinerari
               }
             }
 
+            // Handle MEDEVAC request - show card with Add to Cart button
+            if (toolUse.name === 'createMedevacRequest' && toolResult.action === 'SHOW_MEDEVAC_REQUEST' && toolResult.medevacRequest) {
+              console.log('🚨 MEDEVAC Request created:', toolResult.medevacRequest);
+
+              const medevacMessage = {
+                role: 'medevac_request',
+                content: toolResult.message || 'Medical evacuation request prepared',
+                medevacRequest: toolResult.medevacRequest,
+                urgencyInfo: toolResult.urgencyInfo,
+                displayMessage: toolResult.displayMessage
+              };
+
+              setChatHistory(prev => prev.map(c =>
+                c.id === workingChatId
+                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), medevacMessage] }
+                  : c
+              ));
+
+              await chatService.updateChatMessages(workingChatId, [...conversationHistory, medevacMessage], user.id);
+              setIsProcessing(false);
+              return;
+            }
+
+            // Handle VISA request - show card with Add to Cart button
+            if (toolUse.name === 'createVisaRequest' && toolResult.action === 'SHOW_VISA_REQUEST' && toolResult.visaRequest) {
+              console.log('🛂 Visa Request created:', toolResult.visaRequest);
+
+              const visaMessage = {
+                role: 'visa_request',
+                content: toolResult.message || 'Express visa request prepared',
+                visaRequest: toolResult.visaRequest,
+                displayMessage: toolResult.displayMessage
+              };
+
+              setChatHistory(prev => prev.map(c =>
+                c.id === workingChatId
+                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), visaMessage] }
+                  : c
+              ));
+
+              await chatService.updateChatMessages(workingChatId, [...conversationHistory, visaMessage], user.id);
+              setIsProcessing(false);
+              return;
+            }
+
             // Process search results into tabs
             const { tabs, hasRestriction } = processToolResultsToTabs(toolUse, toolResult);
 

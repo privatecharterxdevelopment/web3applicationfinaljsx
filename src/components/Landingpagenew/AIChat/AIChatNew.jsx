@@ -36,6 +36,7 @@ import { JourneyBuilder, YachtJourneyBuilder, AirportTransferOffer } from './com
 // Extracted Components
 import { Toast, TypingAnimation, TypingText, ReportIssueModal } from './components';
 import CartSidebar from './components/CartSidebar';
+import MedevacRequestCard from './components/MedevacRequestCard';
 
 // Extras catalog for cart
 const EXTRAS_CATALOG = [
@@ -490,6 +491,43 @@ const AIChatNew = ({
                 <HotelCard key={i} hotel={hotel} onBook={() => handleAddToCart(hotel)} />
               ))}
             </div>
+          </div>
+        </div>
+      );
+    }
+
+    // MEDEVAC Request Card
+    if (msg.role === 'medevac_request' && msg.medevacRequest) {
+      return (
+        <div key={index} className="flex justify-start">
+          <div className="flex flex-col gap-2 ml-0 sm:ml-12" style={{ maxWidth: '95%' }}>
+            <div className="flex items-center gap-2 px-2">
+              <div className={`w-2 h-2 rounded-full ${
+                msg.medevacRequest.urgencyLevel === 'critical' ? 'bg-red-600 animate-pulse' : 'bg-amber-500'
+              }`}></div>
+              <span className="text-xs text-gray-600 font-medium">Sphera AI · Medical Coordination</span>
+            </div>
+            <MedevacRequestCard
+              medevacRequest={msg.medevacRequest}
+              urgencyInfo={msg.urgencyInfo}
+              isInCart={cart.cartItems.some(item => item.id === msg.medevacRequest.id)}
+              onAddToCart={(medevacReq) => {
+                const cartItem = {
+                  ...medevacReq,
+                  cartId: `medevac-${Date.now()}`,
+                  type: 'medevac',
+                  name: `MEDEVAC: ${medevacReq.route?.origin} → ${medevacReq.route?.destination}`,
+                  title: `Medical Evacuation - ${medevacReq.patient?.condition || 'Patient Transport'}`,
+                  price: 0, // Price on request
+                  priceDisplay: 'Price on Request',
+                  isPriority: medevacReq.urgencyLevel === 'critical' || medevacReq.urgencyLevel === 'urgent',
+                  isUrgent: medevacReq.urgencyLevel === 'critical',
+                  requiresConfirmation: true
+                };
+                cart.setCartItems(prev => [...prev, cartItem]);
+                modals.setToast({ message: '🚨 MEDEVAC request added to cart - Our team will contact you immediately', type: 'success' });
+              }}
+            />
           </div>
         </div>
       );
