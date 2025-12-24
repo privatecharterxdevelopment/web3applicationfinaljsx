@@ -1132,8 +1132,11 @@ const AIChatNew = ({
                             <p className="text-sm font-medium text-gray-900 truncate">
                               {item.name || item.title || item.aircraft_model || 'Service'}
                             </p>
-                            {item.route && (
+                            {item.route && typeof item.route === 'string' && (
                               <p className="text-xs text-gray-500 mt-0.5 font-mono">{item.route}</p>
+                            )}
+                            {item.route && typeof item.route === 'object' && (
+                              <p className="text-xs text-gray-500 mt-0.5">{item.route.origin} → {item.route.destination}</p>
                             )}
                             {item.departure_date && (
                               <p className="text-xs text-gray-400 mt-0.5">

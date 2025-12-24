@@ -2,7 +2,7 @@
 import React from 'react';
 import {
   Trash2, Plus, Minus, Clock, Plane, Car, ChevronDown, ChevronUp,
-  Calendar, MapPin, Users, Briefcase, Wine, Anchor, Package, Sparkles, Route
+  Calendar, MapPin, Users, Briefcase, Wine, Anchor, Package, Sparkles, Route, Heart
 } from 'lucide-react';
 
 const CartItem = ({
@@ -25,6 +25,7 @@ const CartItem = ({
   const isWine = item.type === 'wines' || item.type === 'wine';
   const isCustomExtra = item.type === 'custom_extra';
   const isTripPackage = item.type === 'trip_package';
+  const isMedevac = item.type === 'medevac';
   const canDirectCheckout = isEmptyLeg || isAdventure || isWine;
 
   // Get item icon
@@ -35,6 +36,7 @@ const CartItem = ({
     if (isLuxuryCar || isTransfer) return <Car size={14} className="text-gray-500" />;
     if (isWine) return <Wine size={14} className="text-gray-500" />;
     if (isTripPackage) return <Route size={14} className="text-gray-500" />;
+    if (isMedevac) return <Heart size={14} className="text-gray-500" />;
     return <Package size={14} className="text-gray-500" />;
   };
 
@@ -54,7 +56,7 @@ const CartItem = ({
   const price = item.totalWithFee || item.price || item.basePrice || 0;
 
   // Determine if this is a quote-only item (no fixed price)
-  const isQuoteItem = isTransfer || isJet || isHelicopter || isYacht || isLuxuryCar;
+  const isQuoteItem = isTransfer || isJet || isHelicopter || isYacht || isLuxuryCar || isMedevac;
   const hasNoPrice = !price || price === 0;
   const itemName = item.name || item.title || item.aircraft_type || item.model || 'Item';
 
@@ -148,7 +150,7 @@ const CartItem = ({
   if (isTripPackage) {
     const segments = item.segments || [];
     return (
-      <div className="bg-gradient-to-br from-gray-50 to-purple-50 rounded-xl p-3 border border-purple-200 animate-fade-in hover:border-purple-400 transition-all duration-300">
+      <div className="bg-gray-50 rounded-xl p-3 border border-gray-200 animate-fade-in hover:border-gray-400 transition-all duration-300">
         {/* Header */}
         <div className="flex items-start gap-3 mb-2">
           <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r from-gray-900 to-gray-700 flex items-center justify-center">
@@ -156,7 +158,7 @@ const CartItem = ({
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-purple-100 text-purple-700">
+              <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-gray-700 text-white">
                 TRIP PACKAGE
               </span>
               {item.occasion && (
@@ -179,7 +181,7 @@ const CartItem = ({
         </div>
 
         {/* Segments Summary */}
-        <div className="border-t border-purple-200 pt-2 mt-2">
+        <div className="border-t border-gray-200 pt-2 mt-2">
           <button
             onClick={onToggleExpand}
             className="w-full flex items-center justify-between text-xs text-gray-600 hover:text-gray-900"
@@ -192,7 +194,7 @@ const CartItem = ({
             <div className="mt-3 space-y-2">
               {/* Trip Description */}
               {item.description && (
-                <p className="text-[11px] text-gray-600 italic pb-2 border-b border-purple-100">
+                <p className="text-[11px] text-gray-600 italic pb-2 border-b border-gray-200">
                   {item.description}
                 </p>
               )}
@@ -294,7 +296,7 @@ const CartItem = ({
         </div>
 
         {/* Total */}
-        <div className="flex items-center justify-between mt-3 pt-2 border-t border-purple-200">
+        <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-200">
           <div className="text-xs text-gray-500">
             {item.passengers && <span>{item.passengers} pax</span>}
           </div>
@@ -331,6 +333,15 @@ const CartItem = ({
                 INSTANT
               </span>
             )}
+            {isMedevac && (
+              <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
+                item.urgencyLevel === 'critical' ? 'bg-red-100 text-red-700' :
+                item.urgencyLevel === 'urgent' ? 'bg-amber-100 text-amber-700' :
+                'bg-gray-100 text-gray-700'
+              }`}>
+                {item.urgencyLevel === 'critical' ? 'CRITICAL' : item.urgencyLevel === 'urgent' ? 'URGENT' : 'MEDEVAC'}
+              </span>
+            )}
             {item.isPaid && (
               <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-green-100 text-green-700">
                 PAID
@@ -339,9 +350,13 @@ const CartItem = ({
           </div>
           <p className="text-sm font-semibold text-gray-900 truncate">{itemName}</p>
           {/* Show full route for multi-stop journeys */}
-          {item.route ? (
+          {item.route && typeof item.route === 'string' ? (
             <p className="text-xs text-gray-500 truncate font-mono">
               {item.route}
+            </p>
+          ) : item.route && typeof item.route === 'object' ? (
+            <p className="text-xs text-gray-500 truncate">
+              {item.route.origin} → {item.route.destination}
             </p>
           ) : (item.from || item.from_city) && (item.to || item.to_city) ? (
             <p className="text-xs text-gray-500 truncate">
@@ -415,7 +430,7 @@ const CartItem = ({
       {isExpanded && (isJet || isHelicopter) && (
         <div className="mt-2 pt-2 border-t border-gray-200 space-y-3 text-xs">
           {/* Route Overview */}
-          {item.route && (
+          {item.route && typeof item.route === 'string' && (
             <div className="flex items-center gap-2 text-gray-600">
               <Route size={12} className="text-gray-400 flex-shrink-0" />
               <span className="font-mono text-[11px] font-medium">{item.route}</span>
@@ -465,24 +480,26 @@ const CartItem = ({
           {/* Flight Summary */}
           <div className="grid grid-cols-3 gap-2 bg-gray-100 rounded-lg p-2">
             <div className="text-center">
-              <p className="text-[10px] text-gray-500">Distance</p>
+              <p className="text-[10px] text-gray-500">Flight Time</p>
               <p className="text-[11px] font-semibold text-gray-800">
-                {item.totalDistanceNm ? Math.round(item.totalDistanceNm) :
-                 item.totalDistance ? Math.round(item.totalDistance * 0.54) : '—'} nm
+                {item.flightDuration || item.estimatedDuration ||
+                 (item.flightHours ? `${Math.floor(item.flightHours)}h ${Math.round((item.flightHours % 1) * 60)}m` :
+                  item.flightTimeHours ? `${Math.floor(item.flightTimeHours)}h ${Math.round((item.flightTimeHours % 1) * 60)}m` :
+                  item.billedHours ? `${item.billedHours}h` : '—')}
               </p>
             </div>
             <div className="text-center border-x border-gray-200">
-              <p className="text-[10px] text-gray-500">Flight Time</p>
+              <p className="text-[10px] text-gray-500">Hourly Rate</p>
               <p className="text-[11px] font-semibold text-gray-800">
-                {item.estimatedDuration ||
-                 (item.flightTimeHours ? `${Math.floor(item.flightTimeHours)}h ${Math.round((item.flightTimeHours % 1) * 60)}m` :
-                  item.billedHours ? `${item.billedHours}h` : '—')}
+                {item.hourlyRate ? `€${item.hourlyRate.toLocaleString()}/hr` : '—'}
               </p>
             </div>
             <div className="text-center">
               <p className="text-[10px] text-gray-500">Est. Price</p>
               <p className="text-[11px] font-semibold text-gray-800">
-                ${(item.estimatedPrice || item.price || item.basePrice || 0).toLocaleString()}
+                {(item.estimatedPrice || item.price || item.basePrice) > 0
+                  ? `€${(item.estimatedPrice || item.price || item.basePrice).toLocaleString()}`
+                  : 'On Request'}
               </p>
             </div>
           </div>
@@ -496,16 +513,28 @@ const CartItem = ({
 
           {/* Travel Details */}
           <div className="space-y-1.5 text-gray-600">
-            {item.departure_date && (
+            {(item.date || item.departure_date) && (
               <div className="flex items-center gap-2">
                 <Calendar size={12} className="text-gray-400" />
-                <span>{item.departure_date} {item.departure_time && `at ${item.departure_time}`}</span>
+                <span>{item.date || item.departure_date} {(item.time || item.departure_time) && `at ${item.time || item.departure_time}`}</span>
               </div>
             )}
             {item.passengers && (
               <div className="flex items-center gap-2">
                 <Users size={12} className="text-gray-400" />
                 <span>{item.passengers} passengers</span>
+              </div>
+            )}
+            {item.catering && item.catering !== 'complimentary' && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400">🍽️</span>
+                <span>{item.catering}</span>
+              </div>
+            )}
+            {item.notes && (
+              <div className="flex items-start gap-2 p-2 bg-amber-50 rounded-lg border border-amber-100">
+                <span className="text-amber-500 mt-0.5">📝</span>
+                <span className="text-amber-700">{item.notes}</span>
               </div>
             )}
           </div>

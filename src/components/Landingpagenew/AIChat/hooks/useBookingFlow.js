@@ -55,7 +55,9 @@ export const REQUEST_TYPE_MAP = {
   hotel: 'hotel_booking',
   hotels: 'hotel_booking',
   restaurant: 'restaurant_reservation',
-  concierge: 'concierge_request'
+  concierge: 'concierge_request',
+  medevac: 'medevac_request',
+  visa: 'visa_request'
 };
 
 export const useBookingFlow = ({
@@ -645,7 +647,7 @@ export const useBookingFlow = ({
       <tr style="border-bottom: 1px solid #e5e7eb;">
         <td style="padding: 12px; text-align: left;">
           <strong>${item.name || item.title || 'Service'}</strong>
-          ${item.route ? `<br><span style="color: #6b7280; font-size: 12px;">📍 ${item.route}</span>` : ''}
+          ${item.route ? `<br><span style="color: #6b7280; font-size: 12px;">📍 ${typeof item.route === 'string' ? item.route : `${item.route.origin} → ${item.route.destination}`}</span>` : ''}
           ${item.departure_date ? `<br><span style="color: #6b7280; font-size: 12px;">📅 ${formatDate(item.departure_date)}</span>` : ''}
           ${item.passengers ? `<br><span style="color: #6b7280; font-size: 12px;">👥 ${item.passengers} passengers</span>` : ''}
         </td>

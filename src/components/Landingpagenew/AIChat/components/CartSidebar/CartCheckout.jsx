@@ -49,9 +49,23 @@ const CartCheckout = ({
       const primaryItem = unpaidItems[0];
       const itemDescriptions = unpaidItems.map(i => i.name || i.title || i.type).join(', ');
 
-      // Determine service type
-      const isEmptyLeg = primaryItem.type === 'empty_legs' || primaryItem.type === 'emptyleg';
-      const serviceType = isEmptyLeg ? 'empty_leg' : primaryItem.type;
+      // Map cart item types to valid CoinGate service types
+      const getServiceType = (type) => {
+        const typeMap = {
+          'empty_legs': 'empty_leg',
+          'emptyleg': 'empty_leg',
+          'wines': 'wine',
+          'wine': 'wine',
+          'cigars': 'cigars',
+          'delicatesse': 'delicatesse',
+          'delicacies': 'delicatesse',
+          'custom_extra': 'custom_extra',
+          'service_fee': 'service_fee'
+        };
+        return typeMap[type] || 'custom_extra';
+      };
+
+      const serviceType = getServiceType(primaryItem.type);
       const serviceId = primaryItem.original_id || primaryItem.db_id || primaryItem.id || `custom-${Date.now()}`;
 
       // Call CoinGate edge function
@@ -74,7 +88,7 @@ const CartCheckout = ({
           cartItems: unpaidItems.map(item => ({
             id: item.id,
             name: item.name || item.title,
-            type: item.type,
+            type: getServiceType(item.type),
             price: item.price_usd || item.price || item.basePrice,
             quantity: item.quantity || 1
           }))
@@ -168,63 +182,28 @@ const CartCheckout = ({
             </p>
           </div>
         ) : (
-          // Send Request for items requiring confirmation
+          // Send Request for all other cases (mixed cart or request-only items)
           <div className="space-y-2">
-            {hasPayableItems && hasRequestOnlyItems && (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowRequestForm(true)}
-                  disabled={isProcessing}
-                  className="flex-1 px-3 py-2.5 bg-white hover:bg-gray-100 text-gray-700 text-xs font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 border border-gray-300"
-                >
-                  <Send size={14} />
+            <button
+              onClick={() => setShowRequestForm(true)}
+              disabled={isProcessing}
+              className="w-full px-4 py-3 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Send size={16} />
                   Send Request
-                </button>
-
-                <button
-                  onClick={handleCryptoCheckout}
-                  disabled={isProcessingPayment}
-                  className="flex-1 px-3 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 disabled:opacity-50"
-                >
-                  {isProcessingPayment ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Coins size={14} />
-                      Pay with Crypto
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
-
-            {!hasPayableItems && (
-              <button
-                onClick={() => setShowRequestForm(true)}
-                disabled={isProcessing}
-                className="w-full px-4 py-3 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Send size={16} />
-                    Send Request
-                  </>
-                )}
-              </button>
-            )}
+                </>
+              )}
+            </button>
 
             <p className="text-[10px] text-gray-500 text-center">
-              {hasRequestOnlyItems
-                ? 'Some items require confirmation from our team'
-                : 'Our team will review and confirm your request'}
+              Our team will review and confirm your request
             </p>
           </div>
         )}

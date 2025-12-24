@@ -114,11 +114,53 @@ export const useMessageHandler = ({
 
   // Handle addToCart tool result
   const handleAddToCartTool = useCallback((toolResult, workingChatId) => {
+    const item = toolResult.cartItem;
+    const display = toolResult.displayInfo || {};
+
+    // Determine icon based on type
+    const isHelicopter = item.type === 'helicopters' || item.type === 'helicopter';
+    const icon = isHelicopter ? '🚁' : '✈️';
+
+    // Build content with all available info including price
+    let content = `Ready to proceed with your booking:\n\n${icon} **${item.name}**`;
+
+    if (item.from && item.to) {
+      content += `\n📍 ${item.from} → ${item.to}`;
+    }
+    if (item.flightDuration || display.flightDuration) {
+      content += `\n⏱️ Est. Flight: ${item.flightDuration || display.flightDuration}`;
+    }
+    if (item.date) {
+      content += `\n📅 ${item.date}${item.time ? ` at ${item.time}` : ''}`;
+    }
+    if (item.passengers) {
+      content += `\n👥 ${item.passengers} passengers`;
+    }
+    // Show estimated price with calculation
+    if (item.price && item.price > 0) {
+      content += `\n💵 **Est. Total: €${item.price.toLocaleString()}**`;
+      if (item.priceCalculation || display.priceCalculation) {
+        content += ` (${item.priceCalculation || display.priceCalculation})`;
+      }
+    } else if (item.hourlyRate && item.hourlyRate > 0) {
+      content += `\n💰 Rate: €${item.hourlyRate.toLocaleString()}/hr`;
+    }
+    if (item.catering) {
+      content += `\n🥤 ${item.catering === 'complimentary' ? 'Complimentary refreshments' : item.catering}`;
+    }
+    // Show special notes/requests
+    if (item.notes) {
+      content += `\n📝 ${item.notes}`;
+    }
+
+    content += '\n\nChoose how you\'d like to proceed:';
+    content += '\n\n*Tip: Use the **+ Add Extras** button in your cart to add wine, champagne, catering, or other services.*';
+
     const confirmMessage = {
       role: 'assistant',
-      content: `Ready to proceed with your booking:\n\n✈️ **${toolResult.cartItem.name}**\n${toolResult.cartItem.from && toolResult.cartItem.to ? `📍 ${toolResult.cartItem.from} → ${toolResult.cartItem.to}\n` : ''}${toolResult.cartItem.date ? `📅 ${toolResult.cartItem.date}${toolResult.cartItem.time ? ` at ${toolResult.cartItem.time}` : ''}\n` : ''}${toolResult.cartItem.passengers ? `👥 ${toolResult.cartItem.passengers} passengers\n` : ''}${toolResult.cartItem.catering ? `🥤 ${toolResult.cartItem.catering === 'complimentary' ? 'Complimentary refreshments' : toolResult.cartItem.catering}\n` : ''}\nChoose how you'd like to proceed:`,
+      content,
       action: 'confirm_booking',
-      bookingData: toolResult.cartItem
+      bookingData: item
     };
 
     setChatHistory(prev => prev.map(c =>
@@ -625,11 +667,7 @@ They will personally arrange your perfect yacht experience with custom itinerari
       let forcedTool = null;
       let forcedToolMessage = '';
 
-      // MEDEVAC - Force tool for urgent medical requests
-      if (lowerMessage.match(/medevac|medical evacuation|emergency evacuation|air ambulance|medical transport/)) {
-        forcedTool = 'createMedevacRequest';
-        forcedToolMessage = '\n\n🚨 MEDEVAC REQUEST DETECTED - You MUST call createMedevacRequest tool.';
-      }
+      // MEDEVAC - Do NOT force tool. Let Claude collect patient info first, then call tool.
 
       // WINE/CHAMPAGNE - Force searchWines tool
       if (lowerMessage.match(/\bwine\b|champagne|bordeaux|burgundy|sommelier|krug|dom\s*p[eé]rignon|cristal|petrus|margaux|mouton|lafite|latour/i)) {
@@ -652,8 +690,8 @@ They will personally arrange your perfect yacht experience with custom itinerari
         console.log('🚬 Forcing searchCigars tool for:', trimmedMessage);
       }
 
-      // Filter to valid Claude roles
-      const uiOnlyRoles = ['results', 'place', 'hotels', 'adventures', 'confirm_booking', 'loading'];
+      // Filter to valid Claude roles (only 'user' and 'assistant' are valid for Claude API)
+      const uiOnlyRoles = ['results', 'place', 'hotels', 'adventures', 'confirm_booking', 'loading', 'medevac_request', 'visa_request'];
       const claudeMessages = conversationHistory
         .filter(msg => !uiOnlyRoles.includes(msg.role) && !msg.isLoading)
         .map(msg => ({ role: msg.role, content: msg.content }));
@@ -695,12 +733,8 @@ They will personally arrange your perfect yacht experience with custom itinerari
           await chatService.updateChatMessages(workingChatId, [...conversationHistory, initialMessage], user.id);
         } else if (forcedTool) {
           console.log('🔇 Suppressing AI text - tool was forced:', forcedTool);
-          // Remove loading message since tool results will replace it
-          setChatHistory(prev => prev.map(c =>
-            c.id === workingChatId
-              ? { ...c, messages: c.messages.filter(m => !m.isLoading) }
-              : c
-          ));
+          // DON'T remove loading here - keep it until we have actual content to show
+          // The loading will be removed when results or AI message is added
         }
 
         const toolUse = response.content.find(block => block.type === 'tool_use');
@@ -755,6 +789,7 @@ They will personally arrange your perfect yacht experience with custom itinerari
             if (toolUse.name === 'createMedevacRequest' && toolResult.action === 'SHOW_MEDEVAC_REQUEST' && toolResult.medevacRequest) {
               console.log('🚨 MEDEVAC Request created:', toolResult.medevacRequest);
 
+              // UI-only message for displaying the card
               const medevacMessage = {
                 role: 'medevac_request',
                 content: toolResult.message || 'Medical evacuation request prepared',
@@ -763,13 +798,19 @@ They will personally arrange your perfect yacht experience with custom itinerari
                 displayMessage: toolResult.displayMessage
               };
 
+              // Also add an assistant message for conversation context (so Claude knows what happened)
+              const assistantContextMessage = {
+                role: 'assistant',
+                content: `I've prepared your medical evacuation request from ${toolResult.medevacRequest.route?.origin || 'origin'} to ${toolResult.medevacRequest.route?.destination || 'destination'}. The request card is displayed above - you can review the details and add it to your cart when ready. Is there anything else you need, such as ground transport or additional assistance?`
+              };
+
               setChatHistory(prev => prev.map(c =>
                 c.id === workingChatId
-                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), medevacMessage] }
+                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), medevacMessage, assistantContextMessage] }
                   : c
               ));
 
-              await chatService.updateChatMessages(workingChatId, [...conversationHistory, medevacMessage], user.id);
+              await chatService.updateChatMessages(workingChatId, [...conversationHistory, medevacMessage, assistantContextMessage], user.id);
               setIsProcessing(false);
               return;
             }
@@ -778,6 +819,7 @@ They will personally arrange your perfect yacht experience with custom itinerari
             if (toolUse.name === 'createVisaRequest' && toolResult.action === 'SHOW_VISA_REQUEST' && toolResult.visaRequest) {
               console.log('🛂 Visa Request created:', toolResult.visaRequest);
 
+              // UI-only message for displaying the card
               const visaMessage = {
                 role: 'visa_request',
                 content: toolResult.message || 'Express visa request prepared',
@@ -785,13 +827,19 @@ They will personally arrange your perfect yacht experience with custom itinerari
                 displayMessage: toolResult.displayMessage
               };
 
+              // Also add an assistant message for conversation context
+              const assistantContextMessage = {
+                role: 'assistant',
+                content: `I've prepared your express visa request for ${toolResult.visaRequest.destination || 'your destination'}. The request card is displayed above - you can review the details and add it to your cart when ready. Is there anything else you need?`
+              };
+
               setChatHistory(prev => prev.map(c =>
                 c.id === workingChatId
-                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), visaMessage] }
+                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), visaMessage, assistantContextMessage] }
                   : c
               ));
 
-              await chatService.updateChatMessages(workingChatId, [...conversationHistory, visaMessage], user.id);
+              await chatService.updateChatMessages(workingChatId, [...conversationHistory, visaMessage, assistantContextMessage], user.id);
               setIsProcessing(false);
               return;
             }
@@ -806,9 +854,10 @@ They will personally arrange your perfect yacht experience with custom itinerari
                 tabs: tabs
               };
 
+              // Filter out loading message when adding results
               setChatHistory(prev => prev.map(c =>
                 c.id === workingChatId
-                  ? { ...c, messages: [...c.messages, resultsMessage] }
+                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), resultsMessage] }
                   : c
               ));
 
@@ -833,22 +882,19 @@ They will personally arrange your perfect yacht experience with custom itinerari
           const aiText = followUp.content.find(block => block.type === 'text')?.text || 'Found results!';
           const aiMessage = { role: 'assistant', content: aiText };
 
-          let followUpMessageIndex = 0;
-          setChatHistory(prev => {
-            const updated = prev.map(c => {
-              if (c.id === workingChatId) {
-                const newMessages = [...c.messages.filter(m => !m.isLoading), aiMessage];
-                followUpMessageIndex = newMessages.length - 1;
-                return { ...c, messages: newMessages };
-              }
-              return c;
-            });
-            return updated;
-          });
+          // Calculate the new message index BEFORE updating state
+          const currentChat = chatHistory.find(c => c.id === workingChatId);
+          const filteredMessages = currentChat?.messages?.filter(m => !m.isLoading) || [];
+          const newMessageIndex = filteredMessages.length; // This will be the index of the new message
 
-          setTimeout(() => {
-            setTypingMessageIndex(followUpMessageIndex);
-          }, 50);
+          // Set typing index FIRST, then add the message
+          setTypingMessageIndex(newMessageIndex);
+
+          setChatHistory(prev => prev.map(c =>
+            c.id === workingChatId
+              ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), aiMessage] }
+              : c
+          ));
 
           await chatService.updateChatMessages(workingChatId, [...conversationHistory, aiMessage], user.id);
         }
@@ -857,28 +903,31 @@ They will personally arrange your perfect yacht experience with custom itinerari
         const textBlock = response.content.find(block => block.type === 'text');
         const aiMessage = { role: 'assistant', content: textBlock?.text || 'How can I help?' };
 
-        let newMessageIndex = 0;
-        setChatHistory(prev => {
-          const updated = prev.map(c => {
-            if (c.id === workingChatId) {
-              const newMessages = [...c.messages.filter(m => !m.isLoading), aiMessage];
-              newMessageIndex = newMessages.length - 1;
-              return { ...c, messages: newMessages };
-            }
-            return c;
-          });
-          return updated;
-        });
+        // Calculate the new message index BEFORE updating state
+        const currentChat = chatHistory.find(c => c.id === workingChatId);
+        const filteredMessages = currentChat?.messages?.filter(m => !m.isLoading) || [];
+        const newMessageIndex = filteredMessages.length; // This will be the index of the new message
 
-        setTimeout(() => {
-          setTypingMessageIndex(newMessageIndex);
-        }, 50);
+        // Set typing index FIRST, then add the message
+        setTypingMessageIndex(newMessageIndex);
+
+        setChatHistory(prev => prev.map(c =>
+          c.id === workingChatId
+            ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), aiMessage] }
+            : c
+        ));
 
         await chatService.updateChatMessages(workingChatId, [...conversationHistory, aiMessage], user.id);
       }
     } catch (error) {
       console.error('❌ AI service error:', error);
-      setToast({ message: 'Error - please open a new chat or contact support', type: 'error' });
+      // Remove loading message and show error in chat
+      setChatHistory(prev => prev.map(c =>
+        c.id === workingChatId
+          ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), { role: 'assistant', content: 'Sorry, I encountered an error. Please try again or open a new chat.' }] }
+          : c
+      ));
+      setToast({ message: 'Error - please try again', type: 'error' });
     } finally {
       setIsProcessing(false);
     }

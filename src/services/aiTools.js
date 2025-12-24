@@ -581,7 +581,7 @@ export const aiToolDefinitions = [
   },
   {
     name: "addToCart",
-    description: "Add a service booking to the user's cart. Use this when user says 'add to cart', 'book it', 'I'll take it', or confirms they want to proceed with a specific aircraft, yacht, or service. IMPORTANT: Always include hourlyRate for jets/helicopters to calculate estimated total. After adding to cart, ask about additional services like ground transport.",
+    description: "Add a service booking to the user's cart. Use this when user says 'add to cart', 'book it', 'I'll take it', or confirms they want to proceed with a specific aircraft, yacht, or service. CRITICAL: For jets/helicopters, you MUST provide both hourlyRate AND estimatedFlightHours to calculate the total price. After adding to cart, ask about additional services like ground transport.",
     input_schema: {
       type: "object",
       properties: {
@@ -614,9 +614,13 @@ export const aiToolDefinitions = [
           type: "number",
           description: "Number of passengers"
         },
+        estimatedFlightHours: {
+          type: "number",
+          description: "REQUIRED for jets/helicopters: Your estimated flight duration in decimal hours (e.g., 1.5 for 1h30m, 2.0 for 2h). Calculate based on route distance."
+        },
         hourlyRate: {
           type: "number",
-          description: "Hourly rate in EUR from the aircraft details - REQUIRED for jets/helicopters to calculate total"
+          description: "Hourly rate in EUR from the aircraft details - REQUIRED for jets/helicopters"
         },
         price: {
           type: "number",
@@ -2198,6 +2202,7 @@ const FLIGHT_DURATIONS = {
   'paris-nice': 1.2,
   'paris-milan': 1.2,
   'munich-rome': 1.3,
+  'milan-rome': 1.0,
   'geneva-london': 1.5,
   'geneva-nice': 0.7,
 
@@ -3012,6 +3017,7 @@ function addToCart(params) {
     passengers = 1,
     price = 0,
     hourlyRate = 0,
+    estimatedFlightHours = null, // Claude provides this directly
     catering = 'complimentary',
     notes = ''
   } = params;
@@ -3040,30 +3046,34 @@ function addToCart(params) {
   let flightHours = null;
   let priceCalculation = null;
 
-  if ((serviceType === 'jet' || serviceType === 'helicopter') && from && to && hourlyRate) {
-    // Extract city names for flight duration lookup
-    const fromCity = from.toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').trim();
-    const toCity = to.toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').trim();
+  if ((serviceType === 'jet' || serviceType === 'helicopter') && hourlyRate) {
+    // Use Claude's estimated flight hours if provided (preferred)
+    if (estimatedFlightHours && estimatedFlightHours > 0) {
+      flightHours = estimatedFlightHours;
+    } else if (from && to) {
+      // Fallback to lookup table if Claude didn't provide estimate
+      const fromCity = from.toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').trim();
+      const toCity = to.toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').trim();
 
-    // Try both directions in FLIGHT_DURATIONS
-    const routeKey1 = `${fromCity}-${toCity}`;
-    const routeKey2 = `${toCity}-${fromCity}`;
+      const routeKey1 = `${fromCity}-${toCity}`;
+      const routeKey2 = `${toCity}-${fromCity}`;
 
-    flightHours = FLIGHT_DURATIONS[routeKey1] || FLIGHT_DURATIONS[routeKey2];
+      flightHours = FLIGHT_DURATIONS[routeKey1] || FLIGHT_DURATIONS[routeKey2];
 
-    // If no exact match, try partial matches
-    if (!flightHours) {
-      for (const [route, hours] of Object.entries(FLIGHT_DURATIONS)) {
-        const [r1, r2] = route.split('-');
-        if ((fromCity.includes(r1) || r1.includes(fromCity)) &&
-            (toCity.includes(r2) || r2.includes(toCity))) {
-          flightHours = hours;
-          break;
-        }
-        if ((fromCity.includes(r2) || r2.includes(fromCity)) &&
-            (toCity.includes(r1) || r1.includes(toCity))) {
-          flightHours = hours;
-          break;
+      // If no exact match, try partial matches
+      if (!flightHours) {
+        for (const [route, hours] of Object.entries(FLIGHT_DURATIONS)) {
+          const [r1, r2] = route.split('-');
+          if ((fromCity.includes(r1) || r1.includes(fromCity)) &&
+              (toCity.includes(r2) || r2.includes(toCity))) {
+            flightHours = hours;
+            break;
+          }
+          if ((fromCity.includes(r2) || r2.includes(fromCity)) &&
+              (toCity.includes(r1) || r1.includes(toCity))) {
+            flightHours = hours;
+            break;
+          }
         }
       }
     }

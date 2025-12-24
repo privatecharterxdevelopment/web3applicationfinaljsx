@@ -81,7 +81,11 @@ class ClaudeEdgeService {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
         console.error('Edge function error:', response.status, errorData);
-        throw new Error(errorData.error || `Edge function error: ${response.status}`);
+        // Log full details if available
+        if (errorData.details) {
+          console.error('Claude API details:', errorData.details);
+        }
+        throw new Error(errorData.details || errorData.error || `Edge function error: ${response.status}`);
       }
 
       const data = await response.json();

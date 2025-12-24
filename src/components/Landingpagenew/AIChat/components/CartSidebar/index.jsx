@@ -129,6 +129,7 @@ const CartSidebar = ({
             customExtraForm={customExtraForm}
             setCustomExtraForm={setCustomExtraForm}
             extrasCatalog={extrasCatalog}
+            cartItems={cartItems}
             onAddExtra={(extra) => {
               setCartItems(prev => [...prev, extra]);
               onToast?.({ message: `${extra.name} added`, type: 'cart' });

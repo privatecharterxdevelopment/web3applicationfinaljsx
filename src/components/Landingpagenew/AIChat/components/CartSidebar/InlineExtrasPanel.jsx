@@ -82,6 +82,7 @@ const InlineExtrasPanel = ({
   setSelectedCategory,
   customExtraForm,
   setCustomExtraForm,
+  cartItems = [],
   onAddExtra,
   onClose
 }) => {
@@ -91,7 +92,13 @@ const InlineExtrasPanel = ({
   const categoryItems = expandedCategory ? EXTRAS_CATALOG[expandedCategory] || [] : [];
   const categoryInfo = EXTRAS_CATEGORIES.find(c => c.id === expandedCategory);
 
+  // Check if cigar cleaning fee already exists in cart
+  const hasCleaningFee = cartItems.some(item =>
+    item.name === 'Aircraft Cleaning Fee (Cigars)' || item.isCleaningFee
+  );
+
   const handleAddItem = (item) => {
+    // Add the item
     onAddExtra({
       ...item,
       id: `extra-${Date.now()}`,
@@ -102,12 +109,31 @@ const InlineExtrasPanel = ({
       quantity: 1,
       addedAt: new Date().toISOString()
     });
+
+    // If adding cigars and no cleaning fee exists, add the cleaning fee
+    if (expandedCategory === 'cigars' && !hasCleaningFee) {
+      setTimeout(() => {
+        onAddExtra({
+          name: 'Aircraft Cleaning Fee (Cigars)',
+          description: 'Required deep cleaning after cigar smoking',
+          price: 2000,
+          id: `cleaning-fee-${Date.now()}`,
+          cartId: `cleaning-fee-${Date.now()}`,
+          type: 'service_fee',
+          category: 'service',
+          unitPrice: 2000,
+          quantity: 1,
+          isCleaningFee: true,
+          addedAt: new Date().toISOString()
+        });
+      }, 100);
+    }
   };
 
   return (
-    <div className="border-b border-gray-200 bg-gradient-to-br from-purple-50 to-pink-50">
+    <div className="border-b border-gray-200 bg-gray-50">
       {/* Header */}
-      <div className="p-3 border-b border-purple-200 flex justify-between items-center bg-white/50">
+      <div className="p-3 border-b border-gray-200 flex justify-between items-center bg-white/50">
         <div>
           <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
             ✨ In-Flight Extras
@@ -132,7 +158,7 @@ const InlineExtrasPanel = ({
                 setExpandedCategory(cat.id);
                 setSelectedCategory(cat.id);
               }}
-              className="p-3 bg-white hover:bg-purple-50 rounded-xl text-left transition-all border border-gray-200 hover:border-purple-300 hover:shadow-sm"
+              className="p-3 bg-white hover:bg-gray-100 rounded-xl text-left transition-all border border-gray-200 hover:border-gray-400 hover:shadow-sm"
             >
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xl">{cat.icon}</span>
@@ -165,7 +191,7 @@ const InlineExtrasPanel = ({
           </button>
 
           {/* Category header */}
-          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-purple-200">
+          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
             <span className="text-2xl">{categoryInfo?.icon}</span>
             <div>
               <h5 className="font-semibold text-gray-900 text-sm">{categoryInfo?.label}</h5>
@@ -188,7 +214,7 @@ const InlineExtrasPanel = ({
             {categoryItems.map((item, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-gray-200 hover:border-purple-300 transition-colors"
+                className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-gray-200 hover:border-gray-400 transition-colors"
               >
                 <div className="flex-1 min-w-0 pr-2">
                   <p className="text-xs font-medium text-gray-800">{item.name}</p>
@@ -200,7 +226,7 @@ const InlineExtrasPanel = ({
                   </span>
                   <button
                     onClick={() => handleAddItem(item)}
-                    className="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-medium rounded-lg transition-colors flex items-center gap-1"
+                    className="px-2.5 py-1.5 bg-gray-900 hover:bg-gray-800 text-white text-[10px] font-medium rounded-lg transition-colors flex items-center gap-1"
                   >
                     <Plus size={12} />
                     Add
@@ -211,7 +237,7 @@ const InlineExtrasPanel = ({
           </div>
 
           {/* Custom Request */}
-          <div className="pt-3 mt-3 border-t border-purple-200">
+          <div className="pt-3 mt-3 border-t border-gray-200">
             <p className="text-[10px] text-gray-600 mb-2 font-medium">Custom Request:</p>
             <div className="flex items-center gap-2">
               <input
@@ -219,7 +245,7 @@ const InlineExtrasPanel = ({
                 value={customExtraForm?.name || ''}
                 onChange={(e) => setCustomExtraForm(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="Describe your custom request..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
               />
               <button
                 onClick={() => {
