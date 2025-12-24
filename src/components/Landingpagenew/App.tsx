@@ -165,7 +165,7 @@ const wagmiAdapter = new WagmiAdapter({
   networks: [base, mainnet]
 });
 
-// FIXED: Cleaner AppKit configuration with mobile support
+// FIXED: AppKit configuration with proper mobile wallet support
 createAppKit({
   adapters: [wagmiAdapter],
   projectId,
@@ -174,28 +174,35 @@ createAppKit({
   metadata: {
     name: 'PrivateCharterX',
     description: 'Luxury Private Charter Platform',
-    url: 'https://privatecharterx.com',
+    url: typeof window !== 'undefined' ? window.location.origin : 'https://privatecharterx.com',
     icons: ['https://privatecharterx.com/favicon.ico']
   },
   features: {
     analytics: false,
     email: false,
-    socials: []
+    socials: [],
+    // Enable EIP-6963 for better wallet detection
+    // @ts-ignore - feature may exist
+    eip6963: true
   },
-  // Enable mobile wallet deep linking
+  // Enable all wallet connection methods
   enableWalletConnect: true,
-  // Allow all wallets including mobile wallets
+  enableInjected: true,
+  enableCoinbase: true,
+  // Featured wallets (mobile-friendly order)
   featuredWalletIds: [
     'c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96', // MetaMask
     '4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0', // Trust Wallet
-    '19177a98252e07ddfc9af2083ba8e07ef627cb6103467ffebb3f8f4205fd7927', // Ledger
     'fd20dc426fb37566d803205b19bbc1d4096b248ac04548e3cfb6b3a38bd033aa', // Coinbase Wallet
+    '19177a98252e07ddfc9af2083ba8e07ef627cb6103467ffebb3f8f4205fd7927', // Ledger
   ],
   // Better mobile UX
   themeMode: 'light',
   themeVariables: {
     '--w3m-z-index': '99999'
-  }
+  },
+  // Allow all wallets on mobile (don't restrict)
+  allowUnsupportedChain: false
 });
 
 

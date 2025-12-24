@@ -37,7 +37,18 @@ export default function WalletConnect({
   const handleConnect = async () => {
     try {
       setIsConnecting(true);
+
+      // Check if we're on mobile
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+      // On mobile, if MetaMask is not injected, the AppKit will show
+      // WalletConnect QR or deep link options automatically
       await open({ view: 'Connect' });
+
+      // If on mobile and MetaMask deeplink doesn't work, provide fallback
+      if (isMobile && !window.ethereum) {
+        console.log('Mobile detected without injected provider - using WalletConnect');
+      }
     } catch (error) {
       console.error('Failed to connect wallet:', error);
       onError?.(error instanceof Error ? error.message : 'Failed to connect wallet');

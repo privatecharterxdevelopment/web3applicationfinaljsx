@@ -1307,9 +1307,9 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                 <div className="flex items-center gap-2">
                   <MessageCircle className="w-4 h-4 text-gray-600" />
                   <span className="text-sm font-medium text-gray-900">Support</span>
-                  {supportTickets.length > 0 && (
+                  {supportTickets.filter(t => t.status === 'open' || t.status === 'pending' || !t.status).length > 0 && (
                     <span className="px-2 py-0.5 bg-orange-500 text-white rounded-full text-xs">
-                      {supportTickets.length}
+                      {supportTickets.filter(t => t.status === 'open' || t.status === 'pending' || !t.status).length}
                     </span>
                   )}
                   <span className="text-[10px] text-gray-400 ml-1">24/7</span>

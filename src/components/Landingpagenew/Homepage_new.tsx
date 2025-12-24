@@ -255,7 +255,7 @@ function Homepage() {
         <AnimatedSection animation="fade-in" delay={100}>
           <section className="px-4 sm:px-8 py-12 sm:py-16 max-w-4xl mx-auto">
             <p className="text-center text-base sm:text-lg text-gray-800 leading-relaxed">
-              Real flights. Real assets. Real returns. All backed by <span className="bg-gray-200 px-2 py-1 rounded">licensed tokenization</span> under SEC regulations. PrivateCharterX is the world's first <span className="bg-gray-200 px-2 py-1 rounded">Web3 and AI-powered</span> luxury travel platform. Jets, helicopters, empty legs, luxury rentals, transfers, curated adventures—searchable by AI, bookable 24/7 with <span className="bg-gray-200 px-2 py-1 rounded">70+ cryptocurrencies</span> via CoinGate. Human support standing by. Our <span className="bg-gray-200 px-2 py-1 rounded">tokenization services</span> transforms aircraft, hangars, and airfields into income-generating digital assets while staying operational. NFT holders unlock <span className="bg-gray-200 px-2 py-1 rounded">free empty legs</span>, 10% discounts, and priority access.
+              PrivateCharterX is the world's first <span className="bg-gray-200 px-2 py-1 rounded">Web3 and AI-powered</span> luxury travel platform. Jets, helicopters, empty legs, luxury rentals, transfers, curated adventures—searchable by AI, bookable 24/7 with <span className="bg-gray-200 px-2 py-1 rounded">70+ cryptocurrencies</span> via CoinGate. Human support standing by. Our <span className="bg-gray-200 px-2 py-1 rounded">tokenization services</span> transforms aircraft, hangars, and airfields into income-generating digital assets while staying operational. NFT holders unlock <span className="bg-gray-200 px-2 py-1 rounded">free empty legs</span>, 10% discounts, and priority access.
             </p>
           </section>
         </AnimatedSection>
@@ -657,25 +657,25 @@ function Homepage() {
         <AnimatedSection animation="slide-up" delay={100}>
           <section className="px-4 sm:px-8 py-8 sm:py-12 max-w-6xl mx-auto">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden">
-              <div className="grid grid-cols-1 md:grid-cols-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 md:h-[300px]">
                 {/* Left - Text Content */}
-                <div className="p-6 flex flex-col justify-center">
+                <div className="p-8 md:p-10 flex flex-col justify-center">
                   <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
                     Yachting and Boats
                     <br />
                     <span className="text-gray-400 text-sm">Maritime Luxury</span>
                   </h3>
-                  <p className="text-gray-600 text-sm leading-snug mb-3">
+                  <p className="text-gray-600 text-sm leading-relaxed mb-4">
                     19,000+ yachts, superyachts, and boats available for direct booking in Q1/2026. From day cruises to week-long adventures—searchable via Sphera AI. KYC required.
                   </p>
-                  <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="flex flex-wrap gap-2">
                     <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Sphera AI</span>
                     <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Global Fleet</span>
                     <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">KYC Required</span>
                   </div>
                 </div>
                 {/* Right - Video with overlay */}
-                <div className="h-48 md:h-auto min-h-[200px] overflow-hidden bg-gradient-to-br from-blue-50 to-cyan-100 relative">
+                <div className="h-56 md:h-full overflow-hidden bg-gradient-to-br from-blue-50 to-cyan-100 relative">
                   <video
                     autoPlay
                     loop
@@ -690,6 +690,49 @@ function Homepage() {
                   {/* Text overlay */}
                   <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                     <span className="text-white text-2xl md:text-3xl font-light tracking-wide">Q1 / 2026</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </AnimatedSection>
+
+        {/* Private Jet Buy/Sell Coming Soon Banner - Reversed Layout */}
+        <AnimatedSection animation="slide-up" delay={120}>
+          <section className="px-4 sm:px-8 py-8 sm:py-12 max-w-6xl mx-auto">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden">
+              <div className="grid grid-cols-1 md:grid-cols-2 md:h-[300px]">
+                {/* Left - Video with overlay */}
+                <div className="h-56 md:h-full overflow-hidden bg-gradient-to-br from-gray-100 to-gray-300 relative order-2 md:order-1">
+                  <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                    poster="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/pngwing.com-2.png"
+                  >
+                    <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/3129671-uhd_3840_2160_25fps.mp4" type="video/mp4" />
+                  </video>
+                  {/* Text overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                    <span className="text-white text-2xl md:text-3xl font-light tracking-wide">Coming Soon</span>
+                  </div>
+                </div>
+                {/* Right - Text Content */}
+                <div className="p-8 md:p-10 flex flex-col justify-center order-1 md:order-2">
+                  <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
+                    Private Jet Buy/Sell
+                    <br />
+                    <span className="text-gray-400 text-sm">AI & Web3 Powered Marketplace</span>
+                  </h3>
+                  <p className="text-gray-600 text-sm leading-relaxed mb-4">
+                    Discover daily off-market offers and 9,000+ aircraft worldwide—from props to BBJ jets. Transparent pricing with direct contact via Sphera AI.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Sphera AI</span>
+                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Off-Market Deals</span>
+                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Direct Contact</span>
                   </div>
                 </div>
               </div>

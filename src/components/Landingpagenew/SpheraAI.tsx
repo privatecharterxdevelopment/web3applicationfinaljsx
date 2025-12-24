@@ -403,8 +403,7 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
           {capabilities.map((cap, index) => (
             <div
               key={index}
-              onClick={() => navigate('/dashboard/chat?newChat=true')}
-              className="group bg-white rounded-2xl p-5 border border-gray-100 hover:border-gray-200 hover:shadow-lg transition-all duration-300 cursor-pointer"
+              className="group bg-white rounded-2xl p-5 border border-gray-100 hover:border-gray-200 hover:shadow-lg transition-all duration-300"
             >
               <h3 className="text-base font-medium text-gray-900 mb-2 leading-tight">
                 {cap.title}
@@ -412,8 +411,8 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
                 <span className="text-gray-400 text-sm font-normal">{cap.description.split(' ').slice(0, 3).join(' ')}</span>
               </h3>
               <p className="text-xs text-gray-600 leading-relaxed mb-3">{cap.description}</p>
-              <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-                +
+              <div className="w-6 h-6 flex items-center justify-center text-gray-400 text-xl font-light">
+                •
               </div>
             </div>
           ))}
