@@ -26,17 +26,17 @@ export default function CookieBanner() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-3 sm:p-4">
-      {/* Modern Monochromatic Container */}
-      <div className="max-w-2xl mx-auto bg-gray-900 rounded-xl sm:rounded-2xl shadow-2xl border border-gray-800">
+      {/* Light Grey Blurred Container */}
+      <div className="max-w-2xl mx-auto bg-gray-100/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-gray-200/50">
         <div className="p-4 sm:p-5">
           {/* Content - Stacked on mobile, row on desktop */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             {/* Text */}
-            <p className="text-sm text-gray-300 leading-relaxed flex-1">
+            <p className="text-sm text-gray-600 leading-relaxed flex-1">
               We use cookies to enhance your experience. By continuing, you agree to our{' '}
               <button
                 onClick={handlePrivacyPolicy}
-                className="text-white underline underline-offset-2 hover:text-gray-200 transition-colors"
+                className="text-gray-900 underline underline-offset-2 hover:text-gray-700 transition-colors font-medium"
               >
                 Privacy Policy
               </button>.
@@ -46,13 +46,13 @@ export default function CookieBanner() {
             <div className="flex gap-2 sm:gap-3 sm:flex-shrink-0">
               <button
                 onClick={handlePrivacyPolicy}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2 text-sm text-gray-500 hover:text-gray-900 transition-colors"
               >
                 Learn More
               </button>
               <button
                 onClick={handleAccept}
-                className="flex-1 sm:flex-none px-5 py-2 bg-white text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
+                className="flex-1 sm:flex-none px-5 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
               >
                 Accept
               </button>
