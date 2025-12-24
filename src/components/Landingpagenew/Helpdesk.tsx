@@ -22,8 +22,6 @@ import {
   Lock,
   FileText,
   CreditCard,
-  Ticket,
-  LogIn,
   ChevronDown,
   ChevronUp,
   Sparkles,
@@ -523,41 +521,43 @@ function Helpdesk({ setCurrentPage }: HelpdeskProps) {
               <p className="text-gray-600 text-sm mb-4">Get detailed help via email</p>
               <a
                 href="mailto:info@privatecharterx.com"
-                className="inline-block bg-gray-900 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                className="inline-flex items-center gap-2 bg-gray-900 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
               >
-                info@privatecharterx.com
+                <Mail className="w-4 h-4" />
+                Send Email
               </a>
             </div>
 
-            {/* Support Ticket */}
-            <div className="bg-white rounded-xl p-6 text-center border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Ticket className="w-7 h-7 text-gray-700" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Support Ticket</h3>
-              <p className="text-gray-600 text-sm mb-4">Submit a detailed request</p>
-              <button
-                onClick={() => navigate('/login')}
-                className="inline-flex items-center gap-2 bg-gray-900 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
-              >
-                <LogIn className="w-4 h-4" />
-                Login to Submit
-              </button>
-            </div>
-
-            {/* Live Chat */}
+            {/* Chat Support */}
             <div className="bg-white rounded-xl p-6 text-center border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
               <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <MessageCircle className="w-7 h-7 text-gray-700" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">AI Assistant</h3>
-              <p className="text-gray-600 text-sm mb-4">Chat with our AI concierge</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Chat Support</h3>
+              <p className="text-gray-600 text-sm mb-4">Get instant help from our team</p>
               <button
                 onClick={() => navigate('/dashboard')}
-                className="inline-block bg-gray-900 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                className="inline-flex items-center gap-2 bg-gray-900 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
               >
+                <MessageCircle className="w-4 h-4" />
                 Start Chat
               </button>
+            </div>
+
+            {/* Phone Support */}
+            <div className="bg-white rounded-xl p-6 text-center border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Headphones className="w-7 h-7 text-gray-700" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Phone Support</h3>
+              <p className="text-gray-600 text-sm mb-4">Speak with our team directly</p>
+              <a
+                href="tel:+442045920778"
+                className="inline-flex items-center gap-2 bg-gray-900 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+              >
+                <Headphones className="w-4 h-4" />
+                Call Us
+              </a>
             </div>
           </div>
 
