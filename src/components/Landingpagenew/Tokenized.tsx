@@ -902,18 +902,18 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
             <div className="w-full h-40 overflow-hidden">
               <img
                 src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/tokenization-images/Whisk_3750a44ec051d509e9d4a7e31ebf8489dr.png"
-                alt="Aviation Assets"
+                alt="Private Jet Tokenization - Fractional Aircraft Ownership"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
             </div>
             <div className="p-6">
-              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Aviation Assets</h3>
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Private Jet Tokenization</h3>
               <p className="text-gray-600 text-sm leading-snug mb-3">
-                Private jets, helicopters, eVTOLs, and aviation operators ready for tokenization.
+                Tokenize Gulfstream, Bombardier, and Dassault jets. Earn charter revenue from fractional jet ownership.
               </p>
               <div className="flex flex-wrap gap-2">
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Private jet fleets</span>
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Helicopter operations</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Jet charter revenue</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Helicopter tokens</span>
               </div>
             </div>
           </div>
@@ -923,18 +923,18 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
             <div className="w-full h-40 overflow-hidden">
               <img
                 src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/tokenization-images/Whisk_a36d4ca9db3e7489277401374f9f8db5dr.png"
-                alt="Ground Transportation"
+                alt="Limousine Fleet Tokenization - Luxury Car Investment"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
             </div>
             <div className="p-6">
-              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Ground Transportation</h3>
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Limousine & Fleet Tokens</h3>
               <p className="text-gray-600 text-sm leading-snug mb-3">
-                Luxury car fleets, limousine services, and premium ground transportation companies.
+                Tokenize limousine fleets and luxury car collections. Revenue from executive transfers and VIP services.
               </p>
               <div className="flex flex-wrap gap-2">
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Limousine companies</span>
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Luxury car fleets</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Fleet revenue share</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Luxury car tokens</span>
               </div>
             </div>
           </div>
@@ -944,18 +944,18 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
             <div className="w-full h-40 overflow-hidden">
               <img
                 src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/tokenization-images/Whisk_fb36353cc5e7e88939945cb4b6af252cdr.png"
-                alt="Maritime Assets"
+                alt="Yacht Tokenization - Superyacht Charter Revenue"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
             </div>
             <div className="p-6">
-              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Maritime Assets</h3>
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Yacht Tokenization</h3>
               <p className="text-gray-600 text-sm leading-snug mb-3">
-                Luxury yachts, charter operations, and maritime hospitality services.
+                Tokenize superyachts and earn Mediterranean charter revenue. Fractional yacht ownership from $10K.
               </p>
               <div className="flex flex-wrap gap-2">
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Luxury yacht charters</span>
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Superyacht ownership</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Yacht charter income</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Superyacht tokens</span>
               </div>
             </div>
           </div>
@@ -986,18 +986,18 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
             <div className="w-full h-40 overflow-hidden">
               <img
                 src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/tokenization-images/Whisk_2e43ce3d5799c1183784fed02bb80b67dr.png"
-                alt="Travel Real Estate"
+                alt="Hangar Tokenization - Aviation Real Estate Investment"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
             </div>
             <div className="p-6">
-              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Travel Real Estate</h3>
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Hangar & FBO Tokenization</h3>
               <p className="text-gray-600 text-sm leading-snug mb-3">
-                Airports, hangars, terminals, and travel-related real estate infrastructure.
+                Tokenize private hangars, FBOs, and aviation infrastructure. Stable rental yields from aircraft storage.
               </p>
               <div className="flex flex-wrap gap-2">
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Private hangars</span>
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Airport terminals</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Hangar rental income</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">FBO tokenization</span>
               </div>
             </div>
           </div>
@@ -1007,19 +1007,145 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
             <div className="w-full h-40 overflow-hidden">
               <img
                 src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/tokenization-images/Whisk_e206f96362f7c8f8aa7419000dd4a313dr.png"
-                alt="Technology & Innovation"
+                alt="eVTOL and Carbon Credit Tokenization"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
             </div>
             <div className="p-6">
-              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Technology & Innovation</h3>
+              <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">eVTOL & Carbon Credits</h3>
               <p className="text-gray-600 text-sm leading-snug mb-3">
-                Travel tech companies, mobility platforms, and innovative transportation solutions.
+                Tokenize eVTOL aircraft, SAF credits, and carbon offsets. Invest in sustainable aviation future.
               </p>
               <div className="flex flex-wrap gap-2">
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Mobility platforms</span>
-                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Travel tech startups</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Carbon credit tokens</span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">SAF tokenization</span>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section - SEO Optimized */}
+      <section className="px-4 sm:px-8 py-16 sm:py-20 max-w-4xl mx-auto">
+        <h2 className="text-2xl sm:text-3xl font-light text-gray-900 mb-3 text-center">
+          Frequently Asked Questions
+        </h2>
+        <p className="text-gray-500 text-sm text-center mb-10">
+          Learn more about private jet tokenization, yacht tokenization, and fractional luxury asset ownership
+        </p>
+
+        <div className="space-y-4">
+          {/* FAQ 1 */}
+          <div
+            onClick={() => toggleCard('faq1')}
+            className="bg-white border border-gray-100 rounded-xl p-5 cursor-pointer hover:border-gray-200 transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-gray-900">What is private jet tokenization?</h3>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedCard === 'faq1' ? 'rotate-180' : ''}`} />
+            </div>
+            <div className={`overflow-hidden transition-all duration-300 ${expandedCard === 'faq1' ? 'max-h-40 mt-3' : 'max-h-0'}`}>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Private jet tokenization converts aircraft ownership into blockchain-based digital securities.
+                Investors can purchase fractional shares of jets like Gulfstream G650, Citation X, or Global 7500,
+                earning passive income from charter revenue while the asset appreciates. This enables fractional
+                jet ownership starting from $10,000 instead of millions.
+              </p>
+            </div>
+          </div>
+
+          {/* FAQ 2 */}
+          <div
+            onClick={() => toggleCard('faq2')}
+            className="bg-white border border-gray-100 rounded-xl p-5 cursor-pointer hover:border-gray-200 transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-gray-900">How does yacht tokenization work?</h3>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedCard === 'faq2' ? 'rotate-180' : ''}`} />
+            </div>
+            <div className={`overflow-hidden transition-all duration-300 ${expandedCard === 'faq2' ? 'max-h-40 mt-3' : 'max-h-0'}`}>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Yacht tokenization creates digital tokens representing fractional superyacht ownership.
+                Owners of tokenized yachts receive quarterly dividends from Mediterranean charter revenue,
+                Caribbean charter bookings, and vessel appreciation. Luxury yacht tokenization typically
+                offers 8-15% APY from charter operations managed by professional crews.
+              </p>
+            </div>
+          </div>
+
+          {/* FAQ 3 */}
+          <div
+            onClick={() => toggleCard('faq3')}
+            className="bg-white border border-gray-100 rounded-xl p-5 cursor-pointer hover:border-gray-200 transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-gray-900">What charter revenue can tokenized assets generate?</h3>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedCard === 'faq3' ? 'rotate-180' : ''}`} />
+            </div>
+            <div className={`overflow-hidden transition-all duration-300 ${expandedCard === 'faq3' ? 'max-h-48 mt-3' : 'max-h-0'}`}>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Tokenized jets generate charter revenue from on-demand flights, corporate contracts, and empty leg
+                sales. Tokenized yacht charter revenue comes from weekly Mediterranean cruises, event charters, and
+                seasonal Caribbean bookings. Token holders receive proportional distributions from private jet charter
+                income and yacht charter fees, typically yielding 8-15% annually depending on utilization rates.
+              </p>
+            </div>
+          </div>
+
+          {/* FAQ 4 */}
+          <div
+            onClick={() => toggleCard('faq4')}
+            className="bg-white border border-gray-100 rounded-xl p-5 cursor-pointer hover:border-gray-200 transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-gray-900">Can I tokenize aviation real estate like hangars?</h3>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedCard === 'faq4' ? 'rotate-180' : ''}`} />
+            </div>
+            <div className={`overflow-hidden transition-all duration-300 ${expandedCard === 'faq4' ? 'max-h-40 mt-3' : 'max-h-0'}`}>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Yes, hangar tokenization and FBO tokenization are growing asset classes. Private hangar ownership
+                tokens generate rental income from aircraft storage, maintenance facilities, and fuel services.
+                Airport terminal tokenization and aviation infrastructure real estate offer stable yields from
+                long-term lease agreements with airlines and charter operators.
+              </p>
+            </div>
+          </div>
+
+          {/* FAQ 5 */}
+          <div
+            onClick={() => toggleCard('faq5')}
+            className="bg-white border border-gray-100 rounded-xl p-5 cursor-pointer hover:border-gray-200 transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-gray-900">What other luxury assets can be tokenized?</h3>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedCard === 'faq5' ? 'rotate-180' : ''}`} />
+            </div>
+            <div className={`overflow-hidden transition-all duration-300 ${expandedCard === 'faq5' ? 'max-h-48 mt-3' : 'max-h-0'}`}>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Beyond private jet tokenization and yacht tokenization, we support helicopter fleet tokenization,
+                limousine company tokenization, luxury car collection tokens, eVTOL aircraft tokenization, and
+                carbon credit tokenization. Sustainable aviation fuel (SAF) credits and helicopter charter operations
+                are emerging tokenizable assets offering both yield and environmental impact.
+              </p>
+            </div>
+          </div>
+
+          {/* FAQ 6 */}
+          <div
+            onClick={() => toggleCard('faq6')}
+            className="bg-white border border-gray-100 rounded-xl p-5 cursor-pointer hover:border-gray-200 transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-gray-900">Is RWA tokenization SEC compliant?</h3>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expandedCard === 'faq6' ? 'rotate-180' : ''}`} />
+            </div>
+            <div className={`overflow-hidden transition-all duration-300 ${expandedCard === 'faq6' ? 'max-h-40 mt-3' : 'max-h-0'}`}>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Yes, our tokenized securities are issued under SEC Regulation D (Reg-D) exemptions for accredited
+                investors. Each tokenized jet, yacht, or real estate asset is structured through a compliant SPV
+                (Special Purpose Vehicle) with full KYC/AML verification. Security token offerings (STOs) for
+                aviation and maritime assets follow institutional-grade compliance frameworks.
+              </p>
             </div>
           </div>
         </div>
@@ -1050,6 +1176,41 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
           </button>
         </div>
       </section>
+
+      {/* Hidden SEO Content - Accessible to crawlers but not visible */}
+      <div className="sr-only" aria-hidden="true">
+        <h2>Private Jet Tokenization Platform</h2>
+        <p>
+          Tokenize private jets including Gulfstream G650ER, Bombardier Global 7500, Dassault Falcon 8X,
+          Cessna Citation X, Embraer Praetor 600, and other business jets. Fractional private jet ownership
+          through blockchain tokenization enables investors to earn charter revenue from corporate jet rentals,
+          on-demand private flights, and empty leg sales.
+        </p>
+        <h2>Yacht Tokenization and Maritime Asset Tokens</h2>
+        <p>
+          Superyacht tokenization for vessels like Sunseeker, Benetti, Feadship, and Lürssen yachts.
+          Tokenized yacht ownership generates Mediterranean yacht charter revenue, Caribbean yacht charter income,
+          and Monaco yacht week bookings. Fractional yacht ownership tokens start from $10,000 minimum investment.
+        </p>
+        <h2>Aviation Real Estate Tokenization</h2>
+        <p>
+          Hangar tokenization, FBO tokenization, private terminal tokenization, and airport infrastructure tokens.
+          Aviation real estate generates stable rental income from aircraft storage, maintenance services, and fuel sales.
+          Private hangar ownership tokens and jet hangar investment opportunities.
+        </p>
+        <h2>Charter Revenue Distribution for Tokenized Assets</h2>
+        <p>
+          Tokenized jet charter revenue, yacht charter income distribution, helicopter charter dividends,
+          and limousine fleet revenue sharing. Automated quarterly dividend payments from charter operations
+          to token holders via smart contracts on Base and Ethereum blockchain networks.
+        </p>
+        <h2>Luxury Asset Tokenization Categories</h2>
+        <p>
+          Helicopter fleet tokenization, eVTOL tokenization, urban air mobility tokens, limousine company tokenization,
+          luxury car collection tokens, vintage aircraft tokenization, seaplane tokenization, and carbon credit tokenization.
+          SAF (Sustainable Aviation Fuel) credit tokens and environmental offset tokenization.
+        </p>
+      </div>
 
       {/* Footer */}
       <Footer />
