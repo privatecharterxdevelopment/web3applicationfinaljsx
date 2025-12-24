@@ -43,7 +43,9 @@ const AddStopModal = ({ onSelect, onClose, previousPoint, nextPoint, jetRange })
 
     const R = 6371; // Earth's radius in km
     const dLat = (airport.lat - previousPoint.lat) * Math.PI / 180;
-    const dLon = (airport.lon - previousPoint.lng) * Math.PI / 180;
+    // Support both 'lng' (airportsJsonService) and 'lon' formats
+    const airportLng = airport.lng || airport.lon || 0;
+    const dLon = (airportLng - previousPoint.lng) * Math.PI / 180;
     const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
               Math.cos(previousPoint.lat * Math.PI / 180) * Math.cos(airport.lat * Math.PI / 180) *
               Math.sin(dLon/2) * Math.sin(dLon/2);

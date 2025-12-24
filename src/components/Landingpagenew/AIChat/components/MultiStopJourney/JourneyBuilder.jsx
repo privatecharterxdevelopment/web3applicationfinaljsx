@@ -161,7 +161,7 @@ const JourneyBuilder = ({
       city: airport.city,
       country: airport.country,
       lat: airport.lat,
-      lng: airport.lon
+      lng: airport.lng || airport.lon  // Support both 'lng' (airportsJsonService) and 'lon' formats
     });
     setOriginSearch(`${airport.city} (${airport.code})`);
     setShowOriginResults(false);
@@ -174,7 +174,7 @@ const JourneyBuilder = ({
       city: airport.city,
       country: airport.country,
       lat: airport.lat,
-      lng: airport.lon
+      lng: airport.lng || airport.lon  // Support both 'lng' (airportsJsonService) and 'lon' formats
     });
     setDestSearch(`${airport.city} (${airport.code})`);
     setShowDestResults(false);
@@ -188,7 +188,7 @@ const JourneyBuilder = ({
       city: airport.city,
       country: airport.country,
       lat: airport.lat,
-      lng: airport.lon,
+      lng: airport.lng || airport.lon,  // Support both 'lng' (airportsJsonService) and 'lon' formats
       stopDuration: duration,
       isOvernight: duration >= OVERNIGHT_THRESHOLD_MINUTES,
       acknowledgedOvernight: false

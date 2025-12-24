@@ -338,10 +338,26 @@ const CartItem = ({
             )}
           </div>
           <p className="text-sm font-semibold text-gray-900 truncate">{itemName}</p>
-          {(item.from || item.from_city) && (item.to || item.to_city) && (
+          {/* Show full route for multi-stop journeys */}
+          {item.route ? (
+            <p className="text-xs text-gray-500 truncate font-mono">
+              {item.route}
+            </p>
+          ) : (item.from || item.from_city) && (item.to || item.to_city) ? (
             <p className="text-xs text-gray-500 truncate">
               {item.from || item.from_city} → {item.to || item.to_city}
             </p>
+          ) : null}
+          {/* Show flight time and price summary for jets */}
+          {(isJet || isHelicopter) && (item.estimatedDuration || item.billedHours) && (
+            <div className="flex items-center gap-2 text-[10px] text-gray-400 mt-0.5">
+              {item.estimatedDuration && <span>{item.estimatedDuration}</span>}
+              {item.isMultiStop && item.stops?.length > 0 && (
+                <span className="px-1 py-0.5 bg-blue-50 text-blue-600 rounded text-[9px]">
+                  {item.stops.length} stop{item.stops.length > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
           )}
         </div>
 
@@ -390,6 +406,115 @@ const CartItem = ({
             <div className="flex items-center gap-2">
               <Users size={12} className="text-gray-400" />
               <span>{item.capacity} passengers max</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Jet/Helicopter Expanded Details - Multi-Stop Route */}
+      {isExpanded && (isJet || isHelicopter) && (
+        <div className="mt-2 pt-2 border-t border-gray-200 space-y-3 text-xs">
+          {/* Route Overview */}
+          {item.route && (
+            <div className="flex items-center gap-2 text-gray-600">
+              <Route size={12} className="text-gray-400 flex-shrink-0" />
+              <span className="font-mono text-[11px] font-medium">{item.route}</span>
+            </div>
+          )}
+
+          {/* Multi-Stop Legs */}
+          {item.isMultiStop && item.legs && item.legs.length > 0 && (
+            <div className="space-y-2 bg-white rounded-lg p-2 border border-gray-100">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Flight Legs</p>
+              {item.legs.map((leg, idx) => (
+                <div key={idx} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-medium text-gray-600">
+                      {idx + 1}
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-medium text-gray-800">
+                        {leg.fromCode || leg.from} → {leg.toCode || leg.to}
+                      </p>
+                      <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                        <span>{Math.round(leg.distance * 0.54)} nm</span>
+                        <span>•</span>
+                        <span>{leg.flightTime ? `${Math.floor(leg.flightTime)}h ${Math.round((leg.flightTime % 1) * 60)}m` : '—'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {leg.departureTime && leg.arrivalTime && (
+                    <div className="text-right text-[10px] text-gray-500">
+                      <p>{leg.departureTime} → {leg.arrivalTime}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* Stops Info */}
+              {item.stops && item.stops.length > 0 && (
+                <div className="pt-2 border-t border-gray-100">
+                  <p className="text-[10px] text-gray-500">
+                    <span className="font-medium">Stops:</span> {item.stops.map(s => s.city || s.code).join(' • ')}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Flight Summary */}
+          <div className="grid grid-cols-3 gap-2 bg-gray-100 rounded-lg p-2">
+            <div className="text-center">
+              <p className="text-[10px] text-gray-500">Distance</p>
+              <p className="text-[11px] font-semibold text-gray-800">
+                {item.totalDistanceNm ? Math.round(item.totalDistanceNm) :
+                 item.totalDistance ? Math.round(item.totalDistance * 0.54) : '—'} nm
+              </p>
+            </div>
+            <div className="text-center border-x border-gray-200">
+              <p className="text-[10px] text-gray-500">Flight Time</p>
+              <p className="text-[11px] font-semibold text-gray-800">
+                {item.estimatedDuration ||
+                 (item.flightTimeHours ? `${Math.floor(item.flightTimeHours)}h ${Math.round((item.flightTimeHours % 1) * 60)}m` :
+                  item.billedHours ? `${item.billedHours}h` : '—')}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] text-gray-500">Est. Price</p>
+              <p className="text-[11px] font-semibold text-gray-800">
+                ${(item.estimatedPrice || item.price || item.basePrice || 0).toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          {/* Price Calculation */}
+          {item.priceCalculation && (
+            <p className="text-[10px] text-gray-500 text-center">
+              {item.priceCalculation}
+            </p>
+          )}
+
+          {/* Travel Details */}
+          <div className="space-y-1.5 text-gray-600">
+            {item.departure_date && (
+              <div className="flex items-center gap-2">
+                <Calendar size={12} className="text-gray-400" />
+                <span>{item.departure_date} {item.departure_time && `at ${item.departure_time}`}</span>
+              </div>
+            )}
+            {item.passengers && (
+              <div className="flex items-center gap-2">
+                <Users size={12} className="text-gray-400" />
+                <span>{item.passengers} passengers</span>
+              </div>
+            )}
+          </div>
+
+          {/* Overnight Stays Warning */}
+          {item.hasOvernightStays && (
+            <div className="flex items-center gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+              <span className="text-amber-500">🌙</span>
+              <p className="text-[10px] text-amber-700">Includes overnight stop(s)</p>
             </div>
           )}
         </div>
