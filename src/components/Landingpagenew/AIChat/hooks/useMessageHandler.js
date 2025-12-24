@@ -11,7 +11,11 @@ import { chatService } from '../../../../services/chatService';
 import { subscriptionService } from '../../../../services/subscriptionService';
 import { getSystemPrompt } from '../../../../lib/aiKnowledgeBase';
 import { aiToolDefinitions, executeTool } from '../../../../services/aiTools';
-import { checkServiceAccess } from '../utils/constants';
+import {
+  checkServiceAccess,
+  getMessageLimit,
+  hasUnlimitedAccess
+} from '../utils/constants';
 
 export const useMessageHandler = ({
   user,
@@ -399,16 +403,18 @@ Click **"Add to Route"** to confirm this stop, or provide corrections.`;
     // Only check for existing chats (not new chats)
     if (!isAdmin && !isNewChat && existingChat) {
       const currentMsgCount = existingChat.messages?.filter(m => m.role === 'user').length || 0;
-      const tier = userProfile?.subscription_tier?.toLowerCase();
-      const tierMessageLimit = (tier === 'elite' || tier === 'professional') ? Infinity :
-                               tier === 'traveller' ? 25 : 10;
+      const tier = userProfile?.subscription_tier;
+
+      // Get message limit from centralized helpers
+      const tierMessageLimit = hasUnlimitedAccess(tier) ? Infinity : getMessageLimit(tier);
 
       if (currentMsgCount >= tierMessageLimit) {
         setMessageLimitReached(true);
         // Add message explaining the limit
+        const travellerLimit = getMessageLimit('traveller');
         const limitMessage = {
           role: 'assistant',
-          content: `You've reached the message limit for this chat (${tierMessageLimit} messages).\n\n${tier === 'explorer' || !tier ? 'Upgrade to Traveller for 25 messages per chat, or Elite for unlimited messages.' : 'Upgrade to Elite for unlimited messages per chat.'}`
+          content: `You've reached the message limit for this chat (${tierMessageLimit} messages).\n\n${!tier || tier.toLowerCase() === 'explorer' ? `Upgrade to Traveller for ${travellerLimit} messages per chat, or Elite for unlimited messages.` : 'Upgrade to Elite for unlimited messages per chat.'}`
         };
         setChatHistory(prev => prev.map(c =>
           c.id === activeChat

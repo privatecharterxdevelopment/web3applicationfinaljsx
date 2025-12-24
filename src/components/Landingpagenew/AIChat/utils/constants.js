@@ -348,3 +348,69 @@ export const ANIMATION_DURATIONS = {
   FADE: 200,
   SLIDE: 300
 };
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+/**
+ * Normalize tier string (handles case variations)
+ */
+export const normalizeTier = (tier) => {
+  if (!tier) return null;
+  return tier.toLowerCase().trim();
+};
+
+/**
+ * Get tier limits (with fallback to Explorer)
+ */
+export const getTierLimits = (tier) => {
+  const normalized = normalizeTier(tier);
+  return TIER_LIMITS[normalized] || TIER_LIMITS[SUBSCRIPTION_TIERS.EXPLORER];
+};
+
+/**
+ * Check if tier has unlimited access
+ */
+export const hasUnlimitedAccess = (tier) => {
+  const limits = getTierLimits(tier);
+  return limits.unlimitedMessages === true;
+};
+
+/**
+ * Get message limit for tier
+ */
+export const getMessageLimit = (tier) => {
+  const limits = getTierLimits(tier);
+  return limits.messagesPerChat;
+};
+
+/**
+ * Get chat limit for tier
+ */
+export const getChatLimit = (tier) => {
+  const limits = getTierLimits(tier);
+  return limits.chats;
+};
+
+/**
+ * Check if user can send message
+ */
+export const canSendMessage = (tier, currentMessageCount) => {
+  if (hasUnlimitedAccess(tier)) return true;
+  const limit = getMessageLimit(tier);
+  return currentMessageCount < limit;
+};
+
+/**
+ * Check if multiple tiers can access (used for quick suggestions)
+ * @param {string} userTier - User's subscription tier
+ * @param {string[]} allowedTiers - Array of allowed tiers
+ */
+export const checkTierAccess = (userTier, allowedTiers) => {
+  if (!allowedTiers || allowedTiers.length === 0) return true;
+  if (!userTier) return false;
+
+  const normalized = normalizeTier(userTier);
+  return allowedTiers.some(tier => normalized === normalizeTier(tier));
+};

@@ -6,6 +6,7 @@ import { useAccount, useBalance, useChainId } from 'wagmi';
 import { useAppKit } from '@reown/appkit/react';
 import { supabase } from '../../lib/supabase';
 import { subscriptionService } from '../../services/subscriptionService';
+import { TIER_LIMITS } from './AIChat/utils/constants';
 import { formatEther } from 'viem';
 import { base, mainnet } from 'viem/chains';
 import { web3Service } from '../../lib/web3';
@@ -619,11 +620,11 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
       const profile = await subscriptionService.getUserProfile(user.id);
       const chatStats = await subscriptionService.getChatStats(user.id);
 
-      // Get messages per chat based on tier
+      // Get messages per chat based on tier using centralized TIER_LIMITS
       const getMessagesPerChat = (tier) => {
-        if (tier === 'elite') return '∞';
-        if (tier === 'traveller') return '25';
-        return '10'; // explorer
+        const tierConfig = TIER_LIMITS[tier?.toLowerCase()];
+        if (tierConfig?.unlimitedMessages) return '∞';
+        return String(tierConfig?.messagesPerChat || 10);
       };
 
       // Fetch user's chat sessions with message counts

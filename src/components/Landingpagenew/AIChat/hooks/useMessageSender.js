@@ -4,7 +4,7 @@
 import { useCallback, useRef } from 'react';
 import { claudeEdgeService } from '../../../../services/claudeEdgeService';
 import { chatService } from '../../../../services/chatService';
-import { MAX_MESSAGES_PER_CHAT } from '../utils/constants';
+import { getMessageLimit, hasUnlimitedAccess } from '../utils/constants';
 
 export function useMessageSender({
   chatManager,
@@ -36,13 +36,15 @@ export function useMessageSender({
     const existingChat = chatHistory.find(c => c.id === activeChat);
     const currentMsgCount = existingChat?.messages?.filter(m => m.role === 'user').length || 0;
 
-    // Check message limit (Elite has unlimited)
-    const hasUnlimitedMessages = userSubscriptionLimits?.unlimited_messages === true;
+    // Check message limit using centralized helpers
+    const tier = userSubscriptionLimits?.tier;
+    const hasUnlimitedMessages = hasUnlimitedAccess(tier);
+    const messageLimit = getMessageLimit(tier);
 
-    if (!hasUnlimitedMessages && currentMsgCount >= MAX_MESSAGES_PER_CHAT && activeChat !== 'new') {
+    if (!hasUnlimitedMessages && currentMsgCount >= messageLimit && activeChat !== 'new') {
       chatManager.setMessageLimitReached(true);
       onToast?.({
-        message: `Message limit reached (${MAX_MESSAGES_PER_CHAT} messages per chat). Upgrade for more messages.`,
+        message: `Message limit reached (${messageLimit} messages per chat). Upgrade for more messages.`,
         type: 'warning'
       });
       chatManager.setProcessing(false);
@@ -237,13 +239,15 @@ export function useMessageSender({
     const existingChat = chatHistory.find(c => c.id === activeChat);
     const currentMsgCount = existingChat?.messages?.filter(m => m.role === 'user').length || 0;
 
-    // Check message limit
-    const hasUnlimitedMessages = userSubscriptionLimits?.unlimited_messages === true;
+    // Check message limit using centralized helpers
+    const tier = userSubscriptionLimits?.tier;
+    const hasUnlimitedMessages = hasUnlimitedAccess(tier);
+    const messageLimit = getMessageLimit(tier);
 
-    if (!hasUnlimitedMessages && currentMsgCount >= MAX_MESSAGES_PER_CHAT && activeChat !== 'new') {
+    if (!hasUnlimitedMessages && currentMsgCount >= messageLimit && activeChat !== 'new') {
       chatManager.setMessageLimitReached(true);
       onToast?.({
-        message: `Message limit reached (${MAX_MESSAGES_PER_CHAT} messages per chat). Upgrade for more messages.`,
+        message: `Message limit reached (${messageLimit} messages per chat). Upgrade for more messages.`,
         type: 'warning'
       });
       chatManager.setProcessing(false);

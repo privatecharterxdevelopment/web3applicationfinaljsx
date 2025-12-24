@@ -17,6 +17,7 @@ import { useState, useCallback, useRef } from 'react';
 import { createRequest } from '../../../../services/requests';
 import { subscriptionService } from '../../../../services/subscriptionService';
 import { supabase } from '../../../../lib/supabase';
+import { getTierLimits } from '../utils/constants';
 
 // Payment method options
 export const PAYMENT_METHODS = {
@@ -622,9 +623,10 @@ export const useBookingFlow = ({
   // Check if can use Break The Price feature
   const canUseBreakThePrice = useCallback(() => {
     if (isAdmin) return true;
-    if (!userSubscriptionLimits) return false;
-    const tier = userSubscriptionLimits.tier?.toLowerCase();
-    return tier === 'starter' || tier === 'traveller' || tier === 'elite' || tier === 'professional';
+    if (!userSubscriptionLimits?.tier) return false;
+    // Use centralized tier config for breakThePrice access
+    const tierConfig = getTierLimits(userSubscriptionLimits.tier);
+    return tierConfig.breakThePrice === true;
   }, [isAdmin, userSubscriptionLimits]);
 
   // ============================================

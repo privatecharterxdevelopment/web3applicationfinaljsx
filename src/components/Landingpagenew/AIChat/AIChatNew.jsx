@@ -62,7 +62,12 @@ import {
 } from './hooks';
 
 // Utils
-import { checkServiceAccess } from './utils/constants';
+import {
+  checkServiceAccess,
+  getTierLimits,
+  hasUnlimitedAccess,
+  checkTierAccess
+} from './utils/constants';
 
 // Web3
 import { useAccount, useDisconnect } from 'wagmi';
@@ -279,10 +284,12 @@ const AIChatNew = ({
   }, []);
 
   const getMessageLimit = useCallback(() => {
-    const tier = subscription.userProfile?.subscription_tier?.toLowerCase() || 'explorer';
-    if (tier === 'elite' || tier === 'professional') return { limit: 100, unlimited: true };
-    if (tier === 'traveller') return { limit: 25, unlimited: false };
-    return { limit: 10, unlimited: false }; // explorer
+    const tier = subscription.userProfile?.subscription_tier || 'explorer';
+    const tierConfig = getTierLimits(tier);
+    if (hasUnlimitedAccess(tier)) {
+      return { limit: tierConfig.messagesPerChat || 100, unlimited: true };
+    }
+    return { limit: tierConfig.messagesPerChat || 10, unlimited: false };
   }, [subscription.userProfile]);
 
   // ==================================
@@ -299,11 +306,9 @@ const AIChatNew = ({
   }, [cart, modals]);
 
   const handleSuggestionClick = useCallback((suggestion) => {
-    // Check subscription requirement
-    const userTier = subscription.userProfile?.subscription_tier?.toLowerCase() || 'explorer';
-    // Fix: Use exact match or check if userTier equals one of required tiers
-    const hasRequired = !suggestion.requiresSubscription ||
-      suggestion.requiresSubscription.some(tier => userTier === tier.toLowerCase());
+    // Check subscription requirement using centralized helper
+    const userTier = subscription.userProfile?.subscription_tier || 'explorer';
+    const hasRequired = checkTierAccess(userTier, suggestion.requiresSubscription);
 
     if (suggestion.requiresSubscription && !hasRequired && !isAdmin) {
       modals.setToast({
@@ -654,10 +659,9 @@ const AIChatNew = ({
                 {/* Quick Suggestion Bubbles - Glassmorphic style */}
                 <div className="flex flex-wrap gap-2 mt-2 px-2">
                   {QUICK_SUGGESTIONS.map((suggestion, index) => {
-                    const userTier = subscription.userProfile?.subscription_tier?.toLowerCase() || 'explorer';
-                    // Fix: Use exact match instead of includes
-                    const hasRequired = !suggestion.requiresSubscription ||
-                      suggestion.requiresSubscription.some(tier => userTier === tier.toLowerCase());
+                    const userTier = subscription.userProfile?.subscription_tier || 'explorer';
+                    // Use centralized helper for tier access check
+                    const hasRequired = checkTierAccess(userTier, suggestion.requiresSubscription);
                     const isLocked = suggestion.requiresSubscription && !hasRequired && !isAdmin;
 
                     return (

@@ -10,6 +10,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { supabase } from '../../../../lib/supabase';
+import { getTierLimits } from '../utils/constants';
 
 export const useFileUpload = ({
   user,
@@ -246,9 +247,10 @@ export const useFileUpload = ({
 
   // Check if user can use Break The Price (subscription feature)
   const canUseBreakThePrice = useCallback((userProfile) => {
-    if (!userProfile) return false;
-    const tier = userProfile.subscription_tier?.toLowerCase();
-    return tier === 'traveller' || tier === 'elite' || tier === 'platinum';
+    if (!userProfile?.subscription_tier) return false;
+    // Use centralized tier config for breakThePrice access
+    const tierConfig = getTierLimits(userProfile.subscription_tier);
+    return tierConfig.breakThePrice === true;
   }, []);
 
   return {

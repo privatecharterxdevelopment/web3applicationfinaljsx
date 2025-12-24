@@ -5,6 +5,12 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { subscriptionService } from '../../../../services/subscriptionService';
+import {
+  getTierLimits,
+  hasUnlimitedAccess,
+  canSendMessage as checkCanSend,
+  hasFeatureAccess as checkFeature
+} from '../utils/constants';
 
 export const useSubscriptionNew = (user, isAdmin = false) => {
   // Extract userId from user object or use directly if string
@@ -104,31 +110,17 @@ export const useSubscriptionNew = (user, isAdmin = false) => {
     }
   }, [userId]);
 
-  // Check if can send message
+  // Check if can send message - using centralized helper
   const canSendMessage = useCallback((currentMessageCount) => {
-    if (!userSubscriptionLimits) return true;
-
-    const tier = userSubscriptionLimits.tier?.toLowerCase();
-
-    // Elite has unlimited
-    if (tier === 'elite') return true;
-
-    // Check limits by tier
-    const limits = {
-      explorer: 10,
-      traveller: 25
-    };
-
-    const limit = limits[tier] || 10;
-    return currentMessageCount < limit;
+    if (!userSubscriptionLimits?.tier) return true;
+    return checkCanSend(userSubscriptionLimits.tier, currentMessageCount);
   }, [userSubscriptionLimits]);
 
-  // Check if user can use Break the Price
+  // Check if user can use Break the Price - using centralized helper
   const canUseBreakThePrice = useCallback(() => {
-    if (!userSubscriptionLimits) return false;
-
-    const tier = userSubscriptionLimits.tier?.toLowerCase();
-    return tier === 'traveller' || tier === 'elite';
+    if (!userSubscriptionLimits?.tier) return false;
+    const limits = getTierLimits(userSubscriptionLimits.tier);
+    return limits.breakThePrice === true;
   }, [userSubscriptionLimits]);
 
   // Get tier display name
@@ -139,20 +131,10 @@ export const useSubscriptionNew = (user, isAdmin = false) => {
     return tier.charAt(0).toUpperCase() + tier.slice(1);
   }, [userSubscriptionLimits]);
 
-  // Check feature access
+  // Check feature access using centralized helper
   const hasFeatureAccess = useCallback((feature) => {
-    if (!userSubscriptionLimits) return false;
-
-    const tier = userSubscriptionLimits.tier?.toLowerCase();
-
-    const featuresByTier = {
-      explorer: ['chat', 'search', 'basic_booking'],
-      traveller: ['chat', 'search', 'basic_booking', 'break_the_price', 'priority_support'],
-      elite: ['chat', 'search', 'basic_booking', 'break_the_price', 'priority_support', 'unlimited_messages', 'free_transfers', 'membershipx_card']
-    };
-
-    const tierFeatures = featuresByTier[tier] || featuresByTier.explorer;
-    return tierFeatures.includes(feature);
+    if (!userSubscriptionLimits?.tier) return false;
+    return checkFeature(userSubscriptionLimits.tier, feature);
   }, [userSubscriptionLimits]);
 
   // Update message count
@@ -166,20 +148,18 @@ export const useSubscriptionNew = (user, isAdmin = false) => {
     setMessageLimitReached(false);
   }, []);
 
-  // Check and set message limit reached
+  // Check and set message limit reached using centralized helpers
   useEffect(() => {
-    if (!userSubscriptionLimits) return;
+    if (!userSubscriptionLimits?.tier) return;
 
-    const tier = userSubscriptionLimits.tier?.toLowerCase();
-    if (tier === 'elite') {
+    // Elite has unlimited messages
+    if (hasUnlimitedAccess(userSubscriptionLimits.tier)) {
       setMessageLimitReached(false);
       return;
     }
 
-    const limits = { explorer: 10, traveller: 25 };
-    const limit = limits[tier] || 10;
-
-    setMessageLimitReached(messageCount >= limit);
+    const limits = getTierLimits(userSubscriptionLimits.tier);
+    setMessageLimitReached(messageCount >= limits.messagesPerChat);
   }, [messageCount, userSubscriptionLimits]);
 
   // Load profile on mount + handle Stripe success redirect

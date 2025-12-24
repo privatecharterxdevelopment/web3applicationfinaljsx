@@ -3,7 +3,12 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { subscriptionService } from '../../../../services/subscriptionService';
-import { TIER_LIMITS, SUBSCRIPTION_TIERS } from '../utils/constants';
+import {
+  SUBSCRIPTION_TIERS,
+  getTierLimits,
+  hasUnlimitedAccess,
+  getMessageLimit
+} from '../utils/constants';
 
 export function useSubscriptionLimits({ user, isAdmin }) {
   const [limits, setLimits] = useState(null);
@@ -21,17 +26,17 @@ export function useSubscriptionLimits({ user, isAdmin }) {
     try {
       const profile = await subscriptionService.getUserProfile(user.id);
       const tier = profile?.subscription_tier;
-      const tierConfig = tier ? TIER_LIMITS[tier] : null;
+      const tierConfig = getTierLimits(tier);
 
       setLimits({
         tier: tier,
         chats_limit: profile?.chats_limit || 0,
         chats_used: profile?.chats_used || 0,
-        messages_per_chat: tierConfig?.messagesPerChat || 0,
-        unlimited_chats: tier === SUBSCRIPTION_TIERS.ELITE,
-        unlimited_messages: tier === SUBSCRIPTION_TIERS.ELITE,
-        break_the_price: tierConfig?.breakThePrice || false,
-        features: tierConfig?.features || [],
+        messages_per_chat: tierConfig.messagesPerChat || 0,
+        unlimited_chats: hasUnlimitedAccess(tier),
+        unlimited_messages: hasUnlimitedAccess(tier),
+        break_the_price: tierConfig.breakThePrice || false,
+        features: tierConfig.features || [],
         has_subscription: !!tier && profile?.subscription_status === 'active'
       });
       setError(null);
@@ -78,14 +83,10 @@ export function useSubscriptionLimits({ user, isAdmin }) {
     if (isAdmin) return true;
     if (!limits?.has_subscription) return false;
 
-    // Elite has unlimited
-    if (limits.unlimited_messages) return true;
-    if (limits.tier === SUBSCRIPTION_TIERS.ELITE) return true;
+    // Use centralized helper for unlimited check
+    if (hasUnlimitedAccess(limits.tier)) return true;
 
-    const maxMessages = limits.messages_per_chat ||
-                       TIER_LIMITS[limits.tier]?.messagesPerChat ||
-                       10;
-
+    const maxMessages = getMessageLimit(limits.tier);
     return currentMessageCount < maxMessages;
   }, [limits, isAdmin]);
 
@@ -94,9 +95,9 @@ export function useSubscriptionLimits({ user, isAdmin }) {
     if (isAdmin) return true;
     if (!limits?.has_subscription) return false;
 
-    return limits.break_the_price === true ||
-           limits.tier === SUBSCRIPTION_TIERS.TRAVELLER ||
-           limits.tier === SUBSCRIPTION_TIERS.ELITE;
+    // Use centralized tier config for breakThePrice access
+    const tierConfig = getTierLimits(limits.tier);
+    return tierConfig.breakThePrice === true;
   }, [limits, isAdmin]);
 
   // Get tier display name
@@ -115,8 +116,8 @@ export function useSubscriptionLimits({ user, isAdmin }) {
   // Check if user has unlimited messages
   const hasUnlimitedMessages = useCallback(() => {
     if (isAdmin) return true;
-    return limits?.unlimited_messages === true ||
-           limits?.tier === SUBSCRIPTION_TIERS.ELITE;
+    // Use centralized helper for unlimited access check
+    return hasUnlimitedAccess(limits?.tier);
   }, [limits, isAdmin]);
 
   // Get remaining chats
@@ -138,10 +139,8 @@ export function useSubscriptionLimits({ user, isAdmin }) {
     if (hasUnlimitedMessages()) return Infinity;
     if (!limits?.has_subscription) return 0;
 
-    const maxMessages = limits?.messages_per_chat ||
-                       TIER_LIMITS[limits?.tier]?.messagesPerChat ||
-                       10;
-
+    // Use centralized helper for message limit
+    const maxMessages = getMessageLimit(limits?.tier);
     return Math.max(0, maxMessages - currentMessageCount);
   }, [limits, hasUnlimitedMessages]);
 

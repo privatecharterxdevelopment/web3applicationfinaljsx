@@ -1,6 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import footerLogo from './Screenshot 2025-12-24 at 1.02.13.png';
+
+// Use hosted logo URL like header
+const LOGO_URL = 'https://i.ibb.co/DPF5g3Sk/iu42DU1.png';
 
 interface FooterProps {
   onNavigate?: (path: string) => void;
@@ -28,7 +30,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <div>
               {/* Logo */}
               <img
-                src={footerLogo}
+                src={LOGO_URL}
                 alt="PrivateCharterX"
                 className="h-8 object-contain mb-3"
               />
