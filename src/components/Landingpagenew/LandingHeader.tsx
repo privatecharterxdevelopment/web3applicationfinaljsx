@@ -56,6 +56,7 @@ export default function LandingHeader({ onGetStarted, showInfoButton = true }: L
     { path: '/aviation', label: 'Aviation' },
     { path: '/tokenized', label: 'RWA Tokenization' },
     { path: '/sphera-ai', label: 'Sphera AI' },
+    { path: '/rwa-nft', label: 'RWA NFT' },
   ];
 
   return (

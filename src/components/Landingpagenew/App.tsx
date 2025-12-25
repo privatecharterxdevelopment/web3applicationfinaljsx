@@ -97,6 +97,7 @@ import Aviation from './Aviation';
 import Tokenized from './Tokenized';
 import Helpdesk from './Helpdesk';
 import SpheraAI from './SpheraAI';
+import RWANFT from './RWANFT';
 
 // Import your complete dashboard
 import TokenizedAssetsGlassmorphic from './tokenized-assets-glassmorphic.jsx';
@@ -380,6 +381,7 @@ function AppContent() {
               <Route path="/aviation" element={<Aviation setCurrentPage={() => {}} />} />
               <Route path="/tokenized" element={<Tokenized setCurrentPage={() => {}} />} />
               <Route path="/sphera-ai" element={<SpheraAI setCurrentPage={() => {}} />} />
+              <Route path="/rwa-nft" element={<RWANFT setCurrentPage={() => {}} />} />
               <Route path="/helpdesk" element={<Helpdesk setCurrentPage={() => {}} />} />
               <Route path="/tokenswap" element={<TokenSwapPage />} />
 

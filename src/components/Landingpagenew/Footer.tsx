@@ -112,6 +112,9 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 <button onClick={() => handleNavigate('/dashboard/web3/nft-marketplace')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
                   NFT Membership
                 </button>
+                <button onClick={() => handleNavigate('/rwa-nft')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
+                  RWA NFT
+                </button>
                 <button onClick={() => handleNavigate('/dashboard/web3/pvcx-token')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
                   PVCX Token
                 </button>
