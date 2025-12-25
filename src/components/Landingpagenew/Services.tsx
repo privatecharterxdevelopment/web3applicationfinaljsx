@@ -189,7 +189,7 @@ function Services({ setCurrentPage }: ServicesProps) {
     {
       id: 'subscription',
       question: 'Do I need a subscription to use your services?',
-      answer: 'Basic browsing is free. To chat with Sphera AI and make bookings, you need a subscription: Explorer ($99/mo), Traveller ($299/mo), or Elite ($999/mo). Each tier offers different chat limits and exclusive features.'
+      answer: 'Basic browsing is free. To chat with Sphera AI and make bookings, you need a subscription: Explorer ($99/mo), Traveller ($199/mo), or Elite ($999/mo). Each tier offers different chat limits and exclusive features.'
     },
     {
       id: 'cancellation',

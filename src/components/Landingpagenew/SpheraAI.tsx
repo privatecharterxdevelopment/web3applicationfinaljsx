@@ -176,7 +176,7 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
     {
       id: 'subscription',
       question: 'Do I need a subscription?',
-      answer: 'Yes, Sphera AI is available through our subscription plans: Explorer ($99/mo - 5 chats, 10 messages each), Traveller ($299/mo - 10 chats, 25 messages each), and Elite ($999/mo - unlimited chats and messages). Elite members also get exclusive access to MEDEVAC services.'
+      answer: 'Yes, Sphera AI is available through our subscription plans: Explorer ($99/mo - 5 chats, 10 messages each), Traveller ($199/mo - 10 chats, 25 messages each), and Elite ($999/mo - unlimited chats and messages). Elite members also get exclusive access to MEDEVAC services.'
     },
     {
       id: 'booking',
@@ -435,7 +435,7 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {[
             { name: 'Explorer', price: 99 },
-            { name: 'Traveller', price: 299, popular: true },
+            { name: 'Traveller', price: 199, popular: true },
             { name: 'Elite', price: 999 }
           ].map((plan, index) => (
             <div

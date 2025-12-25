@@ -30,7 +30,7 @@ const SubscriptionSuccessPage = () => {
     },
     traveller: {
       name: 'Traveller',
-      price: '$299',
+      price: '$199',
       chats: '10 AI Chats',
       messages: '25 messages per chat',
       icon: '🌍'

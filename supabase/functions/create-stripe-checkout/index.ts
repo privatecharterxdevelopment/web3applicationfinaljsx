@@ -8,10 +8,10 @@ const corsHeaders = {
 };
 
 // Chat limits for each tier - MUST match Subscriptionplans.jsx and SubscriptionModal.jsx
-// Updated 2025 pricing: Explorer ($99), Traveller ($299), Elite ($999)
+// Updated 2025 pricing: Explorer ($99), Traveller ($199), Elite ($999)
 const TIER_CONFIG: Record<string, { chats: number | null; price: number; messagesPerChat: number }> = {
   explorer: { chats: 5, price: 99, messagesPerChat: 10 },      // $99/mo - 5 chats, 10 msgs/chat
-  traveller: { chats: 10, price: 299, messagesPerChat: 25 },    // $299/mo - 10 chats, 25 msgs/chat
+  traveller: { chats: 10, price: 199, messagesPerChat: 25 },    // $199/mo - 10 chats, 25 msgs/chat
   elite: { chats: null, price: 999, messagesPerChat: Infinity }, // $999/mo - unlimited
   // Legacy tiers (for backwards compatibility)
   starter: { chats: 5, price: 20, messagesPerChat: 10 },

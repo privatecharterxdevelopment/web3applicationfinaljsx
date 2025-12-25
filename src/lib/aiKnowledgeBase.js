@@ -1483,7 +1483,7 @@ export const SERVICES = {
 
       // Subscription requirement
       requiredTier: ["traveller", "elite"],
-      tierRestrictionMessage: "MEDEVAC service is only available for Traveller ($299/mo) and Elite Club ($999/mo) members. Would you like to upgrade your subscription to access this critical service?",
+      tierRestrictionMessage: "MEDEVAC service is only available for Traveller ($199/mo) and Elite Club ($999/mo) members. Would you like to upgrade your subscription to access this critical service?",
 
       keywords: ["medevac", "medical evacuation", "air ambulance", "medical transport", "emergency flight", "hospital transfer", "medical emergency", "patient transport"],
 
@@ -1806,7 +1806,7 @@ const TIER_FEATURES = {
   },
   traveller: {
     name: 'Traveller',
-    price: 299,
+    price: 199,
     chatsPerMonth: 10,
     messagesPerChat: 25,
     features: ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'catering', 'custom_travel_org', 'medevac', 'concierge', 'group_charter', 'reservations', 'event_booking', 'visa_services', 'break_the_price'],
@@ -1833,7 +1833,7 @@ function generateSubscriptionContext(userTier) {
 
 SUBSCRIPTION PLANS OVERVIEW (when asked):
 • Explorer ($99/mo): 5 chats/month, 10 messages/chat, Empty legs, Ground transport, Restaurants, Visa services
-• Traveller ($299/mo): 10 chats/month, 25 messages/chat, + MEDEVAC, Concierge, Break the Price
+• Traveller ($199/mo): 10 chats/month, 25 messages/chat, + MEDEVAC, Concierge, Break the Price
 • Elite Club ($999/mo): Unlimited chats & messages, + Free airport transfers, MembershipX Card, VIP Events
 
 EXPRESS VISA SERVICE: $250/person (available to ALL subscribers)
@@ -1872,7 +1872,7 @@ EXPRESS VISA SERVICE: $250/person (AVAILABLE to this user)
 
 SUBSCRIPTION PLANS (when asked about upgrades):
 • Explorer ($99/mo): 5 chats/month, 10 messages/chat
-• Traveller ($299/mo): 10 chats/month, 25 messages/chat, + MEDEVAC, Concierge, Break the Price
+• Traveller ($199/mo): 10 chats/month, 25 messages/chat, + MEDEVAC, Concierge, Break the Price
 • Elite Club ($999/mo): Unlimited everything, + Free airport transfers, MembershipX Card, VIP Events
 
 ENFORCEMENT RULES:
@@ -2076,7 +2076,7 @@ When user asks to "plan a trip", "plan vacation", "5 days in [destination]", "de
 MEDEVAC - MEDICAL EVACUATION SERVICE (TIER-RESTRICTED)
 ═══════════════════════════════════════════════════════════════════════════════
 ⚠️ SUBSCRIPTION VERIFICATION - CRITICAL:
-- MEDEVAC is ONLY available for Traveller ($299/mo) and Elite Club ($999/mo) members
+- MEDEVAC is ONLY available for Traveller ($199/mo) and Elite Club ($999/mo) members
 - If user is on Explorer plan ($99/mo) or has no subscription, respond with EXACTLY:
   "MEDEVAC (Medical Evacuation) service is a premium feature available exclusively for Traveller and Elite Club members.
 
