@@ -157,23 +157,34 @@ export async function fetchBlogPostsFromSource() {
 }
 
 /**
+ * Decode HTML entities (e.g., &#8211; → –, &amp; → &)
+ */
+function decodeHTMLEntities(text) {
+  if (!text) return text;
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = text;
+  return textarea.value;
+}
+
+/**
  * Format blog post from WordPress REST API response
  */
 function formatWordPressPost(post) {
-  // Extract title
-  const title = post.title?.rendered || 'Untitled';
+  // Extract title and decode HTML entities
+  const title = decodeHTMLEntities(post.title?.rendered) || 'Untitled';
 
   // Extract content
   const content = post.content?.rendered || '';
 
-  // Extract excerpt
+  // Extract excerpt and decode HTML entities
   let excerpt = post.excerpt?.rendered || '';
   // Clean HTML tags from excerpt
   excerpt = excerpt.replace(/<[^>]*>/g, '').trim();
+  excerpt = decodeHTMLEntities(excerpt);
   if (!excerpt && content) {
     // Fallback: create excerpt from content
     const textContent = content.replace(/<[^>]*>/g, '').trim();
-    excerpt = textContent.substring(0, 200) + '...';
+    excerpt = decodeHTMLEntities(textContent.substring(0, 200)) + '...';
   }
 
   // Extract featured image from _embedded
@@ -239,7 +250,7 @@ function parseRSSFeed(xmlText) {
     const posts = [];
 
     items.forEach(item => {
-      const title = item.querySelector('title')?.textContent || 'Untitled';
+      const title = decodeHTMLEntities(item.querySelector('title')?.textContent) || 'Untitled';
       const link = item.querySelector('link')?.textContent || '';
       const pubDate = item.querySelector('pubDate')?.textContent || new Date().toISOString();
       const creator = item.querySelector('creator')?.textContent || 'PrivateCharterX Team';
@@ -248,9 +259,9 @@ function parseRSSFeed(xmlText) {
       let content = item.querySelector('encoded')?.textContent ||
                     item.querySelector('description')?.textContent || '';
 
-      // Extract excerpt from content
+      // Extract excerpt from content and decode HTML entities
       const textContent = content.replace(/<[^>]*>/g, '').trim();
-      const excerpt = textContent.substring(0, 200) + '...';
+      const excerpt = decodeHTMLEntities(textContent.substring(0, 200)) + '...';
 
       // Extract featured image
       const imageMatch = content.match(/<img[^>]+src="([^">]+)"/);
