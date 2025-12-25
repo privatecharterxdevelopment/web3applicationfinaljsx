@@ -1,18 +1,18 @@
 import React from 'react';
-import { ExternalLink, Check, Shield, Crown, Sparkles, Zap, Plus, ChevronRight } from 'lucide-react';
+import { ExternalLink, Check, Shield, Crown, Sparkles, Zap, Plus, ChevronRight, BadgeCheck } from 'lucide-react';
 
 export default function NFTMarketplace({ onCreateNFT }) {
   const nftVideoUrl = "https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivateCharterX_transparent-_3_.mp4";
-  const openSeaUrl = "https://opensea.io"; // Replace with actual OpenSea collection URL
+  const openSeaUrl = "https://opensea.io/collection/privatecharterx-membership";
 
   // PrivateCharterX NFT Data
   const nft = {
-    name: "PrivateCharterX Membership 001-100",
+    name: "PrivateCharterX Membership",
     collection: "PrivateCharterX Official",
     description: "Exclusive membership NFT with lifetime aviation benefits and VIP privileges",
     supply: 100,
     minted: 47,
-    network: "Ethereum",
+    network: "Base",
     price: "1.0 ETH",
     category: "Utility Token"
   };
@@ -27,76 +27,95 @@ export default function NFTMarketplace({ onCreateNFT }) {
 
         {/* NFT Grid - matching My SPVs layout */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* PrivateCharterX NFT Card */}
-          <div className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all">
-            <div className="flex items-start justify-between mb-6">
-              <div className="w-14 h-14 bg-black rounded-xl flex items-center justify-center">
-                <Shield size={28} className="text-white" />
+          {/* PrivateCharterX NFT Card - Glassmorphic Design */}
+          <div
+            className="rounded-2xl p-6 relative overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, rgba(120, 120, 130, 0.15) 0%, rgba(80, 80, 90, 0.12) 50%, rgba(100, 100, 110, 0.18) 100%)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.15), inset 0 -1px 1px rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.12)'
+            }}
+          >
+            {/* Top edge highlight */}
+            <div
+              className="absolute top-0 left-0 right-0 h-[1px]"
+              style={{
+                background: 'linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.25) 30%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0.25) 70%, rgba(255,255,255,0.05) 100%)'
+              }}
+            />
+            {/* Left edge highlight */}
+            <div
+              className="absolute top-0 left-0 bottom-0 w-[1px]"
+              style={{
+                background: 'linear-gradient(180deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 100%)'
+              }}
+            />
+            {/* Bottom edge subtle highlight */}
+            <div
+              className="absolute bottom-0 left-0 right-0 h-[1px]"
+              style={{
+                background: 'linear-gradient(90deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.02) 100%)'
+              }}
+            />
+
+            {/* NFT Video */}
+            <div className="aspect-square bg-gray-900/80 rounded-xl mb-4 overflow-hidden relative">
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              >
+                <source src={nftVideoUrl} type="video/mp4" />
+              </video>
+              {/* Verified Badge */}
+              <div className="absolute top-3 right-3 bg-green-500 text-white px-2 py-1 rounded-lg text-[10px] font-medium flex items-center gap-1">
+                <BadgeCheck size={12} />
+                Verified
               </div>
-              <div className="flex gap-2">
-                <span className="px-2 py-1 bg-gray-200 text-gray-900 rounded-md text-[10px] font-medium">ERC-721</span>
-                <span className="px-2 py-1 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black rounded-md text-[10px] font-bold">Limited</span>
+              {/* Limited Badge */}
+              <div className="absolute top-3 left-3 px-2 py-1 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black rounded-lg text-[10px] font-bold">
+                Limited
               </div>
             </div>
 
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">{nft.name}</h3>
-            <p className="text-sm text-gray-700 mb-6 leading-relaxed">
-              {nft.description}
-            </p>
+            {/* NFT Info */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500">Collection</p>
+                  <p className="text-sm font-medium text-gray-900">{nft.name}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500">Network</p>
+                  <p className="text-sm font-medium text-gray-900">{nft.network}</p>
+                </div>
+              </div>
 
-            <div className="space-y-2 mb-6">
-              <div className="flex items-center gap-2 text-xs text-gray-700">
-                <Check size={14} className="text-gray-900" />
-                <span>1 Free Empty Leg</span>
+              <div className="flex items-center gap-2 pt-2 border-t border-gray-400/20">
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500 mb-1">Price</p>
+                  <p className="text-lg font-medium text-gray-900">{nft.price}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500 mb-1">Discounts</p>
+                  <p className="text-lg font-medium text-green-600">10% Off</p>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-xs text-gray-700">
-                <Check size={14} className="text-gray-900" />
-                <span>10% Booking Discount</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gray-700">
-                <Check size={14} className="text-gray-900" />
-                <span>Free Airport Transfer</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gray-700">
-                <Check size={14} className="text-gray-900" />
-                <span>24/7 Support</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gray-700">
-                <Check size={14} className="text-gray-900" />
-                <span>Tradable at Anytime</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gray-700">
-                <Check size={14} className="text-gray-900" />
-                <span>And more...</span>
-              </div>
+
+              {/* View on OpenSea */}
+              <a
+                href={openSeaUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 mt-3 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
+              >
+                <ExternalLink size={14} />
+                <span>View on OpenSea</span>
+              </a>
             </div>
-
-            <div className="pt-4 border-t border-gray-300/50 mb-6">
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <div className="text-xs text-gray-600 mb-0.5">Supply</div>
-                  <div className="text-sm font-medium text-gray-900">{nft.supply}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-600 mb-0.5">Minted</div>
-                  <div className="text-sm font-medium text-gray-900">{nft.minted}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-600 mb-0.5">Price</div>
-                  <div className="text-sm font-medium text-gray-900">{nft.price}</div>
-                </div>
-              </div>
-            </div>
-
-            <a
-              href={openSeaUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 text-gray-900 hover:text-black transition-colors"
-            >
-              <span className="text-sm font-medium">View on OpenSea</span>
-              <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </a>
           </div>
 
           {/* Create New NFT Button */}
