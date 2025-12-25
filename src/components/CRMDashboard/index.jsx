@@ -6723,12 +6723,14 @@ const PVCXSection = ({ balances, transactions, refreshing, onRefresh, supabaseAd
   const [selectedUser, setSelectedUser] = useState(null);
   const [sendAmount, setSendAmount] = useState('');
   const [sendNote, setSendNote] = useState('');
+  const [sendSource, setSendSource] = useState('bookings'); // 'bookings' or 'co2'
   const [sending, setSending] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('balances');
 
   // All admins can send tokens (CRM is already admin-only)
   const canSendTokens = true;
+  const isEltesto = true; // Allow all CRM admins to send tokens
 
   const formatDate = (date) => {
     if (!date) return '-';
@@ -6751,22 +6753,30 @@ const PVCXSection = ({ balances, transactions, refreshing, onRefresh, supabaseAd
     try {
       setSending(true);
 
-      // Get user's current balance from user_profiles
-      const { data: profile, error: profileError } = await supabaseAdmin
-        .from('user_profiles')
-        .select('pvcx_balance')
+      // Get user's current balance from pvcx_balance table
+      const { data: balanceData, error: balanceError } = await supabaseAdmin
+        .from('pvcx_balance')
+        .select('*')
         .eq('user_id', selectedUser.id)
         .single();
 
-      const currentBalance = profile?.pvcx_balance || 0;
-      const newBalance = currentBalance + amount;
+      const currentBalance = parseFloat(balanceData?.balance) || 0;
+      const currentFromBookings = parseFloat(balanceData?.earned_from_bookings) || 0;
+      const currentFromCO2 = parseFloat(balanceData?.earned_from_co2) || 0;
 
-      // Update user_profiles with new balance
+      // Calculate new values based on source
+      const newBalance = currentBalance + amount;
+      const newFromBookings = sendSource === 'bookings' ? currentFromBookings + amount : currentFromBookings;
+      const newFromCO2 = sendSource === 'co2' ? currentFromCO2 + amount : currentFromCO2;
+
+      // Upsert pvcx_balance with new values
       const { error: updateError } = await supabaseAdmin
-        .from('user_profiles')
+        .from('pvcx_balance')
         .upsert({
           user_id: selectedUser.id,
-          pvcx_balance: newBalance,
+          balance: newBalance,
+          earned_from_bookings: newFromBookings,
+          earned_from_co2: newFromCO2,
           updated_at: new Date().toISOString()
         }, { onConflict: 'user_id' });
 
@@ -6776,7 +6786,20 @@ const PVCXSection = ({ balances, transactions, refreshing, onRefresh, supabaseAd
         return;
       }
 
-      // Try to record transaction (table may not exist yet)
+      // Also update user_profiles for backwards compatibility
+      try {
+        await supabaseAdmin
+          .from('user_profiles')
+          .upsert({
+            user_id: selectedUser.id,
+            pvcx_balance: newBalance,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id' });
+      } catch (profileErr) {
+        console.log('Could not update user_profiles:', profileErr);
+      }
+
+      // Try to record transaction
       try {
         await supabaseAdmin
           .from('pvcx_transactions')
@@ -6784,7 +6807,8 @@ const PVCXSection = ({ balances, transactions, refreshing, onRefresh, supabaseAd
             user_id: selectedUser.id,
             amount: amount,
             type: 'credit',
-            note: sendNote || `Token transfer from ${currentAdminEmail}`,
+            source: sendSource, // 'bookings' or 'co2'
+            note: sendNote || `${sendSource === 'bookings' ? 'Booking reward' : 'CO2 offset reward'} from ${currentAdminEmail}`,
             admin_email: currentAdminEmail,
             balance_after: newBalance,
             created_at: new Date().toISOString()
@@ -6793,15 +6817,16 @@ const PVCXSection = ({ balances, transactions, refreshing, onRefresh, supabaseAd
         console.log('Could not record transaction (table may not exist):', txErr);
       }
 
-      // Try to create notification for user
+      // Create notification for user
       try {
+        const sourceLabel = sendSource === 'bookings' ? 'booking rewards' : 'CO2 offset rewards';
         await supabaseAdmin
           .from('notifications')
           .insert({
             user_id: selectedUser.id,
             type: 'pvcx_received',
             title: 'PVCX Tokens Received',
-            message: `You received ${amount.toLocaleString()} PVCX tokens. New balance: ${newBalance.toLocaleString()} PVCX`,
+            message: `You received ${amount.toLocaleString()} PVCX from ${sourceLabel}. New balance: ${newBalance.toLocaleString()} PVCX`,
             read: false,
             created_at: new Date().toISOString()
           });
@@ -6809,11 +6834,12 @@ const PVCXSection = ({ balances, transactions, refreshing, onRefresh, supabaseAd
         console.log('Could not create notification (table may not exist):', notifErr);
       }
 
-      alert(`Successfully sent ${amount.toLocaleString()} PVCX to ${selectedUser.email || selectedUser.name || 'user'}`);
+      alert(`Successfully sent ${amount.toLocaleString()} PVCX (${sendSource}) to ${selectedUser.email || selectedUser.name || 'user'}`);
       setShowSendModal(false);
       setSelectedUser(null);
       setSendAmount('');
       setSendNote('');
+      setSendSource('bookings');
       onRefresh();
     } catch (err) {
       console.error('Error sending tokens:', err);
@@ -7112,6 +7138,42 @@ const PVCXSection = ({ balances, transactions, refreshing, onRefresh, supabaseAd
                     )}
                   </>
                 )}
+              </div>
+
+              {/* Source Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Token Source</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSendSource('bookings')}
+                    className={`px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                      sendSource === 'bookings'
+                        ? 'border-purple-500 bg-purple-50 text-purple-700'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                    }`}
+                  >
+                    <Plane size={16} />
+                    From Bookings
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSendSource('co2')}
+                    className={`px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                      sendSource === 'co2'
+                        ? 'border-purple-500 bg-purple-50 text-purple-700'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                    }`}
+                  >
+                    <Leaf size={16} />
+                    From CO2
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400 mt-1.5">
+                  {sendSource === 'bookings'
+                    ? 'Rewards earned from flight/charter bookings'
+                    : 'Rewards earned from CO2 offset purchases'}
+                </p>
               </div>
 
               {/* Amount */}
