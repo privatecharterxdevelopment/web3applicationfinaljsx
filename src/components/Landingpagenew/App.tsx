@@ -523,9 +523,12 @@ function AppContent() {
               <Route path="/web3/launchpad" element={<Navigate to="/dashboard/web3/launchpad" replace />} />
 
               {/* ===== Subscriptions Routes ===== */}
-              <Route path="/subscriptions" element={<Navigate to="/subscriptions/plans" replace />} />
-              <Route path="/subscriptions/plans" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/subscriptions/manage" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/subscriptions" element={<Navigate to="/dashboard/subscriptions/plans" replace />} />
+              <Route path="/subscriptions/plans" element={<Navigate to="/dashboard/subscriptions/plans" replace />} />
+              <Route path="/subscriptions/manage" element={<Navigate to="/dashboard/subscriptions/manage" replace />} />
+              <Route path="/dashboard/subscriptions" element={<Navigate to="/dashboard/subscriptions/plans" replace />} />
+              <Route path="/dashboard/subscriptions/plans" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/subscriptions/manage" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
 
               {/* Auth Routes */}
               <Route path="/login" element={<LoginNew />} />

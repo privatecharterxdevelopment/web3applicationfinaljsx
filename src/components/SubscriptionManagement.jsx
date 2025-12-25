@@ -23,7 +23,7 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
     if (onNavigateToPlans) {
       onNavigateToPlans();
     } else {
-      navigate('/subscriptions/plans');
+      navigate('/dashboard/subscriptions/plans');
     }
   };
 

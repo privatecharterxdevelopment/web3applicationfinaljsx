@@ -519,7 +519,7 @@ serve(async (req) => {
       title: serviceDetails.title,
       description: `PrivateCharterX - ${serviceType.replace('_', ' ')} booking`,
       callback_url: `${supabaseUrl}/functions/v1/coingate-webhook`,
-      success_url: `${appUrl}/payment/success?booking_id=${booking.id}`,
+      success_url: `${appUrl}/dashboard/subscriptions/plans?payment=success&booking_id=${booking.id}`,
       cancel_url: `${appUrl}/payment/cancel?booking_id=${booking.id}`,
       token: booking.id // For verification
     };

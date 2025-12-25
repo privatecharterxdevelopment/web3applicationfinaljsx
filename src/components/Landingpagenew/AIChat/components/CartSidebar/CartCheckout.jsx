@@ -111,9 +111,9 @@ const CartCheckout = ({
           return item;
         }));
 
-        // Open CoinGate payment page
-        window.open(result.paymentUrl, '_blank');
-        onToast?.({ message: 'Payment page opened. Complete your crypto payment.', type: 'success' });
+        // Redirect to CoinGate payment page
+        onToast?.({ message: 'Redirecting to payment...', type: 'success' });
+        window.location.href = result.paymentUrl;
       } else {
         throw new Error(result.error || 'Failed to create payment');
       }

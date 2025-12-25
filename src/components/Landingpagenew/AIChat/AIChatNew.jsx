@@ -850,7 +850,7 @@ const AIChatNew = ({
                       key={plan.tier}
                       onClick={() => {
                         modals.setShowSubscriptionBlocker(false);
-                        navigate('/subscriptions/plans');
+                        navigate('/dashboard/subscriptions/plans');
                       }}
                       className={`flex-1 p-3 rounded-xl border text-center transition-all hover:border-gray-300 ${
                         plan.popular
@@ -874,7 +874,7 @@ const AIChatNew = ({
                 <button
                   onClick={() => {
                     modals.setShowSubscriptionBlocker(false);
-                    navigate('/subscriptions/plans');
+                    navigate('/dashboard/subscriptions/plans');
                   }}
                   className="w-full py-2.5 bg-gray-900 text-white rounded-xl text-sm font-light hover:bg-gray-800 transition-colors"
                 >
@@ -1312,7 +1312,7 @@ const AIChatNew = ({
                     key={plan.tier}
                     onClick={() => {
                       modals.setShowSubscriptionBlocker(false);
-                      navigate('/subscriptions/plans');
+                      navigate('/dashboard/subscriptions/plans');
                     }}
                     className={`flex-1 p-3 rounded-xl border text-center transition-all hover:border-gray-300 ${
                       plan.popular
@@ -1336,7 +1336,7 @@ const AIChatNew = ({
               <button
                 onClick={() => {
                   modals.setShowSubscriptionBlocker(false);
-                  navigate('/subscriptions/plans');
+                  navigate('/dashboard/subscriptions/plans');
                 }}
                 className="w-full py-2.5 bg-gray-900 text-white rounded-xl text-sm font-light hover:bg-gray-800 transition-colors"
               >

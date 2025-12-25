@@ -159,7 +159,7 @@ class StripeService {
           priceId,
           customerId: customer.stripe_customer_id,
           successUrl: `${window.location.origin}/subscription/success?tier=${tier}`,
-          cancelUrl: `${window.location.origin}/subscriptions/plans?subscription=cancelled`,
+          cancelUrl: `${window.location.origin}/dashboard/subscriptions/plans?subscription=cancelled`,
           metadata: {
             user_id: user.id,
             tier,

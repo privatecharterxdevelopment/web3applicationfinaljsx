@@ -1143,8 +1143,8 @@ const TokenizedAssetsGlassmorphic = () => {
     'co2-certificates': '/dashboard/co2-certificates',
 
     // Subscriptions
-    'subscription-plans': '/subscriptions/plans',
-    'subscriptions': '/subscriptions/manage',
+    'subscription-plans': '/dashboard/subscriptions/plans',
+    'subscriptions': '/dashboard/subscriptions/manage',
 
     // User
     'requests': '/dashboard/requests',
@@ -2115,6 +2115,8 @@ const TokenizedAssetsGlassmorphic = () => {
       '/dashboard/co2-certificates': 'co2-certificates',
 
       // Subscriptions Routes
+      '/dashboard/subscriptions/plans': 'subscription-plans',
+      '/dashboard/subscriptions/manage': 'subscriptions',
       '/subscriptions/plans': 'subscription-plans',
       '/subscriptions/manage': 'subscriptions',
 

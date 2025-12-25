@@ -377,7 +377,7 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
                 Chat with Sphera AI
               </button>
               <button
-                onClick={() => navigate('/subscriptions/plans')}
+                onClick={() => navigate('/dashboard/subscriptions/plans')}
                 className="px-8 py-3 rounded-xl text-sm font-medium transition-all duration-200 border border-gray-300 hover:bg-white/20"
                 style={{ color: '#374151' }}
               >
@@ -453,7 +453,7 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
                 <span className="text-gray-500 text-sm">/month</span>
               </div>
               <button
-                onClick={() => navigate('/subscriptions/plans')}
+                onClick={() => navigate('/dashboard/subscriptions/plans')}
                 className={`w-full py-3 rounded-lg text-sm font-medium transition-colors ${
                   plan.popular
                     ? 'bg-gray-900 text-white hover:bg-gray-800'

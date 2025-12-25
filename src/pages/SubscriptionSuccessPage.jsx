@@ -312,7 +312,7 @@ const SubscriptionSuccessPage = () => {
             </Link>
 
             <Link
-              to="/subscriptions/manage"
+              to="/dashboard/subscriptions/manage"
               className="w-full py-2.5 px-6 bg-transparent text-gray-400 font-light rounded-xl flex items-center justify-center gap-2 hover:text-gray-600 transition-colors text-sm"
             >
               <Crown className="w-4 h-4" />

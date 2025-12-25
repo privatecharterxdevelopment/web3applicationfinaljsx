@@ -232,7 +232,7 @@ function Services({ setCurrentPage }: ServicesProps) {
               Chat with Sphera AI
             </button>
             <button
-              onClick={() => navigate('/subscriptions/plans')}
+              onClick={() => navigate('/dashboard/subscriptions/plans')}
               className="border border-gray-200 text-gray-700 px-8 py-4 rounded-xl text-sm font-medium hover:bg-white hover:border-gray-300 transition-all duration-200"
             >
               View Plans
@@ -369,7 +369,7 @@ function Services({ setCurrentPage }: ServicesProps) {
 
           <div className="text-center mt-10">
             <button
-              onClick={() => navigate('/subscriptions/plans')}
+              onClick={() => navigate('/dashboard/subscriptions/plans')}
               className="bg-white text-gray-900 px-8 py-4 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors inline-flex items-center gap-2"
             >
               Upgrade to Elite
