@@ -1280,6 +1280,10 @@ const TokenizedAssetsGlassmorphic = () => {
   const [loadingSPVs, setLoadingSPVs] = useState(false);
   const [selectedSPV, setSelectedSPV] = useState(null);
 
+  // Wallet Signatures state (NFT verifications)
+  const [walletSignatures, setWalletSignatures] = useState([]);
+  const [loadingSignatures, setLoadingSignatures] = useState(false);
+
   // Tokenization state
   const [userTokenizations, setUserTokenizations] = useState([]);
   const [loadingTokenizations, setLoadingTokenizations] = useState(false);
@@ -3158,6 +3162,47 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   };
 
+  // Fetch wallet signatures from NFT verified requests
+  const fetchWalletSignatures = async () => {
+    if (!user?.id) return;
+
+    setLoadingSignatures(true);
+    try {
+      // Fetch all requests with NFT flag, then filter for signatures client-side
+      const { data, error } = await supabase
+        .from('user_requests')
+        .select('id, created_at, type, status, data')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        // Extract signature data from requests that have NFT signatures
+        const signatures = data
+          .filter(req => req.data?.nft_signature && req.data?.has_nft)
+          .map(req => ({
+            id: req.id,
+            request_id: req.id,
+            request_type: req.type,
+            request_status: req.status,
+            wallet_address: req.data.nft_signature.wallet_address,
+            signature: req.data.nft_signature.signature,
+            message: req.data.nft_signature.message,
+            signed_at: req.data.nft_signature.signed_at,
+            verified: req.data.nft_signature.verified,
+            request_total: req.data.total,
+            created_at: req.created_at
+          }));
+
+        setWalletSignatures(signatures);
+        console.log('✅ Loaded wallet signatures:', signatures.length);
+      }
+    } catch (error) {
+      console.error('Error fetching wallet signatures:', error);
+    } finally {
+      setLoadingSignatures(false);
+    }
+  };
+
   // Fetch user's tokenization requests
   const fetchUserTokenizations = async () => {
     if (!user?.id) return;
@@ -3347,6 +3392,13 @@ const TokenizedAssetsGlassmorphic = () => {
   useEffect(() => {
     if ((activeCategory === 'my-spvs' || (activeCategory === 'overview' && webMode === 'web3')) && user?.id) {
       fetchUserSPVs();
+    }
+  }, [activeCategory, webMode, user?.id]);
+
+  // Load Wallet Signatures (NFT verifications) on Web3 overview
+  useEffect(() => {
+    if ((activeCategory === 'overview' && webMode === 'web3') && user?.id) {
+      fetchWalletSignatures();
     }
   }, [activeCategory, webMode, user?.id]);
 
@@ -6702,20 +6754,25 @@ const TokenizedAssetsGlassmorphic = () => {
                         </div>
                       </button>
 
-                      {/* Card #11 - My SPVs */}
+                      {/* Card #11 - Wallet Signatures (NFT Verifications) */}
                       <button
-                        onClick={() => setActiveCategory('my-spvs')}
+                        onClick={() => {/* Could navigate to signatures view if desired */}}
                         className="hidden md:block border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
                         style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
                       >
                         <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-900 truncate">
-                          My SPVs
+                          Wallet Signatures
                         </h4>
-                        <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-1">Formed companies</p>
+                        <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-1">NFT verifications</p>
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-medium text-gray-900">
-                            {loadingSPVs ? '...' : `${userSPVs.length} submitted`}
+                            {loadingSignatures ? '...' : `${walletSignatures.length} signed`}
                           </span>
+                          {walletSignatures.length > 0 && (
+                            <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+                              Verified
+                            </span>
+                          )}
                         </div>
                       </button>
                     </div>
