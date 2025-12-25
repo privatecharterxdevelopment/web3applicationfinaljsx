@@ -58,7 +58,7 @@ NFT Membership Benefits:
 - **Priority Access**: Enhanced booking priority
 - **Exclusive Perks**: VIP experiences and member events
 - **Chat Limit**: Unlimited AI assistant conversations
-- **Acquisition**: Available for purchase through platform (0.5 ETH)
+- **Acquisition**: Available for purchase through platform (1.0 ETH)
 - **Benefits Tracking**: Free service benefits tracked per NFT to prevent abuse
 
 Standard Response for Token Inquiry:
@@ -109,7 +109,7 @@ Membership Tiers and Benefits:
 - Upgrade benefit: Save 10% on every booking + VIP perks
 - Perfect for: UHNW individuals, executives, VIP clients
 
-**NFT Holder** (0.5 ETH one-time purchase):
+**NFT Holder** (1.0 ETH one-time purchase):
 - Commission Rate: 8% (12% savings vs Explorer - LOWEST RATE)
 - AI Chat Limit: Unlimited conversations
 - Booking Discount: 10% off all services
@@ -861,7 +861,7 @@ CRITICAL RULES TO NEVER FORGET:
 13. CO2 certificates = Always included, tax benefits
 14. SAF certificates = Optional, on request, blockchain-verified
 15. Crypto bonus = 5% (BTC, ETH, USDC, USDT) - mention during price discussions!
-16. Subscription tiers = Explorer (Free, 20%), Starter (€79, 15%), Professional (€149, 12%), Elite (€299, 10%), NFT (0.5 ETH, 8%)
+16. Subscription tiers = Explorer (Free, 20%), Starter (€79, 15%), Professional (€149, 12%), Elite (€299, 10%), NFT (1.0 ETH, 8%)
 17. Chat limits = Explorer: 2, Starter: 15, Professional: 30, Elite: Unlimited, NFT: Unlimited
 18. When chat limit reached = Suggest upgrade with savings calculation
 19. High-value bookings = Mention commission savings with subscription upgrade

@@ -955,7 +955,7 @@ function Homepage() {
                 },
                 {
                   question: "What is NFT Membership?",
-                  answer: "Our NFT Membership (0.5 ETH) gives you 10% off all bookings, one free empty leg per year, priority access to deals, and exclusive VIP experiences. Benefits are verifiable on-chain and transferable."
+                  answer: "Our NFT Membership (1.0 ETH) gives you 10% off all bookings, one free empty leg per year, priority access to deals, and exclusive VIP experiences. Benefits are verifiable on-chain and transferable."
                 },
                 {
                   question: "What subscription plans are available?",

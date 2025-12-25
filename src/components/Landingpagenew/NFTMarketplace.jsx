@@ -13,7 +13,7 @@ export default function NFTMarketplace({ onCreateNFT }) {
     supply: 100,
     minted: 47,
     network: "Ethereum",
-    price: "0.5 ETH",
+    price: "1.0 ETH",
     category: "Utility Token"
   };
 

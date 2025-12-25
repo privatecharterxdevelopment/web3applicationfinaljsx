@@ -20,56 +20,56 @@ export default function NFTCollection() {
       name: 'PrivateCharterX Membership NFT #001',
       video: nftVideo,
       fallback: fallbackImage,
-      price: '0.5 ETH'
+      price: '1.0 ETH'
     },
     {
       id: '2',
       name: 'PrivateCharterX Membership NFT #002',
       video: nftVideo,
       fallback: fallbackImage,
-      price: '0.5 ETH'
+      price: '1.0 ETH'
     },
     {
       id: '3',
       name: 'PrivateCharterX Membership NFT #003',
       video: nftVideo,
       fallback: fallbackImage,
-      price: '0.5 ETH'
+      price: '1.0 ETH'
     },
     {
       id: '4',
       name: 'PrivateCharterX Membership NFT #004',
       video: nftVideo,
       fallback: fallbackImage,
-      price: '0.5 ETH'
+      price: '1.0 ETH'
     },
     {
       id: '5',
       name: 'PrivateCharterX Membership NFT #005',
       video: nftVideo,
       fallback: fallbackImage,
-      price: '0.5 ETH'
+      price: '1.0 ETH'
     },
     {
       id: '6',
       name: 'PrivateCharterX Membership NFT #006',
       video: nftVideo,
       fallback: fallbackImage,
-      price: '0.5 ETH'
+      price: '1.0 ETH'
     },
     {
       id: '7',
       name: 'PrivateCharterX Membership NFT #007',
       video: nftVideo,
       fallback: fallbackImage,
-      price: '0.5 ETH'
+      price: '1.0 ETH'
     },
     {
       id: '8',
       name: 'PrivateCharterX Membership NFT #008',
       video: nftVideo,
       fallback: fallbackImage,
-      price: '0.5 ETH'
+      price: '1.0 ETH'
     }
   ];
 
@@ -314,7 +314,7 @@ export default function NFTCollection() {
                   { 
                     step: '1', 
                     title: 'Buy Your NFT', 
-                    desc: 'Purchase your PrivateCharterX Membership NFT on OpenSea for 0.5 ETH using your connected wallet.' 
+                    desc: 'Purchase your PrivateCharterX Membership NFT on OpenSea for 1.0 ETH using your connected wallet.' 
                   },
                   { 
                     step: '2', 
@@ -364,7 +364,7 @@ export default function NFTCollection() {
                     with immediate financial benefits and exclusive aviation experiences.
                   </p>
                   <p className="text-gray-600 leading-relaxed">
-                    Each NFT at just 0.5 ETH grants you access to a comprehensive ecosystem of private aviation benefits, 
+                    Each NFT at just 1.0 ETH grants you access to a comprehensive ecosystem of private aviation benefits, 
                     sustainable travel solutions, and a thriving community of aviation enthusiasts, brokers, and luxury travelers.
                   </p>
                 </div>

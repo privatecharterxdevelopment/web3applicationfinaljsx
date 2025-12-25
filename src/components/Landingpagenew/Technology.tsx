@@ -311,7 +311,7 @@ function Technology({ setCurrentPage }: TechnologyProps) {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center py-3 border-b border-white/10">
                     <span className="text-sm text-gray-300">Price</span>
-                    <span className="text-lg font-medium">0.5 ETH</span>
+                    <span className="text-lg font-medium">1.0 ETH</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-white/10">
                     <span className="text-sm text-gray-300">Total Supply</span>

@@ -18,7 +18,7 @@ const NFTCollection: React.FC = () => {
     {
       id: 'flight-nft',
       name: 'Flight NFT Collection',
-      price: '0.5 ETH',
+      price: '1.0 ETH',
       supply: '1000 NFTs',
       popular: true,
       features: [
@@ -291,7 +291,7 @@ const NFTCollection: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
               {[
-                { title: '1. Grab Your NFT', desc: 'Purchase your Flight NFT on OpenSea for 0.5 ETH using your connected wallet' },
+                { title: '1. Grab Your NFT', desc: 'Purchase your Flight NFT on OpenSea for 1.0 ETH using your connected wallet' },
                 { title: '2. Connect Wallet to Website', desc: 'Connect your wallet containing the NFT to our website to verify ownership' },
                 { title: '3. Get Benefits Immediately', desc: 'Access all benefits instantly - discounts, free flights, Mercedes transport, and more!' }
               ].map((step, index) => (

@@ -258,7 +258,7 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
               <div className="flex items-center gap-2 pt-2 border-t border-gray-400/20">
                 <div className="flex-1">
                   <p className="text-xs text-gray-500 mb-1">Price</p>
-                  <p className="text-lg font-medium text-gray-900">0.5 ETH</p>
+                  <p className="text-lg font-medium text-gray-900">1.0 ETH</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-gray-500 mb-1">Discounts</p>
@@ -427,7 +427,7 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
               </thead>
               <tbody>
                 {[
-                  { feature: 'Upfront Cost', traditional: '$50,000 - $500,000+', nft: '0.5 ETH (~$1,800)' },
+                  { feature: 'Upfront Cost', traditional: '$50,000 - $500,000+', nft: '1.0 ETH (~$3,600)' },
                   { feature: 'Annual Fees', traditional: '$5,000 - $25,000/year', nft: 'None' },
                   { feature: 'Minimum Commitment', traditional: '25-50 flight hours', nft: 'No minimum' },
                   { feature: 'Transferable', traditional: false, nft: true },
