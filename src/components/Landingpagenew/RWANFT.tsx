@@ -4,18 +4,13 @@ import LandingHeader from './LandingHeader';
 import Footer from './Footer';
 import {
   Sparkles,
-  Plane,
-  Car,
   Shield,
   Zap,
   Check,
   ArrowRight,
   Wallet,
-  Gift,
   ChevronDown,
   ExternalLink,
-  Crown,
-  Percent,
   BadgeCheck,
   Gem,
   Lock,
@@ -49,7 +44,6 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
   const benefits = [
     {
       id: 'empty-leg',
-      icon: Plane,
       title: 'Free Empty Leg Flights',
       shortDesc: 'One free flight per year',
       fullDesc: 'Get one complimentary empty leg flight per year with a value of up to $1,500. Empty legs are one-way flights when aircraft reposition, offering significant savings on luxury private aviation.',
@@ -57,7 +51,6 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
     },
     {
       id: 'jet-discount',
-      icon: Percent,
       title: '10% Off Private Jets',
       shortDesc: 'On all charter bookings',
       fullDesc: 'Enjoy an exclusive 10% discount on all private jet charter bookings. Whether you\'re flying light jets, midsize, or ultra-long-range aircraft, your NFT membership saves you thousands on every flight.',
@@ -65,7 +58,6 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
     },
     {
       id: 'ground-discount',
-      icon: Car,
       title: '10% Off Ground Transport',
       shortDesc: 'Luxury cars & chauffeurs',
       fullDesc: 'Save 10% on all ground transportation including luxury car rentals (Ferrari, Lamborghini, Rolls-Royce), professional chauffeur services, and airport transfers worldwide.',
@@ -73,7 +65,6 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
     },
     {
       id: 'priority',
-      icon: Crown,
       title: 'Priority Booking',
       shortDesc: 'Skip the queue',
       fullDesc: 'Get VIP priority access on high-demand services during peak seasons. Your requests are processed first, ensuring you never miss out on limited availability flights or premium vehicles.',
@@ -81,7 +72,6 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
     },
     {
       id: 'verified',
-      icon: BadgeCheck,
       title: 'Verified Member Status',
       shortDesc: 'On-chain verification',
       fullDesc: 'Your membership is verified on the blockchain through secure wallet signatures. No passwords, no accounts to hack - just cryptographic proof of your exclusive membership status.',
@@ -89,7 +79,6 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
     },
     {
       id: 'perks',
-      icon: Gift,
       title: 'Exclusive Perks',
       shortDesc: 'Events & experiences',
       fullDesc: 'Access member-only events, NFT drops, exclusive experiences, and early access to new PrivateCharterX services. Connect with other high-net-worth individuals in our private community.',
@@ -201,11 +190,18 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
           </p>
         </div>
 
-        {/* NFT Preview Card with Video */}
+        {/* NFT Preview Card with Video - Glassmorphic */}
         <div className="max-w-md mx-auto">
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-lg">
+          <div
+            className="rounded-2xl p-6 border border-white/30 shadow-xl"
+            style={{
+              background: 'rgba(255, 255, 255, 0.25)',
+              backdropFilter: 'blur(20px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(20px) saturate(180%)'
+            }}
+          >
             {/* NFT Video */}
-            <div className="aspect-square bg-gray-900 rounded-xl mb-4 overflow-hidden relative">
+            <div className="aspect-square bg-gray-900/80 rounded-xl mb-4 overflow-hidden relative">
               <video
                 autoPlay
                 loop
@@ -235,7 +231,7 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+              <div className="flex items-center gap-2 pt-2 border-t border-white/20">
                 <div className="flex-1">
                   <p className="text-xs text-gray-500 mb-1">Price</p>
                   <p className="text-lg font-medium text-gray-900">0.5 ETH</p>
@@ -299,16 +295,11 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
                 className="w-full p-5 text-left"
               >
                 <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <benefit.icon className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-medium text-gray-900 mb-0.5">{benefit.title}</h3>
-                      <p className="text-sm text-gray-500">{benefit.shortDesc}</p>
-                    </div>
+                  <div className="flex-1">
+                    <h3 className="text-base font-medium text-gray-900 mb-0.5">{benefit.title}</h3>
+                    <p className="text-sm text-gray-500">{benefit.shortDesc}</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 ml-3">
                     <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-medium rounded hidden sm:block">
                       {benefit.highlight}
                     </span>
@@ -326,14 +317,12 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
               {/* Expanded Content */}
               {expandedBenefit === benefit.id && (
                 <div className="px-5 pb-5 pt-0">
-                  <div className="pl-13 ml-[52px]">
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                      {benefit.fullDesc}
-                    </p>
-                    <span className="inline-block mt-3 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded sm:hidden">
-                      {benefit.highlight}
-                    </span>
-                  </div>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    {benefit.fullDesc}
+                  </p>
+                  <span className="inline-block mt-3 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded sm:hidden">
+                    {benefit.highlight}
+                  </span>
                 </div>
               )}
             </div>
