@@ -1147,6 +1147,7 @@ const TokenizedAssetsGlassmorphic = () => {
     'subscriptions': '/dashboard/subscriptions/manage',
 
     // User
+    'my-activity': '/dashboard/activities',
     'requests': '/dashboard/requests',
     'ai-requests': '/dashboard/ai-requests',
     'bookings': '/dashboard/bookings',
@@ -2121,6 +2122,7 @@ const TokenizedAssetsGlassmorphic = () => {
       '/subscriptions/manage': 'subscriptions',
 
       // User Routes
+      '/dashboard/activities': 'my-activity',
       '/dashboard/requests': 'requests',
       '/dashboard/ai-requests': 'ai-requests',
       '/dashboard/bookings': 'bookings',

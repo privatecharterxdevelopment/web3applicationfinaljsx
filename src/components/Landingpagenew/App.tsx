@@ -450,6 +450,7 @@ function AppContent() {
               <Route path="/dashboard/web3/my-spvs" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
 
               {/* User Dashboard Routes */}
+              <Route path="/dashboard/activities" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
               <Route path="/dashboard/requests" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
               <Route path="/dashboard/ai-requests" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
               <Route path="/dashboard/bookings" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
