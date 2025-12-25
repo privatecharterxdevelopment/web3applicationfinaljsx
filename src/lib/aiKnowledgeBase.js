@@ -1798,7 +1798,7 @@ export const SUSTAINABILITY = {
 const TIER_FEATURES = {
   explorer: {
     name: 'Explorer',
-    price: 49,
+    price: 99,
     chatsPerMonth: 5,
     messagesPerChat: 10,
     features: ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'catering', 'custom_travel_org', 'visa_services'],
@@ -1806,7 +1806,7 @@ const TIER_FEATURES = {
   },
   traveller: {
     name: 'Traveller',
-    price: 99,
+    price: 299,
     chatsPerMonth: 10,
     messagesPerChat: 25,
     features: ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'catering', 'custom_travel_org', 'medevac', 'concierge', 'group_charter', 'reservations', 'event_booking', 'visa_services', 'break_the_price'],
@@ -1814,7 +1814,7 @@ const TIER_FEATURES = {
   },
   elite: {
     name: 'Elite Club',
-    price: 399,
+    price: 999,
     chatsPerMonth: 'unlimited',
     messagesPerChat: 'unlimited',
     features: ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'vip_catering', 'custom_travel_org', 'medevac', 'concierge', 'group_charter', 'reservations', 'event_booking', 'airport_transfers', 'membershipx_card', 'vip_events', 'visa_services', 'break_the_price'],
