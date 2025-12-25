@@ -2079,25 +2079,19 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                     <div className={`flex items-center justify-between py-2.5 px-3 rounded-lg border transition-all ${
                       nftCount > 0
                         ? nftBenefits.free_empty_leg.status === 'redeemed'
-                          ? 'bg-emerald-50 border-emerald-200'
+                          ? 'bg-gray-100 border-gray-300'
                           : 'bg-white border-gray-200 hover:border-gray-300'
                         : 'bg-gray-50 border-gray-100 opacity-50'
                     }`}>
-                      <div className="flex items-center gap-2">
-                        <Plane className={`w-4 h-4 ${nftCount > 0 ? nftBenefits.free_empty_leg.status === 'redeemed' ? 'text-emerald-600' : 'text-gray-700' : 'text-gray-400'}`} />
-                        <div>
-                          <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>Free Empty Leg Flight</span>
-                          <p className="text-[10px] text-gray-400">Up to $1,500 value</p>
-                        </div>
-                      </div>
+                      <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>Free Empty Leg Flight</span>
                       {nftCount > 0 ? (
                         nftBenefits.free_empty_leg.status === 'redeemed' ? (
-                          <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
+                          <span className="flex items-center gap-1 text-xs text-gray-600 font-medium">
                             <CheckCircle className="w-3.5 h-3.5" />
                             Redeemed
                           </span>
                         ) : (
-                          <span className="text-xs text-emerald-600 font-medium px-2 py-0.5 bg-emerald-50 rounded-full">Available</span>
+                          <span className="text-xs text-gray-700 font-medium px-2 py-0.5 bg-gray-100 rounded-full">Available</span>
                         )
                       ) : (
                         <span className="text-xs text-gray-400">Locked</span>
@@ -2108,15 +2102,9 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                     <div className={`flex items-center justify-between py-2.5 px-3 rounded-lg border transition-all ${
                       nftCount > 0 ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100 opacity-50'
                     }`}>
-                      <div className="flex items-center gap-2">
-                        <Crown className={`w-4 h-4 ${nftCount > 0 ? 'text-amber-500' : 'text-gray-400'}`} />
-                        <div>
-                          <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>10% Permanent Discount</span>
-                          <p className="text-[10px] text-gray-400">On all Private Jet bookings</p>
-                        </div>
-                      </div>
+                      <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>10% Permanent Discount</span>
                       {nftCount > 0 ? (
-                        <span className="text-xs text-emerald-600 font-medium px-2 py-0.5 bg-emerald-50 rounded-full">Active</span>
+                        <span className="text-xs text-gray-700 font-medium px-2 py-0.5 bg-gray-100 rounded-full">Active</span>
                       ) : (
                         <span className="text-xs text-gray-400">Locked</span>
                       )}
@@ -2126,15 +2114,9 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                     <div className={`flex items-center justify-between py-2.5 px-3 rounded-lg border transition-all ${
                       nftCount > 0 ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100 opacity-50'
                     }`}>
-                      <div className="flex items-center gap-2">
-                        <Clock className={`w-4 h-4 ${nftCount > 0 ? 'text-blue-500' : 'text-gray-400'}`} />
-                        <div>
-                          <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>Priority Empty Leg Access</span>
-                          <p className="text-[10px] text-gray-400">24h early access to new listings</p>
-                        </div>
-                      </div>
+                      <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>Priority Empty Leg Access</span>
                       {nftCount > 0 ? (
-                        <span className="text-xs text-emerald-600 font-medium px-2 py-0.5 bg-emerald-50 rounded-full">Active</span>
+                        <span className="text-xs text-gray-700 font-medium px-2 py-0.5 bg-gray-100 rounded-full">Active</span>
                       ) : (
                         <span className="text-xs text-gray-400">Locked</span>
                       )}
@@ -2144,15 +2126,9 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                     <div className={`flex items-center justify-between py-2.5 px-3 rounded-lg border transition-all ${
                       nftCount > 0 ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100 opacity-50'
                     }`}>
-                      <div className="flex items-center gap-2">
-                        <ArrowUpRight className={`w-4 h-4 ${nftCount > 0 ? 'text-purple-500' : 'text-gray-400'}`} />
-                        <div>
-                          <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>Limousine Transfers</span>
-                          <p className="text-[10px] text-gray-400">Complimentary airport transfers</p>
-                        </div>
-                      </div>
+                      <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>Limousine Transfers</span>
                       {nftCount > 0 ? (
-                        <span className="text-xs text-emerald-600 font-medium px-2 py-0.5 bg-emerald-50 rounded-full">Active</span>
+                        <span className="text-xs text-gray-700 font-medium px-2 py-0.5 bg-gray-100 rounded-full">Active</span>
                       ) : (
                         <span className="text-xs text-gray-400">Locked</span>
                       )}
@@ -2162,15 +2138,9 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                     <div className={`flex items-center justify-between py-2.5 px-3 rounded-lg border transition-all ${
                       nftCount > 0 ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100 opacity-50'
                     }`}>
-                      <div className="flex items-center gap-2">
-                        <MessageCircle className={`w-4 h-4 ${nftCount > 0 ? 'text-green-500' : 'text-gray-400'}`} />
-                        <div>
-                          <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>24/7 Priority Support</span>
-                          <p className="text-[10px] text-gray-400">Dedicated VIP support line</p>
-                        </div>
-                      </div>
+                      <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>24/7 Priority Support</span>
                       {nftCount > 0 ? (
-                        <span className="text-xs text-emerald-600 font-medium px-2 py-0.5 bg-emerald-50 rounded-full">Active</span>
+                        <span className="text-xs text-gray-700 font-medium px-2 py-0.5 bg-gray-100 rounded-full">Active</span>
                       ) : (
                         <span className="text-xs text-gray-400">Locked</span>
                       )}
@@ -2180,15 +2150,9 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                     <div className={`flex items-center justify-between py-2.5 px-3 rounded-lg border transition-all ${
                       nftCount > 0 ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100 opacity-50'
                     }`}>
-                      <div className="flex items-center gap-2">
-                        <Coins className={`w-4 h-4 ${nftCount > 0 ? 'text-orange-500' : 'text-gray-400'}`} />
-                        <div>
-                          <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>Early Token Access</span>
-                          <p className="text-[10px] text-gray-400">Priority access to $PVCX launches</p>
-                        </div>
-                      </div>
+                      <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>Early Token Access</span>
                       {nftCount > 0 ? (
-                        <span className="text-xs text-emerald-600 font-medium px-2 py-0.5 bg-emerald-50 rounded-full">Active</span>
+                        <span className="text-xs text-gray-700 font-medium px-2 py-0.5 bg-gray-100 rounded-full">Active</span>
                       ) : (
                         <span className="text-xs text-gray-400">Locked</span>
                       )}
@@ -2198,15 +2162,9 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                     <div className={`flex items-center justify-between py-2.5 px-3 rounded-lg border transition-all ${
                       nftCount > 0 ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100 opacity-50'
                     }`}>
-                      <div className="flex items-center gap-2">
-                        <Wallet className={`w-4 h-4 ${nftCount > 0 ? 'text-cyan-500' : 'text-gray-400'}`} />
-                        <div>
-                          <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>$PVCX Token Rewards</span>
-                          <p className="text-[10px] text-gray-400">Earn tokens on every booking</p>
-                        </div>
-                      </div>
+                      <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>$PVCX Token Rewards</span>
                       {nftCount > 0 ? (
-                        <span className="text-xs text-emerald-600 font-medium px-2 py-0.5 bg-emerald-50 rounded-full">Active</span>
+                        <span className="text-xs text-gray-700 font-medium px-2 py-0.5 bg-gray-100 rounded-full">Active</span>
                       ) : (
                         <span className="text-xs text-gray-400">Locked</span>
                       )}
@@ -2216,15 +2174,9 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                     <div className={`flex items-center justify-between py-2.5 px-3 rounded-lg border transition-all ${
                       nftCount > 0 ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100 opacity-50'
                     }`}>
-                      <div className="flex items-center gap-2">
-                        <Award className={`w-4 h-4 ${nftCount > 0 ? 'text-pink-500' : 'text-gray-400'}`} />
-                        <div>
-                          <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>VIP Event Invitations</span>
-                          <p className="text-[10px] text-gray-400">Exclusive member-only events</p>
-                        </div>
-                      </div>
+                      <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>VIP Event Invitations</span>
                       {nftCount > 0 ? (
-                        <span className="text-xs text-emerald-600 font-medium px-2 py-0.5 bg-emerald-50 rounded-full">Active</span>
+                        <span className="text-xs text-gray-700 font-medium px-2 py-0.5 bg-gray-100 rounded-full">Active</span>
                       ) : (
                         <span className="text-xs text-gray-400">Locked</span>
                       )}
