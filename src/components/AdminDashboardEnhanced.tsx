@@ -4,7 +4,8 @@ import {
   MessageSquare, Bell, Rocket, Building2, Coins, TrendingUp,
   Send, CheckCircle, XCircle, Clock, AlertCircle, DollarSign,
   ExternalLink, Eye, Edit, Trash2, Plus, Filter, Download,
-  ShieldCheck, Image, Car, Bot, Flag, RefreshCw, LogOut, Wine, Cigarette
+  ShieldCheck, Image, Car, Bot, Flag, RefreshCw, LogOut, Wine, Cigarette,
+  Crown, Award
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
@@ -20,6 +21,7 @@ const navSections = [
       { id: "sto_listings", label: "P2P Listings", icon: Coins },
       { id: "tokenization_services", label: "Tokenization Requests", icon: FileText },
       { id: "nfts", label: "NFTs", icon: Image },
+      { id: "nft_benefits", label: "NFT Benefits", icon: Crown },
     ]
   },
   {
@@ -86,6 +88,7 @@ export default function AdminDashboardEnhanced() {
   const [notifications, setNotifications] = useState([]);
   const [kycApplications, setKycApplications] = useState([]);
   const [nfts, setNfts] = useState([]);
+  const [nftBenefits, setNftBenefits] = useState([]);
   const [chatConversations, setChatConversations] = useState([]);
   const [chatReports, setChatReports] = useState([]);
   const [taxiBookings, setTaxiBookings] = useState([]);
@@ -96,6 +99,15 @@ export default function AdminDashboardEnhanced() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [showNftBenefitModal, setShowNftBenefitModal] = useState(false);
+  const [newNftBenefit, setNewNftBenefit] = useState({
+    user_id: '',
+    nft_token_id: '',
+    benefit_type: 'free_empty_leg',
+    service_name: '',
+    service_value: 0,
+    wallet_address: ''
+  });
 
   useEffect(() => {
     fetchAllData();
@@ -122,6 +134,7 @@ export default function AdminDashboardEnhanced() {
         notificationsData,
         kycData,
         nftsData,
+        nftBenefitsData,
         chatData,
         chatReportsData,
         taxiData,
@@ -144,6 +157,7 @@ export default function AdminDashboardEnhanced() {
         supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(100),
         supabase.from('kyc_applications').select('*, users:user_id(email, first_name, last_name)').order('created_at', { ascending: false }),
         supabase.from('nfts').select('*, owner:owner_id(email)').order('created_at', { ascending: false }),
+        supabase.from('nft_benefits_used').select('*, user:user_id(email, first_name, last_name)').order('used_at', { ascending: false }),
         supabase.from('chat_conversations').select('*, user:user_id(email, first_name, last_name)').order('updated_at', { ascending: false }).limit(100),
         supabase.from('chat_reports').select('*, user:user_id(email), conversation:conversation_id(title)').order('created_at', { ascending: false }),
         supabase.from('taxi_bookings').select('*, user:user_id(email, first_name, last_name)').order('created_at', { ascending: false }),
@@ -167,6 +181,7 @@ export default function AdminDashboardEnhanced() {
       setNotifications(notificationsData.data || []);
       setKycApplications(kycData.data || []);
       setNfts(nftsData.data || []);
+      setNftBenefits(nftBenefitsData.data || []);
       setChatConversations(chatData.data || []);
       setChatReports(chatReportsData.data || []);
       setTaxiBookings(taxiData.data || []);
@@ -314,6 +329,68 @@ export default function AdminDashboardEnhanced() {
     } catch (error) {
       console.error('Error sending notification:', error);
       alert('Failed to send notification');
+    }
+  };
+
+  // NFT Benefit status update
+  const handleNftBenefitStatusUpdate = async (benefitId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('nft_benefits_used')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', benefitId);
+
+      if (error) throw error;
+
+      // Refresh data
+      await fetchAllData();
+      alert(`Benefit marked as ${newStatus}`);
+    } catch (error) {
+      console.error('Error updating NFT benefit status:', error);
+      alert('Failed to update benefit status');
+    }
+  };
+
+  // Add new NFT benefit usage
+  const handleAddNftBenefit = async () => {
+    try {
+      if (!newNftBenefit.user_id || !newNftBenefit.nft_token_id) {
+        alert('Please fill in all required fields');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('nft_benefits_used')
+        .insert({
+          user_id: newNftBenefit.user_id,
+          nft_token_id: newNftBenefit.nft_token_id,
+          wallet_address: newNftBenefit.wallet_address,
+          benefit_type: newNftBenefit.benefit_type,
+          service_name: newNftBenefit.service_name || null,
+          service_value: newNftBenefit.service_value || null,
+          status: 'pending',
+          used_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      // Reset form and close modal
+      setNewNftBenefit({
+        user_id: '',
+        nft_token_id: '',
+        benefit_type: 'free_empty_leg',
+        service_name: '',
+        service_value: 0,
+        wallet_address: ''
+      });
+      setShowNftBenefitModal(false);
+
+      // Refresh data
+      await fetchAllData();
+      alert('NFT benefit usage recorded successfully');
+    } catch (error) {
+      console.error('Error adding NFT benefit:', error);
+      alert('Failed to record NFT benefit usage');
     }
   };
 
@@ -1390,6 +1467,173 @@ export default function AdminDashboardEnhanced() {
           </div>
         );
 
+      case "nft_benefits":
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-light text-gray-900">NFT Benefits Tracking ({nftBenefits.length})</h2>
+              <button
+                onClick={() => setShowNftBenefitModal(true)}
+                className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-gray-800 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Add Benefit Usage
+              </button>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="border border-gray-300/50 rounded-xl p-4 bg-white/35" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
+                    <Plane className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-medium text-gray-900">
+                      {nftBenefits.filter(b => b.benefit_type === 'free_empty_leg').length}
+                    </p>
+                    <p className="text-xs text-gray-500">Empty Legs Redeemed</p>
+                  </div>
+                </div>
+              </div>
+              <div className="border border-gray-300/50 rounded-xl p-4 bg-white/35" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                    <Car className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-medium text-gray-900">
+                      {nftBenefits.filter(b => b.benefit_type === 'limousine_transfer').length}
+                    </p>
+                    <p className="text-xs text-gray-500">Limo Transfers Used</p>
+                  </div>
+                </div>
+              </div>
+              <div className="border border-gray-300/50 rounded-xl p-4 bg-white/35" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
+                    <Crown className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-medium text-gray-900">
+                      {nftBenefits.filter(b => b.benefit_type === 'discount_applied').length}
+                    </p>
+                    <p className="text-xs text-gray-500">Discounts Applied</p>
+                  </div>
+                </div>
+              </div>
+              <div className="border border-gray-300/50 rounded-xl p-4 bg-white/35" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                    <Award className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-medium text-gray-900">
+                      {new Set(nftBenefits.map(b => b.nft_token_id)).size}
+                    </p>
+                    <p className="text-xs text-gray-500">Unique NFT Holders</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Benefits Table */}
+            <div className="border border-gray-300/50 rounded-xl overflow-hidden bg-white/35" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50/50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NFT Token ID</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Benefit Type</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Service</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Value</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Used At</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200/50">
+                  {filter(nftBenefits, ['user.email', 'nft_token_id', 'benefit_type', 'service_name']).map((benefit: any) => (
+                    <tr key={benefit.id} className="hover:bg-white/20">
+                      <td className="px-4 py-3">
+                        <div>
+                          <p className="font-medium text-gray-900">{benefit.user?.first_name} {benefit.user?.last_name}</p>
+                          <p className="text-xs text-gray-500">{benefit.user?.email}</p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">#{benefit.nft_token_id}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                          benefit.benefit_type === 'free_empty_leg' ? 'bg-emerald-100 text-emerald-700' :
+                          benefit.benefit_type === 'limousine_transfer' ? 'bg-purple-100 text-purple-700' :
+                          benefit.benefit_type === 'discount_applied' ? 'bg-amber-100 text-amber-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          {benefit.benefit_type === 'free_empty_leg' && <Plane className="w-3 h-3" />}
+                          {benefit.benefit_type === 'limousine_transfer' && <Car className="w-3 h-3" />}
+                          {benefit.benefit_type === 'discount_applied' && <Crown className="w-3 h-3" />}
+                          {benefit.benefit_type?.replace(/_/g, ' ')}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-900">{benefit.service_name || '-'}</td>
+                      <td className="px-4 py-3 text-gray-900 font-medium">
+                        {benefit.service_value ? `$${benefit.service_value.toLocaleString()}` : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">
+                        {new Date(benefit.used_at).toLocaleDateString()} {new Date(benefit.used_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                          benefit.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
+                          benefit.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                          benefit.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          {benefit.status === 'completed' && <CheckCircle className="w-3 h-3" />}
+                          {benefit.status === 'pending' && <Clock className="w-3 h-3" />}
+                          {benefit.status === 'cancelled' && <XCircle className="w-3 h-3" />}
+                          {benefit.status || 'active'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          {benefit.status !== 'completed' && (
+                            <button
+                              onClick={() => handleNftBenefitStatusUpdate(benefit.id, 'completed')}
+                              className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs flex items-center gap-1 hover:bg-emerald-200"
+                            >
+                              <CheckCircle className="w-3 h-3" />
+                              Mark Complete
+                            </button>
+                          )}
+                          {benefit.status !== 'cancelled' && (
+                            <button
+                              onClick={() => handleNftBenefitStatusUpdate(benefit.id, 'cancelled')}
+                              className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs flex items-center gap-1 hover:bg-red-200"
+                            >
+                              <XCircle className="w-3 h-3" />
+                              Cancel
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {nftBenefits.length === 0 && (
+                <div className="text-center py-12 text-gray-500">
+                  <Award className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p>No NFT benefits used yet</p>
+                  <p className="text-xs text-gray-400 mt-1">Benefits will appear here when NFT holders redeem them</p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
       case "chat_conversations":
         return (
           <div className="space-y-4">
@@ -2011,6 +2255,116 @@ export default function AdminDashboardEnhanced() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* NFT Benefit Modal */}
+        {showNftBenefitModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white/35 rounded-2xl max-w-md w-full p-6 border border-gray-300/50" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Record NFT Benefit Usage</h2>
+                <button
+                  onClick={() => setShowNftBenefitModal(false)}
+                  className="p-2 hover:bg-gray-100/50 rounded-lg transition-colors"
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">User ID *</label>
+                  <select
+                    value={newNftBenefit.user_id}
+                    onChange={(e) => setNewNftBenefit(prev => ({ ...prev, user_id: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300/50 rounded-lg focus:outline-none focus:border-gray-400/50 bg-white/20"
+                    style={{ backdropFilter: 'blur(10px)' }}
+                  >
+                    <option value="">Select User</option>
+                    {users.map((user: any) => (
+                      <option key={user.id} value={user.id}>{user.email}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">NFT Token ID *</label>
+                  <input
+                    type="text"
+                    value={newNftBenefit.nft_token_id}
+                    onChange={(e) => setNewNftBenefit(prev => ({ ...prev, nft_token_id: e.target.value }))}
+                    placeholder="e.g., 1, 2, 42"
+                    className="w-full px-3 py-2 border border-gray-300/50 rounded-lg focus:outline-none focus:border-gray-400/50 bg-white/20"
+                    style={{ backdropFilter: 'blur(10px)' }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">Wallet Address</label>
+                  <input
+                    type="text"
+                    value={newNftBenefit.wallet_address}
+                    onChange={(e) => setNewNftBenefit(prev => ({ ...prev, wallet_address: e.target.value }))}
+                    placeholder="0x..."
+                    className="w-full px-3 py-2 border border-gray-300/50 rounded-lg focus:outline-none focus:border-gray-400/50 bg-white/20"
+                    style={{ backdropFilter: 'blur(10px)' }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">Benefit Type *</label>
+                  <select
+                    value={newNftBenefit.benefit_type}
+                    onChange={(e) => setNewNftBenefit(prev => ({ ...prev, benefit_type: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300/50 rounded-lg focus:outline-none focus:border-gray-400/50 bg-white/20"
+                    style={{ backdropFilter: 'blur(10px)' }}
+                  >
+                    <option value="free_empty_leg">Free Empty Leg Flight</option>
+                    <option value="limousine_transfer">Limousine Transfer</option>
+                    <option value="discount_applied">Discount Applied</option>
+                    <option value="priority_access">Priority Access</option>
+                    <option value="vip_event">VIP Event Invitation</option>
+                    <option value="pvcx_rewards">$PVCX Rewards</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">Service Name</label>
+                  <input
+                    type="text"
+                    value={newNftBenefit.service_name}
+                    onChange={(e) => setNewNftBenefit(prev => ({ ...prev, service_name: e.target.value }))}
+                    placeholder="e.g., Empty Leg NYC-LAX"
+                    className="w-full px-3 py-2 border border-gray-300/50 rounded-lg focus:outline-none focus:border-gray-400/50 bg-white/20"
+                    style={{ backdropFilter: 'blur(10px)' }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">Service Value (USD)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={newNftBenefit.service_value}
+                    onChange={(e) => setNewNftBenefit(prev => ({ ...prev, service_value: parseFloat(e.target.value) || 0 }))}
+                    placeholder="0.00"
+                    className="w-full px-3 py-2 border border-gray-300/50 rounded-lg focus:outline-none focus:border-gray-400/50 bg-white/20"
+                    style={{ backdropFilter: 'blur(10px)' }}
+                  />
+                </div>
+                <div className="flex gap-2 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowNftBenefitModal(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50/50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAddNftBenefit}
+                    className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    Record Benefit
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

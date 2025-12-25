@@ -15,7 +15,8 @@ import {
   MapPin,
   Plane,
   ArrowRight,
-  RefreshCw
+  RefreshCw,
+  Sparkles
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useAdminPermissions } from '../../../hooks/useAdminPermissions';
@@ -410,6 +411,13 @@ export default function UserRequestManagement() {
                           <div className="font-medium text-gray-900 flex items-center">
                             <User size={14} className="text-gray-400 mr-1" />
                             {request.client_name || getUserName(request.users || null)}
+                            {/* NFT Badge */}
+                            {request.data?.has_nft && (
+                              <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-900 text-white text-[10px] font-medium rounded">
+                                <Sparkles size={10} className="text-green-400" />
+                                NFT
+                              </span>
+                            )}
                           </div>
                           {(request.client_email || request.users?.email) && (
                             <div className="text-gray-500 flex items-center mt-0.5 text-xs">
@@ -426,8 +434,15 @@ export default function UserRequestManagement() {
                         </div>
                       ) : (
                         <div>
-                          <div className="text-gray-500 text-xs">
+                          <div className="text-gray-500 text-xs flex items-center">
                             ID: {request.user_id?.substring(0, 8)}...
+                            {/* NFT Badge */}
+                            {request.data?.has_nft && (
+                              <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-900 text-white text-[10px] font-medium rounded">
+                                <Sparkles size={10} className="text-green-400" />
+                                NFT
+                              </span>
+                            )}
                           </div>
                           {request.users?.email && (
                             <div className="text-gray-600 flex items-center mt-0.5 text-xs">
@@ -689,6 +704,22 @@ export default function UserRequestManagement() {
                         <div className="text-sm text-gray-900">{formatDate(selectedRequest.created_at)}</div>
                       </div>
                     </div>
+
+                    {/* NFT Member Status */}
+                    {selectedRequest.data?.has_nft && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-900 text-white rounded-lg">
+                            <Sparkles size={14} className="text-green-400" />
+                            <span className="text-xs font-medium">NFT Member</span>
+                          </div>
+                          {selectedRequest.data?.nft_discounts_applied && (
+                            <span className="text-xs text-gray-500">• Discounts Applied</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     {selectedRequest.completed_at && (
                       <div className="mt-3 pt-3 border-t border-gray-200">
                         <div className="text-xs text-gray-500 mb-1">Completed</div>

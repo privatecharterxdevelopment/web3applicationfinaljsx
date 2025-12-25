@@ -186,7 +186,7 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
             PrivateCharterX Membership NFT
           </h1>
           <p className="text-gray-600 text-sm md:text-base max-w-xl mx-auto font-light">
-            Unlock exclusive discounts on private jets, luxury cars, and premium services with your on-chain membership.
+            Unlock free empty leg flights, charter discounts, ground transport savings, and a fully tradable on-chain membership.
           </p>
         </div>
 
@@ -447,30 +447,43 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
 
       {/* CTA Section */}
       <section className="px-4 sm:px-8 py-12 sm:py-16 max-w-6xl mx-auto">
-        <div className="bg-gray-900 rounded-3xl p-8 sm:p-12 text-center">
-          <h2 className="text-2xl sm:text-3xl font-light text-white mb-4">
-            Ready to Join?
-          </h2>
-          <p className="text-gray-400 max-w-xl mx-auto mb-8">
-            Get your PrivateCharterX Membership NFT and start saving on luxury travel today.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
-              href={OPENSEA_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-white text-gray-900 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-gray-100"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Buy on OpenSea
-            </a>
-            <button
-              onClick={() => navigate('/dashboard/chat?newChat=true')}
-              className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl text-sm font-medium transition-all duration-200 border border-white/30 hover:border-white/50 text-white hover:bg-white/10"
-            >
-              <Sparkles className="w-4 h-4" />
-              Chat with Sphera AI
-            </button>
+        <div
+          className="rounded-3xl p-8 sm:p-12 relative overflow-hidden"
+          style={{
+            backgroundImage: 'url(https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/Privatecharterx_Banner.png)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          }}
+        >
+          {/* Dark overlay for text readability */}
+          <div className="absolute inset-0 bg-black/50" />
+
+          {/* Content - Left aligned */}
+          <div className="relative z-10">
+            <h2 className="text-2xl sm:text-3xl font-light text-white mb-4">
+              Ready to Join?
+            </h2>
+            <p className="text-gray-300 max-w-xl mb-8">
+              Get your PrivateCharterX Membership NFT and start saving on luxury travel today.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <a
+                href={OPENSEA_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-white text-gray-900 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-gray-100"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Buy on OpenSea
+              </a>
+              <button
+                onClick={() => navigate('/dashboard/chat?newChat=true')}
+                className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl text-sm font-medium transition-all duration-200 border border-white/30 hover:border-white/50 text-white hover:bg-white/10"
+              >
+                <Sparkles className="w-4 h-4" />
+                Chat with Sphera AI
+              </button>
+            </div>
           </div>
         </div>
       </section>
