@@ -144,9 +144,8 @@ serve(async (req) => {
       <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f9fafb; }
         .container { max-width: 600px; margin: 0 auto; background-color: white; }
-        .header { background: linear-gradient(135deg, #000000 0%, #1a1a2e 100%); color: white; padding: 40px 32px; text-align: center; }
-        .header h1 { margin: 0; font-size: 28px; letter-spacing: 1px; }
-        .header p { margin: 12px 0 0; opacity: 0.9; font-size: 16px; }
+        .header { background: linear-gradient(135deg, #000000 0%, #1a1a2e 100%); color: white; padding: 32px; text-align: center; }
+        .header img { height: 48px; width: auto; }
         .content { padding: 32px; }
         .reset-badge { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; display: inline-block; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: 600; margin-bottom: 20px; }
         .intro-text { font-size: 16px; color: #4b5563; line-height: 1.6; margin-bottom: 24px; }
@@ -165,8 +164,7 @@ serve(async (req) => {
     <body>
       <div class="container">
         <div class="header">
-          <h1>PrivateCharterX</h1>
-          <p>Password Reset Request</p>
+          <img src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/PrivatecharterX_logo_vectorized.glb.png" alt="PrivateCharterX" />
         </div>
 
         <div class="content">
