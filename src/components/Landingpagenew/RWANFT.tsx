@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAccount } from 'wagmi';
 import LandingHeader from './LandingHeader';
 import Footer from './Footer';
 import {
@@ -30,6 +31,7 @@ const NFT_VIDEO = 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/pu
 
 function RWANFT({ setCurrentPage }: RWANFTProps) {
   const navigate = useNavigate();
+  const { address: walletAddress, isConnected: isWalletConnected } = useAccount();
   const [expandedFaq, setExpandedFaq] = React.useState<string | null>(null);
   const [expandedBenefit, setExpandedBenefit] = React.useState<string | null>(null);
 
@@ -278,13 +280,20 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
             <ExternalLink className="w-4 h-4" />
             View on OpenSea
           </a>
-          <button
-            onClick={() => navigate('/dashboard/web3')}
-            className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl text-sm font-medium transition-all duration-200 border border-gray-300 hover:border-gray-400 text-gray-700 hover:bg-gray-50"
-          >
-            <Wallet className="w-4 h-4" />
-            Connect Wallet
-          </button>
+          {isWalletConnected && walletAddress ? (
+            <div className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl text-sm font-medium border border-gray-200 bg-gray-50 text-gray-700">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              <span className="font-mono">{walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}</span>
+            </div>
+          ) : (
+            <button
+              onClick={() => navigate('/dashboard/web3')}
+              className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl text-sm font-medium transition-all duration-200 border border-gray-300 hover:border-gray-400 text-gray-700 hover:bg-gray-50"
+            >
+              <Wallet className="w-4 h-4" />
+              Connect Wallet
+            </button>
+          )}
         </div>
 
         {/* Contract Address */}
