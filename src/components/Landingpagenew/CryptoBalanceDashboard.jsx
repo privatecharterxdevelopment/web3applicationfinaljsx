@@ -873,6 +873,56 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
   };
 
   const totalValue = balances.reduce((sum, item) => sum + item.value, 0);
+
+  // Calculate daily change from real transactions (last 24 hours)
+  const dailyChange = React.useMemo(() => {
+    if (!transactions || transactions.length === 0 || totalValue === 0) {
+      return { amount: 0, percent: 0 };
+    }
+
+    const ethPrice = 3500; // Same as used in balance calculations
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    let netChange = 0;
+
+    transactions.forEach(tx => {
+      const txDate = new Date(tx.timestamp);
+      if (txDate >= oneDayAgo) {
+        // Get value in ETH
+        const valueInEth = parseFloat(tx.valueInEth) || 0;
+        const valueInUsd = valueInEth * ethPrice;
+
+        // Check for token transfers (like USDC)
+        let tokenValue = 0;
+        if (tx.tokenTransfers && tx.tokenTransfers.length > 0) {
+          tx.tokenTransfers.forEach(transfer => {
+            // USDC and stablecoins are 1:1 USD
+            if (transfer.symbol === 'USDC' || transfer.symbol === 'USDT' || transfer.symbol === 'DAI') {
+              tokenValue += parseFloat(transfer.value) || 0;
+            }
+          });
+        }
+
+        const totalTxValue = valueInUsd + tokenValue;
+
+        if (tx.type === 'receive') {
+          netChange += totalTxValue;
+        } else if (tx.type === 'send') {
+          netChange -= totalTxValue;
+        }
+      }
+    });
+
+    // Calculate percentage change relative to previous value (current - change)
+    const previousValue = totalValue - netChange;
+    const percentChange = previousValue > 0 ? (netChange / previousValue) * 100 : 0;
+
+    return {
+      amount: netChange,
+      percent: percentChange
+    };
+  }, [transactions, totalValue]);
   const maxValue = Math.max(...balances.map(b => b.value), 1);
 
   const handleSend = () => {
@@ -1066,15 +1116,13 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
               <h2 className="text-3xl sm:text-4xl font-light text-gray-900 mb-1">
                 ${totalValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </h2>
-              <p className="text-xs text-gray-500 mt-1">+2.4% today</p>
+              {dailyChange.percent !== 0 && (
+                <p className={`text-xs mt-1 ${dailyChange.percent >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                  {dailyChange.percent >= 0 ? '+' : ''}{dailyChange.percent.toFixed(2)}% today
+                </p>
+              )}
             </div>
             <div className="flex items-start gap-2">
-              <div className="text-right">
-                <p className="text-xs text-gray-400 mb-1">{chainId === base.id ? 'Base' : chainId === mainnet.id ? 'Mainnet' : `Chain ${chainId}`}</p>
-                <div className="px-2 py-1 bg-white/30 backdrop-blur-sm rounded-full text-xs text-gray-700 border border-gray-300/50">
-                  Live
-                </div>
-              </div>
               <button
                 onClick={handleManualRefresh}
                 disabled={isRefreshing}
