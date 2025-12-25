@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { ArrowLeft, ShoppingCart, Crown, AlertCircle, MessageSquare, Plus, X } from 'lucide-react';
+import { ArrowLeft, Crown, AlertCircle, MessageSquare, Plus, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const ChatHeader = memo(({
@@ -58,16 +58,16 @@ const ChatHeader = memo(({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Cart icon */}
+          {/* Cart - Modern glass bubble */}
           <button
             onClick={() => setShowCartSidebar(true)}
-            className="relative p-2 rounded-xl bg-white/40 hover:bg-white/60 text-gray-700 transition-all duration-200 border border-gray-200/40 hover:border-gray-300/50 group"
-            style={{ backdropFilter: 'blur(8px)' }}
+            className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100/80 hover:bg-gray-200/90 text-gray-600 transition-all duration-200 border border-gray-200/50 hover:border-gray-300/60 group"
+            style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
             title="View Cart"
           >
-            <ShoppingCart size={16} className="group-hover:scale-105 transition-transform" />
+            <span className="text-xs font-light tracking-wide" style={{ fontFamily: 'Satoshi, sans-serif' }}>Cart</span>
             {cartItems.length > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-gray-900 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+              <span className="min-w-[18px] h-[18px] bg-gray-800 text-white text-[10px] font-medium rounded-full flex items-center justify-center px-1">
                 {cartItems.length}
               </span>
             )}

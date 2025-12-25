@@ -11,7 +11,7 @@ import {
   Send, X, Shield,
   ShoppingCart, MessageSquare, Crown, AlertCircle,
   Plane, Clock, Users, MapPin, Car, Route,
-  Loader2, Sparkles, Wine, Globe, Lock
+  Loader2, Sparkles, Wine, Globe, Lock, Wallet
 } from 'lucide-react';
 
 // Services
@@ -114,6 +114,9 @@ const AIChatNew = ({
   const { address: walletAddress, isConnected: isWalletConnected } = useAccount();
   const { disconnect: disconnectWallet } = useDisconnect();
 
+  // NFT Signature state for wallet verification (must be before hooks that use it)
+  const [nftSignatureData, setNftSignatureData] = useState(null);
+
   // ==================================
   // HOOKS - Clean Architecture
   // ==================================
@@ -152,7 +155,9 @@ const AIChatNew = ({
     activeChat: chat.activeChat,
     userHasNFT: subscription.userHasNFT,
     isAdmin,
-    userSubscriptionLimits: subscription.userSubscriptionLimits
+    userSubscriptionLimits: subscription.userSubscriptionLimits,
+    nftSignatureData,
+    setNftSignatureData
   });
 
   // File Upload Hook
@@ -594,14 +599,22 @@ const AIChatNew = ({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => modals.setShowCartSidebar(true)} className="relative p-2 hover:bg-gray-100/60 rounded-lg transition-colors">
-              <ShoppingCart size={20} className="text-gray-600" />
+            {/* Cart - Only button shown in header */}
+            <button
+              onClick={() => modals.setShowCartSidebar(true)}
+              className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100/80 hover:bg-gray-200/90 text-gray-600 transition-all duration-200 border border-gray-200/50 hover:border-gray-300/60"
+              style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
+              title="View Cart"
+            >
+              <ShoppingCart size={12} className="text-gray-500" />
+              <span className="text-xs font-light tracking-wide" style={{ fontFamily: 'Satoshi, sans-serif' }}>Cart</span>
               {cart.cartItems.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-black text-white text-xs rounded-full flex items-center justify-center">
+                <span className="min-w-[18px] h-[18px] bg-gray-800 text-white text-[10px] font-medium rounded-full flex items-center justify-center px-1">
                   {cart.cartItems.length}
                 </span>
               )}
             </button>
+
             {/* Subscription Tier Badge */}
             <button
               onClick={() => modals.setShowSubscriptionModal(true)}
@@ -842,9 +855,9 @@ const AIChatNew = ({
               <div className="px-5 pb-4">
                 <div className="flex gap-2">
                   {[
-                    { id: 'explorer', tier: 'Explorer', price: 49, chats: '5 chats' },
-                    { id: 'traveller', tier: 'Traveller', price: 99, chats: '10 chats', popular: true },
-                    { id: 'elite', tier: 'Elite', price: 399, chats: 'Unlimited' }
+                    { id: 'explorer', tier: 'Explorer', price: 99, chats: '5 chats' },
+                    { id: 'traveller', tier: 'Traveller', price: 199, chats: '10 chats', popular: true },
+                    { id: 'elite', tier: 'Elite', price: 999, chats: 'Unlimited' }
                   ].map((plan) => (
                     <button
                       key={plan.tier}
@@ -896,6 +909,43 @@ const AIChatNew = ({
             </div>
           </div>
         )}
+
+        {/* Cart Sidebar - Also rendered for New Chat View */}
+        <CartSidebar
+          isOpen={modals.showCartSidebar}
+          onClose={() => modals.setShowCartSidebar(false)}
+          cartItems={cart.cartItems}
+          setCartItems={cart.setCartItems}
+          cartTotal={cart.cartTotal}
+          user={user}
+          userHasNFT={subscription.userHasNFT}
+          onToast={modals.setToast}
+          onSendRequest={bookingFlow.submitCartRequest}
+          onOpenCalendar={(item) => { modals.setSelectedItemForCalendar(item); modals.setShowCalendarModal(true); }}
+          isProcessing={isProcessing}
+          isProcessingPayment={bookingFlow.isSubmitting}
+          setIsProcessingPayment={() => {}}
+          showRequestForm={bookingFlow.showRequestForm}
+          setShowRequestForm={bookingFlow.setShowRequestForm}
+          showInlineExtras={showInlineExtras}
+          setShowInlineExtras={setShowInlineExtras}
+          selectedExtraCategory={selectedExtraCategory}
+          setSelectedExtraCategory={setSelectedExtraCategory}
+          customExtraForm={customExtraForm}
+          setCustomExtraForm={setCustomExtraForm}
+          extrasCatalog={EXTRAS_CATALOG}
+          isWalletConnected={isWalletConnected}
+          onOpenWalletConnect={() => modals.setShowWalletConnect(true)}
+          onNFTSignatureComplete={setNftSignatureData}
+        />
+
+        {/* Wallet Connect Modal - Also for New Chat View */}
+        {modals.showWalletConnect && (
+          <WalletConnect
+            onClose={() => modals.setShowWalletConnect(false)}
+            onConnect={(wallet) => { bookingFlow.handleWalletConnect(wallet); modals.setShowWalletConnect(false); }}
+          />
+        )}
       </div>
     );
   }
@@ -942,15 +992,24 @@ const AIChatNew = ({
           <button onClick={() => setShowReportIssueModal(true)} className="p-2 hover:bg-gray-100/60 rounded-lg transition-colors" title="Report Issue">
             <AlertCircle size={18} className="text-gray-400" />
           </button>
-          <button onClick={() => modals.setShowCartSidebar(true)} className="relative p-2 hover:bg-gray-100/60 rounded-lg transition-colors">
-            <ShoppingCart size={20} className="text-gray-600" />
+
+          {/* Cart - Only button shown in header */}
+          <button
+            onClick={() => modals.setShowCartSidebar(true)}
+            className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100/80 hover:bg-gray-200/90 text-gray-600 transition-all duration-200 border border-gray-200/50 hover:border-gray-300/60"
+            style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
+            title="View Cart"
+          >
+            <ShoppingCart size={12} className="text-gray-500" />
+            <span className="text-xs font-light tracking-wide" style={{ fontFamily: 'Satoshi, sans-serif' }}>Cart</span>
             {cart.cartItems.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-black text-white text-xs rounded-full flex items-center justify-center">
+              <span className="min-w-[18px] h-[18px] bg-gray-800 text-white text-[10px] font-medium rounded-full flex items-center justify-center px-1">
                 {cart.cartItems.length}
               </span>
             )}
           </button>
-          {/* Subscription Tier Badge - matches AIChat.jsx */}
+
+          {/* Subscription Tier Badge */}
           <button
             onClick={() => modals.setShowSubscriptionModal(true)}
             className="px-2.5 py-1.5 bg-white/40 hover:bg-white/60 rounded-xl text-xs font-medium text-gray-700 transition-all duration-200 flex items-center gap-1.5 border border-gray-200/40 hover:border-gray-300/50"
@@ -1053,33 +1112,34 @@ const AIChatNew = ({
         </div>
       </div>
 
-      {/* Modals */}
-      {modals.showCartSidebar && (
-        <CartSidebar
-          isOpen={modals.showCartSidebar}
-          onClose={() => modals.setShowCartSidebar(false)}
-          cartItems={cart.cartItems}
-          setCartItems={cart.setCartItems}
-          cartTotal={cart.cartTotal}
-          user={user}
-          userHasNFT={subscription.userHasNFT}
-          onToast={modals.setToast}
-          onSendRequest={bookingFlow.submitCartRequest}
-          onOpenCalendar={(item) => { modals.setSelectedItemForCalendar(item); modals.setShowCalendarModal(true); }}
-          isProcessing={isProcessing}
-          isProcessingPayment={bookingFlow.isSubmitting}
-          setIsProcessingPayment={() => {}}
-          showRequestForm={bookingFlow.showRequestForm}
-          setShowRequestForm={bookingFlow.setShowRequestForm}
-          showInlineExtras={showInlineExtras}
-          setShowInlineExtras={setShowInlineExtras}
-          selectedExtraCategory={selectedExtraCategory}
-          setSelectedExtraCategory={setSelectedExtraCategory}
-          customExtraForm={customExtraForm}
-          setCustomExtraForm={setCustomExtraForm}
-          extrasCatalog={EXTRAS_CATALOG}
-        />
-      )}
+      {/* Cart Sidebar */}
+      <CartSidebar
+        isOpen={modals.showCartSidebar}
+        onClose={() => modals.setShowCartSidebar(false)}
+        cartItems={cart.cartItems}
+        setCartItems={cart.setCartItems}
+        cartTotal={cart.cartTotal}
+        user={user}
+        userHasNFT={subscription.userHasNFT}
+        onToast={modals.setToast}
+        onSendRequest={bookingFlow.submitCartRequest}
+        onOpenCalendar={(item) => { modals.setSelectedItemForCalendar(item); modals.setShowCalendarModal(true); }}
+        isProcessing={isProcessing}
+        isProcessingPayment={bookingFlow.isSubmitting}
+        setIsProcessingPayment={() => {}}
+        showRequestForm={bookingFlow.showRequestForm}
+        setShowRequestForm={bookingFlow.setShowRequestForm}
+        showInlineExtras={showInlineExtras}
+        setShowInlineExtras={setShowInlineExtras}
+        selectedExtraCategory={selectedExtraCategory}
+        setSelectedExtraCategory={setSelectedExtraCategory}
+        customExtraForm={customExtraForm}
+        setCustomExtraForm={setCustomExtraForm}
+        extrasCatalog={EXTRAS_CATALOG}
+        isWalletConnected={isWalletConnected}
+        onOpenWalletConnect={() => modals.setShowWalletConnect(true)}
+        onNFTSignatureComplete={setNftSignatureData}
+      />
 
       {/* Request Form Modal */}
       {bookingFlow.showRequestForm && cart.cartItems.length > 0 && (
@@ -1304,9 +1364,9 @@ const AIChatNew = ({
             <div className="px-5 pb-4">
               <div className="flex gap-2">
                 {[
-                  { id: 'explorer', tier: 'Explorer', price: 49, chats: '5 chats' },
-                  { id: 'traveller', tier: 'Traveller', price: 99, chats: '10 chats', popular: true },
-                  { id: 'elite', tier: 'Elite', price: 399, chats: 'Unlimited' }
+                  { id: 'explorer', tier: 'Explorer', price: 99, chats: '5 chats' },
+                  { id: 'traveller', tier: 'Traveller', price: 199, chats: '10 chats', popular: true },
+                  { id: 'elite', tier: 'Elite', price: 999, chats: 'Unlimited' }
                 ].map((plan) => (
                   <button
                     key={plan.tier}

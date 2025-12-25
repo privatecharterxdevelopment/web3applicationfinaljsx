@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUpRight, ArrowDownLeft, History, Wallet, MessageCircle, Shield, User, Award, Plus, X, ExternalLink, LogOut, RefreshCw, Coins, Plane, Leaf, Send, CheckCircle, Camera, Loader2, Crown, ChevronRight, Clock } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, History, Wallet, MessageCircle, Shield, User, Award, Plus, X, ExternalLink, LogOut, RefreshCw, Coins, Plane, Leaf, Send, CheckCircle, Camera, Loader2, Crown, ChevronRight, Clock, PenTool, Sparkles } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer, YAxis, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import { useAccount, useBalance, useChainId } from 'wagmi';
@@ -32,6 +32,19 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
   const [userProfile, setUserProfile] = useState(null);
   const [nftCount, setNftCount] = useState(0);
   const [investments, setInvestments] = useState([]);
+
+  // NFT Benefits state
+  const [nftBenefits, setNftBenefits] = useState({
+    free_empty_leg: { status: 'available', used_at: null, booking_id: null },
+    permanent_discount: { status: 'active', percentage: 10 },
+    priority_access: { status: 'active' },
+    limousine_transfers: { status: 'available', used_count: 0 },
+    priority_support: { status: 'active' },
+    early_token_access: { status: 'active' },
+    pvcx_rewards: { status: 'active' },
+    vip_events: { status: 'active' }
+  });
+  const [loadingBenefits, setLoadingBenefits] = useState(false);
 
   // State for PVCX data
   const [pvcxData, setPvcxData] = useState({
@@ -78,6 +91,10 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
 
   // State for chat history with message counts
   const [userChats, setUserChats] = useState([]);
+
+  // State for wallet signatures from NFT verifications
+  const [walletSignatures, setWalletSignatures] = useState([]);
+  const [loadingSignatures, setLoadingSignatures] = useState(false);
 
   // Fetch ETH balance on Base - refetch every 30 seconds
   const { data: baseEthBalance, refetch: refetchBaseEth } = useBalance({
@@ -130,6 +147,7 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
       fetchUserProfile();
       fetchKYCData();
       fetchUserRequests();
+      fetchWalletSignatures();
       fetchSupportTickets();
       fetchInvestments();
       fetchNFTCount();
@@ -533,6 +551,48 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
     }
   };
 
+  // Fetch wallet signatures from NFT verified requests
+  const fetchWalletSignatures = async () => {
+    if (!user?.id) return;
+
+    setLoadingSignatures(true);
+    try {
+      // Fetch all requests with NFT flag, then filter for signatures client-side
+      // (JSONB path queries in Supabase can be unreliable)
+      const { data, error } = await supabase
+        .from('user_requests')
+        .select('id, created_at, type, status, data')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        // Extract signature data from requests that have NFT signatures
+        const signatures = data
+          .filter(req => req.data?.nft_signature && req.data?.has_nft)
+          .map(req => ({
+            id: req.id,
+            request_id: req.id,
+            request_type: req.type,
+            request_status: req.status,
+            wallet_address: req.data.nft_signature.wallet_address,
+            signature: req.data.nft_signature.signature,
+            message: req.data.nft_signature.message,
+            signed_at: req.data.nft_signature.signed_at,
+            verified: req.data.nft_signature.verified,
+            request_total: req.data.total,
+            created_at: req.created_at
+          }));
+
+        setWalletSignatures(signatures);
+        console.log('✅ Loaded wallet signatures:', signatures.length);
+      }
+    } catch (error) {
+      console.error('Error fetching wallet signatures:', error);
+    } finally {
+      setLoadingSignatures(false);
+    }
+  };
+
   const fetchSupportTickets = async () => {
     try {
       const { data, error } = await supabase
@@ -571,19 +631,62 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
     if (!address) return;
 
     try {
-      // Query NFT ownership - adjust table name based on your schema
-      const { data, error } = await supabase
-        .from('nft_memberships')
-        .select('*')
-        .eq('wallet_address', address.toLowerCase());
+      console.log('🔍 Checking on-chain NFT ownership for:', address);
 
-      if (!error && data) {
-        setNftCount(data.length);
+      // On-chain detection via web3Service
+      // Checks the actual NFT contract on Base: 0xDF86Cf55BD2E58aaaC09160AaD0ed8673382B339
+      const nfts = await web3Service.getUserNFTs(address);
+
+      console.log(`✅ Found ${nfts.length} NFTs on-chain:`, nfts);
+      setNftCount(nfts.length);
+
+      // Fetch benefits if user has NFT
+      if (nfts.length > 0) {
+        fetchNFTBenefits(nfts[0]?.tokenId);
       }
     } catch (error) {
-      console.error('Error fetching NFT count:', error);
-      // Default to showing 0 if table doesn't exist
+      console.error('Error fetching NFT count on-chain:', error);
+      // Default to showing 0 if detection fails
       setNftCount(0);
+    }
+  };
+
+  // Fetch NFT benefits usage status
+  const fetchNFTBenefits = async (tokenId) => {
+    if (!user?.id) return;
+
+    setLoadingBenefits(true);
+    try {
+      // Query nft_benefits_used table
+      const { data, error } = await supabase
+        .from('nft_benefits_used')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (!error && data) {
+        // Update benefits status based on usage
+        const updatedBenefits = { ...nftBenefits };
+
+        data.forEach(benefit => {
+          if (benefit.benefit_type === 'free_empty_leg') {
+            updatedBenefits.free_empty_leg = {
+              status: 'redeemed',
+              used_at: benefit.used_at,
+              booking_id: benefit.service_id,
+              service_name: benefit.service_name
+            };
+          }
+          if (benefit.benefit_type === 'limousine_transfer') {
+            updatedBenefits.limousine_transfers.used_count += 1;
+          }
+        });
+
+        setNftBenefits(updatedBenefits);
+      }
+    } catch (error) {
+      console.error('Error fetching NFT benefits:', error);
+    } finally {
+      setLoadingBenefits(false);
     }
   };
 
@@ -1298,6 +1401,115 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
               </div>
             </div>
 
+            {/* Wallet Signatures Section - NFT Verification History */}
+            {walletSignatures.length > 0 && (
+              <div className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => toggleSection('signatures')}
+                  className="w-full p-3 flex items-center justify-between hover:bg-white/10 transition-all"
+                >
+                  <div className="flex items-center gap-2">
+                    <PenTool className="w-4 h-4 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-900">Wallet Signatures</span>
+                    <span className="px-2 py-0.5 bg-gray-900 text-white rounded-full text-xs">
+                      {walletSignatures.length}
+                    </span>
+                  </div>
+                  <Plus className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${activeSection === 'signatures' ? 'rotate-45' : ''}`} />
+                </button>
+                <div className={`transition-all duration-300 ease-in-out overflow-hidden ${activeSection === 'signatures' ? 'max-h-[500px] overflow-y-auto' : 'max-h-0'}`}>
+                  <div className="p-4 bg-white/10 space-y-3">
+                    {/* Description */}
+                    <div className="flex items-start gap-2 p-3 bg-gray-900/5 rounded-lg border border-gray-200/30">
+                      <Sparkles size={14} className="text-gray-600 mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-gray-600 leading-relaxed">
+                        These signatures verify your NFT membership and authorize the use of member benefits for your requests.
+                      </p>
+                    </div>
+
+                    {/* Signatures List */}
+                    {walletSignatures.map((sig) => (
+                      <div key={sig.id} className="py-3 px-3 bg-white/5 rounded-lg border border-gray-200/30">
+                        {/* Header */}
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
+                              <PenTool size={12} className="text-white" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-medium text-gray-900">NFT Verification</p>
+                              <p className="text-[10px] text-gray-500">
+                                {new Date(sig.signed_at).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                            sig.verified ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {sig.verified ? 'Verified' : 'Pending'}
+                          </span>
+                        </div>
+
+                        {/* Wallet Address */}
+                        <div className="mb-2 p-2 bg-gray-100/50 rounded-lg">
+                          <p className="text-[10px] text-gray-400 mb-1">Wallet Address</p>
+                          <p className="text-xs font-mono text-gray-700 break-all">
+                            {sig.wallet_address}
+                          </p>
+                        </div>
+
+                        {/* Signature Hash */}
+                        <div className="mb-2 p-2 bg-gray-100/50 rounded-lg">
+                          <p className="text-[10px] text-gray-400 mb-1">Signature</p>
+                          <p className="text-[10px] font-mono text-gray-500 break-all line-clamp-2">
+                            {sig.signature?.slice(0, 42)}...{sig.signature?.slice(-10)}
+                          </p>
+                        </div>
+
+                        {/* Request Info */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <p className="text-[10px] text-gray-400">Request Type</p>
+                            <p className="text-xs font-medium text-gray-700 capitalize">
+                              {sig.request_type?.replace(/_/g, ' ') || 'Booking'}
+                            </p>
+                          </div>
+                          {sig.request_total && (
+                            <div>
+                              <p className="text-[10px] text-gray-400">Request Value</p>
+                              <p className="text-xs font-medium text-gray-700">
+                                ${sig.request_total?.toLocaleString()}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="flex justify-between items-center text-[10px] text-gray-400 pt-2 mt-2 border-t border-gray-200/30">
+                          <span>Request #{sig.request_id?.slice(0, 8)}</span>
+                          <a
+                            href={`https://basescan.org/address/${sig.wallet_address}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors"
+                          >
+                            View on BaseScan
+                            <ExternalLink size={10} />
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Support Tickets Section */}
             <div className="bg-white/15 backdrop-blur-xl border border-gray-300/50 rounded-xl overflow-hidden">
               <button
@@ -1803,7 +2015,7 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                 </div>
                 <Plus className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${activeSection === 'nft' ? 'rotate-45' : ''}`} />
               </button>
-              <div className={`transition-all duration-300 ease-in-out overflow-hidden ${activeSection === 'nft' ? 'max-h-[500px]' : 'max-h-0'}`}>
+              <div className={`transition-all duration-300 ease-in-out overflow-hidden ${activeSection === 'nft' ? 'max-h-[800px]' : 'max-h-0'}`}>
                 <div className="p-4 bg-white/10 space-y-4">
                   {/* NFTs Owned Counter */}
                   <div className="flex justify-between items-center py-2 px-3 bg-white/5 rounded-lg border border-gray-200/30">
@@ -1811,27 +2023,165 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                     <span className="text-sm font-medium text-gray-900">{nftCount}</span>
                   </div>
 
-                  {/* Show owned NFTs if any */}
-                  {nftCount > 0 ? (
-                    <div className="space-y-2">
-                      <p className="text-xs text-gray-500">Your membership NFTs are detected in your wallet</p>
-                      {investments.slice(0, 5).map((inv) => (
-                        <div key={inv.id} className="flex justify-between items-center py-2 border-b border-gray-200/30 last:border-0">
-                          <span className="text-sm text-gray-900">
-                            {inv.launchpad_projects?.name || 'Membership NFT'}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {inv.token_amount || 1} NFT{(inv.token_amount || 1) > 1 ? 's' : ''}
-                          </span>
+                  {/* NFT Benefits List */}
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-gray-700 mb-2">Membership Benefits</p>
+
+                    {/* Free Empty Leg Flight */}
+                    <div className={`flex items-center justify-between py-2.5 px-3 rounded-lg border transition-all ${
+                      nftCount > 0
+                        ? nftBenefits.free_empty_leg.status === 'redeemed'
+                          ? 'bg-emerald-50 border-emerald-200'
+                          : 'bg-white border-gray-200 hover:border-gray-300'
+                        : 'bg-gray-50 border-gray-100 opacity-50'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <Plane className={`w-4 h-4 ${nftCount > 0 ? nftBenefits.free_empty_leg.status === 'redeemed' ? 'text-emerald-600' : 'text-gray-700' : 'text-gray-400'}`} />
+                        <div>
+                          <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>Free Empty Leg Flight</span>
+                          <p className="text-[10px] text-gray-400">Up to $1,500 value</p>
                         </div>
-                      ))}
+                      </div>
+                      {nftCount > 0 ? (
+                        nftBenefits.free_empty_leg.status === 'redeemed' ? (
+                          <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            Redeemed
+                          </span>
+                        ) : (
+                          <span className="text-xs text-emerald-600 font-medium px-2 py-0.5 bg-emerald-50 rounded-full">Available</span>
+                        )
+                      ) : (
+                        <span className="text-xs text-gray-400">Locked</span>
+                      )}
                     </div>
-                  ) : (
-                    <div className="text-center py-2">
-                      <p className="text-sm text-gray-500 mb-3">No membership NFTs detected</p>
-                      <p className="text-xs text-gray-400 mb-3">Get exclusive benefits with a PrivateCharterX membership NFT</p>
+
+                    {/* 10% Permanent Discount */}
+                    <div className={`flex items-center justify-between py-2.5 px-3 rounded-lg border transition-all ${
+                      nftCount > 0 ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100 opacity-50'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <Crown className={`w-4 h-4 ${nftCount > 0 ? 'text-amber-500' : 'text-gray-400'}`} />
+                        <div>
+                          <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>10% Permanent Discount</span>
+                          <p className="text-[10px] text-gray-400">On all Private Jet bookings</p>
+                        </div>
+                      </div>
+                      {nftCount > 0 ? (
+                        <span className="text-xs text-emerald-600 font-medium px-2 py-0.5 bg-emerald-50 rounded-full">Active</span>
+                      ) : (
+                        <span className="text-xs text-gray-400">Locked</span>
+                      )}
                     </div>
-                  )}
+
+                    {/* Priority Empty Leg Access */}
+                    <div className={`flex items-center justify-between py-2.5 px-3 rounded-lg border transition-all ${
+                      nftCount > 0 ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100 opacity-50'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <Clock className={`w-4 h-4 ${nftCount > 0 ? 'text-blue-500' : 'text-gray-400'}`} />
+                        <div>
+                          <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>Priority Empty Leg Access</span>
+                          <p className="text-[10px] text-gray-400">24h early access to new listings</p>
+                        </div>
+                      </div>
+                      {nftCount > 0 ? (
+                        <span className="text-xs text-emerald-600 font-medium px-2 py-0.5 bg-emerald-50 rounded-full">Active</span>
+                      ) : (
+                        <span className="text-xs text-gray-400">Locked</span>
+                      )}
+                    </div>
+
+                    {/* Complimentary Limousine Transfers */}
+                    <div className={`flex items-center justify-between py-2.5 px-3 rounded-lg border transition-all ${
+                      nftCount > 0 ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100 opacity-50'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <ArrowUpRight className={`w-4 h-4 ${nftCount > 0 ? 'text-purple-500' : 'text-gray-400'}`} />
+                        <div>
+                          <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>Limousine Transfers</span>
+                          <p className="text-[10px] text-gray-400">Complimentary airport transfers</p>
+                        </div>
+                      </div>
+                      {nftCount > 0 ? (
+                        <span className="text-xs text-emerald-600 font-medium px-2 py-0.5 bg-emerald-50 rounded-full">Active</span>
+                      ) : (
+                        <span className="text-xs text-gray-400">Locked</span>
+                      )}
+                    </div>
+
+                    {/* 24/7 Priority Support */}
+                    <div className={`flex items-center justify-between py-2.5 px-3 rounded-lg border transition-all ${
+                      nftCount > 0 ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100 opacity-50'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <MessageCircle className={`w-4 h-4 ${nftCount > 0 ? 'text-green-500' : 'text-gray-400'}`} />
+                        <div>
+                          <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>24/7 Priority Support</span>
+                          <p className="text-[10px] text-gray-400">Dedicated VIP support line</p>
+                        </div>
+                      </div>
+                      {nftCount > 0 ? (
+                        <span className="text-xs text-emerald-600 font-medium px-2 py-0.5 bg-emerald-50 rounded-full">Active</span>
+                      ) : (
+                        <span className="text-xs text-gray-400">Locked</span>
+                      )}
+                    </div>
+
+                    {/* Early Token Access */}
+                    <div className={`flex items-center justify-between py-2.5 px-3 rounded-lg border transition-all ${
+                      nftCount > 0 ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100 opacity-50'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <Coins className={`w-4 h-4 ${nftCount > 0 ? 'text-orange-500' : 'text-gray-400'}`} />
+                        <div>
+                          <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>Early Token Access</span>
+                          <p className="text-[10px] text-gray-400">Priority access to $PVCX launches</p>
+                        </div>
+                      </div>
+                      {nftCount > 0 ? (
+                        <span className="text-xs text-emerald-600 font-medium px-2 py-0.5 bg-emerald-50 rounded-full">Active</span>
+                      ) : (
+                        <span className="text-xs text-gray-400">Locked</span>
+                      )}
+                    </div>
+
+                    {/* $PVCX Token Rewards */}
+                    <div className={`flex items-center justify-between py-2.5 px-3 rounded-lg border transition-all ${
+                      nftCount > 0 ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100 opacity-50'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <Wallet className={`w-4 h-4 ${nftCount > 0 ? 'text-cyan-500' : 'text-gray-400'}`} />
+                        <div>
+                          <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>$PVCX Token Rewards</span>
+                          <p className="text-[10px] text-gray-400">Earn tokens on every booking</p>
+                        </div>
+                      </div>
+                      {nftCount > 0 ? (
+                        <span className="text-xs text-emerald-600 font-medium px-2 py-0.5 bg-emerald-50 rounded-full">Active</span>
+                      ) : (
+                        <span className="text-xs text-gray-400">Locked</span>
+                      )}
+                    </div>
+
+                    {/* VIP Event Invitations */}
+                    <div className={`flex items-center justify-between py-2.5 px-3 rounded-lg border transition-all ${
+                      nftCount > 0 ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100 opacity-50'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <Award className={`w-4 h-4 ${nftCount > 0 ? 'text-pink-500' : 'text-gray-400'}`} />
+                        <div>
+                          <span className={`text-sm ${nftCount > 0 ? 'text-gray-900' : 'text-gray-400'}`}>VIP Event Invitations</span>
+                          <p className="text-[10px] text-gray-400">Exclusive member-only events</p>
+                        </div>
+                      </div>
+                      {nftCount > 0 ? (
+                        <span className="text-xs text-emerald-600 font-medium px-2 py-0.5 bg-emerald-50 rounded-full">Active</span>
+                      ) : (
+                        <span className="text-xs text-gray-400">Locked</span>
+                      )}
+                    </div>
+                  </div>
 
                   {/* OpenSea Link */}
                   <a
@@ -1961,17 +2311,33 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
         )}
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-3 gap-4 mt-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-            <p className="text-xs text-gray-400 mb-1">Assets</p>
-            <p className="text-xl font-light text-black">{isConnected ? balances.length : 0}</p>
+            <div className="flex items-center gap-1.5 mb-1">
+              <History className="w-3 h-3 text-gray-400" />
+              <p className="text-xs text-gray-400">Transactions</p>
+            </div>
+            <p className="text-xl font-light text-black">{isConnected ? transactions.length : 0}</p>
           </div>
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-            <p className="text-xs text-gray-400 mb-1">Requests</p>
+            <div className="flex items-center gap-1.5 mb-1">
+              <PenTool className="w-3 h-3 text-gray-400" />
+              <p className="text-xs text-gray-400">Signatures</p>
+            </div>
+            <p className="text-xl font-light text-black">{walletSignatures.length}</p>
+          </div>
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Send className="w-3 h-3 text-gray-400" />
+              <p className="text-xs text-gray-400">Requests</p>
+            </div>
             <p className="text-xl font-light text-black">{userRequests.length}</p>
           </div>
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-            <p className="text-xs text-gray-400 mb-1">NFTs</p>
+            <div className="flex items-center gap-1.5 mb-1">
+              <Award className="w-3 h-3 text-gray-400" />
+              <p className="text-xs text-gray-400">NFTs</p>
+            </div>
             <p className="text-xl font-light text-black">{nftCount}</p>
           </div>
         </div>

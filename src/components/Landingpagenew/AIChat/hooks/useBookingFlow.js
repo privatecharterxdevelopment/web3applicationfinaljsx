@@ -70,7 +70,10 @@ export const useBookingFlow = ({
   activeChat,
   userHasNFT,
   isAdmin,
-  userSubscriptionLimits
+  userSubscriptionLimits,
+  // NFT Signature data
+  nftSignatureData,
+  setNftSignatureData
 }) => {
   // Booking flow states
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -337,10 +340,21 @@ export const useBookingFlow = ({
           total: grandTotal,
           currency: 'USD',
           payment_method: selectedPaymentMethod,
-          wallet_address: connectedWallet,
+          wallet_address: connectedWallet || nftSignatureData?.wallet_address,
           notes: additionalNotes,
           conversation: conversationMessages,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          // NFT Member Status
+          has_nft: userHasNFT || false,
+          nft_discounts_applied: hasNFTItem,
+          // NFT Wallet Signature (if NFT holder signed)
+          nft_signature: nftSignatureData ? {
+            wallet_address: nftSignatureData.wallet_address,
+            signature: nftSignatureData.signature,
+            message: nftSignatureData.message,
+            signed_at: nftSignatureData.signed_at,
+            verified: true
+          } : null
         },
         status: 'pending'
       };
@@ -413,8 +427,8 @@ export const useBookingFlow = ({
     }
   }, [
     user, cartItems, userHasNFT, usedNFTBenefitThisYear, isAdmin,
-    selectedPaymentMethod, connectedWallet, activeChat,
-    buildDetailedItems, determineRequestType, setCartItems, setChatHistory, setToast
+    selectedPaymentMethod, connectedWallet, activeChat, nftSignatureData,
+    buildDetailedItems, determineRequestType, setCartItems, setChatHistory, setToast, chatHistory
   ]);
 
   // Save request as draft (PDF)

@@ -11,6 +11,40 @@ const NFT_CONTRACT_ADDRESS = '0xDF86Cf55BD2E58aaaC09160AaD0ed8673382B339' as `0x
 const CO2_CONTRACT_ADDRESS = '0x26F42A3B48D67103BD59D5C45118f353888501B0' as `0x${string}`;
 const CHAIN = base;
 
+// ===== SPAM TOKEN FILTER =====
+// Whitelist of legitimate tokens - only these will be shown in transaction history
+// This prevents spam airdrop tokens (CAI, INX, SBX, etc.) from cluttering the wallet history
+const WHITELISTED_TOKENS = new Set([
+  'ETH',      // Native Ethereum
+  'WETH',     // Wrapped ETH
+  'USDC',     // USD Coin
+  'USDT',     // Tether
+  'DAI',      // DAI Stablecoin
+  'MATIC',    // Polygon (on ETH)
+  'LINK',     // Chainlink
+  'UNI',      // Uniswap
+  'AAVE',     // Aave
+  'CRV',      // Curve
+  'MKR',      // Maker
+  'SNX',      // Synthetix
+  'COMP',     // Compound
+  'LDO',      // Lido
+  'ARB',      // Arbitrum
+  'OP',       // Optimism
+  'BLUR',     // Blur
+  'APE',      // ApeCoin
+  'SHIB',     // Shiba Inu
+  'PEPE',     // Pepe
+  'WLD',      // Worldcoin
+  'PVCX',     // PrivateCharterX Token
+]);
+
+// Helper function to check if a token is whitelisted
+const isWhitelistedToken = (asset: string | undefined): boolean => {
+  if (!asset) return true; // Native transfers (no asset symbol) are always allowed
+  return WHITELISTED_TOKENS.has(asset.toUpperCase());
+};
+
 // PVCX Token addresses for different networks
 export const PVCX_TOKEN_ADDRESS = {
   sepolia: '0x1234567890123456789012345678901234567890' as `0x${string}`,
@@ -697,8 +731,21 @@ class Web3Service {
 
       console.log(`📊 Base: Sent: ${sentTransfers.length}, Received: ${receivedTransfers.length}`);
 
-      // Combine and format transactions
-      const allTransfers = [...sentTransfers, ...receivedTransfers];
+      // Combine and filter spam tokens
+      const allTransfersRaw = [...sentTransfers, ...receivedTransfers];
+      const allTransfers = allTransfersRaw.filter(transfer => {
+        // Always allow native ETH transfers (external/internal)
+        if (transfer.category === 'external' || transfer.category === 'internal') {
+          return true;
+        }
+        // For token transfers, check whitelist
+        return isWhitelistedToken(transfer.asset);
+      });
+
+      const spamFiltered = allTransfersRaw.length - allTransfers.length;
+      if (spamFiltered > 0) {
+        console.log(`🛡️ Filtered out ${spamFiltered} spam token transfers`);
+      }
       const transactions: WalletTransaction[] = [];
       const seenHashes = new Set<string>();
 
@@ -839,8 +886,22 @@ class Web3Service {
 
       console.log(`📊 ETH Mainnet: Sent: ${sentTransfers.length}, Received: ${receivedTransfers.length}`);
 
-      // Combine and format transactions
-      const allTransfers = [...sentTransfers, ...receivedTransfers];
+      // Combine and filter spam tokens
+      const allTransfersRaw = [...sentTransfers, ...receivedTransfers];
+      const allTransfers = allTransfersRaw.filter(transfer => {
+        // Always allow native ETH transfers (external/internal)
+        if (transfer.category === 'external' || transfer.category === 'internal') {
+          return true;
+        }
+        // For token transfers, check whitelist
+        return isWhitelistedToken(transfer.asset);
+      });
+
+      const spamFiltered = allTransfersRaw.length - allTransfers.length;
+      if (spamFiltered > 0) {
+        console.log(`🛡️ ETH: Filtered out ${spamFiltered} spam token transfers`);
+      }
+
       const transactions: WalletTransaction[] = [];
       const seenHashes = new Set<string>();
 

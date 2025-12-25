@@ -5,8 +5,10 @@ import React, { useState, useMemo } from 'react';
 import {
   X, ShoppingCart, Trash2, Plus, Minus, Clock, Plane, Car,
   Coins, Loader2, Send, ChevronDown, ChevronUp, Calendar,
-  MapPin, Users, Briefcase, Wine, Anchor, AlertCircle
+  MapPin, Users, Briefcase, Wine, Anchor, AlertCircle,
+  Sparkles, Wallet
 } from 'lucide-react';
+import { useAppKit } from '@reown/appkit/react';
 
 // Import sub-components
 import CartItem from './CartItem';
@@ -38,9 +40,27 @@ const CartSidebar = ({
   customExtraForm,
   setCustomExtraForm,
   // Extras catalog
-  extrasCatalog = []
+  extrasCatalog = [],
+  // Wallet connection
+  isWalletConnected = false,
+  onOpenWalletConnect,
+  // NFT Signature callback
+  onNFTSignatureComplete
 }) => {
   const [expandedItems, setExpandedItems] = useState({});
+  const [nftSignatureData, setNftSignatureData] = useState(null);
+
+  // Handle NFT signature completion
+  const handleNFTSignatureComplete = (signatureData) => {
+    setNftSignatureData(signatureData);
+    // Pass to parent if callback provided
+    if (onNFTSignatureComplete) {
+      onNFTSignatureComplete(signatureData);
+    }
+  };
+
+  // Use AppKit for wallet connection (same as dashboard)
+  const { open: openWalletModal } = useAppKit();
 
   // Separate items by type
   const { payableItems, requestOnlyItems, hasPayableItems, hasRequestOnlyItems } = useMemo(() => {
@@ -100,24 +120,74 @@ const CartSidebar = ({
 
       {/* Sidebar Panel */}
       <div className="fixed right-0 top-0 h-full w-full sm:w-96 bg-white border-l border-gray-200 shadow-xl z-50 animate-fade-in-right flex flex-col max-h-screen">
-        {/* Header */}
-        <div className="p-4 border-b border-gray-200 flex-shrink-0">
+        {/* Header - Minimal, thin Satoshi */}
+        <div className="p-4 border-b border-gray-100 flex-shrink-0 bg-gray-50/50" style={{ backdropFilter: 'blur(12px)' }}>
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <ShoppingCart size={20} className="text-gray-700" />
-              <h3 className="text-lg font-semibold text-gray-900">Your Cart</h3>
+            <div className="flex items-center gap-3">
+              <h3 className="text-base font-light text-gray-700 tracking-wide" style={{ fontFamily: 'Satoshi, sans-serif' }}>
+                Your Cart
+              </h3>
               {cartItems.length > 0 && (
-                <span className="px-2 py-0.5 bg-gray-900 text-white text-xs font-medium rounded-full">
+                <span className="px-2 py-0.5 bg-gray-800 text-white text-[10px] font-medium rounded-full">
                   {cartItems.length}
                 </span>
               )}
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <X size={20} className="text-gray-500" />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Wallet Connect Button - Black style, uses AppKit like dashboard */}
+              <button
+                onClick={() => !isWalletConnected && openWalletModal()}
+                className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all duration-200 ${
+                  isWalletConnected
+                    ? 'bg-gray-900 text-white cursor-default'
+                    : 'bg-gray-900 hover:bg-gray-800 text-white'
+                }`}
+                title={isWalletConnected ? 'Wallet Connected' : 'Connect Wallet'}
+              >
+                <Wallet size={14} className="text-white" />
+                <span className="text-[10px] font-medium" style={{ fontFamily: 'Satoshi, sans-serif' }}>
+                  {isWalletConnected ? 'Connected' : 'Wallet'}
+                </span>
+                {isWalletConnected && (
+                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                )}
+              </button>
+
+              {/* NFT Button - Always visible, triggers wallet connection for NFT detection */}
+              <button
+                onClick={() => {
+                  if (!isWalletConnected) {
+                    // Connect wallet first to detect NFT (uses AppKit like dashboard)
+                    openWalletModal();
+                  }
+                  // If already connected, NFT detection happens automatically via useSubscriptionNew
+                }}
+                className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all duration-200 ${
+                  userHasNFT
+                    ? 'bg-gray-900 text-white border-2 border-green-500 shadow-[0_0_8px_rgba(34,197,94,0.25)]'
+                    : isWalletConnected
+                    ? 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                    : 'bg-gray-900 hover:bg-gray-800 text-white'
+                }`}
+                title={userHasNFT ? 'NFT Member - Discounts Active' : isWalletConnected ? 'No NFT detected' : 'Connect wallet to check NFT'}
+              >
+                <Sparkles size={12} className={userHasNFT ? 'text-green-400' : 'text-current'} />
+                <span className="text-[10px] font-medium" style={{ fontFamily: 'Satoshi, sans-serif' }}>
+                  NFT
+                </span>
+                {userHasNFT && (
+                  <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+                )}
+              </button>
+
+              {/* Close Button */}
+              <button
+                onClick={onClose}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={18} className="text-gray-400" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -188,6 +258,7 @@ const CartSidebar = ({
               onAddExtras={() => setShowInlineExtras(true)}
               onToast={onToast}
               setCartItems={setCartItems}
+              onNFTSignatureComplete={handleNFTSignatureComplete}
             />
           </>
         )}
