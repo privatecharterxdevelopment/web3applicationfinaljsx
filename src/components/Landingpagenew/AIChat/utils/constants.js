@@ -16,9 +16,9 @@ export const SUBSCRIPTION_TIERS = {
 
 // Tier pricing (USD)
 export const TIER_PRICING = {
-  [SUBSCRIPTION_TIERS.EXPLORER]: 49,
-  [SUBSCRIPTION_TIERS.TRAVELLER]: 99,
-  [SUBSCRIPTION_TIERS.ELITE]: 399
+  [SUBSCRIPTION_TIERS.EXPLORER]: 99,
+  [SUBSCRIPTION_TIERS.TRAVELLER]: 299,
+  [SUBSCRIPTION_TIERS.ELITE]: 999
 };
 
 // Tier limits
@@ -28,7 +28,7 @@ export const TIER_LIMITS = {
     messagesPerChat: 10,
     breakThePrice: false,
     unlimitedMessages: false,
-    price: 49,
+    price: 99,
     support: 'email',
     features: [
       'empty_legs',
@@ -46,7 +46,7 @@ export const TIER_LIMITS = {
     messagesPerChat: 25,
     breakThePrice: true,
     unlimitedMessages: false,
-    price: 99,
+    price: 299,
     support: 'priority',
     features: [
       'empty_legs',
@@ -69,7 +69,7 @@ export const TIER_LIMITS = {
     messagesPerChat: Infinity,
     breakThePrice: true,
     unlimitedMessages: true,
-    price: 399,
+    price: 999,
     support: '24/7_phone',
     freeAirportTransfers: 2,
     membershipXCard: true,

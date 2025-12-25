@@ -23,21 +23,21 @@ const SubscriptionSuccessPage = () => {
   const tierInfo = {
     explorer: {
       name: 'Explorer',
-      price: '$49',
+      price: '$99',
       chats: '5 AI Chats',
       messages: '10 messages per chat',
       icon: '✈️'
     },
     traveller: {
       name: 'Traveller',
-      price: '$99',
+      price: '$299',
       chats: '10 AI Chats',
       messages: '25 messages per chat',
       icon: '🌍'
     },
     elite: {
       name: 'Elite Club',
-      price: '$399',
+      price: '$999',
       chats: 'Unlimited Chats',
       messages: 'Unlimited messages',
       icon: '👑'

@@ -959,7 +959,7 @@ function Homepage() {
                 },
                 {
                   question: "What subscription plans are available?",
-                  answer: "Explorer ($49/mo), Traveller ($99/mo), and Elite ($399/mo with unlimited AI chats). Each tier unlocks commission discounts on bookings. Annual plans available."
+                  answer: "Explorer ($99/mo), Traveller ($299/mo), and Elite ($999/mo with unlimited AI chats). Each tier unlocks commission discounts on bookings. Annual plans available."
                 },
                 {
                   question: "What is asset tokenization?",

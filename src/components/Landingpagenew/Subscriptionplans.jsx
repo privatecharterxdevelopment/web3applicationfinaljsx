@@ -1,7 +1,7 @@
 /**
  * Subscription Plans Page
  * Design: Modern glassmorphic card layout with new tier structure
- * Tiers: Starter ($49), Traveller ($99), Elite Club ($399)
+ * Tiers: Explorer ($99), Traveller ($299), Elite Club ($999)
  */
 
 import React, { useState, useEffect } from 'react';
@@ -111,7 +111,7 @@ const PricingPackages = ({ onClose, onBack }) => {
       id: 'explorer',
       name: 'EXPLORER',
       tagline: 'Get Started',
-      price: 49,
+      price: 99,
       period: 'month',
       chatsPerMonth: 5,
       messagesPerChat: 10,
@@ -139,7 +139,7 @@ const PricingPackages = ({ onClose, onBack }) => {
       id: 'traveller',
       name: 'TRAVELLER',
       tagline: 'Most Popular',
-      price: 99,
+      price: 299,
       period: 'month',
       chatsPerMonth: 10,
       messagesPerChat: 25,
@@ -168,7 +168,7 @@ const PricingPackages = ({ onClose, onBack }) => {
       id: 'elite',
       name: 'ELITE CLUB',
       tagline: 'Unlimited Access',
-      price: 399,
+      price: 999,
       period: 'month',
       chatsPerMonth: 'Unlimited',
       messagesPerChat: 'Unlimited',

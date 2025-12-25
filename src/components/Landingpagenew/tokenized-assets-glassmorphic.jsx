@@ -5957,9 +5957,9 @@ const TokenizedAssetsGlassmorphic = () => {
                         <button
                           onClick={() => {
                             const planDetails = {
-                              explorer: { name: 'Explorer', price: 49, features: ['5 AI Conversations/month', '10 messages per conversation', 'Break the Price feature', 'Email Support'] },
-                              traveller: { name: 'Traveller', price: 99, features: ['10 AI Conversations/month', '25 messages per conversation', 'Break the Price feature', 'Priority Support', 'Dedicated Manager'] },
-                              elite: { name: 'Elite Club', price: 399, features: ['Unlimited AI Conversations', 'Unlimited messages per chat', 'Unlimited Break the Price', '24/7 Concierge Service'] }
+                              explorer: { name: 'Explorer', price: 99, features: ['5 AI Conversations/month', '10 messages per conversation', 'Break the Price feature', 'Email Support'] },
+                              traveller: { name: 'Traveller', price: 299, features: ['10 AI Conversations/month', '25 messages per conversation', 'Break the Price feature', 'Priority Support', 'Dedicated Manager'] },
+                              elite: { name: 'Elite Club', price: 999, features: ['Unlimited AI Conversations', 'Unlimited messages per chat', 'Unlimited Break the Price', '24/7 Concierge Service'] }
                             };
                             const plan = planDetails[successSubscriptionTier] || planDetails.explorer;
                             const subscriptionData = {
