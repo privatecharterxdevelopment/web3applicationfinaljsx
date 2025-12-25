@@ -14,15 +14,14 @@ import {
   Gift,
   ChevronDown,
   ExternalLink,
-  Users,
-  Clock,
   Crown,
   Percent,
-  Navigation,
   BadgeCheck,
   Gem,
   Lock,
-  Star
+  Star,
+  Plus,
+  X
 } from 'lucide-react';
 
 interface RWANFTProps {
@@ -32,51 +31,68 @@ interface RWANFTProps {
 // NFT Contract Details
 const NFT_CONTRACT = '0xDF86Cf55BD2E58aaaC09160AaD0ed8673382B339';
 const OPENSEA_URL = `https://opensea.io/collection/privatecharterx-membership`;
-const NFT_IMAGE = 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/PrivatecharterX_logo_vectorized.glb.png';
+const NFT_VIDEO = 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivateCharterX_transparent-_3_.mp4';
 
 function RWANFT({ setCurrentPage }: RWANFTProps) {
   const navigate = useNavigate();
   const [expandedFaq, setExpandedFaq] = React.useState<string | null>(null);
+  const [expandedBenefit, setExpandedBenefit] = React.useState<string | null>(null);
 
   const toggleFaq = (faqId: string) => {
     setExpandedFaq(expandedFaq === faqId ? null : faqId);
   };
 
+  const toggleBenefit = (benefitId: string) => {
+    setExpandedBenefit(expandedBenefit === benefitId ? null : benefitId);
+  };
+
   const benefits = [
     {
+      id: 'empty-leg',
       icon: Plane,
       title: 'Free Empty Leg Flights',
-      description: 'One free empty leg flight per year up to $1,500 value',
+      shortDesc: 'One free flight per year',
+      fullDesc: 'Get one complimentary empty leg flight per year with a value of up to $1,500. Empty legs are one-way flights when aircraft reposition, offering significant savings on luxury private aviation.',
       highlight: 'Up to $1,500'
     },
     {
+      id: 'jet-discount',
       icon: Percent,
       title: '10% Off Private Jets',
-      description: 'Exclusive discount on all private jet charter bookings',
+      shortDesc: 'On all charter bookings',
+      fullDesc: 'Enjoy an exclusive 10% discount on all private jet charter bookings. Whether you\'re flying light jets, midsize, or ultra-long-range aircraft, your NFT membership saves you thousands on every flight.',
       highlight: '10% Discount'
     },
     {
+      id: 'ground-discount',
       icon: Car,
       title: '10% Off Ground Transport',
-      description: 'Save on luxury car rentals and chauffeur services',
+      shortDesc: 'Luxury cars & chauffeurs',
+      fullDesc: 'Save 10% on all ground transportation including luxury car rentals (Ferrari, Lamborghini, Rolls-Royce), professional chauffeur services, and airport transfers worldwide.',
       highlight: '10% Discount'
     },
     {
+      id: 'priority',
       icon: Crown,
       title: 'Priority Booking',
-      description: 'Skip the queue with priority access to high-demand services',
+      shortDesc: 'Skip the queue',
+      fullDesc: 'Get VIP priority access on high-demand services during peak seasons. Your requests are processed first, ensuring you never miss out on limited availability flights or premium vehicles.',
       highlight: 'VIP Access'
     },
     {
+      id: 'verified',
       icon: BadgeCheck,
       title: 'Verified Member Status',
-      description: 'Exclusive on-chain verification of your membership',
+      shortDesc: 'On-chain verification',
+      fullDesc: 'Your membership is verified on the blockchain through secure wallet signatures. No passwords, no accounts to hack - just cryptographic proof of your exclusive membership status.',
       highlight: 'On-Chain'
     },
     {
+      id: 'perks',
       icon: Gift,
       title: 'Exclusive Perks',
-      description: 'Access to member-only events, drops, and experiences',
+      shortDesc: 'Events & experiences',
+      fullDesc: 'Access member-only events, NFT drops, exclusive experiences, and early access to new PrivateCharterX services. Connect with other high-net-worth individuals in our private community.',
       highlight: 'Members Only'
     }
   ];
@@ -161,7 +177,7 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
     {
       id: 'expiry',
       question: 'Do the benefits expire?',
-      answer: 'No! Unlike traditional subscriptions, NFT membership benefits never expire. As long as you hold the NFT, you retain all benefits. The free empty leg benefit renews annually.'
+      answer: 'No! Unlike traditional memberships, NFT membership benefits never expire. As long as you hold the NFT, you retain all benefits. The free empty leg benefit renews annually.'
     }
   ];
 
@@ -169,118 +185,99 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
     <div className="min-h-screen bg-gray-100 px-4 py-4">
       <LandingHeader />
 
-      {/* Hero Section */}
-      <section className="px-4 sm:px-8 py-8 sm:py-12 max-w-6xl mx-auto">
-        <div
-          className="relative rounded-3xl overflow-hidden"
-          style={{
-            background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 25%, #1a1a1a 50%, #0d0d0d 75%, #000000 100%)',
-            minHeight: '600px'
-          }}
-        >
-          {/* Subtle Pattern Overlay */}
-          <div
-            className="absolute inset-0 opacity-30"
-            style={{
-              backgroundImage: 'radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.08) 0%, transparent 50%)'
-            }}
-          />
+      {/* Hero Section - Clean, no dark background */}
+      <section className="px-4 sm:px-8 py-8 sm:py-16 max-w-6xl mx-auto">
+        {/* Header - Centered */}
+        <div className="text-center mb-10">
+          <span className="inline-flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-full text-xs font-medium tracking-wide uppercase mb-6">
+            <Gem className="w-3.5 h-3.5" />
+            Real World Asset NFT
+          </span>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-light text-gray-900 mb-3">
+            PrivateCharterX Membership NFT
+          </h1>
+          <p className="text-gray-600 text-sm md:text-base max-w-xl mx-auto font-light">
+            Unlock exclusive discounts on private jets, luxury cars, and premium services with your on-chain membership.
+          </p>
+        </div>
 
-          {/* Content */}
-          <div className="relative px-6 sm:px-12 py-12 sm:py-16">
-            {/* Header - Centered */}
-            <div className="text-center mb-10">
-              <span className="inline-flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-full text-xs font-medium tracking-wide uppercase mb-6 border border-white/20">
-                <Gem className="w-3.5 h-3.5" />
-                Real World Asset NFT
-              </span>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-light text-white mb-3">
-                PrivateCharterX Membership NFT
-              </h1>
-              <p className="text-gray-400 text-sm md:text-base max-w-xl mx-auto font-light">
-                Unlock exclusive discounts on private jets, luxury cars, and premium services with your on-chain membership.
-              </p>
-            </div>
-
-            {/* NFT Preview Card */}
-            <div className="max-w-md mx-auto">
-              <div
-                className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-2xl p-6 border border-white/10"
-                style={{ backdropFilter: 'blur(20px)' }}
+        {/* NFT Preview Card with Video */}
+        <div className="max-w-md mx-auto">
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-lg">
+            {/* NFT Video */}
+            <div className="aspect-square bg-gray-900 rounded-xl mb-4 overflow-hidden relative">
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-cover"
               >
-                {/* NFT Image */}
-                <div className="aspect-square bg-gradient-to-br from-gray-700 to-gray-900 rounded-xl mb-4 flex items-center justify-center overflow-hidden relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent" />
-                  <img
-                    src={NFT_IMAGE}
-                    alt="PrivateCharterX NFT"
-                    className="w-3/4 h-3/4 object-contain"
-                  />
-                  {/* Verified Badge */}
-                  <div className="absolute top-3 right-3 bg-green-500 text-white px-2 py-1 rounded-lg text-[10px] font-medium flex items-center gap-1">
-                    <BadgeCheck size={12} />
-                    Verified
-                  </div>
-                </div>
-
-                {/* NFT Info */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-gray-500">Collection</p>
-                      <p className="text-sm font-medium text-white">PrivateCharterX Membership</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-gray-500">Network</p>
-                      <p className="text-sm font-medium text-white">Base</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-2 border-t border-white/10">
-                    <div className="flex-1">
-                      <p className="text-xs text-gray-500 mb-1">Benefits Value</p>
-                      <p className="text-lg font-medium text-green-400">$1,500+/year</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-gray-500 mb-1">Discounts</p>
-                      <p className="text-lg font-medium text-white">10% Off</p>
-                    </div>
-                  </div>
-                </div>
+                <source src={NFT_VIDEO} type="video/mp4" />
+              </video>
+              {/* Verified Badge */}
+              <div className="absolute top-3 right-3 bg-green-500 text-white px-2 py-1 rounded-lg text-[10px] font-medium flex items-center gap-1">
+                <BadgeCheck size={12} />
+                Verified
               </div>
             </div>
 
-            {/* CTAs */}
-            <div className="text-center mt-10 flex flex-col sm:flex-row gap-3 justify-center">
-              <a
-                href={OPENSEA_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-white text-gray-900 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-gray-100"
-              >
-                <ExternalLink className="w-4 h-4" />
-                View on OpenSea
-              </a>
-              <button
-                onClick={() => navigate('/dashboard/web3')}
-                className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl text-sm font-medium transition-all duration-200 border border-white/30 hover:border-white/50 text-white hover:bg-white/10"
-              >
-                <Wallet className="w-4 h-4" />
-                Connect Wallet
-              </button>
-            </div>
+            {/* NFT Info */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500">Collection</p>
+                  <p className="text-sm font-medium text-gray-900">PrivateCharterX Membership</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500">Network</p>
+                  <p className="text-sm font-medium text-gray-900">Base</p>
+                </div>
+              </div>
 
-            {/* Contract Address */}
-            <div className="text-center mt-6">
-              <p className="text-xs text-gray-500">
-                Contract: <span className="font-mono text-gray-400">{NFT_CONTRACT.slice(0, 10)}...{NFT_CONTRACT.slice(-8)}</span>
-              </p>
+              <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500 mb-1">Price</p>
+                  <p className="text-lg font-medium text-gray-900">0.5 ETH</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500 mb-1">Discounts</p>
+                  <p className="text-lg font-medium text-green-600">10% Off</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* CTAs */}
+        <div className="text-center mt-10 flex flex-col sm:flex-row gap-3 justify-center">
+          <a
+            href={OPENSEA_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-gray-900 text-white rounded-xl text-sm font-medium transition-all duration-200 hover:bg-gray-800"
+          >
+            <ExternalLink className="w-4 h-4" />
+            View on OpenSea
+          </a>
+          <button
+            onClick={() => navigate('/dashboard/web3')}
+            className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl text-sm font-medium transition-all duration-200 border border-gray-300 hover:border-gray-400 text-gray-700 hover:bg-gray-50"
+          >
+            <Wallet className="w-4 h-4" />
+            Connect Wallet
+          </button>
+        </div>
+
+        {/* Contract Address */}
+        <div className="text-center mt-6">
+          <p className="text-xs text-gray-500">
+            Contract: <span className="font-mono text-gray-600">{NFT_CONTRACT.slice(0, 10)}...{NFT_CONTRACT.slice(-8)}</span>
+          </p>
+        </div>
       </section>
 
-      {/* Benefits Section */}
+      {/* Benefits Section - Expandable Cards */}
       <section className="px-4 sm:px-8 py-12 sm:py-20 max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-2xl sm:text-3xl font-light text-gray-900 mb-4">
@@ -291,22 +288,54 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {benefits.map((benefit, index) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {benefits.map((benefit) => (
             <div
-              key={index}
-              className="group bg-white rounded-2xl p-6 border border-gray-100 hover:border-gray-300 hover:shadow-lg transition-all duration-300"
+              key={benefit.id}
+              className="bg-white rounded-2xl border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-lg"
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center">
-                  <benefit.icon className="w-6 h-6 text-white" />
+              <button
+                onClick={() => toggleBenefit(benefit.id)}
+                className="w-full p-5 text-left"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <benefit.icon className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-medium text-gray-900 mb-0.5">{benefit.title}</h3>
+                      <p className="text-sm text-gray-500">{benefit.shortDesc}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-medium rounded hidden sm:block">
+                      {benefit.highlight}
+                    </span>
+                    <div className={`w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center transition-all ${expandedBenefit === benefit.id ? 'bg-gray-900 border-gray-900' : 'bg-white'}`}>
+                      {expandedBenefit === benefit.id ? (
+                        <X size={12} className="text-white" />
+                      ) : (
+                        <Plus size={12} className="text-gray-400" />
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-lg">
-                  {benefit.highlight}
-                </span>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">{benefit.title}</h3>
-              <p className="text-sm text-gray-600">{benefit.description}</p>
+              </button>
+
+              {/* Expanded Content */}
+              {expandedBenefit === benefit.id && (
+                <div className="px-5 pb-5 pt-0">
+                  <div className="pl-13 ml-[52px]">
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      {benefit.fullDesc}
+                    </p>
+                    <span className="inline-block mt-3 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded sm:hidden">
+                      {benefit.highlight}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -355,14 +384,14 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
         </div>
       </section>
 
-      {/* Comparison Section */}
+      {/* Comparison Section - NFT vs Traditional Aviation Operators */}
       <section className="px-4 sm:px-8 py-12 sm:py-20 max-w-6xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-2xl sm:text-3xl font-light text-gray-900 mb-4">
-            NFT vs Traditional Membership
+            NFT vs Traditional Operator Memberships
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            See why blockchain-based membership is the future of luxury travel.
+            Compare our Web3 membership with traditional aviation operator programs like VistaJet, NetJets, and Wheels Up.
           </p>
         </div>
 
@@ -372,22 +401,24 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
                   <th className="text-left py-4 px-6 font-medium text-gray-900">Feature</th>
-                  <th className="text-center py-4 px-6 font-medium text-gray-900">Traditional</th>
-                  <th className="text-center py-4 px-6 font-medium text-gray-900 bg-gray-900 text-white">NFT Membership</th>
+                  <th className="text-center py-4 px-6 font-medium text-gray-500">Traditional Operators</th>
+                  <th className="text-center py-4 px-6 font-medium text-gray-900 bg-gray-900 text-white">PrivateCharterX NFT</th>
                 </tr>
               </thead>
               <tbody>
                 {[
-                  { feature: 'Monthly Fees', traditional: '$99-999/mo', nft: 'One-time purchase' },
+                  { feature: 'Upfront Cost', traditional: '$50,000 - $500,000+', nft: '0.5 ETH (~$1,800)' },
+                  { feature: 'Annual Fees', traditional: '$5,000 - $25,000/year', nft: 'None' },
+                  { feature: 'Minimum Commitment', traditional: '25-50 flight hours', nft: 'No minimum' },
                   { feature: 'Transferable', traditional: false, nft: true },
                   { feature: 'Resale Value', traditional: false, nft: true },
-                  { feature: 'On-Chain Verification', traditional: false, nft: true },
-                  { feature: 'Expiration', traditional: 'Monthly renewal', nft: 'Never expires' },
-                  { feature: 'Free Empty Leg', traditional: 'Elite only', nft: true },
-                  { feature: 'Jet Discount', traditional: 'Up to 5%', nft: '10%' },
-                  { feature: 'Ground Discount', traditional: 'Up to 5%', nft: '10%' },
-                  { feature: 'Priority Access', traditional: 'Elite only', nft: true },
-                  { feature: 'Exclusive Events', traditional: 'Elite only', nft: true },
+                  { feature: 'Lock-in Period', traditional: '1-3 years', nft: 'None' },
+                  { feature: 'Global Access', traditional: 'Network dependent', nft: 'Worldwide' },
+                  { feature: 'Jet Discount', traditional: 'Fixed hourly rate', nft: '10% off market rates' },
+                  { feature: 'Ground Transport', traditional: 'Separate program', nft: '10% discount included' },
+                  { feature: 'Empty Leg Access', traditional: 'Limited / Extra cost', nft: '1 free/year + access' },
+                  { feature: 'Ownership Proof', traditional: 'Paper contract', nft: 'Blockchain verified' },
+                  { feature: 'Benefits Expiry', traditional: 'Contract term', nft: 'Never expires' },
                 ].map((row, index) => (
                   <tr key={index} className="border-b border-gray-100 last:border-b-0">
                     <td className="py-4 px-6 text-gray-700">{row.feature}</td>
@@ -399,7 +430,7 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
                           <span className="text-gray-300">—</span>
                         )
                       ) : (
-                        <span className="text-gray-600">{row.traditional}</span>
+                        <span className="text-gray-500">{row.traditional}</span>
                       )}
                     </td>
                     <td className="py-4 px-6 text-center bg-gray-50">
@@ -419,6 +450,10 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
             </table>
           </div>
         </div>
+
+        <p className="text-xs text-gray-400 text-center mt-4">
+          * Traditional operator data based on publicly available information from major jet card and membership programs.
+        </p>
       </section>
 
       {/* CTA Section */}
