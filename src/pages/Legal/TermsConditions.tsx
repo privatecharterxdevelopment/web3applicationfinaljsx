@@ -17,7 +17,7 @@ export default function TermsConditions() {
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-light text-gray-900 mb-4 leading-tight">
           Terms & Conditions
         </h1>
-        <p className="text-gray-500 text-sm">Last Updated: December 2024 | Version: 2.3</p>
+        <p className="text-gray-500 text-sm">Last Updated: December 2024 | Version: 2.4</p>
       </section>
 
       {/* Content */}
@@ -262,9 +262,43 @@ export default function TermsConditions() {
             </div>
           </div>
 
-          {/* Section 11 */}
+          {/* Section 11 - Subscription Plans */}
           <div className="space-y-4">
-            <h2 className="text-lg font-medium text-gray-900">11. Membership NFT Program</h2>
+            <h2 className="text-lg font-medium text-gray-900">11. Subscription Plans</h2>
+            <p className="text-gray-600 text-sm leading-relaxed mb-2">PCX offers tiered subscription plans with varying benefits:</p>
+
+            <h3 className="text-sm font-medium text-gray-700 pt-2">11.1. Available Tiers</h3>
+            <ul className="list-disc list-inside space-y-1.5 text-gray-600 text-sm ml-4">
+              <li><strong>Explorer ($99/month):</strong> 5 AI conversations, 10 messages per chat, email support</li>
+              <li><strong>Traveller ($199/month):</strong> 10 AI conversations, 25 messages per chat, priority support, dedicated manager</li>
+              <li><strong>Elite Club ($999/month):</strong> Unlimited AI conversations, unlimited messages, 24/7 phone support, 2 complimentary airport transfers per month</li>
+            </ul>
+
+            <h3 className="text-sm font-medium text-gray-700 pt-4">11.2. Elite Club - Airport Transfer Benefit</h3>
+            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+              <p className="text-gray-600 text-sm leading-relaxed">
+                Elite Club members receive <strong>2 complimentary airport transfers per month</strong>. Important clarifications:
+              </p>
+              <ul className="list-disc list-inside space-y-1.5 text-gray-600 text-sm ml-4 mt-2">
+                <li><strong>1 vehicle = 1 transfer:</strong> Each transfer covers one vehicle, regardless of passenger count</li>
+                <li><strong>2 vehicles = 2 transfers:</strong> If you require 2 vehicles for a single trip (e.g., for a larger group), this counts as 2 of your monthly transfers</li>
+                <li>Unused transfers do not roll over to the following month</li>
+                <li>Additional transfers beyond the monthly allowance are charged at standard rates</li>
+              </ul>
+            </div>
+
+            <h3 className="text-sm font-medium text-gray-700 pt-4">11.3. Subscription Terms</h3>
+            <ul className="list-disc list-inside space-y-1.5 text-gray-600 text-sm ml-4">
+              <li>Subscriptions are billed monthly and auto-renew until cancelled</li>
+              <li>Cancel anytime; access continues until the end of the billing period</li>
+              <li>No refunds for partial months</li>
+              <li>Benefits reset at the start of each billing cycle</li>
+            </ul>
+          </div>
+
+          {/* Section 12 */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-medium text-gray-900">12. Membership NFT Program</h2>
             <p className="text-gray-600 text-sm leading-relaxed mb-2">Holders of a PCX Membership NFT are entitled to perpetual benefits:</p>
             <ul className="list-disc list-inside space-y-1.5 text-gray-600 text-sm ml-4">
               <li>One Free (renewable) Empty Leg Flight</li>
@@ -275,9 +309,9 @@ export default function TermsConditions() {
             </ul>
           </div>
 
-          {/* Section 12 */}
+          {/* Section 13 */}
           <div className="space-y-4">
-            <h2 className="text-lg font-medium text-gray-900">12. Payment Terms</h2>
+            <h2 className="text-lg font-medium text-gray-900">13. Payment Terms</h2>
             <div className="space-y-2 text-gray-600 text-sm leading-relaxed">
               <p><strong>Accepted Methods:</strong> Major credit/debit cards (via Stripe), bank transfers (SEPA, SWIFT), and cryptocurrencies (USDC, USDT, ETH, BTC, $PVCX).</p>
               <div className="bg-amber-50 p-3 rounded-lg border border-amber-200 mt-2">
@@ -288,9 +322,9 @@ export default function TermsConditions() {
             </div>
           </div>
 
-          {/* Section 13 */}
+          {/* Section 14 */}
           <div className="space-y-4">
-            <h2 className="text-lg font-medium text-gray-900">13. Liability</h2>
+            <h2 className="text-lg font-medium text-gray-900">14. Liability</h2>
             <div className="space-y-2 text-gray-600 text-sm leading-relaxed">
               <p>For international flights, liability is governed by the Montreal Convention 1999.</p>
               <p>PCX's total aggregate liability is limited to the service fees paid for the specific service, with a maximum of $100,000 per incident for non-aviation services.</p>
@@ -298,18 +332,18 @@ export default function TermsConditions() {
             </div>
           </div>
 
-          {/* Section 14 */}
+          {/* Section 15 */}
           <div className="space-y-4">
-            <h2 className="text-lg font-medium text-gray-900">14. Governing Law and Jurisdiction</h2>
+            <h2 className="text-lg font-medium text-gray-900">15. Governing Law and Jurisdiction</h2>
             <p className="text-gray-600 text-sm leading-relaxed">
               These Terms are governed by the laws of the State of Florida, United States. The courts of Miami-Dade County, Florida have exclusive jurisdiction.
               For EU residents, you may also bring claims in your country of residence under applicable consumer protection laws.
             </p>
           </div>
 
-          {/* Section 15 */}
+          {/* Section 16 */}
           <div className="space-y-4">
-            <h2 className="text-lg font-medium text-gray-900">15. Contact Information</h2>
+            <h2 className="text-lg font-medium text-gray-900">16. Contact Information</h2>
             <div className="bg-gray-50 p-4 rounded-xl space-y-2 text-sm">
               <p className="text-gray-600">
                 General: <a href="mailto:info@privatecharterx.com" className="text-gray-900 hover:underline">info@privatecharterx.com</a>
