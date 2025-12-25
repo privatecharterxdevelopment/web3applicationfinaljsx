@@ -193,13 +193,35 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
         {/* NFT Preview Card with Video - Glassmorphic */}
         <div className="max-w-md mx-auto">
           <div
-            className="rounded-2xl p-6 border border-white/30 shadow-xl"
+            className="rounded-2xl p-6 relative overflow-hidden"
             style={{
-              background: 'rgba(255, 255, 255, 0.25)',
-              backdropFilter: 'blur(20px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(20px) saturate(180%)'
+              background: 'linear-gradient(135deg, rgba(120, 120, 130, 0.15) 0%, rgba(80, 80, 90, 0.12) 50%, rgba(100, 100, 110, 0.18) 100%)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.15), inset 0 -1px 1px rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.12)'
             }}
           >
+            {/* Top edge highlight */}
+            <div
+              className="absolute top-0 left-0 right-0 h-[1px]"
+              style={{
+                background: 'linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.25) 30%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0.25) 70%, rgba(255,255,255,0.05) 100%)'
+              }}
+            />
+            {/* Left edge highlight */}
+            <div
+              className="absolute top-0 left-0 bottom-0 w-[1px]"
+              style={{
+                background: 'linear-gradient(180deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 100%)'
+              }}
+            />
+            {/* Bottom edge subtle highlight */}
+            <div
+              className="absolute bottom-0 left-0 right-0 h-[1px]"
+              style={{
+                background: 'linear-gradient(90deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.02) 100%)'
+              }}
+            />
             {/* NFT Video */}
             <div className="aspect-square bg-gray-900/80 rounded-xl mb-4 overflow-hidden relative">
               <video
@@ -231,7 +253,7 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 pt-2 border-t border-white/20">
+              <div className="flex items-center gap-2 pt-2 border-t border-gray-400/20">
                 <div className="flex-1">
                   <p className="text-xs text-gray-500 mb-1">Price</p>
                   <p className="text-lg font-medium text-gray-900">0.5 ETH</p>
