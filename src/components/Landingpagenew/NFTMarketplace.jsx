@@ -3,7 +3,7 @@ import { ExternalLink, Check, Shield, Crown, Sparkles, Zap, Plus, ChevronRight, 
 
 export default function NFTMarketplace({ onCreateNFT }) {
   const nftVideoUrl = "https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivateCharterX_transparent-_3_.mp4";
-  const openSeaUrl = "https://opensea.io/collection/privatecharterx-membership";
+  const openSeaUrl = "https://opensea.io/collection/privatecharterx-membership-card";
 
   // PrivateCharterX NFT Data
   const nft = {

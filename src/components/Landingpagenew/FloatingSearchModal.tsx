@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { airportsJsonService as airportsService, type AirportSearchResult } from '../../services/airportsJsonService';
@@ -29,9 +29,6 @@ export default function FloatingSearchModal() {
   const [isLoadingDeparture, setIsLoadingDeparture] = useState(false);
   const [isLoadingDestination, setIsLoadingDestination] = useState(false);
 
-  // File upload for Break the Price
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const titles = [
     'Where we fly today?',
@@ -170,46 +167,6 @@ export default function FloatingSearchModal() {
     }
   };
 
-  // Handle file upload for Break the Price
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file type
-      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
-      if (!allowedTypes.includes(file.type)) {
-        alert('Please upload a PDF or image file (JPG, PNG, WebP)');
-        return;
-      }
-      // Validate file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        alert('File too large. Maximum size is 10MB.');
-        return;
-      }
-      setSelectedFile(file);
-      // Navigate to AI chat with Break the Price file
-      const params = new URLSearchParams({
-        tab: 'ai-chat',
-        newChat: 'true',
-        breakThePrice: 'true',
-        fileName: file.name
-      });
-      if (!isAuthenticated) {
-        params.append('login', 'true');
-      }
-      // Store file in sessionStorage for AI chat to pick up
-      const reader = new FileReader();
-      reader.onload = () => {
-        sessionStorage.setItem('breakThePriceFile', JSON.stringify({
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          data: reader.result
-        }));
-        navigate(`/dashboard?${params.toString()}`);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   // Navigate with authentication check helper
   const navigateWithAuth = (path: string) => {
@@ -352,26 +309,6 @@ export default function FloatingSearchModal() {
                 </div>
               )}
             </div>
-
-            {/* Upload Button - For Break the Price (PDF/Image) */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,image/jpeg,image/png,image/webp"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-md sm:rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center transition-all duration-100 hover:bg-gray-200 hover:text-gray-700 active:scale-95 flex-shrink-0"
-              title="Upload quote (PDF/Image) - Break the Price"
-            >
-              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-            </button>
 
             {/* Send Button - Minimal rounded square */}
             <button

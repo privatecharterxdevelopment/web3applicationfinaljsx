@@ -30,7 +30,7 @@ async function sendExistingUserEmail(email: string, firstName: string) {
     });
 
     const fromEmail = Deno.env.get('FROM_EMAIL') || 'noreply@www.privatecharterx.com';
-    const siteUrl = Deno.env.get('SITE_URL') || 'https://privatecharterx.com';
+    const siteUrl = Deno.env.get('SITE_URL') || 'https://web3applicationfinaljsx.vercel.app';
     const resetUrl = `${siteUrl}/login`;
 
     const emailParams = {
@@ -287,7 +287,7 @@ serve(async (req) => {
     });
 
     const fromEmail = Deno.env.get('FROM_EMAIL') || 'noreply@www.privatecharterx.com';
-    const siteUrl = Deno.env.get('SITE_URL') || 'https://privatecharterx.com';
+    const siteUrl = Deno.env.get('SITE_URL') || 'https://web3applicationfinaljsx.vercel.app';
 
     const welcomeEmailHTML = `
     <!DOCTYPE html>

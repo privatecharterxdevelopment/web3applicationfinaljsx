@@ -131,7 +131,95 @@ serve(async (req) => {
     });
     // Prepare email parameters
     const fromEmail = Deno.env.get('FROM_EMAIL') || 'noreply@www.privatecharterx.com'; //'ipsunlorem@gmail.com'; //'no-reply@privatecharterx.com'; // must be verified in aws first
-    const resetUrl = `${Deno.env.get('SITE_URL') || 'https://privatecharterx.com'}/reset-password?token=${resetToken}`;
+    const siteUrl = Deno.env.get('SITE_URL') || 'https://web3applicationfinaljsx.vercel.app';
+    const resetUrl = `${siteUrl}/reset-password?token=${resetToken}`;
+
+    const resetEmailHTML = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Reset Your Password - PrivateCharterX</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f9fafb; }
+        .container { max-width: 600px; margin: 0 auto; background-color: white; }
+        .header { background: linear-gradient(135deg, #000000 0%, #1a1a2e 100%); color: white; padding: 40px 32px; text-align: center; }
+        .header h1 { margin: 0; font-size: 28px; letter-spacing: 1px; }
+        .header p { margin: 12px 0 0; opacity: 0.9; font-size: 16px; }
+        .content { padding: 32px; }
+        .reset-badge { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; display: inline-block; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: 600; margin-bottom: 20px; }
+        .intro-text { font-size: 16px; color: #4b5563; line-height: 1.6; margin-bottom: 24px; }
+        .button { display: inline-block; background: #000; color: white; padding: 16px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px; }
+        .link-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 24px 0; word-break: break-all; font-size: 12px; color: #64748b; }
+        .warning-box { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 12px; padding: 16px; margin: 24px 0; }
+        .warning-title { font-size: 14px; font-weight: 600; color: #92400e; margin: 0 0 4px; }
+        .warning-text { font-size: 13px; color: #b45309; margin: 0; }
+        .support-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; margin: 24px 0; text-align: center; }
+        .support-title { font-size: 16px; font-weight: 600; color: #166534; margin: 0 0 8px; }
+        .support-text { font-size: 14px; color: #15803d; margin: 0; }
+        .support-text a { color: #166534; text-decoration: none; font-weight: 600; }
+        .footer { background-color: #f8fafc; padding: 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>PrivateCharterX</h1>
+          <p>Password Reset Request</p>
+        </div>
+
+        <div class="content">
+          <div style="text-align: center;">
+            <span class="reset-badge">Password Reset</span>
+          </div>
+
+          <h2 style="text-align: center; font-size: 24px; color: #1e293b; margin: 16px 0;">Reset Your Password</h2>
+
+          <p class="intro-text">
+            We received a request to reset your password. Click the button below to create a new password for your PrivateCharterX account.
+          </p>
+
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${resetUrl}" class="button">Reset Password</a>
+          </div>
+
+          <div class="warning-box">
+            <p class="warning-title">&#9888; This link expires in 1 hour</p>
+            <p class="warning-text">For security reasons, this password reset link will expire in 60 minutes. If you need a new link, please request another password reset.</p>
+          </div>
+
+          <div class="link-box">
+            <strong style="color: #475569;">If the button doesn't work, copy this link:</strong><br/><br/>
+            ${resetUrl}
+          </div>
+
+          <p style="font-size: 14px; color: #6b7280; text-align: center;">
+            If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.
+          </p>
+
+          <div class="support-box">
+            <p class="support-title">Need Help?</p>
+            <p class="support-text">
+              Contact our support team<br/>
+              <a href="mailto:support@privatecharterx.com">support@privatecharterx.com</a>
+            </p>
+          </div>
+        </div>
+
+        <div class="footer">
+          <p style="margin: 0 0 8px;"><strong>PrivateCharterX</strong></p>
+          <p style="margin: 0;">Private Aviation & Luxury Services</p>
+          <p style="margin: 16px 0 0;">&copy; ${new Date().getFullYear()} PrivateCharterX. All rights reserved.</p>
+          <p style="margin: 8px 0 0; font-size: 11px; color: #9ca3af;">
+            Zurich, Switzerland | <a href="${siteUrl}/privacy" style="color: #9ca3af;">Privacy Policy</a> | <a href="${siteUrl}/terms" style="color: #9ca3af;">Terms of Service</a>
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+    `;
+
     const emailParams = {
       FromEmailAddress: `PrivateCharterX <${fromEmail}>`,
       Destination: {
@@ -147,30 +235,7 @@ serve(async (req) => {
           },
           Body: {
             Html: {
-              Data: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                  <div style="background-color: #000; padding: 20px; text-align: center;">
-                    <h1 style="color: #fff; margin: 0;">PrivateCharterX</h1>
-                  </div>
-                  <div style="padding: 20px; border: 1px solid #eee; border-top: none;">
-                    <h2>Reset Your Password</h2>
-                    <p>We received a request to reset your password. Click the button below to create a new password:</p>
-                    <div style="text-align: center; margin: 30px 0;">
-                      <a href="${resetUrl}" 
-                        style="background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
-                        Reset Password
-                      </a>
-                    </div>
-                    <p>If you did not request a password reset, you can safely ignore this email.</p>
-                    <p>This link will expire in 1 hour.</p>
-                    <p>If the button doesn't work, copy and paste this URL into your browser:</p>
-                    <p style="word-break: break-all;">${resetUrl}</p>
-                  </div>
-                  <div style="background-color: #f5f5f5; padding: 15px; text-align: center; font-size: 12px; color: #666;">
-                    <p>&copy; ${new Date().getFullYear()} PrivateCharterX. All rights reserved.</p>
-                  </div>
-                </div>
-              `,
+              Data: resetEmailHTML,
               Charset: 'UTF-8'
             }
           }

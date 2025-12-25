@@ -26,7 +26,7 @@ interface RWANFTProps {
 
 // NFT Contract Details
 const NFT_CONTRACT = '0xDF86Cf55BD2E58aaaC09160AaD0ed8673382B339';
-const OPENSEA_URL = `https://opensea.io/collection/privatecharterx-membership`;
+const OPENSEA_URL = `https://opensea.io/collection/privatecharterx-membership-card`;
 const NFT_VIDEO = 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/PrivateCharterX_transparent-_3_.mp4';
 
 function RWANFT({ setCurrentPage }: RWANFTProps) {
@@ -411,7 +411,7 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
             NFT vs Traditional Operator Memberships
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Compare our Web3 membership with traditional aviation operator programs like VistaJet, NetJets, and Wheels Up.
+            Compare our Web3 membership with traditional aviation operator programs.
           </p>
         </div>
 
