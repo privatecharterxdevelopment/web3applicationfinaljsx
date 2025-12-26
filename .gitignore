@@ -156,3 +156,4 @@ typechain/
 thefinalwebapplicationpcx-main/
 .vercel
 .env*.local
+src/components/Screenshot*.png
