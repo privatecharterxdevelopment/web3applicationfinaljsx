@@ -1138,8 +1138,11 @@ const LuxuryCars = () => {
           {/* RESULTS */}
           {loading ? (
             <div className="flex justify-center items-center py-20">
-              <div className="w-12 h-12 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
-              <p className="ml-4 text-gray-600">Loading luxury cars...</p>
+              <div className="w-20 h-20">
+                <video autoPlay loop muted playsInline className="w-full h-full object-contain">
+                  <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
+                </video>
+              </div>
             </div>
           ) : error ? (
             <div className="text-center py-16 bg-red-50 rounded-2xl border border-red-100">

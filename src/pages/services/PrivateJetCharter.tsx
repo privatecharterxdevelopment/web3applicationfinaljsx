@@ -688,7 +688,11 @@ export default function JetCharter() {
 
           {loading ? (
             <div className="flex justify-center items-center py-20">
-              <div className="w-12 h-12 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
+              <div className="w-20 h-20">
+                <video autoPlay loop muted playsInline className="w-full h-full object-contain">
+                  <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
+                </video>
+              </div>
             </div>
           ) : filteredJets.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
