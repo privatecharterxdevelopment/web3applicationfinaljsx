@@ -7670,10 +7670,17 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
-          {/* Launchpad */}
+          {/* Launchpad - Coming Soon */}
           {!isTransitioning && activeCategory === 'launchpad' && (
-            <div className="w-full h-full overflow-y-auto">
-              <LaunchpadPageNew />
+            <div className="w-full h-full overflow-y-auto flex items-center justify-center">
+              <div className="text-center p-8">
+                <h2 className="text-2xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter mb-2 font-['DM_Sans']">Launchpad</h2>
+                <p className="text-gray-500 mb-4">Token launches and IDO platform</p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-600 text-sm font-medium">
+                  <Rocket size={16} />
+                  Launching Q1 / 2026
+                </div>
+              </div>
             </div>
           )}
 
@@ -7698,10 +7705,17 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
-          {/* Marketplace */}
+          {/* Marketplace - Coming Soon */}
           {!isTransitioning && activeCategory === 'marketplace' && (
-            <div className="w-full h-full overflow-y-auto">
-              <Marketplace />
+            <div className="w-full h-full overflow-y-auto flex items-center justify-center">
+              <div className="text-center p-8">
+                <h2 className="text-2xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter mb-2 font-['DM_Sans']">Marketplace</h2>
+                <p className="text-gray-500 mb-4">Trade tokenized assets and collectibles</p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-600 text-sm font-medium">
+                  <Rocket size={16} />
+                  Launching Q1 / 2026
+                </div>
+              </div>
             </div>
           )}
 
