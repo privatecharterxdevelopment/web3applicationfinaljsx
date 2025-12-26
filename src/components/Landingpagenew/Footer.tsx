@@ -127,21 +127,27 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               </div>
             </div>
 
-            {/* Support */}
+            {/* Pages */}
             <div>
-              <h4 className="text-sm font-medium text-gray-900 mb-4">Support</h4>
+              <h4 className="text-sm font-medium text-gray-900 mb-4">Pages</h4>
               <div className="space-y-2.5">
-                <button onClick={() => handleNavigate('/faqs')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
-                  FAQ
+                <button onClick={() => handleNavigate('/services')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
+                  Services
+                </button>
+                <button onClick={() => handleNavigate('/aviation')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
+                  Aviation
+                </button>
+                <button onClick={() => handleNavigate('/tokenized')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
+                  RWA Tokenization
+                </button>
+                <button onClick={() => handleNavigate('/sphera-ai')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
+                  Sphera AI
+                </button>
+                <button onClick={() => handleNavigate('/rwa-nft')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
+                  RWA NFT
                 </button>
                 <button onClick={() => handleNavigate('/helpdesk')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
-                  Help Center
-                </button>
-                <button onClick={() => handleNavigate('/sphera-ai#pricing')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
-                  Subscriptions
-                </button>
-                <button onClick={() => handleNavigate('/dashboard/chat?query=Express%20Visa%20Service&newChat=true')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
-                  Visa Services
+                  Helpdesk
                 </button>
               </div>
             </div>
