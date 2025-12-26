@@ -683,15 +683,15 @@ const CRMDashboard = ({ onClose }) => {
   const fetchPVCXData = useCallback(async () => {
     setRefreshing(true);
     try {
-      // Try to fetch from pvcx_balances table (will create if doesn't exist via upsert)
+      // Fetch from pvcx_balance table (main source of truth)
       const { data: balances, error: balError } = await supabaseAdmin
-        .from('pvcx_balances')
+        .from('pvcx_balance')
         .select('*')
         .order('balance', { ascending: false });
 
       if (balError) {
-        console.log('PVCX balances table may not exist, checking user_profiles for pvcx_balance field');
-        // Fallback: fetch from user_profiles if pvcx_balances table doesn't exist
+        console.log('pvcx_balance table error, checking user_profiles for pvcx_balance field');
+        // Fallback: fetch from user_profiles if pvcx_balance table doesn't exist
         const { data: profiles } = await supabaseAdmin
           .from('user_profiles')
           .select('user_id, pvcx_balance')
@@ -6825,13 +6825,14 @@ const PVCXSection = ({ balances, transactions, refreshing, onRefresh, supabaseAd
           .insert({
             user_id: selectedUser.id,
             type: 'pvcx_received',
-            title: 'PVCX Tokens Received',
-            message: `You received ${amount.toLocaleString()} PVCX from ${sourceLabel}. New balance: ${newBalance.toLocaleString()} PVCX`,
-            read: false,
+            title: 'PVCX Tokens Received! 🎉',
+            message: `You received ${amount.toLocaleString()} PVCX from ${sourceLabel}. Your new balance is ${newBalance.toLocaleString()} PVCX.`,
+            is_read: false,
             created_at: new Date().toISOString()
           });
+        console.log('✅ PVCX notification created for user:', selectedUser.id);
       } catch (notifErr) {
-        console.log('Could not create notification (table may not exist):', notifErr);
+        console.error('❌ Could not create notification:', notifErr);
       }
 
       alert(`Successfully sent ${amount.toLocaleString()} PVCX (${sendSource}) to ${selectedUser.email || selectedUser.name || 'user'}`);
@@ -7472,8 +7473,8 @@ const InvoiceGeneratorSection = ({ customers, supabaseAdmin }) => {
         <meta charset="UTF-8">
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #333; line-height: 1.5; }
-          .container { max-width: 800px; margin: 0 auto; padding: 40px; }
+          body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #333; line-height: 1.5; background: #fff; }
+          .pdf-container { max-width: 800px; margin: 0 auto; padding: 40px; background: #fff; }
           .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 2px solid #111; }
           .logo { font-size: 24px; font-weight: 700; color: #111; }
           .logo span { color: #666; font-weight: 400; }
@@ -7496,7 +7497,7 @@ const InvoiceGeneratorSection = ({ customers, supabaseAdmin }) => {
         </style>
       </head>
       <body>
-        <div class="container">
+        <div class="pdf-container">
           <div class="header">
             <div>
               <div class="logo">PrivateCharterX<span> Aviation</span></div>

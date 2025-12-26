@@ -56,15 +56,11 @@ Timestamp: ${new Date().toISOString()}`;
       return;
     }
 
-    if (!signature) {
-      alert('Please sign with your wallet');
-      return;
-    }
-
+    // Wallet signature is optional - can be added later
     onSubmit({
       termsAccepted,
       declarationAccepted,
-      signature
+      signature: signature || null
     });
   };
 
@@ -187,7 +183,7 @@ Timestamp: ${new Date().toISOString()}`;
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!termsAccepted || !declarationAccepted || !signature}
+            disabled={!termsAccepted || !declarationAccepted}
             className="px-6 py-3 bg-black hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all flex items-center gap-2"
           >
             <Check size={18} />

@@ -1287,6 +1287,7 @@ const TokenizedAssetsGlassmorphic = () => {
   // Tokenization state
   const [userTokenizations, setUserTokenizations] = useState([]);
   const [loadingTokenizations, setLoadingTokenizations] = useState(false);
+  const [selectedTokenization, setSelectedTokenization] = useState(null);
 
   // DAO state
   const [userDaos, setUserDaos] = useState([]);
@@ -4874,7 +4875,7 @@ const TokenizedAssetsGlassmorphic = () => {
         {/* Main Content Area - PART OF SAME CONTAINER */}
         <main className={`flex-1 overflow-y-auto flex flex-col ${webMode === 'web3' ? 'bg-white/10' : ''}`}>
           {/* FIXED TOP BAR - Category menu links on left, icons and switcher on right */}
-          <div className={`sticky top-0 sm:top-4 z-40 px-2 sm:px-4 lg:px-8 flex justify-between items-center pt-2 sm:pt-6 pr-2 sm:pr-4 lg:pr-6 ${
+          <div className={`sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100/50 px-2 sm:px-4 lg:px-8 flex justify-between items-center py-3 sm:py-4 pr-2 sm:pr-4 lg:pr-6 ${
             activeCategory === 'chat' ? 'hidden' : ''
           }`}>
             {/* MOBILE ONLY: Sidebar Toggle in header row - Categories moved to sidebar */}
@@ -6784,7 +6785,7 @@ const TokenizedAssetsGlassmorphic = () => {
 
           {/* Tokenize Asset Flow */}
           {!isTransitioning && activeCategory === 'tokenization' && (
-            <TokenizeAssetFlow onBack={() => setActiveCategory('overview')} user={user} />
+            <TokenizeAssetFlow onBack={(destination) => setActiveCategory(destination || 'overview')} user={user} />
           )}
 
           {/* My Tokenized Assets View */}
@@ -6900,8 +6901,13 @@ const TokenizedAssetsGlassmorphic = () => {
                           <div className="pt-4 border-t border-gray-200">
                             <button
                               onClick={() => {
-                                // TODO: Load draft and open tokenization flow
-                                console.log('View/Edit tokenization:', token.id);
+                                if (token.status === 'draft') {
+                                  // TODO: Load draft and open tokenization flow for editing
+                                  console.log('Continue editing draft:', token.id);
+                                } else {
+                                  // Open detail view modal
+                                  setSelectedTokenization(token);
+                                }
                               }}
                               className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
                             >
@@ -6935,6 +6941,310 @@ const TokenizedAssetsGlassmorphic = () => {
                     )}
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Tokenization Detail Modal */}
+          {selectedTokenization && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+                {/* Modal Header */}
+                <div className="relative">
+                  {selectedTokenization.header_image_url ? (
+                    <div className="h-40 overflow-hidden">
+                      <img src={selectedTokenization.header_image_url} alt="" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    </div>
+                  ) : (
+                    <div className="h-24 bg-gradient-to-r from-purple-600 to-purple-800" />
+                  )}
+                  <button
+                    onClick={() => setSelectedTokenization(null)}
+                    className="absolute top-4 right-4 p-2 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/40 transition-colors"
+                  >
+                    <X size={20} className="text-white" />
+                  </button>
+                  <div className="absolute bottom-4 left-6 flex items-center gap-4">
+                    <div className="w-16 h-16 bg-white rounded-xl shadow-lg flex items-center justify-center overflow-hidden border-4 border-white">
+                      {selectedTokenization.logo_url ? (
+                        <img src={selectedTokenization.logo_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <Sparkles size={28} className="text-purple-600" />
+                      )}
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-white drop-shadow-lg">
+                        {selectedTokenization.asset_name || 'Untitled Asset'}
+                      </h2>
+                      {selectedTokenization.token_symbol && (
+                        <span className="text-sm font-mono text-white/80">${selectedTokenization.token_symbol}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Modal Content */}
+                <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+                  {/* Status Badge */}
+                  <div className="flex items-center gap-3 mb-6">
+                    <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${
+                      selectedTokenization.status === 'submitted' ? 'bg-yellow-100 text-yellow-700' :
+                      selectedTokenization.status === 'approved' ? 'bg-green-100 text-green-700' :
+                      selectedTokenization.status === 'processing' ? 'bg-blue-100 text-blue-700' :
+                      selectedTokenization.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {selectedTokenization.status === 'submitted' ? '⏳ Pending Review' :
+                       selectedTokenization.status === 'approved' ? '✅ Approved' :
+                       selectedTokenization.status === 'processing' ? '🔄 In Progress' :
+                       selectedTokenization.status === 'rejected' ? '❌ Declined' :
+                       selectedTokenization.status?.charAt(0).toUpperCase() + selectedTokenization.status?.slice(1) || 'Draft'}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      Submitted: {new Date(selectedTokenization.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  {/* Asset Information */}
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <Building2 size={18} className="text-purple-600" />
+                      Asset Information
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">Category</p>
+                        <p className="text-sm font-medium text-gray-900 capitalize">{selectedTokenization.asset_category || '-'}</p>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">Asset Value</p>
+                        <p className="text-sm font-medium text-gray-900">{selectedTokenization.asset_value ? `€${Number(selectedTokenization.asset_value).toLocaleString()}` : '-'}</p>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">Location</p>
+                        <p className="text-sm font-medium text-gray-900">{selectedTokenization.asset_location || '-'}</p>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">Jurisdiction</p>
+                        <p className="text-sm font-medium text-gray-900">{selectedTokenization.jurisdiction || '-'}</p>
+                      </div>
+                    </div>
+                    {selectedTokenization.asset_description && (
+                      <div className="mt-4 bg-gray-50 p-4 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-2">Description</p>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedTokenization.asset_description}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Token Configuration */}
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <Coins size={18} className="text-purple-600" />
+                      Token Configuration
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">Token Type</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {selectedTokenization.token_type === 'utility' ? 'UTO (Utility)' :
+                           selectedTokenization.token_type === 'security' ? 'STO (Security)' : '-'}
+                        </p>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">Token Standard</p>
+                        <p className="text-sm font-medium text-gray-900">{selectedTokenization.token_standard || '-'}</p>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">Total Supply</p>
+                        <p className="text-sm font-medium text-gray-900">{selectedTokenization.total_supply ? Number(selectedTokenization.total_supply).toLocaleString() : '-'}</p>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">Price per Token</p>
+                        <p className="text-sm font-medium text-gray-900">{selectedTokenization.price_per_token ? `€${Number(selectedTokenization.price_per_token).toLocaleString()}` : '-'}</p>
+                      </div>
+                      {selectedTokenization.expected_apy && (
+                        <div className="bg-green-50 p-3 rounded-lg">
+                          <p className="text-xs text-gray-500 mb-1">Expected APY</p>
+                          <p className="text-sm font-medium text-green-700">{selectedTokenization.expected_apy}%</p>
+                        </div>
+                      )}
+                      {selectedTokenization.lockup_period && (
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <p className="text-xs text-gray-500 mb-1">Lockup Period</p>
+                          <p className="text-sm font-medium text-gray-900">{selectedTokenization.lockup_period} months</p>
+                        </div>
+                      )}
+                      {selectedTokenization.minimum_investment && (
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <p className="text-xs text-gray-500 mb-1">Min. Investment</p>
+                          <p className="text-sm font-medium text-gray-900">€{Number(selectedTokenization.minimum_investment).toLocaleString()}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Wallet Information */}
+                  {(selectedTokenization.issuer_wallet_address || selectedTokenization.wallet_address) && (
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <Wallet size={18} className="text-purple-600" />
+                        Wallet Information
+                      </h3>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">Issuer Wallet Address</p>
+                        <p className="text-sm font-mono text-gray-900 break-all">
+                          {selectedTokenization.issuer_wallet_address || selectedTokenization.wallet_address || 'Not specified yet'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Asset Images */}
+                  {selectedTokenization.form_data?.images && selectedTokenization.form_data.images.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <Image size={18} className="text-purple-600" />
+                        Asset Images
+                      </h3>
+                      <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                        {selectedTokenization.form_data.images.map((img, idx) => (
+                          <a
+                            key={idx}
+                            href={img.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="aspect-square rounded-lg overflow-hidden border border-gray-200 hover:border-purple-400 transition-colors"
+                          >
+                            <img src={img.url} alt={img.name || `Asset image ${idx + 1}`} className="w-full h-full object-cover" />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Documents */}
+                  {selectedTokenization.form_data && (
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <FileText size={18} className="text-purple-600" />
+                        Legal Documents
+                      </h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        {selectedTokenization.form_data.prospectus?.url && (
+                          <a
+                            href={selectedTokenization.form_data.prospectus.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
+                          >
+                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                              <FileText size={20} className="text-blue-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">Prospectus</p>
+                              <p className="text-xs text-gray-500">{selectedTokenization.form_data.prospectus.name || 'View document'}</p>
+                            </div>
+                          </a>
+                        )}
+                        {selectedTokenization.form_data.legalOpinion?.url && (
+                          <a
+                            href={selectedTokenization.form_data.legalOpinion.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
+                          >
+                            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                              <FileText size={20} className="text-green-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">Legal Opinion</p>
+                              <p className="text-xs text-gray-500">{selectedTokenization.form_data.legalOpinion.name || 'View document'}</p>
+                            </div>
+                          </a>
+                        )}
+                        {selectedTokenization.form_data.ownershipProof?.url && (
+                          <a
+                            href={selectedTokenization.form_data.ownershipProof.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
+                          >
+                            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                              <FileText size={20} className="text-purple-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">Ownership Proof</p>
+                              <p className="text-xs text-gray-500">{selectedTokenization.form_data.ownershipProof.name || 'View document'}</p>
+                            </div>
+                          </a>
+                        )}
+                        {selectedTokenization.form_data.insurance?.url && (
+                          <a
+                            href={selectedTokenization.form_data.insurance.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
+                          >
+                            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                              <Shield size={20} className="text-amber-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">Insurance</p>
+                              <p className="text-xs text-gray-500">{selectedTokenization.form_data.insurance.name || 'View document'}</p>
+                            </div>
+                          </a>
+                        )}
+                        {!selectedTokenization.form_data.prospectus?.url &&
+                         !selectedTokenization.form_data.legalOpinion?.url &&
+                         !selectedTokenization.form_data.ownershipProof?.url &&
+                         !selectedTokenization.form_data.insurance?.url && (
+                          <div className="col-span-2 text-center py-8 bg-gray-50 rounded-lg text-gray-500">
+                            <FileText size={32} className="mx-auto mb-2 text-gray-300" />
+                            <p className="text-sm">No documents uploaded</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Timeline for Approved */}
+                  {selectedTokenization.status === 'approved' && selectedTokenization.marketplace_launch_at && (
+                    <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+                      <h3 className="text-sm font-semibold text-green-800 mb-3 flex items-center gap-2">
+                        <Clock size={16} />
+                        Launch Timeline
+                      </h3>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-green-700">Approved</span>
+                          <span className="text-sm text-green-900 font-medium">{new Date(selectedTokenization.approved_at).toLocaleDateString()}</span>
+                        </div>
+                        {selectedTokenization.waitlist_opens_at && (
+                          <div className="flex justify-between">
+                            <span className="text-sm text-green-700">Waitlist Opens</span>
+                            <span className="text-sm text-green-900 font-medium">{new Date(selectedTokenization.waitlist_opens_at).toLocaleDateString()}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span className="text-sm text-green-700">Launch Date</span>
+                          <span className="text-sm text-green-900 font-bold">{new Date(selectedTokenization.marketplace_launch_at).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Modal Footer */}
+                <div className="p-4 border-t border-gray-200 flex justify-end">
+                  <button
+                    onClick={() => setSelectedTokenization(null)}
+                    className="px-6 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           )}

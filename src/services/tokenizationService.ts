@@ -310,7 +310,7 @@ export async function submitDraft(
       signature: string;
       address: string;
       timestamp: string;
-    };
+    } | null;
   }
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -322,9 +322,12 @@ export async function submitDraft(
     // Add signature data if provided
     if (signatureData) {
       updateData.terms_accepted = signatureData.termsAccepted;
-      updateData.wallet_signature = signatureData.signature.signature;
-      updateData.signature_timestamp = signatureData.signature.timestamp;
-      updateData.signer_address = signatureData.signature.address;
+      // Wallet signature is optional - only add if user signed with wallet
+      if (signatureData.signature) {
+        updateData.wallet_signature = signatureData.signature.signature;
+        updateData.signature_timestamp = signatureData.signature.timestamp;
+        updateData.signer_address = signatureData.signature.address;
+      }
     }
 
     const { data, error } = await supabase

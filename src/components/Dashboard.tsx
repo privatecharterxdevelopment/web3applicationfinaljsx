@@ -1775,10 +1775,11 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
     { id: 'requests', label: 'My Requests', icon: History, badge: userRequests.length },
     { id: 'ai-requests', label: 'AI Requests', icon: Sparkles, badge: aiRequestsCount, isSubMenu: true },
     { id: 'messages', label: 'Notifications', icon: Bell, badge: notifications.filter(n => n.unread).length },
+    // Always show Tokenized Assets
+    { id: 'tokenized-assets', label: 'My Tokenized Assets', icon: Gem },
     // Web 3.0 only items
     ...(isWeb3Mode ? [
       { id: 'transactions', label: 'Transactions', icon: CreditCard },
-      { id: 'tokenized-assets', label: 'Tokenized Assets', icon: Gem },
       { id: 'wallet', label: 'Wallet & NFTs', icon: Wallet, badge: walletAssets.nfts.length },
     ] : []),
     { id: 'co2-certificates', label: 'CO2 Certificates', icon: Leaf, badge: co2Stats?.total_requests || 0 },
@@ -3346,23 +3347,127 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
   );
   };
 
+  // Tokenized Assets State
+  const [tokenizedAssets, setTokenizedAssets] = useState([]);
+  const [loadingTokenizedAssets, setLoadingTokenizedAssets] = useState(false);
+
+  // Fetch tokenized assets
+  const fetchTokenizedAssets = async () => {
+    if (!user?.id) return;
+    setLoadingTokenizedAssets(true);
+    try {
+      const { data, error } = await supabase
+        .from('tokenization_drafts')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setTokenizedAssets(data);
+      }
+    } catch (err) {
+      console.error('Error fetching tokenized assets:', err);
+    }
+    setLoadingTokenizedAssets(false);
+  };
+
+  // Fetch on mount and when view changes
+  useEffect(() => {
+    if (currentView === 'tokenized-assets') {
+      fetchTokenizedAssets();
+    }
+  }, [currentView, user?.id]);
+
+  // Status badge helper
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'submitted':
+        return { label: 'Received', color: 'bg-blue-100 text-blue-700' };
+      case 'in_review':
+      case 'in_progress':
+        return { label: 'In Progress', color: 'bg-yellow-100 text-yellow-700' };
+      case 'approved':
+      case 'confirmed':
+        return { label: 'Confirmed', color: 'bg-green-100 text-green-700' };
+      case 'rejected':
+        return { label: 'Rejected', color: 'bg-red-100 text-red-700' };
+      default:
+        return { label: 'Draft', color: 'bg-gray-100 text-gray-700' };
+    }
+  };
+
   // Render Tokenized Assets Tab
   const renderTokenizedAssets = () => (
     <div className="p-8 space-y-6">
       {/* Title */}
       <div className="mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-2">Tokenized Assets</h2>
-        <p className="text-sm text-gray-600">View and manage your tokenized assets</p>
+        <h2 className="text-2xl font-semibold text-gray-800 mb-2">My Tokenized Assets</h2>
+        <p className="text-sm text-gray-600">Track your tokenization requests</p>
       </div>
 
       {/* Content */}
-      <div className="bg-gray-100/40 rounded-xl p-8 text-center">
-        <Sparkles size={48} className="text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No Tokenized Assets Yet</h3>
-        <p className="text-gray-600 max-w-md mx-auto">
-          Your tokenized assets will appear here once you create them
-        </p>
-      </div>
+      {loadingTokenizedAssets ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+        </div>
+      ) : tokenizedAssets.length === 0 ? (
+        <div className="bg-gray-100/40 rounded-xl p-8 text-center">
+          <Sparkles size={48} className="text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No Tokenization Requests Yet</h3>
+          <p className="text-gray-600 max-w-md mx-auto mb-4">
+            Submit a tokenization request and track its status here
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {tokenizedAssets.map((asset) => {
+            const status = getStatusBadge(asset.status);
+            return (
+              <div
+                key={asset.id}
+                className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="font-semibold text-gray-900">
+                        {asset.asset_name || 'Untitled Asset'}
+                      </h3>
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${status.color}`}>
+                        {status.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                      <span className="capitalize">{asset.asset_category?.replace('-', ' ') || 'N/A'}</span>
+                      <span>•</span>
+                      <span>{asset.token_type === 'utility' ? 'Utility Token' : 'Security Token'}</span>
+                      {asset.asset_value && (
+                        <>
+                          <span>•</span>
+                          <span>${parseFloat(asset.asset_value).toLocaleString()}</span>
+                        </>
+                      )}
+                    </div>
+                    {asset.asset_location && (
+                      <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
+                        <MapPin size={12} />
+                        {asset.asset_location}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right text-xs text-gray-400">
+                    {asset.submitted_at ? (
+                      <span>Submitted {new Date(asset.submitted_at).toLocaleDateString()}</span>
+                    ) : (
+                      <span>Created {new Date(asset.created_at).toLocaleDateString()}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 
@@ -4796,7 +4901,7 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
               {currentView === 'messages' && renderMessages()}
               {/* Web 3.0 only views */}
               {isWeb3Mode && currentView === 'transactions' && renderTransactions()}
-              {isWeb3Mode && currentView === 'tokenized-assets' && renderTokenizedAssets()}
+              {currentView === 'tokenized-assets' && renderTokenizedAssets()}
               {isWeb3Mode && currentView === 'wallet' && renderWalletNFTs()}
               {/* Common views */}
               {currentView === 'co2-certificates' && renderCO2Certificates()}

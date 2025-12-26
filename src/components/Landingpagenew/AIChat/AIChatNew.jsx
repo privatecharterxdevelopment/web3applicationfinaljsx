@@ -791,11 +791,6 @@ const AIChatNew = ({
               }
             }}
             currentTier={subscription.userProfile?.subscription_tier || subscription.userSubscriptionLimits?.tier}
-            onUpgrade={async (tierId) => {
-              console.log('🎉 Plan selected:', tierId);
-              // The SubscriptionModal handles redirect to Stripe
-              // After returning, the useEffect will detect subscription=success
-            }}
             onToast={({ message, type }) => modals.setToast({ message, type })}
           />
         )}
@@ -1301,11 +1296,6 @@ const AIChatNew = ({
             }
           }}
           currentTier={subscription.userProfile?.subscription_tier || subscription.userSubscriptionLimits?.tier}
-          onUpgrade={async (tierId) => {
-            console.log('🎉 Plan selected:', tierId);
-            // The SubscriptionModal handles redirect to Stripe
-            // After returning, the useEffect will detect subscription=success
-          }}
           onToast={({ message, type }) => modals.setToast({ message, type })}
         />
       )}

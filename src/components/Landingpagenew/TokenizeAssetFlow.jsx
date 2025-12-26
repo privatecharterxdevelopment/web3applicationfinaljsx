@@ -99,7 +99,7 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null, user = null }) => {
     },
   });
 
-  const totalSteps = tokenType === 'security' ? 7 : 7; // UTO: 7 steps (includes payment), STO: 7 steps
+  const totalSteps = 2; // Step 0: Category, Step 1: Simplified Form
 
   // File upload refs
   const logoInputRef = useRef(null);
@@ -236,65 +236,42 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null, user = null }) => {
     }
   };
 
-  // Handle final submission - save draft and open terms modal
+  // Handle final submission - simplified: save request and show success
   const handleSubmitApplication = async () => {
     if (!user?.id) {
       alert('Please sign in to submit your tokenization request.');
       return;
     }
-    if (!address) {
-      alert('Please connect your wallet to submit.');
-      return;
-    }
 
     setIsSaving(true);
     try {
-      // Save draft first to get/update draft ID
+      // Save tokenization request
       const { data, error } = await supabase
         .from('tokenization_drafts')
         .upsert({
           id: currentDraftId || undefined,
-          user_id: user?.id, // Use authenticated user ID (UUID), not wallet address
-          wallet_address: address, // Store wallet address separately
+          user_id: user?.id,
+          wallet_address: address || null,
           token_type: tokenType,
           asset_category: assetCategory,
-          current_step: currentStep,
-          status: 'draft',
+          current_step: 1,
+          status: 'submitted',
           asset_name: formData.assetName || null,
           asset_description: formData.description || null,
           asset_value: formData.assetValue ? parseFloat(formData.assetValue) : null,
           asset_location: formData.location || null,
-          logo_url: formData.logo?.url || null,
-          header_image_url: formData.headerImage?.url || null,
           token_standard: formData.tokenStandard || null,
-          total_supply: formData.totalSupply ? parseInt(formData.totalSupply) : null,
           token_symbol: formData.tokenSymbol || null,
-          price_per_token: formData.pricePerToken ? parseFloat(formData.pricePerToken) : null,
-          minimum_investment: formData.minimumInvestment ? parseFloat(formData.minimumInvestment) : null,
-          expected_apy: formData.expectedAPY ? parseFloat(formData.expectedAPY) : null,
-          revenue_distribution: formData.revenueDistribution || null,
-          revenue_currency: formData.revenueCurrency || null,
-          lockup_period: formData.lockupPeriod ? parseInt(formData.lockupPeriod) : null,
-          has_spv: formData.hasSPV,
-          spv_details: formData.spvDetails || null,
-          operator: formData.operator || null,
-          management_fee: formData.managementFee || null,
-          access_rights: formData.accessRights || null,
-          validity_period: formData.validityPeriod || null,
-          is_transferable: formData.isTransferable,
-          is_burnable: formData.isBurnable,
-          jurisdiction: formData.jurisdiction || null,
-          needs_audit: formData.needsAudit,
-          issuer_wallet_address: formData.issuerWalletAddress || address,
-          membership_package: formData.membershipPackage || null,
           form_data: {
-            ...formData,
-            images: formData.images?.map(img => ({ name: img.name, url: img.url, path: img.path })) || [],
-            prospectus: formData.prospectus ? { name: formData.prospectus.name, url: formData.prospectus.url } : null,
-            legalOpinion: formData.legalOpinion ? { name: formData.legalOpinion.name, url: formData.legalOpinion.url } : null,
-            ownershipProof: formData.ownershipProof ? { name: formData.ownershipProof.name, url: formData.ownershipProof.url } : null,
-            insurance: formData.insurance ? { name: formData.insurance.name, url: formData.insurance.url } : null,
+            assetName: formData.assetName,
+            description: formData.description,
+            assetValue: formData.assetValue,
+            location: formData.location,
+            tokenSymbol: formData.tokenSymbol,
+            tokenType: tokenType,
+            assetCategory: assetCategory
           },
+          submitted_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }, { onConflict: 'id' })
         .select()
@@ -302,7 +279,7 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null, user = null }) => {
 
       if (error) {
         console.error('Save error:', error);
-        alert('Failed to save draft. Please try again.');
+        alert('Failed to submit request. Please try again.');
         setIsSaving(false);
         return;
       }
@@ -312,9 +289,31 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null, user = null }) => {
         setCurrentDraftId(data.id);
       }
 
+      // Also save to user_requests for email notifications
+      try {
+        await supabase.from('user_requests').insert([{
+          user_id: user.id,
+          type: 'tokenization',
+          status: 'pending',
+          data: {
+            tokenization_draft_id: data?.id,
+            asset_name: formData.assetName,
+            asset_category: assetCategory,
+            asset_description: formData.description,
+            asset_value: formData.assetValue,
+            asset_location: formData.location,
+            token_type: tokenType,
+            token_symbol: formData.tokenSymbol,
+            booking_source: 'tokenization_flow_simplified',
+            timestamp: new Date().toISOString()
+          }
+        }]);
+      } catch (notifError) {
+        console.warn('User request save failed:', notifError);
+      }
+
       setIsSaving(false);
-      // Open terms modal for signature
-      setShowTermsModal(true);
+      setShowSuccessModal(true);
     } catch (error) {
       console.error('Save exception:', error);
       alert('An error occurred while saving. Please try again.');
@@ -580,6 +579,173 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null, user = null }) => {
       </div>
     );
   };
+
+  // Simplified Request Form (Step 1) - Single page form after category selection
+  const renderSimplifiedForm = () => (
+    <div className="flex-1 overflow-y-auto py-8 px-6">
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <button
+            onClick={() => {
+              setAssetCategory(null);
+              setCurrentStep(0);
+            }}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 text-sm font-['DM_Sans']"
+          >
+            <ChevronLeft size={18} />
+            Back to Categories
+          </button>
+          <h2 className="text-2xl md:text-3xl font-light text-gray-900 tracking-tighter mb-2 font-['DM_Sans']">
+            Tokenize Your {assetCategory?.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Asset'}
+          </h2>
+          <p className="text-base text-gray-600 font-['DM_Sans']">
+            Fill in the details below and we'll get in touch within 24-48 hours
+          </p>
+        </div>
+
+        <div className="space-y-6">
+          {/* Token Type Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-900 mb-3 font-['DM_Sans']">Token Type *</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setTokenType('utility');
+                  updateFormData('tokenStandard', 'ERC-721');
+                }}
+                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                  tokenType === 'utility'
+                    ? 'bg-black text-white border-black'
+                    : 'bg-white/50 border-gray-200 hover:border-gray-300 text-gray-900'
+                }`}
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <Coins size={20} className={tokenType === 'utility' ? 'text-white' : 'text-gray-700'} />
+                  <span className="font-medium font-['DM_Sans']">Utility Token</span>
+                </div>
+                <p className={`text-xs font-['DM_Sans'] ${tokenType === 'utility' ? 'text-white/80' : 'text-gray-500'}`}>
+                  Memberships, access rights, service hours
+                </p>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTokenType('security');
+                  updateFormData('tokenStandard', 'ERC-1400');
+                }}
+                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                  tokenType === 'security'
+                    ? 'bg-black text-white border-black'
+                    : 'bg-white/50 border-gray-200 hover:border-gray-300 text-gray-900'
+                }`}
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <Shield size={20} className={tokenType === 'security' ? 'text-white' : 'text-gray-700'} />
+                  <span className="font-medium font-['DM_Sans']">Security Token</span>
+                </div>
+                <p className={`text-xs font-['DM_Sans'] ${tokenType === 'security' ? 'text-white/80' : 'text-gray-500'}`}>
+                  Fractional ownership, revenue sharing
+                </p>
+              </button>
+            </div>
+          </div>
+
+          {/* Asset Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Asset Name *</label>
+            <input
+              type="text"
+              value={formData.assetName}
+              onChange={(e) => updateFormData('assetName', e.target.value)}
+              placeholder="e.g., Gulfstream G650"
+              className="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 font-['DM_Sans']"
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Description *</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => updateFormData('description', e.target.value)}
+              placeholder="Tell us about your asset - its features, condition, and what you'd like to achieve with tokenization..."
+              rows={4}
+              className="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 resize-none font-['DM_Sans']"
+            />
+          </div>
+
+          {/* Value & Location Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Estimated Value (USD) *</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
+                <input
+                  type="number"
+                  value={formData.assetValue}
+                  onChange={(e) => updateFormData('assetValue', e.target.value)}
+                  placeholder="5,000,000"
+                  className="w-full pl-8 pr-4 py-3 bg-white/50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 font-['DM_Sans']"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">Location *</label>
+              <input
+                type="text"
+                value={formData.location}
+                onChange={(e) => updateFormData('location', e.target.value)}
+                placeholder="e.g., Dubai, UAE"
+                className="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 font-['DM_Sans']"
+              />
+            </div>
+          </div>
+
+          {/* Token Symbol (Optional) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-900 mb-2 font-['DM_Sans']">
+              Token Symbol <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <input
+              type="text"
+              value={formData.tokenSymbol}
+              onChange={(e) => updateFormData('tokenSymbol', e.target.value.toUpperCase())}
+              placeholder="e.g., GJET or PCX-JET"
+              maxLength={12}
+              className="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 uppercase font-['DM_Sans']"
+            />
+            <p className="mt-1 text-xs text-gray-500 font-['DM_Sans']">We can help you choose a symbol if you're unsure</p>
+          </div>
+
+          {/* Submit Button */}
+          <div className="pt-4">
+            <button
+              onClick={handleSubmitApplication}
+              disabled={!tokenType || !formData.assetName || !formData.description || !formData.assetValue || !formData.location || isSaving || isSubmitting}
+              className="w-full py-4 bg-black text-white font-medium rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-['DM_Sans']"
+            >
+              {isSaving || isSubmitting ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  {isSaving ? 'Saving...' : 'Submitting...'}
+                </>
+              ) : (
+                <>
+                  Submit Request
+                  <ArrowRight size={18} />
+                </>
+              )}
+            </button>
+            <p className="mt-3 text-center text-xs text-gray-500 font-['DM_Sans']">
+              Our team will contact you within 24-48 hours to discuss your tokenization
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   // Step 1: Token Type Selection - Larger Design
   const renderStep1 = () => (
@@ -2532,32 +2698,10 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null, user = null }) => {
 
   return (
     <div className="w-full flex-1 flex flex-col">
-      {/* Header spacer */}
-      <div className="mb-4"></div>
-
-      {/* Progress Bar */}
-      {currentStep > 0 && renderProgressBar()}
-
-      {/* Main Content with Summary Sidebar */}
-      <div className="flex-1 flex gap-6 px-4 md:px-6">
-        {/* Step Content */}
-        <div className={`flex-1 overflow-y-auto ${currentStep > 1 ? 'lg:pr-4' : ''}`}>
-          {currentStep === 0 && renderStep0()}
-          {currentStep === 1 && renderStep1()}
-          {currentStep === 2 && renderStep2()}
-          {currentStep === 3 && (tokenType === 'utility' ? renderStep3Utility() : renderStep3Security())}
-          {currentStep === 4 && (tokenType === 'security' ? renderStep4() : renderStep5())}
-          {currentStep === 5 && (tokenType === 'security' ? renderStep5() : renderPaymentPackageSelection())}
-          {currentStep === 6 && (tokenType === 'security' ? renderStep6() : renderUtilityPreview())}
-          {currentStep === 7 && renderStep6()}
-        </div>
-
-        {/* Summary Tracker Sidebar - Show from Step 2 onwards */}
-        {currentStep > 1 && (
-          <div className="hidden lg:block w-64 flex-shrink-0">
-            {renderSummaryTracker()}
-          </div>
-        )}
+      {/* Main Content - Simplified: Category Cards or Form */}
+      <div className="flex-1">
+        {currentStep === 0 && renderStep0()}
+        {currentStep === 1 && renderSimplifiedForm()}
       </div>
 
       {/* Jurisdiction Popup Modal */}
@@ -2701,11 +2845,11 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null, user = null }) => {
             <button
               onClick={() => {
                 setShowSuccessModal(false);
-                onBack();
+                onBack('my-tokenized-assets'); // Navigate to My Tokenized Assets
               }}
               className="w-full py-3 bg-black hover:bg-gray-800 text-white rounded-xl font-semibold transition-all"
             >
-              Back to Dashboard
+              View My Tokenized Assets
             </button>
           </div>
         </div>
