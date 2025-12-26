@@ -52,19 +52,21 @@ const PVCXTokenView = ({ user, onNavigate }) => {
     >
       {loading ? (
         <div className="flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
+          <div className="w-20 h-20">
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-contain"
+            >
+              <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
+            </video>
+          </div>
         </div>
       ) : (
         <div className="w-full max-w-sm flex flex-col items-center">
-          {/* Token Icon - Centered */}
-          <div className="mb-8">
-            <img
-              src={PVCX_LOGO}
-              alt="PVCX Token"
-              className="w-28 h-28 object-contain"
-            />
-          </div>
-
+          
           {/* Total Balance */}
           <div className="text-center mb-8">
             <p className="text-5xl font-light text-gray-900 tracking-tight mb-1">
@@ -104,7 +106,7 @@ const PVCXTokenView = ({ user, onNavigate }) => {
               disabled
               className="w-full py-3.5 bg-gray-100 text-gray-400 text-sm font-medium rounded-xl cursor-not-allowed"
             >
-              Withdrawals at 1,000 Users
+              Withdraw
             </button>
           )}
 

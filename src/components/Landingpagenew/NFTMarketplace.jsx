@@ -21,7 +21,7 @@ export default function NFTMarketplace({ onCreateNFT }) {
     <div className="w-full h-full overflow-y-auto p-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-light text-gray-900 mb-2">NFT Marketplace</h1>
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter mb-2 font-['DM_Sans']">NFT Marketplace</h1>
           <p className="text-gray-600">Exclusive digital collectibles with real-world utility</p>
         </div>
 

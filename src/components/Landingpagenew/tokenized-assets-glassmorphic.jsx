@@ -6803,7 +6803,7 @@ const TokenizedAssetsGlassmorphic = () => {
             <div className="w-full h-full overflow-y-auto p-8">
               <div className="max-w-7xl mx-auto">
                 <div className="mb-8">
-                  <h1 className="text-3xl font-light text-gray-900 mb-2">My Tokenized Assets</h1>
+                  <h1 className="text-2xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter mb-2 font-['DM_Sans']">My Tokenized Assets</h1>
                   <p className="text-gray-600">View and manage your tokenization requests</p>
                 </div>
 
