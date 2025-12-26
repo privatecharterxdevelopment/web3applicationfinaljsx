@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LandingHeader from './LandingHeader';
-import Footer from '../../components/Footer';
+import Footer from './Footer';
 import {
   Search,
   Mail,
