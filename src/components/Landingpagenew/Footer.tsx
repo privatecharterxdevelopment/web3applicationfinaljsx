@@ -24,7 +24,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
       {/* Main Footer Content */}
       <div className="px-4 sm:px-8 py-12 sm:py-16">
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 sm:gap-6">
 
             {/* Brand / Logo / Social / Payment - Left Side */}
             <div>
@@ -148,6 +148,25 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 </button>
                 <button onClick={() => handleNavigate('/helpdesk')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
                   Helpdesk
+                </button>
+              </div>
+            </div>
+
+            {/* Support */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 mb-4">Support</h4>
+              <div className="space-y-2.5">
+                <button onClick={() => handleNavigate('/faqs')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
+                  FAQ
+                </button>
+                <button onClick={() => handleNavigate('/helpdesk')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
+                  Help Center
+                </button>
+                <button onClick={() => handleNavigate('/dashboard/subscriptions/plans')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
+                  Manage Subscription
+                </button>
+                <button onClick={() => handleNavigate('/dashboard/requests')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
+                  My Requests
                 </button>
               </div>
             </div>
