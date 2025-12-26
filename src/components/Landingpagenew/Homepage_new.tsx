@@ -109,61 +109,51 @@ interface SpheraProduct {
 const SpheraProductsCarousel = ({ navigate }: { navigate: (path: string) => void }) => {
   const [products, setProducts] = React.useState<SpheraProduct[]>(fallbackProducts);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isPaused, setIsPaused] = React.useState(false);
 
   // Fetch products from database
   React.useEffect(() => {
     const fetchProducts = async () => {
       try {
-        // Fetch wines, cigars, and delicacies in parallel
-        const [winesRes, cigarsRes, delicaciesRes] = await Promise.all([
-          supabase.from('wines').select('*').eq('is_active', true).limit(8),
-          supabase.from('premium_cigars').select('*').eq('is_active', true).limit(4),
-          supabase.from('delicacies').select('*').eq('is_active', true).limit(4)
+        // Fetch wines and cigars - no filter, just get products with valid image URLs
+        const [winesRes, cigarsRes] = await Promise.all([
+          supabase.from('wines').select('*').limit(100),
+          supabase.from('premium_cigars').select('*').limit(20)
         ]);
 
         const allProducts: SpheraProduct[] = [];
 
-        // Map wines
-        if (winesRes.data && winesRes.data.length > 0) {
-          winesRes.data.forEach((wine: any) => {
+        // Only add wines that have a valid http image URL
+        winesRes.data?.forEach((wine: any) => {
+          if (wine.image_url?.startsWith('http')) {
             allProducts.push({
               id: `wine-${wine.id}`,
               name: wine.name,
-              category: wine.type === 'champagne' ? 'Champagne' : wine.type === 'red' ? 'Red Wine' : wine.type === 'white' ? 'White Wine' : 'Wine',
-              image: wine.image_url || 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&h=500&fit=crop',
+              category: wine.type === 'champagne' ? 'Champagne' : 'Wine',
+              image: wine.image_url,
               query: `${wine.name} wine`,
-              price: wine.price_range_eur || (wine.typical_price_eur ? `€${wine.typical_price_eur}` : undefined)
+              price: wine.price_range_eur
             });
-          });
-        }
+          }
+        });
 
-        // Map cigars
-        if (cigarsRes.data && cigarsRes.data.length > 0) {
-          cigarsRes.data.forEach((cigar: any) => {
+        // Only add cigars that have a valid http image URL
+        cigarsRes.data?.forEach((cigar: any) => {
+          if (cigar.image_url?.startsWith('http')) {
             allProducts.push({
               id: `cigar-${cigar.id}`,
               name: `${cigar.brand} ${cigar.name}`,
               category: 'Premium Cigars',
-              image: cigar.image_url || 'https://images.unsplash.com/photo-1528458876861-544fd1b4d440?w=400&h=500&fit=crop',
+              image: cigar.image_url,
               query: `${cigar.brand} ${cigar.name} cigar`,
               price: cigar.price_per_stick_usd ? `$${cigar.price_per_stick_usd}` : undefined
             });
-          });
-        }
+          }
+        });
 
-        // Map delicacies
-        if (delicaciesRes.data && delicaciesRes.data.length > 0) {
-          delicaciesRes.data.forEach((item: any) => {
-            allProducts.push({
-              id: `delicacy-${item.id}`,
-              name: item.name,
-              category: item.category || 'Delicacy',
-              image: item.image_url || 'https://images.unsplash.com/photo-1625943553852-781c6dd46faa?w=400&h=500&fit=crop',
-              query: `${item.name} delicacy`,
-              price: item.price ? `$${item.price}` : undefined
-            });
-          });
-        }
+        console.log('🍷 Wines fetched:', winesRes.data?.length);
+        console.log('🚬 Cigars fetched:', cigarsRes.data?.map(c => ({ name: c.name, brand: c.brand, image_url: c.image_url?.substring(0, 50) })));
+        console.log('🛒 Products with valid images:', allProducts.length, allProducts.map(p => p.name));
 
         // Use fetched products or fallback
         if (allProducts.length > 0) {
@@ -192,7 +182,11 @@ const SpheraProductsCarousel = ({ navigate }: { navigate: (path: string) => void
   }
 
   return (
-    <div className="relative sphera-carousel-container">
+    <div
+      className="relative sphera-carousel-container"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
       {/* Left fade gradient */}
       <div className="absolute left-0 top-0 w-20 h-full bg-gradient-to-r from-gray-100 via-gray-100/80 to-transparent z-10 pointer-events-none" />
 
@@ -205,7 +199,8 @@ const SpheraProductsCarousel = ({ navigate }: { navigate: (path: string) => void
           className="sphera-carousel-track flex gap-4"
           style={{
             width: `${totalWidth * 2}px`,
-            animation: `spheraScroll ${products.length * 2.5}s linear infinite`,
+            animation: `spheraScroll ${products.length * 5}s linear infinite`,
+            animationPlayState: isPaused ? 'paused' : 'running',
           }}
         >
           {/* First set of cards */}
@@ -372,8 +367,9 @@ const SpheraProductsCarousel = ({ navigate }: { navigate: (path: string) => void
             transform: translateX(-${totalWidth}px);
           }
         }
-        .sphera-carousel-container:hover .sphera-carousel-track {
-          animation-play-state: paused;
+        .sphera-carousel-container:hover .sphera-carousel-track,
+        .sphera-carousel-track:hover {
+          animation-play-state: paused !important;
         }
       `}</style>
     </div>

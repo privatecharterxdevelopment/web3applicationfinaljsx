@@ -65,7 +65,8 @@ import {
   Battery,
   Fuel,
   Recycle,
-  Activity
+  Activity,
+  Mail
 } from 'lucide-react';
 
 interface TokenizedProps {
@@ -472,8 +473,8 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
                       href={`mailto:admin@privatecharterx.com?subject=Investment%20Inquiry%20-%20${assetType === 'jet' ? 'Gulfstream%20G650ER' : 'Sunseeker%2095%20Yacht'}%20Token`}
                       className="flex-1 bg-gray-900 text-white py-3 rounded-xl text-[12px] font-light tracking-wide hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
                     >
-                      <Wallet size={15} />
-                      Invest Now
+                      <Mail size={15} />
+                      Get Information
                     </a>
                     <button
                       className="px-4 py-3 rounded-xl text-gray-600 transition-colors border border-gray-200/50"

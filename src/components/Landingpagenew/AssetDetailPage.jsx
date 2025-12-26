@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft, ExternalLink, Download, CheckCircle, TrendingUp,
   Shield, Users, Calendar, MapPin, Plane, FileText, AlertCircle,
-  ChevronDown, ChevronUp, Star, Award, Info
+  ChevronDown, ChevronUp, Star, Award, Info, Mail
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -245,7 +245,7 @@ export default function AssetDetailPage({ assetId, onBack }) {
               <h3 className="text-2xl font-bold mb-4">
                 {isComingSoon && 'Launching Soon'}
                 {isWaitlistOpen && 'Join the Waitlist'}
-                {isLive && 'Invest Now'}
+                {isLive && 'Get Information'}
               </h3>
 
               {data.launch_date && (isComingSoon || isWaitlistOpen) && (
@@ -304,15 +304,13 @@ export default function AssetDetailPage({ assetId, onBack }) {
               )}
 
               {isLive && (
-                <Button
-                  onClick={() => {/* Navigate to marketplace */}}
-                  variant="primary"
-                  size="lg"
-                  fullWidth
-                  className="mb-4 text-lg font-bold"
+                <a
+                  href={`mailto:admin@privatecharterx.com?subject=Investment%20Inquiry%20-%20${data.name || 'RWA Token'}`}
+                  className="flex items-center justify-center gap-2 w-full mb-4 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-lg font-bold transition-colors"
                 >
-                  Invest Now
-                </Button>
+                  <Mail size={18} />
+                  Get Information
+                </a>
               )}
 
               <div className="flex items-center gap-2 text-sm text-gray-500 justify-center">

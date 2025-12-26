@@ -244,79 +244,67 @@ const TokenizeAssetFlow = ({ onBack, draftToLoad = null, user = null }) => {
     }
 
     setIsSaving(true);
+
     try {
-      // Save tokenization request
+      // Save to the new simplified tokenization_requests table
+      const requestData = {
+        user_id: user.id,
+        token_type: tokenType || 'utility',
+        asset_name: formData.assetName,
+        description: formData.description,
+        estimated_value: formData.assetValue ? parseFloat(formData.assetValue) : null,
+        location: formData.location || null,
+        token_symbol: formData.tokenSymbol || null,
+        status: 'pending'
+      };
+
+      console.log('Submitting tokenization request:', requestData);
+
       const { data, error } = await supabase
-        .from('tokenization_drafts')
-        .upsert({
-          id: currentDraftId || undefined,
-          user_id: user?.id,
-          wallet_address: address || null,
-          token_type: tokenType,
-          asset_category: assetCategory,
-          current_step: 1,
-          status: 'submitted',
-          asset_name: formData.assetName || null,
-          asset_description: formData.description || null,
-          asset_value: formData.assetValue ? parseFloat(formData.assetValue) : null,
-          asset_location: formData.location || null,
-          token_standard: formData.tokenStandard || null,
-          token_symbol: formData.tokenSymbol || null,
-          form_data: {
-            assetName: formData.assetName,
-            description: formData.description,
-            assetValue: formData.assetValue,
-            location: formData.location,
-            tokenSymbol: formData.tokenSymbol,
-            tokenType: tokenType,
-            assetCategory: assetCategory
-          },
-          submitted_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'id' })
+        .from('tokenization_requests')
+        .insert(requestData)
         .select()
         .single();
 
       if (error) {
         console.error('Save error:', error);
-        alert('Failed to submit request. Please try again.');
+        alert(`Failed to submit request: ${error.message || 'Unknown error'}. Please try again.`);
         setIsSaving(false);
         return;
       }
 
-      // Update draft ID if new
-      if (data?.id) {
-        setCurrentDraftId(data.id);
-      }
+      console.log('Tokenization request saved:', data);
 
-      // Also save to user_requests for email notifications
+      // Also save to user_requests for CRM/email notifications
       try {
         await supabase.from('user_requests').insert([{
           user_id: user.id,
           type: 'tokenization',
           status: 'pending',
           data: {
-            tokenization_draft_id: data?.id,
+            tokenization_request_id: data?.id,
             asset_name: formData.assetName,
-            asset_category: assetCategory,
-            asset_description: formData.description,
-            asset_value: formData.assetValue,
-            asset_location: formData.location,
+            description: formData.description,
+            estimated_value: formData.assetValue,
+            location: formData.location,
             token_type: tokenType,
             token_symbol: formData.tokenSymbol,
-            booking_source: 'tokenization_flow_simplified',
+            wallet_address: address,
+            booking_source: 'tokenization_simplified',
             timestamp: new Date().toISOString()
           }
         }]);
+        console.log('CRM notification saved');
       } catch (notifError) {
-        console.warn('User request save failed:', notifError);
+        console.warn('CRM notification save failed:', notifError);
+        // Don't fail the submission if CRM save fails
       }
 
       setIsSaving(false);
       setShowSuccessModal(true);
     } catch (error) {
       console.error('Save exception:', error);
-      alert('An error occurred while saving. Please try again.');
+      alert(`An error occurred while saving: ${error?.message || 'Unknown error'}. Please try again.`);
       setIsSaving(false);
     }
   };

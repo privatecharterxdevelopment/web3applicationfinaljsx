@@ -1086,6 +1086,85 @@ const HelpdeskInlineView = ({ setActiveCategory }) => {
   );
 };
 
+// RWA Banner Carousel - Animated switching between assets
+const RWABannerCarousel = () => {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const assets = [
+    {
+      symbol: '$GFSTR',
+      name: 'Gulfstream G650 (2019)',
+      description: 'Ultra-long-range private jet',
+      apy: '14.2%',
+      badge: 'PRIVATE SALE',
+      badgeColor: 'bg-red-500',
+      image: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/GFSTRM_Token-removebg-preview%20(1).png'
+    },
+    {
+      symbol: '$SS90',
+      name: 'Sunseeker 90 Ocean',
+      description: 'Luxury superyacht',
+      apy: '12.8%',
+      badge: 'PRIVATE SALE',
+      badgeColor: 'bg-red-500',
+      image: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/SS90_token_tokenized_yacht-removebg-preview.png'
+    }
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % assets.length);
+    }, 4000); // Switch every 4 seconds
+    return () => clearInterval(interval);
+  }, [assets.length]);
+
+  const currentAsset = assets[activeIndex];
+
+  return (
+    <a
+      href="/tokenized"
+      className="block border rounded-xl p-3 bg-white/40 hover:bg-white/50 border-gray-300/50 transition-all hover:shadow-lg group mb-3 relative overflow-hidden"
+      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+    >
+      <div className="flex items-center justify-between gap-3">
+        {/* Left: Text content */}
+        <div className="flex-1 transition-all duration-500">
+          <span className="inline-block px-1.5 py-0.5 rounded-full text-[8px] font-medium bg-gray-200 text-gray-600 mb-1">
+            {currentAsset.badge}
+          </span>
+          <h4 className="text-xs font-semibold text-gray-900 mb-0.5">
+            {currentAsset.symbol} <span className="font-normal text-gray-600">{currentAsset.name}</span>
+          </h4>
+          <p className="text-[10px] text-gray-600">{currentAsset.description} • APY {currentAsset.apy}</p>
+        </div>
+        {/* Right: Token image - overflow without affecting height */}
+        <div className="w-16 h-16 flex-shrink-0 flex items-center justify-center -mr-2 -my-3">
+          <img
+            src={currentAsset.image}
+            alt={currentAsset.name}
+            className="w-28 h-28 object-contain group-hover:scale-105 transition-transform duration-300"
+          />
+        </div>
+      </div>
+      {/* Dot indicators */}
+      <div className="absolute bottom-1.5 left-1/2 transform -translate-x-1/2 flex gap-1">
+        {assets.map((_, idx) => (
+          <button
+            key={idx}
+            onClick={(e) => {
+              e.preventDefault();
+              setActiveIndex(idx);
+            }}
+            className={`w-1.5 h-1.5 rounded-full transition-all ${
+              idx === activeIndex ? 'bg-gray-800 w-3' : 'bg-gray-400'
+            }`}
+          />
+        ))}
+      </div>
+    </a>
+  );
+};
+
 const TokenizedAssetsGlassmorphic = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -3211,10 +3290,10 @@ const TokenizedAssetsGlassmorphic = () => {
     setLoadingTokenizations(true);
     try {
       const { data, error } = await supabase
-        .from('tokenization_drafts')
+        .from('tokenization_requests')
         .select('*')
         .eq('user_id', user.id)
-        .order('updated_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       setUserTokenizations(data || []);
@@ -4875,7 +4954,7 @@ const TokenizedAssetsGlassmorphic = () => {
         {/* Main Content Area - PART OF SAME CONTAINER */}
         <main className={`flex-1 overflow-y-auto flex flex-col ${webMode === 'web3' ? 'bg-white/10' : ''}`}>
           {/* FIXED TOP BAR - Category menu links on left, icons and switcher on right */}
-          <div className={`sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100/50 px-2 sm:px-4 lg:px-8 flex justify-between items-center py-3 sm:py-4 pr-2 sm:pr-4 lg:pr-6 ${
+          <div className={`sticky top-0 z-50 bg-transparent px-2 sm:px-4 lg:px-8 flex justify-between items-center py-3 sm:py-4 pr-2 sm:pr-4 lg:pr-6 ${
             activeCategory === 'chat' ? 'hidden' : ''
           }`}>
             {/* MOBILE ONLY: Sidebar Toggle in header row - Categories moved to sidebar */}
@@ -6355,6 +6434,11 @@ const TokenizedAssetsGlassmorphic = () => {
                     )}
                   </div>
 
+                  {/* RWA Investment Banner - Web3 Mode Only - Animated Carousel */}
+                  {webMode === 'web3' && (
+                    <RWABannerCarousel />
+                  )}
+
                   {/* Row 1: Empty Legs + Aviation (2 cards) */}
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {/* RWS Mode - Show recent chats/empty legs */}
@@ -6512,71 +6596,6 @@ const TokenizedAssetsGlassmorphic = () => {
                       </>
                     )}
 
-                    {/* Web3 Mode - Show user's tokenization requests */}
-                    {webMode === 'web3' && (
-                      <>
-                        {loadingTokenizations ? (
-                          <div className="col-span-2 md:col-span-3 flex items-center justify-center py-8">
-                            <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
-                          </div>
-                        ) : userTokenizations.length > 0 ? (
-                          userTokenizations.slice(0, 2).map((token) => {
-                            const statusColors = {
-                              'draft': 'bg-gray-200 text-gray-700',
-                              'submitted': 'bg-yellow-100 text-yellow-700',
-                              'pending': 'bg-yellow-100 text-yellow-700',
-                              'under_review': 'bg-blue-100 text-blue-700',
-                              'approved': 'bg-green-100 text-green-700',
-                              'approved_for_sto': 'bg-green-100 text-green-700',
-                              'live_on_marketplace': 'bg-purple-100 text-purple-700',
-                              'rejected': 'bg-red-100 text-red-700'
-                            };
-                            return (
-                              <button
-                                key={token.id}
-                                onClick={() => setActiveCategory('my-tokenized-assets')}
-                                className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
-                                style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                              >
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="text-sm">
-                                    {token.data?.asset_type?.toLowerCase().includes('jet') ? '✈️' :
-                                     token.data?.asset_type?.toLowerCase().includes('yacht') ? '⛵' :
-                                     token.data?.asset_type?.toLowerCase().includes('car') ? '🚗' :
-                                     token.data?.asset_type?.toLowerCase().includes('art') ? '🎨' :
-                                     token.data?.asset_type?.toLowerCase().includes('real') ? '🏠' : '💎'}
-                                  </span>
-                                  <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-medium ${statusColors[token.status] || 'bg-gray-100 text-gray-600'}`}>
-                                    {token.status?.replace(/_/g, ' ')}
-                                  </span>
-                                </div>
-                                <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-900 truncate">
-                                  {token.data?.asset_name || 'Tokenization Request'}
-                                </h4>
-                                <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-1">
-                                  {token.data?.token_standard || 'Reg-D'} • {token.data?.total_supply?.toLocaleString() || '—'} tokens
-                                </p>
-                                <div className="text-[10px] text-gray-500">
-                                  {new Date(token.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                </div>
-                              </button>
-                            );
-                          })
-                        ) : (
-                          <div className="col-span-2 md:col-span-3 border rounded-xl p-4 text-center bg-white/35 border-gray-300/50" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                            <Sparkles size={20} className="text-gray-500 mx-auto mb-2" />
-                            <p className="text-xs text-gray-700 font-medium mb-1">No Tokenization Requests</p>
-                            <p className="text-[10px] text-gray-500 mb-2">Connect your real-world assets to blockchain</p>
-                            <button
-                              onClick={() => setActiveCategory('tokenization')}
-                              className="text-[10px] px-3 py-1.5 bg-black text-white rounded-lg hover:bg-gray-800 transition-all"
-                            >
-                              Start Tokenization
-                            </button>
-                          </div>
-                        )}
-                      </>
-                    )}
                   </div>
 
                   {/* Row 2: My Bookings + My Requests (mobile) / My Bookings + Blog (desktop) */}
