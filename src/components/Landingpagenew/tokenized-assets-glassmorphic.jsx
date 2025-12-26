@@ -1103,7 +1103,7 @@ const RWABannerCarousel = () => {
       symbol: '$SS90',
       name: 'Sunseeker 90 Ocean',
       description: 'Luxury superyacht',
-      apy: '12.8%',
+      apy: '9.6%',
       badge: 'PRIVATE SALE',
       badgeColor: 'bg-red-500',
       image: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/SS90_token_tokenized_yacht-removebg-preview.png'
@@ -1122,8 +1122,12 @@ const RWABannerCarousel = () => {
   return (
     <a
       href="/tokenized"
-      className="block border rounded-xl p-3 min-h-[120px] bg-white/40 hover:bg-white/50 border-gray-300/50 transition-all group relative overflow-hidden"
-      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+      className="block border rounded-xl p-3 min-h-[120px] border-gray-300/50 transition-all group relative overflow-hidden"
+      style={{
+        backgroundImage: 'url(https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/Privatecharterx_Banner%20(4)%20(1).png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }}
     >
       {/* Token image - absolute positioned, large, cut off at bottom */}
       <img
