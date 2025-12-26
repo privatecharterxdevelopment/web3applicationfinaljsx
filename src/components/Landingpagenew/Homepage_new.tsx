@@ -1266,7 +1266,7 @@ function Homepage() {
           {/* Main Footer Content */}
           <div className="px-4 sm:px-8 py-12 sm:py-16">
             <div className="max-w-6xl mx-auto">
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 sm:gap-6">
 
                 {/* Brand / Logo / Social / Payment - Left Side */}
                 <div>
@@ -1365,6 +1365,31 @@ function Homepage() {
                     </button>
                     <button onClick={() => navigate('/dashboard/web3/marketplace')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                       Marketplace
+                    </button>
+                  </div>
+                </div>
+
+                {/* Pages */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-4">Pages</h4>
+                  <div className="space-y-2.5">
+                    <button onClick={() => navigate('/services')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Services
+                    </button>
+                    <button onClick={() => navigate('/aviation')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Aviation
+                    </button>
+                    <button onClick={() => navigate('/tokenized')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      RWA Tokenization
+                    </button>
+                    <button onClick={() => navigate('/sphera-ai')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Sphera AI
+                    </button>
+                    <button onClick={() => navigate('/rwa-nft')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      RWA NFT
+                    </button>
+                    <button onClick={() => navigate('/helpdesk')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                      Helpdesk
                     </button>
                   </div>
                 </div>
