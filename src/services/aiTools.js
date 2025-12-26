@@ -455,6 +455,32 @@ export const aiToolDefinitions = [
     }
   },
   {
+    name: "searchSpecialServices",
+    description: "Search special services database for consulting, concierge, and premium services. Use when user mentions: consulting, business consulting, legal services, concierge, VIP services, special services, advisory, professional services.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "The service name to search. User says 'consulting' → query='consulting'."
+        },
+        category: {
+          type: "string",
+          description: "Category filter for the service type"
+        },
+        priceMin: {
+          type: "number",
+          description: "Minimum price"
+        },
+        priceMax: {
+          type: "number",
+          description: "Maximum price"
+        }
+      },
+      required: []
+    }
+  },
+  {
     name: "searchWineGlobal",
     description: "ONLY use AFTER searchWines returns 0 results AND user confirms they want global sourcing. Do NOT use this tool without first trying searchWines. Searches wine merchants globally.",
     input_schema: {
@@ -962,6 +988,9 @@ export async function executeTool(toolName, input) {
 
       case 'searchCigars':
         return await searchCigars(input);
+
+      case 'searchSpecialServices':
+        return await searchSpecialServices(input);
 
       case 'searchWineGlobal':
         return await searchWineGlobal(input);
@@ -4030,7 +4059,7 @@ export async function searchWines(params) {
       supabaseQuery = supabaseQuery.ilike('classification', `%${classification}%`);
     }
 
-    // Execute query with limit
+    // Execute query - limit to 20 for display, specific searches find exact matches from full DB
     const { data: wines, error } = await supabaseQuery
       .order('typical_price_eur', { ascending: true })
       .limit(20);
@@ -4195,7 +4224,7 @@ export async function searchDelicatesse(params) {
       supabaseQuery = supabaseQuery.lte('price_usd', priceMax);
     }
 
-    // Execute query
+    // Execute query - limit to 20 for display
     const { data: items, error } = await supabaseQuery
       .order('sort_order', { ascending: true })
       .order('price_usd', { ascending: true })
@@ -4263,6 +4292,127 @@ export async function searchDelicatesse(params) {
 
   } catch (error) {
     console.error('Delicatesse search error:', error);
+    return {
+      success: false,
+      error: error.message,
+      results: []
+    };
+  }
+}
+
+/**
+ * Search for special services (consulting, concierge, etc.)
+ * Table: special_services
+ * @param {Object} params - Search parameters
+ * @returns {Promise<Object>} - Special services search results
+ */
+export async function searchSpecialServices(params) {
+  console.log('🎯 searchSpecialServices CALLED with params:', JSON.stringify(params));
+
+  const {
+    query,
+    category,
+    priceMin,
+    priceMax
+  } = params;
+
+  try {
+    // Build Supabase query for special_services table
+    let supabaseQuery = supabase
+      .from('special_services')
+      .select('*')
+      .eq('is_active', true);
+
+    // QUERY - search by service name or description
+    if (query) {
+      supabaseQuery = supabaseQuery.or(`service_name.ilike.%${query}%,description.ilike.%${query}%`);
+    }
+
+    // CATEGORY filter
+    if (category) {
+      supabaseQuery = supabaseQuery.ilike('category', `%${category}%`);
+    }
+
+    // PRICE filters
+    if (priceMin) {
+      supabaseQuery = supabaseQuery.gte('base_price', priceMin);
+    }
+    if (priceMax) {
+      supabaseQuery = supabaseQuery.lte('base_price', priceMax);
+    }
+
+    // Execute query
+    const { data: services, error } = await supabaseQuery
+      .order('base_price', { ascending: true })
+      .limit(20);
+
+    if (error) {
+      console.error('Special services search error:', error);
+      return {
+        success: false,
+        error: 'Failed to search special services: ' + error.message,
+        results: []
+      };
+    }
+
+    // Format results for display
+    const formattedServices = (services || []).map(service => ({
+      id: service.id,
+      name: service.service_name,
+      description: service.description,
+      detailedDescription: service.detailed_description,
+      type: 'special_service',
+      category: service.category,
+      // Price display
+      price: service.base_price || 0,
+      basePrice: service.base_price || 0,
+      cartPrice: service.base_price,
+      pricingUnit: service.pricing_unit,
+      currency: service.currency || 'USD',
+      priceDisplay: service.base_price
+        ? `${service.currency || '$'}${service.base_price.toLocaleString()}${service.pricing_unit ? ` / ${service.pricing_unit}` : ''}`
+        : 'Price on request',
+      // Image
+      image: service.image_url,
+      image_url: service.image_url,
+      // Additional details
+      inclusions: service.inclusions || [],
+      exclusions: service.exclusions || [],
+      requirements: service.requirements || [],
+      minimumNoticeHours: service.minimum_notice_hours,
+      availabilityNotes: service.availability_notes,
+      // Format for display
+      displayTitle: service.service_name,
+      displaySubtitle: service.description
+    }));
+
+    console.log(`🎯 Found ${formattedServices.length} special services`);
+
+    // Get category counts for summary
+    const categoryCounts = {};
+    formattedServices.forEach(service => {
+      categoryCounts[service.category] = (categoryCounts[service.category] || 0) + 1;
+    });
+
+    return {
+      success: true,
+      results: formattedServices,
+      total: formattedServices.length,
+      params,
+      categorySummary: categoryCounts,
+      displayType: 'special_services',
+      message: formattedServices.length > 0
+        ? `Found ${formattedServices.length} special services`
+        : 'No services found matching your criteria.',
+      cartIntegration: {
+        type: 'special_service',
+        category: 'special_services',
+        priceField: 'base_price'
+      }
+    };
+
+  } catch (error) {
+    console.error('Special services search error:', error);
     return {
       success: false,
       error: error.message,

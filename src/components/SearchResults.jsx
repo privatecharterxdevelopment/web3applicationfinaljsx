@@ -86,6 +86,7 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
              tab.id === 'yachts' ? 'Yachts' :
              tab.id === 'adventures' ? 'Adventures' :
              tab.id === 'wines' ? 'Wines' :
+             tab.id === 'special_services' ? 'Special Services' :
              (tab.id === 'luxury_cars' || tab.id === 'luxuryCars') ? 'Supercars' :
              (tab.id === 'transfers' || tab.id === 'ground_transport' || tab.id === 'taxi') ? 'Transfers' :
              tab.title}
@@ -167,6 +168,8 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                     <Wine size={14} className="text-gray-500" />
                   ) : item.type === 'delicatesse' || item.type === 'cigars' ? (
                     <span className="text-sm">🎁</span>
+                  ) : item.type === 'special_service' ? (
+                    <span className="text-sm">✨</span>
                   ) : item.type === 'helicopters' ? (
                     <span className="text-sm">🚁</span>
                   ) : (
@@ -186,6 +189,8 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                         ? (item.name || item.displayTitle || item.title || item.description?.slice(0, 40) || item.category || 'Delicacy')
                         : item.type === 'cigars'
                         ? (item.name || item.displayTitle || item.title || `${item.brand || ''} Cigar`.trim() || 'Premium Cigar')
+                        : item.type === 'special_service'
+                        ? (item.service_name || item.name || item.displayTitle || item.title || 'Special Service')
                         : (item.name || item.model || item.title || 'Unnamed Service')}
                     </p>
                     {/* Category Badge - subtle */}
@@ -371,6 +376,25 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                         )}
                       </>
                     )}
+
+                    {/* Special Services */}
+                    {item.type === 'special_service' && (
+                      <>
+                        {item.service_category && <span className="capitalize">{item.service_category}</span>}
+                        {item.duration && (
+                          <>
+                            <span>•</span>
+                            <span>{item.duration}</span>
+                          </>
+                        )}
+                        {item.location && (
+                          <>
+                            <span>•</span>
+                            <span>{item.location}</span>
+                          </>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -391,6 +415,7 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                     {item.type === 'wines' && (item.priceRange || (item.typicalPrice || item.typical_price_eur || item.price ? `€${(item.typicalPrice || item.typical_price_eur || item.price).toLocaleString()}` : 'Price on request'))}
                     {item.type === 'delicatesse' && (item.priceDisplay || (item.price ? `$${item.price.toLocaleString()}` : 'Price on request'))}
                     {item.type === 'cigars' && (item.priceDisplay || (item.price ? `$${item.price}/stick` : 'Price on request'))}
+                    {item.type === 'special_service' && (item.priceDisplay || (item.price_eur ? `€${item.price_eur.toLocaleString()}` : item.price ? `$${item.price.toLocaleString()}` : 'Quote'))}
                   </p>
                   {item.type === 'empty_legs' && (
                     <p className="text-[10px] text-emerald-600">Save up to 70%</p>
@@ -1311,6 +1336,91 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                               <p className="text-[10px] text-gray-400">Price per stick</p>
                               <p className="text-sm font-semibold text-gray-900">
                                 {item.priceDisplay || (item.price ? `$${item.price}` : 'On request')}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAddToCart && onAddToCart(item);
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-colors border border-gray-200"
+                              >
+                                <ShoppingCart size={12} />
+                                Add
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onBookNow && onBookNow(item);
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-xs font-medium transition-colors"
+                              >
+                                <CreditCard size={12} />
+                                Request
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {/* SPECIAL SERVICES - Expanded Details */}
+                      {item.type === 'special_service' && (
+                        <>
+                          {/* Service info grid */}
+                          <div className="col-span-2 md:col-span-4">
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-gray-600">
+                              {item.service_category && <span><span className="text-gray-400">Category:</span> <span className="capitalize">{item.service_category}</span></span>}
+                              {item.duration && <span><span className="text-gray-400">Duration:</span> {item.duration}</span>}
+                              {item.location && <span><span className="text-gray-400">Location:</span> {item.location}</span>}
+                              {item.availability && <span><span className="text-gray-400">Availability:</span> {item.availability}</span>}
+                            </div>
+                            {item.description && (
+                              <p className="mt-2 text-[11px] text-gray-600 leading-relaxed">{item.description}</p>
+                            )}
+                            {item.features && item.features.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                {item.features.slice(0, 5).map((feature, idx) => (
+                                  <span key={idx} className="px-2 py-0.5 bg-purple-50 text-purple-700 text-[10px] rounded-full border border-purple-200">
+                                    {feature}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            {item.notes && (
+                              <p className="mt-1 text-[10px] text-gray-500 italic">{item.notes}</p>
+                            )}
+                          </div>
+
+                          {/* Service requirements/info box */}
+                          <div className="col-span-2 md:col-span-4 mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                            <p className="font-semibold text-purple-900 mb-2">✨ Service Details</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-purple-800">
+                              <div className="flex items-center gap-2">
+                                <span className="text-purple-500">✓</span>
+                                <span>Personalized consultation</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-purple-500">✓</span>
+                                <span>Premium quality guaranteed</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-purple-500">✓</span>
+                                <span>Dedicated concierge support</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-purple-500">✓</span>
+                                <span>Flexible scheduling</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Price & Actions */}
+                          <div className="col-span-2 md:col-span-4 mt-3 flex items-center justify-between gap-4">
+                            <div>
+                              <p className="text-[10px] text-gray-400">Starting from</p>
+                              <p className="text-sm font-semibold text-gray-900">
+                                {item.priceDisplay || (item.price_eur ? `€${item.price_eur.toLocaleString()}` : item.price ? `$${item.price.toLocaleString()}` : 'Quote on request')}
                               </p>
                             </div>
                             <div className="flex gap-2">

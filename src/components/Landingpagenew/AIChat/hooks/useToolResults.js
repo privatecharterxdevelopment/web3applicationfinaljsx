@@ -243,6 +243,22 @@ export const useToolResults = () => {
         }
         break;
 
+      case 'searchSpecialServices':
+        if (toolResult.results?.length > 0) {
+          tabs.push({
+            id: 'special_services',
+            title: 'Special Services',
+            count: toolResult.results.length,
+            items: toolResult.results.map(item => ({
+              ...item,
+              type: 'special_service',
+              displayType: 'SERVICE',
+              badgeColor: 'bg-purple-100 text-purple-800'
+            }))
+          });
+        }
+        break;
+
       default:
         break;
     }

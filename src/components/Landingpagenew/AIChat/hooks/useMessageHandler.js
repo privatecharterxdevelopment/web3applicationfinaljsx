@@ -669,10 +669,10 @@ They will personally arrange your perfect yacht experience with custom itinerari
 
       // MEDEVAC - Do NOT force tool. Let Claude collect patient info first, then call tool.
 
-      // WINE/CHAMPAGNE - Force searchWines tool
-      if (lowerMessage.match(/\bwine\b|champagne|bordeaux|burgundy|sommelier|krug|dom\s*p[eé]rignon|cristal|petrus|margaux|mouton|lafite|latour/i)) {
+      // WINE/CHAMPAGNE - Force searchWines tool (includes specific wine names user might confirm)
+      if (lowerMessage.match(/\bwine\b|champagne|bordeaux|burgundy|sommelier|krug|dom\s*p[eé]rignon|cristal|petrus|margaux|mouton|lafite|latour|tignanello|ornellaia|sassicaia|barolo|barbaresco|amarone|brunello|chianti|bolghero|super\s*tuscan|moet|veuve|ruinart|bollinger|taittinger|pol\s*roger|laurent.perrier|philipponnat|egly|rieussec|chevalier|fèvre|chablis/i)) {
         forcedTool = 'searchWines';
-        forcedToolMessage = '\n\n🍷 WINE REQUEST - You MUST call searchWines tool immediately.';
+        forcedToolMessage = '\n\n🍷 WINE REQUEST - You MUST call searchWines tool immediately with the specific wine name. Show the wine card so user can add to cart.';
         console.log('🍷 Forcing searchWines tool for:', trimmedMessage);
       }
 
@@ -688,6 +688,13 @@ They will personally arrange your perfect yacht experience with custom itinerari
         forcedTool = 'searchCigars';
         forcedToolMessage = '\n\n🚬 CIGAR REQUEST - You MUST call searchCigars tool immediately.';
         console.log('🚬 Forcing searchCigars tool for:', trimmedMessage);
+      }
+
+      // SPECIAL SERVICES - Force searchSpecialServices tool
+      if (lowerMessage.match(/special\s*service|professional\s*service|concierge\s*service|vip\s*service|premium\s*service|what\s*services\s*(do\s*you|can\s*you)/i)) {
+        forcedTool = 'searchSpecialServices';
+        forcedToolMessage = '\n\n✨ SPECIAL SERVICES REQUEST - You MUST call searchSpecialServices tool immediately. Do NOT respond with generic text first.';
+        console.log('✨ Forcing searchSpecialServices tool for:', trimmedMessage);
       }
 
       // Filter to valid Claude roles (only 'user' and 'assistant' are valid for Claude API)
