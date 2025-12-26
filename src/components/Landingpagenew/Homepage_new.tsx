@@ -1382,7 +1382,7 @@ function Homepage() {
                     <button onClick={() => window.location.href = 'mailto:support@privatecharterx.com'} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                       Help Center
                     </button>
-                    <button onClick={() => navigate('/dashboard/subscription')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                    <button onClick={() => navigate('/dashboard/subscriptions/plans')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                       Manage Subscription
                     </button>
                     <button onClick={() => navigate('/dashboard/requests')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
