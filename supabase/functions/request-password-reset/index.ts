@@ -131,7 +131,7 @@ serve(async (req) => {
     });
     // Prepare email parameters
     const fromEmail = Deno.env.get('FROM_EMAIL') || 'noreply@www.privatecharterx.com'; //'ipsunlorem@gmail.com'; //'no-reply@privatecharterx.com'; // must be verified in aws first
-    const siteUrl = Deno.env.get('SITE_URL') || 'https://web3applicationfinaljsx.vercel.app';
+    const siteUrl = Deno.env.get('SITE_URL') || 'https://www.privatecharterx.com';
     const resetUrl = `${siteUrl}/reset-password?token=${resetToken}`;
 
     const resetEmailHTML = `
