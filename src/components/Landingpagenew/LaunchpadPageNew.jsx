@@ -68,8 +68,8 @@ export default function LaunchpadPageNew() {
         <div className="mb-6">
           {/* Title and Description */}
           <div className="mb-4 mt-2 sm:mt-0">
-            <h1 className="text-xl sm:text-2xl font-medium text-gray-900 mb-1">Security Token Offerings</h1>
-            <p className="text-xs sm:text-sm text-gray-500">SEC-regulated investments via our licensed U.S. partner (Reg D, Reg C, Reg CF)</p>
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter mb-2 font-['DM_Sans']">Launchpad</h1>
+            <p className="text-gray-600">SEC-regulated investments via our licensed U.S. partner</p>
           </div>
 
           {/* Search and View Toggle */}
@@ -118,9 +118,16 @@ export default function LaunchpadPageNew() {
         {/* Launches Grid/List */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="text-center">
-              <Loader2 className="w-12 h-12 text-gray-900 animate-spin mx-auto mb-4" />
-              <p className="text-sm text-gray-600">Loading projects...</p>
+            <div className="w-20 h-20">
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-contain"
+              >
+                <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
+              </video>
             </div>
           </div>
         ) : filteredLaunches.length === 0 ? (

@@ -205,9 +205,16 @@ export default function Marketplace() {
   if (loading) {
     return (
       <div className="w-full h-full bg-transparent flex items-center justify-center py-20">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading marketplace...</p>
+        <div className="w-20 h-20">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-contain"
+          >
+            <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
+          </video>
         </div>
       </div>
     );
@@ -221,7 +228,7 @@ export default function Marketplace() {
         <div className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <PageHeader
-              title="Luxury Asset Marketplace"
+              title="Marketplace"
               subtitle="Invest in fractional ownership of premium assets"
             />
             <div className="flex items-center gap-4">

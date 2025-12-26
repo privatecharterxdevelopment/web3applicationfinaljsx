@@ -16,7 +16,7 @@ export default function PageHeader({ title, subtitle, action, className = '' }) 
   return (
     <div className={`flex items-center justify-between mb-6 ${className}`}>
       <div>
-        <h1 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter mb-2">
+        <h1 className="text-2xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter mb-2 font-['DM_Sans']">
           {title}
         </h1>
         {subtitle && (
@@ -39,7 +39,7 @@ export default function PageHeader({ title, subtitle, action, className = '' }) 
  */
 export function SimplePageHeader({ title, className = '' }) {
   return (
-    <h1 className={`text-3xl md:text-4xl font-light text-gray-900 tracking-tighter mb-6 ${className}`}>
+    <h1 className={`text-2xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter mb-6 font-['DM_Sans'] ${className}`}>
       {title}
     </h1>
   );
