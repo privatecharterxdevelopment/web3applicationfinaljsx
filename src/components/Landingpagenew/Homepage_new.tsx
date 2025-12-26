@@ -1277,7 +1277,7 @@ function Homepage() {
                     className="h-12 object-contain mb-3"
                   />
                   {/* Description */}
-                  <p className="text-sm text-gray-500 mb-4 font-light">
+                  <p className="text-sm text-gray-900 mb-4 font-light">
                     Blockchain-powered private aviation platform revolutionizing luxury travel.
                   </p>
                   {/* Social Icons - 1 row, left aligned */}
