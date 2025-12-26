@@ -6837,11 +6837,11 @@ const TokenizedAssetsGlassmorphic = () => {
                       return (
                         <div key={token.id} className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all">
                           <div className="flex items-start justify-between mb-4">
-                            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center overflow-hidden">
+                            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
                               {token.logo_url ? (
                                 <img src={token.logo_url} alt={token.asset_name} className="w-full h-full object-cover" />
                               ) : (
-                                <Sparkles size={24} className="text-white" />
+                                <img src="/pcx.png" alt="PCX" className="w-8 h-8 object-contain" />
                               )}
                             </div>
                             <span className={`text-xs px-2 py-1 rounded-full ${statusColors[token.status] || 'bg-gray-100 text-gray-700'}`}>
@@ -6852,7 +6852,7 @@ const TokenizedAssetsGlassmorphic = () => {
                             {token.asset_name || 'Untitled Asset'}
                           </h3>
                           <p className="text-sm text-gray-600 mb-1">
-                            {token.asset_category || 'No category'}
+                            {token.token_type === 'security' ? 'STO (Security Token)' : token.token_type === 'utility' ? 'UTO (Utility Token)' : 'Token'}
                           </p>
                           {token.token_symbol && (
                             <div className="flex items-center gap-2 mb-2">
@@ -6949,20 +6949,17 @@ const TokenizedAssetsGlassmorphic = () => {
 
           {/* Tokenization Detail Modal */}
           {selectedTokenization && (
-            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-              <div
-                className="bg-white/80 border border-gray-200/50 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
-                style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-              >
+            <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
+              <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
                 {/* Modal Header */}
-                <div className="p-6 border-b border-gray-200/50">
+                <div className="p-6 border-b border-gray-200">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden">
                         {selectedTokenization.logo_url ? (
                           <img src={selectedTokenization.logo_url} alt="" className="w-full h-full object-cover" />
                         ) : (
-                          <Sparkles size={20} className="text-gray-400" />
+                          <img src="/pcx.png" alt="PCX" className="w-8 h-8 object-contain" />
                         )}
                       </div>
                       <div>
@@ -7004,28 +7001,24 @@ const TokenizedAssetsGlassmorphic = () => {
                     <h3 className="text-xs font-medium text-gray-500 mb-3 uppercase tracking-wider font-['DM_Sans']">
                       Asset Information
                     </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div className="bg-white/50 border border-gray-100 p-3 rounded-xl">
-                        <p className="text-[10px] text-gray-400 mb-1 font-['DM_Sans']">Category</p>
-                        <p className="text-xs font-light text-gray-700 capitalize font-['DM_Sans']">{selectedTokenization.asset_category || '-'}</p>
-                      </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       <div className="bg-white/50 border border-gray-100 p-3 rounded-xl">
                         <p className="text-[10px] text-gray-400 mb-1 font-['DM_Sans']">Asset Value</p>
-                        <p className="text-xs font-light text-gray-700 font-['DM_Sans']">{selectedTokenization.asset_value ? `€${Number(selectedTokenization.asset_value).toLocaleString()}` : '-'}</p>
+                        <p className="text-xs font-light text-gray-700 font-['DM_Sans']">{selectedTokenization.estimated_value ? `€${Number(selectedTokenization.estimated_value).toLocaleString()}` : '-'}</p>
                       </div>
                       <div className="bg-white/50 border border-gray-100 p-3 rounded-xl">
                         <p className="text-[10px] text-gray-400 mb-1 font-['DM_Sans']">Location</p>
-                        <p className="text-xs font-light text-gray-700 font-['DM_Sans']">{selectedTokenization.asset_location || '-'}</p>
+                        <p className="text-xs font-light text-gray-700 font-['DM_Sans']">{selectedTokenization.location || '-'}</p>
                       </div>
                       <div className="bg-white/50 border border-gray-100 p-3 rounded-xl">
-                        <p className="text-[10px] text-gray-400 mb-1 font-['DM_Sans']">Jurisdiction</p>
-                        <p className="text-xs font-light text-gray-700 font-['DM_Sans']">{selectedTokenization.jurisdiction || '-'}</p>
+                        <p className="text-[10px] text-gray-400 mb-1 font-['DM_Sans']">Token Symbol</p>
+                        <p className="text-xs font-light text-gray-700 font-mono font-['DM_Sans']">{selectedTokenization.token_symbol ? `$${selectedTokenization.token_symbol}` : '-'}</p>
                       </div>
                     </div>
-                    {selectedTokenization.asset_description && (
+                    {selectedTokenization.description && (
                       <div className="mt-3 bg-white/50 border border-gray-100 p-4 rounded-xl">
                         <p className="text-[10px] text-gray-400 mb-2 font-['DM_Sans']">Description</p>
-                        <p className="text-xs font-light text-gray-600 whitespace-pre-wrap font-['DM_Sans']">{selectedTokenization.asset_description}</p>
+                        <p className="text-xs font-light text-gray-600 whitespace-pre-wrap font-['DM_Sans']">{selectedTokenization.description}</p>
                       </div>
                     )}
                   </div>
@@ -7035,7 +7028,7 @@ const TokenizedAssetsGlassmorphic = () => {
                     <h3 className="text-xs font-medium text-gray-500 mb-3 uppercase tracking-wider font-['DM_Sans']">
                       Token Configuration
                     </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                       <div className="bg-white/50 border border-gray-100 p-3 rounded-xl">
                         <p className="text-[10px] text-gray-400 mb-1 font-['DM_Sans']">Token Type</p>
                         <p className="text-xs font-light text-gray-700 font-['DM_Sans']">
@@ -7044,35 +7037,9 @@ const TokenizedAssetsGlassmorphic = () => {
                         </p>
                       </div>
                       <div className="bg-white/50 border border-gray-100 p-3 rounded-xl">
-                        <p className="text-[10px] text-gray-400 mb-1 font-['DM_Sans']">Token Standard</p>
-                        <p className="text-xs font-light text-gray-700 font-['DM_Sans']">{selectedTokenization.token_standard || '-'}</p>
+                        <p className="text-[10px] text-gray-400 mb-1 font-['DM_Sans']">Status</p>
+                        <p className="text-xs font-light text-gray-700 capitalize font-['DM_Sans']">{selectedTokenization.status || 'pending'}</p>
                       </div>
-                      <div className="bg-white/50 border border-gray-100 p-3 rounded-xl">
-                        <p className="text-[10px] text-gray-400 mb-1 font-['DM_Sans']">Total Supply</p>
-                        <p className="text-xs font-light text-gray-700 font-['DM_Sans']">{selectedTokenization.total_supply ? Number(selectedTokenization.total_supply).toLocaleString() : '-'}</p>
-                      </div>
-                      <div className="bg-white/50 border border-gray-100 p-3 rounded-xl">
-                        <p className="text-[10px] text-gray-400 mb-1 font-['DM_Sans']">Price per Token</p>
-                        <p className="text-xs font-light text-gray-700 font-['DM_Sans']">{selectedTokenization.price_per_token ? `€${Number(selectedTokenization.price_per_token).toLocaleString()}` : '-'}</p>
-                      </div>
-                      {selectedTokenization.expected_apy && (
-                        <div className="bg-white/50 border border-gray-100 p-3 rounded-xl">
-                          <p className="text-[10px] text-gray-400 mb-1 font-['DM_Sans']">Expected APY</p>
-                          <p className="text-xs font-light text-gray-700 font-['DM_Sans']">{selectedTokenization.expected_apy}%</p>
-                        </div>
-                      )}
-                      {selectedTokenization.lockup_period && (
-                        <div className="bg-white/50 border border-gray-100 p-3 rounded-xl">
-                          <p className="text-[10px] text-gray-400 mb-1 font-['DM_Sans']">Lockup Period</p>
-                          <p className="text-xs font-light text-gray-700 font-['DM_Sans']">{selectedTokenization.lockup_period} months</p>
-                        </div>
-                      )}
-                      {selectedTokenization.minimum_investment && (
-                        <div className="bg-white/50 border border-gray-100 p-3 rounded-xl">
-                          <p className="text-[10px] text-gray-400 mb-1 font-['DM_Sans']">Min. Investment</p>
-                          <p className="text-xs font-light text-gray-700 font-['DM_Sans']">€{Number(selectedTokenization.minimum_investment).toLocaleString()}</p>
-                        </div>
-                      )}
                     </div>
                   </div>
 
