@@ -87,6 +87,299 @@ const partnerLogos = [
   { name: 'AutoSalonSwitzerland', logo: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/Autosalon-zuerich.com.png' }
 ];
 
+// Fallback products in case database is empty
+const fallbackProducts = [
+  { id: 'fallback-1', name: 'Dom Pérignon', category: 'Champagne', image: 'https://images.unsplash.com/photo-1594372365401-3b5ff14eaaed?w=400&h=500&fit=crop', query: 'Dom Pérignon champagne' },
+  { id: 'fallback-2', name: 'Beluga Caviar', category: 'Caviar', image: 'https://images.unsplash.com/photo-1625943553852-781c6dd46faa?w=400&h=500&fit=crop', query: 'Beluga caviar' },
+  { id: 'fallback-3', name: 'Cohiba Behike', category: 'Cuban Cigars', image: 'https://images.unsplash.com/photo-1528458876861-544fd1b4d440?w=400&h=500&fit=crop', query: 'Cohiba Behike cigars' },
+  { id: 'fallback-4', name: 'Krug Grande Cuvée', category: 'Champagne', image: 'https://images.unsplash.com/photo-1578911373434-0cb395d2cbfb?w=400&h=500&fit=crop', query: 'Krug Grande Cuvée' },
+];
+
+// Product interface
+interface SpheraProduct {
+  id: string;
+  name: string;
+  category: string;
+  image: string;
+  query: string;
+  price?: string;
+}
+
+// Sphera Products Carousel Component - Fetches from Database
+const SpheraProductsCarousel = ({ navigate }: { navigate: (path: string) => void }) => {
+  const [products, setProducts] = React.useState<SpheraProduct[]>(fallbackProducts);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  // Fetch products from database
+  React.useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        // Fetch wines, cigars, and delicacies in parallel
+        const [winesRes, cigarsRes, delicaciesRes] = await Promise.all([
+          supabase.from('wines').select('*').eq('is_active', true).limit(8),
+          supabase.from('premium_cigars').select('*').eq('is_active', true).limit(4),
+          supabase.from('delicacies').select('*').eq('is_active', true).limit(4)
+        ]);
+
+        const allProducts: SpheraProduct[] = [];
+
+        // Map wines
+        if (winesRes.data && winesRes.data.length > 0) {
+          winesRes.data.forEach((wine: any) => {
+            allProducts.push({
+              id: `wine-${wine.id}`,
+              name: wine.name,
+              category: wine.type === 'champagne' ? 'Champagne' : wine.type === 'red' ? 'Red Wine' : wine.type === 'white' ? 'White Wine' : 'Wine',
+              image: wine.image_url || 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&h=500&fit=crop',
+              query: `${wine.name} wine`,
+              price: wine.price_range_eur || (wine.typical_price_eur ? `€${wine.typical_price_eur}` : undefined)
+            });
+          });
+        }
+
+        // Map cigars
+        if (cigarsRes.data && cigarsRes.data.length > 0) {
+          cigarsRes.data.forEach((cigar: any) => {
+            allProducts.push({
+              id: `cigar-${cigar.id}`,
+              name: `${cigar.brand} ${cigar.name}`,
+              category: 'Premium Cigars',
+              image: cigar.image_url || 'https://images.unsplash.com/photo-1528458876861-544fd1b4d440?w=400&h=500&fit=crop',
+              query: `${cigar.brand} ${cigar.name} cigar`,
+              price: cigar.price_per_stick_usd ? `$${cigar.price_per_stick_usd}` : undefined
+            });
+          });
+        }
+
+        // Map delicacies
+        if (delicaciesRes.data && delicaciesRes.data.length > 0) {
+          delicaciesRes.data.forEach((item: any) => {
+            allProducts.push({
+              id: `delicacy-${item.id}`,
+              name: item.name,
+              category: item.category || 'Delicacy',
+              image: item.image_url || 'https://images.unsplash.com/photo-1625943553852-781c6dd46faa?w=400&h=500&fit=crop',
+              query: `${item.name} delicacy`,
+              price: item.price ? `$${item.price}` : undefined
+            });
+          });
+        }
+
+        // Use fetched products or fallback
+        if (allProducts.length > 0) {
+          setProducts(allProducts);
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  const cardWidth = 280;
+  const gap = 16;
+  const totalWidth = products.length * (cardWidth + gap);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-[320px]">
+        <div className="animate-pulse text-gray-400">Loading products...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative sphera-carousel-container">
+      {/* Left fade gradient */}
+      <div className="absolute left-0 top-0 w-20 h-full bg-gradient-to-r from-gray-100 via-gray-100/80 to-transparent z-10 pointer-events-none" />
+
+      {/* Right fade gradient */}
+      <div className="absolute right-0 top-0 w-20 h-full bg-gradient-to-l from-gray-100 via-gray-100/80 to-transparent z-10 pointer-events-none" />
+
+      {/* Carousel Track */}
+      <div className="overflow-hidden">
+        <div
+          className="sphera-carousel-track flex gap-4"
+          style={{
+            width: `${totalWidth * 2}px`,
+            animation: `spheraScroll ${products.length * 2.5}s linear infinite`,
+          }}
+        >
+          {/* First set of cards */}
+          {products.map((product) => (
+            <div
+              key={`first-${product.id}`}
+              className="group relative flex-shrink-0 rounded-2xl overflow-hidden cursor-pointer transform transition-all duration-500 hover:scale-[1.02] hover:shadow-xl"
+              style={{ width: `${cardWidth}px`, height: '320px' }}
+              onClick={() => navigate(`/dashboard/chat?query=${encodeURIComponent(product.query)}&newChat=true`)}
+            >
+              {/* Background Image */}
+              <div className="absolute inset-0">
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&h=500&fit=crop';
+                  }}
+                />
+              </div>
+
+              {/* Gradient Blur Overlay at Bottom */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 30%, rgba(0,0,0,0.1) 60%, transparent 100%)',
+                }}
+              />
+
+              {/* Blur Effect at Bottom */}
+              <div
+                className="absolute bottom-0 left-0 right-0 h-32"
+                style={{
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                  maskImage: 'linear-gradient(to top, black 50%, transparent 100%)',
+                  WebkitMaskImage: 'linear-gradient(to top, black 50%, transparent 100%)',
+                }}
+              />
+
+              {/* Category Badge */}
+              <div className="absolute top-4 left-4">
+                <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs text-white font-medium">
+                  {product.category}
+                </span>
+              </div>
+
+              {/* Price Badge (if available) */}
+              {product.price && (
+                <div className="absolute top-4 right-4">
+                  <span className="px-3 py-1 bg-black/40 backdrop-blur-md rounded-full text-xs text-white font-medium">
+                    {product.price}
+                  </span>
+                </div>
+              )}
+
+              {/* Content */}
+              <div className="absolute bottom-0 left-0 right-0 p-5">
+                <h3 className="text-white text-lg font-medium mb-3 drop-shadow-lg line-clamp-2">
+                  {product.name}
+                </h3>
+
+                {/* Order by AI Button */}
+                <button
+                  className="w-full py-2.5 rounded-xl text-sm font-medium text-white transition-all duration-300 border border-white/30 hover:border-white/60 hover:bg-white/20"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
+                  }}
+                >
+                  Order by AI
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {/* Second set for seamless infinite loop */}
+          {products.map((product) => (
+            <div
+              key={`second-${product.id}`}
+              className="group relative flex-shrink-0 rounded-2xl overflow-hidden cursor-pointer transform transition-all duration-500 hover:scale-[1.02] hover:shadow-xl"
+              style={{ width: `${cardWidth}px`, height: '320px' }}
+              onClick={() => navigate(`/dashboard/chat?query=${encodeURIComponent(product.query)}&newChat=true`)}
+            >
+              {/* Background Image */}
+              <div className="absolute inset-0">
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&h=500&fit=crop';
+                  }}
+                />
+              </div>
+
+              {/* Gradient Blur Overlay at Bottom */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 30%, rgba(0,0,0,0.1) 60%, transparent 100%)',
+                }}
+              />
+
+              {/* Blur Effect at Bottom */}
+              <div
+                className="absolute bottom-0 left-0 right-0 h-32"
+                style={{
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                  maskImage: 'linear-gradient(to top, black 50%, transparent 100%)',
+                  WebkitMaskImage: 'linear-gradient(to top, black 50%, transparent 100%)',
+                }}
+              />
+
+              {/* Category Badge */}
+              <div className="absolute top-4 left-4">
+                <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs text-white font-medium">
+                  {product.category}
+                </span>
+              </div>
+
+              {/* Price Badge (if available) */}
+              {product.price && (
+                <div className="absolute top-4 right-4">
+                  <span className="px-3 py-1 bg-black/40 backdrop-blur-md rounded-full text-xs text-white font-medium">
+                    {product.price}
+                  </span>
+                </div>
+              )}
+
+              {/* Content */}
+              <div className="absolute bottom-0 left-0 right-0 p-5">
+                <h3 className="text-white text-lg font-medium mb-3 drop-shadow-lg line-clamp-2">
+                  {product.name}
+                </h3>
+
+                {/* Order by AI Button */}
+                <button
+                  className="w-full py-2.5 rounded-xl text-sm font-medium text-white transition-all duration-300 border border-white/30 hover:border-white/60 hover:bg-white/20"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
+                  }}
+                >
+                  Order by AI
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* CSS Animation for smooth infinite scroll */}
+      <style>{`
+        @keyframes spheraScroll {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-${totalWidth}px);
+          }
+        }
+        .sphera-carousel-container:hover .sphera-carousel-track {
+          animation-play-state: paused;
+        }
+      `}</style>
+    </div>
+  );
+};
+
 // Compact Partner Logo Carousel Component
 const CompactPartnerCarousel = () => {
   return (
@@ -697,41 +990,21 @@ function Homepage() {
           </section>
         </AnimatedSection>
 
-        {/* Private Jet Buy/Sell Coming Soon Banner - Reversed Layout */}
+        {/* Sphera AI Luxury Products Carousel */}
         <AnimatedSection animation="slide-up" delay={120}>
           <section className="px-4 sm:px-8 py-8 sm:py-12 max-w-6xl mx-auto">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden">
-              <div className="grid grid-cols-1 md:grid-cols-2 md:h-[300px]">
-                {/* Left - Image with overlay */}
-                <div className="h-56 md:h-full overflow-hidden bg-gradient-to-br from-gray-100 to-gray-300 relative order-2 md:order-1">
-                  <img
-                    src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/tokenization-images/Privatecharterx_aircraft_sales.jpeg"
-                    alt="Private Jet Buy/Sell"
-                    className="w-full h-full object-cover"
-                  />
-                  {/* Text overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                    <span className="text-white text-2xl md:text-3xl font-light tracking-wide">Q1 / 2026</span>
-                  </div>
-                </div>
-                {/* Right - Text Content */}
-                <div className="p-8 md:p-10 flex flex-col justify-center order-1 md:order-2">
-                  <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
-                    Private Jet Buy/Sell
-                    <br />
-                    <span className="text-gray-400 text-sm">AI & Web3 Powered Marketplace</span>
-                  </h3>
-                  <p className="text-gray-600 text-sm leading-relaxed mb-4">
-                    Discover daily off-market offers and 9,000+ aircraft worldwide—from props to BBJ jets. Transparent pricing with direct contact via Sphera AI.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Sphera AI</span>
-                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Off-Market Deals</span>
-                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Direct Contact</span>
-                  </div>
-                </div>
-              </div>
+            {/* Section Header */}
+            <div className="text-center mb-8">
+              <h2 className="text-2xl sm:text-3xl font-light text-gray-900 mb-2">
+                Order by Sphera AI
+              </h2>
+              <p className="text-gray-500 text-sm font-light">
+                Premium products delivered worldwide — wines, delicacies, and luxury goods
+              </p>
             </div>
+
+            {/* Carousel Container */}
+            <SpheraProductsCarousel navigate={navigate} />
           </section>
         </AnimatedSection>
 

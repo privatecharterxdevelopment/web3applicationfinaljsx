@@ -683,6 +683,13 @@ export default function AppRegisterModal({
               description: 'Welcome bonus - Registration reward',
               metadata: { reason: 'new_user_registration' }
             });
+
+            // Also update user_profiles.pvcx_balance for CRM display compatibility
+            await supabase.from('user_profiles').upsert({
+              user_id: userId,
+              pvcx_balance: 100,
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id' });
           } catch (e) {
             console.error('Bonus error:', e);
           }

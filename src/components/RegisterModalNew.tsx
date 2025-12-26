@@ -100,7 +100,7 @@ function Step2Form({
 
           // Give new user 100 PVCX tokens as registration bonus
           try {
-            // Insert initial balance record
+            // Insert initial balance record into pvcx_balance table
             const { error: balanceError } = await supabase
               .from('pvcx_balance')
               .insert({
@@ -122,6 +122,15 @@ function Step2Form({
                   metadata: { reason: 'new_user_registration' }
                 });
             }
+
+            // Also update user_profiles.pvcx_balance for CRM display compatibility
+            await supabase
+              .from('user_profiles')
+              .upsert({
+                user_id: userId,
+                pvcx_balance: 100,
+                updated_at: new Date().toISOString()
+              }, { onConflict: 'user_id' });
           } catch (bonusError) {
             console.error('Failed to award registration bonus:', bonusError);
             // Don't block registration if bonus fails

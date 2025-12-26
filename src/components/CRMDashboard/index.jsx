@@ -225,15 +225,25 @@ const CRMDashboard = ({ onClose }) => {
             { data: requests },
             { data: aiChats },
             { data: supportTickets },
-            { data: profile }
+            { data: profile },
+            { data: pvcxBalance }
           ] = await Promise.all([
             supabaseAdmin.from('users').select('*').eq('id', authUser.id).maybeSingle(),
             supabaseAdmin.from('user_bookings').select('*').eq('user_id', authUser.id),
             supabaseAdmin.from('user_requests').select('*').eq('user_id', authUser.id),
             supabaseAdmin.from('ai_chat_sessions').select('*').eq('user_id', authUser.id),
             supabaseAdmin.from('support_tickets').select('*').eq('user_id', authUser.id),
-            supabaseAdmin.from('user_profiles').select('avatar_url, phone, city, country, wallet_address, pvcx_balance, subscription_tier, nft_holder').eq('user_id', authUser.id).maybeSingle()
+            supabaseAdmin.from('user_profiles').select('avatar_url, phone, city, country, wallet_address, pvcx_balance, subscription_tier, nft_holder').eq('user_id', authUser.id).maybeSingle(),
+            supabaseAdmin.from('pvcx_balance').select('balance, earned_from_bookings, earned_from_co2').eq('user_id', authUser.id).maybeSingle()
           ]);
+
+          // Merge profile with PVCX balance from dedicated table (pvcx_balance table is source of truth)
+          const mergedProfile = {
+            ...(profile || {}),
+            pvcx_balance: pvcxBalance?.balance ?? profile?.pvcx_balance ?? 0,
+            pvcx_from_bookings: pvcxBalance?.earned_from_bookings ?? 0,
+            pvcx_from_co2: pvcxBalance?.earned_from_co2 ?? 0
+          };
 
           // Merge auth user data with public user data
           return {
@@ -258,7 +268,7 @@ const CRMDashboard = ({ onClose }) => {
             requests: requests || [],
             aiChats: aiChats || [],
             supportTickets: supportTickets || [],
-            profile: profile || {}
+            profile: mergedProfile
           };
         } catch (err) {
           console.error('Error enriching user:', authUser.id, err);

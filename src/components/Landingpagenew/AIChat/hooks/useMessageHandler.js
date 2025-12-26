@@ -815,6 +815,39 @@ They will personally arrange your perfect yacht experience with custom itinerari
               return;
             }
 
+            // Handle Custom Trip Package - show card with Add to Cart button
+            if (toolUse.name === 'createTripPackage' && toolResult.action === 'SHOW_TRIP_PACKAGE' && toolResult.tripPackage) {
+              console.log('✈️ Trip Package created:', toolResult.tripPackage);
+
+              // UI-only message for displaying the card
+              const tripPackageMessage = {
+                role: 'trip_package',
+                content: toolResult.message || 'Custom trip package prepared',
+                tripPackage: toolResult.tripPackage,
+                displayMessage: toolResult.displayMessage
+              };
+
+              // Also add an assistant message for conversation context
+              const segmentCount = toolResult.tripPackage.segments?.length || 0;
+              const estimatedTotal = toolResult.tripPackage.estimatedTotal;
+              const totalFormatted = estimatedTotal ? `€${estimatedTotal.toLocaleString()}` : 'Price on request';
+
+              const assistantContextMessage = {
+                role: 'assistant',
+                content: `I've prepared your custom trip package "${toolResult.tripPackage.name}" with ${segmentCount} segments. Estimated total: ${totalFormatted}. The package card is displayed above - you can review all segments and add the complete trip to your cart when ready. Would you like to adjust any segment or add additional services?`
+              };
+
+              setChatHistory(prev => prev.map(c =>
+                c.id === workingChatId
+                  ? { ...c, messages: [...c.messages.filter(m => !m.isLoading), tripPackageMessage, assistantContextMessage] }
+                  : c
+              ));
+
+              await chatService.updateChatMessages(workingChatId, [...conversationHistory, tripPackageMessage, assistantContextMessage], user.id);
+              setIsProcessing(false);
+              return;
+            }
+
             // Handle VISA request - show card with Add to Cart button
             if (toolUse.name === 'createVisaRequest' && toolResult.action === 'SHOW_VISA_REQUEST' && toolResult.visaRequest) {
               console.log('🛂 Visa Request created:', toolResult.visaRequest);

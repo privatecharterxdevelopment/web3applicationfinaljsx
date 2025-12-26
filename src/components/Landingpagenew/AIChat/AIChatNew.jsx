@@ -37,6 +37,7 @@ import { JourneyBuilder, YachtJourneyBuilder, AirportTransferOffer } from './com
 import { Toast, TypingAnimation, TypingText, ReportIssueModal } from './components';
 import CartSidebar from './components/CartSidebar';
 import MedevacRequestCard from './components/MedevacRequestCard';
+import TripPackageCard from './components/TripPackageCard';
 
 // Extras catalog for cart
 const EXTRAS_CATALOG = [
@@ -76,6 +77,7 @@ import { useAccount, useDisconnect } from 'wagmi';
 // Quick suggestion bubbles - matching original design
 const QUICK_SUGGESTIONS = [
   { id: 'jets', label: 'Private Jets', prompt: 'I need to book a private jet' },
+  { id: 'custom_travel', label: 'Custom Travel', prompt: 'I want to plan a custom trip with multiple destinations and stops' },
   { id: 'sommelier', label: 'Sommelier', prompt: 'I would like wine recommendations' },
   { id: 'restaurants', label: 'Restaurants', prompt: 'Find me a luxury restaurant' },
   { id: 'transfer', label: 'Airport Transfer', prompt: 'I need an airport transfer' },
@@ -531,6 +533,44 @@ const AIChatNew = ({
                 };
                 cart.setCartItems(prev => [...prev, cartItem]);
                 modals.setToast({ message: '🚨 MEDEVAC request added to cart - Our team will contact you immediately', type: 'success' });
+              }}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    // Custom Trip Package Card
+    if (msg.role === 'trip_package' && msg.tripPackage) {
+      return (
+        <div key={index} className="flex justify-start">
+          <div className="flex flex-col gap-2 ml-0 sm:ml-12" style={{ maxWidth: '450px' }}>
+            <div className="flex items-center gap-2 px-2">
+              <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
+              <span className="text-xs text-gray-600 font-medium">Sphera AI · Travel Planning</span>
+            </div>
+            <TripPackageCard
+              tripPackage={msg.tripPackage}
+              isInCart={cart.cartItems.some(item => item.id === msg.tripPackage.id)}
+              onAddToCart={(tripPkg) => {
+                const cartItem = {
+                  ...tripPkg,
+                  cartId: `trip-${Date.now()}`,
+                  type: 'trip_package',
+                  price: tripPkg.estimatedTotal || 0,
+                  basePrice: tripPkg.estimatedTotal || 0,
+                  totalWithFee: tripPkg.estimatedTotal || 0,
+                  isEstimate: true,
+                  requiresConfirmation: true,
+                  priceDisplay: tripPkg.estimatedTotal ? `€${tripPkg.estimatedTotal.toLocaleString()}` : 'Price on Request'
+                };
+                cart.setCartItems(prev => [...prev, cartItem]);
+                modals.setToast({ message: '✈️ Trip package added to cart!', type: 'success' });
+              }}
+              onEditSegment={(tripPkg) => {
+                // Send message to adjust the trip
+                const editMessage = `I'd like to adjust my ${tripPkg.name} trip package. Can you help me modify the segments?`;
+                messageHandler.sendMessage(editMessage);
               }}
             />
           </div>
