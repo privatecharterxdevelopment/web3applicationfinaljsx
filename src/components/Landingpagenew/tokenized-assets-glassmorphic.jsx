@@ -319,17 +319,16 @@ Happy travels!`,
     return (
       <div className="p-8 space-y-6">
         <div className="flex items-center justify-center py-12">
-          <div className="flex flex-col items-center gap-3">
+          <div className="w-20 h-20">
             <video
               autoPlay
               loop
               muted
               playsInline
-              className="w-32 h-32"
+              className="w-full h-full object-contain"
             >
               <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
             </video>
-            <span className="text-gray-600">Loading profile data...</span>
           </div>
         </div>
       </div>
@@ -4362,18 +4361,17 @@ const TokenizedAssetsGlassmorphic = () => {
           {!showLoginModal && !showRegisterModal && !showForgotPasswordModal && !showPartnerRegisterModal && (
             <div className="flex flex-col items-center gap-4">
               {/* PrivateCharterX Logo Animation - Same as transition */}
-              <div className="relative w-24 h-24">
+              <div className="w-20 h-20">
                 <video
                   autoPlay
                   loop
                   muted
                   playsInline
-                  className="w-full h-full"
+                  className="w-full h-full object-contain"
                 >
                   <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
                 </video>
               </div>
-              <p className="text-sm text-gray-600">Loading...</p>
             </div>
           )}
         </div>
@@ -5403,7 +5401,17 @@ const TokenizedAssetsGlassmorphic = () => {
                   if (loadingRequests) {
                     return (
                       <div className="flex items-center justify-center py-16">
-                        <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin"></div>
+                        <div className="w-20 h-20">
+                          <video
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            className="w-full h-full object-contain"
+                          >
+                            <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
+                          </video>
+                        </div>
                       </div>
                     );
                   }
@@ -6802,17 +6810,16 @@ const TokenizedAssetsGlassmorphic = () => {
                 {/* Tokenization List */}
                 {loadingTokenizations ? (
                   <div className="flex items-center justify-center py-20">
-                    <div className="flex flex-col items-center">
+                    <div className="w-20 h-20">
                       <video
                         autoPlay
                         loop
                         muted
                         playsInline
-                        className="w-32 h-32 mb-3"
+                        className="w-full h-full object-contain"
                       >
                         <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
                       </video>
-                      <p className="text-sm text-gray-600">Loading tokenizations...</p>
                     </div>
                   </div>
                 ) : (
@@ -6904,7 +6911,7 @@ const TokenizedAssetsGlassmorphic = () => {
                                   setSelectedTokenization(token);
                                 }
                               }}
-                              className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
+                              className="text-sm text-gray-900 hover:text-black font-medium flex items-center gap-1"
                             >
                               {token.status === 'draft' ? 'Continue Editing' : 'View Details'}
                               <ChevronRight size={14} />
@@ -7213,17 +7220,16 @@ const TokenizedAssetsGlassmorphic = () => {
                 {/* SPV List */}
                 {loadingSPVs ? (
                   <div className="flex items-center justify-center py-20">
-                    <div className="flex flex-col items-center">
+                    <div className="w-20 h-20">
                       <video
                         autoPlay
                         loop
                         muted
                         playsInline
-                        className="w-32 h-32 mb-3"
+                        className="w-full h-full object-contain"
                       >
                         <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
                       </video>
-                      <p className="text-sm text-gray-600">Loading SPVs...</p>
                     </div>
                   </div>
                 ) : (
@@ -7518,17 +7524,16 @@ const TokenizedAssetsGlassmorphic = () => {
                 {/* Bookings List */}
                 {loadingBookings ? (
                   <div className="flex items-center justify-center py-20">
-                    <div className="flex flex-col items-center">
+                    <div className="w-20 h-20">
                       <video
                         autoPlay
                         loop
                         muted
                         playsInline
-                        className="w-32 h-32 mb-3"
+                        className="w-full h-full object-contain"
                       >
                         <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
                       </video>
-                      <p className="text-sm text-gray-600">Loading bookings...</p>
                     </div>
                   </div>
                 ) : (
@@ -7906,17 +7911,16 @@ const TokenizedAssetsGlassmorphic = () => {
               {/* Loading State */}
               {!showJetDetail && isLoadingJets && (
                 <div className="flex justify-center items-center py-12">
-                  <div className="flex flex-col items-center gap-3">
+                  <div className="w-20 h-20">
                     <video
                       autoPlay
                       loop
                       muted
                       playsInline
-                      className="w-24 h-24"
+                      className="w-full h-full object-contain"
                     >
                       <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
                     </video>
-                    <div className="text-sm text-gray-600">Loading jets...</div>
                   </div>
                 </div>
               )}
@@ -8384,17 +8388,16 @@ const TokenizedAssetsGlassmorphic = () => {
               {/* Loading State */}
               {isLoadingHelicopters && !showHelicopterDetail && (
                 <div className="flex justify-center items-center py-12">
-                  <div className="flex flex-col items-center gap-3">
+                  <div className="w-20 h-20">
                     <video
                       autoPlay
                       loop
                       muted
                       playsInline
-                      className="w-24 h-24"
+                      className="w-full h-full object-contain"
                     >
                       <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
                     </video>
-                    <div className="text-sm text-gray-600">Loading helicopters...</div>
                   </div>
                 </div>
               )}
@@ -8866,17 +8869,16 @@ const TokenizedAssetsGlassmorphic = () => {
               {/* Loading State */}
               {isLoadingEmptyLegs && !showEmptyLegDetail && (
                 <div className="flex justify-center items-center py-12">
-                  <div className="flex flex-col items-center gap-3">
+                  <div className="w-20 h-20">
                     <video
                       autoPlay
                       loop
                       muted
                       playsInline
-                      className="w-24 h-24"
+                      className="w-full h-full object-contain"
                     >
                       <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
                     </video>
-                    <div className="text-sm text-gray-600">Loading empty legs...</div>
                   </div>
                 </div>
               )}
@@ -9697,17 +9699,16 @@ const TokenizedAssetsGlassmorphic = () => {
               {/* Loading State */}
               {isLoadingAdventures && (
                 <div className="flex justify-center items-center py-12">
-                  <div className="flex flex-col items-center gap-3">
+                  <div className="w-20 h-20">
                     <video
                       autoPlay
                       loop
                       muted
                       playsInline
-                      className="w-24 h-24"
+                      className="w-full h-full object-contain"
                     >
                       <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
                     </video>
-                    <div className="text-sm text-gray-600">Loading adventures...</div>
                   </div>
                 </div>
               )}
@@ -10752,17 +10753,16 @@ const TokenizedAssetsGlassmorphic = () => {
               {/* Loading State */}
               {isLoadingLuxuryCars && (
                 <div className="flex justify-center items-center py-12">
-                  <div className="flex flex-col items-center gap-3">
+                  <div className="w-20 h-20">
                     <video
                       autoPlay
                       loop
                       muted
                       playsInline
-                      className="w-24 h-24"
+                      className="w-full h-full object-contain"
                     >
                       <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
                     </video>
-                    <div className="text-sm text-gray-600">Loading luxury cars...</div>
                   </div>
                 </div>
               )}
