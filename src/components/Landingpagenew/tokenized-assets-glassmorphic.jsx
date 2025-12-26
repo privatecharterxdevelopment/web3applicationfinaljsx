@@ -6795,13 +6795,6 @@ const TokenizedAssetsGlassmorphic = () => {
             <div className="w-full h-full overflow-y-auto p-8">
               <div className="max-w-7xl mx-auto">
                 <div className="mb-8">
-                  <button
-                    onClick={() => setActiveCategory('overview')}
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-                  >
-                    <ArrowLeft size={16} />
-                    Back
-                  </button>
                   <h1 className="text-3xl font-light text-gray-900 mb-2">My Tokenized Assets</h1>
                   <p className="text-gray-600">View and manage your tokenization requests</p>
                 </div>
@@ -6841,7 +6834,7 @@ const TokenizedAssetsGlassmorphic = () => {
                               {token.logo_url ? (
                                 <img src={token.logo_url} alt={token.asset_name} className="w-full h-full object-cover" />
                               ) : (
-                                <img src="/pcx.png" alt="PCX" className="w-8 h-8 object-contain" />
+                                <img src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/PrivatecharterX_logo_vectorized.glb.png" alt="PCX" className="w-8 h-8 object-contain" />
                               )}
                             </div>
                             <span className={`text-xs px-2 py-1 rounded-full ${statusColors[token.status] || 'bg-gray-100 text-gray-700'}`}>
@@ -6959,7 +6952,7 @@ const TokenizedAssetsGlassmorphic = () => {
                         {selectedTokenization.logo_url ? (
                           <img src={selectedTokenization.logo_url} alt="" className="w-full h-full object-cover" />
                         ) : (
-                          <img src="/pcx.png" alt="PCX" className="w-8 h-8 object-contain" />
+                          <img src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/PrivatecharterX_logo_vectorized.glb.png" alt="PCX" className="w-8 h-8 object-contain" />
                         )}
                       </div>
                       <div>
@@ -7004,7 +6997,7 @@ const TokenizedAssetsGlassmorphic = () => {
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       <div className="bg-white/50 border border-gray-100 p-3 rounded-xl">
                         <p className="text-[10px] text-gray-400 mb-1 font-['DM_Sans']">Asset Value</p>
-                        <p className="text-xs font-light text-gray-700 font-['DM_Sans']">{selectedTokenization.estimated_value ? `€${Number(selectedTokenization.estimated_value).toLocaleString()}` : '-'}</p>
+                        <p className="text-xs font-light text-gray-700 font-['DM_Sans']">{selectedTokenization.estimated_value ? `$${Number(selectedTokenization.estimated_value).toLocaleString()}` : '-'}</p>
                       </div>
                       <div className="bg-white/50 border border-gray-100 p-3 rounded-xl">
                         <p className="text-[10px] text-gray-400 mb-1 font-['DM_Sans']">Location</p>
@@ -7015,12 +7008,10 @@ const TokenizedAssetsGlassmorphic = () => {
                         <p className="text-xs font-light text-gray-700 font-mono font-['DM_Sans']">{selectedTokenization.token_symbol ? `$${selectedTokenization.token_symbol}` : '-'}</p>
                       </div>
                     </div>
-                    {selectedTokenization.description && (
-                      <div className="mt-3 bg-white/50 border border-gray-100 p-4 rounded-xl">
-                        <p className="text-[10px] text-gray-400 mb-2 font-['DM_Sans']">Description</p>
-                        <p className="text-xs font-light text-gray-600 whitespace-pre-wrap font-['DM_Sans']">{selectedTokenization.description}</p>
-                      </div>
-                    )}
+                    <div className="mt-3 bg-white/50 border border-gray-100 p-4 rounded-xl">
+                      <p className="text-[10px] text-gray-400 mb-2 font-['DM_Sans']">Description</p>
+                      <p className="text-xs font-light text-gray-600 whitespace-pre-wrap font-['DM_Sans']">{selectedTokenization.description || '-'}</p>
+                    </div>
                   </div>
 
                   {/* Token Configuration */}
