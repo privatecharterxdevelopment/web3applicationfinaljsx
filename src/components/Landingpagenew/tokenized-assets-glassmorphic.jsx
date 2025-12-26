@@ -1114,7 +1114,7 @@ const RWABannerCarousel = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % assets.length);
-    }, 4000); // Switch every 4 seconds
+    }, 10000); // Switch every 10 seconds
     return () => clearInterval(interval);
   }, [assets.length]);
 
@@ -1123,43 +1123,24 @@ const RWABannerCarousel = () => {
   return (
     <a
       href="/tokenized"
-      className="block border rounded-xl p-3 bg-white/40 hover:bg-white/50 border-gray-300/50 transition-all hover:shadow-lg group mb-3 relative overflow-hidden"
+      className="block border rounded-xl p-3 min-h-[120px] bg-white/40 hover:bg-white/50 border-gray-300/50 transition-all group relative overflow-hidden"
       style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
     >
-      <div className="flex items-center justify-between gap-3">
-        {/* Left: Text content */}
-        <div className="flex-1 transition-all duration-500">
-          <span className="inline-block px-1.5 py-0.5 rounded-full text-[8px] font-medium bg-gray-200 text-gray-600 mb-1">
-            {currentAsset.badge}
-          </span>
-          <h4 className="text-xs font-semibold text-gray-900 mb-0.5">
-            {currentAsset.symbol} <span className="font-normal text-gray-600">{currentAsset.name}</span>
-          </h4>
-          <p className="text-[10px] text-gray-600">{currentAsset.description} • APY {currentAsset.apy}</p>
-        </div>
-        {/* Right: Token image - overflow without affecting height */}
-        <div className="w-16 h-16 flex-shrink-0 flex items-center justify-center -mr-2 -my-3">
-          <img
-            src={currentAsset.image}
-            alt={currentAsset.name}
-            className="w-28 h-28 object-contain group-hover:scale-105 transition-transform duration-300"
-          />
-        </div>
-      </div>
-      {/* Dot indicators */}
-      <div className="absolute bottom-1.5 left-1/2 transform -translate-x-1/2 flex gap-1">
-        {assets.map((_, idx) => (
-          <button
-            key={idx}
-            onClick={(e) => {
-              e.preventDefault();
-              setActiveIndex(idx);
-            }}
-            className={`w-1.5 h-1.5 rounded-full transition-all ${
-              idx === activeIndex ? 'bg-gray-800 w-3' : 'bg-gray-400'
-            }`}
-          />
-        ))}
+      {/* Token image - absolute positioned, large, cut off at bottom */}
+      <img
+        src={currentAsset.image}
+        alt={currentAsset.name}
+        className="absolute right-4 -bottom-[115px] w-[300px] h-[300px] object-contain group-hover:scale-105 transition-all duration-700 ease-in-out pointer-events-none"
+      />
+      {/* Left: Text content */}
+      <div className="relative z-10 pr-24 ml-1 transition-all duration-700 ease-in-out">
+        <span className="inline-block px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-gray-200 text-gray-600 mb-1.5">
+          {currentAsset.badge}
+        </span>
+        <h4 className="text-sm font-bold text-gray-900 mb-0.5">
+          {currentAsset.symbol} <span className="font-medium text-gray-700">{currentAsset.name}</span>
+        </h4>
+        <p className="text-xs text-gray-600">{currentAsset.description} • APY {currentAsset.apy}</p>
       </div>
     </a>
   );
@@ -6421,16 +6402,16 @@ const TokenizedAssetsGlassmorphic = () => {
                     <div className="flex items-center gap-2">
                       <ChevronRight size={12} className={webMode === 'web3' ? 'text-gray-700' : 'text-gray-400'} />
                       <h3 className={`text-xs font-medium ${webMode === 'web3' ? 'text-gray-800' : 'text-gray-600'}`}>
-                        {webMode === 'web3' ? 'My Tokenizations' : 'Your recent chats'}
+                        {webMode === 'web3' ? 'web3 dashboard' : 'Your recent chats'}
                       </h3>
                     </div>
-                    {webMode === 'web3' && userTokenizations.length > 0 && (
-                      <button
-                        onClick={() => setActiveCategory('my-tokenized-assets')}
+                    {webMode === 'web3' && (
+                      <a
+                        href="/dashboard/web3/marketplace"
                         className="text-[10px] text-gray-500 hover:text-gray-700 transition-colors"
                       >
                         View all →
-                      </button>
+                      </a>
                     )}
                   </div>
 
@@ -6439,7 +6420,8 @@ const TokenizedAssetsGlassmorphic = () => {
                     <RWABannerCarousel />
                   )}
 
-                  {/* Row 1: Empty Legs + Aviation (2 cards) */}
+                  {/* Row 1: Empty Legs + Aviation (2 cards) - RWS Mode Only */}
+                  {webMode === 'rws' && (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {/* RWS Mode - Show recent chats/empty legs */}
                     {webMode === 'rws' && (
@@ -6597,9 +6579,10 @@ const TokenizedAssetsGlassmorphic = () => {
                     )}
 
                   </div>
+                  )}
 
                   {/* Row 2: My Bookings + My Requests (mobile) / My Bookings + Blog (desktop) */}
-                  <div className="mt-4 md:mt-8 grid grid-cols-2 gap-3 md:gap-4">
+                  <div className="grid grid-cols-2 gap-3 md:gap-4">
                     {/* Card - Bookings Card */}
                     <button
                       onClick={() => {
@@ -6732,7 +6715,7 @@ const TokenizedAssetsGlassmorphic = () => {
 
                   {/* Third Row - Additional Cards (Web3 Mode Only) */}
                   {webMode === 'web3' && (
-                    <div className="mt-4 md:mt-8 grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       {/* Card #9 - NFT Marketplace */}
                       <button
                         onClick={() => setActiveCategory('nft-marketplace')}
