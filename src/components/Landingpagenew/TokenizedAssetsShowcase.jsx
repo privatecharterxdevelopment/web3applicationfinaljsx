@@ -202,9 +202,10 @@ export default function TokenizedAssetsShowcase() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center font-['DM_Sans']">
-        <div className="text-center">
-          <div className="w-10 h-10 border border-black/10 border-t-black rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-base text-black/40 font-['DM_Sans']">Loading</p>
+        <div className="w-20 h-20">
+          <video autoPlay loop muted playsInline className="w-full h-full object-contain">
+            <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
+          </video>
         </div>
       </div>
     );

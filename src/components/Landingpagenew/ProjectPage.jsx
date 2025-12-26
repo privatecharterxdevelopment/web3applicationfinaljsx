@@ -355,9 +355,10 @@ const ProjectPage = () => {
   if (!asset) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-black mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading asset details...</p>
+        <div className="w-20 h-20">
+          <video autoPlay loop muted playsInline className="w-full h-full object-contain">
+            <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
+          </video>
         </div>
       </div>
     );

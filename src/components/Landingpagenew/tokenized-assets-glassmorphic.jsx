@@ -7670,28 +7670,10 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
-          {/* Launchpad - Coming Soon */}
+          {/* Launchpad */}
           {!isTransitioning && activeCategory === 'launchpad' && (
-            <div className="w-full h-full overflow-y-auto flex items-center justify-center">
-              <div className="text-center p-8">
-                <div className="w-24 h-24 mx-auto mb-6">
-                  <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-full h-full object-contain"
-                  >
-                    <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
-                  </video>
-                </div>
-                <h2 className="text-2xl font-semibold text-gray-800 mb-2">Launchpad</h2>
-                <p className="text-gray-500 mb-4">Token launches and IDO platform</p>
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-600 text-sm font-medium">
-                  <Rocket size={16} />
-                  Launching Q1 / 2026
-                </div>
-              </div>
+            <div className="w-full h-full overflow-y-auto">
+              <LaunchpadPageNew />
             </div>
           )}
 
@@ -7716,28 +7698,10 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
-          {/* Marketplace - Coming Soon */}
+          {/* Marketplace */}
           {!isTransitioning && activeCategory === 'marketplace' && (
-            <div className="w-full h-full overflow-y-auto flex items-center justify-center">
-              <div className="text-center p-8">
-                <div className="w-24 h-24 mx-auto mb-6">
-                  <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-full h-full object-contain"
-                  >
-                    <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
-                  </video>
-                </div>
-                <h2 className="text-2xl font-semibold text-gray-800 mb-2">Marketplace</h2>
-                <p className="text-gray-500 mb-4">Trade tokenized assets and collectibles</p>
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-600 text-sm font-medium">
-                  <Rocket size={16} />
-                  Launching Q1 / 2026
-                </div>
-              </div>
+            <div className="w-full h-full overflow-y-auto">
+              <Marketplace />
             </div>
           )}
 
