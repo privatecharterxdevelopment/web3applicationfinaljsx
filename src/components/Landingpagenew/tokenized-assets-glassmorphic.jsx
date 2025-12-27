@@ -1133,7 +1133,7 @@ const RWABannerCarousel = () => {
       <img
         src={currentAsset.image}
         alt={currentAsset.name}
-        className="absolute right-4 -bottom-[115px] w-[300px] h-[300px] object-contain group-hover:scale-105 transition-all duration-700 ease-in-out pointer-events-none"
+        className="absolute -right-16 md:right-4 -bottom-[115px] w-[300px] h-[300px] object-contain group-hover:scale-105 transition-all duration-700 ease-in-out pointer-events-none"
       />
       {/* Left: Text content */}
       <div className="relative z-10 pr-24 ml-1 transition-all duration-700 ease-in-out">
