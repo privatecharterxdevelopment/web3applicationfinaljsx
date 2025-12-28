@@ -154,6 +154,13 @@ export default function PrivacyPolicy() {
               You can manage your cookie preferences through your browser settings. Essential cookies are required for the platform to function.
               Analytics and marketing cookies are optional and can be disabled.
             </p>
+            <h3 className="text-sm font-medium text-gray-700 pt-2">Microsoft Clarity</h3>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              We use Microsoft Clarity to understand how users interact with our website. Clarity captures anonymized session recordings
+              and heatmaps to help us improve user experience. This data includes mouse movements, clicks, and scroll behavior, but does
+              not collect personal information such as passwords or payment details. You can learn more about Microsoft Clarity's privacy
+              practices at <a href="https://clarity.microsoft.com/terms" target="_blank" rel="noopener noreferrer" className="text-gray-900 hover:underline">clarity.microsoft.com/terms</a>.
+            </p>
           </div>
 
           {/* Section 8 */}
