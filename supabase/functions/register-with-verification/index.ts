@@ -261,18 +261,38 @@ serve(async (req) => {
       });
     }
 
-    // Create user profile with phone if provided
+    // Create user profile with phone - NO subscription by default
     const { error: profileError } = await supabaseAdmin
       .from('user_profiles')
       .insert({
         user_id: authData.user.id,
         phone: phone?.trim() || null,
+        subscription_tier: null,              // Kein Tier
+        subscription_status: 'incomplete',    // Incomplete = kein aktives Abo
+        chats_limit: 0,                       // Keine Chats ohne Abo
+        chats_used: 0,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       });
 
     if (profileError) {
-      console.warn('Failed to create user profile (non-critical):', profileError);
+      console.error('CRITICAL: Failed to create user profile:', profileError);
+
+      // Cleanup: Delete auth user only (CASCADE handles users table)
+      try {
+        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+      } catch (cleanupError) {
+        console.error('Cleanup failed:', cleanupError);
+      }
+
+      await ensureMinimumDelay();
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Failed to create user profile. Please try again.'
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     // Send welcome email (non-blocking - don't wait for it)
@@ -389,11 +409,11 @@ serve(async (req) => {
           </div>
 
           <div class="tier-info">
-            <span class="tier-badge">YOUR PLAN</span>
-            <h3 class="tier-name">Explorer (Free)</h3>
-            <p class="tier-feature">1 AI Chat per month included</p>
+            <span class="tier-badge">GET STARTED</span>
+            <h3 class="tier-name">Choose Your Plan</h3>
+            <p class="tier-feature">Subscribe to unlock AI Chat & premium features</p>
             <p class="upgrade-hint">
-              Want more? <a href="${siteUrl}/subscriptions/plans">Upgrade to unlock unlimited features</a>
+              <a href="${siteUrl}/subscriptions/plans">View subscription plans →</a>
             </p>
           </div>
 
