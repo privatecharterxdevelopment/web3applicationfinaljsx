@@ -46,7 +46,7 @@ function Aviation({ setCurrentPage }: AviationProps) {
         backgroundRepeat: 'no-repeat'
       }}>
         {/* Dark overlay for text readability */}
-        <div className="absolute inset-0 bg-black/60 rounded-2xl"></div>
+        <div className="absolute inset-0 bg-black/30 rounded-2xl"></div>
 
         <div className="relative z-10 text-center text-white">
           <div className="mb-6">
