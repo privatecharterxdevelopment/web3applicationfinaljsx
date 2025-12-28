@@ -376,7 +376,7 @@ function Aviation({ setCurrentPage }: AviationProps) {
               <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-6">
                 <Headphones className="w-8 h-8 text-gray-700" />
               </div>
-              <h3 className="text-lg font-light text-gray-900 mb-4 leading-tight">24/7 Broker Service</h3>
+              <h3 className="text-lg font-light text-gray-900 mb-4 leading-tight">24/7 Service</h3>
               <p className="text-sm text-gray-600 leading-relaxed">
                 Our expert team provides round-the-clock support, ensuring seamless booking
                 and travel coordination for all your aviation needs.
