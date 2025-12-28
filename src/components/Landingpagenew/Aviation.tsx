@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import LandingHeader from './LandingHeader';
 import Footer from './Footer';
 import {
@@ -31,6 +32,7 @@ interface AviationProps {
 }
 
 function Aviation({ setCurrentPage }: AviationProps) {
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gray-100 px-4 py-4">
@@ -165,7 +167,7 @@ function Aviation({ setCurrentPage }: AviationProps) {
                   </div>
                 </div>
                 <button
-                  onClick={() => setCurrentPage('dashboard')}
+                  onClick={() => navigate('/dashboard/empty-legs')}
                   className="text-white font-light text-sm flex items-center hover:text-gray-200 transition-colors"
                 >
                   View Empty Legs <ArrowRight className="w-4 h-4 ml-2" />
