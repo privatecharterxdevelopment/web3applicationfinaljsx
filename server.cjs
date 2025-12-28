@@ -17,8 +17,9 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 // Import API modules
-const stripeConnectApi = require('./api/stripe-connect-partners.cjs');
-const stripeWebhook = require('./api/webhooks/stripe-connect-webhook.cjs');
+// Partner marketplace disabled - uncomment if needed
+// const stripeConnectApi = require('./api/stripe-connect-partners.cjs');
+// const stripeWebhook = require('./api/webhooks/stripe-connect-webhook.cjs');
 const stripeSubscriptionWebhook = require('./api/webhooks/stripe-subscription-webhook.cjs');
 const newsletterApi = require('./api/newsletter.cjs');
 const coingateApi = require('./api/coingate.cjs');
@@ -37,7 +38,7 @@ app.use(cors({
 }));
 
 // Webhook endpoints need raw body for signature verification
-app.use('/webhooks/stripe-connect', express.raw({ type: 'application/json' }));
+// app.use('/webhooks/stripe-connect', express.raw({ type: 'application/json' }));
 app.use('/webhooks/stripe-subscription', express.raw({ type: 'application/json' }));
 
 // JSON body parser for all other routes
@@ -50,26 +51,20 @@ app.use((req, res, next) => {
 });
 
 // ============================================================
-// Stripe Connect Partner API Routes
+// Stripe Connect Partner API Routes - DISABLED
 // ============================================================
 
-// Partner Account Management
-app.post('/api/partners/create-connect-account', stripeConnectApi.createConnectAccount);
-app.post('/api/partners/onboarding-link', stripeConnectApi.getOnboardingLink);
-app.get('/api/partners/account-status', stripeConnectApi.getAccountStatus);
-app.post('/api/partners/express-dashboard-link', stripeConnectApi.getExpressDashboardLink);
-
-// Booking and Payment Flow
-app.post('/api/partners/create-booking-payment', stripeConnectApi.createPartnerBookingPayment);
-app.post('/api/partners/accept-booking', stripeConnectApi.acceptBooking);
-app.post('/api/partners/reject-booking', stripeConnectApi.rejectBooking);
-app.post('/api/partners/capture-and-transfer', stripeConnectApi.captureAndTransferToPartner);
-
-// Partner Earnings and Analytics
-app.get('/api/partners/earnings', stripeConnectApi.getPartnerEarnings);
-
-// Admin Management
-app.get('/api/admin/stripe-dashboard-links', stripeConnectApi.getAdminStripeDashboardLinks);
+// Partner marketplace features disabled - uncomment if needed
+// app.post('/api/partners/create-connect-account', stripeConnectApi.createConnectAccount);
+// app.post('/api/partners/onboarding-link', stripeConnectApi.getOnboardingLink);
+// app.get('/api/partners/account-status', stripeConnectApi.getAccountStatus);
+// app.post('/api/partners/express-dashboard-link', stripeConnectApi.getExpressDashboardLink);
+// app.post('/api/partners/create-booking-payment', stripeConnectApi.createPartnerBookingPayment);
+// app.post('/api/partners/accept-booking', stripeConnectApi.acceptBooking);
+// app.post('/api/partners/reject-booking', stripeConnectApi.rejectBooking);
+// app.post('/api/partners/capture-and-transfer', stripeConnectApi.captureAndTransferToPartner);
+// app.get('/api/partners/earnings', stripeConnectApi.getPartnerEarnings);
+// app.get('/api/admin/stripe-dashboard-links', stripeConnectApi.getAdminStripeDashboardLinks);
 
 // ============================================================
 // Newsletter API Routes
@@ -105,7 +100,7 @@ app.post('/api/coingate/create-order', coingateApi.createOrder);
 // Webhook Endpoints
 // ============================================================
 
-app.post('/webhooks/stripe-connect', stripeWebhook.handleStripeConnectWebhook);
+// app.post('/webhooks/stripe-connect', stripeWebhook.handleStripeConnectWebhook);
 app.post('/webhooks/stripe-subscription', stripeSubscriptionWebhook.handleStripeSubscriptionWebhook);
 
 // ============================================================
@@ -124,15 +119,14 @@ app.get('/health', (req, res) => {
 
 app.get('/', (req, res) => {
   res.json({
-    name: 'PrivateCharterX Partner Marketplace API',
+    name: 'PrivateCharterX API',
     version: '1.0.0',
     status: 'running',
     endpoints: {
       health: '/health',
-      partners: '/api/partners/*',
-      admin: '/api/admin/*',
       newsletter: '/api/newsletter/*',
-      webhooks: '/webhooks/stripe-connect, /webhooks/stripe-subscription'
+      coingate: '/api/coingate/*',
+      webhooks: '/webhooks/stripe-subscription'
     }
   });
 });
@@ -170,7 +164,7 @@ module.exports = app;
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log('='.repeat(60));
-    console.log('🚀 PrivateCharterX Partner Marketplace API');
+    console.log('🚀 PrivateCharterX API');
     console.log('='.repeat(60));
     console.log(`✅ Server running on port ${PORT}`);
     console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`);
@@ -179,10 +173,9 @@ if (require.main === module) {
     console.log('='.repeat(60));
     console.log('📡 Endpoints:');
     console.log(`   Health: http://localhost:${PORT}/health`);
-    console.log(`   Partners API: http://localhost:${PORT}/api/partners/*`);
-    console.log(`   Admin API: http://localhost:${PORT}/api/admin/*`);
     console.log(`   Newsletter API: http://localhost:${PORT}/api/newsletter/*`);
-    console.log(`   Webhooks: http://localhost:${PORT}/webhooks/stripe-connect`);
+    console.log(`   CoinGate API: http://localhost:${PORT}/api/coingate/*`);
+    console.log(`   Webhooks: http://localhost:${PORT}/webhooks/stripe-subscription`);
     console.log('='.repeat(60));
   });
 
