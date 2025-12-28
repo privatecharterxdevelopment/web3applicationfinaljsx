@@ -95,7 +95,7 @@ function Aviation({ setCurrentPage }: AviationProps) {
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+      <div className="max-w-7xl mx-auto">
         {/* Our Aviation Services */}
         <section className="px-8 py-20 max-w-6xl mx-auto">
           <div className="text-center mb-16">
