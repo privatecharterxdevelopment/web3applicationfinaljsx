@@ -48,8 +48,8 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
       id: 'empty-leg',
       title: 'Free Empty Leg Flights',
       shortDesc: 'One free flight per year',
-      fullDesc: 'Get one complimentary empty leg flight per year with a value of up to $1,500. Empty legs are one-way flights when aircraft reposition, offering significant savings on luxury private aviation.',
-      highlight: 'Up to $1,500'
+      fullDesc: 'Get one complimentary empty leg flight per year. Empty legs are one-way flights when aircraft reposition, offering significant savings on luxury private aviation.',
+      highlight: ''
     },
     {
       id: 'jet-discount',
@@ -143,7 +143,7 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
     {
       id: 'benefits',
       question: 'What benefits do NFT holders receive?',
-      answer: 'NFT holders receive: 1 free empty leg flight per year (up to $1,500 value), 10% discount on all private jet bookings, 10% discount on luxury ground transportation, priority booking access, exclusive member events, and verified on-chain membership status.'
+      answer: 'NFT holders receive: 1 free empty leg flight per year, 10% discount on all private jet bookings, 10% discount on luxury ground transportation, priority booking access, exclusive member events, and verified on-chain membership status.'
     },
     {
       id: 'how-verify',
@@ -331,9 +331,11 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
                     <p className="text-sm text-gray-500">{benefit.shortDesc}</p>
                   </div>
                   <div className="flex items-center gap-2 ml-3">
-                    <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-medium rounded hidden sm:block">
-                      {benefit.highlight}
-                    </span>
+                    {benefit.highlight && (
+                      <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-medium rounded hidden sm:block">
+                        {benefit.highlight}
+                      </span>
+                    )}
                     <div className={`w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center transition-all ${expandedBenefit === benefit.id ? 'bg-gray-900 border-gray-900' : 'bg-white'}`}>
                       {expandedBenefit === benefit.id ? (
                         <X size={12} className="text-white" />
@@ -351,9 +353,11 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
                   <p className="text-sm text-gray-600 leading-relaxed">
                     {benefit.fullDesc}
                   </p>
-                  <span className="inline-block mt-3 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded sm:hidden">
-                    {benefit.highlight}
-                  </span>
+                  {benefit.highlight && (
+                    <span className="inline-block mt-3 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded sm:hidden">
+                      {benefit.highlight}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
