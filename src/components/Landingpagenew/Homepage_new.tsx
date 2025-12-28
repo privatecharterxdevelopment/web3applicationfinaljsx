@@ -1404,7 +1404,7 @@ function Homepage() {
                     }} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                       FAQ
                     </button>
-                    <button onClick={() => window.location.href = 'mailto:support@privatecharterx.com'} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                    <button onClick={() => navigate('/helpdesk')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                       Help Center
                     </button>
                     <button onClick={() => navigate('/dashboard/subscriptions/plans')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
