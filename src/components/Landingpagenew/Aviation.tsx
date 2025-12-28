@@ -56,7 +56,7 @@ function Aviation({ setCurrentPage }: AviationProps) {
           </div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light text-white mb-4 sm:mb-6 leading-tight tracking-tight">
             Reinventing private aviation<br />
-            <span className="text-gray-400">Blockchain-Powered travel</span>
+            <span className="text-gray-900">Blockchain-Powered travel</span>
           </h1>
           <p className="text-sm sm:text-base lg:text-lg text-gray-200 mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed px-4">
             Experience the future of private aviation with transparent pricing, sustainable flight certificates,
@@ -82,13 +82,13 @@ function Aviation({ setCurrentPage }: AviationProps) {
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
             <button
-              onClick={() => setCurrentPage('dashboard')}
+              onClick={() => navigate('/dashboard/chat?newChat=true')}
               className="bg-white text-gray-900 px-6 sm:px-8 py-2.5 sm:py-3 rounded-md text-sm hover:bg-gray-100 transition-colors font-medium"
             >
               Book Your Flight
             </button>
             <button
-              onClick={() => setCurrentPage('dashboard')}
+              onClick={() => navigate('/dashboard/empty-legs')}
               className="border border-white/30 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-md text-sm hover:bg-white/10 transition-colors backdrop-blur-sm"
             >
               Explore Empty Legs
