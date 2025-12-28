@@ -417,14 +417,14 @@ function Aviation({ setCurrentPage }: AviationProps) {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
           <button
-            onClick={() => setCurrentPage('dashboard')}
+            onClick={() => navigate('/dashboard/chat?newChat=true&query=private+jet+charter')}
             className="bg-gray-900 text-white px-8 py-3 rounded-md text-sm hover:bg-gray-800 transition-colors flex items-center justify-center"
           >
             Book Your Flight
             <ArrowRight className="w-4 h-4 ml-2" />
           </button>
           <button
-            onClick={() => setCurrentPage('dashboard')}
+            onClick={() => navigate('/dashboard/empty-legs')}
             className="border border-gray-200 text-gray-700 px-8 py-3 rounded-md text-sm hover:bg-gray-50 transition-colors"
           >
             Explore Empty Legs
