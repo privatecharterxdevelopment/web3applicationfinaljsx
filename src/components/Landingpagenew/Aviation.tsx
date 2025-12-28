@@ -113,8 +113,8 @@ function Aviation({ setCurrentPage }: AviationProps) {
             {/* Private Jets */}
             <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
               {/* Image Header */}
-              <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
-                <Plane className="w-12 h-12 text-gray-500" />
+              <div className="w-full h-32 overflow-hidden">
+                <img src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/Privatecharterx_privatejet_charter.png" alt="Private Jets" className="w-full h-full object-cover" />
               </div>
               <div className="p-6">
                 <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Private Jets</h3>
@@ -143,10 +143,8 @@ function Aviation({ setCurrentPage }: AviationProps) {
                 NFT Perk
               </div>
               {/* Image Header */}
-              <div className="h-40 bg-gradient-to-br from-gray-700 to-gray-800 rounded-t-2xl flex items-center justify-center">
-                <div className="w-20 h-20 bg-gray-600 rounded-2xl flex items-center justify-center">
-                  <Sparkles className="w-10 h-10 text-white" />
-                </div>
+              <div className="h-40 overflow-hidden">
+                <img src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/privatecharterx_emptylegs.png" alt="Empty Legs" className="w-full h-full object-cover" />
               </div>
               <div className="p-6">
                 <h3 className="text-lg font-light mb-3 leading-tight">Empty Legs</h3>
@@ -178,8 +176,8 @@ function Aviation({ setCurrentPage }: AviationProps) {
             {/* Group Charter */}
             <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
               {/* Image Header */}
-              <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
-                <Users className="w-12 h-12 text-gray-500" />
+              <div className="w-full h-32 overflow-hidden">
+                <img src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/privatecharterx_group_charter.png" alt="Group Charter" className="w-full h-full object-cover" />
               </div>
               <div className="p-6">
                 <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Group Charter</h3>
@@ -205,8 +203,8 @@ function Aviation({ setCurrentPage }: AviationProps) {
             {/* Helicopter */}
             <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
               {/* Image Header */}
-              <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
-                <Settings className="w-12 h-12 text-gray-500" />
+              <div className="w-full h-32 overflow-hidden">
+                <img src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/Privatecharterx_helicopter.png" alt="Helicopter" className="w-full h-full object-cover" />
               </div>
               <div className="p-6">
                 <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Helicopter</h3>
@@ -235,8 +233,8 @@ function Aviation({ setCurrentPage }: AviationProps) {
                 Coming Soon
               </div>
               {/* Image Header */}
-              <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
-                <Zap className="w-12 h-12 text-gray-500" />
+              <div className="w-full h-32 overflow-hidden">
+                <img src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/Privatecharterx_helicopter.png" alt="eVTOL" className="w-full h-full object-cover" />
               </div>
               <div className="p-6">
                 <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">eVTOL</h3>
