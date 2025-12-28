@@ -50,8 +50,13 @@
 
     <title>PrivateCharterX - AI Aviation Platform | RWA Tokenization | Private Jets</title>
 
-    <!-- Satoshi Font -->
-    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700&display=swap" rel="stylesheet">
+    <!-- PERFORMANCE: Preconnect to font providers -->
+    <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+    <link rel="dns-prefetch" href="https://api.fontshare.com">
+
+    <!-- PERFORMANCE: Async font loading with fallback -->
+    <link rel="preload" href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700&display=swap" rel="stylesheet"></noscript>
 
     <!-- Microsoft Clarity -->
     <script type="text/javascript">
@@ -64,7 +69,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- Face API.js - Loaded via CDN in vite-plugin-face-api.js -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -1,10 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import faceApiCdnPlugin from './vite-plugin-face-api.js';
+// Face API removed - feature disabled, was blocking 6.3s load time
+// import faceApiCdnPlugin from './vite-plugin-face-api.js';
 import claudeApiPlugin from './vite-plugin-claude-api';
 
 export default defineConfig({
-  plugins: [react(), faceApiCdnPlugin(), claudeApiPlugin()],
+  plugins: [react(), claudeApiPlugin()],
   optimizeDeps: {
     exclude: ['lucide-react'],
     include: ['ethers', 'wagmi', 'viem', '@reown/appkit', 'three']
