@@ -234,7 +234,7 @@ function Aviation({ setCurrentPage }: AviationProps) {
               </div>
               {/* Image Header */}
               <div className="w-full h-32 overflow-hidden">
-                <img src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/Privatecharterx_helicopter.png" alt="eVTOL" className="w-full h-full object-cover" />
+                <img src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/Privatecharterx_evtol.png" alt="eVTOL" className="w-full h-full object-cover" />
               </div>
               <div className="p-6">
                 <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">eVTOL</h3>
@@ -260,8 +260,8 @@ function Aviation({ setCurrentPage }: AviationProps) {
             {/* 24/7 Service */}
             <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
               {/* Image Header */}
-              <div className="w-full h-32 bg-gray-100 border-b border-gray-200 flex items-center justify-center">
-                <Headphones className="w-12 h-12 text-gray-500" />
+              <div className="w-full h-32 overflow-hidden">
+                <img src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/privatecharterx_support.png" alt="24/7 Concierge" className="w-full h-full object-cover" />
               </div>
               <div className="p-6">
                 <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">24/7 Concierge</h3>
