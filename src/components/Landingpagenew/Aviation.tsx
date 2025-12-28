@@ -40,7 +40,7 @@ function Aviation({ setCurrentPage }: AviationProps) {
 
       {/* Hero Section with Background Image - Shorter Height */}
       <section className="relative px-4 sm:px-8 py-12 sm:py-16 max-w-7xl mx-auto rounded-2xl overflow-hidden mb-6 sm:mb-8" style={{
-        backgroundImage: 'url(/bgd9a4m7.jpg)',
+        backgroundImage: 'url(https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/Privatecharterx_clouds.png)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
