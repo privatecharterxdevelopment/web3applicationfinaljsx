@@ -3,7 +3,7 @@
   <!-- Homepage -->
   <url>
     <loc>https://privatecharterx.com/</loc>
-    <lastmod>2024-12-24</lastmod>
+    <lastmod>2024-12-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -11,7 +11,7 @@
   <!-- Services -->
   <url>
     <loc>https://privatecharterx.com/services</loc>
-    <lastmod>2024-12-24</lastmod>
+    <lastmod>2024-12-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -19,7 +19,7 @@
   <!-- Aviation -->
   <url>
     <loc>https://privatecharterx.com/aviation</loc>
-    <lastmod>2024-12-24</lastmod>
+    <lastmod>2024-12-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -27,7 +27,7 @@
   <!-- RWA Tokenization -->
   <url>
     <loc>https://privatecharterx.com/tokenized</loc>
-    <lastmod>2024-12-24</lastmod>
+    <lastmod>2024-12-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -35,15 +35,31 @@
   <!-- Sphera AI -->
   <url>
     <loc>https://privatecharterx.com/sphera-ai</loc>
-    <lastmod>2024-12-24</lastmod>
+    <lastmod>2024-12-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
+  </url>
+
+  <!-- RWA NFT Membership -->
+  <url>
+    <loc>https://privatecharterx.com/rwa-nft</loc>
+    <lastmod>2024-12-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- FAQs -->
+  <url>
+    <loc>https://privatecharterx.com/faqs</loc>
+    <lastmod>2024-12-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
 
   <!-- Helpdesk -->
   <url>
     <loc>https://privatecharterx.com/helpdesk</loc>
-    <lastmod>2024-12-24</lastmod>
+    <lastmod>2024-12-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -51,21 +67,28 @@
   <!-- Legal Pages -->
   <url>
     <loc>https://privatecharterx.com/terms</loc>
-    <lastmod>2024-12-24</lastmod>
+    <lastmod>2024-12-28</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
 
   <url>
     <loc>https://privatecharterx.com/privacy</loc>
-    <lastmod>2024-12-24</lastmod>
+    <lastmod>2024-12-28</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <url>
+    <loc>https://privatecharterx.com/cookies</loc>
+    <lastmod>2024-12-28</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
 
   <url>
     <loc>https://privatecharterx.com/imprint</loc>
-    <lastmod>2024-12-24</lastmod>
+    <lastmod>2024-12-28</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>

@@ -7,6 +7,8 @@ Allow: /services
 Allow: /aviation
 Allow: /tokenized
 Allow: /sphera-ai
+Allow: /rwa-nft
+Allow: /faqs
 Allow: /helpdesk
 Allow: /terms
 Allow: /privacy
