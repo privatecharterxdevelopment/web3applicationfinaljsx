@@ -28,7 +28,7 @@ export const useModals = () => {
   const [showChatSessions, setShowChatSessions] = useState(false);
 
   // Subscription Modal
-  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [showSubscriptionModal, _setShowSubscriptionModal] = useState(false);
 
   // Report Issue Modal
   const [showReportIssueModal, setShowReportIssueModal] = useState(false);
@@ -53,8 +53,19 @@ export const useModals = () => {
   const [selectedExtraCategory, setSelectedExtraCategory] = useState(null);
 
   // Subscription Blocker
-  const [showSubscriptionBlocker, setShowSubscriptionBlocker] = useState(false);
+  const [showSubscriptionBlocker, _setShowSubscriptionBlocker] = useState(false);
   const [subscriptionBlockerReason, setSubscriptionBlockerReason] = useState('');
+
+  // Mutually exclusive: only one subscription popup at a time
+  const setShowSubscriptionModal = useCallback((value) => {
+    if (value) _setShowSubscriptionBlocker(false);
+    _setShowSubscriptionModal(value);
+  }, []);
+
+  const setShowSubscriptionBlocker = useCallback((value) => {
+    if (value) _setShowSubscriptionModal(false);
+    _setShowSubscriptionBlocker(value);
+  }, []);
 
   // Cart Sidebar
   const [showCartSidebar, setShowCartSidebar] = useState(false);
@@ -72,14 +83,14 @@ export const useModals = () => {
     setShowConsultationModal(false);
     setShowBulkOrderInterface(false);
     setShowChatSessions(false);
-    setShowSubscriptionModal(false);
+    _setShowSubscriptionModal(false);
     setShowReportIssueModal(false);
     setShowRequestForm(false);
     setShowCryptoPayment(false);
     setShowBreakThePrice(false);
     setShowExtrasModal(false);
     setShowCartSidebar(false);
-    setShowSubscriptionBlocker(false);
+    _setShowSubscriptionBlocker(false);
   }, []);
 
   // Open calendar modal with item
@@ -109,7 +120,8 @@ export const useModals = () => {
   // Open subscription blocker with reason
   const openSubscriptionBlocker = useCallback((reason) => {
     setSubscriptionBlockerReason(reason);
-    setShowSubscriptionBlocker(true);
+    _setShowSubscriptionModal(false);
+    _setShowSubscriptionBlocker(true);
   }, []);
 
   return {
