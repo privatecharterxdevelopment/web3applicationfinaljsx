@@ -397,7 +397,7 @@ const AIChatNew = ({
         <div key={index} className="flex justify-start">
           <div className="flex flex-col gap-2 ml-0 sm:ml-12" style={{ maxWidth: '85%' }}>
             <div className="flex items-center gap-2 px-2">
-              <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
               <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
             </div>
             <div className="px-5 py-4 bg-white/90 border border-gray-100 rounded-2xl shadow-sm">
@@ -489,7 +489,7 @@ const AIChatNew = ({
         <div key={index} className="flex justify-start">
           <div className="flex flex-col gap-2 ml-0 sm:ml-12" style={{ maxWidth: '90%' }}>
             <div className="flex items-center gap-2 px-2">
-              <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
               <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
             </div>
             <div className="space-y-3">
@@ -546,7 +546,7 @@ const AIChatNew = ({
         <div key={index} className="flex justify-start">
           <div className="flex flex-col gap-2 ml-0 sm:ml-12" style={{ maxWidth: '450px' }}>
             <div className="flex items-center gap-2 px-2">
-              <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
               <span className="text-xs text-gray-600 font-medium">Sphera AI · Travel Planning</span>
             </div>
             <TripPackageCard
@@ -582,7 +582,7 @@ const AIChatNew = ({
       <div key={index} className="flex justify-start">
         <div className="flex flex-col gap-2 ml-0 sm:ml-12" style={{ maxWidth: '85%' }}>
           <div className="flex items-center gap-2 px-2">
-            <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
             <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
           </div>
           <div className="px-5 py-4 bg-white/90 text-gray-800 border border-gray-100 rounded-2xl shadow-sm">
@@ -701,7 +701,7 @@ const AIChatNew = ({
             <div className="flex justify-start animate-fade-in">
               <div className="flex flex-col gap-2 ml-0 sm:ml-12" style={{ maxWidth: '85%' }}>
                 <div className="flex items-center gap-2 px-2">
-                  <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                   <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
                 </div>
                 <div className="px-5 py-4 bg-white/90 text-gray-800 border border-gray-100 rounded-2xl shadow-sm">

@@ -50,9 +50,10 @@ function Aviation({ setCurrentPage }: AviationProps) {
 
         <div className="relative z-10 text-center text-white">
           <div className="mb-6">
-            <span className="bg-white/20 backdrop-blur-sm text-white px-3 sm:px-4 py-2 rounded-full text-xs font-medium tracking-wide uppercase border border-white/30">
-              Access to 16,000+ Jets Worldwide
-            </span>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-full border border-white/30">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-[10px] text-white font-medium tracking-wide uppercase">Access to 16,000+ Jets Worldwide</span>
+            </div>
           </div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light text-white mb-4 sm:mb-6 leading-tight tracking-tight">
             Reinventing private aviation<br />

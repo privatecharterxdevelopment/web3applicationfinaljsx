@@ -1,61 +1,55 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-// Typing Text Effect Component - Smooth word-by-word streaming like ChatGPT
-const TypingText = ({ text, speed = 30, onComplete, renderAfterComplete }) => {
+// Typing Text Effect Component - Smooth character-by-character streaming like ChatGPT
+const TypingText = ({ text, speed = 15, onComplete, renderAfterComplete }) => {
   const [displayedText, setDisplayedText] = useState('');
   const [isComplete, setIsComplete] = useState(false);
-  const requestRef = useRef();
-  const startTimeRef = useRef();
-  const onCompleteRef = useRef(onComplete);
+  const indexRef = useRef(0);
+  const timeoutRef = useRef(null);
   const hasCompletedRef = useRef(false);
+  const textRef = useRef(text);
+  const onCompleteRef = useRef(onComplete);
 
-  // Keep onComplete ref updated without triggering re-animation
+  // Keep refs updated without triggering re-renders
   useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
+  // Only reset animation when TEXT actually changes
   useEffect(() => {
-    // Reset animation state when text changes
+    // Skip if text hasn't changed
+    if (textRef.current === text && displayedText) {
+      return;
+    }
+    textRef.current = text;
+
+    // Reset state when text changes
     setDisplayedText('');
     setIsComplete(false);
-    startTimeRef.current = null;
+    indexRef.current = 0;
     hasCompletedRef.current = false;
 
-    // Split text into words for smoother typing
-    const words = text.split(/(\s+)/); // Keep whitespace
+    if (!text) {
+      setIsComplete(true);
+      return;
+    }
 
-    const animate = (timestamp) => {
-      if (!startTimeRef.current) startTimeRef.current = timestamp;
-      const elapsed = timestamp - startTimeRef.current;
+    const typeNextChar = () => {
+      if (indexRef.current < text.length) {
+        // Add next character(s) - batch for smoother feel
+        const charsToAdd = Math.min(3, text.length - indexRef.current); // Add 1-3 chars at a time
+        const nextText = text.slice(0, indexRef.current + charsToAdd);
+        indexRef.current += charsToAdd;
 
-      // Calculate how many characters should be shown based on elapsed time
-      const baseCharsToShow = Math.floor(elapsed / speed);
+        setDisplayedText(nextText);
 
-      // Build the displayed text
-      let charsShown = 0;
-      let result = '';
-
-      for (let i = 0; i < words.length && charsShown < baseCharsToShow; i++) {
-        const word = words[i];
-        const remainingChars = baseCharsToShow - charsShown;
-
-        if (remainingChars >= word.length) {
-          result += word;
-          charsShown += word.length;
-        } else {
-          result += word.slice(0, remainingChars);
-          charsShown += remainingChars;
-        }
-      }
-
-      setDisplayedText(result);
-
-      if (result.length < text.length) {
-        requestRef.current = requestAnimationFrame(animate);
+        // Continue typing
+        timeoutRef.current = setTimeout(typeNextChar, speed);
       } else {
+        // Typing complete
         setDisplayedText(text);
         setIsComplete(true);
-        // Only call onComplete once
+
         if (!hasCompletedRef.current && onCompleteRef.current) {
           hasCompletedRef.current = true;
           setTimeout(() => onCompleteRef.current?.(), 100);
@@ -63,20 +57,23 @@ const TypingText = ({ text, speed = 30, onComplete, renderAfterComplete }) => {
       }
     };
 
-    requestRef.current = requestAnimationFrame(animate);
+    // Start typing after a small delay
+    timeoutRef.current = setTimeout(typeNextChar, 50);
 
     return () => {
-      if (requestRef.current) {
-        cancelAnimationFrame(requestRef.current);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
     };
   }, [text, speed]); // Removed onComplete from dependencies
 
   return (
-    <div className="text-sm leading-relaxed">
-      <p className="whitespace-pre-line">
+    <div className="text-sm leading-relaxed overflow-hidden">
+      <p className="whitespace-pre-line break-words">
         {displayedText}
-        {!isComplete && <span className="inline-block w-0.5 h-4 bg-gray-500 ml-0.5 animate-pulse" />}
+        {!isComplete && (
+          <span className="inline-block w-0.5 h-4 bg-emerald-500 ml-0.5 animate-pulse align-middle" />
+        )}
       </p>
       {isComplete && renderAfterComplete && renderAfterComplete()}
     </div>

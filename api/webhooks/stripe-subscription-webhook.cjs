@@ -33,11 +33,12 @@ function getSupabase() {
 }
 
 // Chat limits for each tier - MUST match Subscriptionplans.jsx and SubscriptionModal.jsx
-// Updated 2025 pricing: Explorer ($49), Traveller ($99), Elite ($399)
+// Updated 2025 pricing: Essential ($19), Explorer ($99), Traveller ($199), Elite ($999)
 const TIER_CHAT_LIMITS = {
-  explorer: 5,     // $49/mo - 5 AI chats, 10 messages per chat
-  traveller: 10,   // $99/mo - 10 AI chats, 25 messages per chat
-  elite: null,     // $399/mo - unlimited chats and messages
+  essential: 10,   // $19/mo - 10 AI chats, 5 messages per chat (uses Haiku)
+  explorer: 5,     // $99/mo - 5 AI chats, 10 messages per chat
+  traveller: 10,   // $199/mo - 10 AI chats, 25 messages per chat
+  elite: null,     // $999/mo - unlimited chats and messages
   // Legacy tiers (for backwards compatibility)
   starter: 5,
   pro: 10,
@@ -46,10 +47,13 @@ const TIER_CHAT_LIMITS = {
 // Price amounts to tier mapping (in cents) for Payment Links
 // This maps the subscription price to the correct tier
 const PRICE_TO_TIER = {
-  4900: 'explorer',    // $49.00
-  9900: 'traveller',   // $99.00
-  39900: 'elite',      // $399.00
+  1900: 'essential',   // $19.00 - Essential Basic (Haiku)
+  9900: 'explorer',    // $99.00
+  19900: 'traveller',  // $199.00
+  99900: 'elite',      // $999.00
   // Legacy prices
+  4900: 'explorer',    // $49.00 (old explorer price)
+  39900: 'elite',      // $399.00 (old elite price)
   2000: 'starter',     // $20.00
   4000: 'pro',         // $40.00
 };
@@ -253,9 +257,10 @@ async function handleCheckoutCompleted(session) {
     if (!tier) {
       // Fallback: estimate tier from amount
       const amount = priceAmount / 100;
-      if (amount >= 300) tier = 'elite';
-      else if (amount >= 80) tier = 'traveller';
-      else tier = 'explorer';
+      if (amount >= 500) tier = 'elite';
+      else if (amount >= 150) tier = 'traveller';
+      else if (amount >= 50) tier = 'explorer';
+      else tier = 'essential';  // $19 Essential tier
       console.log(`[Subscription Webhook] Estimated tier from amount $${amount}: ${tier}`);
     }
 

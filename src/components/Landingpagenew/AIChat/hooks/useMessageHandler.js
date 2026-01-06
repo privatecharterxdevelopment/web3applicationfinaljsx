@@ -248,7 +248,7 @@ export const useMessageHandler = ({
 
     try {
       const placeFollowUp = await claudeEdgeService.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: subscriptionService.getModelForTier(userProfile?.subscription_tier),
         max_tokens: 512,
         system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
         messages: [
@@ -306,7 +306,7 @@ export const useMessageHandler = ({
 
     try {
       const hotelFollowUp = await claudeEdgeService.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: subscriptionService.getModelForTier(userProfile?.subscription_tier),
         max_tokens: 512,
         system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
         messages: [
@@ -713,7 +713,7 @@ They will personally arrange your perfect yacht experience with custom itinerari
       console.log('🔧 Tools count:', toolsWithCache.length, 'Tool names:', toolsWithCache.map(t => t.name));
 
       const response = await claudeEdgeService.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: subscriptionService.getModelForTier(userProfile?.subscription_tier),
         max_tokens: 4096,
         system: [{ type: "text", text: systemPrompt + forcedToolMessage, cache_control: { type: "ephemeral" } }],
         messages: claudeMessages,
@@ -907,7 +907,7 @@ They will personally arrange your perfect yacht experience with custom itinerari
 
           // Get AI follow-up response (include tools so AI can chain tool calls)
           const followUp = await claudeEdgeService.messages.create({
-            model: 'claude-sonnet-4-20250514',
+            model: subscriptionService.getModelForTier(userProfile?.subscription_tier),
             max_tokens: 1024,
             system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
             messages: [

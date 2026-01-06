@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import FloatingSearchModal from './FloatingSearchModal';
 import AnimatedSection from '../AnimatedSection';
 import LandingHeader from './LandingHeader';
-import Globe3D from '../Globe3D';
 import { supabase } from '../../lib/supabase';
 import NewsletterForm from '../NewsletterForm';
 import {
@@ -31,7 +30,6 @@ import {
   TrendingUp,
   CheckCircle,
   Leaf,
-  Anchor,
   Car
 } from 'lucide-react';
 
@@ -87,298 +85,6 @@ const partnerLogos = [
   { name: 'AutoSalonSwitzerland', logo: 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/Autosalon-zuerich.com.png' }
 ];
 
-// Fallback products in case database is empty
-const fallbackProducts = [
-  { id: 'fallback-1', name: 'Dom Pérignon', category: 'Champagne', image: 'https://images.unsplash.com/photo-1594372365401-3b5ff14eaaed?w=400&h=500&fit=crop', query: 'Dom Pérignon champagne' },
-  { id: 'fallback-2', name: 'Beluga Caviar', category: 'Caviar', image: 'https://images.unsplash.com/photo-1625943553852-781c6dd46faa?w=400&h=500&fit=crop', query: 'Beluga caviar' },
-  { id: 'fallback-3', name: 'Cohiba Behike', category: 'Cuban Cigars', image: 'https://images.unsplash.com/photo-1528458876861-544fd1b4d440?w=400&h=500&fit=crop', query: 'Cohiba Behike cigars' },
-  { id: 'fallback-4', name: 'Krug Grande Cuvée', category: 'Champagne', image: 'https://images.unsplash.com/photo-1578911373434-0cb395d2cbfb?w=400&h=500&fit=crop', query: 'Krug Grande Cuvée' },
-];
-
-// Product interface
-interface SpheraProduct {
-  id: string;
-  name: string;
-  category: string;
-  image: string;
-  query: string;
-  price?: string;
-}
-
-// Sphera Products Carousel Component - Fetches from Database
-const SpheraProductsCarousel = ({ navigate }: { navigate: (path: string) => void }) => {
-  const [products, setProducts] = React.useState<SpheraProduct[]>(fallbackProducts);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [isPaused, setIsPaused] = React.useState(false);
-
-  // Fetch products from database
-  React.useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        // Fetch wines and cigars - no filter, just get products with valid image URLs
-        const [winesRes, cigarsRes] = await Promise.all([
-          supabase.from('wines').select('*').limit(100),
-          supabase.from('premium_cigars').select('*').limit(20)
-        ]);
-
-        const allProducts: SpheraProduct[] = [];
-
-        // Only add wines that have a valid http image URL
-        winesRes.data?.forEach((wine: any) => {
-          if (wine.image_url?.startsWith('http')) {
-            allProducts.push({
-              id: `wine-${wine.id}`,
-              name: wine.name,
-              category: wine.type === 'champagne' ? 'Champagne' : 'Wine',
-              image: wine.image_url,
-              query: `${wine.name} wine`,
-              price: wine.price_range_eur
-            });
-          }
-        });
-
-        // Only add cigars that have a valid http image URL
-        cigarsRes.data?.forEach((cigar: any) => {
-          if (cigar.image_url?.startsWith('http')) {
-            allProducts.push({
-              id: `cigar-${cigar.id}`,
-              name: `${cigar.brand} ${cigar.name}`,
-              category: 'Premium Cigars',
-              image: cigar.image_url,
-              query: `${cigar.brand} ${cigar.name} cigar`,
-              price: cigar.price_per_stick_usd ? `$${cigar.price_per_stick_usd}` : undefined
-            });
-          }
-        });
-
-        console.log('🍷 Wines fetched:', winesRes.data?.length);
-        console.log('🚬 Cigars fetched:', cigarsRes.data?.map(c => ({ name: c.name, brand: c.brand, image_url: c.image_url?.substring(0, 50) })));
-        console.log('🛒 Products with valid images:', allProducts.length, allProducts.map(p => p.name));
-
-        // Use fetched products or fallback
-        if (allProducts.length > 0) {
-          setProducts(allProducts);
-        }
-      } catch (error) {
-        console.error('Error fetching products:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, []);
-
-  const cardWidth = 280;
-  const gap = 16;
-  const totalWidth = products.length * (cardWidth + gap);
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-[320px]">
-        <div className="w-20 h-20">
-          <video autoPlay loop muted playsInline className="w-full h-full object-contain">
-            <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
-          </video>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className="relative sphera-carousel-container"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-    >
-      {/* Left fade gradient */}
-      <div className="absolute left-0 top-0 w-20 h-full bg-gradient-to-r from-gray-100 via-gray-100/80 to-transparent z-10 pointer-events-none" />
-
-      {/* Right fade gradient */}
-      <div className="absolute right-0 top-0 w-20 h-full bg-gradient-to-l from-gray-100 via-gray-100/80 to-transparent z-10 pointer-events-none" />
-
-      {/* Carousel Track */}
-      <div className="overflow-hidden">
-        <div
-          className="sphera-carousel-track flex gap-4"
-          style={{
-            width: `${totalWidth * 2}px`,
-            animation: `spheraScroll ${products.length * 5}s linear infinite`,
-            animationPlayState: isPaused ? 'paused' : 'running',
-          }}
-        >
-          {/* First set of cards */}
-          {products.map((product) => (
-            <div
-              key={`first-${product.id}`}
-              className="group relative flex-shrink-0 rounded-2xl overflow-hidden cursor-pointer transform transition-all duration-500 hover:scale-[1.02] hover:shadow-xl"
-              style={{ width: `${cardWidth}px`, height: '320px' }}
-              onClick={() => navigate(`/dashboard/chat?query=${encodeURIComponent(product.query)}&newChat=true`)}
-            >
-              {/* Background Image */}
-              <div className="absolute inset-0">
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&h=500&fit=crop';
-                  }}
-                />
-              </div>
-
-              {/* Gradient Blur Overlay at Bottom */}
-              <div
-                className="absolute inset-0"
-                style={{
-                  background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 30%, rgba(0,0,0,0.1) 60%, transparent 100%)',
-                }}
-              />
-
-              {/* Blur Effect at Bottom */}
-              <div
-                className="absolute bottom-0 left-0 right-0 h-32"
-                style={{
-                  backdropFilter: 'blur(8px)',
-                  WebkitBackdropFilter: 'blur(8px)',
-                  maskImage: 'linear-gradient(to top, black 50%, transparent 100%)',
-                  WebkitMaskImage: 'linear-gradient(to top, black 50%, transparent 100%)',
-                }}
-              />
-
-              {/* Category Badge */}
-              <div className="absolute top-4 left-4">
-                <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs text-white font-medium">
-                  {product.category}
-                </span>
-              </div>
-
-              {/* Price Badge (if available) */}
-              {product.price && (
-                <div className="absolute top-4 right-4">
-                  <span className="px-3 py-1 bg-black/40 backdrop-blur-md rounded-full text-xs text-white font-medium">
-                    {product.price}
-                  </span>
-                </div>
-              )}
-
-              {/* Content */}
-              <div className="absolute bottom-0 left-0 right-0 p-5">
-                <h3 className="text-white text-lg font-medium mb-3 drop-shadow-lg line-clamp-2">
-                  {product.name}
-                </h3>
-
-                {/* Order by AI Button */}
-                <button
-                  className="w-full py-2.5 rounded-xl text-sm font-medium text-white transition-all duration-300 border border-white/30 hover:border-white/60 hover:bg-white/20"
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.15)',
-                    backdropFilter: 'blur(12px)',
-                    WebkitBackdropFilter: 'blur(12px)',
-                  }}
-                >
-                  Order by AI
-                </button>
-              </div>
-            </div>
-          ))}
-
-          {/* Second set for seamless infinite loop */}
-          {products.map((product) => (
-            <div
-              key={`second-${product.id}`}
-              className="group relative flex-shrink-0 rounded-2xl overflow-hidden cursor-pointer transform transition-all duration-500 hover:scale-[1.02] hover:shadow-xl"
-              style={{ width: `${cardWidth}px`, height: '320px' }}
-              onClick={() => navigate(`/dashboard/chat?query=${encodeURIComponent(product.query)}&newChat=true`)}
-            >
-              {/* Background Image */}
-              <div className="absolute inset-0">
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&h=500&fit=crop';
-                  }}
-                />
-              </div>
-
-              {/* Gradient Blur Overlay at Bottom */}
-              <div
-                className="absolute inset-0"
-                style={{
-                  background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 30%, rgba(0,0,0,0.1) 60%, transparent 100%)',
-                }}
-              />
-
-              {/* Blur Effect at Bottom */}
-              <div
-                className="absolute bottom-0 left-0 right-0 h-32"
-                style={{
-                  backdropFilter: 'blur(8px)',
-                  WebkitBackdropFilter: 'blur(8px)',
-                  maskImage: 'linear-gradient(to top, black 50%, transparent 100%)',
-                  WebkitMaskImage: 'linear-gradient(to top, black 50%, transparent 100%)',
-                }}
-              />
-
-              {/* Category Badge */}
-              <div className="absolute top-4 left-4">
-                <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs text-white font-medium">
-                  {product.category}
-                </span>
-              </div>
-
-              {/* Price Badge (if available) */}
-              {product.price && (
-                <div className="absolute top-4 right-4">
-                  <span className="px-3 py-1 bg-black/40 backdrop-blur-md rounded-full text-xs text-white font-medium">
-                    {product.price}
-                  </span>
-                </div>
-              )}
-
-              {/* Content */}
-              <div className="absolute bottom-0 left-0 right-0 p-5">
-                <h3 className="text-white text-lg font-medium mb-3 drop-shadow-lg line-clamp-2">
-                  {product.name}
-                </h3>
-
-                {/* Order by AI Button */}
-                <button
-                  className="w-full py-2.5 rounded-xl text-sm font-medium text-white transition-all duration-300 border border-white/30 hover:border-white/60 hover:bg-white/20"
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.15)',
-                    backdropFilter: 'blur(12px)',
-                    WebkitBackdropFilter: 'blur(12px)',
-                  }}
-                >
-                  Order by AI
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* CSS Animation for smooth infinite scroll */}
-      <style>{`
-        @keyframes spheraScroll {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(-${totalWidth}px);
-          }
-        }
-        .sphera-carousel-container:hover .sphera-carousel-track,
-        .sphera-carousel-track:hover {
-          animation-play-state: paused !important;
-        }
-      `}</style>
-    </div>
-  );
-};
 
 // Compact Partner Logo Carousel Component
 const CompactPartnerCarousel = () => {
@@ -447,6 +153,7 @@ function Homepage() {
   const navigate = useNavigate();
   const [jets, setJets] = useState<Jet[]>([]);
   const [cardImageIndexes, setCardImageIndexes] = useState<{[key: string]: number}>({});
+  const [showPromoBanner, setShowPromoBanner] = useState(true);
 
   const handleGetStarted = () => {
     console.log('Get Started clicked!');
@@ -510,48 +217,30 @@ function Homepage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 px-4 py-4 overflow-x-hidden">
       <LandingHeader onGetStarted={handleGetStarted} />
 
-      {/* Hero Section */}
-      {/* Mobile Layout - Stacked (Globe above, Search below) - Full screen height */}
-      <div className="md:hidden max-w-7xl mx-auto rounded-2xl overflow-hidden min-h-[calc(100vh-100px)] flex flex-col justify-start pt-4">
-        {/* Globe Section - Mobile - Centered, pushed down more */}
-        <div className="relative h-[224px] flex items-center justify-center overflow-hidden mt-10">
-          <div className="w-[262px] h-[262px]">
-            <Globe3D />
-          </div>
+      {/* Hero Section - Title Based Design */}
+      <div className="max-w-7xl mx-auto rounded-2xl overflow-hidden min-h-[calc(100vh-120px)] flex flex-col items-center justify-center px-4 py-12">
+        {/* Status Badge */}
+        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100/60 backdrop-blur-sm rounded-full border border-gray-300/30 mb-4">
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          <span className="text-[10px] text-gray-600 font-medium tracking-wide uppercase">web3 and ai powered multi charter</span>
         </div>
 
-        {/* Spacing between globe and floating element */}
-        <div className="h-6"></div>
+        {/* Main Title - Smaller size */}
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-light text-gray-900 text-center mb-2">
+          AI Luxury Travel Agent
+        </h1>
 
-        {/* Floating Search Modal - Below Globe on Mobile */}
-        <div className="px-2 pb-4">
+        {/* Subtitle */}
+        <p className="text-gray-500 text-sm sm:text-base font-light text-center mb-16">
+          backed by real humans
+        </p>
+
+        {/* Floating Search Modal */}
+        <div className="w-full max-w-2xl">
           <FloatingSearchModal />
         </div>
       </div>
 
-      {/* Desktop Layout - Overlapping (Original) */}
-      <div className="hidden md:block max-w-7xl mx-auto rounded-2xl overflow-hidden relative min-h-[85vh]">
-        {/* Background Globe - Full Color - Centered */}
-        <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden">
-          <div className="w-full h-full">
-            <Globe3D />
-          </div>
-        </div>
-
-        {/* Content overlay - Centered Floating Search Modal */}
-        <section className="absolute inset-0 z-20 flex items-center justify-center px-8">
-          <FloatingSearchModal />
-        </section>
-      </div>
-
-        {/* Philosophy Text Section */}
-        <AnimatedSection animation="fade-in" delay={100}>
-          <section className="px-4 sm:px-8 py-12 sm:py-16 max-w-4xl mx-auto">
-            <p className="text-center text-base sm:text-lg text-gray-800 leading-relaxed">
-              PrivateCharterX is the world's first <span className="bg-gray-200 px-2 py-1 rounded">Web3 and AI-powered</span> luxury travel platform. Jets, helicopters, empty legs, luxury rentals, transfers, curated adventures—searchable by AI, bookable 24/7 with <span className="bg-gray-200 px-2 py-1 rounded">70+ cryptocurrencies</span> via CoinGate. Human support standing by. Our <span className="bg-gray-200 px-2 py-1 rounded">tokenization services</span> transforms aircraft, hangars, and airfields into income-generating digital assets while staying operational. NFT holders unlock <span className="bg-gray-200 px-2 py-1 rounded">free empty legs</span>, 10% discounts, and priority access.
-            </p>
-          </section>
-        </AnimatedSection>
 
         {/* Animated AI Prompts Marquee */}
         <section className="py-8 sm:py-12 overflow-hidden">
@@ -946,65 +635,12 @@ function Homepage() {
         {/* Fractional Ownership - HIDDEN */}
         {/* Section removed as per request */}
 
-        {/* Yachts Coming Soon Banner */}
-        <AnimatedSection animation="slide-up" delay={100}>
-          <section className="px-4 sm:px-8 py-8 sm:py-12 max-w-6xl mx-auto">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden">
-              <div className="grid grid-cols-1 md:grid-cols-2 md:h-[300px]">
-                {/* Left - Text Content */}
-                <div className="p-8 md:p-10 flex flex-col justify-center">
-                  <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
-                    Yachting and Boats
-                    <br />
-                    <span className="text-gray-400 text-sm">Maritime Luxury</span>
-                  </h3>
-                  <p className="text-gray-600 text-sm leading-relaxed mb-4">
-                    19,000+ yachts, superyachts, and boats available for direct booking in Q1/2026. From day cruises to week-long adventures—searchable via Sphera AI. KYC required.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Sphera AI</span>
-                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Global Fleet</span>
-                    <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">KYC Required</span>
-                  </div>
-                </div>
-                {/* Right - Video with overlay */}
-                <div className="h-56 md:h-full overflow-hidden bg-gradient-to-br from-blue-50 to-cyan-100 relative">
-                  <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-full h-full object-cover"
-                    poster="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/pngwing.com-2.png"
-                  >
-                    <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/13151265-hd_1280_720_25fps.mov" type="video/mp4" />
-                    <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/13151265-hd_1280_720_25fps.mov" type="video/quicktime" />
-                  </video>
-                  {/* Text overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                    <span className="text-white text-2xl md:text-3xl font-light tracking-wide">Q1 / 2026</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-        </AnimatedSection>
-
-        {/* Sphera AI Luxury Products Carousel */}
-        <AnimatedSection animation="slide-up" delay={120}>
-          <section className="px-4 sm:px-8 py-8 sm:py-12 max-w-6xl mx-auto">
-            {/* Section Header */}
-            <div className="text-center mb-8">
-              <h2 className="text-2xl sm:text-3xl font-light text-gray-900 mb-2">
-                Order by Sphera AI
-              </h2>
-              <p className="text-gray-500 text-sm font-light">
-                Premium products delivered worldwide — wines, delicacies, and luxury goods
-              </p>
-            </div>
-
-            {/* Carousel Container */}
-            <SpheraProductsCarousel navigate={navigate} />
+        {/* Philosophy Text Section */}
+        <AnimatedSection animation="fade-in" delay={100}>
+          <section className="px-4 sm:px-8 py-12 sm:py-16 max-w-4xl mx-auto">
+            <p className="text-center text-base sm:text-lg text-gray-800 leading-relaxed">
+              PrivateCharterX is the world's first <span className="bg-gray-200 px-2 py-1 rounded">Web3 and AI-powered</span> luxury travel platform. Jets, helicopters, empty legs, luxury rentals, transfers, curated adventures—searchable by AI, bookable 24/7 with <span className="bg-gray-200 px-2 py-1 rounded">70+ cryptocurrencies</span> via CoinGate. Human support standing by. Our <span className="bg-gray-200 px-2 py-1 rounded">tokenization services</span> transforms aircraft, hangars, and airfields into income-generating digital assets while staying operational. NFT holders unlock <span className="bg-gray-200 px-2 py-1 rounded">free empty legs</span>, 10% discounts, and priority access.
+            </p>
           </section>
         </AnimatedSection>
 
@@ -1332,9 +968,6 @@ function Homepage() {
                     <button onClick={() => navigate('/dashboard/chat?query=empty+legs')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                       Empty Legs
                     </button>
-                    <button onClick={() => navigate('/dashboard/chat?query=luxury+car')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Luxury Cars
-                    </button>
                     <span className="block text-sm text-gray-400 text-left">
                       Yacht Charters <span className="text-xs">(Q1/2026)</span>
                     </span>
@@ -1453,6 +1086,69 @@ function Homepage() {
             </div>
           </div>
         </footer>
+
+        {/* Promotional "Try for Free" Banner - Bottom Right - Glassmorphic */}
+        {showPromoBanner && (
+          <div className="fixed bottom-6 right-6 z-50">
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{
+                width: '260px',
+                background: 'rgba(255, 255, 255, 0.6)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)'
+              }}
+            >
+              {/* Close button */}
+              <button
+                onClick={() => setShowPromoBanner(false)}
+                className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              {/* Content */}
+              <div className="p-5">
+                <p className="text-sm text-gray-700 leading-relaxed mb-4 pr-4">
+                  Ready to plan your next trip?
+                </p>
+
+                {/* CTA Button */}
+                <button
+                  onClick={() => navigate('/dashboard/chat?newChat=true')}
+                  className="w-full py-2.5 px-4 rounded-xl text-sm transition-all duration-200 flex items-center justify-center gap-2"
+                  style={{
+                    background: 'rgba(0, 0, 0, 0.05)',
+                    border: '1px solid rgba(0, 0, 0, 0.08)',
+                    color: '#374151'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(0, 0, 0, 0.08)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
+                  }}
+                >
+                  <span>Try it for $19/m</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Contact link */}
+                <p className="text-[11px] text-gray-500 text-center mt-3">
+                  Questions or booking inquiry?{' '}
+                  <a
+                    href="mailto:bookings@privatecharterx.com"
+                    className="text-gray-700 hover:text-gray-900 underline"
+                  >
+                    Contact us
+                  </a>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
     </div>
   );

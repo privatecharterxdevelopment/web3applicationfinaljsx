@@ -2,7 +2,7 @@
  * Luxury Travel Planning Service
  *
  * Comprehensive service for creating ultra-luxury travel itineraries
- * - Minimum budget: $20,000 USD
+ * - Minimum budget: $10,000 USD
  * - Premium pricing only (no budget options)
  * - Real venue verification via Google Places
  * - Map generation via Mapbox
@@ -47,7 +47,7 @@ export const LUXURY_PRICING = {
   },
 };
 
-export const MINIMUM_BUDGET = 20000;
+export const MINIMUM_BUDGET = 10000;
 
 export interface TravelRequestInput {
   userId?: string;

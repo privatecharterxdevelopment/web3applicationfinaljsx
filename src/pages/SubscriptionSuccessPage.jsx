@@ -21,6 +21,13 @@ const SubscriptionSuccessPage = () => {
 
   // Tier display info
   const tierInfo = {
+    essential: {
+      name: 'Essential Basic',
+      price: '$19',
+      chats: '10 AI Chats',
+      messages: '5 messages per chat',
+      icon: '🚀'
+    },
     explorer: {
       name: 'Explorer',
       price: '$99',

@@ -101,12 +101,40 @@ const PricingPackages = ({ onClose, onBack }) => {
   const [processingPlan, setProcessingPlan] = useState(null);
 
   const STRIPE_PAYMENT_LINKS = {
+    essential: import.meta.env.VITE_STRIPE_ESSENTIAL_PAYMENT_LINK || '',
     explorer: import.meta.env.VITE_STRIPE_EXPLORER_PAYMENT_LINK || import.meta.env.VITE_STRIPE_STARTER_PAYMENT_LINK || '',
     traveller: import.meta.env.VITE_STRIPE_TRAVELLER_PAYMENT_LINK || import.meta.env.VITE_STRIPE_PRO_PAYMENT_LINK || '',
     elite: import.meta.env.VITE_STRIPE_ELITE_PAYMENT_LINK || ''
   };
 
   const plans = [
+    {
+      id: 'essential',
+      name: 'ESSENTIAL BASIC',
+      tagline: 'Start Simple',
+      price: 19,
+      period: 'month',
+      chatsPerMonth: 10,
+      messagesPerChat: 5,
+      support: 'Email',
+      stripePriceId: import.meta.env.VITE_STRIPE_ESSENTIAL_PRICE_ID,
+      aiModel: 'Haiku',
+      features: [
+        { text: '10 AI Conversations/month', included: true },
+        { text: '5 messages per conversation', included: true },
+        { text: 'Empty Legs Search & Booking', included: true },
+        { text: 'Restaurant Search', included: true },
+        { text: 'Private Jet Search', included: true },
+        { text: 'General Service Queries', included: true },
+        { text: 'Email Support', included: true },
+        { text: 'Private Jet Booking', included: false },
+        { text: 'Helicopter Charters', included: false },
+        { text: 'Luxury Cars', included: false },
+        { text: 'Concierge Services', included: false },
+        { text: 'MEDEVAC Services', included: false }
+      ],
+      highlights: ['$19/mo', '10 Chats', 'Empty Legs', 'Jet Search']
+    },
     {
       id: 'explorer',
       name: 'EXPLORER',
@@ -291,11 +319,8 @@ const PricingPackages = ({ onClose, onBack }) => {
 
   return (
     <div className="h-full overflow-y-auto" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-      {/* Header - Transparent */}
-      <div
-        className="px-6 py-5 border-b border-white/10"
-        style={{ backdropFilter: 'blur(8px)' }}
-      >
+      {/* Header - Fully Transparent */}
+      <div className="px-6 py-5 border-b border-gray-200/30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {onBack && (
@@ -323,153 +348,86 @@ const PricingPackages = ({ onClose, onBack }) => {
           )}
         </div>
 
-        {/* Stats - Current subscription info */}
+        {/* Stats Pills - Modern glassmorphic design */}
         {userSubscription?.tier && (
-          <div className="flex items-center gap-6 mt-4 text-sm">
-            <div>
-              <span className="text-gray-400">Current Plan</span>
-              <span className="ml-2 font-medium text-gray-900 capitalize">
+          <div className="flex flex-wrap items-center gap-2 mt-4">
+            {/* Current Plan Pill */}
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/40 border border-white/60"
+              style={{ backdropFilter: 'blur(12px)' }}
+            >
+              <div className={`w-1.5 h-1.5 rounded-full ${
+                userSubscription?.status === 'active' ? 'bg-emerald-500' : 'bg-gray-400'
+              }`} />
+              <span className="text-[11px] text-gray-500 uppercase tracking-wide">Plan</span>
+              <span className="text-xs font-semibold text-gray-800 capitalize">
                 {loadingSubscription ? '...' : userSubscription?.tier || 'None'}
               </span>
             </div>
-            <div>
-              <span className="text-gray-400">Chats</span>
-              <span className="ml-2 font-medium text-gray-900">
-                {loadingSubscription ? '...' : userSubscription?.unlimited ? '∞ Unlimited' : `${userSubscription?.chatsUsed || 0}/${userSubscription?.chatsLimit || 0}`}
+
+            {/* Chats Pill */}
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/40 border border-white/60"
+              style={{ backdropFilter: 'blur(12px)' }}
+            >
+              <MessageSquare size={11} className="text-gray-400" />
+              <span className="text-[11px] text-gray-500 uppercase tracking-wide">Chats</span>
+              <span className="text-xs font-semibold text-gray-800">
+                {loadingSubscription ? '...' : userSubscription?.unlimited ? '∞' : `${userSubscription?.chatsUsed || 0}/${userSubscription?.chatsLimit || 0}`}
               </span>
             </div>
-            <div className="flex items-center gap-1">
-              <Sparkles size={12} className="text-amber-500" />
-              <span className="text-gray-400">Popular</span>
-              <span className="ml-1 font-medium text-gray-900">Traveller</span>
+
+            {/* Popular Pill */}
+            <div
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-50/80 to-orange-50/80 border border-amber-200/40"
+              style={{ backdropFilter: 'blur(12px)' }}
+            >
+              <Sparkles size={11} className="text-amber-500" />
+              <span className="text-[11px] text-amber-600 font-medium">Most Popular: Traveller</span>
             </div>
           </div>
         )}
 
+        {/* No Subscription CTA */}
         {!userSubscription?.tier && !loadingSubscription && (
-          <div
-            className="mt-4 bg-white/20 rounded-xl p-4 border border-white/30"
-            style={{ backdropFilter: 'blur(8px)' }}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className="w-10 h-10 bg-white/60 rounded-lg flex items-center justify-center border border-gray-200/50"
-                style={{ backdropFilter: 'blur(8px)' }}
-              >
-                <Shield size={18} className="text-gray-500" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-800">Choose a membership to get started</p>
-                <p className="text-xs text-gray-500">Unlock AI-powered travel planning and exclusive services</p>
-              </div>
+          <div className="flex flex-wrap items-center gap-2 mt-4">
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/40 border border-white/60"
+              style={{ backdropFilter: 'blur(12px)' }}
+            >
+              <Shield size={11} className="text-gray-400" />
+              <span className="text-xs text-gray-600">No active plan</span>
+            </div>
+            <div
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-50/80 to-orange-50/80 border border-amber-200/40"
+              style={{ backdropFilter: 'blur(12px)' }}
+            >
+              <Sparkles size={11} className="text-amber-500" />
+              <span className="text-[11px] text-amber-600 font-medium">Start with Essential at $19/mo</span>
             </div>
           </div>
         )}
       </div>
 
-      {/* Current Plan Banner - Transparent */}
-      {userSubscription && userSubscription.tier && (
-        <div
-          className="mx-6 mt-4 bg-white/20 rounded-2xl p-5 border border-white/30"
-          style={{ backdropFilter: 'blur(8px)' }}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div
-                className="w-12 h-12 bg-white/60 rounded-xl flex items-center justify-center border border-gray-200/50"
-                style={{ backdropFilter: 'blur(8px)' }}
-              >
-                <img src={PCX_LOGO} alt="PCX" className="w-7 h-7 object-contain" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-medium text-gray-800 capitalize">{userSubscription.tier} Plan</h3>
-                  <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full border ${
-                    userSubscription.status === 'active'
-                      ? 'bg-emerald-100 text-emerald-600 border-emerald-200/50'
-                      : userSubscription.status === 'past_due'
-                      ? 'bg-amber-100 text-amber-600 border-amber-200/50'
-                      : 'bg-gray-100 text-gray-600 border-gray-200/50'
-                  }`}>
-                    {userSubscription.status?.toUpperCase() || 'ACTIVE'}
-                  </span>
-                </div>
-                <p className="text-gray-500 text-sm mt-0.5">
-                  {userSubscription.unlimited ? (
-                    <span className="flex items-center gap-1">
-                      <Infinity size={14} className="text-gray-400" />
-                      Unlimited conversations & messages
-                    </span>
-                  ) : (
-                    `${userSubscription.chatsLimit - userSubscription.chatsUsed} conversations remaining this month`
-                  )}
-                </p>
-              </div>
-            </div>
-            <div className="text-right">
-              {userSubscription.unlimited ? (
-                <div className="text-2xl font-light text-gray-700">∞</div>
-              ) : (
-                <>
-                  <div className="text-2xl font-light text-gray-800">{userSubscription.chatsLimit - userSubscription.chatsUsed}</div>
-                  <div className="text-xs text-gray-500">chats left</div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Subscription Dates */}
-          {(userSubscription.currentPeriodStart || userSubscription.currentPeriodEnd) && (
-            <div className="mt-4 pt-4 border-t border-gray-200/50 flex flex-wrap gap-4 text-xs">
-              {userSubscription.currentPeriodStart && (
-                <div className="flex items-center gap-2">
-                  <Calendar size={12} className="text-gray-400" />
-                  <span className="text-gray-500">Started:</span>
-                  <span className="text-gray-700 font-medium">
-                    {userSubscription.currentPeriodStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </span>
-                </div>
-              )}
-              {userSubscription.currentPeriodEnd && (
-                <div className="flex items-center gap-2">
-                  <Calendar size={12} className="text-emerald-500" />
-                  <span className="text-gray-500">Renews:</span>
-                  <span className="text-emerald-600 font-medium">
-                    {userSubscription.currentPeriodEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </span>
-                </div>
-              )}
-              {userSubscription.chatsResetDate && !userSubscription.unlimited && (
-                <div className="flex items-center gap-2">
-                  <MessageSquare size={12} className="text-gray-400" />
-                  <span className="text-gray-500">Chats reset:</span>
-                  <span className="text-gray-700 font-medium">
-                    {userSubscription.chatsResetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+{/* Current Plan Banner - Removed (info now shown in header pills) */}
 
       {/* Plans Grid */}
       <div className="px-6 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl">
           {plans.map((plan) => {
             const isCurrentPlan = userSubscription?.tier === plan.id;
 
             return (
               <div
                 key={plan.id}
-                className={`relative rounded-2xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
+                className={`relative rounded-2xl p-5 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
                   isCurrentPlan
                     ? 'bg-white/30 border-2 border-emerald-500 ring-2 ring-emerald-500/20 shadow-lg'
                     : plan.popular
-                    ? 'bg-white/30 border border-gray-300/50 ring-1 ring-gray-900/5 shadow-lg'
+                    ? 'bg-white/30 border border-gray-300/60 ring-1 ring-gray-900/5 shadow-lg'
                     : plan.elite
                     ? 'bg-white/30 border border-amber-300/40 ring-1 ring-amber-500/10 shadow-lg'
-                    : 'bg-white/20 border border-white/40 hover:bg-white/40 hover:border-gray-200/60'
+                    : 'bg-white/30 border border-gray-300/50 shadow-md hover:shadow-lg hover:border-gray-400/60'
                 }`}
                 style={{ backdropFilter: 'blur(12px) saturate(150%)' }}
               >
@@ -478,7 +436,7 @@ const PricingPackages = ({ onClose, onBack }) => {
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                     <span className="inline-flex items-center gap-1 bg-emerald-500 text-white px-3 py-1 rounded-full text-[10px] font-medium tracking-wide shadow-lg">
                       <CheckCircle size={10} />
-                      CURRENT PLAN
+                      CURRENT
                     </span>
                   </div>
                 )}
@@ -487,7 +445,7 @@ const PricingPackages = ({ onClose, onBack }) => {
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                     <span className="inline-flex items-center gap-1 bg-gray-900 text-white px-3 py-1 rounded-full text-[10px] font-medium tracking-wide shadow-lg">
                       <Sparkles size={10} />
-                      MOST POPULAR
+                      POPULAR
                     </span>
                   </div>
                 )}
@@ -496,128 +454,75 @@ const PricingPackages = ({ onClose, onBack }) => {
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                     <span className="inline-flex items-center gap-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white px-3 py-1 rounded-full text-[10px] font-medium tracking-wide shadow-lg">
                       <Crown size={10} />
-                      ELITE CLUB
+                      ELITE
                     </span>
                   </div>
                 )}
 
                 {/* Plan Header */}
                 <div className={`${plan.popular || plan.elite || isCurrentPlan ? 'mt-2' : ''}`}>
-                  <h3 className="text-lg font-semibold text-gray-900 tracking-tight">
+                  <h3 className="text-base font-semibold text-gray-900 tracking-tight">
                     {plan.name}
                   </h3>
-                  <p className="text-gray-500 text-xs mt-0.5">{plan.tagline}</p>
+                  <p className="text-gray-500 text-[11px] mt-0.5">{plan.tagline}</p>
                 </div>
 
-                {/* Price - Light typography */}
-                <div className="mt-4 mb-5">
-                  <span className="text-4xl font-extralight text-gray-800 tracking-tight">${plan.price}</span>
+                {/* Price */}
+                <div className="mt-3 mb-4">
+                  <span className="text-3xl font-extralight text-gray-800 tracking-tight">${plan.price}</span>
                   <span className="text-gray-400 text-xs font-light ml-1">/{plan.period}</span>
                 </div>
 
-                {/* Key Stats - Glassmorphic */}
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  <div
-                    className="bg-white/50 rounded-lg p-2.5 border border-white/30"
-                    style={{ backdropFilter: 'blur(8px)' }}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <MessageSquare size={12} className="text-gray-400" />
-                      <span className="text-[10px] text-gray-500">Chats/mo</span>
-                    </div>
-                    <p className="text-sm font-medium text-gray-800 mt-0.5">
-                      {plan.chatsPerMonth === 'Unlimited' ? '∞' : plan.chatsPerMonth}
-                    </p>
+                {/* Key Stats */}
+                <div className="flex gap-2 mb-3 text-[10px]">
+                  <div className="flex items-center gap-1 px-2 py-1 bg-white/50 rounded-md border border-white/30">
+                    <MessageSquare size={10} className="text-gray-400" />
+                    <span className="text-gray-600">{plan.chatsPerMonth === 'Unlimited' ? '∞' : plan.chatsPerMonth} chats</span>
                   </div>
-                  <div
-                    className="bg-white/50 rounded-lg p-2.5 border border-white/30"
-                    style={{ backdropFilter: 'blur(8px)' }}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <Mail size={12} className="text-gray-400" />
-                      <span className="text-[10px] text-gray-500">Msgs/chat</span>
-                    </div>
-                    <p className="text-sm font-medium text-gray-800 mt-0.5">
-                      {plan.messagesPerChat === 'Unlimited' ? '∞' : plan.messagesPerChat}
-                    </p>
+                  <div className="flex items-center gap-1 px-2 py-1 bg-white/50 rounded-md border border-white/30">
+                    <Mail size={10} className="text-gray-400" />
+                    <span className="text-gray-600">{plan.messagesPerChat === 'Unlimited' ? '∞' : plan.messagesPerChat} msgs</span>
                   </div>
                 </div>
 
-                {/* Support Level - Glassmorphic */}
-                <div
-                  className="flex items-center gap-2 mb-4 p-2 bg-white/40 rounded-lg border border-white/30"
-                  style={{ backdropFilter: 'blur(8px)' }}
-                >
-                  {plan.support === '24/7 Phone' ? (
-                    <Phone size={14} className="text-amber-500" />
-                  ) : plan.support === 'Priority' ? (
-                    <Star size={14} className="text-gray-600" />
-                  ) : (
-                    <Mail size={14} className="text-gray-400" />
-                  )}
-                  <span className="text-xs text-gray-600 font-light">{plan.support} Support</span>
-                </div>
-
-                {/* Features List */}
-                <div className="space-y-2 mb-5 max-h-48 overflow-y-auto">
-                  {plan.features.slice(0, 8).map((feature, index) => (
-                    <div key={index} className="flex items-start gap-2">
-                      <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                        feature.included ? 'bg-gray-100' : 'bg-white/10'
-                      }`}>
-                        {feature.included ? (
-                          <Check size={10} className="text-gray-600" />
-                        ) : (
-                          <X size={10} className="text-gray-300" />
-                        )}
-                      </div>
-                      <span className={`text-xs ${feature.included ? 'text-gray-600' : 'text-gray-400'}`}>
+                {/* Features List - Compact */}
+                <div className="space-y-1.5 mb-4">
+                  {plan.features.slice(0, 6).map((feature, index) => (
+                    <div key={index} className="flex items-center gap-1.5">
+                      {feature.included ? (
+                        <Check size={10} className="text-gray-500 flex-shrink-0" />
+                      ) : (
+                        <X size={10} className="text-gray-300 flex-shrink-0" />
+                      )}
+                      <span className={`text-[11px] ${feature.included ? 'text-gray-600' : 'text-gray-400'}`}>
                         {feature.text}
                       </span>
                     </div>
                   ))}
-                  {plan.features.length > 8 && (
-                    <p className="text-[10px] text-gray-400 pl-6">+{plan.features.length - 8} more features</p>
+                  {plan.features.length > 6 && (
+                    <p className="text-[10px] text-gray-400 pl-4">+{plan.features.length - 6} more</p>
                   )}
                 </div>
 
-                {/* Highlight Tags - Glassmorphic */}
-                <div className="flex flex-wrap gap-1.5 mb-5">
-                  {plan.highlights.slice(0, 4).map((tag, index) => (
-                    <span
-                      key={index}
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-medium border ${
-                        plan.elite
-                          ? 'text-amber-700 bg-amber-50/60 border-amber-200/40'
-                          : 'text-gray-600 bg-white/50 border-white/40'
-                      }`}
-                      style={{ backdropFilter: 'blur(4px)' }}
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                {/* CTA Button - Monochromatic light gray glass */}
+                {/* CTA Button */}
                 <button
                   onClick={() => !isCurrentPlan && handlePlanClick(plan)}
                   disabled={processingPlan === plan.id || isCurrentPlan}
-                  className={`w-full py-3 rounded-xl text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                  className={`w-full py-2.5 rounded-xl text-xs font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
                     isCurrentPlan
                       ? 'bg-gray-100/50 text-gray-400 cursor-default border border-gray-200/40'
-                      : 'bg-white/60 text-gray-700 hover:bg-white/80 border border-gray-200/50 hover:border-gray-300/60'
+                      : 'bg-gray-900 text-white hover:bg-gray-800'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  style={{ backdropFilter: 'blur(8px)' }}
                 >
                   {processingPlan === plan.id ? (
                     <>
-                      <Loader2 size={16} className="animate-spin" />
+                      <Loader2 size={14} className="animate-spin" />
                       Processing...
                     </>
                   ) : isCurrentPlan ? (
                     <>
-                      <CheckCircle size={16} />
-                      Current Plan
+                      <CheckCircle size={14} />
+                      Current
                     </>
                   ) : (
                     'Select Plan'
@@ -628,9 +533,9 @@ const PricingPackages = ({ onClose, onBack }) => {
           })}
         </div>
 
-        {/* Business Solutions Card */}
-        <div
-          className="mt-5 max-w-6xl bg-white/20 border border-white/30 rounded-2xl p-6 hover:bg-white/30 hover:shadow-xl hover:border-white/40 transition-all duration-300 group"
+{/* Business Solutions Card - Hidden for now */}
+        {/* <div
+          className="mt-6 max-w-6xl bg-white/20 border border-white/30 rounded-2xl p-6 hover:bg-white/30 hover:shadow-xl hover:border-white/40 transition-all duration-300 group"
           style={{ backdropFilter: 'blur(8px)' }}
         >
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -665,7 +570,7 @@ const PricingPackages = ({ onClose, onBack }) => {
               Contact Us
             </a>
           </div>
-        </div>
+        </div> */}
 
         {/* Feature Comparison Table */}
         <div className="mt-8 max-w-6xl bg-white/20 rounded-2xl border border-white/30 overflow-hidden" style={{ backdropFilter: 'blur(8px)' }}>
@@ -678,90 +583,97 @@ const PricingPackages = ({ onClose, onBack }) => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/20">
-                  <th className="text-left px-6 py-3 text-gray-500 font-medium">Feature</th>
-                  <th className="text-center px-4 py-3 text-gray-900 font-medium">Explorer</th>
-                  <th className="text-center px-4 py-3 text-gray-900 font-medium bg-white/10">Traveller</th>
-                  <th className="text-center px-4 py-3 text-amber-700 font-medium">Elite Club</th>
+                  <th className="text-left px-4 py-3 text-gray-500 font-medium">Feature</th>
+                  <th className="text-center px-3 py-3 text-gray-700 font-medium text-xs">Essential</th>
+                  <th className="text-center px-3 py-3 text-gray-900 font-medium text-xs">Explorer</th>
+                  <th className="text-center px-3 py-3 text-gray-900 font-medium text-xs bg-white/10">Traveller</th>
+                  <th className="text-center px-3 py-3 text-amber-700 font-medium text-xs">Elite</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10">
                 <tr>
-                  <td className="px-6 py-3 text-gray-600">AI Chats/month</td>
-                  <td className="text-center px-4 py-3">5</td>
-                  <td className="text-center px-4 py-3 bg-white/10">10</td>
-                  <td className="text-center px-4 py-3 text-amber-600 font-medium">Unlimited</td>
+                  <td className="px-4 py-2.5 text-gray-600 text-xs">AI Chats/month</td>
+                  <td className="text-center px-3 py-2.5 text-xs">10</td>
+                  <td className="text-center px-3 py-2.5 text-xs">5</td>
+                  <td className="text-center px-3 py-2.5 bg-white/10 text-xs">10</td>
+                  <td className="text-center px-3 py-2.5 text-amber-600 font-medium text-xs">∞</td>
                 </tr>
                 <tr>
-                  <td className="px-6 py-3 text-gray-600">Messages/chat</td>
-                  <td className="text-center px-4 py-3">10</td>
-                  <td className="text-center px-4 py-3 bg-white/10">25</td>
-                  <td className="text-center px-4 py-3 text-amber-600 font-medium">Unlimited</td>
+                  <td className="px-4 py-2.5 text-gray-600 text-xs">Messages/chat</td>
+                  <td className="text-center px-3 py-2.5 text-xs">5</td>
+                  <td className="text-center px-3 py-2.5 text-xs">10</td>
+                  <td className="text-center px-3 py-2.5 bg-white/10 text-xs">25</td>
+                  <td className="text-center px-3 py-2.5 text-amber-600 font-medium text-xs">∞</td>
                 </tr>
                 <tr>
-                  <td className="px-6 py-3 text-gray-600">Empty Legs</td>
-                  <td className="text-center px-4 py-3"><Check size={16} className="text-emerald-500 mx-auto" /></td>
-                  <td className="text-center px-4 py-3 bg-white/10"><Check size={16} className="text-emerald-500 mx-auto" /></td>
-                  <td className="text-center px-4 py-3"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                  <td className="px-4 py-2.5 text-gray-600 text-xs">Empty Legs</td>
+                  <td className="text-center px-3 py-2.5"><Check size={14} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5"><Check size={14} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5 bg-white/10"><Check size={14} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5"><Check size={14} className="text-emerald-500 mx-auto" /></td>
                 </tr>
                 <tr>
-                  <td className="px-6 py-3 text-gray-600">Ground Transport</td>
-                  <td className="text-center px-4 py-3"><Check size={16} className="text-emerald-500 mx-auto" /></td>
-                  <td className="text-center px-4 py-3 bg-white/10"><Check size={16} className="text-emerald-500 mx-auto" /></td>
-                  <td className="text-center px-4 py-3"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                  <td className="px-4 py-2.5 text-gray-600 text-xs">Restaurants</td>
+                  <td className="text-center px-3 py-2.5"><Check size={14} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5"><Check size={14} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5 bg-white/10"><Check size={14} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5"><Check size={14} className="text-emerald-500 mx-auto" /></td>
                 </tr>
                 <tr>
-                  <td className="px-6 py-3 text-gray-600">Restaurants</td>
-                  <td className="text-center px-4 py-3"><Check size={16} className="text-emerald-500 mx-auto" /></td>
-                  <td className="text-center px-4 py-3 bg-white/10"><Check size={16} className="text-emerald-500 mx-auto" /></td>
-                  <td className="text-center px-4 py-3"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                  <td className="px-4 py-2.5 text-gray-600 text-xs">Private Jet Search</td>
+                  <td className="text-center px-3 py-2.5"><Check size={14} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5"><Check size={14} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5 bg-white/10"><Check size={14} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5"><Check size={14} className="text-emerald-500 mx-auto" /></td>
                 </tr>
                 <tr>
-                  <td className="px-6 py-3 text-gray-600">MEDEVAC Services</td>
-                  <td className="text-center px-4 py-3"><X size={16} className="text-gray-300 mx-auto" /></td>
-                  <td className="text-center px-4 py-3 bg-white/10"><Check size={16} className="text-emerald-500 mx-auto" /></td>
-                  <td className="text-center px-4 py-3"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                  <td className="px-4 py-2.5 text-gray-600 text-xs">Private Jet Booking</td>
+                  <td className="text-center px-3 py-2.5"><X size={14} className="text-gray-300 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5"><Check size={14} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5 bg-white/10"><Check size={14} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5"><Check size={14} className="text-emerald-500 mx-auto" /></td>
                 </tr>
                 <tr>
-                  <td className="px-6 py-3 text-gray-600">Concierge Services</td>
-                  <td className="text-center px-4 py-3"><X size={16} className="text-gray-300 mx-auto" /></td>
-                  <td className="text-center px-4 py-3 bg-white/10"><Check size={16} className="text-emerald-500 mx-auto" /></td>
-                  <td className="text-center px-4 py-3"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                  <td className="px-4 py-2.5 text-gray-600 text-xs">Helicopters</td>
+                  <td className="text-center px-3 py-2.5"><X size={14} className="text-gray-300 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5"><Check size={14} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5 bg-white/10"><Check size={14} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5"><Check size={14} className="text-emerald-500 mx-auto" /></td>
                 </tr>
                 <tr>
-                  <td className="px-6 py-3 text-gray-600">Group Charter</td>
-                  <td className="text-center px-4 py-3"><X size={16} className="text-gray-300 mx-auto" /></td>
-                  <td className="text-center px-4 py-3 bg-white/10"><Check size={16} className="text-emerald-500 mx-auto" /></td>
-                  <td className="text-center px-4 py-3"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                  <td className="px-4 py-2.5 text-gray-600 text-xs">Ground Transport</td>
+                  <td className="text-center px-3 py-2.5"><X size={14} className="text-gray-300 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5"><Check size={14} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5 bg-white/10"><Check size={14} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5"><Check size={14} className="text-emerald-500 mx-auto" /></td>
                 </tr>
                 <tr>
-                  <td className="px-6 py-3 text-gray-600">Event Booking</td>
-                  <td className="text-center px-4 py-3"><X size={16} className="text-gray-300 mx-auto" /></td>
-                  <td className="text-center px-4 py-3 bg-white/10"><Check size={16} className="text-emerald-500 mx-auto" /></td>
-                  <td className="text-center px-4 py-3"><Check size={16} className="text-emerald-500 mx-auto" /></td>
+                  <td className="px-4 py-2.5 text-gray-600 text-xs">MEDEVAC Services</td>
+                  <td className="text-center px-3 py-2.5"><X size={14} className="text-gray-300 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5"><X size={14} className="text-gray-300 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5 bg-white/10"><Check size={14} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5"><Check size={14} className="text-emerald-500 mx-auto" /></td>
                 </tr>
                 <tr>
-                  <td className="px-6 py-3 text-gray-600">Free Airport Transfers</td>
-                  <td className="text-center px-4 py-3"><X size={16} className="text-gray-300 mx-auto" /></td>
-                  <td className="text-center px-4 py-3 bg-white/10"><X size={16} className="text-gray-300 mx-auto" /></td>
-                  <td className="text-center px-4 py-3 text-amber-600 font-medium">2x/month</td>
+                  <td className="px-4 py-2.5 text-gray-600 text-xs">Concierge Services</td>
+                  <td className="text-center px-3 py-2.5"><X size={14} className="text-gray-300 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5"><X size={14} className="text-gray-300 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5 bg-white/10"><Check size={14} className="text-emerald-500 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5"><Check size={14} className="text-emerald-500 mx-auto" /></td>
                 </tr>
                 <tr>
-                  <td className="px-6 py-3 text-gray-600">MembershipX Card</td>
-                  <td className="text-center px-4 py-3"><X size={16} className="text-gray-300 mx-auto" /></td>
-                  <td className="text-center px-4 py-3 bg-white/10"><X size={16} className="text-gray-300 mx-auto" /></td>
-                  <td className="text-center px-4 py-3"><Check size={16} className="text-amber-500 mx-auto" /></td>
+                  <td className="px-4 py-2.5 text-gray-600 text-xs">VIP Events</td>
+                  <td className="text-center px-3 py-2.5"><X size={14} className="text-gray-300 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5"><X size={14} className="text-gray-300 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5 bg-white/10"><X size={14} className="text-gray-300 mx-auto" /></td>
+                  <td className="text-center px-3 py-2.5"><Check size={14} className="text-amber-500 mx-auto" /></td>
                 </tr>
                 <tr>
-                  <td className="px-6 py-3 text-gray-600">VIP Event Invites</td>
-                  <td className="text-center px-4 py-3"><X size={16} className="text-gray-300 mx-auto" /></td>
-                  <td className="text-center px-4 py-3 bg-white/10"><X size={16} className="text-gray-300 mx-auto" /></td>
-                  <td className="text-center px-4 py-3"><Check size={16} className="text-amber-500 mx-auto" /></td>
-                </tr>
-                <tr>
-                  <td className="px-6 py-3 text-gray-600">Support</td>
-                  <td className="text-center px-4 py-3 text-gray-500">Email</td>
-                  <td className="text-center px-4 py-3 bg-white/10 text-gray-700">Priority</td>
-                  <td className="text-center px-4 py-3 text-amber-600 font-medium">24/7 Phone</td>
+                  <td className="px-4 py-2.5 text-gray-600 text-xs">Support</td>
+                  <td className="text-center px-3 py-2.5 text-gray-500 text-xs">Email</td>
+                  <td className="text-center px-3 py-2.5 text-gray-500 text-xs">Email</td>
+                  <td className="text-center px-3 py-2.5 bg-white/10 text-gray-700 text-xs">Priority</td>
+                  <td className="text-center px-3 py-2.5 text-amber-600 font-medium text-xs">24/7</td>
                 </tr>
               </tbody>
             </table>

@@ -1024,7 +1024,7 @@ const AIChat = ({
           }
 
           const response = await claudeEdgeService.messages.create({
-            model: 'claude-sonnet-4-20250514',
+            model: subscriptionService.getModelForTier(userProfile?.subscription_tier),
             max_tokens: 4096,
             system: [{ type: "text", text: systemPrompt + (hasMedevacTrigger ? '\n\n🚨 EMERGENCY: User needs MEDEVAC. Call createMedevacRequest tool IMMEDIATELY with whatever info you can extract. Use defaults for missing fields.' : ''), cache_control: { type: "ephemeral" } }],
             messages: [claudeUserMessage],
@@ -1068,7 +1068,7 @@ const AIChat = ({
 
               // Get AI follow-up response
               const followUp = await claudeEdgeService.messages.create({
-                model: 'claude-sonnet-4-20250514',
+                model: subscriptionService.getModelForTier(userProfile?.subscription_tier),
                 max_tokens: 1024,
                 system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
                 messages: [
@@ -1157,7 +1157,9 @@ const AIChat = ({
             }
           } else {
             // Simple text response (no tool use)
-            const aiText = response.content.find(block => block.type === 'text')?.text || "I'm here to help!";
+            let aiText = response.content.find(block => block.type === 'text')?.text || "I'm here to help!";
+            // Strip box drawing characters that create ugly lines
+            aiText = aiText.replace(/═{3,}/g, '').replace(/─{3,}/g, '').replace(/│/g, '').replace(/\n{3,}/g, '\n\n').trim();
             const aiMessage = { role: 'assistant', content: aiText };
 
             // Update chat - filter out loading messages first
@@ -2131,7 +2133,7 @@ End your response with: "Please review the information above. If everything is c
 
       try {
         const response = await claudeEdgeService.messages.create({
-          model: 'claude-sonnet-4-20250514',
+          model: subscriptionService.getModelForTier(userProfile?.subscription_tier),
           max_tokens: 1024,
           system: [{ type: "text", text: "You are a travel quote analysis expert. Extract key details from travel quotes.", cache_control: { type: "ephemeral" } }],
           messages: [{
@@ -3801,7 +3803,7 @@ Then use searchCigars with appropriate filters. Keep it elegant and brief.`;
 5. Text responses NEVER add to cart - only tools do`;
 
       const response = await claudeEdgeService.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: subscriptionService.getModelForTier(userProfile?.subscription_tier),
         max_tokens: 4096,
         system: [
           {
@@ -3829,7 +3831,9 @@ Then use searchCigars with appropriate filters. Keep it elegant and brief.`;
         const textBlock = response.content.find(block => block.type === 'text');
         if (textBlock && textBlock.text && textBlock.text.trim() && !forcedTool) {
           // Only show text if NO tool was forced (natural conversation)
-          const initialMessage = { role: 'assistant', content: textBlock.text };
+          // Strip box drawing characters that create ugly lines
+          const cleanedText = textBlock.text.replace(/═{3,}/g, '').replace(/─{3,}/g, '').replace(/│/g, '').replace(/\n{3,}/g, '\n\n').trim();
+          const initialMessage = { role: 'assistant', content: cleanedText };
 
           // Remove loading message and add actual response
           setChatHistory(prev => prev.map(c =>
@@ -4075,7 +4079,7 @@ Then use searchCigars with appropriate filters. Keep it elegant and brief.`;
 
               try {
                 const placeFollowUp = await claudeEdgeService.messages.create({
-                  model: 'claude-sonnet-4-20250514',
+                  model: subscriptionService.getModelForTier(userProfile?.subscription_tier),
                   max_tokens: 512,
                   system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
                   messages: [
@@ -4134,7 +4138,7 @@ Then use searchCigars with appropriate filters. Keep it elegant and brief.`;
 
               try {
                 const hotelFollowUp = await claudeEdgeService.messages.create({
-                  model: 'claude-sonnet-4-20250514',
+                  model: subscriptionService.getModelForTier(userProfile?.subscription_tier),
                   max_tokens: 512,
                   system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
                   messages: [
@@ -4229,7 +4233,7 @@ Then use searchCigars with appropriate filters. Keep it elegant and brief.`;
             : systemPrompt;
 
           const followUp = await claudeEdgeService.messages.create({
-            model: 'claude-sonnet-4-20250514',
+            model: subscriptionService.getModelForTier(userProfile?.subscription_tier),
             max_tokens: forcedTool ? 256 : 1024,
             system: [
               {
@@ -4280,6 +4284,16 @@ Then use searchCigars with appropriate filters. Keep it elegant and brief.`;
         const textBlock = response.content.find(block => block.type === 'text');
         let aiText = textBlock?.text || 'How can I help?';
 
+        // ALWAYS strip box drawing characters that create ugly lines
+        const boxDrawingPatterns = [
+          /═{3,}/g,  // Box drawing double lines
+          /─{3,}/g,  // Box drawing single lines
+          /│/g,      // Vertical box drawing
+        ];
+        boxDrawingPatterns.forEach(pattern => {
+          aiText = aiText.replace(pattern, '');
+        });
+
         // FALLBACK: Detect fake cart text and strip it - AI should use tools not text
         const fakeCartPatterns = [
           /\[VIEW FULL ITINERARY\]/gi,
@@ -4288,9 +4302,6 @@ Then use searchCigars with appropriate filters. Keep it elegant and brief.`;
           /\[ADD TO CART\]/gi,
           /\[PROCEED\]/gi,
           /Request ID:\s*[\w-]+/gi,
-          /═{3,}/g,  // Box drawing characters
-          /─{3,}/g,
-          /│/g,
           /🛒\s*TRAVEL REQUEST ADDED TO CART/gi,
         ];
 
@@ -4303,14 +4314,14 @@ Then use searchCigars with appropriate filters. Keep it elegant and brief.`;
             aiText = aiText.replace(pattern, '');
           });
 
-          // Clean up excess whitespace
-          aiText = aiText.replace(/\n{3,}/g, '\n\n').trim();
-
           // Add note about adding to cart
           if (aiText && !aiText.includes('Add Trip to Cart') && !aiText.includes('Add to Cart')) {
             aiText += '\n\n**Ready to proceed?** Click "Add to Cart" on the option you prefer to add it to your cart.';
           }
         }
+
+        // Clean up excess whitespace
+        aiText = aiText.replace(/\n{3,}/g, '\n\n').trim();
 
         const aiMessage = { role: 'assistant', content: aiText };
 
@@ -5062,13 +5073,16 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
     console.log('🎨 Rendering: NEW CHAT VIEW (welcome with suggestions)', { activeChat, chatHistoryLength: chatHistory.length });
 
     // Quick suggestion bubbles - small, blurred, monochromatic
+    // Essential tier ($19) only has: empty legs, restaurant search, jet search (no booking), general queries
     const quickSuggestions = [
-      { id: 'jets', label: 'Private Jets', prompt: 'I need to book a private jet' },
-      { id: 'sommelier', label: 'Sommelier', prompt: 'I would like wine recommendations' },
-      { id: 'restaurants', label: 'Restaurants', prompt: 'Find me a luxury restaurant' },
-      { id: 'transfer', label: 'Airport Transfer', prompt: 'I need an airport transfer' },
-      { id: 'emptylegs', label: 'Empty Legs', prompt: 'I want to find empty leg flights', isRouteQuery: true },
-      { id: 'medevac', label: 'Medevac', prompt: 'I need medical evacuation services', requiresSubscription: ['elite', 'traveller', 'professional'] },
+      { id: 'emptylegs', label: 'Empty Legs', prompt: 'I want to find empty leg flights', isRouteQuery: true }, // Available to all
+      { id: 'restaurants', label: 'Restaurants', prompt: 'Find me a luxury restaurant' }, // Available to all
+      { id: 'jets', label: 'Private Jets', prompt: 'I need to search for private jets', essentialAllowed: true }, // Essential can search only
+      { id: 'transfer', label: 'Airport Transfer', prompt: 'I need an airport transfer', requiresSubscription: ['explorer', 'traveller', 'elite', 'professional'] },
+      { id: 'helicopter', label: 'Helicopters', prompt: 'I need a helicopter charter', requiresSubscription: ['explorer', 'traveller', 'elite', 'professional'] },
+      { id: 'sommelier', label: 'Sommelier', prompt: 'I would like wine recommendations', requiresSubscription: ['explorer', 'traveller', 'elite', 'professional'] },
+      { id: 'concierge', label: 'Concierge', prompt: 'I need concierge services', requiresSubscription: ['traveller', 'elite', 'professional'] },
+      { id: 'medevac', label: 'Medevac', prompt: 'I need medical evacuation services', requiresSubscription: ['traveller', 'elite', 'professional'] },
     ];
 
     // Get time-based greeting
@@ -5088,7 +5102,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
             <div className="flex justify-start animate-fade-in">
               <div className="flex flex-col gap-2 ml-0 sm:ml-12" style={{ maxWidth: '85%' }}>
                 <div className="flex items-center gap-2 px-2">
-                  <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                   <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
                 </div>
                 <div className="px-5 py-4 bg-gray-100 text-gray-800 border border-gray-200 rounded-2xl">
@@ -5138,10 +5152,29 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                 <div className="flex flex-wrap gap-2 mt-2 px-2">
                   {quickSuggestions.map((suggestion, index) => {
                     // Check if suggestion requires subscription
-                    const userTier = userProfile?.subscription_tier?.toLowerCase() || 'explorer';
-                    const hasRequiredSubscription = !suggestion.requiresSubscription ||
-                      suggestion.requiresSubscription.some(tier => userTier.includes(tier.toLowerCase()));
-                    const isLocked = suggestion.requiresSubscription && !hasRequiredSubscription;
+                    const userTier = userProfile?.subscription_tier?.toLowerCase() || null;
+
+                    // Determine if feature is locked based on tier
+                    let isLocked = false;
+                    let lockMessage = '';
+
+                    if (!userTier) {
+                      // No subscription - all premium features locked
+                      isLocked = suggestion.requiresSubscription ? true : false;
+                      lockMessage = `${suggestion.label} requires a subscription. Subscribe to access this service.`;
+                    } else if (userTier === 'essential') {
+                      // Essential tier - only empty legs, restaurants, jet search allowed
+                      if (suggestion.requiresSubscription && !suggestion.requiresSubscription.includes('essential')) {
+                        isLocked = true;
+                        lockMessage = `${suggestion.label} requires Explorer ($99/mo) or higher. Upgrade to access this premium service.`;
+                      }
+                    } else {
+                      // Other tiers - check if they have access
+                      const hasRequiredSubscription = !suggestion.requiresSubscription ||
+                        suggestion.requiresSubscription.some(tier => userTier.includes(tier.toLowerCase()));
+                      isLocked = suggestion.requiresSubscription && !hasRequiredSubscription;
+                      lockMessage = `${suggestion.label} requires a higher subscription tier to access.`;
+                    }
 
                     return (
                       <button
@@ -5150,7 +5183,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           if (isLocked) {
                             // Show upgrade toast for locked features
                             setToast({
-                              message: `${suggestion.label} requires Elite or Professional subscription. Upgrade to access this service.`,
+                              message: lockMessage,
                               type: 'warning',
                               duration: 5000
                             });
@@ -5557,7 +5590,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   <div key={idx} className="flex justify-start animate-fade-in w-full my-4">
                     <div className="flex flex-col gap-2 ml-12" style={{ maxWidth: '380px' }}>
                       <div className="flex items-center gap-2 px-2">
-                        <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                         <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
                         <span className="text-xs text-gray-400">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
@@ -5620,7 +5653,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   <div key={idx} className="flex justify-start animate-fade-in w-full my-4">
                     <div className="flex flex-col gap-2 ml-12 w-full" style={{ maxWidth: '450px' }}>
                       <div className="flex items-center gap-2 px-2">
-                        <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                         <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
                         <span className="text-xs text-gray-400">{timestamp}</span>
                       </div>
@@ -5795,7 +5828,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   <div key={idx} className="flex justify-start animate-fade-in w-full my-4">
                     <div className="flex flex-col gap-2 ml-12 w-full" style={{ maxWidth: '100%' }}>
                       <div className="flex items-center gap-2 px-2">
-                        <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                         <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
                         <span className="text-xs text-gray-400">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
@@ -5863,7 +5896,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   <div key={idx} className="flex justify-start animate-fade-in w-full my-4">
                     <div className="flex flex-col gap-2 ml-12 w-full" style={{ maxWidth: '100%' }}>
                       <div className="flex items-center gap-2 px-2">
-                        <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                         <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
                         <span className="text-xs text-gray-400">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
@@ -5931,7 +5964,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   <div key={idx} className="flex justify-start animate-fade-in w-full">
                     <div className="items-start ml-12 flex flex-col gap-1" style={{ maxWidth: '75%' }}>
                       <div className="flex items-center gap-2 px-2">
-                        <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                         <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
                         <span className="text-xs text-gray-400">{timestamp}</span>
                       </div>
@@ -5975,7 +6008,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   <div className={`${msg.role === 'user' ? 'items-end mr-0' : 'items-start ml-12'} flex flex-col gap-1`} style={{ maxWidth: '75%' }}>
                     <div className="flex items-center gap-2 px-2">
                       {msg.role === 'assistant' && (
-                        <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                       )}
                       <span className="text-xs text-gray-600 font-medium">
                         {msg.role === 'user' ? 'You' : 'Sphera AI'}
@@ -6041,7 +6074,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                             return (
                               <TypingText
                                 text={cleanContent}
-                                speed={5}
+                                speed={15}
                                 onComplete={() => setTypingMessageIndex(null)}
                                 renderAfterComplete={() => (
                                   <button
@@ -6067,7 +6100,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                             return (
                               <TypingText
                                 text={content}
-                                speed={5}
+                                speed={15}
                                 onComplete={() => setTypingMessageIndex(null)}
                                 renderAfterComplete={() => {
                                   const currentChat = chatHistory.find(c => c.id === (activeChat || urlChatId));
@@ -6119,7 +6152,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                           return (
                             <TypingText
                               text={content}
-                              speed={5}
+                              speed={15}
                               onComplete={() => setTypingMessageIndex(null)}
                             />
                           );
@@ -7118,7 +7151,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               <div className="flex justify-start w-full">
                 <div className="flex flex-col gap-1 ml-12" style={{ maxWidth: '75%' }}>
                   <div className="flex items-center gap-2 px-2">
-                    <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                     <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
                     <span className="text-xs text-gray-400">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
@@ -7133,7 +7166,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
               <div className="flex justify-start w-full">
                 <div className="flex flex-col gap-1 ml-12" style={{ maxWidth: '75%' }}>
                   <div className="flex items-center gap-2 px-2">
-                    <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                     <span className="text-xs text-gray-600 font-medium">Sphera AI</span>
                     <span className="text-xs text-gray-400">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
@@ -7293,9 +7326,10 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                   if (user?.id) {
                     supabase.from('user_requests').insert({
                       user_id: user.id,
-                      request_type: 'support',
+                      type: 'support',
                       status: 'pending',
-                      request_data: {
+                      data: {
+                        name: 'Support Request',
                         conversation_id: activeChat,
                         user_email: user.email,
                         timestamp: new Date().toISOString(),
@@ -10352,123 +10386,14 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       )}
 
 
-      {/* Subscription Blocker Popup - Clean minimal design (for ALL subscription reasons including chat_limit) */}
-      {showSubscriptionBlocker && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/20 pointer-events-auto"
-            onClick={() => setShowSubscriptionBlocker(false)}
-          />
-
-          {/* Popup Card */}
-          <div
-            className="relative w-full max-w-md bg-white/95 rounded-2xl shadow-xl border border-gray-200/60 overflow-hidden pointer-events-auto"
-            style={{ backdropFilter: 'blur(20px)' }}
-          >
-            {/* Close Button */}
-            <button
-              onClick={() => setShowSubscriptionBlocker(false)}
-              className="absolute top-3 right-3 p-1.5 hover:bg-gray-100/60 rounded-lg transition-all z-10"
-            >
-              <X size={18} className="text-gray-400" />
-            </button>
-
-            {/* Header */}
-            <div className="pt-6 pb-4 px-6 text-center">
-              {/* Logo */}
-              <img
-                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/PrivatecharterX_logo_vectorized.glb.png"
-                alt="PrivateCharterX"
-                className="w-10 h-10 mx-auto mb-3 object-contain"
-              />
-              <h2 className="text-lg font-light text-gray-900 mb-1">
-                {subscriptionBlockerReason === 'no_subscription' && 'Subscription Required'}
-                {subscriptionBlockerReason === 'chat_limit' && 'Chat Limit Reached'}
-                {subscriptionBlockerReason === 'message_limit' && 'Message Limit Reached'}
-                {subscriptionBlockerReason === 'feature_restricted' && 'Upgrade Required'}
-                {!subscriptionBlockerReason && 'Subscription Required'}
-              </h2>
-              <p className="text-xs font-light text-gray-400">
-                {subscriptionBlockerReason === 'no_subscription' &&
-                  'Subscribe to access Sphera AI and start planning your luxury travel experiences.'}
-                {subscriptionBlockerReason === 'chat_limit' &&
-                  `You've used all your chats for this month. Continue existing conversations or upgrade for more chats.`}
-                {subscriptionBlockerReason === 'message_limit' &&
-                  `You've reached your message limit for this chat. Continue on another chat or upgrade.`}
-                {subscriptionBlockerReason === 'feature_restricted' &&
-                  'This feature requires a higher subscription tier.'}
-                {!subscriptionBlockerReason &&
-                  'Subscribe to access Sphera AI and start planning your luxury travel experiences.'}
-              </p>
-            </div>
-
-            {/* Plans - Horizontal row */}
-            <div className="px-5 pb-4">
-              <div className="flex gap-2">
-                {[
-                  { id: 'explorer', tier: 'Explorer', price: 49, chats: '5 chats', stripeLink: import.meta.env.VITE_STRIPE_STARTER_PAYMENT_LINK || import.meta.env.VITE_STRIPE_EXPLORER_PAYMENT_LINK },
-                  { id: 'traveller', tier: 'Traveller', price: 99, chats: '10 chats', popular: true, stripeLink: import.meta.env.VITE_STRIPE_PRO_PAYMENT_LINK || import.meta.env.VITE_STRIPE_TRAVELLER_PAYMENT_LINK },
-                  { id: 'elite', tier: 'Elite', price: 399, chats: 'Unlimited', stripeLink: import.meta.env.VITE_STRIPE_ELITE_PAYMENT_LINK }
-                ].map((plan) => (
-                  <button
-                    key={plan.tier}
-                    onClick={() => {
-                      if (!plan.stripeLink) {
-                        console.warn('No Stripe link for', plan.id);
-                        return;
-                      }
-                      const params = new URLSearchParams();
-                      if (user?.email) params.set('prefilled_email', user.email);
-                      if (user?.id) params.set('client_reference_id', `${user.id}:${plan.id}`);
-                      const url = params.toString() ? `${plan.stripeLink}?${params.toString()}` : plan.stripeLink;
-                      window.location.href = url;
-                    }}
-                    className={`flex-1 p-3 rounded-xl border text-center transition-all hover:border-gray-300 ${
-                      plan.popular
-                        ? 'bg-gray-50/80 border-gray-300'
-                        : 'bg-white/60 border-gray-200'
-                    }`}
-                  >
-                    {plan.popular && (
-                      <span className="text-[8px] font-medium text-gray-500 uppercase tracking-wider">Popular</span>
-                    )}
-                    <p className="text-[10px] font-light text-gray-500 uppercase tracking-wide">{plan.tier}</p>
-                    <p className="text-xl font-extralight text-gray-900">${plan.price}</p>
-                    <p className="text-[9px] font-light text-gray-400">{plan.chats}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="px-5 pb-5 space-y-2">
-              <button
-                onClick={() => {
-                  setShowSubscriptionBlocker(false);
-                  navigate('/dashboard/subscription');
-                }}
-                className="w-full py-2.5 bg-gray-900 text-white rounded-xl text-sm font-light hover:bg-gray-800 transition-colors"
-              >
-                Manage Plans
-              </button>
-              <button
-                onClick={() => {
-                  setShowSubscriptionBlocker(false);
-                  setActiveChat('new');
-                  setShowChatOverview(true);
-                }}
-                className="w-full py-2.5 bg-white text-gray-700 rounded-xl text-sm font-light hover:bg-gray-100 transition-colors border border-gray-200"
-              >
-                Continue
-              </button>
-              <p className="text-[10px] font-light text-gray-400 text-center mt-3">
-                Cancel anytime • Instant access • 24/7 AI concierge
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Subscription Blocker Popup - Uses unified SubscriptionModal */}
+      <SubscriptionModal
+        isOpen={showSubscriptionBlocker}
+        onClose={() => setShowSubscriptionBlocker(false)}
+        currentTier={userProfile?.subscription_tier}
+        blockerReason={subscriptionBlockerReason}
+        onToast={({ message, type }) => setToast({ message, type })}
+      />
 
       {/* Multi-Leg Options - Now inline buttons below AI message, modal removed */}
     </div>

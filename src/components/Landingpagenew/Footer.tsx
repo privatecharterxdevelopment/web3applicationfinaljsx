@@ -175,6 +175,30 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         </div>
       </div>
 
+      {/* Charter Inquiries Section */}
+      <div className="border-t border-gray-200 bg-gray-50">
+        <div className="px-4 sm:px-8 py-6">
+          <div className="max-w-6xl mx-auto text-center">
+            <h4 className="text-sm font-medium text-gray-900 mb-2">Charter Inquiries & Bookings</h4>
+            <p className="text-xs text-gray-500 mb-3 font-light">
+              For specific charter requests, quotes, and booking inquiries
+            </p>
+            <a
+              href="mailto:bookings@privatecharterx.com"
+              className="inline-flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 transition-colors font-medium"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              bookings@privatecharterx.com
+            </a>
+            <p className="text-[11px] text-gray-400 mt-2 font-light">
+              Available 24/7 · Mon - Sun, 00:00 - 23:59
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Legal Links Bar */}
       <div className="border-t border-gray-200 bg-white">
         <div className="px-4 sm:px-8 py-4">

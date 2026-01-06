@@ -243,27 +243,24 @@ export default function FloatingSearchModal() {
   const handleWeb3Click = (category: string) => {
     switch (category) {
       case 'free emptyleg':
-        navigate('/dashboard?tab=empty-legs&filter=free');
+        navigate('/dashboard/empty-legs');
         break;
       case 'NFTs':
-        navigate('/dashboard?tab=nfts');
+        navigate('/dashboard/web3');
         break;
       case 'asset-/tokenization':
-        navigateWithAuth('/dashboard?tab=tokenize');
+        navigateWithAuth('/dashboard/web3');
         break;
       case '$PVCX':
-        navigateWithAuth('/dashboard?tab=pvcx');
-        break;
-      case 'chain-escrow':
-        navigateWithAuth('/dashboard?tab=escrow');
+        navigateWithAuth('/dashboard/web3');
         break;
       default:
-        navigate('/dashboard');
+        navigate('/dashboard/web3');
     }
   };
 
   return (
-    <div className="w-[calc(100%-16px)] sm:w-full sm:max-w-[780px] mx-2 sm:mx-0 mt-16 sm:mt-32">
+    <div className="w-[calc(100%-16px)] sm:w-full sm:max-w-[780px] mx-2 sm:mx-0">
       <style>{`
         @keyframes pulse {
           0%, 100% { opacity: 1; }
@@ -272,13 +269,7 @@ export default function FloatingSearchModal() {
         .animate-pulse { animation: pulse 2s ease-in-out infinite; }
       `}</style>
 
-      <div className="bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-2.5 sm:p-6 border border-gray-300/50 transition-all duration-150 hover:bg-white/12">
-
-        {/* Status Bubble */}
-        <div className="inline-flex items-center gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 bg-gray-100/60 backdrop-blur-sm rounded-full border border-gray-300/30 mb-2 sm:mb-3">
-          <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
-          <span className="text-[9px] sm:text-[10px] text-gray-600 font-medium tracking-wide uppercase">web3 and ai powered multi charter</span>
-        </div>
+      <div className="bg-gray-100 backdrop-blur-md rounded-xl sm:rounded-2xl p-2.5 sm:p-6 border border-gray-200 transition-all duration-150">
 
         {/* Sphera AI Search Bar - Minimal with animated title inside */}
         <div className="mt-0 sm:mt-1">
@@ -366,7 +357,7 @@ export default function FloatingSearchModal() {
             <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-gray-900 text-base sm:text-xl font-light">
               +
             </div>
-            <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide whitespace-nowrap">sommelier talk</span>
+            <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide whitespace-nowrap">sommelier</span>
           </div>
 
           {/* Delicacies Button */}
@@ -550,7 +541,7 @@ export default function FloatingSearchModal() {
 
         {/* Web3 Categories */}
         <div className={`flex flex-wrap gap-1 sm:gap-2 px-0 transition-all duration-150 ${currentOpenSection === 'web3' ? 'max-h-[300px] opacity-100 mt-2 sm:mt-3 mb-1 sm:mb-2' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-          {['free emptyleg', 'NFTs', 'asset-/tokenization', '$PVCX', 'chain-escrow'].map(cat => (
+          {['free emptyleg', 'NFTs', 'asset-/tokenization', '$PVCX'].map(cat => (
             <div
               key={cat}
               onClick={() => handleWeb3Click(cat)}

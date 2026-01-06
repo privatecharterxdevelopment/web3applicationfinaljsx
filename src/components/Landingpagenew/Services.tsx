@@ -23,7 +23,10 @@ import {
   Check,
   Navigation,
   Users,
-  Star
+  Star,
+  Map,
+  Link2,
+  Handshake
 } from 'lucide-react';
 
 interface ServicesProps {
@@ -72,10 +75,10 @@ function Services({ setCurrentPage }: ServicesProps) {
   const mainServices = [
     {
       icon: Plane,
-      title: 'Private Jets',
-      subtitle: 'Global Fleet Access',
-      description: 'Charter private jets from light jets to ultra-long-range aircraft. Access our global network of 5,000+ aircraft with real-time availability and instant quotes.',
-      features: ['Light jets to heavy jets', 'One-way & round trips', 'Instant price quotes'],
+      title: 'Private Aviation',
+      subtitle: 'Jets & Helicopters',
+      description: 'Charter private jets from light to ultra-long-range aircraft, plus helicopter transfers for city-to-city travel and scenic tours. Access 5,000+ aircraft globally.',
+      features: ['Private jets & helicopters', 'City transfers & tours', 'Instant quotes'],
       query: 'I want to charter a private jet'
     },
     {
@@ -106,16 +109,22 @@ function Services({ setCurrentPage }: ServicesProps) {
 
   const additionalServices = [
     {
-      icon: Sparkles,
-      title: 'Helicopters',
-      description: 'City-to-city transfers, scenic tours, and airport connections.',
-      query: 'Helicopter transfer'
-    },
-    {
       icon: Hotel,
       title: 'Luxury Hotels',
       description: '5-star hotels, resorts, and exclusive accommodations worldwide.',
       query: 'Find luxury hotel'
+    },
+    {
+      icon: Map,
+      title: 'Custom Travel Planning',
+      description: 'AI-powered luxury itineraries with verified 5-star venues and Michelin dining.',
+      query: 'Plan a luxury trip'
+    },
+    {
+      icon: HeartPulse,
+      title: 'MEDEVAC Services',
+      description: 'Emergency medical evacuation, air ambulance, and repatriation worldwide.',
+      query: 'I need MEDEVAC assistance'
     },
     {
       icon: Wine,
@@ -152,6 +161,18 @@ function Services({ setCurrentPage }: ServicesProps) {
       title: 'Visa Assistance',
       description: 'Express visa processing in 95% of countries within 24 hours.',
       query: 'Express visa service'
+    },
+    {
+      icon: Link2,
+      title: 'Blockchain Signatures',
+      description: 'Web3-verified request submissions with on-chain signature authentication.',
+      query: 'How does blockchain verification work'
+    },
+    {
+      icon: Handshake,
+      title: 'Direct Partner Bookings',
+      description: 'Access exclusive rates through our verified luxury partner network.',
+      query: 'Tell me about partner bookings'
     }
   ];
 
@@ -210,14 +231,12 @@ function Services({ setCurrentPage }: ServicesProps) {
       {/* Hero Section */}
       <section className="px-4 sm:px-8 py-16 sm:py-24 max-w-6xl mx-auto">
         <div className="text-center max-w-3xl mx-auto">
-          <span className="inline-flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-full text-xs font-medium tracking-wide uppercase mb-8">
-            <Sparkles className="w-3.5 h-3.5" />
-            Luxury Travel Services
-          </span>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100/60 backdrop-blur-sm rounded-full border border-gray-300/30 mb-8">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="text-[10px] text-gray-600 font-medium tracking-wide uppercase">Luxury Travel Services</span>
+          </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-light text-gray-900 mb-6 leading-tight tracking-tight">
-            Your Gateway to
-            <br />
-            <span className="text-gray-400">Luxury Travel</span>
+            Luxury Travel <span className="text-gray-400">Services</span>
           </h1>
           <p className="text-base sm:text-lg text-gray-600 mb-10 leading-relaxed max-w-2xl mx-auto">
             Private jets, yachts, luxury cars, fine wines, and 24/7 concierge — all accessible

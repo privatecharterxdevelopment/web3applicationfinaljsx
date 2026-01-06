@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import LandingHeader from './LandingHeader';
 import Footer from './Footer';
+import Globe3D from '../Globe3D';
 import {
   MessageSquare,
   Sparkles,
@@ -176,7 +177,7 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
     {
       id: 'subscription',
       question: 'Do I need a subscription?',
-      answer: 'Yes, Sphera AI is available through our subscription plans: Explorer ($99/mo - 5 chats, 10 messages each), Traveller ($199/mo - 10 chats, 25 messages each), and Elite ($999/mo - unlimited chats and messages). Elite members also get exclusive access to MEDEVAC services.'
+      answer: 'Yes, Sphera AI is available through our subscription plans: Essential ($19/mo - 10 chats, 5 messages each with Essential AI), Explorer ($99/mo - 5 chats, 10 messages with Sphera AI), Traveller ($199/mo - 10 chats, 25 messages), and Elite ($999/mo - unlimited). Traveller and Elite members get access to MEDEVAC and full concierge services.'
     },
     {
       id: 'booking',
@@ -196,17 +197,27 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100 px-4 py-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 px-4 py-4 overflow-x-hidden">
       <LandingHeader />
 
-      {/* Hero Section - ChatGPT Style Mockup */}
-      <section className="px-4 sm:px-8 py-8 sm:py-12 max-w-6xl mx-auto">
+      {/* Hero Section - 3D Globe */}
+      <section className="max-w-7xl mx-auto rounded-2xl overflow-hidden relative min-h-[85vh]">
+        {/* Background Globe - Full Color - Centered */}
+        <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden">
+          <div className="w-full h-full">
+            <Globe3D />
+          </div>
+        </div>
+      </section>
+
+      {/* Chat Demo Section */}
+      <section className="px-4 sm:px-8 py-8 sm:py-12 max-w-6xl mx-auto mt-12">
         {/* Gradient Background Container */}
         <div
           className="relative rounded-3xl overflow-hidden"
           style={{
             background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #dee2e6 50%, #ced4da 75%, #adb5bd 100%)',
-            minHeight: '600px'
+            minHeight: '500px'
           }}
         >
           {/* Subtle Pattern Overlay */}
@@ -221,15 +232,11 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
           <div className="relative px-6 sm:px-12 py-12 sm:py-16">
             {/* Header - Centered */}
             <div className="text-center mb-10">
-              <span className="inline-flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-full text-xs font-medium tracking-wide uppercase mb-6">
-                <Sparkles className="w-3.5 h-3.5" />
-                AI-Powered Concierge
-              </span>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-light text-gray-900 mb-3">
-                Meet Sphera AI
-              </h1>
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-light text-gray-900 mb-3">
+                Experience the Conversation
+              </h2>
               <p className="text-gray-700 text-sm md:text-base max-w-xl mx-auto font-light">
-                Book jets, discover wines, arrange transfers, and more through natural conversation.
+                See how Sphera AI handles your luxury travel requests
               </p>
             </div>
 
@@ -361,29 +368,6 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
               </div>
             </div>
 
-            {/* CTA */}
-            <div className="text-center mt-10 flex flex-col sm:flex-row gap-3 justify-center">
-              <button
-                onClick={() => navigate('/dashboard/chat?newChat=true')}
-                className="px-8 py-3 rounded-xl text-sm font-medium transition-all duration-200 border border-white/40 hover:border-white/60 hover:shadow-lg"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.25)',
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                  color: '#374151'
-                }}
-              >
-                <MessageSquare className="w-4 h-4 inline mr-2" />
-                Chat with Sphera AI
-              </button>
-              <button
-                onClick={() => navigate('/dashboard/subscriptions/plans')}
-                className="px-8 py-3 rounded-xl text-sm font-medium transition-all duration-200 border border-gray-300 hover:bg-white/20"
-                style={{ color: '#374151' }}
-              >
-                View Plans
-              </button>
-            </div>
           </div>
         </div>
       </section>
@@ -432,29 +416,31 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           {[
+            { name: 'Essential', price: 19, subtitle: 'Basic' },
             { name: 'Explorer', price: 99 },
             { name: 'Traveller', price: 199, popular: true },
             { name: 'Elite', price: 999 }
           ].map((plan, index) => (
             <div
               key={index}
-              className={`bg-white rounded-xl p-6 border text-center ${plan.popular ? 'border-gray-900 ring-1 ring-gray-900' : 'border-gray-200'}`}
+              className={`bg-white rounded-xl p-5 border text-center ${plan.popular ? 'border-gray-900 ring-1 ring-gray-900' : 'border-gray-200'}`}
             >
               {plan.popular && (
                 <span className="bg-gray-900 text-white text-[10px] px-2 py-1 rounded uppercase font-medium">
                   Most Popular
                 </span>
               )}
-              <h3 className="text-lg font-medium text-gray-900 mt-3">{plan.name}</h3>
-              <div className="mt-4 mb-6">
-                <span className="text-3xl font-light text-gray-900">${plan.price}</span>
-                <span className="text-gray-500 text-sm">/month</span>
+              <h3 className="text-base font-medium text-gray-900 mt-2">{plan.name}</h3>
+              {plan.subtitle && <span className="text-xs text-gray-400">{plan.subtitle}</span>}
+              <div className="mt-3 mb-5">
+                <span className="text-2xl font-light text-gray-900">${plan.price}</span>
+                <span className="text-gray-500 text-xs">/mo</span>
               </div>
               <button
                 onClick={() => navigate('/dashboard/subscriptions/plans')}
-                className={`w-full py-3 rounded-lg text-sm font-medium transition-colors ${
+                className={`w-full py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   plan.popular
                     ? 'bg-gray-900 text-white hover:bg-gray-800'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -473,30 +459,44 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
                   <th className="text-left py-4 px-4 font-medium text-gray-900">Feature</th>
-                  <th className="text-center py-4 px-4 font-medium text-gray-900">Explorer</th>
-                  <th className="text-center py-4 px-4 font-medium text-gray-900">Traveller</th>
-                  <th className="text-center py-4 px-4 font-medium text-gray-900">Elite Club</th>
+                  <th className="text-center py-4 px-3 font-medium text-gray-900">Essential</th>
+                  <th className="text-center py-4 px-3 font-medium text-gray-900">Explorer</th>
+                  <th className="text-center py-4 px-3 font-medium text-gray-900">Traveller</th>
+                  <th className="text-center py-4 px-3 font-medium text-gray-900">Elite</th>
                 </tr>
               </thead>
               <tbody>
                 {[
-                  { feature: 'AI Chats/month', explorer: '5', traveller: '10', elite: 'Unlimited' },
-                  { feature: 'Messages/chat', explorer: '10', traveller: '25', elite: 'Unlimited' },
-                  { feature: 'Empty Legs', explorer: true, traveller: true, elite: true },
-                  { feature: 'Ground Transport', explorer: true, traveller: true, elite: true },
-                  { feature: 'Restaurants', explorer: true, traveller: true, elite: true },
-                  { feature: 'MEDEVAC Services', explorer: false, traveller: true, elite: true },
-                  { feature: 'Concierge Services', explorer: false, traveller: true, elite: true },
-                  { feature: 'Group Charter', explorer: false, traveller: true, elite: true },
-                  { feature: 'Event Booking', explorer: false, traveller: true, elite: true },
-                  { feature: 'Free Airport Transfers', explorer: false, traveller: false, elite: '2x/month' },
-                  { feature: 'MembershipX Card', explorer: false, traveller: false, elite: true },
-                  { feature: 'VIP Event Invites', explorer: false, traveller: false, elite: true },
-                  { feature: 'Support', explorer: 'Email', traveller: 'Priority', elite: '24/7 Phone' },
+                  { feature: 'AI Model', essential: 'Essential', explorer: 'Sphera', traveller: 'Sphera', elite: 'Sphera' },
+                  { feature: 'AI Chats/month', essential: '10', explorer: '5', traveller: '10', elite: 'Unlimited' },
+                  { feature: 'Messages/chat', essential: '5', explorer: '10', traveller: '25', elite: 'Unlimited' },
+                  { feature: 'Empty Legs', essential: true, explorer: true, traveller: true, elite: true },
+                  { feature: 'Ground Transport', essential: true, explorer: true, traveller: true, elite: true },
+                  { feature: 'Restaurants', essential: true, explorer: true, traveller: true, elite: true },
+                  { feature: 'Custom Travel', essential: 'Basic', explorer: true, traveller: true, elite: true },
+                  { feature: 'MEDEVAC Services', essential: false, explorer: false, traveller: true, elite: true },
+                  { feature: 'Concierge Services', essential: false, explorer: false, traveller: true, elite: true },
+                  { feature: 'Group Charter', essential: false, explorer: false, traveller: true, elite: true },
+                  { feature: 'Event Booking', essential: false, explorer: false, traveller: true, elite: true },
+                  { feature: 'Free Airport Transfers', essential: false, explorer: false, traveller: false, elite: '2x/mo' },
+                  { feature: 'MembershipX Card', essential: false, explorer: false, traveller: false, elite: true },
+                  { feature: 'VIP Event Invites', essential: false, explorer: false, traveller: false, elite: true },
+                  { feature: 'Support', essential: 'Email', explorer: 'Email', traveller: 'Priority', elite: '24/7' },
                 ].map((row, index) => (
                   <tr key={index} className="border-b border-gray-100 last:border-b-0">
-                    <td className="py-3 px-4 text-gray-700">{row.feature}</td>
-                    <td className="py-3 px-4 text-center">
+                    <td className="py-3 px-4 text-gray-700 text-xs sm:text-sm">{row.feature}</td>
+                    <td className="py-3 px-3 text-center">
+                      {typeof row.essential === 'boolean' ? (
+                        row.essential ? (
+                          <Check className="w-4 h-4 text-green-500 mx-auto" />
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )
+                      ) : (
+                        <span className="text-gray-600 text-xs">{row.essential}</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-3 text-center">
                       {typeof row.explorer === 'boolean' ? (
                         row.explorer ? (
                           <Check className="w-4 h-4 text-green-500 mx-auto" />
@@ -504,10 +504,10 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
                           <span className="text-gray-300">—</span>
                         )
                       ) : (
-                        <span className="text-gray-600">{row.explorer}</span>
+                        <span className="text-gray-600 text-xs">{row.explorer}</span>
                       )}
                     </td>
-                    <td className="py-3 px-4 text-center">
+                    <td className="py-3 px-3 text-center">
                       {typeof row.traveller === 'boolean' ? (
                         row.traveller ? (
                           <Check className="w-4 h-4 text-green-500 mx-auto" />
@@ -515,10 +515,10 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
                           <span className="text-gray-300">—</span>
                         )
                       ) : (
-                        <span className="text-gray-600">{row.traveller}</span>
+                        <span className="text-gray-600 text-xs">{row.traveller}</span>
                       )}
                     </td>
-                    <td className="py-3 px-4 text-center">
+                    <td className="py-3 px-3 text-center">
                       {typeof row.elite === 'boolean' ? (
                         row.elite ? (
                           <Check className="w-4 h-4 text-green-500 mx-auto" />
@@ -526,7 +526,7 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
                           <span className="text-gray-300">—</span>
                         )
                       ) : (
-                        <span className="text-gray-600">{row.elite}</span>
+                        <span className="text-gray-600 text-xs">{row.elite}</span>
                       )}
                     </td>
                   </tr>

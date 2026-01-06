@@ -180,10 +180,10 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
       <section className="px-4 sm:px-8 py-8 sm:py-16 max-w-6xl mx-auto">
         {/* Header - Centered */}
         <div className="text-center mb-10">
-          <span className="inline-flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-full text-xs font-medium tracking-wide uppercase mb-6">
-            <Gem className="w-3.5 h-3.5" />
-            Real World Asset NFT
-          </span>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100/60 backdrop-blur-sm rounded-full border border-gray-300/30 mb-6">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="text-[10px] text-gray-600 font-medium tracking-wide uppercase">Real World Asset NFT</span>
+          </div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-light text-gray-900 mb-3">
             PrivateCharterX Membership NFT
           </h1>

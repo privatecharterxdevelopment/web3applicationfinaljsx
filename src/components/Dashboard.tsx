@@ -2305,7 +2305,7 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
               <option value="helicopter">Helicopters</option>
               {/* <option value="cars">Luxury Cars</option> */}
               <option value="adventures">Adventures</option>
-              <option value="spv_formation">SPV Formation</option>
+              {/* <option value="spv_formation">SPV Formation</option> */}
               <option value="tokenization">Tokenization</option>
               {/* <option value="co2-certificate">CO2 Certificates</option> */}
             </select>

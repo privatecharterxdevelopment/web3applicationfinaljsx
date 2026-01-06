@@ -8,7 +8,9 @@ const corsHeaders = {
 };
 
 // Chat limits for each tier - MUST match other subscription configs
+// Updated 2025 pricing: Essential ($19), Explorer ($99), Traveller ($199), Elite ($999)
 const TIER_CONFIG: Record<string, { chats: number | null; messagesPerChat: number }> = {
+  essential: { chats: 10, messagesPerChat: 5 },   // $19/mo - uses Haiku
   explorer: { chats: 5, messagesPerChat: 10 },
   traveller: { chats: 10, messagesPerChat: 25 },
   elite: { chats: null, messagesPerChat: Infinity },
@@ -16,9 +18,13 @@ const TIER_CONFIG: Record<string, { chats: number | null; messagesPerChat: numbe
 
 // Price amounts to tier mapping (in cents)
 const PRICE_TO_TIER: Record<number, string> = {
-  4900: 'explorer',
-  9900: 'traveller',
-  39900: 'elite',
+  1900: 'essential',   // $19.00 - Essential Basic (Haiku)
+  9900: 'explorer',    // $99.00
+  19900: 'traveller',  // $199.00
+  99900: 'elite',      // $999.00
+  // Legacy prices
+  4900: 'explorer',    // $49.00 (old explorer price)
+  39900: 'elite',      // $399.00 (old elite price)
 };
 
 serve(async (req) => {
@@ -91,9 +97,10 @@ serve(async (req) => {
 
     if (!tier) {
       const amount = (priceAmount || 0) / 100;
-      if (amount >= 300) tier = 'elite';
-      else if (amount >= 80) tier = 'traveller';
-      else tier = 'explorer';
+      if (amount >= 500) tier = 'elite';
+      else if (amount >= 150) tier = 'traveller';
+      else if (amount >= 50) tier = 'explorer';
+      else tier = 'essential';  // $19 Essential tier
       console.log(`Estimated tier from amount $${amount}: ${tier}`);
     }
 

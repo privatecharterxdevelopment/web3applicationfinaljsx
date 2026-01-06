@@ -2,18 +2,38 @@ import { supabase } from '../lib/supabase';
 
 // Tier-specific message limits per chat
 const TIER_MESSAGE_LIMITS = {
+  essential: 5,    // Essential Basic - 5 messages per chat (Haiku)
   explorer: 10,
   traveller: 25,
-  elite: null, // null = unlimited
+  elite: null,     // null = unlimited
   professional: null // Professional tier (if used) = unlimited
 };
 
 // Tier-specific chat limits per month
 const TIER_CHAT_LIMITS = {
+  essential: 10,   // Essential Basic - 10 chats per month
   explorer: 5,
   traveller: 10,
-  elite: null, // null = unlimited
+  elite: null,     // null = unlimited
   professional: null
+};
+
+// AI Model per tier - Essential uses Haiku, others use Sonnet
+const TIER_AI_MODELS = {
+  essential: 'claude-3-5-haiku-20241022',  // Essential Basic uses Haiku (faster, cheaper)
+  explorer: 'claude-sonnet-4-20250514',
+  traveller: 'claude-sonnet-4-20250514',
+  elite: 'claude-sonnet-4-20250514',
+  professional: 'claude-sonnet-4-20250514'
+};
+
+// Features allowed per tier
+const TIER_ALLOWED_FEATURES = {
+  essential: ['empty_legs', 'restaurants', 'private_jets_search', 'general_queries'],
+  explorer: ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'catering', 'custom_travel_org', 'private_jets', 'helicopters'],
+  traveller: ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'catering', 'custom_travel_org', 'private_jets', 'helicopters', 'medevac', 'concierge', 'group_charter', 'reservations', 'event_booking'],
+  elite: ['all'], // Elite has access to everything
+  professional: ['all']
 };
 
 class SubscriptionService {
@@ -308,8 +328,81 @@ class SubscriptionService {
    * Get message limit for a specific tier
    */
   getMessageLimitForTier(tier) {
-    if (!tier) return 10;
-    return TIER_MESSAGE_LIMITS[tier.toLowerCase()] ?? 10;
+    if (!tier) return 5;
+    return TIER_MESSAGE_LIMITS[tier.toLowerCase()] ?? 5;
+  }
+
+  /**
+   * Get AI model for a specific tier
+   * Essential Basic uses Haiku, all others use Sonnet
+   */
+  getModelForTier(tier) {
+    if (!tier) return TIER_AI_MODELS.essential; // Default to Haiku for no subscription
+    return TIER_AI_MODELS[tier.toLowerCase()] ?? TIER_AI_MODELS.explorer;
+  }
+
+  /**
+   * Check if a feature is allowed for the Essential Basic tier
+   * Returns { allowed: boolean, upgradeMessage: string | null }
+   */
+  checkEssentialFeatureAccess(tier, feature) {
+    if (!tier) {
+      return { allowed: false, upgradeMessage: 'Please subscribe to access this feature.' };
+    }
+
+    const tierLower = tier.toLowerCase();
+
+    // Non-essential tiers have full access (based on their tier features)
+    if (tierLower !== 'essential') {
+      return { allowed: true, upgradeMessage: null };
+    }
+
+    // Essential tier - check allowed features
+    const allowedFeatures = TIER_ALLOWED_FEATURES.essential;
+
+    // Map feature names to allowed categories
+    const featureMap = {
+      'empty_legs': 'empty_legs',
+      'emptyleg': 'empty_legs',
+      'empty_leg': 'empty_legs',
+      'restaurant': 'restaurants',
+      'restaurants': 'restaurants',
+      'dining': 'restaurants',
+      'private_jet': 'private_jets_search',
+      'jets': 'private_jets_search',
+      'jet': 'private_jets_search',
+      'general': 'general_queries',
+      'info': 'general_queries',
+      'search': 'general_queries'
+    };
+
+    const mappedFeature = featureMap[feature.toLowerCase()] || feature.toLowerCase();
+
+    if (allowedFeatures.includes(mappedFeature)) {
+      return { allowed: true, upgradeMessage: null };
+    }
+
+    return {
+      allowed: false,
+      upgradeMessage: '🔒 This is a premium service. Please upgrade your plan to access this feature.'
+    };
+  }
+
+  /**
+   * Get list of blocked features for Essential tier with upgrade messages
+   */
+  getEssentialBlockedFeatures() {
+    return {
+      helicopters: '🔒 Helicopter charters are a premium service. Please upgrade to Explorer or higher.',
+      yachts: '🔒 Yacht charters are a premium service. Please upgrade to Explorer or higher.',
+      luxury_cars: '🔒 Luxury car rentals are a premium service. Please upgrade to Explorer or higher.',
+      concierge: '🔒 Concierge services require Traveller or Elite membership. Please upgrade.',
+      medevac: '🔒 MEDEVAC services require Traveller or Elite membership. Please upgrade.',
+      booking_jets: '🔒 Private jet bookings require Explorer or higher. You can search and view jets with Essential.',
+      group_charter: '🔒 Group charter requests require Traveller or Elite membership. Please upgrade.',
+      vip_events: '🔒 VIP event access requires Elite membership. Please upgrade.',
+      adventures: '🔒 Adventure packages are a premium service. Please upgrade to Explorer or higher.'
+    };
   }
 
   /**

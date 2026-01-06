@@ -37,9 +37,10 @@ const InputArea = memo(({
     if (user?.id) {
       const { error } = await supabase.from('user_requests').insert({
         user_id: user.id,
-        request_type: 'support',
+        type: 'support',
         status: 'pending',
-        request_data: {
+        data: {
+          name: 'Support Request',
           conversation_id: activeChat,
           user_email: user.email,
           timestamp: new Date().toISOString(),

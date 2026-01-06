@@ -239,7 +239,7 @@ export function formatItineraryForCart(itineraryData) {
  * Validate travel request budget
  */
 export function validateTravelBudget(budget) {
-  const MINIMUM_BUDGET = 20000;
+  const MINIMUM_BUDGET = 10000;
 
   if (typeof budget !== 'number' || isNaN(budget)) {
     return {

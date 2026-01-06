@@ -1121,7 +1121,7 @@ const RWABannerCarousel = () => {
 
   return (
     <a
-      href="/tokenized"
+      href="mailto:admin@privatecharterx.com?subject=RWA%20Investment%20Inquiry&body=I%20am%20interested%20in%20learning%20more%20about%20tokenized%20asset%20investments."
       className="block border rounded-xl p-3 min-h-[120px] border-gray-300/50 transition-all group relative overflow-hidden"
       style={{
         backgroundImage: 'url(https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/Privatecharterx_Banner%20(4)%20(1).png)',
@@ -4216,12 +4216,12 @@ const TokenizedAssetsGlassmorphic = () => {
   const rwsCategoryMenu = [
     { id: 'jets', label: 'Jets', icon: Plane, category: 'jets' },
     { id: 'helicopter', label: 'Helis', icon: Zap, category: 'helicopter' },
-    { id: 'empty-legs', label: 'Empty Legs', icon: MapPin, category: 'empty-legs' },
+    { id: 'empty-legs', label: 'Empty Legs', icon: MapPin, category: 'empty-legs' }
     // { id: 'hotels', label: 'Hotels', icon: Building2, category: 'hotels' }, // DISABLED - LiteAPI hotels temporarily removed
     // { id: 'adventures', label: 'Adventures', icon: Mountain, category: 'adventures' }, // Hidden - Adventures only available via AI Chat
     // { id: 'assets', label: 'Events & Sports', icon: Calendar, category: 'assets' }, // Hidden for MVP
     // { id: 'luxury-cars', label: 'Luxury Cars', icon: Car, category: 'luxury-cars' }, // Hidden - now integrated into Ground Transport
-    { id: 'ground-transport', label: 'Ground Transport', icon: Car, category: 'ground-transport' }
+    // { id: 'ground-transport', label: 'Ground Transport', icon: Car, category: 'ground-transport' } // Hidden for now
     // { id: 'tailored-services', label: 'AI Travel Designer', icon: Compass, category: 'chat' },
     // { id: 'co2-saf', label: 'CO₂/SAF', icon: Leaf, category: 'co2-saf' } // Hidden for now
   ];
@@ -4291,16 +4291,17 @@ const TokenizedAssetsGlassmorphic = () => {
         { id: 'create-tokenization', label: 'Tokenize Asset', icon: Plus, category: 'tokenization' }
       ]
     },
-    {
-      id: 'spv-formation',
-      label: 'SPV Formation',
-      icon: Building2,
-      category: 'spv-formation',
-      submenu: [
-        { id: 'my-spvs', label: 'My SPVs', icon: FolderOpen, category: 'my-spvs' },
-        { id: 'create-spv', label: 'Create SPV', icon: Plus, category: 'spv-formation' }
-      ]
-    },
+    // SPV Formation - Hidden for now
+    // {
+    //   id: 'spv-formation',
+    //   label: 'SPV Formation',
+    //   icon: Building2,
+    //   category: 'spv-formation',
+    //   submenu: [
+    //     { id: 'my-spvs', label: 'My SPVs', icon: FolderOpen, category: 'my-spvs' },
+    //     { id: 'create-spv', label: 'Create SPV', icon: Plus, category: 'spv-formation' }
+    //   ]
+    // },
     // { id: 'co2-certificates', label: 'CO2 Certificates', icon: Leaf, category: 'co2-certificates' }, // Hidden for now
     // { id: 'chat-support', label: 'Chat Support', icon: MessageSquare, category: 'chat-support' }, // Hidden - using footer chat widget instead
     { id: 'nft-marketplace', label: 'NFT Marketplace', icon: Shield, category: 'nft-marketplace', web3Only: true }

@@ -153,7 +153,7 @@ export default function LandingHeader({ onGetStarted, showInfoButton = true }: L
               onClick={handleGetStarted}
               className="bg-gray-900 text-white px-3 sm:px-5 py-2 rounded-md text-xs sm:text-sm hover:bg-gray-800 transition-colors"
             >
-              Get Started
+              +chat now
             </button>
           )}
         </div>

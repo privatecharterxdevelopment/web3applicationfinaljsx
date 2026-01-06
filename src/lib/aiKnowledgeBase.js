@@ -1796,12 +1796,22 @@ export const SUSTAINABILITY = {
 
 // Subscription tier feature definitions
 const TIER_FEATURES = {
+  essential: {
+    name: 'Essential Basic',
+    price: 19,
+    chatsPerMonth: 10,
+    messagesPerChat: 5,
+    aiModel: 'Haiku (Fast)',
+    features: ['empty_legs', 'restaurants', 'private_jets_search', 'general_queries'],
+    restricted: ['private_jets_booking', 'helicopters', 'yachts', 'luxury_cars', 'ground_transport', 'adventures', 'concierge', 'medevac', 'group_charter', 'vip_events', 'airport_transfers', 'membershipx_card', 'break_the_price', 'delicacies', 'cigars', 'winery', 'catering'],
+    upgradeMessage: '🔒 This is a premium service. Please upgrade your plan to access this feature.'
+  },
   explorer: {
     name: 'Explorer',
     price: 99,
     chatsPerMonth: 5,
     messagesPerChat: 10,
-    features: ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'catering', 'custom_travel_org', 'visa_services'],
+    features: ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'catering', 'custom_travel_org', 'visa_services', 'private_jets', 'helicopters'],
     restricted: ['medevac', 'concierge', 'group_charter', 'vip_events', 'airport_transfers', 'membershipx_card', 'break_the_price']
   },
   traveller: {
@@ -1832,13 +1842,59 @@ function generateSubscriptionContext(userTier) {
 - Direct user to subscription plans for full access
 
 SUBSCRIPTION PLANS OVERVIEW (when asked):
-• Explorer ($99/mo): 5 chats/month, 10 messages/chat, Empty legs, Ground transport, Restaurants, Visa services
+• Essential Basic ($19/mo): 10 chats/month, 5 messages/chat, Empty legs search & booking, Restaurant search, Private jet search (no booking)
+• Explorer ($99/mo): 5 chats/month, 10 messages/chat, + Full jet/heli booking, Ground transport, Restaurants, Visa services
 • Traveller ($199/mo): 10 chats/month, 25 messages/chat, + MEDEVAC, Concierge, Break the Price
 • Elite Club ($999/mo): Unlimited chats & messages, + Free airport transfers, MembershipX Card, VIP Events
 
-EXPRESS VISA SERVICE: $250/person (available to ALL subscribers)
+EXPRESS VISA SERVICE: $250/person (available to Explorer and above)
 - 24-hour guaranteed processing for 95% of countries
 - Full documentation handling by verified agent network`;
+  }
+
+  // Special handling for Essential tier
+  if (userTier.toLowerCase() === 'essential') {
+    return `Current user subscription: ESSENTIAL BASIC ($19/month)
+USAGE LIMITS: 10 chats/month, 5 messages/chat
+AI MODEL: Haiku (Fast responses)
+
+ACCESSIBLE FEATURES for Essential Basic:
+- Empty legs search and booking ✅
+- Restaurant search ✅
+- Private jet search (view only, no booking) ✅
+- General service queries and information ✅
+
+RESTRICTED FEATURES (require upgrade to Explorer or higher):
+- Private jet booking
+- Helicopter charters
+- Yacht charters
+- Ground transport/taxi
+- Luxury cars
+- Adventures
+- Concierge services
+- MEDEVAC
+- Wine/cigars/delicacies
+- VIP events
+
+⚠️ ESSENTIAL TIER ENFORCEMENT - CRITICAL:
+When an Essential Basic user tries to:
+1. BOOK a private jet (not just search): Respond with "🔒 Private jet bookings require Explorer ($99/mo) or higher. You can browse and search jets, but booking requires an upgrade. [UPGRADE_BUTTON]"
+2. Request helicopters, yachts, luxury cars, ground transport: Respond with "🔒 This is a premium service. Please upgrade your plan to access this feature. [UPGRADE_BUTTON]"
+3. Request concierge, MEDEVAC, adventures: Respond with "🔒 This is a premium service. Please upgrade your plan to access this feature. [UPGRADE_BUTTON]"
+
+🗺️ CUSTOM TRAVEL PLANNING (Essential users):
+Essential users CAN request custom travel itineraries. Try your best to help them.
+HOWEVER, if the request is complex (multi-city, many activities, detailed restaurant bookings, etc.):
+- Provide a SIMPLIFIED version of the itinerary
+- At the end, add this note:
+"💡 **Tip:** For more detailed itineraries with verified restaurant reservations, real-time availability, and comprehensive trip coordination, consider upgrading to **Sphera AI** (Explorer $99/mo or higher). Sphera provides enhanced planning capabilities for complex luxury travel. [UPGRADE_BUTTON]"
+
+For ALLOWED features (empty legs, restaurant search, jet search, general queries, basic travel planning), proceed normally without mentioning upgrade.
+
+SUBSCRIPTION UPGRADE OPTIONS:
+• Explorer ($99/mo): Full jet/heli booking, Ground transport, 5 chats/month, 10 messages/chat
+• Traveller ($199/mo): + MEDEVAC, Concierge, Break the Price, 10 chats, 25 messages
+• Elite Club ($999/mo): Unlimited everything, VIP benefits`;
   }
 
   const tierInfo = TIER_FEATURES[userTier];
@@ -1871,7 +1927,8 @@ EXPRESS VISA SERVICE: $250/person (AVAILABLE to this user)
 - When user asks about visa/entry requirements, offer Express Visa Service
 
 SUBSCRIPTION PLANS (when asked about upgrades):
-• Explorer ($99/mo): 5 chats/month, 10 messages/chat
+• Essential Basic ($19/mo): 10 chats/month, 5 messages/chat, Empty legs, Restaurant search, Jet search
+• Explorer ($99/mo): 5 chats/month, 10 messages/chat, + Full booking, Ground transport
 • Traveller ($199/mo): 10 chats/month, 25 messages/chat, + MEDEVAC, Concierge, Break the Price
 • Elite Club ($999/mo): Unlimited everything, + Free airport transfers, MembershipX Card, VIP Events
 
@@ -3089,9 +3146,9 @@ LUXURY TRAVEL PLANNER - ULTRA-INTELLIGENT ITINERARY DESIGN
 **ACTIVATION TRIGGERS:**
 When user mentions: "plan a trip", "plan my vacation", "design an itinerary", "multi-day trip", "travel planning", "week in [destination]", "5 days in", "full trip to", "complete travel package", "plan everything"
 
-**MINIMUM BUDGET REQUIREMENT: $20,000 USD**
-This service is EXCLUSIVELY for ultra-luxury travel. If budget is below $20,000, respond:
-"Our luxury travel planning service specializes in curated ultra-premium experiences with a minimum budget of $20,000 USD. This ensures 5-star accommodations, Michelin-starred dining, and private transportation throughout. For budgets below this threshold, I can help you book individual services like jets, helicopters, or hotels separately."
+**MINIMUM BUDGET REQUIREMENT: $10,000 USD**
+This service is EXCLUSIVELY for ultra-luxury travel. If budget is below $10,000, respond:
+"Our luxury travel planning service specializes in curated ultra-premium experiences with a minimum budget of $10,000 USD. This ensures 5-star accommodations, fine dining, and premium transportation throughout. For budgets below this threshold, I can help you book individual services like jets, helicopters, or hotels separately."
 
 **CONVERSATION FLOW:**
 
@@ -3102,12 +3159,12 @@ Ask for missing details only. If user already provided dates, travelers, budget 
 
 1️⃣ **Dates:** When are you traveling? (departure and return)
 2️⃣ **Travelers:** How many adults and children?
-3️⃣ **Budget:** What's your total budget for this trip? (minimum $20,000 USD)
+3️⃣ **Budget:** What's your total budget for this trip? (minimum $10,000 USD)
 4️⃣ **Preferences:** Any specific interests? (gastronomy, wellness, adventure, culture, romance)"
 
 STEP 2 - VALIDATE BUDGET:
-- If budget < $20,000: Politely decline and suggest individual bookings
-- If budget >= $20,000: Proceed with planning
+- If budget < $10,000: Politely decline and suggest individual bookings
+- If budget >= $10,000: Proceed with planning
 
 STEP 3 - SEARCH FOR REAL DATA (WEB SEARCH + GOOGLE PLACES API):
 Tell user: "Let me search for the finest [destination] venues and current pricing..."
@@ -3178,13 +3235,11 @@ ACTIVITIES:
 
 After gathering requirements and searching, present:
 
-═══════════════════════════════════════════════════════════════════════════
-🌟 LUXURY ITINERARY: [DESTINATION]
-[Start Date] - [End Date] | [X] Nights | [X] Travelers
-═══════════════════════════════════════════════════════════════════════════
+🌟 **LUXURY ITINERARY: [DESTINATION]**
+*[Start Date] - [End Date] | [X] Nights | [X] Travelers*
 
 📍 **DAY 1 - [Date]**
-───────────────────────────────────────
+
 🛬 **Arrival & Transfer**
 • Private jet arrival at [Airport]
 • First Class category transfer to hotel (45min)
@@ -3201,15 +3256,14 @@ After gathering requirements and searching, present:
 
 [Continue for each day...]
 
-───────────────────────────────────────
 💰 **BUDGET BREAKDOWN**
-───────────────────────────────────────
+
 🏨 Accommodation: $XX,XXX
 ✈️ Transportation: $XX,XXX
 🍽️ Dining: $XX,XXX
 🎯 Activities: $XX,XXX
 💫 Miscellaneous: $X,XXX
-───────────────────────────────────────
+
 📊 **TOTAL ESTIMATE: $XX,XXX**
 📈 Your Budget: $XX,XXX
 ✅ Within budget / ⚠️ Over by $X,XXX
@@ -3228,7 +3282,7 @@ After gathering requirements and searching, present:
 - Add to cart when finalized
 
 ❌ NEVER:
-- Accept budgets under $20,000
+- Accept budgets under $10,000
 - Invent fake hotels or restaurants
 - Use outdated pricing
 - Suggest budget alternatives
@@ -3244,14 +3298,13 @@ When user approves the itinerary:
 3. Add to cart as "travel_request" item
 4. Show confirmation:
 
-═══════════════════════════════════════════════════════════════════════════
-🛒 TRAVEL REQUEST ADDED TO CART
-───────────────────────────────────────────────────────────────────────────
-Request ID: TRAVEL-[DATE]-[CODE]
-Destination: [Destination]
-Dates: [Start] - [End] ([X] nights)
-Travelers: [X] Adults
-Budget: $[XX,XXX] USD
+🛒 **TRAVEL REQUEST ADDED TO CART**
+
+**Request ID:** TRAVEL-[DATE]-[CODE]
+**Destination:** [Destination]
+**Dates:** [Start] - [End] ([X] nights)
+**Travelers:** [X] Adults
+**Budget:** $[XX,XXX] USD
 
 ✓ [X]-star accommodation confirmed
 ✓ [X] restaurant reservations
@@ -3259,11 +3312,8 @@ Budget: $[XX,XXX] USD
 ✓ Private transportation throughout
 ✓ Complete maps & itinerary saved
 
-[VIEW FULL ITINERARY] [SEND REQUEST] [EDIT]
-
 Our concierge team will review within 24 hours.
 Contact: bookings@privatecharterx.com
-═══════════════════════════════════════════════════════════════════════════
 
 **EXAMPLE CONVERSATION:**
 
@@ -3299,9 +3349,7 @@ Let me search for the finest venues..." [WEB SEARCH]
 
 Shall I finalize this itinerary? I can generate detailed daily schedules with maps and save it to your account."
 
-═══════════════════════════════════════════════════════════════════════════
-CLOSING & CART MANAGEMENT
-═══════════════════════════════════════════════════════════════════════════════
+**CLOSING & CART MANAGEMENT**
 Always guide toward action:
 - "Shall I add this to your cart?"
 - "Ready to secure this booking?"
@@ -3309,9 +3357,7 @@ Always guide toward action:
 
 For empty legs (urgency): "Empty legs are first-come-first-served. I'd recommend securing this now - they typically don't last long."
 
-═══════════════════════════════════════════════════════════════════════════════
-BOOKING FLOW - CRITICAL (CALL addToCart IMMEDIATELY) - JETS & HELICOPTERS
-═══════════════════════════════════════════════════════════════════════════════
+**BOOKING FLOW - CRITICAL (CALL addToCart IMMEDIATELY) - JETS & HELICOPTERS**
 When user provides flight details (date, passengers) AFTER you already showed aircraft options:
 - DO NOT search/show tabs again - the options are already visible above
 - DO NOT call any search tools

@@ -4,6 +4,7 @@
 import { useCallback, useRef } from 'react';
 import { claudeEdgeService } from '../../../../services/claudeEdgeService';
 import { chatService } from '../../../../services/chatService';
+import { subscriptionService } from '../../../../services/subscriptionService';
 import { getMessageLimit, hasUnlimitedAccess } from '../utils/constants';
 
 export function useMessageSender({
@@ -123,10 +124,12 @@ export function useMessageSender({
         .filter(msg => msg.role !== 'results')
         .map(msg => ({ role: msg.role, content: msg.content }));
 
-      console.log('📡 Sending to Claude:', { messageCount: claudeMessages.length });
+      // Get AI model based on subscription tier (Essential uses Haiku, others use Sonnet)
+      const aiModel = subscriptionService.getModelForTier(tier);
+      console.log('📡 Sending to Claude:', { messageCount: claudeMessages.length, model: aiModel, tier });
 
       const response = await claudeEdgeService.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: aiModel,
         max_tokens: 4096,
         system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
         messages: claudeMessages,
@@ -320,12 +323,14 @@ export function useMessageSender({
         .filter(msg => msg.role !== 'results')
         .map(msg => ({ role: msg.role, content: msg.content }));
 
-      console.log('📡 Starting streaming to Claude:', { messageCount: claudeMessages.length });
+      // Get AI model based on subscription tier
+      const aiModel = subscriptionService.getModelForTier(tier);
+      console.log('📡 Starting streaming to Claude:', { messageCount: claudeMessages.length, model: aiModel });
 
       // Stream the response
       const fullText = await claudeEdgeService.streamMessage(
         {
-          model: 'claude-sonnet-4-20250514',
+          model: aiModel,
           max_tokens: 4096,
           system: [{ type: "text", text: systemPrompt }],
           messages: claudeMessages
@@ -384,9 +389,11 @@ export function useMessageSender({
   const sendFollowUp = useCallback(async (conversationHistory, toolResults, workingChatId) => {
     try {
       const systemPrompt = getSystemPrompt();
+      const tier = userSubscriptionLimits?.tier;
+      const aiModel = subscriptionService.getModelForTier(tier);
 
       const followUp = await claudeEdgeService.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: aiModel,
         max_tokens: 2048,
         system: [{ type: "text", text: systemPrompt }],
         messages: [

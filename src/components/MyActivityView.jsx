@@ -204,8 +204,10 @@ const MyActivityView = ({ user, initialFilter, onBack }) => {
     'jet': 'Private Jet Charter',
     'jets': 'Private Jet Charter',
     'private_jet': 'Private Jet Charter',
+    'private_jet_charter': 'Private Jet Charter',
     'helicopter': 'Helicopter Charter',
     'helicopters': 'Helicopter Charter',
+    'helicopter_charter': 'Helicopter Charter',
     'empty_leg': 'Empty Leg Flight',
     'empty_legs': 'Empty Leg Flight',
     'emptyleg': 'Empty Leg Flight',
@@ -214,13 +216,21 @@ const MyActivityView = ({ user, initialFilter, onBack }) => {
     'transfer': 'Ground Transport',
     'yacht': 'Yacht Charter',
     'yachts': 'Yacht Charter',
+    'yacht_charter': 'Yacht Charter',
     'wine': 'Wine Order',
     'wines': 'Wine Order',
     'concierge': 'Concierge Service',
     'luxury_car': 'Luxury Car',
     'luxury_cars': 'Luxury Car',
+    'luxury_car_rental': 'Luxury Car Rental',
     'adventure': 'Adventure Experience',
-    'fixed_offer': 'Fixed Offer'
+    'adventure_package': 'Adventure Package',
+    'fixed_offer': 'Fixed Offer',
+    'support': 'Support Request',
+    'ai_chat_bulk': 'AI Concierge Request',
+    'custom_request': 'Custom Request',
+    'cart_checkout': 'Cart Checkout',
+    'booking': 'Booking Request'
   };
 
   // Get chat request title - extract actual service types from ALL items
@@ -383,8 +393,11 @@ const MyActivityView = ({ user, initialFilter, onBack }) => {
     }
     data = data || {};
 
-    // For custom requests, use the provided name
-    if (request.type === 'custom_request') return data.name || 'Custom Request';
+    // First priority: Use name field if available (for support requests and custom requests)
+    if (data.name) return data.name;
+
+    // For custom requests, use fallback
+    if (request.type === 'custom_request') return 'Custom Request';
 
     // Extract items from various data structures
     const items = data.items || data.cart_items || [];
@@ -420,7 +433,11 @@ const MyActivityView = ({ user, initialFilter, onBack }) => {
       return label;
     }
 
-    // Fallback to request type
+    // Check if request.type has a label in serviceTypeLabels
+    const typeLabel = serviceTypeLabels[request.type];
+    if (typeLabel) return typeLabel;
+
+    // Fallback to formatted request type
     return request.type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Request';
   };
 

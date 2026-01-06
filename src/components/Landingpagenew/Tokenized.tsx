@@ -94,9 +94,10 @@ function Tokenized({ setCurrentPage }: TokenizedProps) {
       <section className="px-4 sm:px-8 py-12 sm:py-16 max-w-7xl mx-auto mb-6 sm:mb-8">
         <div className="text-center">
           <div className="mb-6">
-            <span className="bg-gray-900/80 backdrop-blur-sm text-white px-3 sm:px-4 py-2 rounded-full text-xs font-medium tracking-wide uppercase border border-gray-800">
-              Real World Asset Tokenization
-            </span>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100/60 backdrop-blur-sm rounded-full border border-gray-300/30">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-[10px] text-gray-600 font-medium tracking-wide uppercase">Real World Asset Tokenization</span>
+            </div>
           </div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light text-gray-900 mb-4 sm:mb-6 leading-tight tracking-tight">
             Tokenize the world of<br />
