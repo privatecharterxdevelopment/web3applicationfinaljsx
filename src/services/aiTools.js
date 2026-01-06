@@ -1305,7 +1305,8 @@ export async function searchPrivateJets(params) {
   let jetsWithPricing = results.aircraft || [];
 
   if (from && to) {
-    const flightHours = getEstimatedFlightHours(from, to);
+    // Use async version that can calculate distance via geocoding
+    const flightHours = await getEstimatedFlightHoursAsync(from, to);
 
     if (flightHours) {
       const hours = Math.floor(flightHours);
@@ -1427,8 +1428,8 @@ export async function searchHelicopters(params) {
   let helicoptersWithPricing = results.helicopters || [];
 
   if (from && to) {
-    // Helicopters are typically shorter range - use 150 kts average speed
-    const flightHours = getEstimatedFlightHours(from, to);
+    // Helicopters are typically shorter range - use 250 km/h average speed
+    const flightHours = await getEstimatedFlightHoursAsync(from, to, 250);
 
     if (flightHours) {
       // Calculate billed hours using 30-minute increments (minimum 30 minutes for helicopters)
@@ -2300,25 +2301,69 @@ const FLIGHT_DURATIONS = {
   'dubai-hong kong': 7.5,
   'hong kong-tokyo': 4.0,
   'singapore-tokyo': 7.0,
+  // US Domestic
+  'new york-houston': 3.5,
+  'new york-los angeles': 5.5,
+  'new york-miami': 3.0,
+  'new york-chicago': 2.5,
+  'new york-dallas': 3.5,
+  'new york-san francisco': 6.0,
+  'new york-las vegas': 5.0,
+  'new york-seattle': 5.5,
+  'new york-denver': 4.0,
+  'new york-atlanta': 2.5,
+  'new york-boston': 1.0,
+  'new york-washington': 1.0,
+  'los angeles-houston': 3.0,
+  'los angeles-miami': 5.0,
+  'los angeles-chicago': 4.0,
+  'los angeles-dallas': 3.0,
+  'los angeles-san francisco': 1.5,
+  'los angeles-las vegas': 1.0,
+  'los angeles-seattle': 2.5,
+  'los angeles-denver': 2.5,
+  'miami-houston': 2.5,
+  'miami-dallas': 3.0,
+  'miami-chicago': 3.0,
+  'miami-atlanta': 1.5,
+  'chicago-houston': 2.5,
+  'chicago-dallas': 2.5,
+  'chicago-denver': 2.5,
+  'chicago-las vegas': 3.5,
+  'dallas-houston': 1.0,
+  'dallas-denver': 2.0,
+  'dallas-las vegas': 2.5,
+  'houston-denver': 2.5,
+  'houston-las vegas': 3.0,
+  'houston-atlanta': 2.0,
+  // US to Europe
+  'new york-london': 7.5,
+  'new york-paris': 8.0,
+  'new york-zurich': 8.5,
+  'los angeles-london': 10.5,
+  'miami-london': 9.0,
+  // US to Middle East
+  'new york-dubai': 13.0,
+  'los angeles-dubai': 16.0,
 };
 
 /**
  * Get estimated flight duration between two cities
- * Uses FLIGHT_DURATIONS lookup table
+ * Uses FLIGHT_DURATIONS lookup table first, then calculates from coordinates
  */
-function getEstimatedFlightHours(from, to) {
+async function getEstimatedFlightHoursAsync(from, to, jetSpeed = 800) {
   if (!from || !to) return null;
 
   const fromCity = from.toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').replace(/airport/gi, '').trim();
   const toCity = to.toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').replace(/airport/gi, '').trim();
 
-  // Try both directions in FLIGHT_DURATIONS
+  // Try both directions in FLIGHT_DURATIONS (quick lookup)
   const routeKey1 = `${fromCity}-${toCity}`;
   const routeKey2 = `${toCity}-${fromCity}`;
 
   let hours = FLIGHT_DURATIONS[routeKey1] || FLIGHT_DURATIONS[routeKey2];
 
-  // Try partial matches
+  // Try partial matches in lookup table
   if (!hours) {
     for (const [route, h] of Object.entries(FLIGHT_DURATIONS)) {
       const [r1, r2] = route.split('-');
@@ -2327,7 +2372,65 @@ function getEstimatedFlightHours(from, to) {
         hours = h;
         break;
       }
-      // Also try reverse match
+      if ((fromCity.includes(r2) || r2.includes(fromCity)) &&
+          (toCity.includes(r1) || r1.includes(toCity))) {
+        hours = h;
+        break;
+      }
+    }
+  }
+
+  // If no lookup match, calculate from geocoded coordinates
+  if (!hours) {
+    try {
+      const [fromCoords, toCoords] = await Promise.all([
+        geocodeAddress(from),
+        geocodeAddress(to)
+      ]);
+
+      if (fromCoords && toCoords) {
+        // Calculate great circle distance in km
+        const R = 6371; // Earth's radius in km
+        const dLat = (toCoords.lat - fromCoords.lat) * Math.PI / 180;
+        const dLon = (toCoords.lng - fromCoords.lng) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(fromCoords.lat * Math.PI / 180) * Math.cos(toCoords.lat * Math.PI / 180) *
+          Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distanceKm = R * c;
+
+        // Calculate flight time: distance / speed + 0.5h for takeoff/landing
+        hours = (distanceKm / jetSpeed) + 0.5;
+        console.log(`✈️ Calculated flight: ${from} → ${to} = ${distanceKm.toFixed(0)}km, ${hours.toFixed(1)}h`);
+      }
+    } catch (error) {
+      console.error('Error calculating flight distance:', error);
+    }
+  }
+
+  return hours;
+}
+
+// Synchronous version for backwards compatibility (uses lookup only)
+function getEstimatedFlightHours(from, to) {
+  if (!from || !to) return null;
+
+  const fromCity = from.toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').replace(/airport/gi, '').trim();
+  const toCity = to.toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').replace(/airport/gi, '').trim();
+
+  const routeKey1 = `${fromCity}-${toCity}`;
+  const routeKey2 = `${toCity}-${fromCity}`;
+
+  let hours = FLIGHT_DURATIONS[routeKey1] || FLIGHT_DURATIONS[routeKey2];
+
+  if (!hours) {
+    for (const [route, h] of Object.entries(FLIGHT_DURATIONS)) {
+      const [r1, r2] = route.split('-');
+      if ((fromCity.includes(r1) || r1.includes(fromCity)) &&
+          (toCity.includes(r2) || r2.includes(toCity))) {
+        hours = h;
+        break;
+      }
       if ((fromCity.includes(r2) || r2.includes(fromCity)) &&
           (toCity.includes(r1) || r1.includes(toCity))) {
         hours = h;

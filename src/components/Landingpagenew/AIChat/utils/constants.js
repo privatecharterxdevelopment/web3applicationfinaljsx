@@ -9,6 +9,7 @@ export const MAX_CHATS_ELITE = Infinity;
 
 // Subscription tiers
 export const SUBSCRIPTION_TIERS = {
+  ESSENTIAL: 'essential',
   EXPLORER: 'explorer',
   TRAVELLER: 'traveller',
   ELITE: 'elite'
@@ -16,6 +17,7 @@ export const SUBSCRIPTION_TIERS = {
 
 // Tier pricing (USD)
 export const TIER_PRICING = {
+  [SUBSCRIPTION_TIERS.ESSENTIAL]: 19,
   [SUBSCRIPTION_TIERS.EXPLORER]: 99,
   [SUBSCRIPTION_TIERS.TRAVELLER]: 199,
   [SUBSCRIPTION_TIERS.ELITE]: 999
@@ -23,6 +25,20 @@ export const TIER_PRICING = {
 
 // Tier limits
 export const TIER_LIMITS = {
+  [SUBSCRIPTION_TIERS.ESSENTIAL]: {
+    chats: 10,
+    messagesPerChat: 5,
+    breakThePrice: false,
+    unlimitedMessages: false,
+    price: 19,
+    support: 'email',
+    aiModel: 'haiku',
+    features: [
+      'empty_legs',
+      'restaurants',
+      'jet_search'
+    ]
+  },
   [SUBSCRIPTION_TIERS.EXPLORER]: {
     chats: 5,
     messagesPerChat: 10,
@@ -362,11 +378,12 @@ export const normalizeTier = (tier) => {
 };
 
 /**
- * Get tier limits (with fallback to Explorer)
+ * Get tier limits (returns null if no valid tier)
  */
 export const getTierLimits = (tier) => {
   const normalized = normalizeTier(tier);
-  return TIER_LIMITS[normalized] || TIER_LIMITS[SUBSCRIPTION_TIERS.EXPLORER];
+  if (!normalized) return { chats: 0, messagesPerChat: 0, features: [], unlimitedMessages: false };
+  return TIER_LIMITS[normalized] || { chats: 0, messagesPerChat: 0, features: [], unlimitedMessages: false };
 };
 
 /**

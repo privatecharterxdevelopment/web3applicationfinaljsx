@@ -140,7 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser({
               ...profile,
               email_verified: session.user.email_confirmed_at !== null,
-              subscription_tier: userProfile?.subscription_tier || 'explorer',
+              subscription_tier: userProfile?.subscription_tier || null,
               chat_limit: userProfile?.chats_limit ?? 1,
               chats_used: userProfile?.chats_used || 0
             });
@@ -230,7 +230,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email_verified: profile.email_verified,
             user_role: profile.user_role || 'user',
             created_at: profile.created_at,
-            subscription_tier: userProfile?.subscription_tier || 'explorer',
+            subscription_tier: userProfile?.subscription_tier || null,
             chat_limit: userProfile?.chats_limit ?? 1,
             chats_used: userProfile?.chats_used || 0
           });
@@ -269,7 +269,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               const newProfile = payload.new as any;
               setUser(prev => prev ? {
                 ...prev,
-                subscription_tier: newProfile.subscription_tier || 'explorer',
+                subscription_tier: newProfile.subscription_tier || null,
                 chat_limit: newProfile.chats_limit ?? 1,
                 chats_used: newProfile.chats_used || 0
               } : null);
@@ -392,10 +392,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               country: '',
               postal_code: '',
               kyc_status: 'not_started',
-              // Subscription data (single source of truth)
-              subscription_tier: 'explorer',
-              subscription_status: 'active',
-              chats_limit: 1, // Free tier: 1 chat only
+              // Subscription data - NO FREE ACCESS, must subscribe
+              subscription_tier: null,
+              subscription_status: null,
+              chats_limit: 0,
               chats_used: 0
             }]);
 
@@ -479,7 +479,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('✅ Subscription refreshed:', userProfile.subscription_tier);
         setUser(prev => prev ? {
           ...prev,
-          subscription_tier: userProfile.subscription_tier || 'explorer',
+          subscription_tier: userProfile.subscription_tier || null,
           chat_limit: userProfile.chats_limit ?? 1,
           chats_used: userProfile.chats_used || 0
         } : null);

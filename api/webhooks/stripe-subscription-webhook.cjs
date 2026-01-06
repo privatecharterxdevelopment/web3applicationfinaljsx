@@ -148,7 +148,7 @@ async function handleSubscriptionUpdate(subscription) {
     return;
   }
 
-  const tier = metadata.tier || 'starter';
+  const tier = metadata.tier || 'explorer'; // Default to explorer if no tier specified
   const chatsLimit = TIER_CHAT_LIMITS[tier] ?? 5;
   const now = new Date();
   const periodEnd = new Date(subscription.current_period_end * 1000);
@@ -204,13 +204,13 @@ async function handleSubscriptionUpdate(subscription) {
 async function handleSubscriptionDeleted(subscription) {
   const now = new Date().toISOString();
 
-  // Downgrade to explorer tier
+  // Remove subscription access - user must resubscribe
   const { error } = await getSupabase()
     .from('user_profiles')
     .update({
-      subscription_tier: 'explorer',
+      subscription_tier: null,
       subscription_status: 'canceled',
-      chats_limit: 1,
+      chats_limit: 0,
       chats_reset_date: null,
       updated_at: now,
     })

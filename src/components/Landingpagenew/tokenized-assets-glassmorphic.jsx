@@ -3574,7 +3574,7 @@ const TokenizedAssetsGlassmorphic = () => {
     try {
       const profile = await subscriptionService.getUserProfile(user.id);
       const stats = await subscriptionService.getChatStats(user.id);
-      setSubscriptionTier(profile?.subscription_tier || 'explorer');
+      setSubscriptionTier(profile?.subscription_tier || null);
       setSubscriptionData({
         chatsUsed: stats?.chatsUsed || 0,
         chatsLimit: stats?.chatsLimit,

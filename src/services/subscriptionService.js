@@ -878,7 +878,7 @@ class SubscriptionService {
         this_month: thisMonth,
         last_month: lastMonth,
         total_transactions: transactions.length,
-        current_tier: profile?.subscription_tier || 'explorer',
+        current_tier: profile?.subscription_tier || 'none',
         member_since: transactions.length > 0
           ? transactions[transactions.length - 1].created_at
           : profile?.created_at

@@ -292,12 +292,11 @@ const AIChatNew = ({
   }, []);
 
   const getMessageLimit = useCallback(() => {
-    const tier = subscription.userProfile?.subscription_tier || 'explorer';
+    const tier = subscription.userProfile?.subscription_tier;
+    if (!tier) return { limit: 0, unlimited: false };
+    if (tier === 'elite') return { limit: Infinity, unlimited: true };
     const tierConfig = getTierLimits(tier);
-    if (hasUnlimitedAccess(tier)) {
-      return { limit: tierConfig.messagesPerChat || 100, unlimited: true };
-    }
-    return { limit: tierConfig.messagesPerChat || 10, unlimited: false };
+    return { limit: tierConfig.messagesPerChat || 10, unlimited: tier === 'elite' };
   }, [subscription.userProfile]);
 
   // ==================================
@@ -315,8 +314,8 @@ const AIChatNew = ({
 
   const handleSuggestionClick = useCallback((suggestion) => {
     // Check subscription requirement using centralized helper
-    const userTier = subscription.userProfile?.subscription_tier || 'explorer';
-    const hasRequired = checkTierAccess(userTier, suggestion.requiresSubscription);
+    const userTier = subscription.userProfile?.subscription_tier || null;
+    const hasRequired = userTier ? checkTierAccess(userTier, suggestion.requiresSubscription) : false;
 
     if (suggestion.requiresSubscription && !hasRequired && !isAdmin) {
       modals.setToast({
@@ -608,7 +607,7 @@ const AIChatNew = ({
   // ==================================
   if (chat.activeChat === 'new' || chat.activeChat === null) {
     const msgLimits = getMessageLimit();
-    const newChatDisplayTier = subscription.userProfile?.subscription_tier?.toLowerCase() || 'explorer';
+    const newChatDisplayTier = subscription.userProfile?.subscription_tier?.toLowerCase() || null;
 
     return (
       <div className="h-full bg-transparent flex flex-col overflow-hidden">
@@ -750,7 +749,7 @@ const AIChatNew = ({
                 {/* Quick Suggestion Bubbles - Glassmorphic style */}
                 <div className="flex flex-wrap gap-2 mt-2 px-2">
                   {QUICK_SUGGESTIONS.map((suggestion, index) => {
-                    const userTier = subscription.userProfile?.subscription_tier || 'explorer';
+                    const userTier = subscription.userProfile?.subscription_tier || null;
                     // Use centralized helper for tier access check
                     const hasRequired = checkTierAccess(userTier, suggestion.requiresSubscription);
                     const isLocked = suggestion.requiresSubscription && !hasRequired && !isAdmin;
@@ -989,7 +988,7 @@ const AIChatNew = ({
   // ACTIVE CHAT VIEW
   // ==================================
   const msgLimits = getMessageLimit();
-  const displayTier = subscription.userProfile?.subscription_tier?.toLowerCase() || 'explorer';
+  const displayTier = subscription.userProfile?.subscription_tier?.toLowerCase() || null;
   // Calculate actual message count from current chat (user messages only for limit tracking)
   const actualMessageCount = chat.messages?.filter(m => m.role === 'user').length || 0;
 

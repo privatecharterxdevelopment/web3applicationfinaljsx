@@ -1021,9 +1021,6 @@ function Homepage() {
                     <button onClick={() => navigate('/rwa-nft')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                       RWA NFT
                     </button>
-                    <button onClick={() => navigate('/helpdesk')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Helpdesk
-                    </button>
                   </div>
                 </div>
 

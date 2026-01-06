@@ -8014,17 +8014,29 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                                       <span>{item.speed_kts} kts</span>
                                     </div>
                                   )}
-                                  {(item.hourly_rate_usd || item.hourlyRate) && (
+                                  {/* Show estimated total price if route is known, otherwise hourly rate */}
+                                  {(item.estimatedPrice || item.estimated_price) ? (
+                                    <div className="flex items-center gap-1.5 col-span-2">
+                                      <span className="text-[10px] text-gray-400">💰</span>
+                                      <span className="font-medium text-gray-900">~${(item.estimatedPrice || item.estimated_price || 0).toLocaleString()} est.</span>
+                                    </div>
+                                  ) : (item.hourly_rate_usd || item.hourlyRate) ? (
                                     <div className="flex items-center gap-1.5">
                                       <span className="text-[10px] text-gray-400">💰</span>
                                       <span>${(item.hourly_rate_usd || item.hourlyRate || 0).toLocaleString()}/hr</span>
                                     </div>
-                                  )}
+                                  ) : null}
                                 </div>
+                                {/* Price calculation breakdown */}
+                                {item.priceCalculation && (item.estimatedPrice || item.estimated_price) && (
+                                  <p className="text-[10px] text-gray-400 pt-1">
+                                    {item.priceCalculation}
+                                  </p>
+                                )}
                                 {/* Custom request note */}
-                                {item.isEstimate && (
+                                {(item.isEstimate || item.estimatedPrice || item.estimated_price) && (
                                   <p className="text-[10px] text-gray-400 italic pt-2 border-t border-gray-100">
-                                    Price is estimated. Our team will confirm final pricing.
+                                    Estimated price. Final quote upon confirmation.
                                   </p>
                                 )}
                               </div>
