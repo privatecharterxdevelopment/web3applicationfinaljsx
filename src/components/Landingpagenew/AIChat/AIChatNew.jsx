@@ -818,12 +818,13 @@ const AIChatNew = ({
           </div>
         </div>
 
-        {/* Modals */}
+        {/* Unified Subscription Modal */}
         {modals.showSubscriptionModal && (
           <SubscriptionModal
             isOpen={modals.showSubscriptionModal}
             onClose={async () => {
               modals.setShowSubscriptionModal(false);
+              modals.setSubscriptionBlockerReason(null);
               // Refresh profile in case subscription was updated (webhook processed)
               if (user?.id) {
                 await subscription.loadUserProfile();
@@ -831,11 +832,12 @@ const AIChatNew = ({
             }}
             currentTier={subscription.userProfile?.subscription_tier || subscription.userSubscriptionLimits?.tier}
             onToast={({ message, type }) => modals.setToast({ message, type })}
+            blockerReason={modals.subscriptionBlockerReason}
           />
         )}
 
-        {/* Subscription Blocker Popup - Clean minimal design (for ALL subscription reasons including chat_limit) */}
-        {modals.showSubscriptionBlocker && (
+        {/* OLD Blocker - now disabled, uses SubscriptionModal instead */}
+        {false && modals.showSubscriptionBlocker && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
             {/* Backdrop */}
             <div
@@ -1330,6 +1332,7 @@ const AIChatNew = ({
           isOpen={modals.showSubscriptionModal}
           onClose={async () => {
             modals.setShowSubscriptionModal(false);
+            modals.setSubscriptionBlockerReason(null);
             // Refresh profile in case subscription was updated (webhook processed)
             if (user?.id) {
               await subscription.loadUserProfile();
@@ -1337,10 +1340,11 @@ const AIChatNew = ({
           }}
           currentTier={subscription.userProfile?.subscription_tier || subscription.userSubscriptionLimits?.tier}
           onToast={({ message, type }) => modals.setToast({ message, type })}
+          blockerReason={modals.subscriptionBlockerReason}
         />
       )}
-      {/* Subscription Blocker Popup - Clean minimal design (for ALL subscription reasons including chat_limit) */}
-      {modals.showSubscriptionBlocker && (
+      {/* OLD Blocker - now disabled, uses SubscriptionModal instead */}
+      {false && modals.showSubscriptionBlocker && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
           {/* Backdrop */}
           <div

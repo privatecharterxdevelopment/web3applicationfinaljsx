@@ -56,15 +56,17 @@ export const useModals = () => {
   const [showSubscriptionBlocker, _setShowSubscriptionBlocker] = useState(false);
   const [subscriptionBlockerReason, setSubscriptionBlockerReason] = useState('');
 
-  // Mutually exclusive: only one subscription popup at a time
+  // UNIFIED: All subscription popups use SubscriptionModal
   const setShowSubscriptionModal = useCallback((value) => {
-    if (value) _setShowSubscriptionBlocker(false);
     _setShowSubscriptionModal(value);
+    if (value) _setShowSubscriptionBlocker(false);
   }, []);
 
+  // Redirect blocker to unified modal
   const setShowSubscriptionBlocker = useCallback((value) => {
-    if (value) _setShowSubscriptionModal(false);
-    _setShowSubscriptionBlocker(value);
+    // Use the unified SubscriptionModal instead
+    _setShowSubscriptionModal(value);
+    _setShowSubscriptionBlocker(false); // Never show the old blocker
   }, []);
 
   // Cart Sidebar
