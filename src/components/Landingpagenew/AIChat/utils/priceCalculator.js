@@ -21,6 +21,41 @@ export function calculateDistance(from, to) {
 }
 
 /**
+ * Calculate billed hours using 30-minute increments
+ * @param {number} flightHours - Actual flight hours
+ * @param {number} minHours - Minimum billable hours (default 1)
+ * @returns {number} Billed hours rounded to 30-min increments
+ */
+export function calculateBilledHours(flightHours, minHours = 1) {
+  // Round up to nearest 30 minutes (0.5 hours)
+  const roundedHours = Math.ceil(flightHours * 2) / 2;
+  return Math.max(minHours, roundedHours);
+}
+
+/**
+ * Calculate estimated flight price based on route
+ * @param {Object} params - { origin, destination, hourlyRate, speed }
+ * @returns {Object} { distance, flightHours, billedHours, estimatedPrice }
+ */
+export function calculateFlightPrice({ origin, destination, hourlyRate, speed = 800 }) {
+  if (!origin?.lat || !destination?.lat || !hourlyRate) {
+    return { distance: 0, flightHours: 0, billedHours: 0, estimatedPrice: 0 };
+  }
+
+  const distance = calculateDistance(origin, destination);
+  const flightHours = distance / speed;
+  const billedHours = calculateBilledHours(flightHours);
+  const estimatedPrice = Math.round(billedHours * hourlyRate);
+
+  return {
+    distance: Math.round(distance),
+    flightHours: Math.round(flightHours * 10) / 10,
+    billedHours,
+    estimatedPrice
+  };
+}
+
+/**
  * Calculate item price with estimated flight time for jets/helicopters
  * @param {Object} item - Cart item
  * @returns {number} Calculated price

@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { SphereAI } from '../lib/openAI';
+import { calculateFlightPrice, calculateBilledHours } from '../components/Landingpagenew/AIChat/utils/priceCalculator';
 
 /**
  * Service for handling intelligent travel search with AI parsing and Supabase queries
@@ -453,13 +454,39 @@ export class TravelSearchService {
       }
 
       // Filter by availability
-  // Availability may be stored as availability or is_available; if neither exists, this will be ignored by Supabase
-  query = query.or('availability.eq.true,is_available.eq.true');
+      // Availability may be stored as availability or is_available; if neither exists, this will be ignored by Supabase
+      query = query.or('availability.eq.true,is_available.eq.true');
 
       const { data, error } = await query.limit(20);
 
       if (error) throw error;
-      return data || [];
+
+      // If we have origin and destination coordinates, calculate estimated prices
+      const jets = data || [];
+      if (intent.origin_coords && intent.destination_coords) {
+        return jets.map(jet => {
+          const hourlyRate = jet.hourly_rate || jet.price_per_hour || jet.hourly_rate_eur || 0;
+          const speed = jet.speed_kmh || jet.cruise_speed || 800; // Default 800 km/h for jets
+
+          const priceInfo = calculateFlightPrice({
+            origin: intent.origin_coords,
+            destination: intent.destination_coords,
+            hourlyRate,
+            speed
+          });
+
+          return {
+            ...jet,
+            estimated_price: priceInfo.estimatedPrice,
+            estimated_flight_hours: priceInfo.billedHours,
+            flight_distance_km: priceInfo.distance,
+            route_origin: intent.origin || intent.from_city,
+            route_destination: intent.destination || intent.to_city
+          };
+        });
+      }
+
+      return jets;
     } catch (error) {
       console.error('Jets query error:', error);
       return [];

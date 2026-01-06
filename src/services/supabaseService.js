@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { calculateFlightPrice } from '../components/Landingpagenew/AIChat/utils/priceCalculator';
 
 // Normalize images that might be stored as array, JSON object, or single string
 export const ImageUtils = {
@@ -365,7 +366,7 @@ function mapTokenizationService(service) {
 }
 
 export const UnifiedSearchService = {
-  async searchAll({ passengers, location, fromLocation, toLocation, country, dateFrom, dateTo, q, serviceTypes, aircraftModel, category } = {}) {
+  async searchAll({ passengers, location, fromLocation, toLocation, country, dateFrom, dateTo, q, serviceTypes, aircraftModel, category, originCoords, destinationCoords } = {}) {
     try {
       const today = new Date().toISOString().split('T')[0];
 
@@ -522,7 +523,30 @@ export const UnifiedSearchService = {
       if (groundTransportRes.error) console.error('Supabase taxi_cars (ground transport) error:', groundTransportRes.error);
       if (adventuresRes.error) console.error('Supabase fixed_offers (adventures) error:', adventuresRes.error);
 
-      const aircraft = (jetsRes.data || []).map(mapJetToAircraft);
+      // Map jets and calculate estimated prices if route coordinates are available
+      let aircraft = (jetsRes.data || []).map(mapJetToAircraft);
+
+      // If origin and destination coordinates are provided, calculate estimated prices
+      if (originCoords && destinationCoords) {
+        aircraft = aircraft.map(jet => {
+          const hourlyRate = jet.hourly_rate || jet.price_per_hour || jet.hourly_rate_eur || 0;
+          const speed = jet.speed_kmh || jet.cruise_speed || 800; // Default 800 km/h for jets
+
+          const priceInfo = calculateFlightPrice({
+            origin: originCoords,
+            destination: destinationCoords,
+            hourlyRate,
+            speed
+          });
+
+          return {
+            ...jet,
+            estimated_price: priceInfo.estimatedPrice,
+            estimated_flight_hours: priceInfo.billedHours,
+            flight_distance_km: priceInfo.distance
+          };
+        });
+      }
 
       // Empty legs - fetch all and filter client-side by from/to location, country, IATA, date
       let emptyLegs = (emptyLegsRes.data || []).map(mapEmptyLeg);

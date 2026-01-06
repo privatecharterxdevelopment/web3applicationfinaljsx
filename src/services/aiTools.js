@@ -4,6 +4,7 @@
  */
 
 import { UnifiedSearchService } from './supabaseService';
+import { calculateBilledHours } from '../components/Landingpagenew/AIChat/utils/priceCalculator';
 import { hotelService } from './hotelService';
 import { supabase } from '../lib/supabase';
 
@@ -1314,8 +1315,15 @@ export async function searchPrivateJets(params) {
       // Attach route info and calculated price to each jet
       jetsWithPricing = jetsWithPricing.map(jet => {
         const hourlyRate = jet.hourly_rate_eur || 0;
-        // Calculate price based on actual flight time (e.g., 1.5h × €9,000 = €13,500)
-        const estimatedPrice = Math.round(flightHours * hourlyRate);
+        // Calculate billed hours using 30-minute increments (minimum 1 hour)
+        const billedHours = calculateBilledHours(flightHours, 1);
+        // Calculate price based on billed hours
+        const estimatedPrice = Math.round(billedHours * hourlyRate);
+
+        // Format billed hours for display
+        const billedHrs = Math.floor(billedHours);
+        const billedMins = Math.round((billedHours - billedHrs) * 60);
+        const billedStr = billedMins > 0 ? `${billedHrs}h ${billedMins}m` : `${billedHrs}h`;
 
         return {
           ...jet,
@@ -1327,13 +1335,13 @@ export async function searchPrivateJets(params) {
           route: `${from} → ${to}`,
           // Flight calculation
           flightHours: flightHours,
-          billedHours: flightHours, // Use actual hours, not rounded
+          billedHours: billedHours, // 30-min increments
           estimatedDuration: durationStr,
           flightDistance: Math.round(flightHours * (jet.speed_kts || 450)), // Approx distance in nm
           // Price calculation
           estimatedPrice: estimatedPrice,
           price: estimatedPrice,
-          priceCalculation: hourlyRate ? `${durationStr} × €${hourlyRate.toLocaleString()}/hr` : null,
+          priceCalculation: hourlyRate ? `${billedStr} × €${hourlyRate.toLocaleString()}/hr` : null,
           isEstimate: true
         };
       });
@@ -1423,16 +1431,21 @@ export async function searchHelicopters(params) {
     const flightHours = getEstimatedFlightHours(from, to);
 
     if (flightHours) {
-      // Helicopters often have minimum 30min billing, but calculate actual time
-      const actualHours = Math.max(0.5, flightHours); // Minimum 30 minutes
+      // Calculate billed hours using 30-minute increments (minimum 30 minutes for helicopters)
+      const billedHours = calculateBilledHours(flightHours, 0.5);
       const hours = Math.floor(flightHours);
       const minutes = Math.round((flightHours - hours) * 60);
       const durationStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 
       helicoptersWithPricing = helicoptersWithPricing.map(heli => {
         const hourlyRate = heli.hourly_rate_eur || heli.price || 0;
-        // Calculate price based on actual flight time
-        const estimatedPrice = Math.round(actualHours * hourlyRate);
+        // Calculate price based on billed hours (30-min increments)
+        const estimatedPrice = Math.round(billedHours * hourlyRate);
+
+        // Format billed hours for display
+        const billedHrs = Math.floor(billedHours);
+        const billedMins = Math.round((billedHours - billedHrs) * 60);
+        const billedStr = billedMins > 0 ? `${billedHrs}h ${billedMins}m` : `${billedHrs}h`;
 
         return {
           ...heli,
@@ -1442,12 +1455,12 @@ export async function searchHelicopters(params) {
           to_city: to,
           route: `${from} → ${to}`,
           flightHours: flightHours,
-          billedHours: actualHours,
+          billedHours: billedHours,
           estimatedDuration: durationStr,
           flightDistance: Math.round(flightHours * (heli.speed_kts || 150)),
           estimatedPrice: estimatedPrice,
           price: estimatedPrice,
-          priceCalculation: hourlyRate ? `${durationStr} × €${hourlyRate.toLocaleString()}/hr` : null,
+          priceCalculation: hourlyRate ? `${billedStr} × €${hourlyRate.toLocaleString()}/hr` : null,
           isEstimate: true
         };
       });
