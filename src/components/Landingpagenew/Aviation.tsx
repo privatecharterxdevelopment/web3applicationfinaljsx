@@ -38,45 +38,59 @@ function Aviation({ setCurrentPage }: AviationProps) {
     <div className="min-h-screen bg-gray-100 px-4 py-4">
       <LandingHeader />
 
-      {/* Hero Section with Background Image - Shorter Height */}
-      <section className="relative px-4 sm:px-8 py-12 sm:py-16 max-w-7xl mx-auto rounded-2xl overflow-hidden mb-6 sm:mb-8" style={{
-        backgroundImage: 'url(https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/Privatecharterx_clouds.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
-      }}>
-        {/* Dark overlay for text readability */}
-        <div className="absolute inset-0 bg-black/30 rounded-2xl"></div>
+      {/* Hero Section with Background Video - Shorter Height */}
+      <section
+        className="relative px-4 sm:px-8 py-12 sm:py-16 max-w-7xl mx-auto rounded-2xl overflow-hidden mb-6 sm:mb-8"
+        style={{
+          backgroundImage: 'url(https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/Privatecharterx_clouds.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      >
+        {/* Background Video */}
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          className="absolute inset-0 w-full h-full object-cover rounded-2xl"
+          poster="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/Privatecharterx_clouds.png"
+        >
+          <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/moreVideos/clouds_video_privatecharterx.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zL2Nsb3Vkc192aWRlb19wcml2YXRlY2hhcnRlcngubXA0IiwiaWF0IjoxNzY3Njk2NDc5LCJleHAiOjIwMjQwMzA2MDQ1Mjc5fQ.DIWb_2kg54Glb-qyH8S9FYQ9GsXx-mhk1TcpfLZbMx0" type="video/mp4" />
+        </video>
+        {/* Light overlay for text readability */}
+        <div className="absolute inset-0 bg-gray-100/60 rounded-2xl"></div>
 
         <div className="relative z-10 text-center text-white">
           <div className="mb-6">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-full border border-white/30">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/40 backdrop-blur-sm rounded-full border border-white/50">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-[10px] text-white font-medium tracking-wide uppercase">Access to 16,000+ Jets Worldwide</span>
+              <span className="text-[10px] text-gray-800 font-medium tracking-wide uppercase">Access to 16,000+ Jets Worldwide</span>
             </div>
           </div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light text-white mb-4 sm:mb-6 leading-tight tracking-tight">
-            Reinventing private aviation<br />
-            <span className="text-gray-900">Blockchain-Powered travel</span>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light mb-4 sm:mb-6 leading-tight tracking-tight">
+            <span className="text-gray-900">Reinventing private aviation</span><br />
+            <span className="text-gray-600">Blockchain-Powered travel</span>
           </h1>
-          <p className="text-sm sm:text-base lg:text-lg text-gray-200 mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed px-4">
+          <p className="text-sm sm:text-base lg:text-lg text-gray-700 mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed px-4">
             Experience the future of private aviation with transparent pricing, sustainable flight certificates,
             and 24/7 blockchain-integrated service.
           </p>
 
           {/* Key Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8 max-w-4xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <div className="text-xl sm:text-2xl font-light mb-1">16,000+</div>
-              <p className="text-xs sm:text-sm text-gray-300">Global Aircraft Fleet</p>
+            <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/60">
+              <div className="text-xl sm:text-2xl font-light mb-1 text-gray-900">16,000+</div>
+              <p className="text-xs sm:text-sm text-gray-600">Global Aircraft Fleet</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <div className="text-2xl font-light mb-1">24/7</div>
-              <p className="text-sm text-gray-300">Concierge Service</p>
+            <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/60">
+              <div className="text-2xl font-light mb-1 text-gray-900">24/7</div>
+              <p className="text-sm text-gray-600">Concierge Service</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <div className="text-2xl font-light mb-1">100%</div>
-              <p className="text-sm text-gray-300">Blockchain Verified</p>
+            <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/60">
+              <div className="text-2xl font-light mb-1 text-gray-900">100%</div>
+              <p className="text-sm text-gray-600">Blockchain Verified</p>
             </div>
           </div>
 
@@ -84,13 +98,13 @@ function Aviation({ setCurrentPage }: AviationProps) {
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
             <button
               onClick={() => navigate('/dashboard/chat?newChat=true')}
-              className="bg-white text-gray-900 px-6 sm:px-8 py-2.5 sm:py-3 rounded-md text-sm hover:bg-gray-100 transition-colors font-medium"
+              className="bg-gray-900 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-md text-sm hover:bg-gray-800 transition-colors font-medium"
             >
               Book Your Flight
             </button>
             <button
               onClick={() => navigate('/dashboard/empty-legs')}
-              className="border border-white/30 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-md text-sm hover:bg-white/10 transition-colors backdrop-blur-sm"
+              className="border border-gray-400 text-gray-800 px-6 sm:px-8 py-2.5 sm:py-3 rounded-md text-sm hover:bg-white/40 transition-colors backdrop-blur-sm"
             >
               Explore Empty Legs
             </button>

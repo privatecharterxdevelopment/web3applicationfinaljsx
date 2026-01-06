@@ -204,7 +204,7 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
       <section className="max-w-7xl mx-auto rounded-2xl overflow-hidden relative min-h-[85vh]">
         {/* Background Globe - Full Color - Centered */}
         <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden">
-          <div className="w-full h-full">
+          <div className="w-full h-full scale-[0.65] sm:scale-75 md:scale-100 origin-center">
             <Globe3D />
           </div>
         </div>
