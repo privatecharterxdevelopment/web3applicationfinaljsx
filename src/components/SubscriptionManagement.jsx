@@ -115,6 +115,7 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
 
   const getTierDisplayName = (tier) => {
     const names = {
+      essential: 'Essential',
       explorer: 'Explorer',
       traveller: 'Traveller',
       elite: 'Elite Club'
@@ -138,6 +139,13 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
 
   const getPlanFeatures = (tier) => {
     const features = {
+      essential: {
+        chats: '10/month',
+        messages: '5/chat',
+        support: 'Email',
+        concierge: 'No',
+        highlights: ['Empty Legs', 'Restaurant Search', 'Jet Search']
+      },
       explorer: {
         chats: '5/month',
         messages: '10/chat',

@@ -889,6 +889,7 @@ const AIChatNew = ({
               <div className="px-5 pb-4">
                 <div className="flex gap-2">
                   {[
+                    { id: 'essential', tier: 'Essential', price: 19, chats: '10 chats' },
                     { id: 'explorer', tier: 'Explorer', price: 99, chats: '5 chats' },
                     { id: 'traveller', tier: 'Traveller', price: 199, chats: '10 chats', popular: true },
                     { id: 'elite', tier: 'Elite', price: 999, chats: 'Unlimited' }
@@ -1393,6 +1394,7 @@ const AIChatNew = ({
             <div className="px-5 pb-4">
               <div className="flex gap-2">
                 {[
+                  { id: 'essential', tier: 'Essential', price: 19, chats: '10 chats' },
                   { id: 'explorer', tier: 'Explorer', price: 99, chats: '5 chats' },
                   { id: 'traveller', tier: 'Traveller', price: 199, chats: '10 chats', popular: true },
                   { id: 'elite', tier: 'Elite', price: 999, chats: 'Unlimited' }
