@@ -78,6 +78,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         console.log('🔄 Initializing AuthContext...');
 
+        // Check for OAuth code in URL and exchange it first
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+
+        if (code) {
+          console.log('🔑 Found OAuth code in URL, exchanging...');
+          try {
+            const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+            if (exchangeError) {
+              console.error('❌ Code exchange failed:', exchangeError);
+            } else {
+              console.log('✅ Code exchanged successfully');
+              // Clear the code from URL without reload
+              const newUrl = window.location.pathname + window.location.hash;
+              window.history.replaceState({}, '', newUrl);
+            }
+          } catch (exchangeErr) {
+            console.error('❌ Code exchange error:', exchangeErr);
+          }
+        }
+
         // Get current session
         const { data: { session }, error } = await supabase.auth.getSession();
 
