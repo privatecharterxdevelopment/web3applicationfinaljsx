@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { ensureUserProfile } from '../utils/profileUtils';
+import { handleOAuthUser } from '../utils/oauthUserHandler';
 
 interface User {
   id: string;
@@ -106,11 +107,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           if (profileError) {
             console.error('❌ Error loading profile (non-blocking):', profileError.message || 'timeout');
+            // Extract name from Google OAuth metadata (full_name or name)
+            const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
+            const firstName = session.user.user_metadata?.given_name || fullName.split(' ')[0] || '';
+            const lastName = session.user.user_metadata?.family_name || fullName.split(' ').slice(1).join(' ') || '';
+
             setUser({
               id: session.user.id,
               email: session.user.email || '',
-              first_name: session.user.user_metadata?.first_name,
-              last_name: session.user.user_metadata?.last_name,
+              first_name: firstName,
+              last_name: lastName,
               email_verified: session.user.email_confirmed_at !== null,
               user_role: session.user.user_metadata?.role || 'user',
               created_at: session.user.created_at
@@ -146,11 +152,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
           } else {
             console.log('⚠️ No profile found, using auth data');
+            // Extract name from Google OAuth metadata (full_name or name)
+            const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
+            const firstName = session.user.user_metadata?.given_name || fullName.split(' ')[0] || '';
+            const lastName = session.user.user_metadata?.family_name || fullName.split(' ').slice(1).join(' ') || '';
+
             setUser({
               id: session.user.id,
               email: session.user.email || '',
-              first_name: session.user.user_metadata?.first_name,
-              last_name: session.user.user_metadata?.last_name,
+              first_name: firstName,
+              last_name: lastName,
               email_verified: session.user.email_confirmed_at !== null,
               user_role: session.user.user_metadata?.role || 'user',
               created_at: session.user.created_at
@@ -190,6 +201,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('🔄 Auth state changed:', event, session?.user?.email);
 
       if (event === 'SIGNED_IN' && session?.user) {
+        // Check if this is an OAuth login (Google, Apple, etc.)
+        const provider = session.user.app_metadata?.provider;
+        const isOAuthLogin = provider && provider !== 'email';
+
+        if (isOAuthLogin) {
+          console.log('🔑 OAuth login detected, provider:', provider);
+          // Handle OAuth user - ensure they have entries in users and user_profiles tables
+          await handleOAuthUser(
+            session.user.id,
+            session.user.email || '',
+            session.user.user_metadata || {}
+          );
+        }
+
         // Get user profile data WITH 2-SECOND TIMEOUT
         const queryPromise = supabase
           .from('users')
@@ -206,11 +231,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           timeoutPromise
         ]) as any;
 
-        if (profileError) {
-          console.log('No profile found in users table, using basic user data');
+        // Extract name from Google metadata as fallback
+        const fullName = session.user.user_metadata?.full_name ||
+                        session.user.user_metadata?.name ||
+                        '';
+        const metaFirstName = session.user.user_metadata?.given_name ||
+                             fullName.split(' ')[0] ||
+                             '';
+        const metaLastName = session.user.user_metadata?.family_name ||
+                            fullName.split(' ').slice(1).join(' ') ||
+                            '';
+
+        if (profileError || !profile) {
           setUser({
             id: session.user.id,
             email: session.user.email || '',
+            first_name: metaFirstName || 'User',
+            last_name: metaLastName || '',
             email_verified: session.user.email_confirmed_at !== null,
             user_role: session.user.user_metadata?.role || 'user'
           });
@@ -225,8 +262,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser({
             id: profile.id,
             email: profile.email,
-            first_name: profile.first_name,
-            last_name: profile.last_name,
+            first_name: profile.first_name || metaFirstName,
+            last_name: profile.last_name || metaLastName,
             email_verified: profile.email_verified,
             user_role: profile.user_role || 'user',
             created_at: profile.created_at,
