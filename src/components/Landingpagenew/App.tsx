@@ -89,6 +89,9 @@ import TravelDesignerPage from '../../components/TravelDesigner.tsx';
 // Import TokenSwap page
 import TokenSwapPage from './TokenSwapPage';
 
+// Import CryptoFund page
+import CryptoFund from '../../pages/CryptoFund';
+
 // Import Landing Page Components
 import Homepage from './Homepage_new';
 import Services from './Services';
@@ -384,6 +387,7 @@ function AppContent() {
               <Route path="/rwa-nft" element={<RWANFT setCurrentPage={() => {}} />} />
               <Route path="/helpdesk" element={<Helpdesk setCurrentPage={() => {}} />} />
               <Route path="/tokenswap" element={<TokenSwapPage />} />
+              <Route path="/crypto-fund" element={<CryptoFund />} />
 
               {/* ===== LEGAL PAGES ===== */}
               <Route path="/terms" element={<TermsConditions />} />

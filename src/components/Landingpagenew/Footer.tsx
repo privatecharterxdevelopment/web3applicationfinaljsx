@@ -137,6 +137,9 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 <button onClick={() => handleNavigate('/aviation')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
                   Aviation
                 </button>
+                <button onClick={() => handleNavigate('/crypto-fund')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
+                  Crypto Fund
+                </button>
                 <button onClick={() => handleNavigate('/tokenized')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left font-light">
                   RWA Tokenization
                 </button>

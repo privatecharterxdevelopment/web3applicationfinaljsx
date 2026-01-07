@@ -109,6 +109,7 @@ export default function Footer() {
                 <h3 className="text-xs font-medium text-gray-900 uppercase tracking-wider mb-4">Partners & Press</h3>
                 <ul className="space-y-2">
                   <li><button onClick={handleDashboardLink} className="text-sm text-gray-600 hover:text-gray-900 transition-colors font-light text-left">Partner With Us</button></li>
+                  <li><Link to="/crypto-fund" className="text-sm text-gray-600 hover:text-gray-900 transition-colors font-light">Crypto Fund</Link></li>
                   <li><button onClick={handleDashboardLink} className="text-sm text-gray-600 hover:text-gray-900 transition-colors font-light text-left">Blog Posts</button></li>
                   <li><a href="https://privatecharterx.blog" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-600 hover:text-gray-900 transition-colors font-light">Press Center</a></li>
                 </ul>
