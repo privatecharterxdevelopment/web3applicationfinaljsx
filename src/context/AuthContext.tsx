@@ -51,15 +51,16 @@ export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     // Return default values instead of null to prevent destructuring errors
+    // initializing: false so components don't get stuck waiting
     return {
       user: null,
       isAuthenticated: false,
       isAdmin: false,
-      initializing: true,
-      signIn: async () => { throw new Error('AuthContext not available'); },
-      signUp: async () => { throw new Error('AuthContext not available'); },
-      signOut: async () => { throw new Error('AuthContext not available'); },
-      refreshSubscription: async () => { throw new Error('AuthContext not available'); }
+      initializing: false,
+      signIn: async () => { console.warn('AuthContext not available'); },
+      signUp: async () => { console.warn('AuthContext not available'); },
+      signOut: async () => { console.warn('AuthContext not available'); },
+      refreshSubscription: async () => { console.warn('AuthContext not available'); }
     } as AuthContextType;
   }
   return context;
