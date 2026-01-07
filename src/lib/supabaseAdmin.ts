@@ -9,9 +9,11 @@ if (!supabaseUrl) {
 }
 
 // Admin client bypasses RLS - use only for admin operations
+// NOTE: Using separate storage key to avoid "Multiple GoTrueClient" warning
 export const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
+    persistSession: false,
+    storageKey: 'sb-admin-auth-token' // Separate storage to avoid conflict with main client
   }
 });

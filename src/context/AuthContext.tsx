@@ -78,26 +78,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         console.log('🔄 Initializing AuthContext...');
 
-        // Check for OAuth code in URL and exchange it first
+        // Check for OAuth code in URL
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
 
         if (code) {
-          console.log('🔑 Found OAuth code in URL, exchanging...');
-          try {
-            const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          console.log('🔑 OAuth code detected in URL, exchanging for session...');
 
-            if (exchangeError) {
-              console.error('❌ Code exchange failed:', exchangeError);
-            } else {
-              console.log('✅ Code exchanged successfully');
-              // Clear the code from URL without reload
-              const newUrl = window.location.pathname + window.location.hash;
-              window.history.replaceState({}, '', newUrl);
+          // Exchange the code for a session explicitly
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+          if (exchangeError) {
+            console.error('❌ Code exchange failed:', exchangeError.message);
+            // Check if it's a PKCE verifier issue
+            if (exchangeError.message.includes('code verifier')) {
+              console.error('💡 PKCE code verifier missing - this happens when the OAuth was started from a different domain or browser session');
             }
-          } catch (exchangeErr) {
-            console.error('❌ Code exchange error:', exchangeErr);
+          } else if (data.session) {
+            console.log('✅ Code exchanged successfully, session established for:', data.session.user?.email);
           }
+
+          // Clean up URL regardless of success/failure
+          const newUrl = window.location.pathname + window.location.hash;
+          window.history.replaceState({}, '', newUrl);
         }
 
         // Get current session
