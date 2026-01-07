@@ -1323,19 +1323,8 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
         
         const userServiceRequests = serviceRequests || [];
 
-        // Fetch CO2 certificate requests
-        const { data: co2Requests, error: co2Error } = await supabase
-          .from('co2_certificate_requests')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (co2Error) {
-          console.error('Error loading CO2 certificate requests:', co2Error);
-          setCo2CertificateRequests([]);
-        } else {
-          setCo2CertificateRequests(co2Requests || []);
-        }
+        // CO2 certificate requests disabled - feature removed from dashboard
+        // setCo2CertificateRequests([]);
 
         // Transform and combine all types
         const unifiedRequests: UnifiedRequest[] = [];
@@ -1429,59 +1418,8 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
     loadAllRequests();
   }, []);
 
-  // Debug CO2 certificate requests data structure
-  useEffect(() => {
-    if (co2CertificateRequests.length > 0) {
-      console.log('🌱 CO2 Certificate Requests Debug:', {
-        count: co2CertificateRequests.length,
-        firstRequest: co2CertificateRequests[0],
-        allFields: Object.keys(co2CertificateRequests[0] || {})
-      });
-    }
-  }, [co2CertificateRequests]);
-
+  // CO2 stats - disabled to reduce API calls (CO2 feature removed from dashboard)
   const [co2Stats, setCo2Stats] = useState<UserCO2Stats | null>(null);
-
-  // Load CO2 stats
-  useEffect(() => {
-    const loadCO2Stats = async () => {
-      if (!user?.id) return;
-
-      try {
-        const { data: co2Requests } = await supabase
-          .from('co2_certificate_requests')
-          .select('status, total_emissions_kg, total_cost, created_at')
-          .eq('user_id', user.id);
-
-        if (co2Requests) {
-          const totalRequests = co2Requests.length;
-          const pendingRequests = co2Requests.filter(r => r.status === 'pending').length;
-          const completedCertificates = co2Requests.filter(r => r.status === 'completed' || r.status === 'delivered').length;
-          const totalCO2OffsetKg = co2Requests.reduce((sum, r) => sum + (r.total_emissions_kg || 0), 0);
-          const totalSpent = co2Requests.reduce((sum, r) => sum + (r.total_cost || 0), 0);
-          const totalTreesEquivalent = Math.round(totalCO2OffsetKg / 22); // Approximate: 22kg CO2 per tree
-
-          setCo2Stats({
-            id: user.id,
-            user_id: user.id,
-            total_requests: totalRequests,
-            pending_requests: pendingRequests,
-            completed_certificates: completedCertificates,
-            total_co2_offset_kg: totalCO2OffsetKg,
-            total_trees_equivalent: totalTreesEquivalent,
-            total_spent: totalSpent,
-            last_request_date: co2Requests.length > 0 ? co2Requests[0].created_at : undefined,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-        }
-      } catch (error) {
-        console.error('Error loading CO2 stats:', error);
-      }
-    };
-
-    loadCO2Stats();
-  }, [user?.id]);
 
   const [userStats, setUserStats] = useState({
     totalRequests: 0,
@@ -1514,30 +1452,37 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
   const [userProfileData, setUserProfileData] = useState<{ phone?: string; avatar_url?: string } | null>(null);
 
   // Check if user needs to complete profile (no phone number)
+  // CONSOLIDATED: Fetch profile data (phone, avatar, KYC status) in ONE query
   useEffect(() => {
-    const checkProfileComplete = async () => {
+    const fetchProfileData = async () => {
       if (!user?.id) return;
 
-      // Check if user already saved phone in this session
-      const alreadySaved = localStorage.getItem(`profile_phone_saved_${user.id}`);
-      if (alreadySaved === 'true') {
-        console.log('Phone already saved, skipping profile complete modal');
-        return;
-      }
-
       try {
+        // Single query for all profile data needed
         const { data: profile, error } = await supabase
           .from('user_profiles')
-          .select('phone, avatar_url')
+          .select('phone, avatar_url, kyc_status')
           .eq('user_id', user.id)
           .maybeSingle();
 
         if (error) {
-          console.error('Error checking profile:', error);
+          console.error('Error fetching profile:', error);
           return;
         }
 
+        // Set KYC status
+        if (profile?.kyc_status) {
+          setKycStatus(profile.kyc_status as 'not_started' | 'pending' | 'verified');
+        }
+
+        // Set profile data for modal
         setUserProfileData(profile);
+
+        // Check if phone is already saved
+        const alreadySaved = localStorage.getItem(`profile_phone_saved_${user.id}`);
+        if (alreadySaved === 'true') {
+          return;
+        }
 
         // If user already has phone, mark as saved and skip
         if (profile?.phone && profile.phone.trim() !== '') {
@@ -1556,34 +1501,11 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
           setShowProfileCompleteModal(true);
         }
       } catch (error) {
-        console.error('Error in checkProfileComplete:', error);
+        console.error('Error in fetchProfileData:', error);
       }
     };
 
-    checkProfileComplete();
-  }, [user?.id]);
-
-  // Fetch KYC status on component mount
-  useEffect(() => {
-    const fetchKycStatus = async () => {
-      if (!user?.id) return;
-
-      try {
-        const { data: profile, error } = await supabase
-          .from('user_profiles')
-          .select('kyc_status')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (!error && profile?.kyc_status) {
-          setKycStatus(profile.kyc_status as 'not_started' | 'pending' | 'verified');
-        }
-      } catch (error) {
-        console.error('Error fetching KYC status:', error);
-      }
-    };
-
-    fetchKycStatus();
+    fetchProfileData();
   }, [user?.id]);
 
   // Fetch wallet assets when wallet is connected
@@ -1837,7 +1759,8 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
       { id: 'transactions', label: 'Transactions', icon: CreditCard },
       { id: 'wallet', label: 'Wallet & NFTs', icon: Wallet, badge: walletAssets.nfts.length },
     ] : []),
-    { id: 'co2-certificates', label: 'CO2 Certificates', icon: Leaf, badge: co2Stats?.total_requests || 0 },
+    // CO2 Certificates removed from dashboard
+    // { id: 'co2-certificates', label: 'CO2 Certificates', icon: Leaf, badge: co2Stats?.total_requests || 0 },
     { id: 'chat-support', label: 'Chat Support', icon: MessageCircle },
     { id: 'kyc', label: 'KYC Verification', icon: Shield, badge: kycStatus === 'not_started' ? 1 : undefined },
     { id: 'profiles', label: 'Profile Settings', icon: User }
