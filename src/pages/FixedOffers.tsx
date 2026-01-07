@@ -3,7 +3,6 @@ import { MapPin, Calendar, Users, Clock, Info, X, ExternalLink, Search, Send, Pl
 import { useAuth } from '../context/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { createClient } from '@supabase/supabase-js';
 import { createRequest } from '../services/requests';
 import { supabase } from '../lib/supabase';
 import { airportsStaticService } from '../services/airportsStaticService';

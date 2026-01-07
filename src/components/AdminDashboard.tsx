@@ -3,13 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Users, FileText, Calendar, Package, Plane, Gift, Wallet, Search, Sparkles } from "lucide-react";
 
-// Supabase client
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+// Use shared Supabase client
+import { supabase } from "../lib/supabase";
 
 const navItems = [
   { id: "users", label: "Users", icon: Users },
