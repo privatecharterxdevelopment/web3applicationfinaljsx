@@ -79,6 +79,7 @@ import { getAirportByCode, getRouteCoordinates, calculateDistance } from '../uti
 import RoutePreviewMap from './RoutePreviewMap';
 import ProfileSettings from './ProfileSettings';
 import ReferralPage from './Landingpagenew/ReferralPage';
+import ProfileCompleteModal from './ProfileCompleteModal';
 import { useAccount, useDisconnect } from 'wagmi';
 
 // Global declarations
@@ -1507,6 +1508,60 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
   // KYC States
   const [kycStatus, setKycStatus] = useState<'not_started' | 'pending' | 'verified'>('not_started');
   const [showKycForm, setShowKycForm] = useState(false);
+
+  // Profile Complete Modal (for Google OAuth users without phone)
+  const [showProfileCompleteModal, setShowProfileCompleteModal] = useState(false);
+  const [userProfileData, setUserProfileData] = useState<{ phone?: string; avatar_url?: string } | null>(null);
+
+  // Check if user needs to complete profile (no phone number)
+  useEffect(() => {
+    const checkProfileComplete = async () => {
+      if (!user?.id) return;
+
+      // Check if user already saved phone in this session
+      const alreadySaved = localStorage.getItem(`profile_phone_saved_${user.id}`);
+      if (alreadySaved === 'true') {
+        console.log('Phone already saved, skipping profile complete modal');
+        return;
+      }
+
+      try {
+        const { data: profile, error } = await supabase
+          .from('user_profiles')
+          .select('phone, avatar_url')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error checking profile:', error);
+          return;
+        }
+
+        setUserProfileData(profile);
+
+        // If user already has phone, mark as saved and skip
+        if (profile?.phone && profile.phone.trim() !== '') {
+          localStorage.setItem(`profile_phone_saved_${user.id}`, 'true');
+          return;
+        }
+
+        // Check if user logged in via OAuth (Google) by checking auth provider
+        const { data: { session } } = await supabase.auth.getSession();
+        const provider = session?.user?.app_metadata?.provider;
+        const isOAuthUser = provider && provider !== 'email';
+
+        // Show modal if OAuth user and no phone number
+        if (isOAuthUser) {
+          console.log('OAuth user without phone number, showing profile complete modal');
+          setShowProfileCompleteModal(true);
+        }
+      } catch (error) {
+        console.error('Error in checkProfileComplete:', error);
+      }
+    };
+
+    checkProfileComplete();
+  }, [user?.id]);
 
   // Fetch KYC status on component mount
   useEffect(() => {
@@ -4656,6 +4711,15 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
 
   return (
     <div className="w-full h-screen overflow-hidden flex flex-col">
+      {/* Profile Complete Modal for Google OAuth users */}
+      <ProfileCompleteModal
+        isOpen={showProfileCompleteModal}
+        onComplete={() => setShowProfileCompleteModal(false)}
+        userEmail={user?.email || ''}
+        userName={user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : undefined}
+        avatarUrl={userProfileData?.avatar_url}
+      />
+
       {/* Collapsed state - Only Plus button visible */}
       {headersCollapsed && (
         <header className="flex items-center justify-end px-4 py-3 border-b border-gray-100 flex-shrink-0 bg-white/80 backdrop-blur-xl">

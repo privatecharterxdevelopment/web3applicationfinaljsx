@@ -66,20 +66,32 @@ export async function handleOAuthUser(userId: string, email: string, metadata: O
 
         // Give welcome bonus for new OAuth users
         try {
-          await supabase.from('pvcx_balance').insert({
+          // Insert into correct table: user_pvcx_balances
+          const { error: balanceError } = await supabase.from('user_pvcx_balances').insert({
             user_id: userId,
             balance: 100,
             earned_from_bookings: 0,
             earned_from_co2: 0
           });
 
-          await supabase.from('pvcx_transactions').insert({
+          if (balanceError) {
+            console.error('Error creating PVCX balance:', balanceError);
+          } else {
+            console.log('✅ 100 PVCX welcome bonus added for:', email);
+          }
+
+          // Log the transaction
+          const { error: txError } = await supabase.from('pvcx_transactions').insert({
             user_id: userId,
             type: 'admin_bonus',
             amount: 100,
             description: 'Welcome bonus - Registration reward',
             metadata: { reason: 'new_user_registration', auth_method: 'google' }
           });
+
+          if (txError) {
+            console.error('Error logging PVCX transaction:', txError);
+          }
 
           // Welcome notification
           await supabase.from('notifications').insert({
