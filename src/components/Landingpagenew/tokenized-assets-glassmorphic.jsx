@@ -7783,20 +7783,6 @@ const TokenizedAssetsGlassmorphic = () => {
                 <h2 className="text-xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter">Private Jets</h2>
 
                 <div className="flex items-center gap-2 md:gap-3">
-                  {/* Filter Toggle Button */}
-                  <button
-                    onClick={() => setJetsFiltersVisible(!jetsFiltersVisible)}
-                    className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-[10px] md:text-xs font-medium transition-all backdrop-blur-xl border ${
-                      jetsFiltersVisible
-                        ? 'bg-gray-800 text-white border-gray-800'
-                        : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
-                    }`}
-                    style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                  >
-                    <SlidersHorizontal size={12} />
-                    <span>Filters</span>
-                  </button>
-
                   {/* Charter a Jet Button - Opens AI Chat */}
                   <button
                     onClick={() => {
@@ -7822,74 +7808,6 @@ const TokenizedAssetsGlassmorphic = () => {
                 </button>
               )}
 
-              {/* Filters - Glassmorphic - Mobile Optimized */}
-              {!showJetDetail && jetsFiltersVisible && (
-                <div className="bg-gray-100/60 rounded-lg border border-gray-300/50 p-3 md:p-5 mb-4 md:mb-6 backdrop-blur-xl transition-all duration-300" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4">
-                  <div>
-                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Category</label>
-                    <select
-                      value={jetsFilter}
-                      onChange={(e) => setJetsFilter(e.target.value)}
-                      className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    >
-                      <option value="all">All Categories</option>
-                      <option value="Light Jet">Light Jet</option>
-                      <option value="Midsize Jet">Midsize Jet</option>
-                      <option value="Heavy Jet">Heavy Jet</option>
-                      <option value="Ultra Long Range">Ultra Long Range</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Manufacturer</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Gulfstream"
-                      value={jetsSearch}
-                      onChange={(e) => setJetsSearch(e.target.value)}
-                      className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Model</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. G650"
-                      value={jetsSearch}
-                      onChange={(e) => setJetsSearch(e.target.value)}
-                      className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Max Price</label>
-                    <input
-                      type="text"
-                      placeholder="$50,000"
-                      value={jetsMaxPrice}
-                      onChange={(e) => setJetsMaxPrice(e.target.value)}
-                      className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    />
-                  </div>
-                  <div className="col-span-2 md:col-span-1 flex items-end">
-                    <button
-                      onClick={() => {
-                        setJetsSearch('');
-                        setJetsMaxPrice('');
-                        setJetsFilter('all');
-                      }}
-                      className="w-full px-3 md:px-4 py-2 md:py-2.5 bg-white/35 hover:bg-white/40 border border-gray-300/50 text-gray-700 rounded-lg md:rounded-xl text-xs md:text-sm transition-all"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    >
-                      Clear
-                    </button>
-                  </div>
-                </div>
-                </div>
-              )}
 
               {/* Loading State */}
               {!showJetDetail && isLoadingJets && (
@@ -8255,20 +8173,6 @@ const TokenizedAssetsGlassmorphic = () => {
                 <h2 className="text-xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter">Helicopter Charters</h2>
 
                 <div className="flex items-center gap-2 md:gap-3">
-                  {/* Filter Toggle Button */}
-                  <button
-                    onClick={() => setHelicoptersFiltersVisible(!helicoptersFiltersVisible)}
-                    className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-[10px] md:text-xs font-medium transition-all backdrop-blur-xl border ${
-                      helicoptersFiltersVisible
-                        ? 'bg-gray-800 text-white border-gray-800'
-                        : 'bg-gray-100/60 text-gray-700 border-gray-300/50 hover:bg-gray-200/60'
-                    }`}
-                    style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                  >
-                    <SlidersHorizontal size={12} />
-                    <span>Filters</span>
-                  </button>
-
                   {/* Charter a Heli Button - Opens AI Chat */}
                   <button
                     onClick={() => {
@@ -8296,76 +8200,6 @@ const TokenizedAssetsGlassmorphic = () => {
                   <ArrowLeft size={20} />
                   <span className="text-sm font-medium">Back to Helicopters</span>
                 </button>
-              )}
-
-              {/* Filters - Glassmorphic - Mobile Optimized */}
-              {!showHelicopterDetail && helicoptersFiltersVisible && (
-                <div className="bg-gray-100/60 rounded-lg border border-gray-300/50 p-3 md:p-5 mb-4 md:mb-6 backdrop-blur-xl transition-all duration-300" style={{ backdropFilter: 'blur(20px) saturate(180%)' }}>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4">
-                  <div>
-                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Category</label>
-                    <select
-                      value={helicoptersFilter}
-                      onChange={(e) => setHelicoptersFilter(e.target.value)}
-                      className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    >
-                      <option value="all">All Categories</option>
-                      <option value="Twin Engine">Twin Engine</option>
-                      <option value="Luxury">Luxury</option>
-                      <option value="Light">Light</option>
-                      <option value="Medium">Medium</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Model</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. H135"
-                      value={helicoptersSearch}
-                      onChange={(e) => setHelicoptersSearch(e.target.value)}
-                      className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Location</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Monaco"
-                      value={helicoptersLocation}
-                      onChange={(e) => setHelicoptersLocation(e.target.value)}
-                      className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] md:text-xs font-medium text-gray-800 mb-1 md:mb-2">Max Price ($)</label>
-                    <input
-                      type="number"
-                      placeholder="$8000"
-                      value={helicoptersMaxPrice}
-                      onChange={(e) => setHelicoptersMaxPrice(e.target.value)}
-                      className="w-full px-2 md:px-3 py-2 md:py-2.5 bg-white/35 border border-gray-300/50 rounded-lg md:rounded-xl text-xs md:text-sm text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-gray-400/50 focus:border-transparent transition-all duration-200"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    />
-                  </div>
-                  <div className="col-span-2 md:col-span-1 flex items-end">
-                    <button
-                      onClick={() => {
-                        setHelicoptersSearch('');
-                        setHelicoptersLocation('');
-                        setHelicoptersMaxPrice('');
-                        setHelicoptersFilter('all');
-                      }}
-                      className="w-full px-3 md:px-4 py-2 md:py-2.5 bg-white/35 hover:bg-white/40 border border-gray-300/50 text-gray-700 rounded-lg md:rounded-xl text-xs md:text-sm transition-all"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    >
-                      Clear
-                    </button>
-                  </div>
-                </div>
-                </div>
               )}
 
               {/* Loading State */}
