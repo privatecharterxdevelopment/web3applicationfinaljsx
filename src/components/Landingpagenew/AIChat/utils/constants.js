@@ -208,7 +208,7 @@ export const checkServiceAccess = (message, currentTier) => {
 
     if (matchedPattern) {
       // Check if user has access based on tier
-      const tierHierarchy = { explorer: 1, traveller: 2, elite: 3 };
+      const tierHierarchy = { essential: 0, explorer: 1, traveller: 2, elite: 3 };
       const userTierLevel = tierHierarchy[currentTier] || 0;
       const requiredLevel = tierHierarchy[serviceConfig.requiredTier] || 3;
 

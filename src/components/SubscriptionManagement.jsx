@@ -235,7 +235,7 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
   }
 
   const planFeatures = getPlanFeatures(subscriptionData?.tier);
-  const isPaidPlan = subscriptionData?.tier && ['explorer', 'traveller', 'elite'].includes(subscriptionData?.tier);
+  const isPaidPlan = subscriptionData?.tier && ['essential', 'explorer', 'traveller', 'elite'].includes(subscriptionData?.tier);
   const hasSubscription = !!subscriptionData?.tier;
 
   return (
