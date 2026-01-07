@@ -172,7 +172,7 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
   };
 
   const getTierPrice = (tier) => {
-    const prices = { explorer: 99, traveller: 199, elite: 999 };
+    const prices = { essential: 19, explorer: 99, traveller: 199, elite: 999 };
     return prices[tier] || 0;
   };
 
