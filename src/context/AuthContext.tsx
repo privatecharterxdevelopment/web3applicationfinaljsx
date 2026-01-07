@@ -50,8 +50,17 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    // Return null instead of throwing - allows optional usage
-    return null;
+    // Return default values instead of null to prevent destructuring errors
+    return {
+      user: null,
+      isAuthenticated: false,
+      isAdmin: false,
+      initializing: true,
+      signIn: async () => { throw new Error('AuthContext not available'); },
+      signUp: async () => { throw new Error('AuthContext not available'); },
+      signOut: async () => { throw new Error('AuthContext not available'); },
+      refreshSubscription: async () => { throw new Error('AuthContext not available'); }
+    } as AuthContextType;
   }
   return context;
 };
@@ -201,83 +210,108 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('🔄 Auth state changed:', event, session?.user?.email);
 
       if (event === 'SIGNED_IN' && session?.user) {
-        // Check if this is an OAuth login (Google, Apple, etc.)
-        const provider = session.user.app_metadata?.provider;
-        const isOAuthLogin = provider && provider !== 'email';
+        try {
+          // Check if this is an OAuth login (Google, Apple, etc.)
+          const provider = session.user.app_metadata?.provider;
+          const isOAuthLogin = provider && provider !== 'email';
 
-        if (isOAuthLogin) {
-          console.log('🔑 OAuth login detected, provider:', provider);
-          // Handle OAuth user - ensure they have entries in users and user_profiles tables
-          await handleOAuthUser(
-            session.user.id,
-            session.user.email || '',
-            session.user.user_metadata || {}
-          );
-        }
+          if (isOAuthLogin) {
+            console.log('🔑 OAuth login detected, provider:', provider);
+            // Handle OAuth user - ensure they have entries in users and user_profiles tables
+            try {
+              await handleOAuthUser(
+                session.user.id,
+                session.user.email || '',
+                session.user.user_metadata || {}
+              );
+            } catch (oauthError) {
+              console.error('Error in handleOAuthUser (non-blocking):', oauthError);
+            }
+          }
 
-        // Get user profile data WITH 2-SECOND TIMEOUT
-        const queryPromise = supabase
-          .from('users')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
+          // Extract name from Google metadata as fallback (do this first)
+          const fullName = session.user.user_metadata?.full_name ||
+                          session.user.user_metadata?.name ||
+                          '';
+          const metaFirstName = session.user.user_metadata?.given_name ||
+                               fullName.split(' ')[0] ||
+                               '';
+          const metaLastName = session.user.user_metadata?.family_name ||
+                              fullName.split(' ').slice(1).join(' ') ||
+                              '';
 
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Database query timeout')), 2000)
-        );
+          // Get user profile data WITH 2-SECOND TIMEOUT
+          let profile = null;
+          let profileError = null;
+          try {
+            const queryPromise = supabase
+              .from('users')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
 
-        const { data: profile, error: profileError } = await Promise.race([
-          queryPromise,
-          timeoutPromise
-        ]) as any;
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Database query timeout')), 2000)
+            );
 
-        // Extract name from Google metadata as fallback
-        const fullName = session.user.user_metadata?.full_name ||
-                        session.user.user_metadata?.name ||
-                        '';
-        const metaFirstName = session.user.user_metadata?.given_name ||
-                             fullName.split(' ')[0] ||
-                             '';
-        const metaLastName = session.user.user_metadata?.family_name ||
-                            fullName.split(' ').slice(1).join(' ') ||
-                            '';
+            const result = await Promise.race([queryPromise, timeoutPromise]) as any;
+            profile = result.data;
+            profileError = result.error;
+          } catch (queryError) {
+            console.error('Profile query error (non-blocking):', queryError);
+            profileError = queryError;
+          }
 
-        if (profileError || !profile) {
+          if (profileError || !profile) {
+            console.log('Setting user from OAuth metadata (no profile found)');
+            setUser({
+              id: session.user.id,
+              email: session.user.email || '',
+              first_name: metaFirstName || 'User',
+              last_name: metaLastName || '',
+              email_verified: session.user.email_confirmed_at !== null,
+              user_role: session.user.user_metadata?.role || 'user'
+            });
+          } else {
+            // Also load subscription data from user_profiles on sign-in
+            const { data: userProfile } = await supabase
+              .from('user_profiles')
+              .select('subscription_tier, subscription_status, chats_limit, chats_used')
+              .eq('user_id', session.user.id)
+              .single();
+
+            setUser({
+              id: profile.id,
+              email: profile.email,
+              first_name: profile.first_name || metaFirstName,
+              last_name: profile.last_name || metaLastName,
+              email_verified: profile.email_verified,
+              user_role: profile.user_role || 'user',
+              created_at: profile.created_at,
+              subscription_tier: userProfile?.subscription_tier || null,
+              chat_limit: userProfile?.chats_limit ?? 1,
+              chats_used: userProfile?.chats_used || 0
+            });
+          }
+
+          // Ensure user has an extended profile
+          try {
+            await ensureUserProfile(session.user.id);
+          } catch (error) {
+            console.error('Error ensuring user profile:', error);
+          }
+        } catch (signInError) {
+          console.error('❌ Error processing SIGNED_IN event:', signInError);
+          // Still set user from session data as fallback
+          const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
           setUser({
             id: session.user.id,
             email: session.user.email || '',
-            first_name: metaFirstName || 'User',
-            last_name: metaLastName || '',
+            first_name: session.user.user_metadata?.given_name || fullName.split(' ')[0] || 'User',
+            last_name: session.user.user_metadata?.family_name || fullName.split(' ').slice(1).join(' ') || '',
             email_verified: session.user.email_confirmed_at !== null,
-            user_role: session.user.user_metadata?.role || 'user'
+            user_role: 'user'
           });
-        } else {
-          // Also load subscription data from user_profiles on sign-in
-          const { data: userProfile } = await supabase
-            .from('user_profiles')
-            .select('subscription_tier, subscription_status, chats_limit, chats_used')
-            .eq('user_id', session.user.id)
-            .single();
-
-          setUser({
-            id: profile.id,
-            email: profile.email,
-            first_name: profile.first_name || metaFirstName,
-            last_name: profile.last_name || metaLastName,
-            email_verified: profile.email_verified,
-            user_role: profile.user_role || 'user',
-            created_at: profile.created_at,
-            subscription_tier: userProfile?.subscription_tier || null,
-            chat_limit: userProfile?.chats_limit ?? 1,
-            chats_used: userProfile?.chats_used || 0
-          });
-        }
-
-        // Ensure user has an extended profile
-        try {
-          await ensureUserProfile(session.user.id);
-        } catch (error) {
-          console.error('Error ensuring user profile:', error);
         }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
