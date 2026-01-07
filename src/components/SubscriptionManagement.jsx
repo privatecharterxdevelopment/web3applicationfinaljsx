@@ -94,7 +94,7 @@ const SubscriptionManagement = ({ onNavigateToPlans, onBack }) => {
     try {
       const { url } = await stripeService.createPortalSession();
       if (url) {
-        window.open(url, '_blank');
+        window.location.href = url;
       }
     } catch (error) {
       console.error('Error opening billing portal:', error);
