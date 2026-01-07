@@ -39,10 +39,16 @@ const TIER_CHAT_LIMITS = {
   explorer: 5,     // $99/mo - 5 AI chats, 10 messages per chat
   traveller: 10,   // $199/mo - 10 AI chats, 25 messages per chat
   elite: null,     // $999/mo - unlimited chats and messages
-  // Legacy tiers (for backwards compatibility)
-  starter: 5,
-  pro: 10,
 };
+
+// Normalize tier name - convert 'starter' to 'essential'
+function normalizeTier(tier) {
+  if (!tier) return 'essential';
+  const lower = tier.toLowerCase();
+  if (lower === 'starter') return 'essential';
+  if (lower === 'pro') return 'traveller'; // Legacy mapping
+  return lower;
+}
 
 // Price amounts to tier mapping (in cents) for Payment Links
 // This maps the subscription price to the correct tier
@@ -148,8 +154,9 @@ async function handleSubscriptionUpdate(subscription) {
     return;
   }
 
-  const tier = metadata.tier || 'explorer'; // Default to explorer if no tier specified
-  const chatsLimit = TIER_CHAT_LIMITS[tier] ?? 5;
+  // Normalize tier - convert 'starter' to 'essential'
+  const tier = normalizeTier(metadata.tier || 'explorer');
+  const chatsLimit = TIER_CHAT_LIMITS[tier] ?? 10;
   const now = new Date();
   const periodEnd = new Date(subscription.current_period_end * 1000);
 
@@ -264,6 +271,10 @@ async function handleCheckoutCompleted(session) {
       console.log(`[Subscription Webhook] Estimated tier from amount $${amount}: ${tier}`);
     }
 
+    // Normalize tier - convert 'starter' to 'essential'
+    tier = normalizeTier(tier);
+    console.log(`[Subscription Webhook] Normalized tier: ${tier}`);
+
     // Try to find user_id from multiple sources
     let userId = null;
 
@@ -342,7 +353,7 @@ async function handleCheckoutCompleted(session) {
     });
 
     // Update user_profiles
-    const chatsLimit = TIER_CHAT_LIMITS[tier] ?? 5;
+    const chatsLimit = TIER_CHAT_LIMITS[tier] ?? 10;
     const periodEnd = new Date(subscription.current_period_end * 1000);
 
     const { error } = await getSupabase()

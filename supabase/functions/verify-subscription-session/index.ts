@@ -11,9 +11,18 @@ const corsHeaders = {
 // Updated 2025 pricing: Essential ($19), Explorer ($99), Traveller ($199), Elite ($999)
 const TIER_CONFIG: Record<string, { chats: number | null; messagesPerChat: number }> = {
   essential: { chats: 10, messagesPerChat: 5 },   // $19/mo - uses Haiku
+  starter: { chats: 10, messagesPerChat: 5 },     // Alias for essential (Stripe product name)
   explorer: { chats: 5, messagesPerChat: 10 },
   traveller: { chats: 10, messagesPerChat: 25 },
   elite: { chats: null, messagesPerChat: Infinity },
+};
+
+// Normalize tier name - handle 'starter' as 'essential'
+const normalizeTier = (tier: string | null | undefined): string => {
+  if (!tier) return 'essential';
+  const lower = tier.toLowerCase();
+  if (lower === 'starter') return 'essential';
+  return lower;
 };
 
 // Price amounts to tier mapping (in cents)
@@ -103,6 +112,10 @@ serve(async (req) => {
       else tier = 'essential';  // $19 Essential tier
       console.log(`Estimated tier from amount $${amount}: ${tier}`);
     }
+
+    // Normalize tier - convert 'starter' to 'essential'
+    tier = normalizeTier(tier);
+    console.log(`Normalized tier: ${tier}`);
 
     // Determine user ID
     let finalUserId = userId;

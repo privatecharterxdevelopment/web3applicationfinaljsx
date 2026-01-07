@@ -8,14 +8,20 @@ const corsHeaders = {
 };
 
 // Chat limits for each tier - MUST match Subscriptionplans.jsx and SubscriptionModal.jsx
-// Updated 2025 pricing: Explorer ($99), Traveller ($199), Elite ($999)
+// Updated 2025 pricing: Essential ($19), Explorer ($99), Traveller ($199), Elite ($999)
 const TIER_CONFIG: Record<string, { chats: number | null; price: number; messagesPerChat: number }> = {
-  explorer: { chats: 5, price: 99, messagesPerChat: 10 },      // $99/mo - 5 chats, 10 msgs/chat
+  essential: { chats: 10, price: 19, messagesPerChat: 5 },      // $19/mo - 10 chats, 5 msgs/chat, Haiku AI
+  starter: { chats: 10, price: 19, messagesPerChat: 5 },        // Alias for essential
+  explorer: { chats: 5, price: 99, messagesPerChat: 10 },       // $99/mo - 5 chats, 10 msgs/chat
   traveller: { chats: 10, price: 199, messagesPerChat: 25 },    // $199/mo - 10 chats, 25 msgs/chat
   elite: { chats: null, price: 999, messagesPerChat: Infinity }, // $999/mo - unlimited
-  // Legacy tiers (for backwards compatibility)
-  starter: { chats: 5, price: 20, messagesPerChat: 10 },
-  pro: { chats: 20, price: 40, messagesPerChat: 20 },
+};
+
+// Normalize tier name - handle 'starter' as 'essential'
+const normalizeTier = (tier: string): string => {
+  const lower = tier.toLowerCase();
+  if (lower === 'starter') return 'essential';
+  return lower;
 };
 
 serve(async (req) => {

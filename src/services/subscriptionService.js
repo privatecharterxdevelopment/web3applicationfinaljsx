@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 // Tier-specific message limits per chat
 const TIER_MESSAGE_LIMITS = {
   essential: 5,    // Essential Basic - 5 messages per chat (Haiku)
+  starter: 5,      // Alias for essential (Stripe product name)
   explorer: 10,
   traveller: 25,
   elite: null,     // null = unlimited
@@ -12,6 +13,7 @@ const TIER_MESSAGE_LIMITS = {
 // Tier-specific chat limits per month
 const TIER_CHAT_LIMITS = {
   essential: 10,   // Essential Basic - 10 chats per month
+  starter: 10,     // Alias for essential
   explorer: 5,
   traveller: 10,
   elite: null,     // null = unlimited
@@ -21,6 +23,7 @@ const TIER_CHAT_LIMITS = {
 // AI Model per tier - Essential uses Haiku, others use Sonnet
 const TIER_AI_MODELS = {
   essential: 'claude-3-5-haiku-20241022',  // Essential Basic uses Haiku (faster, cheaper)
+  starter: 'claude-3-5-haiku-20241022',    // Alias for essential
   explorer: 'claude-sonnet-4-20250514',
   traveller: 'claude-sonnet-4-20250514',
   elite: 'claude-sonnet-4-20250514',
@@ -30,6 +33,7 @@ const TIER_AI_MODELS = {
 // Features allowed per tier
 const TIER_ALLOWED_FEATURES = {
   essential: ['empty_legs', 'restaurants', 'private_jets_search', 'general_queries'],
+  starter: ['empty_legs', 'restaurants', 'private_jets_search', 'general_queries'], // Alias for essential
   explorer: ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'catering', 'custom_travel_org', 'private_jets', 'helicopters'],
   traveller: ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'catering', 'custom_travel_org', 'private_jets', 'helicopters', 'medevac', 'concierge', 'group_charter', 'reservations', 'event_booking'],
   elite: ['all'], // Elite has access to everything
@@ -517,13 +521,18 @@ class SubscriptionService {
       if (chatUserId) {
         try {
           const profile = await this.getUserProfile(chatUserId);
-          const tier = profile?.subscription_tier?.toLowerCase();
+          let tier = profile?.subscription_tier?.toLowerCase();
+
+          // Normalize tier - 'starter' is alias for 'essential'
+          if (tier === 'starter') tier = 'essential';
 
           if (tier === 'elite' || tier === 'professional') {
             isUnlimited = true;
             maxMessages = null;
           } else if (tier === 'traveller') {
             maxMessages = 25;
+          } else if (tier === 'essential') {
+            maxMessages = 5; // Essential Basic - 5 messages per chat
           } else {
             maxMessages = 10; // Explorer or default
           }
@@ -577,15 +586,20 @@ class SubscriptionService {
       if (chatUserId) {
         try {
           const profile = await this.getUserProfile(chatUserId);
-          const tier = profile?.subscription_tier?.toLowerCase();
+          let tier = profile?.subscription_tier?.toLowerCase();
+
+          // Normalize tier - 'starter' is alias for 'essential'
+          if (tier === 'starter') tier = 'essential';
 
           if (tier === 'elite' || tier === 'professional') {
             isUnlimited = true;
             maxMessages = null;
           } else if (tier === 'traveller') {
             maxMessages = 25;
+          } else if (tier === 'essential') {
+            maxMessages = 5; // Essential Basic - 5 messages per chat
           } else {
-            maxMessages = 10;
+            maxMessages = 10; // Explorer or default
           }
         } catch (profileError) {
           console.warn('Could not fetch user profile for message limit:', profileError);

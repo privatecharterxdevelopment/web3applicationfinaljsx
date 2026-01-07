@@ -25,7 +25,9 @@ const ChatHeader = memo(({
   const navigate = useNavigate();
 
   const rawTier = userSubscriptionLimits?.tier || userProfile?.subscription_tier;
-  const displayTier = rawTier?.toLowerCase();
+  // Normalize tier - 'starter' is alias for 'essential'
+  let displayTier = rawTier?.toLowerCase();
+  if (displayTier === 'starter') displayTier = 'essential';
 
   return (
     <div className="fixed sm:sticky top-0 left-0 right-0 sm:left-auto sm:right-auto z-30 px-3 sm:px-6 py-2.5 bg-white sm:bg-white/15 border-b border-gray-200 sm:border-white/10 flex-shrink-0" style={{ backdropFilter: 'blur(50px) saturate(180%)', WebkitBackdropFilter: 'blur(50px) saturate(180%)' }}>

@@ -370,11 +370,14 @@ export const ANIMATION_DURATIONS = {
 // ============================================
 
 /**
- * Normalize tier string (handles case variations)
+ * Normalize tier string (handles case variations and aliases)
  */
 export const normalizeTier = (tier) => {
   if (!tier) return null;
-  return tier.toLowerCase().trim();
+  const lower = tier.toLowerCase().trim();
+  // Handle 'starter' as alias for 'essential' (Stripe product name)
+  if (lower === 'starter') return 'essential';
+  return lower;
 };
 
 /**

@@ -22,7 +22,14 @@ const SubscriptionSuccessPage = () => {
   // Tier display info
   const tierInfo = {
     essential: {
-      name: 'Essential Basic',
+      name: 'Essential',
+      price: '$19',
+      chats: '10 AI Chats',
+      messages: '5 messages per chat',
+      icon: '🚀'
+    },
+    starter: {  // Alias for essential (Stripe product name)
+      name: 'Essential',
       price: '$19',
       chats: '10 AI Chats',
       messages: '5 messages per chat',
@@ -51,7 +58,17 @@ const SubscriptionSuccessPage = () => {
     }
   };
 
-  const currentTier = tierInfo[activatedTier] || tierInfo[tier] || tierInfo.explorer;
+  // Normalize tier - handle 'starter' as 'essential' alias
+  const normalizeTier = (t) => {
+    if (!t) return null;
+    const lower = t.toLowerCase();
+    if (lower === 'starter') return 'essential';
+    return lower;
+  };
+
+  const normalizedActivatedTier = normalizeTier(activatedTier);
+  const normalizedUrlTier = normalizeTier(tier);
+  const currentTier = tierInfo[normalizedActivatedTier] || tierInfo[normalizedUrlTier] || tierInfo.essential;
 
   // Verify subscription with Stripe session on page load
   useEffect(() => {
