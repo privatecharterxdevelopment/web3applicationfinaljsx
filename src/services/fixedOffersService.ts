@@ -26,41 +26,42 @@ export const fetchFixedOffers = async (params: FetchFixedOffersParams = {}) => {
       .from('fixed_offers')
       .select('*', { count: 'exact' });
 
-    // Apply filters
+    // Apply filters based on category or region field
     if (category) {
       switch (category) {
         case 'featured':
           query = query.eq('is_featured', true);
           break;
         case 'europe':
+          // Filter by region field or search in origin/destination for European cities/countries
           query = query.or(
-            'destination_continent.eq.Europe,origin_continent.eq.Europe'
+            'region.ilike.%europe%,origin.ilike.%Paris%,origin.ilike.%London%,origin.ilike.%Rome%,origin.ilike.%Milan%,origin.ilike.%Zurich%,origin.ilike.%Geneva%,origin.ilike.%Munich%,origin.ilike.%Vienna%,origin.ilike.%Barcelona%,origin.ilike.%Madrid%,destination.ilike.%Paris%,destination.ilike.%London%,destination.ilike.%Rome%,destination.ilike.%Milan%,destination.ilike.%Zurich%,destination.ilike.%Geneva%,destination.ilike.%Munich%,destination.ilike.%Vienna%,destination.ilike.%Barcelona%,destination.ilike.%Madrid%'
           );
           break;
         case 'africa':
           query = query.or(
-            'destination_continent.eq.Africa,origin_continent.eq.Africa'
+            'region.ilike.%africa%,origin.ilike.%Cape Town%,origin.ilike.%Johannesburg%,origin.ilike.%Nairobi%,origin.ilike.%Marrakech%,origin.ilike.%Cairo%,origin.ilike.%Lagos%,destination.ilike.%Cape Town%,destination.ilike.%Johannesburg%,destination.ilike.%Nairobi%,destination.ilike.%Marrakech%,destination.ilike.%Cairo%,destination.ilike.%Lagos%'
           );
           break;
         case 'asia':
           query = query.or(
-            'destination_continent.eq.Asia,origin_continent.eq.Asia'
+            'region.ilike.%asia%,origin.ilike.%Tokyo%,origin.ilike.%Singapore%,origin.ilike.%Hong Kong%,origin.ilike.%Dubai%,origin.ilike.%Bangkok%,origin.ilike.%Bali%,origin.ilike.%Shanghai%,destination.ilike.%Tokyo%,destination.ilike.%Singapore%,destination.ilike.%Hong Kong%,destination.ilike.%Dubai%,destination.ilike.%Bangkok%,destination.ilike.%Bali%,destination.ilike.%Shanghai%'
           );
           break;
         case 'usa':
         case 'north-america':
           query = query.or(
-            'destination_continent.eq.North America,origin_continent.eq.North America'
+            'region.ilike.%usa%,region.ilike.%america%,origin.ilike.%New York%,origin.ilike.%Los Angeles%,origin.ilike.%Miami%,origin.ilike.%Las Vegas%,origin.ilike.%San Francisco%,origin.ilike.%Chicago%,origin.ilike.%Aspen%,destination.ilike.%New York%,destination.ilike.%Los Angeles%,destination.ilike.%Miami%,destination.ilike.%Las Vegas%,destination.ilike.%San Francisco%,destination.ilike.%Chicago%,destination.ilike.%Aspen%'
           );
           break;
         case 'south-america':
           query = query.or(
-            'destination_continent.eq.South America,origin_continent.eq.South America'
+            'region.ilike.%south america%,origin.ilike.%Rio%,origin.ilike.%Sao Paulo%,origin.ilike.%Buenos Aires%,destination.ilike.%Rio%,destination.ilike.%Sao Paulo%,destination.ilike.%Buenos Aires%'
           );
           break;
         case 'oceania':
           query = query.or(
-            'destination_continent.eq.Oceania,origin_continent.eq.Oceania'
+            'region.ilike.%oceania%,region.ilike.%australia%,origin.ilike.%Sydney%,origin.ilike.%Melbourne%,origin.ilike.%Auckland%,destination.ilike.%Sydney%,destination.ilike.%Melbourne%,destination.ilike.%Auckland%'
           );
           break;
       }

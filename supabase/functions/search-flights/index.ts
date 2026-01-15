@@ -235,11 +235,12 @@ serve(async (req) => {
           stops: (returnSlice.segments?.length || 1) - 1
         } : null,
 
-        // Pricing
+        // Pricing (20% markup applied)
         price: {
-          amount: parseFloat(offer.total_amount || '0'),
+          amount: Math.round(parseFloat(offer.total_amount || '0') * 1.20 * 100) / 100,
           currency: offer.total_currency || 'USD',
-          perPassenger: parseFloat(offer.total_amount || '0') / passengers
+          perPassenger: Math.round((parseFloat(offer.total_amount || '0') * 1.20 / passengers) * 100) / 100,
+          originalAmount: parseFloat(offer.total_amount || '0') // Keep original for reference
         },
 
         // Baggage
