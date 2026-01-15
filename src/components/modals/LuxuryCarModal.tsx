@@ -22,7 +22,7 @@ import {
   Wallet
 } from 'lucide-react';
 import Logo from '../../components/Logo';
-import Footer from '../../components/Footer';
+import Footer from '../../components/Landingpagenew/HomepageFooter';
 import WalletMenu from '../../components/WalletMenu';
 import { supabase } from '../../lib/supabase';
 import NavigationMenu from '../../components/NavigationMenu';

@@ -1,28 +1,73 @@
 # robots.txt for PrivateCharterX
 # https://privatecharterx.com
+# Last updated: 2025-01-14
 
 User-agent: *
-Allow: /
-Allow: /services
+
+# Allow current active pages
+Allow: /$
 Allow: /aviation
+Allow: /flights
+Allow: /flight-tickets
+Allow: /empty-legs
+Allow: /adventures
+Allow: /fixed-offers
 Allow: /tokenized
 Allow: /sphera-ai
-Allow: /rwa-nft
-Allow: /faqs
 Allow: /helpdesk
 Allow: /terms
 Allow: /privacy
-Allow: /cookies
 Allow: /imprint
 
-# Disallow hidden/internal pages
+# Block old/dead pages (redirects are in place but block from indexing)
+Disallow: /faq
+Disallow: /faqs
+Disallow: /services
+Disallow: /sphera-ai
+Disallow: /rwa-nft
+Disallow: /partner
+Disallow: /partners
+Disallow: /partner-with-us
+Disallow: /private-jet
+Disallow: /private-jet-charter
+Disallow: /evtol
+Disallow: /evtol-flights
+Disallow: /helicopter
+Disallow: /helicopter-charter
+Disallow: /yacht
+Disallow: /group-charter
 Disallow: /technology
+Disallow: /how-it-works
+Disallow: /about
+Disallow: /contact
+Disallow: /blog
+Disallow: /news
+Disallow: /safety
+Disallow: /membership
+Disallow: /jet-card
+Disallow: /visa
+Disallow: /luxury-cars
+Disallow: /ico
+Disallow: /nft
+Disallow: /dao
+Disallow: /web3
+Disallow: /crypto
+Disallow: /carbon
+Disallow: /co2
+Disallow: /marketplace
+Disallow: /behind-the-scene
+
+# Block dashboard, admin, and private pages
 Disallow: /dashboard
 Disallow: /admin
 Disallow: /login
 Disallow: /register
+Disallow: /crm
+Disallow: /checkout
+Disallow: /payment
+Disallow: /book
 Disallow: /api
 Disallow: /*.json$
 
-# Sitemap
+# Sitemap location
 Sitemap: https://privatecharterx.com/sitemap.xml

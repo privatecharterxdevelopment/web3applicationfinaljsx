@@ -111,6 +111,41 @@ const MyBookingsView = ({ user, onBack }) => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
+      // Fetch adventure and flight bookings from user_requests
+      const { data: adventureRequests, error: adventureError } = await supabase
+        .from('user_requests')
+        .select('*')
+        .eq('user_id', user.id)
+        .in('type', ['adventure_package', 'fixed_offer', 'flight_ticket', 'commercial_flight'])
+        .order('created_at', { ascending: false });
+
+      // Transform adventure requests to match booking structure
+      const transformedAdventureBookings = (adventureRequests || []).map(req => ({
+        id: req.id,
+        booking_type: req.type,
+        service_title: req.data?.offer_title || req.data?.title || `${req.data?.departure_airport || ''} → ${req.data?.arrival_airport || ''}`,
+        service_image_url: req.data?.offer_image || req.data?.image_url,
+        origin: req.data?.offer_origin || req.data?.departure_airport,
+        destination: req.data?.offer_destination || req.data?.arrival_airport,
+        departure_date: req.data?.selected_dates?.from || req.data?.departure_date,
+        return_date: req.data?.selected_dates?.to || req.data?.return_date,
+        passengers: req.data?.passengers || 1,
+        base_price: req.data?.pricing?.base_price || req.data?.pricing?.total,
+        total_amount: req.data?.pricing?.total || req.data?.pricing?.base_price,
+        currency: req.data?.pricing?.currency || 'USD',
+        payment_status: req.status === 'completed' ? 'paid' : req.status,
+        booking_status: req.status,
+        crypto_currency: req.data?.payment_method,
+        created_at: req.created_at,
+        // Adventure-specific fields
+        aircraft_type: req.data?.offer_aircraft_type,
+        customer_name: req.data?.customer_details?.name,
+        customer_email: req.data?.customer_details?.email,
+        special_requests: req.data?.customer_details?.special_requests,
+        is_adventure: req.type === 'adventure_package' || req.type === 'fixed_offer',
+        is_flight: req.type === 'flight_ticket' || req.type === 'commercial_flight'
+      }));
+
       // Transform hotel bookings to match regular booking structure
       const transformedHotelBookings = (hotelBookings || []).map(hotel => ({
         id: hotel.id,
@@ -145,7 +180,8 @@ const MyBookingsView = ({ user, onBack }) => {
       // Combine and sort all bookings by created_at
       const allBookings = [
         ...(regularBookings || []),
-        ...transformedHotelBookings
+        ...transformedHotelBookings,
+        ...transformedAdventureBookings
       ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
       // Mark expired pending payments and update their status in the database
@@ -202,8 +238,11 @@ const MyBookingsView = ({ user, onBack }) => {
     const typeLabels = {
       empty_leg: 'Empty Leg Flight',
       adventure_package: 'Adventure Package',
+      fixed_offer: 'Adventure Package',
       co2_certificate: 'CO2 Certificate',
-      hotel_booking: 'Hotel Booking'
+      hotel_booking: 'Hotel Booking',
+      flight_ticket: 'Flight Booking',
+      commercial_flight: 'Flight Booking'
     };
     return typeLabels[booking.booking_type] || 'Private Charter Booking';
   };
@@ -243,10 +282,11 @@ const MyBookingsView = ({ user, onBack }) => {
 
   const getTypeIcon = (type) => {
     if (type === 'empty_leg') return <Plane size={14} />;
-    if (type === 'adventure_package') return <Mountain size={14} />;
+    if (type === 'adventure_package' || type === 'fixed_offer') return <Mountain size={14} />;
     if (type === 'co2_certificate') return <Leaf size={14} />;
     if (type === 'hotel_booking') return <Building2 size={14} />;
     if (type === 'cart_checkout') return <Receipt size={14} />;
+    if (type === 'flight_ticket' || type === 'commercial_flight') return <Plane size={14} />;
     return <Plane size={14} />;
   };
 
@@ -254,9 +294,12 @@ const MyBookingsView = ({ user, onBack }) => {
     const labels = {
       empty_leg: 'Empty Leg',
       adventure_package: 'Adventure',
+      fixed_offer: 'Adventure',
       co2_certificate: 'CO2 Offset',
       hotel_booking: 'Hotel',
-      cart_checkout: 'Cart Order'
+      cart_checkout: 'Cart Order',
+      flight_ticket: 'Flight',
+      commercial_flight: 'Flight'
     };
     return labels[type] || 'Booking';
   };
@@ -281,6 +324,8 @@ const MyBookingsView = ({ user, onBack }) => {
   const filteredBookings = bookings.filter(booking => {
     if (filter === 'all') return true;
     if (filter === 'hotel_booking') return booking.booking_type === 'hotel_booking';
+    if (filter === 'adventures') return booking.is_adventure || booking.booking_type === 'adventure_package' || booking.booking_type === 'fixed_offer';
+    if (filter === 'flights') return booking.is_flight || booking.booking_type === 'flight_ticket' || booking.booking_type === 'commercial_flight';
     return booking.payment_status === filter;
   });
 
@@ -336,7 +381,7 @@ const MyBookingsView = ({ user, onBack }) => {
 
         {/* Filter Tabs */}
         <div className="flex items-center gap-1 mt-4 flex-wrap">
-          {['all', 'paid', 'pending'].map(status => (
+          {['all', 'paid', 'pending', 'adventures', 'flights'].map(status => (
             <button
               key={status}
               onClick={() => setFilter(status)}
@@ -346,7 +391,7 @@ const MyBookingsView = ({ user, onBack }) => {
                   : 'text-gray-500 hover:bg-gray-100'
               }`}
             >
-              {status === 'all' ? 'All' : status === 'paid' ? 'Confirmed' : 'Pending'}
+              {status === 'all' ? 'All' : status === 'paid' ? 'Confirmed' : status === 'pending' ? 'Pending' : status === 'adventures' ? 'Adventures' : 'Flights'}
             </button>
           ))}
         </div>
@@ -564,6 +609,175 @@ const MyBookingsView = ({ user, onBack }) => {
                             <div className="mt-3 p-2 bg-gray-50 rounded-lg">
                               <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Special Requests</p>
                               <p className="text-xs text-gray-600">{booking.special_requests}</p>
+                            </div>
+                          )}
+                        </div>
+                      ) : (booking.is_adventure || booking.booking_type === 'adventure_package' || booking.booking_type === 'fixed_offer') ? (
+                        /* Adventure-specific details */
+                        <div className="mb-4">
+                          {/* Adventure image */}
+                          {booking.service_image_url && (
+                            <div className="mb-3">
+                              <img
+                                src={booking.service_image_url}
+                                alt={booking.service_title}
+                                className="w-full h-32 object-cover rounded-lg"
+                              />
+                            </div>
+                          )}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            {booking.origin && (
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">From</p>
+                                <p className="text-sm text-gray-900">{booking.origin}</p>
+                              </div>
+                            )}
+                            {booking.destination && (
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">To</p>
+                                <p className="text-sm text-gray-900">{booking.destination}</p>
+                              </div>
+                            )}
+                            {booking.departure_date && (
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Departure</p>
+                                <p className="text-sm text-gray-900">{format(new Date(booking.departure_date), 'MMM d, yyyy')}</p>
+                              </div>
+                            )}
+                            {booking.return_date && (
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Return</p>
+                                <p className="text-sm text-gray-900">{format(new Date(booking.return_date), 'MMM d, yyyy')}</p>
+                              </div>
+                            )}
+                            {booking.passengers && (
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Passengers</p>
+                                <p className="text-sm text-gray-900">{booking.passengers}</p>
+                              </div>
+                            )}
+                            {booking.aircraft_type && (
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Aircraft</p>
+                                <p className="text-sm text-gray-900">{booking.aircraft_type}</p>
+                              </div>
+                            )}
+                            {booking.customer_name && (
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Guest</p>
+                                <p className="text-sm text-gray-900">{booking.customer_name}</p>
+                              </div>
+                            )}
+                            {booking.customer_email && (
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Email</p>
+                                <p className="text-sm text-gray-900 truncate">{booking.customer_email}</p>
+                              </div>
+                            )}
+                          </div>
+                          {booking.special_requests && (
+                            <div className="mt-3 p-2 bg-gray-50 rounded-lg">
+                              <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Special Requests</p>
+                              <p className="text-xs text-gray-600">{booking.special_requests}</p>
+                            </div>
+                          )}
+                        </div>
+                      ) : (booking.booking_type === 'commercial_flight' || booking.booking_type === 'flight_ticket') ? (
+                        /* Commercial Flight details */
+                        <div className="mb-4">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            {booking.origin && (
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">From</p>
+                                <p className="text-sm text-gray-900 font-medium">{booking.origin}</p>
+                              </div>
+                            )}
+                            {booking.destination && (
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">To</p>
+                                <p className="text-sm text-gray-900 font-medium">{booking.destination}</p>
+                              </div>
+                            )}
+                            {booking.departure_date && (
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Departure</p>
+                                <p className="text-sm text-gray-900">{format(new Date(booking.departure_date), 'MMM d, yyyy')}</p>
+                              </div>
+                            )}
+                            {booking.return_date && (
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Return</p>
+                                <p className="text-sm text-gray-900">{format(new Date(booking.return_date), 'MMM d, yyyy')}</p>
+                              </div>
+                            )}
+                            {booking.passengers && (
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Passengers</p>
+                                <p className="text-sm text-gray-900">{booking.passengers}</p>
+                              </div>
+                            )}
+                            {(booking.aircraft_type || booking.metadata?.airline) && (
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Airline</p>
+                                <p className="text-sm text-gray-900">{booking.aircraft_type || booking.metadata?.airline}</p>
+                              </div>
+                            )}
+                            {booking.metadata?.flight_number && (
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Flight</p>
+                                <p className="text-sm text-gray-900">{booking.metadata.flight_number}</p>
+                              </div>
+                            )}
+                            {booking.metadata?.cabin_class && (
+                              <div>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Cabin</p>
+                                <p className="text-sm text-gray-900 capitalize">{booking.metadata.cabin_class}</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Passenger Details */}
+                          {booking.metadata?.passengers && booking.metadata.passengers.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2">Travelers</p>
+                              <div className="space-y-1">
+                                {booking.metadata.passengers.map((pax, idx) => (
+                                  <div key={idx} className="flex items-center gap-2 text-sm">
+                                    <Users size={12} className="text-gray-400" />
+                                    <span className="text-gray-900">{pax.givenName} {pax.familyName}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Selected Seats */}
+                          {booking.metadata?.selected_seats && booking.metadata.selected_seats.length > 0 && (
+                            <div className="mt-3 p-2 bg-blue-50 rounded-lg">
+                              <p className="text-[10px] text-blue-600 uppercase tracking-wide mb-1">Selected Seats</p>
+                              <p className="text-sm text-blue-900">
+                                {booking.metadata.selected_seats.map(s => s.seatDesignator).join(', ')}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Baggage Info */}
+                          {booking.metadata?.baggage && (
+                            <div className="mt-3 flex items-center gap-4 text-xs text-gray-600">
+                              {booking.metadata.baggage.checkedBags > 0 && (
+                                <span>{booking.metadata.baggage.checkedBags} checked bag{booking.metadata.baggage.checkedBags > 1 ? 's' : ''}</span>
+                              )}
+                              {booking.metadata.baggage.cabinBags > 0 && (
+                                <span>{booking.metadata.baggage.cabinBags} cabin bag{booking.metadata.baggage.cabinBags > 1 ? 's' : ''}</span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Booking Reference */}
+                          {booking.metadata?.booking_reference && (
+                            <div className="mt-3 p-2 bg-gray-50 rounded-lg">
+                              <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Booking Reference</p>
+                              <p className="text-lg font-mono font-bold text-gray-900">{booking.metadata.booking_reference}</p>
                             </div>
                           )}
                         </div>

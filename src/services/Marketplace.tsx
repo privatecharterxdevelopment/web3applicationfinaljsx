@@ -7,7 +7,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import LoginModal from '../components/LoginModal';
 import Header from '../components/Header';
-import Footer from '../components/Footer';
+import Footer from '../components/Landingpagenew/HomepageFooter';
 
 // CO2 Certificate Project Interface
 interface CO2Project {

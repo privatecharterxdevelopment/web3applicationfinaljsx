@@ -60,6 +60,7 @@ const PRICE_TO_TIER = {
   // Legacy prices
   4900: 'explorer',    // $49.00 (old explorer price)
   39900: 'elite',      // $399.00 (old elite price)
+  13000: 'elite',      // $130.00 (admin panel elite price)
   2000: 'starter',     // $20.00
   4000: 'pro',         // $40.00
 };

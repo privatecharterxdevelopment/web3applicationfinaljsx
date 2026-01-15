@@ -339,7 +339,7 @@ Happy travels!`,
     <div className="w-full flex-1 flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">Settings</h2>
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-light text-gray-900 tracking-tighter">Settings</h2>
         {!isEditing ? (
           <button
             onClick={() => setIsEditing(true)}
@@ -403,7 +403,7 @@ Happy travels!`,
           <div className="bg-white/15 backdrop-blur-xl rounded-lg border border-gray-300/50 p-6">
             <div className="flex items-center gap-2 mb-6">
               <User size={18} className="text-gray-700" />
-              <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900">Personal Information</h3>
             </div>
 
             {!isEditing ? (
@@ -4260,8 +4260,8 @@ const TokenizedAssetsGlassmorphic = () => {
     // { id: 'calendar', label: 'Calendar', icon: Calendar, category: 'calendar' }, // Hidden - not needed for now
     // UNIFIED: Single "My Activity" tab replaces My Bookings + My Requests
     { id: 'activity', label: 'My Activity', icon: Activity, category: 'my-activity', rwsOnly: true },
-    // OLD ITEMS (kept for backwards compatibility, redirect to my-activity)
-    // { id: 'bookings', label: 'My Bookings', icon: CreditCard, category: 'bookings' },
+    // My Bookings - Adventures and Commercial Flights
+    { id: 'bookings', label: 'My Bookings', icon: CreditCard, category: 'bookings', rwsOnly: true },
     // { id: 'requests', label: 'My Requests', icon: FolderOpen, category: 'requests' },
     {
       id: 'subscriptions',
@@ -5912,10 +5912,10 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
-          {/* LEGACY: My Bookings View - Redirect to My Activity */}
+          {/* My Bookings View - Adventures and Commercial Flights */}
           {!isTransitioning && activeCategory === 'bookings' && (
             <div className="w-full h-full overflow-y-auto">
-              <MyActivityView user={user} />
+              <MyBookingsView user={user} />
             </div>
           )}
 

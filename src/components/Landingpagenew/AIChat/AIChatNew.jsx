@@ -77,6 +77,7 @@ import { useAccount, useDisconnect } from 'wagmi';
 // Quick suggestion bubbles - matching original design
 const QUICK_SUGGESTIONS = [
   { id: 'jets', label: 'Private Jets', prompt: 'I need to book a private jet' },
+  { id: 'flights', label: 'Flights', prompt: 'Search for commercial flights' },
   { id: 'custom_travel', label: 'Custom Travel', prompt: 'I want to plan a custom trip with multiple destinations and stops' },
   { id: 'sommelier', label: 'Sommelier', prompt: 'I would like wine recommendations' },
   { id: 'restaurants', label: 'Restaurants', prompt: 'Find me a luxury restaurant' },
@@ -232,22 +233,8 @@ const AIChatNew = ({
   useEffect(() => {
     if (isAdmin || !subscription.userProfile) return;
 
-    // Only check when user is on the "new" chat screen
-    if (chat.activeChat === 'new') {
-      const hasSubscription = subscription.userProfile.subscription_tier && subscription.userProfile.subscription_status === 'active';
-      const hasLimit = subscription.userProfile.chats_limit !== null && subscription.userProfile.chats_limit !== undefined;
-      const limitReached = hasLimit && subscription.userProfile.chats_used >= subscription.userProfile.chats_limit;
-
-      if (!hasSubscription) {
-        console.log('🚫 Blocking new chat - no subscription');
-        modals.setSubscriptionBlockerReason('no_subscription');
-        modals.setShowSubscriptionBlocker(true);
-      } else if (limitReached) {
-        console.log('🚫 Blocking new chat - limit reached:', subscription.userProfile.chats_used, '/', subscription.userProfile.chats_limit);
-        modals.setSubscriptionBlockerReason('chat_limit');
-        modals.setShowSubscriptionBlocker(true);
-      }
-    }
+    // Removed aggressive popup - let user browse freely
+    // Popup only shows when they actually try to SEND a message
   }, [chat.activeChat, subscription.userProfile, isAdmin]);
 
   useEffect(() => {

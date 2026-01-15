@@ -116,7 +116,10 @@ const getServiceTitle = (type, itemName) => {
     'concierge': 'Concierge Service',
     'restaurant': 'Restaurant Reservation',
     'flowers': 'Flowers & Gifts',
-    'tokenization': 'Asset Tokenization'
+    'tokenization': 'Asset Tokenization',
+    'commercial_flight': 'Commercial Flight',
+    'flight_ticket': 'Flight Ticket',
+    'flight': 'Flight'
   };
   // Return specific title or fall back to item name or formatted type
   return titles[type?.toLowerCase()] || itemName || type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Service';
@@ -774,9 +777,10 @@ export function generateBookingConfirmationHTML(booking, options = {}) {
 
   // Generate service cards HTML (same as request but simpler)
   const serviceCardsHTML = items.map((item, index) => {
-    const itemType = item.type || item.item_type || 'service';
-    const rawItemName = item.name || item.title || item.service_name || '';
-    const itemPrice = item.price || item.basePrice || item.totalWithFee || 0;
+    const itemType = item.type || item.item_type || item.booking_type || 'service';
+    const rawItemName = item.name || item.title || item.service_name || item.service_title || '';
+    // Support both camelCase and snake_case price fields
+    const itemPrice = item.price || item.basePrice || item.base_price || item.totalWithFee || item.total_amount || 0;
     const aircraft = item.aircraft || item.aircraft_type || item.model || item.vehicleName || '';
 
     // Get the category/type display name
@@ -841,7 +845,7 @@ export function generateBookingConfirmationHTML(booking, options = {}) {
       </div>
       <div class="info-block" style="text-align: right;">
         <h3>Payment Status</h3>
-        <p><span class="status-badge status-paid">${booking.payment_status || 'Confirmed'}</span></p>
+        <p><span class="status-badge ${booking.payment_status === 'paid' ? 'status-paid' : booking.payment_status === 'pending' ? 'status-pending' : 'status-confirmed'}">${(booking.payment_status || 'confirmed').toUpperCase()}</span></p>
       </div>
     </div>
 
@@ -864,7 +868,7 @@ export function generateBookingConfirmationHTML(booking, options = {}) {
           <span class="pricing-value">${formatCurrency(vatAmount, currency)}</span>
         </div>
         <div class="pricing-row total">
-          <span class="pricing-label">TOTAL PAID</span>
+          <span class="pricing-label">${booking.payment_status === 'paid' ? 'TOTAL PAID' : 'TOTAL DUE'}</span>
           <span class="pricing-value">${formatCurrency(totalAmount, currency)}</span>
         </div>
       </div>

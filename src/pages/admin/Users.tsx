@@ -184,6 +184,72 @@ export default function AdminUsers() {
     }
   };
 
+  const approveKYC = async (userId: string) => {
+    try {
+      // Check if user has a KYC application
+      const { data: existingKyc } = await supabase
+        .from('kyc_applications')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+
+      if (existingKyc) {
+        // Update existing KYC application
+        const { error } = await supabase
+          .from('kyc_applications')
+          .update({
+            status: 'approved',
+            verification_level: 'level_1',
+            documents_verified: true,
+            identity_verified: true,
+            address_verified: true,
+            reviewed_at: new Date().toISOString(),
+            approved_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', userId);
+
+        if (error) throw error;
+      } else {
+        // Create a new KYC record if none exists
+        const { error } = await supabase
+          .from('kyc_applications')
+          .insert({
+            user_id: userId,
+            status: 'approved',
+            verification_level: 'level_1',
+            documents_verified: true,
+            identity_verified: true,
+            address_verified: true,
+            application_data: {},
+            submitted_at: new Date().toISOString(),
+            reviewed_at: new Date().toISOString(),
+            approved_at: new Date().toISOString()
+          });
+
+        if (error) throw error;
+      }
+
+      // Also update user_profiles
+      await supabase
+        .from('user_profiles')
+        .update({
+          is_verified: true,
+          kyc_verified: true,
+          verification_level: 1
+        })
+        .eq('user_id', userId);
+
+      // Refresh user details
+      if (selectedUser) {
+        fetchUserDetails(selectedUser);
+      }
+    } catch (error) {
+      console.error('Error approving KYC:', error);
+      alert('Failed to approve KYC. Check console for details.');
+    }
+  };
+
   const deleteUser = async (userId: string) => {
     if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
 
@@ -551,44 +617,67 @@ export default function AdminUsers() {
                       <div className="space-y-4">
                         <h3 className="text-sm font-medium text-gray-900 uppercase tracking-wide">KYC Status</h3>
                         <div className="bg-gray-50 rounded-xl p-4">
-                          {userDetails.kyc ? (
-                            <div className="space-y-3">
-                              <div className="flex justify-between items-center">
-                                <span className="text-sm text-gray-500">Status</span>
-                                <span className={`px-2 py-0.5 text-xs font-medium rounded ${
-                                  userDetails.kyc.status === 'approved' ? 'bg-gray-900 text-white' :
-                                  userDetails.kyc.status === 'pending' ? 'bg-gray-200 text-gray-700' :
-                                  'bg-gray-100 text-gray-500'
-                                }`}>
-                                  {userDetails.kyc.status}
-                                </span>
-                              </div>
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-gray-500">Status</span>
+                              <span className={`px-2 py-0.5 text-xs font-medium rounded ${
+                                userDetails.kyc?.status === 'approved' ? 'bg-green-500 text-white' :
+                                userDetails.kyc?.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-gray-200 text-gray-600'
+                              }`}>
+                                {userDetails.kyc?.status || 'Not Submitted'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-gray-500">Verification Level</span>
+                              <span className={`px-2 py-0.5 text-xs font-medium rounded ${
+                                userDetails.kyc?.verification_level === 'level_1' || userDetails.kyc?.verification_level === 'level_2' || userDetails.kyc?.verification_level === 'level_3'
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-gray-100 text-gray-500'
+                              }`}>
+                                {userDetails.kyc?.verification_level
+                                  ? userDetails.kyc.verification_level.replace('level_', 'Level ')
+                                  : 'Level 0'}
+                              </span>
+                            </div>
+                            {userDetails.kyc?.submitted_at && (
                               <div className="flex justify-between">
-                                <span className="text-sm text-gray-500">Submitted</span>
+                                <span className="text-sm text-gray-500">Registered Date</span>
                                 <span className="text-sm text-gray-900">
                                   {formatDate(userDetails.kyc.submitted_at || userDetails.kyc.created_at)}
                                 </span>
                               </div>
-                              {userDetails.kyc.application_data && (
-                                <>
-                                  <div className="flex justify-between">
-                                    <span className="text-sm text-gray-500">Name</span>
-                                    <span className="text-sm text-gray-900">
-                                      {userDetails.kyc.application_data.firstName} {userDetails.kyc.application_data.lastName}
-                                    </span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span className="text-sm text-gray-500">Nationality</span>
-                                    <span className="text-sm text-gray-900">
-                                      {userDetails.kyc.application_data.nationality || '-'}
-                                    </span>
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          ) : (
-                            <p className="text-sm text-gray-500 text-center py-4">No KYC application</p>
-                          )}
+                            )}
+                            {userDetails.kyc?.application_data?.firstName && (
+                              <>
+                                <div className="flex justify-between">
+                                  <span className="text-sm text-gray-500">Name</span>
+                                  <span className="text-sm text-gray-900">
+                                    {userDetails.kyc.application_data.firstName} {userDetails.kyc.application_data.lastName}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-sm text-gray-500">Nationality</span>
+                                  <span className="text-sm text-gray-900">
+                                    {userDetails.kyc.application_data.nationality || '-'}
+                                  </span>
+                                </div>
+                              </>
+                            )}
+
+                            {/* Approve KYC Button - Show when not approved */}
+                            {userDetails.kyc?.status !== 'approved' && (
+                              <div className="pt-3 border-t border-gray-200">
+                                <button
+                                  onClick={() => approveKYC(selectedUser!.id)}
+                                  className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                                >
+                                  <CheckCircle size={16} />
+                                  Approve KYC (Set to Level 1)
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
 

@@ -43,7 +43,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 
 // Import components and services
 import Header from '../components/Header';
-import Footer from '../components/Footer';
+import Footer from '../components/Landingpagenew/HomepageFooter';
 import { supabase } from '../lib/supabase';
 import { airportsStaticService } from '../services/airportsStaticService';
 import { createRequest } from '../services/requests';

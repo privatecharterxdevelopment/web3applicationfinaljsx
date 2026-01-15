@@ -448,31 +448,48 @@ Click **"Add to Route"** to confirm this stop, or provide corrections.`;
     // Only check for existing chats (not new chats)
     if (!isAdmin && !isNewChat && existingChat) {
       const currentMsgCount = existingChat.messages?.filter(m => m.role === 'user').length || 0;
-      const tier = userProfile?.subscription_tier;
+      const tier = userProfile?.subscription_tier?.toLowerCase();
 
-      // Get message limit from centralized helpers
-      const tierMessageLimit = hasUnlimitedAccess(tier) ? Infinity : getMessageLimit(tier);
+      // Debug logging for subscription tier
+      console.log('🔐 Subscription check:', {
+        tier,
+        status: userProfile?.subscription_status,
+        isAdmin,
+        currentMsgCount,
+        userProfile: userProfile ? 'loaded' : 'null'
+      });
 
-      if (currentMsgCount >= tierMessageLimit) {
-        setMessageLimitReached(true);
-        // Add message explaining the limit
-        const travellerLimit = getMessageLimit('traveller');
-        const limitMessage = {
-          role: 'assistant',
-          content: `You've reached the message limit for this chat (${tierMessageLimit} messages).\n\n${!tier || tier.toLowerCase() === 'explorer' ? `Upgrade to Traveller for ${travellerLimit} messages per chat, or Elite for unlimited messages.` : 'Upgrade to Elite for unlimited messages per chat.'}`
-        };
-        setChatHistory(prev => prev.map(c =>
-          c.id === activeChat
-            ? { ...c, messages: [...c.messages, limitMessage] }
-            : c
-        ));
-        // Show subscription blocker popup
-        setSubscriptionBlockerReason('message_limit');
-        setShowSubscriptionBlocker(true);
-        setIsProcessing(false);
-        return;
+      // If subscription not loaded yet, skip the check (allow message)
+      if (!userProfile) {
+        console.log('⚠️ User profile not loaded yet - skipping limit check');
+        // Don't block - continue with the message
+      } else {
+        // Get message limit from centralized helpers
+        const tierMessageLimit = hasUnlimitedAccess(tier) ? Infinity : getMessageLimit(tier);
+
+        console.log('🔐 Message limit:', { tierMessageLimit, currentMsgCount, willBlock: currentMsgCount >= tierMessageLimit });
+
+        if (currentMsgCount >= tierMessageLimit && tierMessageLimit !== Infinity) {
+          setMessageLimitReached(true);
+          // Add message explaining the limit
+          const travellerLimit = getMessageLimit('traveller');
+          const limitMessage = {
+            role: 'assistant',
+            content: `You've reached the message limit for this chat (${tierMessageLimit} messages).\n\n${!tier || tier.toLowerCase() === 'explorer' ? `Upgrade to Traveller for ${travellerLimit} messages per chat, or Elite for unlimited messages.` : 'Upgrade to Elite for unlimited messages per chat.'}`
+          };
+          setChatHistory(prev => prev.map(c =>
+            c.id === activeChat
+              ? { ...c, messages: [...c.messages, limitMessage] }
+              : c
+          ));
+          // Show subscription blocker popup
+          setSubscriptionBlockerReason('message_limit');
+          setShowSubscriptionBlocker(true);
+          setIsProcessing(false);
+          return;
+        }
+        setMessageCount(currentMsgCount + 1);
       }
-      setMessageCount(currentMsgCount + 1);
     }
 
     // FEATURE RESTRICTION CHECK - Check if user is requesting a service requiring higher tier

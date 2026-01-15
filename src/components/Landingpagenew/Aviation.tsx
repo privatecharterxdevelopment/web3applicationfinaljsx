@@ -1,455 +1,452 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LandingHeader from './LandingHeader';
 import Footer from './Footer';
-import {
-  Plane,
-  Shield,
-  Coins,
-  Clock,
-  Globe,
-  Star,
-  Users,
-  Zap,
-  ChevronDown,
-  ArrowRight,
-  Check,
-  Leaf,
-  Award,
-  MapPin,
-  Calendar,
-  Headphones,
-  Sparkles,
-  TrendingUp,
-  Wind,
-  Battery,
-  Settings,
-  Info
-} from 'lucide-react';
+import { fetchEmptyLegs } from '../../services/emptyLegsService';
+
+interface EmptyLegOffer {
+  id: string;
+  title: string;
+  origin: string;
+  destination?: string;
+  price?: number;
+  currency?: string;
+  image_url?: string;
+  aircraft_type?: string;
+  departure_date?: string;
+  passengers?: number;
+}
 
 interface AviationProps {
-  setCurrentPage: (page: string) => void;
+  setCurrentPage?: (page: string) => void;
 }
 
 function Aviation({ setCurrentPage }: AviationProps) {
   const navigate = useNavigate();
+  const [emptyLegs, setEmptyLegs] = useState<EmptyLegOffer[]>([]);
+  const [loadingEmptyLegs, setLoadingEmptyLegs] = useState(true);
+  const [emptyLegIndexes, setEmptyLegIndexes] = useState([0, 0, 0, 0]);
+
+  // Fetch empty legs from database
+  useEffect(() => {
+    const loadEmptyLegs = async () => {
+      try {
+        const result = await fetchEmptyLegs({ limit: 20 });
+        setEmptyLegs(result.data);
+      } catch (error) {
+        console.error('Error fetching empty legs:', error);
+      } finally {
+        setLoadingEmptyLegs(false);
+      }
+    };
+
+    loadEmptyLegs();
+  }, []);
+
+  // Animated empty legs rotation - each card switches at different intervals
+  useEffect(() => {
+    if (emptyLegs.length <= 4) return;
+
+    const intervals = [4000, 6000, 5000, 7000]; // Different intervals for each card
+    const legsPerCard = Math.ceil(emptyLegs.length / 4);
+
+    const timers = intervals.map((interval, cardIndex) => {
+      return setInterval(() => {
+        setEmptyLegIndexes(prev => {
+          const newIndexes = [...prev];
+          newIndexes[cardIndex] = (newIndexes[cardIndex] + 1) % legsPerCard;
+          return newIndexes;
+        });
+      }, interval);
+    });
+
+    return () => timers.forEach(timer => clearInterval(timer));
+  }, [emptyLegs.length]);
+
+  // Get empty leg for a specific card position
+  const getEmptyLegForCard = (cardIndex: number) => {
+    if (emptyLegs.length === 0) return null;
+    const legsPerCard = Math.ceil(emptyLegs.length / 4);
+    const startIndex = cardIndex * legsPerCard;
+    const currentIndex = startIndex + (emptyLegIndexes[cardIndex] % legsPerCard);
+    return emptyLegs[currentIndex] || emptyLegs[cardIndex] || emptyLegs[0];
+  };
 
   return (
-    <div className="min-h-screen bg-gray-100 px-4 py-4">
+    <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Satoshi', sans-serif" }}>
       <LandingHeader />
 
-      {/* Hero Section with Background Video - Shorter Height */}
-      <section
-        className="relative px-4 sm:px-8 py-12 sm:py-16 max-w-7xl mx-auto rounded-2xl overflow-hidden mb-6 sm:mb-8"
-        style={{
-          backgroundImage: 'url(https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/Privatecharterx_clouds.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
-        }}
-      >
-        {/* Background Video */}
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          className="absolute inset-0 w-full h-full object-cover rounded-2xl"
-          poster="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/Privatecharterx_clouds.png"
-        >
-          <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/moreVideos/clouds_video_privatecharterx.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zL2Nsb3Vkc192aWRlb19wcml2YXRlY2hhcnRlcngubXA0IiwiaWF0IjoxNzY3Njk2NDc5LCJleHAiOjIwMjQwMzA2MDQ1Mjc5fQ.DIWb_2kg54Glb-qyH8S9FYQ9GsXx-mhk1TcpfLZbMx0" type="video/mp4" />
-        </video>
-        {/* Light overlay for text readability */}
-        <div className="absolute inset-0 bg-gray-100/60 rounded-2xl"></div>
-
-        <div className="relative z-10 text-center text-white">
-          <div className="mb-6">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/40 backdrop-blur-sm rounded-full border border-white/50">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-[10px] text-gray-800 font-medium tracking-wide uppercase">Access to 16,000+ Jets Worldwide</span>
-            </div>
-          </div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light mb-4 sm:mb-6 leading-tight tracking-tight">
-            <span className="text-gray-900">Reinventing private aviation</span><br />
-            <span className="text-gray-600">Blockchain-Powered travel</span>
+      {/* Hero Section - Clean title */}
+      <section className="px-4 sm:px-8 pt-12 sm:pt-20 pb-8 max-w-6xl mx-auto">
+        <div className="text-center">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-light mb-4 tracking-tight">
+            <span className="text-gray-900">Aviation</span> <span className="text-gray-500">Services</span>
           </h1>
-          <p className="text-sm sm:text-base lg:text-lg text-gray-700 mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed px-4">
-            Experience the future of private aviation with transparent pricing, sustainable flight certificates,
-            and 24/7 blockchain-integrated service.
+          <p className="text-gray-500 text-base sm:text-lg max-w-2xl mx-auto mb-8">
+            Access to 16,000+ aircraft worldwide. From commercial flights to private jets,
+            all with transparent pricing and crypto payments.
           </p>
 
-          {/* Key Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8 max-w-4xl mx-auto">
-            <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/60">
-              <div className="text-xl sm:text-2xl font-light mb-1 text-gray-900">16,000+</div>
-              <p className="text-xs sm:text-sm text-gray-600">Global Aircraft Fleet</p>
-            </div>
-            <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/60">
-              <div className="text-2xl font-light mb-1 text-gray-900">24/7</div>
-              <p className="text-sm text-gray-600">Concierge Service</p>
-            </div>
-            <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/60">
-              <div className="text-2xl font-light mb-1 text-gray-900">100%</div>
-              <p className="text-sm text-gray-600">Blockchain Verified</p>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
-            <button
-              onClick={() => navigate('/dashboard/chat?newChat=true')}
-              className="bg-gray-900 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-md text-sm hover:bg-gray-800 transition-colors font-medium"
+          {/* Two Buttons */}
+          <div className="flex gap-3 justify-center">
+            <a
+              href="mailto:bookings@privatecharterx.com?subject=Aviation Quote Request"
+              className="px-4 py-2 bg-white border border-gray-300 rounded-full text-sm text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              Book Your Flight
-            </button>
+              Get a Quote
+            </a>
             <button
-              onClick={() => navigate('/dashboard/empty-legs')}
-              className="border border-gray-400 text-gray-800 px-6 sm:px-8 py-2.5 sm:py-3 rounded-md text-sm hover:bg-white/40 transition-colors backdrop-blur-sm"
+              onClick={() => navigate('/dashboard/chat?query=aviation&newChat=true')}
+              className="px-4 py-2 bg-gray-900 rounded-full text-sm text-white hover:bg-gray-800 transition-colors"
             >
-              Explore Empty Legs
+              Book by AI
             </button>
           </div>
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto">
-        {/* Our Aviation Services */}
-        <section className="px-8 py-20 max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-light text-gray-900 mb-6 leading-tight">
-              Our Aviation Services<br />
-              <span className="font-medium">Comprehensive Air Travel Solutions</span>
-            </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              From traditional private jets to cutting-edge eVTOLs, we provide access to the world's
-              most comprehensive aviation network with full blockchain transparency.
-            </p>
-          </div>
+      {/* Two Big Cards */}
+      <section className="px-4 sm:px-8 py-8 sm:py-12 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Private Jets */}
-            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
-              {/* Image Header */}
-              <div className="w-full h-32 overflow-hidden">
-                <img src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/Privatecharterx_privatejet_charter.png" alt="Private Jets" className="w-full h-full object-cover" />
-              </div>
-              <div className="p-6">
-                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Private Jets</h3>
-                <p className="text-gray-600 text-sm leading-snug mb-3">
-                  Access to 16,000+ private jets worldwide. From light jets for short trips to
-                  ultra-long-range aircraft for intercontinental travel.
-                </p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Global fleet access
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Instant booking
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Transparent pricing
-                  </span>
-                </div>
-                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
-              </div>
+          {/* Card 1 - Commercial Aviation */}
+          <div className="group rounded-2xl overflow-hidden h-[400px] sm:h-[480px] flex flex-col bg-gray-100 border border-gray-200">
+            {/* Image Area - Top */}
+            <div className="relative h-[55%] overflow-hidden">
+              <div
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                style={{
+                  backgroundImage: 'url(https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/Whisk_e82354997b9109c97864b1fcd5f56776dr.png)'
+                }}
+              />
             </div>
-
-            {/* Empty Legs */}
-            <div className="bg-gray-900 text-white rounded-2xl overflow-hidden relative">
-              <div className="absolute top-4 right-4 bg-white text-gray-900 px-3 py-1 rounded-full text-xs font-medium">
-                NFT Perk
+            {/* Content Area - Bottom */}
+            <div className="flex-1 bg-gray-100 p-6 sm:p-8">
+              <h3 className="text-2xl sm:text-3xl font-light mb-3 tracking-tight">
+                <span className="text-gray-900">Commercial</span> <span className="text-gray-500">Aviation</span>
+              </h3>
+              <p className="text-sm text-gray-600 mb-4 max-w-md">
+                Book flights with 300+ airlines worldwide. Economy to First Class,
+                all payable with crypto. Best prices guaranteed.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px]">300+ Airlines</span>
+                <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px]">Crypto Payments</span>
+                <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px]">Best Price</span>
               </div>
-              {/* Image Header */}
-              <div className="h-40 overflow-hidden">
-                <img src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/privatecharterx_emptylegs.png" alt="Empty Legs" className="w-full h-full object-cover" />
-              </div>
-              <div className="p-6">
-                <h3 className="text-lg font-light mb-3 leading-tight">Empty Legs</h3>
-                <p className="text-gray-300 text-sm leading-snug mb-3">
-                  Exclusive access to empty leg flights at up to 75% off regular prices.
-                  NFT members get select free empty legs.
-                </p>
-                {/* Tags */}
-                <div className="space-y-2 mb-6">
-                  <div className="bg-gray-700 text-gray-200 px-2 py-1 rounded-full text-xs inline-block mr-2">
-                    Up to 75% savings
-                  </div>
-                  <div className="bg-gray-700 text-gray-200 px-2 py-1 rounded-full text-xs inline-block mr-2">
-                    Free flights for NFT holders
-                  </div>
-                  <div className="bg-gray-700 text-gray-200 px-2 py-1 rounded-full text-xs inline-block">
-                    Real-time availability
-                  </div>
-                </div>
+              <div className="flex gap-2">
                 <button
-                  onClick={() => navigate('/dashboard/empty-legs')}
-                  className="text-white font-light text-sm flex items-center hover:text-gray-200 transition-colors"
+                  onClick={() => navigate('/flights')}
+                  className="px-3 py-1.5 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors"
                 >
-                  View Empty Legs <ArrowRight className="w-4 h-4 ml-2" />
+                  Search Flights
                 </button>
               </div>
             </div>
+          </div>
 
-            {/* Group Charter */}
-            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
-              {/* Image Header */}
-              <div className="w-full h-32 overflow-hidden">
-                <img src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/privatecharterx_group_charter.png" alt="Group Charter" className="w-full h-full object-cover" />
-              </div>
-              <div className="p-6">
-                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Group Charter</h3>
-                <p className="text-gray-600 text-sm leading-snug mb-3">
-                  Tailored solutions for corporate events, sports teams, and large group travel
-                  with customized itineraries and dedicated service.
-                </p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Custom itineraries
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Dedicated coordinator
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Volume discounts
-                  </span>
-                </div>
-                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
-              </div>
+          {/* Card 2 - Private Aviation */}
+          <div className="group rounded-2xl overflow-hidden h-[400px] sm:h-[480px] flex flex-col bg-gray-100 border border-gray-200">
+            {/* Image Area - Top */}
+            <div className="relative h-[55%] overflow-hidden">
+              <div
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                style={{
+                  backgroundImage: 'url(https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/Whisk_a5109b014ee92cba42f48bfebce4fd92eg.png)'
+                }}
+              />
             </div>
-
-            {/* Helicopter */}
-            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
-              {/* Image Header */}
-              <div className="w-full h-32 overflow-hidden">
-                <img src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/Privatecharterx_helicopter.png" alt="Helicopter" className="w-full h-full object-cover" />
+            {/* Content Area - Bottom */}
+            <div className="flex-1 bg-gray-100 p-6 sm:p-8">
+              <h3 className="text-2xl sm:text-3xl font-light mb-3 tracking-tight">
+                <span className="text-gray-900">Private</span> <span className="text-gray-500">Aviation</span>
+              </h3>
+              <p className="text-sm text-gray-600 mb-4 max-w-md">
+                Access 16,000+ private jets and helicopters. From light jets for short trips
+                to ultra-long-range aircraft for intercontinental travel.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px]">16,000+ Aircraft</span>
+                <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px]">Jets & Helicopters</span>
+                <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px]">24/7 Service</span>
               </div>
-              <div className="p-6">
-                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">Helicopter</h3>
-                <p className="text-gray-600 text-sm leading-snug mb-3">
-                  Perfect for short-distance travel, city transfers, and accessing remote locations
-                  with precision and flexibility.
-                </p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    City center access
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Remote destinations
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Quick transfers
-                  </span>
-                </div>
-                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
-              </div>
-            </div>
-
-            {/* eVTOL */}
-            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer relative">
-              <div className="absolute top-6 right-6 bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs z-10">
-                Coming Soon
-              </div>
-              {/* Image Header */}
-              <div className="w-full h-32 overflow-hidden">
-                <img src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/Privatecharterx_evtol.png" alt="eVTOL" className="w-full h-full object-cover" />
-              </div>
-              <div className="p-6">
-                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">eVTOL</h3>
-                <p className="text-gray-600 text-sm leading-snug mb-3">
-                  The future of urban air mobility. Electric vertical takeoff and landing aircraft
-                  for sustainable, efficient city travel.
-                </p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Zero emissions
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Quiet operation
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Urban mobility
-                  </span>
-                </div>
-                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
-              </div>
-            </div>
-
-            {/* 24/7 Service */}
-            <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer">
-              {/* Image Header */}
-              <div className="w-full h-32 overflow-hidden">
-                <img src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/winery/privatecharterx_support.png" alt="24/7 Concierge" className="w-full h-full object-cover" />
-              </div>
-              <div className="p-6">
-                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">24/7 Concierge</h3>
-                <p className="text-gray-600 text-sm leading-snug mb-3">
-                  Round-the-clock support from our aviation experts. From booking to landing,
-                  we're here to ensure your journey is seamless.
-                </p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    24/7 availability
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Expert aviation team
-                  </span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">
-                    Personalized service
-                  </span>
-                </div>
-                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">+</div>
+              <div className="flex gap-2">
+                <a
+                  href="mailto:bookings@privatecharterx.com?subject=Private Jet Quote"
+                  className="px-3 py-1.5 bg-gray-200 rounded-full text-xs text-gray-700 hover:bg-gray-300 transition-colors"
+                >
+                  Get a Quote
+                </a>
+                <button
+                  onClick={() => navigate('/dashboard/chat?query=private+jet&newChat=true')}
+                  className="px-3 py-1.5 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors"
+                >
+                  Book by AI
+                </button>
               </div>
             </div>
           </div>
-        </section>
 
-        {/* Sustainability & Transparency */}
-        <section className="px-8 py-20 max-w-6xl mx-auto border-t border-gray-100">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <h2 className="text-3xl font-light text-gray-900 mb-6 leading-tight">
-                Sustainability & Transparency<br />
-                <span className="font-medium">Blockchain-Certified Green Aviation</span>
-              </h2>
-              <p className="text-gray-600 mb-8 leading-relaxed">
-                Every flight comes with optional blockchain-verified CO2 and SAF (Sustainable Aviation Fuel)
-                certificates, providing unprecedented transparency in aviation's environmental impact.
-              </p>
-
-              <div className="space-y-6">
-                <div className="flex items-start">
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mr-4">
-                    <Leaf className="w-6 h-6 text-gray-600" />
-                  </div>
-                  <div>
-                    <h4 className="text-base font-light text-gray-900 mb-2">CO2 Certificates</h4>
-                    <p className="text-sm text-gray-600">Blockchain-verified carbon footprint tracking for every flight with offset options</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start">
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mr-4">
-                    <Award className="w-6 h-6 text-gray-600" />
-                  </div>
-                  <div>
-                    <h4 className="text-base font-light text-gray-900 mb-2">SAF Certificates</h4>
-                    <p className="text-sm text-gray-600">Sustainable Aviation Fuel usage verification through immutable blockchain records</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start">
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mr-4">
-                    <Shield className="w-6 h-6 text-gray-600" />
-                  </div>
-                  <div>
-                    <h4 className="text-base font-light text-gray-900 mb-2">Transparent Pricing</h4>
-                    <p className="text-sm text-gray-600">All costs, fees, and environmental impacts clearly displayed and blockchain-verified</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gray-50 rounded-2xl p-8 border border-gray-100">
-              <h3 className="text-lg font-light text-gray-900 mb-6 leading-tight">Environmental Impact Dashboard</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                  <span className="text-sm text-gray-600">Flights with SAF</span>
-                  <span className="text-lg font-light text-gray-900">23%</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                  <span className="text-sm text-gray-600">CO2 Offset Programs</span>
-                  <span className="text-lg font-light text-gray-900">89%</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                  <span className="text-sm text-gray-600">Blockchain Certificates</span>
-                  <span className="text-lg font-light text-gray-900">100%</span>
-                </div>
-                <div className="flex justify-between items-center py-3">
-                  <span className="text-sm text-gray-600">Carbon Neutral Flights</span>
-                  <span className="text-lg font-light text-gray-900">67%</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Our Commitment */}
-        <section className="px-8 py-20 max-w-6xl mx-auto border-t border-gray-100">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-light text-gray-900 mb-6 leading-tight">
-              Our Commitment<br />
-              <span className="font-medium">Brokers Today, Operators Tomorrow</span>
-            </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              Currently serving as your trusted aviation brokers with full blockchain integration,
-              we're building toward becoming future operators in the evolving aviation landscape.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-6">
-                <Headphones className="w-8 h-8 text-gray-700" />
-              </div>
-              <h3 className="text-lg font-light text-gray-900 mb-4 leading-tight">24/7 Service</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                Our expert team provides round-the-clock support, ensuring seamless booking
-                and travel coordination for all your aviation needs.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-6">
-                <Shield className="w-8 h-8 text-gray-700" />
-              </div>
-              <h3 className="text-lg font-light text-gray-900 mb-4 leading-tight">Blockchain Integration</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                Every transaction, certificate, and booking is secured and verified through
-                blockchain technology for maximum transparency and trust.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-6">
-                <TrendingUp className="w-8 h-8 text-gray-700" />
-              </div>
-              <h3 className="text-lg font-light text-gray-900 mb-4 leading-tight">Future Operations</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                We're actively developing our capabilities to become direct operators,
-                bringing even more control and innovation to your aviation experience.
-              </p>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {/* CTA Section */}
-      <section className="px-8 py-20 max-w-4xl mx-auto text-center">
-        <h2 className="text-3xl font-light text-gray-900 mb-4">Ready to Take Flight?</h2>
-        <p className="text-gray-500 mb-12 max-w-2xl mx-auto leading-relaxed">
-          Experience the future of aviation with blockchain-verified transparency,
-          sustainable options, and unmatched service quality.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
-          <button
-            onClick={() => navigate('/dashboard/chat?newChat=true&query=private+jet+charter')}
-            className="bg-gray-900 text-white px-8 py-3 rounded-md text-sm hover:bg-gray-800 transition-colors flex items-center justify-center"
-          >
-            Book Your Flight
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </button>
-          <button
-            onClick={() => navigate('/dashboard/empty-legs')}
-            className="border border-gray-200 text-gray-700 px-8 py-3 rounded-md text-sm hover:bg-gray-50 transition-colors"
-          >
-            Explore Empty Legs
-          </button>
         </div>
+      </section>
+
+      {/* Empty Legs Banner - Full Width */}
+      <section className="px-4 sm:px-8 py-8 sm:py-12 max-w-6xl mx-auto">
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          <div className="p-6 sm:p-8">
+            {/* Header */}
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h3 className="text-2xl sm:text-3xl font-light mb-2 tracking-tight">
+                  <span className="text-gray-900">Empty</span> <span className="text-gray-500">Legs</span>
+                </h3>
+                <p className="text-sm text-gray-500 max-w-md">
+                  Save up to 75% on repositioning flights. One-way private jet flights at a fraction of the regular charter price.
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/dashboard/empty-legs')}
+                className="px-3 py-1.5 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors"
+              >
+                View All
+              </button>
+            </div>
+
+            {/* Empty Legs Cards Grid - 2 rows x 4 columns */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {loadingEmptyLegs ? (
+                // Loading skeleton
+                [...Array(8)].map((_, i) => (
+                  <div key={i} className="animate-pulse bg-gray-100 rounded-xl h-[180px]" />
+                ))
+              ) : emptyLegs.length > 0 ? (
+                emptyLegs.slice(0, 8).map((leg, index) => (
+                  <div
+                    key={leg.id || index}
+                    onClick={() => navigate('/dashboard/empty-legs')}
+                    className="group relative rounded-xl overflow-hidden cursor-pointer h-[180px] transition-all duration-500"
+                  >
+                    {/* Background Image */}
+                    <div
+                      className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
+                      style={{
+                        backgroundImage: `url(${leg.image_url || 'https://images.unsplash.com/photo-1540962351504-03099e0a754b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'})`
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+
+                    {/* Content */}
+                    <div className="absolute inset-0 p-3 flex flex-col justify-end">
+                      <div className="flex items-center gap-1 text-white text-xs mb-1">
+                        <span className="font-medium">{leg.origin?.substring(0, 3).toUpperCase()}</span>
+                        <span className="text-white/60">→</span>
+                        <span className="font-medium">{leg.destination?.substring(0, 3).toUpperCase() || 'TBD'}</span>
+                      </div>
+                      <p className="text-white/70 text-[10px] line-clamp-1 mb-2">{leg.aircraft_type || 'Private Jet'}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white font-medium text-sm">
+                          {leg.price ? `$${leg.price.toLocaleString()}` : 'On Request'}
+                        </span>
+                        <span className="bg-green-500 text-white px-1.5 py-0.5 rounded text-[8px] font-medium">
+                          -75%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                // No empty legs available
+                <div className="col-span-4 flex items-center justify-center text-gray-400 text-sm py-12">
+                  No empty legs available at the moment
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* More Services - Same card style */}
+      <section className="px-4 sm:px-8 py-8 sm:py-12 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          {/* Helicopter */}
+          <div className="group rounded-2xl overflow-hidden h-[400px] sm:h-[480px] flex flex-col bg-gray-100 border border-gray-200">
+            <div className="relative h-[55%] overflow-hidden">
+              <div
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                style={{
+                  backgroundImage: 'url(https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/Whisk_62421c53d9b112ab8db4a272d1420bd0eg.png)'
+                }}
+              />
+            </div>
+            <div className="flex-1 bg-gray-100 p-6 sm:p-8">
+              <h3 className="text-2xl sm:text-3xl font-light mb-3 tracking-tight">
+                <span className="text-gray-900">Helicopter</span> <span className="text-gray-500">Charter</span>
+              </h3>
+              <p className="text-sm text-gray-600 mb-4 max-w-md">
+                City-to-city transfers, scenic tours, and event transportation.
+                Perfect for short-range travel and accessing remote locations.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px]">City Transfers</span>
+                <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px]">Scenic Tours</span>
+                <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px]">Events</span>
+              </div>
+              <div className="flex gap-2">
+                <a
+                  href="mailto:bookings@privatecharterx.com?subject=Helicopter Charter Inquiry"
+                  className="px-3 py-1.5 bg-gray-200 rounded-full text-xs text-gray-700 hover:bg-gray-300 transition-colors"
+                >
+                  Get a Quote
+                </a>
+                <button
+                  onClick={() => navigate('/dashboard/chat?query=helicopter&newChat=true')}
+                  className="px-3 py-1.5 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors"
+                >
+                  Book by AI
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Group Charter */}
+          <div className="group rounded-2xl overflow-hidden h-[400px] sm:h-[480px] flex flex-col bg-gray-100 border border-gray-200">
+            <div className="relative h-[55%] overflow-hidden">
+              <div
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                style={{
+                  backgroundImage: 'url(https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/Whisk_a03676b0c23fce485f841fbe26bcc9ffeg%20%281%29.png)'
+                }}
+              />
+            </div>
+            <div className="flex-1 bg-gray-100 p-6 sm:p-8">
+              <h3 className="text-2xl sm:text-3xl font-light mb-3 tracking-tight">
+                <span className="text-gray-900">Group</span> <span className="text-gray-500">Charter</span>
+              </h3>
+              <p className="text-sm text-gray-600 mb-4 max-w-md">
+                Tailored solutions for corporate events, sports teams, and large groups.
+                Custom itineraries with dedicated service coordinators.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px]">10+ Passengers</span>
+                <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px]">Corporate</span>
+                <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px]">Sports Teams</span>
+              </div>
+              <div className="flex gap-2">
+                <a
+                  href="mailto:bookings@privatecharterx.com?subject=Group Charter Inquiry"
+                  className="px-3 py-1.5 bg-gray-200 rounded-full text-xs text-gray-700 hover:bg-gray-300 transition-colors"
+                >
+                  Get a Quote
+                </a>
+                <button
+                  onClick={() => navigate('/dashboard/chat?query=group+charter&newChat=true')}
+                  className="px-3 py-1.5 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors"
+                >
+                  Book by AI
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Cargo Charter */}
+          <div className="group rounded-2xl overflow-hidden h-[400px] sm:h-[480px] flex flex-col bg-gray-100 border border-gray-200">
+            <div className="relative h-[55%] overflow-hidden">
+              <div
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                style={{
+                  backgroundImage: 'url(https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/Whisk_6b293b36de4a53d812a4def7886fac81eg.png)'
+                }}
+              />
+            </div>
+            <div className="flex-1 bg-gray-100 p-6 sm:p-8">
+              <h3 className="text-2xl sm:text-3xl font-light mb-3 tracking-tight">
+                <span className="text-gray-900">Cargo</span> <span className="text-gray-500">Charter</span>
+              </h3>
+              <p className="text-sm text-gray-600 mb-4 max-w-md">
+                Time-critical freight solutions for urgent deliveries. Express air cargo
+                services with dedicated aircraft and flexible scheduling.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px]">Express Delivery</span>
+                <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px]">Time-Critical</span>
+                <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px]">Dedicated Aircraft</span>
+              </div>
+              <div className="flex gap-2">
+                <a
+                  href="mailto:bookings@privatecharterx.com?subject=Cargo Charter Inquiry"
+                  className="px-3 py-1.5 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors"
+                >
+                  Get a Quote
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* MEDEVAC */}
+          <div className="group rounded-2xl overflow-hidden h-[400px] sm:h-[480px] flex flex-col bg-gray-100 border border-gray-200">
+            <div className="relative h-[55%] overflow-hidden">
+              <div
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                style={{
+                  backgroundImage: 'url(https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/Whisk_298998b167301be944d4ff7fb3bc74e5eg.png)'
+                }}
+              />
+            </div>
+            <div className="flex-1 bg-gray-100 p-6 sm:p-8">
+              <h3 className="text-2xl sm:text-3xl font-light mb-3 tracking-tight">
+                <span className="text-gray-900">MEDEVAC</span> <span className="text-gray-500">Flights</span>
+              </h3>
+              <p className="text-sm text-gray-600 mb-4 max-w-md">
+                Medical evacuation and air ambulance services. 24/7 emergency response
+                with fully equipped aircraft and medical personnel.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px]">24/7 Emergency</span>
+                <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px]">Medical Team</span>
+                <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px]">ICU Equipment</span>
+              </div>
+              <div className="flex gap-2">
+                <a
+                  href="mailto:bookings@privatecharterx.com?subject=MEDEVAC Inquiry"
+                  className="px-3 py-1.5 bg-gray-200 rounded-full text-xs text-gray-700 hover:bg-gray-300 transition-colors"
+                >
+                  Get a Quote
+                </a>
+                <button
+                  onClick={() => navigate('/dashboard/chat?query=medevac+medical+evacuation&newChat=true')}
+                  className="px-3 py-1.5 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors"
+                >
+                  Book by AI
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section className="px-4 sm:px-8 py-12 sm:py-16 max-w-6xl mx-auto text-center">
+        <h3 className="text-2xl sm:text-3xl font-light mb-3 tracking-tight">
+          <span className="text-gray-900">Have questions?</span> <span className="text-gray-500">Get in touch</span>
+        </h3>
+        <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">
+          Our aviation experts are available 24/7 to help you plan your next flight.
+        </p>
+        <a
+          href="mailto:bookings@privatecharterx.com?subject=Aviation Inquiry"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 rounded-full text-sm text-white hover:bg-gray-800 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          Contact Us
+        </a>
       </section>
 
       {/* Footer */}
       <Footer />
-
     </div>
   );
 }

@@ -259,6 +259,28 @@ export const useToolResults = () => {
         }
         break;
 
+      case 'searchCommercialFlights':
+        if (toolResult.results?.length > 0) {
+          tabs.push({
+            id: 'commercial_flights',
+            title: 'Commercial Flights',
+            count: toolResult.results.length,
+            items: toolResult.results.map(item => ({
+              ...item,
+              type: 'commercial_flight',
+              displayType: 'FLIGHT',
+              badgeColor: 'bg-sky-100 text-sky-800',
+              // Additional flight-specific fields
+              searchParams: toolResult.searchParams,
+              bookingPageUrl: toolResult.bookingPageUrl
+            })),
+            searchParams: toolResult.searchParams,
+            bookingPageUrl: toolResult.bookingPageUrl,
+            offerRequestId: toolResult.offerRequestId
+          });
+        }
+        break;
+
       default:
         break;
     }
@@ -422,7 +444,9 @@ export const useToolResults = () => {
       ground_transport: { badge: 'TRANSFER', color: 'bg-gray-200 text-gray-700', icon: 'car' },
       custom_extra: { badge: 'EXTRA', color: 'bg-gray-700 text-white', icon: 'plus' },
       medevac: { badge: 'MEDEVAC', color: 'bg-red-600 text-white', icon: 'medical' },
-      service_fee: { badge: 'FEE', color: 'bg-gray-200 text-gray-600', icon: 'dollar' }
+      service_fee: { badge: 'FEE', color: 'bg-gray-200 text-gray-600', icon: 'dollar' },
+      commercial_flight: { badge: 'FLIGHT', color: 'bg-sky-100 text-sky-800', icon: 'plane' },
+      flight: { badge: 'FLIGHT', color: 'bg-sky-100 text-sky-800', icon: 'plane' }
     };
 
     return typeMap[type] || { badge: 'SERVICE', color: 'bg-gray-300 text-gray-700', icon: 'star' };
@@ -431,7 +455,7 @@ export const useToolResults = () => {
   // Check if item can be paid directly (crypto)
   const canDirectCheckout = useCallback((item) => {
     const type = item.type?.toLowerCase() || '';
-    return ['empty_legs', 'emptyleg', 'adventure', 'fixed_offer', 'wine', 'wines'].includes(type);
+    return ['empty_legs', 'emptyleg', 'adventure', 'fixed_offer', 'wine', 'wines', 'commercial_flight', 'flight'].includes(type);
   }, []);
 
   // Check if item requires quote (AI request)

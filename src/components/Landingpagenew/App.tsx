@@ -20,7 +20,7 @@ import GoogleCalendarCallback from '../GoogleCalendarCallback.jsx';
 import MapboxMap from '../../components/Map.tsx';
 import WeatherWidget from '../../components/WeatherWidget.tsx';
 import Logo from '../../components/Logo.tsx';
-import Footer from '../../components/Footer.tsx';
+import Footer from './Footer';
 import NavigationMenu from '../../components/NavigationMenu.tsx';
 import CookieBanner from '../../components/CookieBanner.tsx';
 import ErrorBoundary from '../../components/ErrorBoundary.tsx';
@@ -57,37 +57,18 @@ import AdminEarnings from '../../pages/admin/Earnings.tsx';
 import AdminNotifications from '../../pages/admin/Notifications.tsx';
 import Faq from '../../components/faq.tsx';  // LOWERCASE faq.tsx
 
-// Import pages
-import FixedOffers from '../../pages/FixedOffers.tsx';
-import EmptyLegOffers from '../../pages/EmptyLegOffers.tsx';
+// Import pages (cleaned - removed unused dead pages)
 import AdminOffers from '../../pages/AdminOffers.tsx';
-import BehindTheScene from '../../pages/BehindTheScene.tsx';
-import HowItWorks from '../../pages/HowItWorks.tsx';
-import Contact from '../../pages/Contact.tsx';
-import Crypto from '../../pages/Crypto.tsx';
-import GroupCharter from '../../pages/services/GroupCharter.tsx';
-import HelicopterCharter from '../../pages/services/HelicopterCharter.tsx';
-import PrivateJetCharter from '../../pages/services/PrivateJetCharter.tsx';
-import PartnersBoard from '../../pages/services/PartnersBoard.tsx';
-import EVTOL from '../../pages/services/EVTOL.tsx';
-import EVTOLPage from '../../pages/eVtolpage.tsx';
-import ICO from '../../pages/web3/ICO.tsx';
-import NFTCollection from '../../pages/web3/NFTCollection.tsx';
-import CarbonCertificates from '../../pages/web3/CarbonCertificates.tsx';
-import DAODrivenTokenizedAssetLicensing from '../../pages/web3/DAODrivenTokenizedAssetLicensing.tsx';
 import Impressum from '../../pages/Legal/Impressum.tsx';
 import PrivacyPolicy from '../../pages/Legal/PrivacyPolicy.tsx';
 import TermsConditions from '../../pages/Legal/TermsConditions.tsx';
-import Partners from '../../pages/Partners.tsx';
-import LuxuryCars from '../../pages/LuxuryCars.tsx';
-import BlogPosts from '../../pages/BlogPosts.tsx';
 import ResetPassword from '../../pages/ResetPassword.tsx';
-import JetCard from '../../pages/JetCard.tsx';
-import EnhancedServicesMap from '../../components/EnhancedServicesMap.jsx';
-import TravelDesignerPage from '../../components/TravelDesigner.tsx';
 
 // Import TokenSwap page
 import TokenSwapPage from './TokenSwapPage';
+
+// Import CryptoFund page (LOCAL TESTING ONLY - NOT FOR PRODUCTION)
+import CryptoFund from '../../pages/CryptoFund';
 
 // Import Landing Page Components
 import Homepage from './Homepage_new';
@@ -98,6 +79,13 @@ import Tokenized from './Tokenized';
 import Helpdesk from './Helpdesk';
 import SpheraAI from './SpheraAI';
 import RWANFT from './RWANFT';
+
+// Import new pages
+import Adventures from '../../pages/Adventures';
+import FlightTickets from '../../pages/FlightTickets';
+import FlightBooking from '../../pages/FlightBooking';
+import EmptyLegs from '../../pages/EmptyLegs';
+import EmptyLegBooking from '../../pages/EmptyLegBooking';
 
 // Import your complete dashboard
 import TokenizedAssetsGlassmorphic from './tokenized-assets-glassmorphic.jsx';
@@ -126,14 +114,8 @@ import MySPVs from '../../pages/MySPVs.tsx';
 import SPVFormationFlow from '../../components/SPVFormation/SPVFormationFlow.jsx';
 import TokenizeAssetFlow from './TokenizeAssetFlow.jsx';
 
-// Import Web3 pages
-import FlightTracker from '../../pages/web3/FlightTracker.tsx';
-
 // Import Chat Widget
 import ChatWidget from './ChatWidget.jsx';
-
-// Import the CO2 Marketplace component
-import Marketplace from '../../services/Marketplace.tsx';
 
 // Import the new unified booking flow instead of separate components
 import UnifiedBookingFlow from '../../components/UnifiedBookingFlow.tsx';
@@ -384,6 +366,16 @@ function AppContent() {
               <Route path="/rwa-nft" element={<RWANFT setCurrentPage={() => {}} />} />
               <Route path="/helpdesk" element={<Helpdesk setCurrentPage={() => {}} />} />
               <Route path="/tokenswap" element={<TokenSwapPage />} />
+              <Route path="/crypto-fund" element={<CryptoFund />} />
+
+              {/* New standalone pages */}
+              <Route path="/adventures" element={<Adventures />} />
+              <Route path="/fixed-offers" element={<Adventures />} />
+              <Route path="/flight-tickets" element={<FlightTickets />} />
+              <Route path="/flights" element={<FlightTickets />} />
+              <Route path="/book/flight/:offerId" element={<FlightBooking />} />
+              <Route path="/empty-legs" element={<EmptyLegs />} />
+              <Route path="/book/empty-leg/:id" element={<EmptyLegBooking />} />
 
               {/* ===== LEGAL PAGES ===== */}
               <Route path="/terms" element={<TermsConditions />} />
@@ -552,6 +544,48 @@ function AppContent() {
               {/* Subscription Success Routes */}
               <Route path="/subscription/success" element={<SubscriptionSuccessPage />} />
               <Route path="/dashboard/success" element={<SubscriptionSuccessPage />} />
+
+              {/* ===== DEAD PAGE REDIRECTS - For old Google indexed pages ===== */}
+              {/* FAQ pages - redirect to dashboard */}
+              <Route path="/faq" element={<Navigate to="/dashboard" replace />} />
+
+              {/* Partner pages - redirect to homepage */}
+              <Route path="/partner" element={<Navigate to="/" replace />} />
+              <Route path="/partner-with-us" element={<Navigate to="/" replace />} />
+
+              {/* Service pages - redirect to aviation */}
+              <Route path="/private-jet" element={<Navigate to="/aviation" replace />} />
+              <Route path="/private-jet-charter" element={<Navigate to="/aviation" replace />} />
+              <Route path="/evtol" element={<Navigate to="/aviation" replace />} />
+              <Route path="/evtol-flights" element={<Navigate to="/aviation" replace />} />
+              <Route path="/helicopter" element={<Navigate to="/aviation" replace />} />
+              <Route path="/helicopter-charter" element={<Navigate to="/aviation" replace />} />
+              <Route path="/yacht" element={<Navigate to="/" replace />} />
+              <Route path="/group-charter" element={<Navigate to="/aviation" replace />} />
+
+              {/* Info pages - redirect to homepage */}
+              <Route path="/how-it-works" element={<Navigate to="/" replace />} />
+              <Route path="/about" element={<Navigate to="/" replace />} />
+              <Route path="/contact" element={<Navigate to="/helpdesk" replace />} />
+              <Route path="/safety" element={<Navigate to="/aviation" replace />} />
+              <Route path="/blog" element={<Navigate to="/" replace />} />
+              <Route path="/news" element={<Navigate to="/" replace />} />
+
+              {/* Membership pages - redirect to dashboard */}
+              <Route path="/membership" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/jet-card" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/visa" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/luxury-cars" element={<Navigate to="/dashboard" replace />} />
+
+              {/* Web3/Crypto pages - redirect to tokenized */}
+              <Route path="/ico" element={<Navigate to="/tokenized" replace />} />
+              <Route path="/nft" element={<Navigate to="/tokenized" replace />} />
+              <Route path="/dao" element={<Navigate to="/tokenized" replace />} />
+              <Route path="/crypto" element={<Navigate to="/tokenized" replace />} />
+              <Route path="/carbon" element={<Navigate to="/tokenized" replace />} />
+              <Route path="/co2" element={<Navigate to="/tokenized" replace />} />
+              <Route path="/marketplace" element={<Navigate to="/tokenized" replace />} />
+              <Route path="/behind-the-scene" element={<Navigate to="/" replace />} />
 
               {/* Home Route - New Landing Page */}
               <Route path="/" element={<Homepage />} />

@@ -102,7 +102,10 @@ const getServiceTitle = (type, itemName) => {
     'concierge': 'Concierge Service',
     'restaurant': 'Restaurant Reservation',
     'flowers': 'Flowers & Gifts',
-    'tokenization': 'Asset Tokenization'
+    'tokenization': 'Asset Tokenization',
+    'commercial_flight': 'Commercial Flight',
+    'flight_ticket': 'Flight Ticket',
+    'flight': 'Flight'
   };
   return titles[type?.toLowerCase()] || itemName || type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Service';
 };
@@ -564,7 +567,8 @@ export async function generateBookingConfirmationPDF(booking, options = {}) {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(COLORS.black);
-  doc.text('TOTAL PAID', priceColLabel, y, { align: 'right' });
+  const totalLabel = (booking.payment_status === 'paid') ? 'TOTAL PAID' : 'TOTAL DUE';
+  doc.text(totalLabel, priceColLabel, y, { align: 'right' });
   doc.setFontSize(11);
   doc.text(formatCurrency(totalAmount, currency), priceColValue, y, { align: 'right' });
 

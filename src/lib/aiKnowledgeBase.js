@@ -119,7 +119,13 @@ export const CONVERSATION_RULES = {
       "helicopter", "heli",
       "yacht", "boat",
       "car", "taxi", "transfer", "chauffeur",
-      "adventure", "package", "experience"
+      "adventure", "package", "experience",
+      // Commercial flights
+      "commercial flight", "airline", "airfare", "airline ticket",
+      "book a flight", "flight to", "flight from", "flights to", "flights from",
+      "fly to", "fly from", "flying to", "flying from",
+      "round trip", "one way flight", "economy class", "business class",
+      "first class", "airline booking", "plane ticket"
     ],
 
     // When to use web search (Claude.ai integration)
@@ -868,6 +874,80 @@ export const SERVICES = {
     ],
 
     crossSell: ["jets", "helicopters", "taxi", "hotels"]
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // COMMERCIAL FLIGHTS - Airline Tickets via Duffel API
+  // ─────────────────────────────────────────────────────────────────────────────
+  commercialFlights: {
+    name: "Commercial Flights",
+    database: "duffel_api",
+    icon: "🛫",
+    description: "Search and book commercial airline tickets worldwide",
+
+    keywords: [
+      "commercial flight", "airline", "airline ticket", "airfare",
+      "book a flight", "flight to", "flight from", "flights",
+      "fly to", "fly from", "flying to", "flying from",
+      "round trip", "one way", "economy", "business class", "first class",
+      "plane ticket", "airline booking"
+    ],
+
+    searchBehavior: {
+      minResults: 5,
+      maxResults: 10,
+      sortBy: "price",
+      filterFields: ["origin", "destination", "departureDate", "cabinClass", "passengers"]
+    },
+
+    cabinClasses: {
+      economy: { name: "Economy", description: "Standard seating with basic amenities" },
+      premium_economy: { name: "Premium Economy", description: "Extra legroom and enhanced service" },
+      business: { name: "Business Class", description: "Lie-flat seats, premium dining, lounge access" },
+      first: { name: "First Class", description: "Ultimate luxury with private suites" }
+    },
+
+    features: [
+      "Real-time pricing from 300+ airlines",
+      "Seat selection available",
+      "Instant booking confirmation",
+      "E-ticket delivery",
+      "Price includes all taxes and fees",
+      "Earn 1.5% PVCX rewards on bookings"
+    ],
+
+    pricing: {
+      vat: "8.1% VAT included",
+      payment: "Crypto payments via CoinGate (70+ currencies)",
+      rewards: "1.5% PVCX tokens on every booking"
+    },
+
+    requiredInfo: [
+      "Departure airport/city (IATA code)",
+      "Destination airport/city (IATA code)",
+      "Departure date",
+      "Number of passengers",
+      "Cabin class (optional)"
+    ],
+
+    bookingFlow: {
+      step1: "Search flights with route and date",
+      step2: "Select preferred flight option",
+      step3: "Enter passenger details (name, DOB, passport)",
+      step4: "Choose seats (if available)",
+      step5: "Complete payment via crypto",
+      step6: "Receive e-ticket confirmation"
+    },
+
+    crossSell: ["taxi", "hotels", "adventures", "luxuryCars"],
+
+    closingPhrases: [
+      "I found several flight options for you. Would you like to proceed to booking?",
+      "These flights are available now. Shall I take you to the booking page?",
+      "Ready to book? I can redirect you to complete your reservation."
+    ],
+
+    bookingPageUrl: "/flight-tickets"
   },
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -2107,6 +2187,14 @@ ONLY search the database for BOOKABLE services:
   - Example: "from Zurich" → searchEmptyLegs({ from: "Zurich" }) → shows departures only
   - Example: "to Monaco" → searchEmptyLegs({ to: "Monaco" }) → shows arrivals only
   - ⚠️ CRITICAL: When user provides a city name, ALWAYS call searchEmptyLegs immediately - do NOT ask follow-up questions!
+- **COMMERCIAL FLIGHTS / AIRLINE TICKETS → searchCommercialFlights:**
+  - When user asks for "commercial flight", "airline ticket", "flight", "airfare", "plane ticket", "fly to" → CALL searchCommercialFlights
+  - REQUIRED parameters: origin, destination, departureDate, passengers
+  - If user doesn't provide all details, ASK for: departure city, destination city, travel date, number of passengers
+  - Convert city names to IATA codes (London=LHR, New York=JFK, Paris=CDG, Zurich=ZRH, etc.)
+  - Example: "flight from Zurich to Barcelona" → searchCommercialFlights({ origin: "ZRH", destination: "BCN", departureDate: "[date]", passengers: 1 })
+  - ⚠️ CRITICAL: You MUST call searchCommercialFlights tool - DO NOT say "I don't have access" or suggest external websites!
+  - After showing results, user can book online or request a callback for phone booking
 - Private jet/charter → Search "jets" database, show 5-8 results
 - Helicopter → Search "helicopters" database, show 3-5 results
 - Yacht/boat → INQUIRY ONLY - collect details via sequential questions
@@ -3685,8 +3773,19 @@ CRITICAL EMPTY LEGS RULES:
 User: "I'm planning a trip to Bali next month"
 You: "Bali in [month] - excellent timing! I can help with private jets to Denpasar, helicopter transfers to Ubud, or our curated Bali Luxury Retreat package. What interests you most?"
 
-User: "just looking for a flight"
-You: "Of course! Let me find the perfect flight. Where are you departing from, and what's your destination?"
+User: "just looking for a flight" / "I need a flight" / "book a flight"
+You: "Of course! I can search commercial flights for you. To find the best options, I'll need:
+• Your departure city (e.g., Zurich, London)
+• Your destination city (e.g., Barcelona, New York)
+• Travel date
+• Number of passengers
+Where would you like to fly from and to?"
+(NOTE: Once user provides route + date → IMMEDIATELY call searchCommercialFlights tool)
+
+User: "flight from Zurich to Barcelona on January 16th" / "I want to fly from London to New York next week"
+[IMMEDIATELY call searchCommercialFlights with origin, destination, departureDate, passengers=1]
+You: [Show flight results from searchCommercialFlights tool]
+"Here are the available flights for your route. You can book directly and pay with crypto, or request a callback for phone booking assistance."
 
 User: "I need something for 15 people"
 You: "A group of 15 - how exciting! For this size, I'd recommend our heavy jets or even a VIP airliner. This deserves a tailored approach. May I prepare a custom proposal? I'll just need your travel dates and preferred route."

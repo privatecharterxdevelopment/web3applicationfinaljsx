@@ -683,26 +683,9 @@ const AIChat = ({
     }
   }, [userProfile, isAdmin]);
 
-  // 🚨 BLOCK NEW CHAT if limit reached - Show blocker immediately when trying to start new chat
+  // Subscription check removed from navigation - popup only shows when user tries to SEND a message
   useEffect(() => {
-    if (isAdmin || !userProfile) return;
-
-    // Only check when user is on the "new" chat screen
-    if (activeChat === 'new') {
-      const hasSubscription = userProfile.subscription_tier && userProfile.subscription_status === 'active';
-      const hasLimit = userProfile.chats_limit !== null && userProfile.chats_limit !== undefined;
-      const limitReached = hasLimit && userProfile.chats_used >= userProfile.chats_limit;
-
-      if (!hasSubscription) {
-        console.log('🚫 Blocking new chat - no subscription');
-        setSubscriptionBlockerReason('no_subscription');
-        setShowSubscriptionBlocker(true);
-      } else if (limitReached) {
-        console.log('🚫 Blocking new chat - limit reached:', userProfile.chats_used, '/', userProfile.chats_limit);
-        setSubscriptionBlockerReason('chat_limit');
-        setShowSubscriptionBlocker(true);
-      }
-    }
+    // Let user browse freely without aggressive popup spam
   }, [activeChat, userProfile, isAdmin]);
 
   // Periodically refresh profile when chat limit is reached (to detect upgrades via webhook)

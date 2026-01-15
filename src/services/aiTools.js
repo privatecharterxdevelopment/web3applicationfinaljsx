@@ -274,6 +274,40 @@ export const aiToolDefinitions = [
     }
   },
   {
+    name: "searchCommercialFlights",
+    description: "Search for commercial airline flights via Duffel API. Use when users ask about commercial flights, airline tickets, airfare, or booking regular flights (not private jets). REQUIRES: origin (IATA code), destination (IATA code), departureDate, and passengers. Ask user for these details if not provided. For booking, direct users to the Flight Tickets page with pre-filled search parameters.",
+    input_schema: {
+      type: "object",
+      properties: {
+        origin: {
+          type: "string",
+          description: "Departure airport IATA code (e.g., 'LHR', 'JFK', 'DXB'). Convert city names to IATA codes."
+        },
+        destination: {
+          type: "string",
+          description: "Arrival airport IATA code (e.g., 'CDG', 'LAX', 'SIN'). Convert city names to IATA codes."
+        },
+        departureDate: {
+          type: "string",
+          description: "Departure date in YYYY-MM-DD format"
+        },
+        returnDate: {
+          type: "string",
+          description: "Return date in YYYY-MM-DD format (for round trips, optional)"
+        },
+        passengers: {
+          type: "number",
+          description: "Number of adult passengers (default: 1)"
+        },
+        cabinClass: {
+          type: "string",
+          description: "Cabin class: 'economy', 'premium_economy', 'business', or 'first'. Default: 'economy'"
+        }
+      },
+      required: ["origin", "destination", "departureDate", "passengers"]
+    }
+  },
+  {
     name: "searchAirportTransfer",
     description: "Search for airport transfers, taxi, and chauffeur services. Call this tool immediately when user mentions taxi, transfer, chauffeur, airport pickup, or ground transport. Show available vehicles and direct user to the Ground Transport page for easy booking. For direct taxi bookings, guide users to the Ground Transport page where they can enter pickup/dropoff locations on an interactive map.",
     input_schema: {
@@ -977,6 +1011,9 @@ export async function executeTool(toolName, input) {
 
       case 'searchLuxuryCars':
         return await searchLuxuryCars(input);
+
+      case 'searchCommercialFlights':
+        return await searchCommercialFlights(input);
 
       case 'searchAirportTransfer':
         return await searchAirportTransfer(input);
@@ -2023,6 +2060,201 @@ const DEFAULT_TRANSFER_VEHICLES = [
     description: 'The ultimate in luxury chauffeur service'
   }
 ];
+
+/**
+ * Search for commercial airline flights via Duffel API
+ * Returns available flights with pricing, schedules, and booking info
+ */
+export async function searchCommercialFlights(params) {
+  console.log('✈️ searchCommercialFlights called with:', params);
+
+  const { origin, destination, departureDate, returnDate, passengers = 1, cabinClass = 'economy' } = params || {};
+
+  // Validate required parameters
+  if (!origin || !destination || !departureDate) {
+    return {
+      success: true,
+      results: [],
+      total: 0,
+      needsMoreInfo: true,
+      message: "To search for commercial flights, I need:\n\n• **Departure city/airport** (e.g., London, LHR)\n• **Destination city/airport** (e.g., New York, JFK)\n• **Departure date** (e.g., March 15, 2025)\n• **Number of passengers**\n\nPlease provide these details and I'll find the best flights for you!"
+    };
+  }
+
+  // Common IATA code mappings for city names
+  const cityToIata = {
+    'london': 'LHR', 'heathrow': 'LHR', 'gatwick': 'LGW', 'stansted': 'STN',
+    'new york': 'JFK', 'nyc': 'JFK', 'newark': 'EWR', 'laguardia': 'LGA',
+    'paris': 'CDG', 'los angeles': 'LAX', 'la': 'LAX',
+    'dubai': 'DXB', 'miami': 'MIA', 'chicago': 'ORD',
+    'san francisco': 'SFO', 'sf': 'SFO', 'boston': 'BOS',
+    'tokyo': 'NRT', 'narita': 'NRT', 'haneda': 'HND',
+    'singapore': 'SIN', 'hong kong': 'HKG', 'sydney': 'SYD',
+    'melbourne': 'MEL', 'frankfurt': 'FRA', 'munich': 'MUC',
+    'amsterdam': 'AMS', 'zurich': 'ZRH', 'geneva': 'GVA',
+    'milan': 'MXP', 'rome': 'FCO', 'madrid': 'MAD',
+    'barcelona': 'BCN', 'lisbon': 'LIS', 'vienna': 'VIE',
+    'istanbul': 'IST', 'athens': 'ATH', 'cairo': 'CAI',
+    'doha': 'DOH', 'abu dhabi': 'AUH', 'riyadh': 'RUH',
+    'mumbai': 'BOM', 'delhi': 'DEL', 'bangkok': 'BKK',
+    'kuala lumpur': 'KUL', 'jakarta': 'CGK', 'seoul': 'ICN',
+    'beijing': 'PEK', 'shanghai': 'PVG', 'taipei': 'TPE',
+    'manila': 'MNL', 'auckland': 'AKL', 'cape town': 'CPT',
+    'johannesburg': 'JNB', 'nairobi': 'NBO', 'lagos': 'LOS',
+    'toronto': 'YYZ', 'vancouver': 'YVR', 'montreal': 'YUL',
+    'mexico city': 'MEX', 'sao paulo': 'GRU', 'buenos aires': 'EZE',
+    'rio': 'GIG', 'lima': 'LIM', 'bogota': 'BOG'
+  };
+
+  // Convert city names to IATA codes if needed
+  const originCode = origin.length === 3 ? origin.toUpperCase() :
+    (cityToIata[origin.toLowerCase()] || origin.toUpperCase());
+  const destCode = destination.length === 3 ? destination.toUpperCase() :
+    (cityToIata[destination.toLowerCase()] || destination.toUpperCase());
+
+  try {
+    // Call the Supabase Edge Function
+    const response = await supabase.functions.invoke('search-flights', {
+      body: {
+        origin: originCode,
+        destination: destCode,
+        departureDate,
+        returnDate: returnDate || null,
+        passengers: parseInt(passengers) || 1,
+        cabinClass: cabinClass || 'economy'
+      }
+    });
+
+    if (response.error) {
+      console.error('Flight search error:', response.error);
+      return {
+        success: false,
+        error: response.error.message || 'Failed to search flights',
+        results: [],
+        total: 0
+      };
+    }
+
+    const data = response.data;
+
+    if (!data.success || !data.offers || data.offers.length === 0) {
+      return {
+        success: true,
+        results: [],
+        total: 0,
+        searchParams: { origin: originCode, destination: destCode, departureDate, returnDate, passengers, cabinClass },
+        message: `No flights found from ${originCode} to ${destCode} on ${departureDate}. This could be because:\n\n• The route isn't served by airlines in our network\n• The date is too close or too far in advance\n• Try different dates or nearby airports\n\nWould you like me to search for alternative dates or a private jet charter instead?`
+      };
+    }
+
+    // Transform results for AI chat display
+    const flightResults = data.offers.slice(0, 10).map((offer, index) => ({
+      id: offer.id,
+      offerId: offer.offerId,
+      offerRequestId: offer.offerRequestId || data.offerRequestId,
+      rank: index + 1,
+      type: 'commercial_flight',
+
+      // Airline info
+      airline: offer.airline?.name || 'Unknown Airline',
+      airlineCode: offer.airline?.iataCode || '',
+      airlineLogo: offer.airline?.logoUrl,
+      flightNumber: offer.flightNumber,
+
+      // Route
+      from: offer.departure?.airport || originCode,
+      fromCity: offer.departure?.city || origin,
+      fromAirport: offer.departure?.airportName || '',
+      departureAirportName: offer.departure?.airportName || '',
+      departureCity: offer.departure?.city || origin,
+      departureTerminal: offer.departure?.terminal || null,
+      to: offer.arrival?.airport || destCode,
+      toCity: offer.arrival?.city || destination,
+      toAirport: offer.arrival?.airportName || '',
+      arrivalAirportName: offer.arrival?.airportName || '',
+      arrivalCity: offer.arrival?.city || destination,
+      arrivalTerminal: offer.arrival?.terminal || null,
+
+      // Times
+      departureTime: offer.departure?.time,
+      arrivalTime: offer.arrival?.time,
+      departure_time: offer.departure?.time,
+      arrival_time: offer.arrival?.time,
+      duration: offer.duration,
+      durationMinutes: offer.durationMinutes,
+
+      // Stops
+      stops: offer.stops || 0,
+      stopDetails: offer.stopDetails || [],
+
+      // Segments for booking page
+      segments: offer.segments || [],
+
+      // Return journey (if round trip)
+      returnJourney: offer.returnJourney || null,
+
+      // Pricing
+      price: offer.price?.amount || 0,
+      totalPrice: offer.price?.amount || 0,
+      currency: offer.price?.currency || 'USD',
+      pricePerPerson: offer.price?.perPassenger || offer.price?.amount,
+
+      // Class & Baggage
+      cabinClass: offer.cabinClass || cabinClass,
+      cabinClassName: offer.cabinClassName || cabinClass,
+      checkedBags: offer.baggage?.checkedBags || 0,
+      cabinBags: offer.baggage?.cabinBags || 1,
+      checkedBagWeight: offer.baggage?.checkedBagWeight || null,
+
+      // Conditions
+      refundable: offer.conditions?.refundable || false,
+      changeable: offer.conditions?.changeable || false,
+      conditions: offer.conditions || { refundable: false, changeable: false },
+
+      // Expiry
+      expiresAt: offer.expiresAt,
+
+      // Number of passengers (from search params)
+      passengers: parseInt(passengers) || 1,
+
+      // Raw offer for booking
+      rawOffer: offer.rawOffer || offer,
+
+      // Booking URL
+      bookingUrl: `/flight-tickets?from=${originCode}&to=${destCode}&date=${departureDate}${returnDate ? `&returnDate=${returnDate}` : ''}&passengers=${passengers}&cabin=${cabinClass}`
+    }));
+
+    // Build booking page URL for direct link
+    const bookingPageUrl = `/flight-tickets?from=${originCode}&to=${destCode}&date=${departureDate}${returnDate ? `&returnDate=${returnDate}` : ''}&passengers=${passengers}&cabin=${cabinClass}`;
+
+    return {
+      success: true,
+      results: flightResults,
+      total: data.totalOffers || flightResults.length,
+      searchParams: {
+        origin: originCode,
+        destination: destCode,
+        departureDate,
+        returnDate,
+        passengers,
+        cabinClass
+      },
+      bookingPageUrl,
+      offerRequestId: data.offerRequestId,
+      serviceType: 'commercial_flight',
+      message: null // Let AI format the response
+    };
+
+  } catch (error) {
+    console.error('Commercial flight search error:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to search flights',
+      results: [],
+      total: 0
+    };
+  }
+}
 
 /**
  * Search for airport transfers and taxi services

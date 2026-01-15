@@ -4,13 +4,18 @@ import FloatingSearchModal from './FloatingSearchModal';
 import AnimatedSection from '../AnimatedSection';
 import LandingHeader from './LandingHeader';
 import { supabase } from '../../lib/supabase';
+import Globe3D from '../Globe3D';
+import { fetchFixedOffers } from '../../services/fixedOffersService';
+import { FixedOffer } from '../../pages/FixedOffers';
 import NewsletterForm from '../NewsletterForm';
+import Footer from './Footer';
 import {
   Plane,
   Shield,
   Coins,
   Clock,
   Globe,
+  Bitcoin,
   Star,
   Users,
   Zap,
@@ -30,7 +35,8 @@ import {
   TrendingUp,
   CheckCircle,
   Leaf,
-  Car
+  Car,
+  Search
 } from 'lucide-react';
 
 // Jet interface
@@ -149,11 +155,144 @@ const CompactPartnerCarousel = () => {
   );
 };
 
+// City images mapping
+const cityImages: { [key: string]: string } = {
+  'LAX': 'https://images.unsplash.com/photo-1534190760961-74e8c1c5c3da?w=400&q=80', // Los Angeles
+  'MIA': 'https://images.unsplash.com/photo-1533106497176-45ae19e68ba2?w=400&q=80', // Miami
+  'CHI': 'https://images.unsplash.com/photo-1494522855154-9297ac14b55f?w=400&q=80', // Chicago
+  'PAR': 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=400&q=80', // Paris
+  'ROM': 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=400&q=80', // Rome
+  'BCN': 'https://images.unsplash.com/photo-1583422409516-2895a77efded?w=400&q=80', // Barcelona
+  'SIN': 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=400&q=80', // Singapore
+  'BKK': 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=400&q=80', // Bangkok
+  'HKG': 'https://images.unsplash.com/photo-1536599018102-9f803c140fc1?w=400&q=80', // Hong Kong
+  'TYO': 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&q=80', // Tokyo
+  'SYD': 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=400&q=80', // Sydney
+  'HNL': 'https://images.unsplash.com/photo-1507876466758-bc54f384809c?w=400&q=80', // Honolulu
+  'MIL': 'https://images.unsplash.com/photo-1513581166391-887a96ddeafd?w=400&q=80', // Milan
+  'AMS': 'https://images.unsplash.com/photo-1534351590666-13e3e96b5017?w=400&q=80', // Amsterdam
+  'BER': 'https://images.unsplash.com/photo-1560969184-10fe8719e047?w=400&q=80', // Berlin
+  'CUN': 'https://images.unsplash.com/photo-1510097467424-192d713fd8b2?w=400&q=80', // Cancun
+  'NAS': 'https://images.unsplash.com/photo-1548574505-5e239809ee19?w=400&q=80', // Nassau
+  'SJU': 'https://images.unsplash.com/photo-1579687196544-08ae57ab5960?w=400&q=80', // San Juan
+  'SEA': 'https://images.unsplash.com/photo-1502175353174-a7a70e73b362?w=400&q=80', // Seattle
+  'LAS': 'https://images.unsplash.com/photo-1581351721010-8cf859cb14a4?w=400&q=80', // Las Vegas
+  'DEN': 'https://images.unsplash.com/photo-1619856699906-09e1f58c98b1?w=400&q=80', // Denver
+  'ATL': 'https://images.unsplash.com/photo-1575917649705-5b59aaa12e6b?w=400&q=80', // Atlanta
+  'DFW': 'https://images.unsplash.com/photo-1545194445-dddb8f4487c6?w=400&q=80', // Dallas
+  'BOS': 'https://images.unsplash.com/photo-1501979376754-2ff867a4f659?w=400&q=80', // Boston
+};
+
+// City full names
+const cityNames: { [key: string]: string } = {
+  'LAX': 'Los Angeles', 'MIA': 'Miami', 'CHI': 'Chicago', 'PAR': 'Paris',
+  'ROM': 'Rome', 'BCN': 'Barcelona', 'SIN': 'Singapore', 'BKK': 'Bangkok',
+  'HKG': 'Hong Kong', 'TYO': 'Tokyo', 'SYD': 'Sydney', 'HNL': 'Honolulu',
+  'MIL': 'Milan', 'AMS': 'Amsterdam', 'BER': 'Berlin', 'CUN': 'Cancun',
+  'NAS': 'Nassau', 'SJU': 'San Juan', 'SEA': 'Seattle', 'LAS': 'Las Vegas',
+  'DEN': 'Denver', 'ATL': 'Atlanta', 'DFW': 'Dallas', 'BOS': 'Boston',
+  'NYC': 'New York', 'LON': 'London', 'DXB': 'Dubai', 'SFO': 'San Francisco'
+};
+
+// Flight offers data for animated cards (from-to format with original prices)
+const flightOffersData = [
+  [
+    { from: 'NYC', to: 'LAX', price: 269, originalPrice: 299 },
+    { from: 'NYC', to: 'MIA', price: 224, originalPrice: 249 },
+    { from: 'NYC', to: 'CHI', price: 179, originalPrice: 199 },
+  ],
+  [
+    { from: 'LON', to: 'PAR', price: 134, originalPrice: 149 },
+    { from: 'LON', to: 'ROM', price: 161, originalPrice: 179 },
+    { from: 'LON', to: 'BCN', price: 116, originalPrice: 129 },
+  ],
+  [
+    { from: 'DXB', to: 'SIN', price: 404, originalPrice: 449 },
+    { from: 'DXB', to: 'BKK', price: 359, originalPrice: 399 },
+    { from: 'DXB', to: 'HKG', price: 431, originalPrice: 479 },
+  ],
+  [
+    { from: 'LAX', to: 'TYO', price: 629, originalPrice: 699 },
+    { from: 'LAX', to: 'SYD', price: 719, originalPrice: 799 },
+    { from: 'LAX', to: 'HNL', price: 314, originalPrice: 349 },
+  ],
+  [
+    { from: 'PAR', to: 'MIL', price: 89, originalPrice: 99 },
+    { from: 'PAR', to: 'AMS', price: 80, originalPrice: 89 },
+    { from: 'PAR', to: 'BER', price: 98, originalPrice: 109 },
+  ],
+  [
+    { from: 'MIA', to: 'CUN', price: 179, originalPrice: 199 },
+    { from: 'MIA', to: 'NAS', price: 134, originalPrice: 149 },
+    { from: 'MIA', to: 'SJU', price: 161, originalPrice: 179 },
+  ],
+  [
+    { from: 'SFO', to: 'SEA', price: 116, originalPrice: 129 },
+    { from: 'SFO', to: 'LAS', price: 80, originalPrice: 89 },
+    { from: 'SFO', to: 'DEN', price: 134, originalPrice: 149 },
+  ],
+  [
+    { from: 'CHI', to: 'ATL', price: 125, originalPrice: 139 },
+    { from: 'CHI', to: 'DFW', price: 143, originalPrice: 159 },
+    { from: 'CHI', to: 'BOS', price: 161, originalPrice: 179 },
+  ],
+];
+
 function Homepage() {
   const navigate = useNavigate();
   const [jets, setJets] = useState<Jet[]>([]);
   const [cardImageIndexes, setCardImageIndexes] = useState<{[key: string]: number}>({});
   const [showPromoBanner, setShowPromoBanner] = useState(true);
+  const [flightOfferIndexes, setFlightOfferIndexes] = useState([0, 0, 0, 0, 0, 0, 0, 0]);
+  const [adventurePackages, setAdventurePackages] = useState<FixedOffer[]>([]);
+  const [flightSearch, setFlightSearch] = useState({
+    origin: '',
+    destination: '',
+    departureDate: '',
+    returnDate: '',
+    passengers: 1,
+    journeyType: 'return' as 'one-way' | 'return' | 'multi-city'
+  });
+
+  // Handle flight search - save to localStorage and navigate
+  const handleFlightSearch = () => {
+    if (!flightSearch.origin || !flightSearch.destination || !flightSearch.departureDate) return;
+
+    // Save search to localStorage
+    localStorage.setItem('flightSearchParams', JSON.stringify({
+      ...flightSearch,
+      timestamp: Date.now()
+    }));
+
+    // Navigate to flights page with search params
+    const params = new URLSearchParams({
+      origin: flightSearch.origin,
+      destination: flightSearch.destination,
+      date: flightSearch.departureDate,
+      passengers: flightSearch.passengers.toString(),
+      journeyType: flightSearch.journeyType
+    });
+    if (flightSearch.returnDate && flightSearch.journeyType !== 'one-way') {
+      params.set('returnDate', flightSearch.returnDate);
+    }
+    navigate(`/flights?${params.toString()}`);
+  };
+
+  // Animated flight offers - each card switches at different intervals (slower)
+  useEffect(() => {
+    const intervals = [12000, 15000, 13000, 14000, 11000, 16000, 12500, 14500]; // Slower intervals for each card
+    const timers = intervals.map((interval, cardIndex) => {
+      return setInterval(() => {
+        setFlightOfferIndexes(prev => {
+          const newIndexes = [...prev];
+          newIndexes[cardIndex] = (newIndexes[cardIndex] + 1) % flightOffersData[cardIndex].length;
+          return newIndexes;
+        });
+      }, interval);
+    });
+
+    return () => timers.forEach(timer => clearInterval(timer));
+  }, []);
 
   const handleGetStarted = () => {
     console.log('Get Started clicked!');
@@ -179,6 +318,19 @@ function Homepage() {
     };
 
     fetchJets();
+  }, []);
+
+  // Fetch adventure packages from database
+  useEffect(() => {
+    const fetchAdventurePackages = async () => {
+      try {
+        const result = await fetchFixedOffers({ limit: 8 });
+        setAdventurePackages(result.data);
+      } catch (error) {
+        console.error('Error fetching adventure packages:', error);
+      }
+    };
+    fetchAdventurePackages();
   }, []);
 
   // Gallery navigation for cards
@@ -225,405 +377,505 @@ function Homepage() {
           <span className="text-[10px] text-gray-600 font-medium tracking-wide uppercase">web3 and ai powered multi charter</span>
         </div>
 
-        {/* Main Title - Smaller size */}
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-light text-gray-900 text-center mb-2">
+        {/* Main Title */}
+        <h1 className="text-4xl md:text-5xl font-light text-gray-900 text-center mb-10 tracking-tighter">
           AI Luxury Travel Agent
         </h1>
 
         {/* Subtitle */}
-        <p className="text-gray-500 text-sm sm:text-base font-light text-center mb-16">
-          backed by real humans
+        <p className="text-gray-500 text-sm sm:text-base font-light text-center mb-8 max-w-2xl">
+          Book commercial flights, private jets, helicopters & yachts - all in one platform.<br />
+          Instant quotes, custom routes, crypto payments accepted - manually or by AI chat.
         </p>
 
         {/* Floating Search Modal */}
         <div className="w-full max-w-2xl">
           <FloatingSearchModal />
         </div>
+
+        {/* Stats row below search */}
+        <div className="mt-8 flex flex-wrap justify-center items-center gap-6 sm:gap-8 text-sm text-gray-400">
+          {/* Trustpilot Badge */}
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="#00B67A"/>
+            </svg>
+            <span className="text-gray-600 font-medium">Trustpilot</span>
+            <div className="flex gap-0.5">
+              {[1,2,3,4].map(i => (
+                <svg key={i} className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="#00B67A">
+                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                </svg>
+              ))}
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="#DDD">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+              </svg>
+            </div>
+            <span className="text-xs text-gray-500">Great</span>
+          </div>
+          <div className="w-px h-4 bg-gray-300 hidden sm:block" />
+          <div className="flex items-center gap-2">
+            <Bitcoin className="w-4 h-4" />
+            <span>Crypto Accepted</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            <span>24/7 Support</span>
+          </div>
+        </div>
+
       </div>
 
+      {/* Airline Partners Carousel - Duffel CDN Logos */}
+      <div className="mt-8 px-4 sm:px-8 max-w-6xl mx-auto">
+        <div className="relative overflow-hidden">
+          {/* Fade edges */}
+          <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-gray-50 to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-gray-50 to-transparent z-10 pointer-events-none" />
 
-        {/* Animated AI Prompts Marquee */}
-        <section className="py-8 sm:py-12 overflow-hidden">
           <style>{`
-            @keyframes scrollLeft {
+            @keyframes scrollAirlines {
               0% { transform: translateX(0); }
               100% { transform: translateX(-50%); }
             }
-            @keyframes scrollRight {
-              0% { transform: translateX(-50%); }
-              100% { transform: translateX(0); }
-            }
-            .animate-scroll-left {
-              animation: scrollLeft 180s linear infinite;
-            }
-            .animate-scroll-right {
-              animation: scrollRight 180s linear infinite;
-            }
-            .marquee-row:hover .animate-scroll-left,
-            .marquee-row:hover .animate-scroll-right {
-              animation-play-state: paused;
-            }
-            .prompt-card {
-              transition: all 0.2s ease;
-            }
-            .prompt-card:hover {
-              transform: scale(1.02);
-              box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-            }
-            .prompt-card:active {
-              transform: scale(0.98);
-            }
-            .prompt-card .plus-icon {
-              transition: transform 0.3s ease;
-            }
-            .prompt-card:hover .plus-icon {
-              transform: rotate(90deg);
+            .airline-carousel {
+              animation: scrollAirlines 60s linear infinite;
             }
           `}</style>
-
-          <div className="space-y-4">
-            {/* Row 1 - Left to Right */}
-            <div className="marquee-row relative">
-              <div className="animate-scroll-left flex gap-3 w-max">
-                {[...Array(2)].map((_, setIndex) => (
-                  <div key={setIndex} className="flex gap-3">
-                    {[
-                      { prompt: "I need a private jet from Zurich to London", tier: "explorer" },
-                      { prompt: "Book a light jet from Geneva to Nice", tier: "explorer" },
-                      { prompt: "Show me available jets for Paris to Ibiza", tier: "explorer" },
-                      { prompt: "Find me a heavy jet for 12 passengers", tier: "explorer" },
-                      { prompt: "What's the cheapest jet to Barcelona?", tier: "explorer" },
-                      { prompt: "Empty legs from London", tier: "explorer" },
-                      { prompt: "Show me empty legs to Monaco", tier: "explorer" },
-                      { prompt: "Group charter for 20 passengers", tier: "elite" },
-                      { prompt: "Helicopter transfer Nice to Monaco", tier: "explorer" },
-                      { prompt: "Alpine scenic helicopter tour", tier: "explorer" },
-                      { prompt: "Ground transport from Schiphol", tier: "explorer" },
-                      { prompt: "Luxury car pickup Geneva airport", tier: "explorer" },
-                      { prompt: "Yacht charter Mediterranean", tier: "traveller" },
-                      { prompt: "Superyacht Monaco Grand Prix", tier: "traveller" },
-                      { prompt: "Free airport transfer included", tier: "elite" },
-                      { prompt: "VIP event access Monaco Grand Prix", tier: "elite" },
-                      { prompt: "MembershipX card benefits", tier: "elite" }
-                    ].map((item, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => navigate(`/dashboard/chat?query=${encodeURIComponent(item.prompt)}&newChat=true`)}
-                        className="prompt-card group relative flex-shrink-0 flex items-center gap-3 pl-3 pr-4 py-4 rounded-2xl text-xs whitespace-nowrap cursor-pointer border border-gray-200/40"
-                        style={{
-                          background: 'rgba(255, 255, 255, 0.7)',
-                          backdropFilter: 'blur(12px)',
-                          WebkitBackdropFilter: 'blur(12px)',
-                        }}
-                      >
-                        <span
-                          className="absolute -top-2 left-3 px-2 py-0.5 rounded-full text-[10px] font-medium border text-gray-600"
-                          style={{
-                            background: 'rgba(255, 255, 255, 0.9)',
-                            backdropFilter: 'blur(8px)',
-                            borderColor: 'rgba(0,0,0,0.08)'
-                          }}
-                        >
-                          {item.tier === 'elite' ? 'Elite' : item.tier === 'traveller' ? 'Traveller' : 'Explorer'}
-                        </span>
-                        <span className="text-gray-800">{item.prompt}</span>
-                        <span className="plus-icon ml-auto text-gray-400 text-lg font-light">+</span>
-                      </button>
-                    ))}
-                  </div>
-                ))}
+          <div className="airline-carousel flex items-center gap-12 w-max py-3">
+            {[...Array(2)].map((_, setIndex) => (
+              <div key={setIndex} className="flex items-center gap-10">
+                <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/LX.svg" alt="Swiss" className="h-5 opacity-20 grayscale" />
+                <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/EK.svg" alt="Emirates" className="h-5 opacity-20 grayscale" />
+                <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/LH.svg" alt="Lufthansa" className="h-5 opacity-20 grayscale" />
+                <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/BA.svg" alt="British Airways" className="h-5 opacity-20 grayscale" />
+                <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/AF.svg" alt="Air France" className="h-3 opacity-20 grayscale" />
+                <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/KL.svg" alt="KLM" className="h-5 opacity-20 grayscale" />
+                <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/SQ.svg" alt="Singapore Airlines" className="h-5 opacity-20 grayscale" />
+                <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/TK.svg" alt="Turkish Airlines" className="h-5 opacity-20 grayscale" />
+                <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/EY.svg" alt="Etihad" className="h-5 opacity-20 grayscale" />
+                <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/UA.svg" alt="United" className="h-5 opacity-20 grayscale" />
+                <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/AA.svg" alt="American Airlines" className="h-5 opacity-20 grayscale" />
+                <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/DL.svg" alt="Delta" className="h-5 opacity-20 grayscale" />
+                <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/CX.svg" alt="Cathay Pacific" className="h-5 opacity-20 grayscale" />
+                <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/JL.svg" alt="Japan Airlines" className="h-5 opacity-20 grayscale" />
+                <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/NH.svg" alt="ANA" className="h-5 opacity-20 grayscale" />
+                <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/QF.svg" alt="Qantas" className="h-5 opacity-20 grayscale" />
+                <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/QR.svg" alt="Qatar Airways" className="h-5 opacity-20 grayscale" />
+                <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/IB.svg" alt="Iberia" className="h-5 opacity-20 grayscale" />
+                <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/WK.svg" alt="Edelweiss" className="h-5 opacity-20 grayscale" />
+                <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/AY.svg" alt="Finnair" className="h-3 opacity-20 grayscale" />
               </div>
-            </div>
-
-            {/* Row 2 - Right to Left */}
-            <div className="marquee-row relative">
-              <div className="animate-scroll-right flex gap-3 w-max">
-                {[...Array(2)].map((_, setIndex) => (
-                  <div key={setIndex} className="flex gap-3">
-                    {[
-                      { prompt: "I'd like a Barolo red wine for my flight", tier: "explorer" },
-                      { prompt: "Do you have Dom Pérignon?", tier: "explorer" },
-                      { prompt: "Show me your champagne selection", tier: "explorer" },
-                      { prompt: "Château Margaux 2015 please", tier: "explorer" },
-                      { prompt: "Wine recommendations for celebration", tier: "explorer" },
-                      { prompt: "Order Krug Grande Cuvée", tier: "explorer" },
-                      { prompt: "Cuban cigars for my flight", tier: "explorer" },
-                      { prompt: "Do you have Cohiba Behike?", tier: "explorer" },
-                      { prompt: "Premium cigar selection", tier: "explorer" },
-                      { prompt: "Montecristo No. 2 box", tier: "explorer" },
-                      { prompt: "Michelin star restaurant Zurich", tier: "explorer" },
-                      { prompt: "Rooftop restaurant in Monaco", tier: "explorer" },
-                      { prompt: "Best Italian near my hotel Milan", tier: "explorer" },
-                      { prompt: "VIP catering experience on board", tier: "elite" },
-                      { prompt: "Full meal catering on my jet", tier: "explorer" },
-                      { prompt: "Concierge book dinner for 8", tier: "traveller" },
-                      { prompt: "Event booking private venue", tier: "traveller" }
-                    ].map((item, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => navigate(`/dashboard/chat?query=${encodeURIComponent(item.prompt)}&newChat=true`)}
-                        className="prompt-card group relative flex-shrink-0 flex items-center gap-3 pl-3 pr-4 py-4 rounded-2xl text-xs whitespace-nowrap cursor-pointer border border-gray-200/40"
-                        style={{
-                          background: 'rgba(255, 255, 255, 0.7)',
-                          backdropFilter: 'blur(12px)',
-                          WebkitBackdropFilter: 'blur(12px)',
-                        }}
-                      >
-                        <span
-                          className="absolute -top-2 left-3 px-2 py-0.5 rounded-full text-[10px] font-medium border text-gray-600"
-                          style={{
-                            background: 'rgba(255, 255, 255, 0.9)',
-                            backdropFilter: 'blur(8px)',
-                            borderColor: 'rgba(0,0,0,0.08)'
-                          }}
-                        >
-                          {item.tier === 'elite' ? 'Elite' : item.tier === 'traveller' ? 'Traveller' : 'Explorer'}
-                        </span>
-                        <span className="text-gray-800">{item.prompt}</span>
-                        <span className="plus-icon ml-auto text-gray-400 text-lg font-light">+</span>
-                      </button>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Row 3 - Left to Right */}
-            <div className="marquee-row relative">
-              <div className="animate-scroll-left flex gap-3 w-max" style={{ animationDuration: '160s' }}>
-                {[...Array(2)].map((_, setIndex) => (
-                  <div key={setIndex} className="flex gap-3">
-                    {[
-                      { prompt: "Helicopter Zurich to Gstaad", tier: "explorer" },
-                      { prompt: "Wedding helicopter Lake Como", tier: "explorer" },
-                      { prompt: "Airport transfers Geneva", tier: "explorer" },
-                      { prompt: "Swiss Alps helicopter tour", tier: "explorer" },
-                      { prompt: "Luxury van for 6 to Cannes", tier: "explorer" },
-                      { prompt: "Last-minute Zurich to St. Moritz", tier: "explorer" },
-                      { prompt: "Jets with bedroom capability", tier: "explorer" },
-                      { prompt: "Yacht week Croatia", tier: "traveller" },
-                      { prompt: "Round trip to Dubai", tier: "explorer" },
-                      { prompt: "MEDEVAC flight Greece to Switzerland", tier: "elite" },
-                      { prompt: "Express Visa for Thailand", tier: "explorer" },
-                      { prompt: "Concierge services Monaco", tier: "traveller" },
-                      { prompt: "Break the price on competitor quote", tier: "traveller" },
-                      { prompt: "Empty legs Zurich departing", tier: "explorer" },
-                      { prompt: "Show all Geneva empty legs", tier: "explorer" },
-                      { prompt: "Vintage Bordeaux for my jet", tier: "explorer" },
-                      { prompt: "Cigars for a 3-hour flight", tier: "explorer" }
-                    ].map((item, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => navigate(`/dashboard/chat?query=${encodeURIComponent(item.prompt)}&newChat=true`)}
-                        className="prompt-card group relative flex-shrink-0 flex items-center gap-3 pl-3 pr-4 py-4 rounded-2xl text-xs whitespace-nowrap cursor-pointer border border-gray-200/40"
-                        style={{
-                          background: 'rgba(255, 255, 255, 0.7)',
-                          backdropFilter: 'blur(12px)',
-                          WebkitBackdropFilter: 'blur(12px)',
-                        }}
-                      >
-                        <span
-                          className="absolute -top-2 left-3 px-2 py-0.5 rounded-full text-[10px] font-medium border text-gray-600"
-                          style={{
-                            background: 'rgba(255, 255, 255, 0.9)',
-                            backdropFilter: 'blur(8px)',
-                            borderColor: 'rgba(0,0,0,0.08)'
-                          }}
-                        >
-                          {item.tier === 'elite' ? 'Elite' : item.tier === 'traveller' ? 'Traveller' : 'Explorer'}
-                        </span>
-                        <span className="text-gray-800">{item.prompt}</span>
-                        <span className="plus-icon ml-auto text-gray-400 text-lg font-light">+</span>
-                      </button>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
-        </section>
+        </div>
+      </div>
 
-        {/* Service Cards - 4 Cards in Single Row */}
+
+        {/* Featured Banner + Cards Section */}
         <section className="px-4 sm:px-8 pt-8 sm:pt-12 pb-2 sm:pb-3 max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {/* Global Fleet */}
+          {/* Banner - Book a Private Jet */}
+          <div
+            className="group relative rounded-2xl overflow-hidden mb-4 border border-gray-200"
+            style={{ minHeight: '280px', backgroundColor: '#fafafa' }}
+          >
+            {/* Jet image - mirrored, positioned right */}
             <div
-              onClick={handleGetStarted}
-              className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+              className="absolute inset-0"
+              style={{
+                backgroundImage: 'url(https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/Whisk_2bf440d9864c127ab3e44c5f05646454eg.png)',
+                backgroundPosition: '-20% center',
+                backgroundSize: '55%',
+                backgroundRepeat: 'no-repeat',
+                transform: 'scaleX(-1)'
+              }}
+            />
+            {/* Text - bottom left, no card bg */}
+            <div className="absolute bottom-0 left-0 right-0 z-20 p-8 sm:p-12">
+              <h3 className="text-2xl sm:text-3xl font-light mb-4 tracking-tight">
+                <span className="text-gray-900">Book a</span> <span className="text-gray-500">Private Jet</span>
+              </h3>
+              <div className="flex gap-2">
+                <a
+                  href="mailto:bookings@privatecharterx.com?subject=Private Jet Quote Request"
+                  className="px-3 py-1.5 bg-white/80 backdrop-blur-sm rounded-full text-xs text-gray-700 hover:bg-white transition-colors"
+                >
+                  Get a Quote
+                </a>
+                <button
+                  onClick={() => navigate('/dashboard/chat?query=I%20want%20to%20book%20a%20private%20jet')}
+                  className="px-3 py-1.5 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors"
+                >
+                  Book by AI
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 2 Cards Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Card 1 - Book a Helicopter */}
+            <div
+              className="group relative bg-white rounded-2xl overflow-hidden border border-gray-200"
+              style={{ minHeight: '320px' }}
             >
-              <div className="p-6">
-                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
-                  Global Fleet
-                  <br />
-                  <span className="text-gray-400 text-sm">Worldwide Access</span>
+              {/* Helicopter image - normal size */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: 'url(https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/Whisk_bf9f83710232184b8f94a95270a5a4beeg.png)',
+                  backgroundPosition: 'center',
+                  backgroundSize: 'cover'
+                }}
+              />
+              {/* Text - bottom left */}
+              <div className="absolute bottom-0 left-0 z-20 p-8 sm:p-12">
+                <h3 className="text-2xl sm:text-3xl font-light mb-4 tracking-tight">
+                  <span className="text-gray-900">Book a</span> <span className="text-gray-500">Helicopter</span>
                 </h3>
-                <p className="text-gray-600 text-sm leading-snug mb-3">Access worldwide network of luxury aircraft with real-time availability.</p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Real-time</span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Global</span>
-                </div>
-                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-                  +
+                <div className="flex gap-2">
+                  <a
+                    href="mailto:bookings@privatecharterx.com?subject=Helicopter Quote Request"
+                    className="px-3 py-1.5 bg-white/80 backdrop-blur-sm rounded-full text-xs text-gray-700 hover:bg-white transition-colors"
+                  >
+                    Get a Quote
+                  </a>
+                  <button
+                    onClick={() => navigate('/dashboard/chat?query=I%20want%20to%20book%20a%20helicopter')}
+                    className="px-3 py-1.5 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors"
+                  >
+                    Book by AI
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Web3 Integration */}
+            {/* Card 2 - Book a Yacht or Boat */}
             <div
-              onClick={handleGetStarted}
-              className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+              onClick={() => navigate('/dashboard/chat?query=I%20want%20to%20book%20a%20yacht')}
+              className="group relative bg-white rounded-2xl overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 border border-gray-200"
+              style={{ minHeight: '320px' }}
             >
-              <div className="p-6">
-                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
-                  Web3 Integration
-                  <br />
-                  <span className="text-gray-400 text-sm">Blockchain Powered</span>
-                </h3>
-                <p className="text-gray-600 text-sm leading-snug mb-3">Blockchain-powered bookings with smart contracts and crypto payments.</p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Smart Contracts</span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Crypto</span>
-                </div>
-                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-                  +
-                </div>
-              </div>
-            </div>
-
-            {/* Tokenized Assets */}
-            <div
-              onClick={handleGetStarted}
-              className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
-            >
-              <div className="p-6">
-                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
-                  Tokenized Assets
-                  <br />
-                  <span className="text-gray-400 text-sm">Digital Ownership</span>
-                </h3>
-                <p className="text-gray-600 text-sm leading-snug mb-3">Fractional ownership through digital tokens and secure transactions.</p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Fractional</span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Secure</span>
-                </div>
-                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-                  +
-                </div>
-              </div>
-            </div>
-
-            {/* Sphera AI */}
-            <div
-              onClick={() => navigate('/dashboard/chat?newChat=true')}
-              className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
-            >
-              <div className="p-6">
-                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
-                  Sphera AI
-                  <br />
-                  <span className="text-gray-400 text-sm">v1.0 Travel Intelligence</span>
-                </h3>
-                <p className="text-gray-600 text-sm leading-snug mb-3">The most intelligent travel AI. Empty legs, private jets, wines, delicacies, smart cart.</p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">AI-Powered</span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">24/7</span>
-                </div>
-                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-                  +
+              {/* Yacht video background */}
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover"
+              >
+                <source src="https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/4920651-uhd_4096_2160_25fps.mp4" type="video/mp4" />
+              </video>
+              {/* Badges only - bottom left, no card bg */}
+              <div className="absolute bottom-0 left-0 z-20 p-6">
+                <div className="flex flex-wrap gap-2">
+                  <span className="bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs text-gray-700 border border-gray-200">Motor Yachts</span>
+                  <span className="bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs text-gray-700 border border-gray-200">Sailing</span>
+                  <span className="bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs text-gray-700 border border-gray-200">Superyachts</span>
                 </div>
               </div>
             </div>
           </div>
-        </section>
 
-        {/* Four Cards Section - Ground Transport, Tokenize, Visa, Partner */}
-        <section className="px-4 sm:px-8 pt-1 sm:pt-1 pb-8 sm:pb-12 max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {/* Ground Transport */}
+          {/* Big Card - Commercial Tickets */}
+          <div
+            className="group relative bg-white rounded-2xl overflow-hidden mt-4 border border-gray-200"
+            style={{ minHeight: '640px' }}
+          >
+            {/* Content container - no airplane bg */}
+            <div className="relative z-20 p-8 sm:p-12 flex flex-col justify-between h-full">
+              {/* Title - no card bg */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-2xl sm:text-3xl font-light tracking-tight">
+                    <span className="text-gray-900">Commercial</span> <span className="text-gray-500">Tickets</span>
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => navigate('/dashboard/chat?query=I%20want%20to%20book%20a%20commercial%20flight')}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-gray-900 text-white text-xs font-medium hover:bg-gray-800 transition-colors"
+                    >
+                      <Sparkles size={14} />
+                      Book by AI
+                    </button>
+                    <button
+                      onClick={() => navigate('/flights')}
+                      className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors"
+                    >
+                      <ArrowRight size={18} className="text-gray-600" />
+                    </button>
+                  </div>
+                </div>
+                {/* Journey Type Pills */}
+                <div className="flex gap-2 mb-4">
+                  {(['one-way', 'return', 'multi-city'] as const).map((type) => (
+                    <button
+                      key={type}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFlightSearch({ ...flightSearch, journeyType: type });
+                      }}
+                      className={`px-4 py-1.5 rounded-full text-sm transition-colors ${
+                        flightSearch.journeyType === type
+                          ? 'bg-gray-900 text-white'
+                          : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {type === 'one-way' ? 'One-way' : type === 'return' ? 'Return' : 'Multi-city'}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Flight Search Bar */}
+                <div
+                  className="bg-gray-50 rounded-xl border border-gray-200 p-1.5 mb-6"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex flex-col sm:flex-row gap-1">
+                    {/* Origin */}
+                    <div className="flex-1 px-3 py-2 bg-white rounded-lg border border-gray-100">
+                      <label className="block text-[10px] font-medium text-gray-500 mb-0.5">From</label>
+                      <input
+                        type="text"
+                        placeholder="City or airport"
+                        value={flightSearch.origin}
+                        onChange={(e) => setFlightSearch({ ...flightSearch, origin: e.target.value })}
+                        className="w-full text-sm text-gray-900 placeholder-gray-400 bg-transparent outline-none"
+                      />
+                    </div>
+
+                    {/* Destination */}
+                    <div className="flex-1 px-3 py-2 bg-white rounded-lg border border-gray-100">
+                      <label className="block text-[10px] font-medium text-gray-500 mb-0.5">To</label>
+                      <input
+                        type="text"
+                        placeholder="City or airport"
+                        value={flightSearch.destination}
+                        onChange={(e) => setFlightSearch({ ...flightSearch, destination: e.target.value })}
+                        className="w-full text-sm text-gray-900 placeholder-gray-400 bg-transparent outline-none"
+                      />
+                    </div>
+
+                    {/* Departure Date */}
+                    <div className="flex-1 px-3 py-2 bg-white rounded-lg border border-gray-100">
+                      <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Departure</label>
+                      <input
+                        type="date"
+                        value={flightSearch.departureDate}
+                        onChange={(e) => setFlightSearch({ ...flightSearch, departureDate: e.target.value })}
+                        className="w-full text-sm text-gray-900 bg-transparent outline-none"
+                      />
+                    </div>
+
+                    {/* Return Date - only show for return/multi-city */}
+                    {flightSearch.journeyType !== 'one-way' && (
+                      <div className="flex-1 px-3 py-2 bg-white rounded-lg border border-gray-100">
+                        <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Return</label>
+                        <input
+                          type="date"
+                          value={flightSearch.returnDate}
+                          onChange={(e) => setFlightSearch({ ...flightSearch, returnDate: e.target.value })}
+                          className="w-full text-sm text-gray-900 bg-transparent outline-none"
+                        />
+                      </div>
+                    )}
+
+                    {/* Passengers */}
+                    <div className="hidden sm:block w-24 px-3 py-2 bg-white rounded-lg border border-gray-100">
+                      <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Passengers</label>
+                      <select
+                        value={flightSearch.passengers}
+                        onChange={(e) => setFlightSearch({ ...flightSearch, passengers: parseInt(e.target.value) })}
+                        className="w-full text-sm text-gray-900 bg-transparent outline-none cursor-pointer"
+                      >
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                          <option key={num} value={num}>{num}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Search Button */}
+                    <button
+                      onClick={handleFlightSearch}
+                      disabled={!flightSearch.origin || !flightSearch.destination || !flightSearch.departureDate}
+                      className="px-6 py-2 bg-gray-900 rounded-lg text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      <Search size={16} />
+                      <span className="hidden sm:inline">Search</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Animated Flight Offers Grid - 2 rows of 4 */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {flightOffersData.map((offers, cardIndex) => {
+                  const currentOffer = offers[flightOfferIndexes[cardIndex]];
+                  const cityImage = cityImages[currentOffer.to] || 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=400&q=80';
+                  const cityName = cityNames[currentOffer.to] || currentOffer.to;
+                  return (
+                    <div
+                      key={cardIndex}
+                      onClick={() => navigate(`/flights?from=${encodeURIComponent(currentOffer.from)}&to=${encodeURIComponent(currentOffer.to)}`)}
+                      className="group rounded-xl overflow-hidden transition-all duration-700 hover:scale-105 cursor-pointer bg-gray-100 border border-gray-200"
+                    >
+                      {/* City Image Header */}
+                      <div className="relative h-[80px] overflow-hidden">
+                        <div
+                          className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                          style={{ backgroundImage: `url(${cityImage})` }}
+                        />
+                      </div>
+
+                      {/* Content - Blurred grey background */}
+                      <div className="p-3 bg-gray-100">
+                        <div className="flex items-center gap-1 text-gray-900 text-xs mb-1">
+                          <span className="font-medium">{currentOffer.from}</span>
+                          <span className="text-gray-400">→</span>
+                          <span className="font-medium">{currentOffer.to}</span>
+                        </div>
+                        <p className="text-gray-500 text-[10px] mb-1">{cityName}</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-900 font-medium text-sm">${currentOffer.price}</span>
+                          <span className="text-gray-400 text-xs line-through">${currentOffer.originalPrice}</span>
+                          <span className="bg-green-500 text-white px-1.5 py-0.5 rounded text-[8px] font-medium">
+                            -{Math.round((1 - currentOffer.price / currentOffer.originalPrice) * 100)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* View all link */}
+              <div className="text-center mt-4">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate('/flights');
+                  }}
+                  className="text-sm text-gray-600 hover:text-gray-900 transition-colors underline"
+                >
+                  View all flights →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 3 Cards Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+            {/* Card 1 - Empty Legs */}
+            <div
+              onClick={() => navigate('/empty-legs')}
+              className="group relative bg-white rounded-2xl overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 border border-gray-200"
+              style={{ minHeight: '280px' }}
+            >
+              {/* Background image */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: 'url(https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/Whisk_8eaf61762669635badd48e59c304b6c3eg.png)',
+                  backgroundPosition: 'center',
+                  backgroundSize: 'cover'
+                }}
+              />
+              <div className="absolute bottom-0 left-0 right-0 z-20 p-4">
+                <div className="bg-white/70 backdrop-blur-md rounded-xl p-4 flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-medium text-gray-900 tracking-tight whitespace-nowrap">
+                    Empty Legs
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium">Up to 75% Off</span>
+                    <span className="bg-gray-200/80 px-2 py-1 rounded-full text-xs text-gray-700">Last Minute</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2 - Ground Transport */}
             <div
               onClick={handleGetStarted}
-              className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+              className="group relative bg-white rounded-2xl overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 border border-gray-200"
+              style={{ minHeight: '280px' }}
             >
-              <div className="p-6">
-                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
-                  Ground Transport
-                  <br />
-                  <span className="text-gray-400 text-sm">Move Smarter</span>
-                </h3>
-                <p className="text-gray-600 text-sm leading-snug mb-3">End-to-end ground transportation. Luxury cars, helicopters, and concierge support.</p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Luxury Cars</span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">24/7</span>
-                </div>
-                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-                  +
+              {/* Background image */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: 'url(https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/Whisk_60417b0dd969afb83c44f8733d7156eaeg.png)',
+                  backgroundPosition: 'center -80px',
+                  backgroundSize: '120%'
+                }}
+              />
+              <div className="absolute bottom-0 left-0 right-0 z-20 p-4">
+                <div className="bg-white/70 backdrop-blur-md rounded-xl p-4 flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-medium text-gray-900 tracking-tight whitespace-nowrap">
+                    Ground Transport
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="bg-gray-200/80 px-2 py-1 rounded-full text-xs text-gray-700">24/7</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Tokenize Your Business */}
+            {/* Card 3 - Group Charter */}
             <div
               onClick={handleGetStarted}
-              className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+              className="group relative bg-white rounded-2xl overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 border border-gray-200"
+              style={{ minHeight: '280px' }}
             >
-              <div className="p-6">
-                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
-                  Tokenize Your Business
-                  <br />
-                  <span className="text-gray-400 text-sm">Get Instant Liquidity</span>
-                </h3>
-                <p className="text-gray-600 text-sm leading-snug mb-3">Transform your company into a tokenized entity with fractional ownership and equity tokens.</p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Smart Contracts</span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Liquidity</span>
-                </div>
-                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-                  +
+              {/* Background image */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: 'url(https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/Whisk_fb14380acaf092090044512c11a681a1eg.png)',
+                  backgroundPosition: 'center',
+                  backgroundSize: 'cover'
+                }}
+              />
+              <div className="absolute bottom-0 left-0 right-0 z-20 p-4">
+                <div className="bg-white/70 backdrop-blur-md rounded-xl p-4 flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-medium text-gray-900 tracking-tight whitespace-nowrap">
+                    Group Charter
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="bg-gray-200/80 px-2 py-1 rounded-full text-xs text-gray-700">Corporate</span>
+                    <span className="bg-gray-200/80 px-2 py-1 rounded-full text-xs text-gray-700">Events</span>
+                  </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Express Visa Service */}
-            <div
-              onClick={() => navigate('/dashboard/chat?query=Express%20Visa%20Service&newChat=true')}
-              className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
-            >
-              <div className="p-6">
-                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
-                  Express Visa
-                  <br />
-                  <span className="text-gray-400 text-sm">24h Guarantee</span>
-                </h3>
-                <p className="text-gray-600 text-sm leading-snug mb-3">Hassle-free visa processing in 95% of countries. $250/person with verified agent network.</p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">24h Processing</span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">95% Coverage</span>
-                </div>
-                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-                  +
-                </div>
+          {/* Extra Large Card - Globally Covered */}
+          <div
+            className="group relative bg-white rounded-2xl overflow-hidden mt-4 border border-gray-200"
+            style={{ minHeight: '640px' }}
+          >
+            {/* Title - upper centered */}
+            <div className="absolute top-0 left-0 right-0 z-20 p-8 sm:p-12 text-center">
+              <h3 className="text-2xl sm:text-3xl font-light text-gray-900 mb-3 tracking-tight">
+                Globally Covered
+              </h3>
+              <p className="text-gray-600 text-sm mb-4 max-w-lg mx-auto">
+                From New York to Tokyo, London to Cape Town, Zurich to Dubai - PrivateCharterX connects you to premium charter services worldwide. One platform, unlimited destinations.
+              </p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                <span className="bg-gray-200 px-3 py-1 rounded-full text-xs text-gray-700">Europe</span>
+                <span className="bg-gray-200 px-3 py-1 rounded-full text-xs text-gray-700">USA</span>
+                <span className="bg-gray-200 px-3 py-1 rounded-full text-xs text-gray-700">Asia</span>
+                <span className="bg-gray-200 px-3 py-1 rounded-full text-xs text-gray-700">Africa</span>
+                <span className="bg-gray-200 px-3 py-1 rounded-full text-xs text-gray-700">Switzerland</span>
               </div>
             </div>
-
-            {/* Become a Partner */}
+            {/* Globe - half cut from bottom, centered */}
             <div
-              onClick={() => window.location.href = 'mailto:admin@privatecharterx.com?subject=Partner%20Inquiry&body=Hello%2C%0A%0AI%20am%20interested%20in%20becoming%20a%20partner%20with%20PrivateCharterX.%0A%0APlease%20contact%20me%20to%20discuss%20the%20partnership%20opportunities.%0A%0ABest%20regards'}
-              className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 cursor-pointer"
+              className="absolute bottom-0 left-0 right-0 flex justify-center"
+              style={{ height: '900px', marginBottom: '-450px' }}
             >
-              <div className="p-6">
-                <h3 className="text-lg font-light text-gray-900 mb-3 leading-tight">
-                  Become a Partner
-                  <br />
-                  <span className="text-gray-400 text-sm">Expand Your Business</span>
-                </h3>
-                <p className="text-gray-600 text-sm leading-snug mb-3">List your services on our platform. Luxury cars, taxis, adventure packages, limousines.</p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Global Exposure</span>
-                  <span className="bg-gray-200 px-2 py-1 rounded-full text-xs text-gray-700">Secure</span>
-                </div>
-                <div className="w-6 h-6 flex items-center justify-center text-gray-900 text-xl font-light transition-transform duration-300 group-hover:rotate-90">
-                  +
-                </div>
+              <div style={{ width: '900px', height: '900px' }}>
+                <Globe3D />
               </div>
             </div>
           </div>
@@ -647,34 +899,15 @@ function Homepage() {
         {/* All-in-one Global Mobility Platform - ChatGPT Style */}
         <AnimatedSection animation="slide-up" delay={150}>
           <section className="px-4 sm:px-8 py-8 sm:py-12 max-w-6xl mx-auto">
-            {/* Gradient Background Container */}
+            {/* Container */}
             <div
               className="relative rounded-3xl overflow-hidden"
               style={{
-                background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #dee2e6 50%, #ced4da 75%, #adb5bd 100%)',
-                minHeight: '600px'
+                minHeight: '500px'
               }}
             >
-              {/* Subtle Pattern Overlay */}
-              <div
-                className="absolute inset-0 opacity-20"
-                style={{
-                  backgroundImage: 'radial-gradient(circle at 20% 80%, rgba(255,255,255,0.5) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.4) 0%, transparent 50%)'
-                }}
-              />
-
               {/* Content */}
-              <div className="relative px-6 sm:px-12 py-12 sm:py-16">
-                {/* Header */}
-                <div className="text-center mb-10">
-                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-light text-gray-900 mb-3">
-                    Your AI-Powered Travel Concierge
-                  </h2>
-                  <p className="text-gray-700 text-sm md:text-base max-w-xl mx-auto font-light">
-                    Meet Sphera AI — book jets, discover wines, arrange transfers, and more through natural conversation.
-                  </p>
-                </div>
-
+              <div className="relative px-6 sm:px-12 py-8 sm:py-12">
                 {/* Floating Chat Window Mockup */}
                 <div className="max-w-4xl mx-auto">
                   <div
@@ -836,12 +1069,163 @@ function Homepage() {
         {/* What does digital ownership mean in Web3 - HIDDEN */}
         {/* Section removed as per request */}
 
+        {/* Adventure Packages - 8 Cards */}
+        <section className="px-4 sm:px-8 py-8 sm:py-12 max-w-6xl mx-auto">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl sm:text-3xl font-light text-gray-900 mb-2 tracking-tight">Adventure Packages</h2>
+            <p className="text-gray-500 text-sm">Curated experiences ready to book</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {adventurePackages.map((pkg) => (
+              <div
+                key={pkg.id}
+                onClick={() => navigate('/adventures')}
+                className="group rounded-xl overflow-hidden transition-all duration-700 hover:scale-105 cursor-pointer bg-gray-100 border border-gray-200"
+              >
+                {/* Image Header */}
+                <div className="relative h-[100px] overflow-hidden">
+                  <div
+                    className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                    style={{
+                      backgroundImage: `url(${pkg.image_url || 'https://images.unsplash.com/photo-1540962351504-03099e0a754b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2574&q=80'})`
+                    }}
+                  />
+                </div>
+
+                {/* Content */}
+                <div className="p-3 bg-gray-100">
+                  <h3 className="text-sm font-medium text-gray-900 mb-1 line-clamp-1">
+                    {pkg.title}
+                  </h3>
+                  <p className="text-gray-500 text-[10px] mb-2 line-clamp-1">
+                    {pkg.origin} → {pkg.destination || 'Multi-stop'}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-900 font-medium text-sm">
+                      {pkg.currency === 'EUR' ? '€' : '$'}{pkg.price?.toLocaleString() || 'On request'}
+                    </span>
+                    {pkg.aircraft_type && (
+                      <span className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded text-[8px]">
+                        {pkg.aircraft_type}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* View all link */}
+          <div className="text-center mt-6">
+            <button
+              onClick={() => navigate('/adventures')}
+              className="text-sm text-gray-600 hover:text-gray-900 transition-colors underline"
+            >
+              View all adventure packages →
+            </button>
+          </div>
+        </section>
+
+        {/* Tokenization & Web3 Section */}
+        <section className="px-4 sm:px-8 py-8 sm:py-12 max-w-6xl mx-auto">
+          {/* Centered Title & Description */}
+          <div className="text-center mb-8">
+            <h3 className="text-2xl sm:text-3xl font-light text-gray-900 tracking-tight mb-3">
+              <span className="text-gray-900">RWA</span> <span className="text-gray-500">Tokenization</span>
+            </h3>
+            <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto mb-4">
+              Transform your real-world assets into income-generating digital investments. Hotels listed for bookings, jets operated by our network, travel businesses integrated for global reach.
+            </p>
+            <div className="flex flex-wrap justify-center gap-2 mb-5">
+              <span className="bg-gray-100 px-3 py-1 rounded-full text-xs text-gray-700">Hotels & Resorts</span>
+              <span className="bg-gray-100 px-3 py-1 rounded-full text-xs text-gray-700">Private Jets</span>
+              <span className="bg-gray-100 px-3 py-1 rounded-full text-xs text-gray-700">Travel Businesses</span>
+              <span className="bg-gray-100 px-3 py-1 rounded-full text-xs text-gray-700">Hangars & Airfields</span>
+            </div>
+            <div className="flex flex-wrap justify-center gap-3">
+              <button
+                onClick={() => navigate('/dashboard/chat?query=Calculate%20revenue%20APY%20for%20tokenizing%20my%20asset&newChat=true')}
+                className="px-5 py-2.5 bg-gray-900 rounded-lg text-sm font-medium text-white hover:bg-gray-800 transition-colors"
+              >
+                Calculate Revenue APY
+              </button>
+              <button
+                onClick={() => navigate('/tokenized')}
+                className="px-5 py-2.5 bg-gray-100 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors"
+              >
+                Learn More
+              </button>
+            </div>
+          </div>
+
+          {/* Two Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* NFT Membership Card */}
+            <div
+              onClick={() => navigate('/rwa-nft')}
+              className="group relative rounded-2xl overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 border border-gray-200"
+              style={{ minHeight: '260px' }}
+            >
+              {/* Video Background */}
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover"
+              >
+                <source src="https://auth.privatecharterx.com/storage/v1/object/public/logos/PrivateCharterX_transparent%20(2).mp4" type="video/mp4" />
+              </video>
+              {/* Content at bottom */}
+              <div className="absolute bottom-0 left-0 right-0 z-20 p-4">
+                <div className="bg-white/70 backdrop-blur-md rounded-xl p-4 flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-medium text-gray-900 tracking-tight whitespace-nowrap">
+                    NFT Membership
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="bg-gray-200/80 px-2 py-1 rounded-full text-xs text-gray-700">10% Off</span>
+                    <span className="bg-gray-200/80 px-2 py-1 rounded-full text-xs text-gray-700">Free Empty Leg</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* PVCX Token Card */}
+            <div
+              onClick={() => navigate('/dashboard/web3/pvcx-token')}
+              className="group relative rounded-2xl overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 border border-gray-200"
+              style={{ minHeight: '260px' }}
+            >
+              {/* Background */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: 'url(https://auth.privatecharterx.com/storage/v1/object/public/logos/Whisk_iwzzu2nzizyzmmn50szjzgotutn1qtllfwnh1so.png)',
+                  backgroundPosition: 'center',
+                  backgroundSize: 'cover'
+                }}
+              />
+              {/* Content at bottom */}
+              <div className="absolute bottom-0 left-0 right-0 z-20 p-4">
+                <div className="bg-white/70 backdrop-blur-md rounded-xl p-4 flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-medium text-gray-900 tracking-tight whitespace-nowrap">
+                    $PVCX Token
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="bg-gray-200/80 px-2 py-1 rounded-full text-xs text-gray-700">Utility Token</span>
+                    <span className="bg-gray-200/80 px-2 py-1 rounded-full text-xs text-gray-700">Staking Rewards</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* FAQ Section */}
         <AnimatedSection animation="slide-up" delay={100}>
           <section className="px-4 sm:px-8 py-12 sm:py-20 max-w-6xl mx-auto">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-light text-gray-900 mb-2">Got Questions?</h2>
-              <h3 className="text-xl font-light text-gray-500">We've got answers</h3>
+              <h2 className="text-3xl font-light text-gray-900 mb-2 tracking-tight">Got Questions?</h2>
+              <h3 className="text-xl font-light text-gray-500 tracking-tight">We've got answers</h3>
             </div>
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -883,206 +1267,28 @@ function Homepage() {
               ))}
             </div>
 
-            <div className="text-center mt-12">
-              <p className="text-gray-600 mb-4">Can't find what you're searching for?</p>
-              <button
-                onClick={() => navigate('/helpdesk')}
-                className="text-gray-900 font-medium hover:text-gray-700 transition-colors underline"
-              >
-                Check our Helpdesk
-              </button>
-            </div>
           </div>
           </section>
         </AnimatedSection>
 
+        {/* Bottom CTA */}
+        <section className="px-4 sm:px-8 py-16 sm:py-24 max-w-6xl mx-auto text-center">
+          <h2 className="text-3xl sm:text-4xl font-light text-gray-900 mb-4 tracking-tighter">
+            Ready to elevate your travel experience?
+          </h2>
+          <p className="text-gray-500 text-lg mb-8 max-w-2xl mx-auto">
+            Book your next journey with AI-powered precision, crypto payments, and 24/7 concierge support.
+          </p>
+          <button
+            onClick={() => navigate('/dashboard/chat?newChat=true')}
+            className="bg-gray-900 text-white px-8 py-3 rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
+          >
+            Start Planning Now
+          </button>
+        </section>
 
         {/* Footer */}
-        <footer className="bg-gray-50 border-t border-gray-200" style={{ fontFamily: "'Satoshi', sans-serif", fontWeight: 300 }}>
-          {/* Main Footer Content */}
-          <div className="px-4 sm:px-8 py-12 sm:py-16">
-            <div className="max-w-6xl mx-auto">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 sm:gap-6">
-
-                {/* Brand / Logo / Social / Payment - Left Side */}
-                <div>
-                  {/* Logo */}
-                  <img
-                    src="https://i.ibb.co/DPF5g3Sk/iu42DU1.png"
-                    alt="PrivateCharterX"
-                    className="h-12 object-contain mb-3"
-                  />
-                  {/* Description */}
-                  <p className="text-sm text-gray-900 mb-4 font-light">
-                    Blockchain-powered private aviation platform revolutionizing luxury travel.
-                  </p>
-                  {/* Social Icons - 1 row, left aligned */}
-                  <div className="flex gap-3 justify-start">
-                    {/* LinkedIn */}
-                    <a href="https://www.linkedin.com/company/privatecharterx" target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
-                      <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                      </svg>
-                    </a>
-                    {/* X (Twitter) */}
-                    <a href="https://x.com/PrivatecharterX" target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
-                      <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                      </svg>
-                    </a>
-                    {/* OpenSea */}
-                    <a href="https://opensea.io/collection/privatecharterx-membership-card" target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
-                      <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 0C5.374 0 0 5.374 0 12s5.374 12 12 12 12-5.374 12-12S18.629 0 12 0ZM5.92 12.403l.051-.081 3.123-4.884a.107.107 0 0 1 .187.014c.52 1.169.972 2.623.76 3.528-.088.372-.335.876-.614 1.342a2.405 2.405 0 0 1-.117.199.106.106 0 0 1-.09.045H6.013a.106.106 0 0 1-.091-.163Zm13.914 1.68a.109.109 0 0 1-.065.101c-.243.103-1.07.485-1.414.962-.878 1.222-1.548 2.97-3.048 2.97H9.053a4.019 4.019 0 0 1-4.013-4.028v-.072c0-.058.048-.106.108-.106h3.485c.07 0 .12.063.115.132-.026.226.017.459.125.67.206.42.636.682 1.099.682h1.726v-1.347H9.99a.11.11 0 0 1-.089-.173l.063-.09c.16-.231.391-.586.621-.992.156-.274.308-.566.43-.86.024-.052.043-.107.065-.16.033-.094.067-.182.091-.269a4.57 4.57 0 0 0 .065-.223c.057-.25.081-.514.081-.787 0-.108-.004-.221-.014-.327-.005-.117-.02-.235-.034-.352a3.415 3.415 0 0 0-.048-.312 6.494 6.494 0 0 0-.098-.468l-.014-.06c-.03-.108-.056-.21-.09-.317a11.824 11.824 0 0 0-.328-.972 5.212 5.212 0 0 0-.142-.355c-.072-.178-.146-.339-.213-.49a3.564 3.564 0 0 1-.094-.197 4.658 4.658 0 0 0-.103-.213c-.024-.053-.053-.104-.072-.152l-.211-.388c-.029-.053.019-.118.077-.101l1.32.357h.01l.173.05.192.054.07.019v-.783c0-.379.302-.686.679-.686a.66.66 0 0 1 .477.202.69.69 0 0 1 .2.484V6.65l.141.039c.01.005.022.01.031.017.034.024.084.062.147.11.05.038.103.086.165.137a10.351 10.351 0 0 1 .574.504c.214.199.454.432.684.691.065.074.127.146.192.226.062.079.132.156.19.232.079.104.16.212.235.324.033.053.074.108.105.161.096.142.178.288.257.435.034.067.067.141.096.213.089.197.159.396.202.598a.65.65 0 0 1 .024.169v.015c.007.074.01.149.003.224a1.813 1.813 0 0 1-.091.481 2.149 2.149 0 0 1-.127.325c-.034.082-.074.16-.113.243a2.872 2.872 0 0 1-.338.513 1.12 1.12 0 0 1-.113.149c-.036.046-.076.091-.112.141-.058.072-.117.149-.185.215l-.24.267c-.03.036-.07.072-.104.108l-.203.219a.105.105 0 0 1-.074.03h-1.05v1.348h1.323c.295 0 .576-.104.804-.298.075-.065.439-.381.875-.851a.094.094 0 0 1 .058-.03l3.83-1.106a.11.11 0 0 1 .137.103v.773Z"/>
-                      </svg>
-                    </a>
-                    {/* Email */}
-                    <a href="mailto:info@privatecharterx.com" className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
-                      <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                    </a>
-                  </div>
-                  {/* Payment Icons */}
-                  <div className="mt-6">
-                    <p className="text-xs text-gray-400 mb-2 font-light">We accept</p>
-                    <div className="flex gap-2">
-                      <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-500 font-light">BTC</span>
-                      <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-500 font-light">ETH</span>
-                      <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-500 font-light">USDC</span>
-                      <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-500 font-light">USDT</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Services */}
-                <div>
-                  <h4 className="text-sm font-medium text-gray-900 mb-4">Services</h4>
-                  <div className="space-y-2.5">
-                    <button onClick={() => navigate('/dashboard/chat?query=private+jet')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Private Jets
-                    </button>
-                    <button onClick={() => navigate('/dashboard/chat?query=helicopter')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Helicopters
-                    </button>
-                    <button onClick={() => navigate('/dashboard/chat?query=empty+legs')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Empty Legs
-                    </button>
-                    <span className="block text-sm text-gray-400 text-left">
-                      Yacht Charters <span className="text-xs">(Q1/2026)</span>
-                    </span>
-                    <button onClick={() => navigate('/dashboard/chat?query=airport+transfer')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Ground Transport
-                    </button>
-                    <button onClick={() => navigate('/dashboard/chat?newChat=true')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Sphera AI
-                    </button>
-                  </div>
-                </div>
-
-                {/* Web3 & Tokenization */}
-                <div>
-                  <h4 className="text-sm font-medium text-gray-900 mb-4">Web3</h4>
-                  <div className="space-y-2.5">
-                    <button onClick={() => navigate('/dashboard/web3/tokenization')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Tokenize Your Asset
-                    </button>
-                    <button onClick={() => navigate('/dashboard/web3/nft-marketplace')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      NFT Membership
-                    </button>
-                    <button onClick={() => navigate('/dashboard/web3/pvcx-token')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      PVCX Token
-                    </button>
-                    <button onClick={() => navigate('/dashboard/web3/launchpad')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Launchpad
-                    </button>
-                    <button onClick={() => navigate('/dashboard/web3/marketplace')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Marketplace
-                    </button>
-                  </div>
-                </div>
-
-                {/* Pages */}
-                <div>
-                  <h4 className="text-sm font-medium text-gray-900 mb-4">Pages</h4>
-                  <div className="space-y-2.5">
-                    <button onClick={() => navigate('/services')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Services
-                    </button>
-                    <button onClick={() => navigate('/aviation')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Aviation
-                    </button>
-                    <button onClick={() => navigate('/tokenized')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      RWA Tokenization
-                    </button>
-                    <button onClick={() => navigate('/sphera-ai')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Sphera AI
-                    </button>
-                    <button onClick={() => navigate('/rwa-nft')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      RWA NFT
-                    </button>
-                  </div>
-                </div>
-
-                {/* Support */}
-                <div>
-                  <h4 className="text-sm font-medium text-gray-900 mb-4">Support</h4>
-                  <div className="space-y-2.5">
-                    <button onClick={() => {
-                      const faqSection = document.querySelector('#faq');
-                      faqSection?.scrollIntoView({ behavior: 'smooth' });
-                    }} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      FAQ
-                    </button>
-                    <button onClick={() => navigate('/helpdesk')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Help Center
-                    </button>
-                    <button onClick={() => navigate('/dashboard/subscriptions/plans')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      Manage Subscription
-                    </button>
-                    <button onClick={() => navigate('/dashboard/requests')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                      My Requests
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          </div>
-
-          {/* Legal Links Bar */}
-          <div className="border-t border-gray-200 bg-gray-50">
-            <div className="px-4 sm:px-8 py-4">
-              <div className="max-w-6xl mx-auto">
-                <div className="flex flex-wrap justify-center gap-4 sm:gap-8">
-                  <button onClick={() => navigate('/terms')} className="text-xs text-gray-500 hover:text-gray-900 transition-colors">
-                    Terms of Service
-                  </button>
-                  <button onClick={() => navigate('/privacy')} className="text-xs text-gray-500 hover:text-gray-900 transition-colors">
-                    Privacy Policy
-                  </button>
-                  <button onClick={() => navigate('/cookies')} className="text-xs text-gray-500 hover:text-gray-900 transition-colors">
-                    Cookie Policy
-                  </button>
-                  <button onClick={() => navigate('/imprint')} className="text-xs text-gray-500 hover:text-gray-900 transition-colors">
-                    Imprint
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Company Info Bar */}
-          <div className="border-t border-gray-200 bg-gray-100">
-            <div className="px-4 sm:px-8 py-4">
-              <div className="max-w-6xl mx-auto">
-                <p className="text-xs text-gray-500 text-center">
-                  PrivateCharterX LLC - 1000 Brickell Ave. 715 - 33131 Miami, Florida - United States of America - Registration Nr L24000299516
-                </p>
-              </div>
-            </div>
-          </div>
-        </footer>
+        <Footer />
 
         {/* Promotional "Try for Free" Banner - Bottom Right - Glassmorphic */}
         {showPromoBanner && (

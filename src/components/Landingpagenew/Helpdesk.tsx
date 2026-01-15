@@ -395,40 +395,37 @@ function Helpdesk({ setCurrentPage }: HelpdeskProps) {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 px-4 py-4">
+    <div className="min-h-screen bg-white">
       <LandingHeader showInfoButton={false} />
 
-      {/* Hero Section - Centered */}
-      <section className="px-4 sm:px-8 py-12 sm:py-20 max-w-4xl mx-auto text-center">
-        <div className="mb-6">
-          <span className="bg-gray-900 text-white px-4 py-2 rounded-full text-xs font-medium tracking-wide uppercase">
-            24/7 Support Center
-          </span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-light text-gray-900 mb-6 leading-tight">
-          Complete Platform Guide<br />
-          <span className="text-gray-400">Everything You Need to Know</span>
-        </h1>
-        <p className="text-base sm:text-lg text-gray-600 mb-8 leading-relaxed max-w-2xl mx-auto">
-          Comprehensive documentation covering all PrivateCharterX services - from booking private jets
-          to tokenizing aviation assets and managing DAOs.
-        </p>
+      {/* Hero Section - Same style as Aviation page */}
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-light text-gray-900 mb-6 tracking-tighter">
+            Help Center
+          </h1>
 
-        {/* Search Bar - Centered */}
-        <div className="relative max-w-2xl mx-auto">
-          <Search className="w-5 h-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search help topics..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-white"
-          />
+          <p className="text-xl text-gray-500 mb-8 max-w-3xl mx-auto font-light leading-relaxed">
+            Comprehensive documentation covering all PrivateCharterX services - from booking private jets
+            to tokenizing aviation assets and managing DAOs.
+          </p>
+
+          {/* Search Bar - Centered */}
+          <div className="relative max-w-2xl mx-auto">
+            <Search className="w-5 h-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search help topics..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-white"
+            />
+          </div>
         </div>
-      </section>
+      </div>
 
       {/* FAQ Topics Section */}
-      <section className="px-4 sm:px-8 py-12 sm:py-20 max-w-6xl mx-auto">
+      <section className="px-4 sm:px-8 py-4 sm:py-8 max-w-6xl mx-auto">
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredTopics.map((topic) => {
@@ -511,9 +508,9 @@ function Helpdesk({ setCurrentPage }: HelpdeskProps) {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex justify-center">
             {/* Email Support */}
-            <div className="bg-white rounded-xl p-6 text-center border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-white rounded-xl p-6 text-center border border-gray-200 shadow-sm hover:shadow-md transition-shadow max-w-sm w-full">
               <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Mail className="w-7 h-7 text-gray-700" />
               </div>
@@ -524,39 +521,7 @@ function Helpdesk({ setCurrentPage }: HelpdeskProps) {
                 className="inline-flex items-center gap-2 bg-gray-900 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
               >
                 <Mail className="w-4 h-4" />
-                Send Email
-              </a>
-            </div>
-
-            {/* Chat Support */}
-            <div className="bg-white rounded-xl p-6 text-center border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MessageCircle className="w-7 h-7 text-gray-700" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Chat Support</h3>
-              <p className="text-gray-600 text-sm mb-4">Get instant help from our team</p>
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="inline-flex items-center gap-2 bg-gray-900 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
-              >
-                <MessageCircle className="w-4 h-4" />
-                Start Chat
-              </button>
-            </div>
-
-            {/* Phone Support */}
-            <div className="bg-white rounded-xl p-6 text-center border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Headphones className="w-7 h-7 text-gray-700" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Phone Support</h3>
-              <p className="text-gray-600 text-sm mb-4">Speak with our team directly</p>
-              <a
-                href="tel:+442045920778"
-                className="inline-flex items-center gap-2 bg-gray-900 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
-              >
-                <Headphones className="w-4 h-4" />
-                Call Us
+                info@privatecharterx.com
               </a>
             </div>
           </div>

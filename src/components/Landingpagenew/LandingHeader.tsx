@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Info, Menu, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { useAccount } from 'wagmi';
 
 interface LandingHeaderProps {
   onGetStarted?: () => void;
@@ -14,7 +13,6 @@ export default function LandingHeader({ onGetStarted, showInfoButton = true }: L
   const location = useLocation();
   const auth = useAuth();
   const isAuthenticated = auth?.isAuthenticated || false;
-  const { address, isConnected } = useAccount();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -29,12 +27,6 @@ export default function LandingHeader({ onGetStarted, showInfoButton = true }: L
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  // Shorten wallet address for display
-  const shortenAddress = (addr: string) => {
-    if (!addr) return '';
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  };
 
   const defaultGetStarted = () => {
     navigate('/dashboard');
@@ -52,11 +44,12 @@ export default function LandingHeader({ onGetStarted, showInfoButton = true }: L
   };
 
   const navItems = [
-    { path: '/services', label: 'Services' },
     { path: '/aviation', label: 'Aviation' },
+    { path: '/flights', label: 'Flights' },
+    { path: '/empty-legs', label: 'Empty Legs', badge: 'New' },
+    { path: '/adventures', label: 'Adventures' },
     { path: '/tokenized', label: 'RWA Tokenization' },
     { path: '/sphera-ai', label: 'Sphera AI' },
-    { path: '/rwa-nft', label: 'RWA NFT' },
   ];
 
   return (
@@ -90,18 +83,23 @@ export default function LandingHeader({ onGetStarted, showInfoButton = true }: L
             </button>
 
             {/* Inline Expanding Navigation to the LEFT - Desktop */}
-            <div className={`flex items-center gap-1 overflow-hidden transition-all duration-300 ${isMenuOpen ? 'max-w-[500px] opacity-100' : 'max-w-0 opacity-0'}`}>
+            <div className={`flex items-center gap-1 overflow-hidden transition-all duration-300 ${isMenuOpen ? 'max-w-[600px] opacity-100' : 'max-w-0 opacity-0'}`}>
               {navItems.map((item) => (
                 <button
                   key={item.path}
                   onClick={() => { navigate(item.path); setIsMenuOpen(false); }}
-                  className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-all duration-200 border ${
+                  className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-all duration-200 border flex items-center gap-1.5 ${
                     isActivePage(item.path)
                       ? 'text-gray-900 font-medium bg-gray-100 border-gray-300'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 border-gray-200 hover:border-gray-300'
                   }`}
                 >
                   {item.label}
+                  {(item as any).badge && (
+                    <span className="px-1.5 py-0.5 text-[9px] font-medium bg-green-500 text-white rounded-full">
+                      {(item as any).badge}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -129,13 +127,6 @@ export default function LandingHeader({ onGetStarted, showInfoButton = true }: L
           {/* Get Started / Dashboard Button (THIRD - LAST) */}
           {isAuthenticated ? (
             <>
-              {/* Only show wallet button when wallet is connected - desktop only */}
-              {isConnected && address && (
-                <button className="hidden sm:flex border border-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm hover:bg-gray-50 transition-colors items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  {shortenAddress(address)}
-                </button>
-              )}
               {/* Dashboard Button with Green Pulse - only when logged in */}
               <button
                 onClick={handleDashboardClick}
@@ -160,19 +151,24 @@ export default function LandingHeader({ onGetStarted, showInfoButton = true }: L
       </header>
 
       {/* Mobile Menu Dropdown */}
-      <div className={`md:hidden overflow-hidden transition-all duration-300 ${isMobileMenuOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'}`}>
+      <div className={`md:hidden overflow-hidden transition-all duration-300 ${isMobileMenuOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'}`}>
         <nav className="flex flex-col px-4 pb-4 bg-white/95 backdrop-blur-md border-t border-gray-100">
           {navItems.map((item) => (
             <button
               key={item.path}
               onClick={() => { navigate(item.path); setIsMobileMenuOpen(false); }}
-              className={`px-4 py-3 text-sm text-left border-b border-gray-100 last:border-b-0 transition-colors ${
+              className={`px-4 py-3 text-sm text-left border-b border-gray-100 last:border-b-0 transition-colors flex items-center justify-between ${
                 isActivePage(item.path)
                   ? 'text-gray-900 font-medium bg-gray-50'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
               {item.label}
+              {(item as any).badge && (
+                <span className="px-2 py-0.5 text-[10px] font-medium bg-green-500 text-white rounded-full">
+                  {(item as any).badge}
+                </span>
+              )}
             </button>
           ))}
         </nav>

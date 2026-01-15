@@ -6,7 +6,7 @@ import {
   Headphones, Monitor, Radio, Radar, Cloud, Database, Lock
 } from 'lucide-react';
 import Header from '../components/Header';
-import Footer from '../components/Footer';
+import Footer from '../components/Landingpagenew/HomepageFooter';
 
 // Modal Component for Service Details
 const ServiceDetailModal = ({ service, onClose }) => {

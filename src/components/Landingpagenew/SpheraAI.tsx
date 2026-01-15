@@ -210,6 +210,201 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
         </div>
       </section>
 
+      {/* Animated AI Prompts Marquee */}
+      <section className="py-8 sm:py-12 overflow-hidden">
+        <style>{`
+          @keyframes scrollLeft {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+          @keyframes scrollRight {
+            0% { transform: translateX(-50%); }
+            100% { transform: translateX(0); }
+          }
+          .animate-scroll-left {
+            animation: scrollLeft 180s linear infinite;
+          }
+          .animate-scroll-right {
+            animation: scrollRight 180s linear infinite;
+          }
+          .marquee-row:hover .animate-scroll-left,
+          .marquee-row:hover .animate-scroll-right {
+            animation-play-state: paused;
+          }
+          .prompt-card {
+            transition: all 0.2s ease;
+          }
+          .prompt-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+          }
+          .prompt-card:active {
+            transform: scale(0.98);
+          }
+          .prompt-card .plus-icon {
+            transition: transform 0.3s ease;
+          }
+          .prompt-card:hover .plus-icon {
+            transform: rotate(90deg);
+          }
+        `}</style>
+
+        <div className="space-y-4">
+          {/* Row 1 - Left to Right */}
+          <div className="marquee-row relative">
+            <div className="animate-scroll-left flex gap-3 w-max">
+              {[...Array(2)].map((_, setIndex) => (
+                <div key={setIndex} className="flex gap-3">
+                  {[
+                    { prompt: "I need a private jet from Zurich to London", tier: "explorer" },
+                    { prompt: "Book a light jet from Geneva to Nice", tier: "explorer" },
+                    { prompt: "Show me available jets for Paris to Ibiza", tier: "explorer" },
+                    { prompt: "Find me a heavy jet for 12 passengers", tier: "explorer" },
+                    { prompt: "What's the cheapest jet to Barcelona?", tier: "explorer" },
+                    { prompt: "Empty legs from London", tier: "explorer" },
+                    { prompt: "Show me empty legs to Monaco", tier: "explorer" },
+                    { prompt: "Group charter for 20 passengers", tier: "elite" },
+                    { prompt: "Helicopter transfer Nice to Monaco", tier: "explorer" },
+                    { prompt: "Alpine scenic helicopter tour", tier: "explorer" },
+                    { prompt: "Ground transport from Schiphol", tier: "explorer" },
+                    { prompt: "Luxury car pickup Geneva airport", tier: "explorer" },
+                    { prompt: "Yacht charter Mediterranean", tier: "traveller" },
+                    { prompt: "Superyacht Monaco Grand Prix", tier: "traveller" },
+                    { prompt: "Free airport transfer included", tier: "elite" },
+                    { prompt: "VIP event access Monaco Grand Prix", tier: "elite" },
+                    { prompt: "MembershipX card benefits", tier: "elite" }
+                  ].map((item, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => navigate(`/dashboard/chat?query=${encodeURIComponent(item.prompt)}&newChat=true`)}
+                      className="prompt-card group relative flex-shrink-0 flex items-center gap-3 pl-3 pr-4 py-4 rounded-2xl text-xs whitespace-nowrap cursor-pointer border border-gray-200/40"
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.7)',
+                        backdropFilter: 'blur(12px)',
+                        WebkitBackdropFilter: 'blur(12px)',
+                      }}
+                    >
+                      <span
+                        className="absolute -top-2 left-3 px-2 py-0.5 rounded-full text-[10px] font-medium text-white"
+                        style={{
+                          background: '#9ca3af',
+                        }}
+                      >
+                        {item.tier === 'elite' ? 'Elite' : item.tier === 'traveller' ? 'Traveller' : 'Explorer'}
+                      </span>
+                      <span className="text-gray-800">{item.prompt}</span>
+                      <span className="plus-icon ml-auto text-gray-400 text-lg font-light">+</span>
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Row 2 - Right to Left */}
+          <div className="marquee-row relative">
+            <div className="animate-scroll-right flex gap-3 w-max">
+              {[...Array(2)].map((_, setIndex) => (
+                <div key={setIndex} className="flex gap-3">
+                  {[
+                    { prompt: "I'd like a Barolo red wine for my flight", tier: "explorer" },
+                    { prompt: "Do you have Dom Pérignon?", tier: "explorer" },
+                    { prompt: "Show me your champagne selection", tier: "explorer" },
+                    { prompt: "Château Margaux 2015 please", tier: "explorer" },
+                    { prompt: "Wine recommendations for celebration", tier: "explorer" },
+                    { prompt: "Order Krug Grande Cuvée", tier: "explorer" },
+                    { prompt: "Cuban cigars for my flight", tier: "explorer" },
+                    { prompt: "Do you have Cohiba Behike?", tier: "explorer" },
+                    { prompt: "Premium cigar selection", tier: "explorer" },
+                    { prompt: "Montecristo No. 2 box", tier: "explorer" },
+                    { prompt: "Michelin star restaurant Zurich", tier: "explorer" },
+                    { prompt: "Rooftop restaurant in Monaco", tier: "explorer" },
+                    { prompt: "Best Italian near my hotel Milan", tier: "explorer" },
+                    { prompt: "VIP catering experience on board", tier: "elite" },
+                    { prompt: "Full meal catering on my jet", tier: "explorer" },
+                    { prompt: "Concierge book dinner for 8", tier: "traveller" },
+                    { prompt: "Event booking private venue", tier: "traveller" }
+                  ].map((item, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => navigate(`/dashboard/chat?query=${encodeURIComponent(item.prompt)}&newChat=true`)}
+                      className="prompt-card group relative flex-shrink-0 flex items-center gap-3 pl-3 pr-4 py-4 rounded-2xl text-xs whitespace-nowrap cursor-pointer border border-gray-200/40"
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.7)',
+                        backdropFilter: 'blur(12px)',
+                        WebkitBackdropFilter: 'blur(12px)',
+                      }}
+                    >
+                      <span
+                        className="absolute -top-2 left-3 px-2 py-0.5 rounded-full text-[10px] font-medium text-white"
+                        style={{
+                          background: '#9ca3af',
+                        }}
+                      >
+                        {item.tier === 'elite' ? 'Elite' : item.tier === 'traveller' ? 'Traveller' : 'Explorer'}
+                      </span>
+                      <span className="text-gray-800">{item.prompt}</span>
+                      <span className="plus-icon ml-auto text-gray-400 text-lg font-light">+</span>
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Row 3 - Left to Right */}
+          <div className="marquee-row relative">
+            <div className="animate-scroll-left flex gap-3 w-max" style={{ animationDuration: '160s' }}>
+              {[...Array(2)].map((_, setIndex) => (
+                <div key={setIndex} className="flex gap-3">
+                  {[
+                    { prompt: "Helicopter Zurich to Gstaad", tier: "explorer" },
+                    { prompt: "Wedding helicopter Lake Como", tier: "explorer" },
+                    { prompt: "Airport transfers Geneva", tier: "explorer" },
+                    { prompt: "Swiss Alps helicopter tour", tier: "explorer" },
+                    { prompt: "Luxury van for 6 to Cannes", tier: "explorer" },
+                    { prompt: "Last-minute Zurich to St. Moritz", tier: "explorer" },
+                    { prompt: "Jets with bedroom capability", tier: "explorer" },
+                    { prompt: "Yacht week Croatia", tier: "traveller" },
+                    { prompt: "Round trip to Dubai", tier: "explorer" },
+                    { prompt: "MEDEVAC flight Greece to Switzerland", tier: "elite" },
+                    { prompt: "Express Visa for Thailand", tier: "explorer" },
+                    { prompt: "Concierge services Monaco", tier: "traveller" },
+                    { prompt: "Break the price on competitor quote", tier: "traveller" },
+                    { prompt: "Empty legs Zurich departing", tier: "explorer" },
+                    { prompt: "Show all Geneva empty legs", tier: "explorer" },
+                    { prompt: "Vintage Bordeaux for my jet", tier: "explorer" },
+                    { prompt: "Cigars for a 3-hour flight", tier: "explorer" }
+                  ].map((item, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => navigate(`/dashboard/chat?query=${encodeURIComponent(item.prompt)}&newChat=true`)}
+                      className="prompt-card group relative flex-shrink-0 flex items-center gap-3 pl-3 pr-4 py-4 rounded-2xl text-xs whitespace-nowrap cursor-pointer border border-gray-200/40"
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.7)',
+                        backdropFilter: 'blur(12px)',
+                        WebkitBackdropFilter: 'blur(12px)',
+                      }}
+                    >
+                      <span
+                        className="absolute -top-2 left-3 px-2 py-0.5 rounded-full text-[10px] font-medium text-white"
+                        style={{
+                          background: '#9ca3af',
+                        }}
+                      >
+                        {item.tier === 'elite' ? 'Elite' : item.tier === 'traveller' ? 'Traveller' : 'Explorer'}
+                      </span>
+                      <span className="text-gray-800">{item.prompt}</span>
+                      <span className="plus-icon ml-auto text-gray-400 text-lg font-light">+</span>
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Chat Demo Section */}
       <section className="px-4 sm:px-8 py-8 sm:py-12 max-w-6xl mx-auto mt-12">
         {/* Gradient Background Container */}

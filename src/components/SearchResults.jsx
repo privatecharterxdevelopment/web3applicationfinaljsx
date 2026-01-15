@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Check, X, Plane, Clock, MapPin, Users, Gauge, Fuel, ShoppingCart, CreditCard, Wallet, Wine, Thermometer, Star, Grape, Route, Ship } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronDown, ChevronUp, Check, X, Plane, Clock, MapPin, Users, Gauge, Fuel, ShoppingCart, CreditCard, Wallet, Wine, Thermometer, Star, Grape, Route, Ship, Phone, ExternalLink, Luggage, ArrowRight } from 'lucide-react';
 import BookableServiceCard from './BookableServiceCard';
 
 /**
  * SearchResults component displays search results in expandable tabs/cards
  */
 const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAddToCart, onRequestChanges, onPayCrypto, onBuildJourney, onBuildYachtJourney }) => {
+  const navigate = useNavigate();
+
   // Debug: Log tabs data on mount
   React.useEffect(() => {
     console.log('📋 SearchResults tabs:', tabs);
@@ -89,6 +92,7 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
              tab.id === 'special_services' ? 'Special Services' :
              (tab.id === 'luxury_cars' || tab.id === 'luxuryCars') ? 'Supercars' :
              (tab.id === 'transfers' || tab.id === 'ground_transport' || tab.id === 'taxi') ? 'Transfers' :
+             tab.id === 'commercial_flights' ? 'Flights' :
              tab.title}
             {tab.items?.length > 0 && (
               <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] ${
@@ -143,6 +147,174 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
       {currentTabData && (
         <div className="space-y-2">
           {currentTabData.items.slice(0, showAllItems ? currentTabData.items.length : 5).map((item, index) => (
+            // Special card layout for Commercial Flights
+            item.type === 'commercial_flight' ? (
+              <div
+                key={item.id}
+                className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 hover:border-gray-400 hover:shadow-md transition-all"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  {/* Airline & Times */}
+                  <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                      {item.airlineLogo ? (
+                        <img
+                          src={item.airlineLogo}
+                          alt={item.airline}
+                          className="max-w-full max-h-full object-contain"
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                        />
+                      ) : (
+                        <Plane className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 sm:gap-3">
+                        <span className="text-sm sm:text-lg font-semibold text-gray-900">
+                          {item.departureTime || '—'}
+                        </span>
+                        <ArrowRight size={14} className="text-gray-400 flex-shrink-0" />
+                        <span className="text-sm sm:text-lg font-semibold text-gray-900">
+                          {item.arrivalTime || '—'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5 truncate">
+                        {item.airline || 'Airline'} · {item.flightNumber || ''}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Duration & Route - Hidden on mobile */}
+                  <div className="text-center px-3 sm:px-6 hidden sm:block">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <Clock size={14} className="text-gray-400" />
+                      <span>{item.duration || '—'}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {item.from} – {item.to}
+                    </p>
+                  </div>
+
+                  {/* Stops */}
+                  <div className="text-center px-2 sm:px-4 hidden md:block">
+                    <p className={`text-sm font-medium ${item.stops === 0 ? 'text-green-600' : 'text-gray-700'}`}>
+                      {item.stops === 0 ? 'Non-stop' : `${item.stops} stop${item.stops > 1 ? 's' : ''}`}
+                    </p>
+                  </div>
+
+                  {/* Baggage - Hidden on mobile */}
+                  <div className="text-center px-2 hidden lg:block">
+                    <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                      <Luggage size={14} className="text-gray-400" />
+                      <span>{item.checkedBags > 0 ? `${item.checkedBags} bag` : 'No bags'}</span>
+                    </div>
+                  </div>
+
+                  {/* Price */}
+                  <div className="text-right pl-2 sm:pl-4 flex-shrink-0">
+                    <p className="text-base sm:text-xl font-bold text-gray-900">
+                      ${item.pricePerPerson?.toLocaleString() || item.price?.toLocaleString() || '—'}
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-gray-500">per person</p>
+                  </div>
+                </div>
+
+                {/* Mobile: Extra info row */}
+                <div className="flex items-center gap-3 mt-2 sm:hidden text-xs text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <Clock size={10} />
+                    {item.duration || '—'}
+                  </span>
+                  <span>·</span>
+                  <span className={item.stops === 0 ? 'text-green-600' : ''}>
+                    {item.stops === 0 ? 'Non-stop' : `${item.stops} stop${item.stops > 1 ? 's' : ''}`}
+                  </span>
+                  <span>·</span>
+                  <span>{item.from} – {item.to}</span>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-2 mt-3 pt-3 border-t border-gray-100">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Navigate to FlightBooking page with flight data
+                      const flightData = {
+                        id: item.id,
+                        offerId: item.offerId || item.id,
+                        offerRequestId: item.offerRequestId,
+                        airline: {
+                          name: item.airline || 'Airline',
+                          iataCode: item.airlineCode || '',
+                          logoUrl: item.airlineLogo || null
+                        },
+                        flightNumber: item.flightNumber || '',
+                        departure: {
+                          airport: item.from || item.origin,
+                          airportName: item.departureAirportName || '',
+                          city: item.departureCity || item.from,
+                          time: item.departureTime || item.departure_time,
+                          terminal: item.departureTerminal || null
+                        },
+                        arrival: {
+                          airport: item.to || item.destination,
+                          airportName: item.arrivalAirportName || '',
+                          city: item.arrivalCity || item.to,
+                          time: item.arrivalTime || item.arrival_time,
+                          terminal: item.arrivalTerminal || null
+                        },
+                        duration: item.duration || '',
+                        durationMinutes: item.durationMinutes || 0,
+                        stops: item.stops || 0,
+                        stopDetails: item.stopDetails || [],
+                        segments: item.segments || [],
+                        returnJourney: item.returnJourney || null,
+                        price: {
+                          amount: item.totalPrice || item.price || 0,
+                          currency: item.currency || 'USD',
+                          perPassenger: item.pricePerPerson || item.price || 0
+                        },
+                        baggage: {
+                          checkedBags: item.checkedBags || 0,
+                          cabinBags: item.cabinBags || 1,
+                          checkedBagWeight: item.checkedBagWeight || null
+                        },
+                        cabinClass: item.cabinClass || 'economy',
+                        cabinClassName: item.cabinClassName || 'Economy',
+                        expiresAt: item.expiresAt || new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+                        conditions: item.conditions || { refundable: false, changeable: false },
+                        rawOffer: item.rawOffer || item
+                      };
+                      // Store in localStorage as backup
+                      localStorage.setItem(`flight_offer_${flightData.offerId}`, JSON.stringify(flightData));
+                      // Navigate to booking page
+                      navigate(`/book/flight/${flightData.offerId}?passengers=${item.passengers || 1}`, {
+                        state: { flight: flightData }
+                      });
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium transition-colors text-sm"
+                  >
+                    <CreditCard size={16} />
+                    Book & Pay with Crypto
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAddToCart && onAddToCart({
+                        ...item,
+                        requestType: 'callback',
+                        isCallbackRequest: true,
+                        serviceType: 'commercial_flight_callback'
+                      });
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg font-medium transition-colors text-sm border border-emerald-200"
+                  >
+                    <Phone size={16} />
+                    Request Callback
+                  </button>
+                </div>
+              </div>
+            ) : (
             <div
               key={item.id}
               className="bg-white border border-gray-100 rounded-xl overflow-hidden hover:border-gray-200 transition-all"
@@ -191,6 +363,8 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                         ? (item.name || item.displayTitle || item.title || `${item.brand || ''} Cigar`.trim() || 'Premium Cigar')
                         : item.type === 'special_service'
                         ? (item.service_name || item.name || item.displayTitle || item.title || 'Special Service')
+                        : item.type === 'commercial_flight'
+                        ? `${item.from || '?'} → ${item.to || '?'}`
                         : (item.name || item.model || item.title || 'Unnamed Service')}
                     </p>
                     {/* Category Badge - subtle */}
@@ -210,6 +384,25 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                           {item.stops} stop{item.stops > 1 ? 's' : ''}
                         </span>
                       )
+                    )}
+                    {/* Commercial flight badges */}
+                    {item.type === 'commercial_flight' && (
+                      <>
+                        {item.stops === 0 ? (
+                          <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">
+                            Non-stop
+                          </span>
+                        ) : item.stops > 0 && (
+                          <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-600 border border-amber-200">
+                            {item.stops} stop{item.stops > 1 ? 's' : ''}
+                          </span>
+                        )}
+                        {item.cabinClass && (
+                          <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-sky-50 text-sky-600 border border-sky-200 capitalize">
+                            {item.cabinClass}
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
 
@@ -395,6 +588,31 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                         )}
                       </>
                     )}
+
+                    {/* Commercial Flights */}
+                    {item.type === 'commercial_flight' && (
+                      <>
+                        <span>{item.airline || 'Airline'}</span>
+                        {item.flightNumber && (
+                          <>
+                            <span>•</span>
+                            <span>{item.flightNumber}</span>
+                          </>
+                        )}
+                        {item.duration && (
+                          <>
+                            <span>•</span>
+                            <span>{item.duration}</span>
+                          </>
+                        )}
+                        {item.departureTime && item.arrivalTime && (
+                          <>
+                            <span>•</span>
+                            <span>{item.departureTime} - {item.arrivalTime}</span>
+                          </>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -416,7 +634,13 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                     {item.type === 'delicatesse' && (item.priceDisplay || (item.price ? `$${item.price.toLocaleString()}` : 'Price on request'))}
                     {item.type === 'cigars' && (item.priceDisplay || (item.price ? `$${item.price}/stick` : 'Price on request'))}
                     {item.type === 'special_service' && (item.priceDisplay || (item.price_eur ? `€${item.price_eur.toLocaleString()}` : item.price ? `$${item.price.toLocaleString()}` : 'Quote'))}
+                    {item.type === 'commercial_flight' && (
+                      item.pricePerPerson ? `$${item.pricePerPerson.toLocaleString()}` : item.price ? `$${item.price.toLocaleString()}` : 'Price on request'
+                    )}
                   </p>
+                  {item.type === 'commercial_flight' && (
+                    <p className="text-[10px] text-gray-500">per person</p>
+                  )}
                   {item.type === 'empty_legs' && (
                     <p className="text-[10px] text-emerald-600">Save up to 70%</p>
                   )}
@@ -649,6 +873,134 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                                 Add to Cart
                               </button>
                             </div>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Commercial Flights */}
+                      {item.type === 'commercial_flight' && (
+                        <>
+                          {/* Flight Route Header */}
+                          <div className="col-span-2 md:col-span-4 mb-3 p-4 bg-sky-50 border border-sky-200 rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                {item.airlineLogo && (
+                                  <img src={item.airlineLogo} alt={item.airline} className="h-8 object-contain" onError={(e) => e.target.style.display = 'none'} />
+                                )}
+                                <div>
+                                  <p className="text-lg font-semibold text-gray-900">{item.airline || 'Airline'}</p>
+                                  <p className="text-sm text-gray-500">{item.flightNumber || 'Flight'}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xl font-bold text-gray-900">${item.pricePerPerson?.toLocaleString() || item.price?.toLocaleString() || '—'}</p>
+                                <p className="text-xs text-gray-500">per person</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Flight Times */}
+                          <div className="col-span-2 md:col-span-4 flex items-center justify-between py-3">
+                            <div className="text-center">
+                              <p className="text-2xl font-bold text-gray-900">{item.departureTime || '—'}</p>
+                              <p className="text-sm font-medium text-gray-700">{item.from}</p>
+                            </div>
+                            <div className="flex-1 px-4">
+                              <div className="relative">
+                                <div className="border-t-2 border-dashed border-gray-300" />
+                                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-2">
+                                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                                    <Clock size={12} />
+                                    <span>{item.duration || '—'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <p className="text-center text-xs text-gray-500 mt-1">
+                                {item.stops === 0 ? 'Non-stop' : `${item.stops} stop${item.stops > 1 ? 's' : ''}`}
+                              </p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-2xl font-bold text-gray-900">{item.arrivalTime || '—'}</p>
+                              <p className="text-sm font-medium text-gray-700">{item.to}</p>
+                            </div>
+                          </div>
+
+                          {/* Flight Details Grid */}
+                          <div>
+                            <p className="text-xs text-gray-500">Cabin Class</p>
+                            <p className="text-sm font-semibold text-gray-900 capitalize">{item.cabinClass || 'Economy'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Baggage</p>
+                            <p className="text-sm font-semibold text-gray-900">
+                              {item.checkedBags > 0 ? `${item.checkedBags} checked bag${item.checkedBags > 1 ? 's' : ''}` : 'Carry-on only'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Conditions</p>
+                            <div className="flex items-center gap-2 text-sm">
+                              {item.refundable ? (
+                                <span className="text-green-600 font-medium">Refundable</span>
+                              ) : (
+                                <span className="text-gray-500">Non-refundable</span>
+                              )}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Changes</p>
+                            <div className="flex items-center gap-2 text-sm">
+                              {item.changeable ? (
+                                <span className="text-green-600 font-medium">Allowed</span>
+                              ) : (
+                                <span className="text-gray-500">Not allowed</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Booking Note */}
+                          <div className="col-span-2 md:col-span-4 mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                            <p className="text-sm text-amber-800">
+                              <strong>Note:</strong> This offer expires at {item.expiresAt ? new Date(item.expiresAt).toLocaleTimeString() : 'soon'}.
+                              Book now to secure this price. Pay with crypto and earn PVCX rewards!
+                            </p>
+                          </div>
+
+                          {/* Action Buttons for Commercial Flights */}
+                          <div className="col-span-2 md:col-span-4 mt-4 pt-4 border-t border-gray-200">
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              {/* Book Online */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Navigate to flight booking page
+                                  window.location.href = item.bookingUrl || `/book/flight/${item.offerId}`;
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium transition-colors text-sm"
+                              >
+                                <CreditCard size={16} />
+                                Book & Pay with Crypto
+                              </button>
+
+                              {/* Request Callback */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAddToCart && onAddToCart({
+                                    ...item,
+                                    requestType: 'callback',
+                                    isCallbackRequest: true,
+                                    serviceType: 'commercial_flight_callback'
+                                  });
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg font-medium transition-colors text-sm border border-emerald-200"
+                              >
+                                <Phone size={16} />
+                                Request Callback
+                              </button>
+                            </div>
+                            <p className="text-xs text-gray-500 text-center mt-2">
+                              Need help? Call us: <a href="tel:+1-305-555-0123" className="text-sky-600 hover:underline">+1 (305) 555-0123</a>
+                            </p>
                           </div>
                         </>
                       )}
@@ -1452,7 +1804,8 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
                   </div>
                 )}
               </div>
-            ))}
+            )
+          ))}
 
           {/* Show More/Less Buttons */}
           {currentTabData.items.length > 5 && (

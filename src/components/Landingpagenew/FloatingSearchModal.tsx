@@ -177,23 +177,34 @@ export default function FloatingSearchModal() {
     }
   };
 
-  // Handle Sommelier Talk - navigates to AI chat for wine sommelier consultation
-  const handleSommelierTalk = () => {
-    const prefilledMessage = encodeURIComponent('I would like wine recommendations');
-    if (isAuthenticated) {
-      navigate(`/dashboard/chat?query=${prefilledMessage}&newChat=true`);
-    } else {
-      navigate(`/dashboard/chat?query=${prefilledMessage}&newChat=true&login=true`);
-    }
+  // Handle Flight Tickets - navigates to /flights
+  const handleFlightTickets = () => {
+    navigate('/flights');
   };
 
-  // Handle Delicacies - navigates to AI chat for delicatesse consultation
-  const handleDelicacies = () => {
-    const prefilledMessage = encodeURIComponent('I would like to see delicacies and luxury extras for my flight');
+  // Handle Adventures - navigates to /adventures
+  const handleAdventures = () => {
+    navigate('/adventures');
+  };
+
+  // Handle Empty Legs - navigates to /flights and scrolls to empty legs section
+  const handleEmptyLegs = () => {
+    navigate('/flights');
+    // Scroll to empty legs section after navigation
+    setTimeout(() => {
+      const emptyLegsSection = document.getElementById('empty-legs-section');
+      if (emptyLegsSection) {
+        emptyLegsSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  };
+
+  // Handle Custom Travel Agent - opens new AI chat session
+  const handleCustomTravelAgent = () => {
     if (isAuthenticated) {
-      navigate(`/dashboard/chat?query=${prefilledMessage}&newChat=true`);
+      navigate('/dashboard/chat?newChat=true');
     } else {
-      navigate(`/dashboard/chat?query=${prefilledMessage}&newChat=true&login=true`);
+      navigate('/dashboard/chat?newChat=true&login=true');
     }
   };
 
@@ -314,31 +325,31 @@ export default function FloatingSearchModal() {
           </div>
         </div>
 
-        {/* Services Row - RWA, web3.0, charter a jet in same row - no wrap on mobile */}
+        {/* Services Row - Flight Tickets, Adventures, charter a jet, Empty Legs, Custom Travel Agent */}
         <div className="flex gap-1.5 sm:gap-3 mt-2.5 sm:mt-3 items-center overflow-x-auto">
-          {/* RWA Button */}
+          {/* Flight Tickets Button */}
           <div
-            onClick={() => toggleSection('rwa')}
+            onClick={handleFlightTickets}
             className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-100 hover:border-gray-300/40 hover:bg-white/10 active:scale-95 flex-shrink-0"
           >
-            <div className={`w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-gray-900 text-base sm:text-xl font-light transition-transform duration-150 ${currentOpenSection === 'rwa' ? 'rotate-45' : ''}`}>
+            <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-gray-900 text-base sm:text-xl font-light">
               +
             </div>
-            <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide">RWA</span>
+            <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide whitespace-nowrap">flight tickets</span>
           </div>
 
-          {/* Web3.0 Button */}
+          {/* Adventures Button */}
           <div
-            onClick={() => toggleSection('web3')}
+            onClick={handleAdventures}
             className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-100 hover:border-gray-300/40 hover:bg-white/10 active:scale-95 flex-shrink-0"
           >
-            <div className={`w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-gray-900 text-base sm:text-xl font-light transition-transform duration-150 ${currentOpenSection === 'web3' ? 'rotate-45' : ''}`}>
+            <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-gray-900 text-base sm:text-xl font-light">
               +
             </div>
-            <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide">web3.0</span>
+            <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide whitespace-nowrap">adventures</span>
           </div>
 
-          {/* Charter a Jet Button - Same style as RWA/web3 */}
+          {/* Charter a Jet Button */}
           <div
             onClick={() => setShowCharterFields(!showCharterFields)}
             className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-100 hover:border-gray-300/40 hover:bg-white/10 active:scale-95 flex-shrink-0"
@@ -349,26 +360,26 @@ export default function FloatingSearchModal() {
             <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide whitespace-nowrap">charter a jet</span>
           </div>
 
-          {/* Sommelier Talk Button */}
+          {/* Empty Legs Button */}
           <div
-            onClick={handleSommelierTalk}
+            onClick={handleEmptyLegs}
             className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-100 hover:border-gray-300/40 hover:bg-white/10 active:scale-95 flex-shrink-0"
           >
             <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-gray-900 text-base sm:text-xl font-light">
               +
             </div>
-            <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide whitespace-nowrap">sommelier</span>
+            <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide whitespace-nowrap">empty legs</span>
           </div>
 
-          {/* Delicacies Button */}
+          {/* Custom Travel Agent Button */}
           <div
-            onClick={handleDelicacies}
+            onClick={handleCustomTravelAgent}
             className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-100 hover:border-gray-300/40 hover:bg-white/10 active:scale-95 flex-shrink-0"
           >
             <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-gray-900 text-base sm:text-xl font-light">
               +
             </div>
-            <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide whitespace-nowrap">delicacies</span>
+            <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide whitespace-nowrap">custom travel agent</span>
           </div>
 
           {/* Spacer to push sphera to the right */}
@@ -526,31 +537,6 @@ export default function FloatingSearchModal() {
           </div>
         </div>
 
-        {/* RWA Categories */}
-        <div className={`flex flex-wrap gap-1 sm:gap-2 px-0 transition-all duration-150 ${currentOpenSection === 'rwa' ? 'max-h-[300px] opacity-100 mt-2 sm:mt-3 mb-1 sm:mb-2' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-          {['p/jets', 'emptylegs', 'helicopter', 'airportransfer', 'concierge', 'SPV Formation', 'adventure package', 'holiday planer', 'travel designer', 'Co2 certificate'].map(cat => (
-            <div
-              key={cat}
-              onClick={() => handleRWAClick(cat)}
-              className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-100 rounded-full text-[10px] sm:text-xs text-gray-700 cursor-pointer transition-all duration-100 border border-gray-300 font-medium hover:bg-gray-200 active:scale-95 hover:border-gray-400"
-            >
-              {cat}
-            </div>
-          ))}
-        </div>
-
-        {/* Web3 Categories */}
-        <div className={`flex flex-wrap gap-1 sm:gap-2 px-0 transition-all duration-150 ${currentOpenSection === 'web3' ? 'max-h-[300px] opacity-100 mt-2 sm:mt-3 mb-1 sm:mb-2' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-          {['free emptyleg', 'NFTs', 'asset-/tokenization', '$PVCX'].map(cat => (
-            <div
-              key={cat}
-              onClick={() => handleWeb3Click(cat)}
-              className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-100 rounded-full text-[10px] sm:text-xs text-gray-700 cursor-pointer transition-all duration-100 border border-gray-300 font-medium hover:bg-gray-200 active:scale-95 hover:border-gray-400"
-            >
-              {cat}
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );

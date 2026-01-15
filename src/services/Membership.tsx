@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Header from '../components/Header';
-import Footer from '../components/Footer';
+import Footer from '../components/Landingpagenew/HomepageFooter';
 import LoginModal from '../components/LoginModal';
 import RegisterModal from '../components/RegisterModal';
 

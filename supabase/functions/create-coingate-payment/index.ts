@@ -42,7 +42,7 @@ function convertToUSD(amount: number, fromCurrency: string, rate: number): numbe
 }
 
 interface PaymentRequest {
-  serviceType: 'empty_leg' | 'adventure_package' | 'co2_certificate' | 'hotel_booking' | 'custom_extra' | 'wine' | 'delicatesse' | 'cigars' | 'service_fee';
+  serviceType: 'empty_leg' | 'adventure_package' | 'co2_certificate' | 'hotel_booking' | 'custom_extra' | 'wine' | 'delicatesse' | 'cigars' | 'service_fee' | 'fixed_offer' | 'commercial_flight' | 'flight';
   serviceId: string;
   userId: string;
   walletAddress?: string;
@@ -385,6 +385,54 @@ serve(async (req) => {
         };
         break;
 
+      case 'fixed_offer':
+        // Fixed offers / Adventure packages from fixed_offers table
+        // Frontend sends all data, no database lookup needed
+        tableName = 'fixed_offers';
+
+        if (!priceUSD || !serviceTitle) {
+          throw new Error(`Fixed offer requires price and title: ${serviceId}`);
+        }
+
+        console.log(`Processing fixed offer: ${serviceTitle} - $${priceUSD}`);
+        serviceDetails = {
+          id: serviceId,
+          title: serviceTitle,
+          description: serviceDescription || 'Adventure package booking',
+          image_url: serviceImageUrl,
+          price: priceUSD,
+          currency: 'USD'
+        };
+        break;
+
+      case 'commercial_flight':
+      case 'flight':
+        // Commercial flight bookings - data comes from frontend (Duffel API)
+        tableName = 'user_bookings';
+
+        if (!priceUSD || !serviceTitle) {
+          throw new Error(`Commercial flight requires price and title: ${serviceId}`);
+        }
+
+        // Extract flight data from request
+        const flightData = (paymentData as any).flightData || {};
+
+        console.log(`Processing commercial flight: ${serviceTitle} - $${priceUSD}`);
+        serviceDetails = {
+          id: serviceId,
+          title: serviceTitle,
+          description: serviceDescription || `Commercial flight booking`,
+          image_url: serviceImageUrl,
+          price: priceUSD,
+          currency: 'USD',
+          origin: flightData.origin,
+          destination: flightData.destination,
+          departure_date: flightData.departure_date,
+          return_date: flightData.return_date,
+          aircraft_type: flightData.airline
+        };
+        break;
+
       default:
         throw new Error(`Invalid service type: ${serviceType}`);
     }
@@ -486,7 +534,20 @@ serve(async (req) => {
             source_table: tableName,
             created_via: 'coingate_payment',
             vat_rate: VAT_RATE,
-            vat_amount: vatAmount
+            vat_amount: vatAmount,
+            // Flight-specific data (for commercial_flight type)
+            ...(serviceType === 'commercial_flight' || serviceType === 'flight' ? {
+              duffel_offer_id: serviceId,
+              flight_data: (paymentData as any).flightData || {},
+              passengers: (paymentData as any).flightData?.passengers || [],
+              segments: (paymentData as any).flightData?.segments || [],
+              selected_seats: (paymentData as any).flightData?.selectedSeats || [],
+              baggage: (paymentData as any).flightData?.baggage || {},
+              conditions: (paymentData as any).flightData?.conditions || {},
+              airline: (paymentData as any).flightData?.airline,
+              flight_number: (paymentData as any).flightData?.flightNumber,
+              cabin_class: (paymentData as any).flightData?.cabinClass
+            } : {})
           }
         })
         .select()
@@ -612,11 +673,14 @@ serve(async (req) => {
   } catch (error) {
     console.error('Create payment error:', error);
 
+    // Ensure we always return a valid JSON response
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
     return new Response(JSON.stringify({
       success: false,
-      error: error.message || 'Failed to create payment'
+      error: errorMessage || 'Failed to create payment'
     }), {
-      status: 500,
+      status: 200, // Return 200 with success:false to avoid Supabase function invoke issues
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }

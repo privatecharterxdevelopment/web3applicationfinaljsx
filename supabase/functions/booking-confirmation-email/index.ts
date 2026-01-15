@@ -140,10 +140,16 @@ serve(async (req) => {
       const types: Record<string, { name: string; emoji: string; color: string }> = {
         'empty_leg': { name: 'Empty Leg Flight', emoji: '✈️', color: '#3b82f6' },
         'adventure_package': { name: 'Adventure Package', emoji: '🏔️', color: '#f97316' },
-        'co2_certificate': { name: 'CO₂ Certificate', emoji: '🌱', color: '#22c55e' }
+        'co2_certificate': { name: 'CO₂ Certificate', emoji: '🌱', color: '#22c55e' },
+        'commercial_flight': { name: 'Commercial Flight', emoji: '🛫', color: '#8b5cf6' },
+        'flight': { name: 'Commercial Flight', emoji: '🛫', color: '#8b5cf6' }
       };
       return types[type] || { name: type, emoji: '📋', color: '#6b7280' };
     };
+
+    // Check if this is a commercial flight booking
+    const isCommercialFlight = booking.booking_type === 'commercial_flight' || booking.booking_type === 'flight';
+    const bookingReference = booking.metadata?.booking_reference || booking.metadata?.duffel_booking_reference;
 
     const typeInfo = getBookingTypeInfo(booking.booking_type);
 
@@ -232,6 +238,18 @@ serve(async (req) => {
                     <div class="city-label">Destination</div>
                   </div>
                 </div>
+              </div>
+              ` : ''}
+
+              ${isCommercialFlight && bookingReference ? `
+              <div style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border-radius: 12px; padding: 20px; margin: 16px 0; text-align: center;">
+                <div style="color: rgba(255,255,255,0.8); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Booking Reference (PNR)</div>
+                <div style="color: white; font-size: 28px; font-weight: 700; letter-spacing: 3px; font-family: monospace;">${bookingReference}</div>
+                <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin: 12px 0 0;">Use this code to check in online or at the airport</p>
+              </div>
+              <div style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; padding: 16px; margin: 16px 0; text-align: center;">
+                <div style="font-size: 14px; color: #92400e; font-weight: 600;">📧 Your e-ticket will be sent separately</div>
+                <p style="font-size: 13px; color: #a16207; margin: 8px 0 0;">You will receive your flight ticket via email shortly. Please allow up to 15 minutes for processing.</p>
               </div>
               ` : ''}
 
@@ -427,6 +445,28 @@ serve(async (req) => {
             </div>
           </div>
 
+          ${isCommercialFlight ? `
+          <div style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border-radius: 12px; padding: 20px; margin: 16px 0;">
+            <h4 style="margin: 0 0 12px; color: white;">🛫 Commercial Flight - Action Required</h4>
+            ${bookingReference ? `
+            <div style="background: rgba(255,255,255,0.2); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+              <div style="color: rgba(255,255,255,0.8); font-size: 11px; text-transform: uppercase;">Booking Reference (PNR)</div>
+              <div style="color: white; font-size: 24px; font-weight: 700; letter-spacing: 2px; font-family: monospace;">${bookingReference}</div>
+            </div>
+            ` : ''}
+            ${booking.metadata?.duffel_order_id ? `
+            <div class="detail-row" style="border-color: rgba(255,255,255,0.2);">
+              <span style="color: rgba(255,255,255,0.8);">Duffel Order ID</span>
+              <span style="color: white; font-family: monospace;">${booking.metadata.duffel_order_id}</span>
+            </div>
+            ` : ''}
+            <div style="background: #fef3c7; border-radius: 8px; padding: 12px; margin-top: 12px;">
+              <p style="margin: 0; color: #92400e; font-weight: 600; font-size: 14px;">⚠️ E-Ticket must be sent manually!</p>
+              <p style="margin: 8px 0 0; color: #a16207; font-size: 13px;">Download the e-ticket from Duffel Dashboard and send it to the customer.</p>
+            </div>
+          </div>
+          ` : ''}
+
           <div class="customer-box">
             <h4 style="margin: 0 0 12px; color: #1e40af;">👤 Customer Details</h4>
             <div class="detail-row">
@@ -485,12 +525,21 @@ serve(async (req) => {
           </div>
 
           <h3>Next Steps:</h3>
+          ${isCommercialFlight ? `
+          <ol style="color: #4b5563; line-height: 1.8;">
+            <li>Verify payment in CoinGate dashboard</li>
+            <li><strong style="color: #7c3aed;">Go to Duffel Dashboard and download the e-ticket</strong></li>
+            <li><strong style="color: #7c3aed;">Send e-ticket to customer via email</strong></li>
+            <li>Update booking status when complete</li>
+          </ol>
+          ` : `
           <ol style="color: #4b5563; line-height: 1.8;">
             <li>Verify payment in CoinGate dashboard</li>
             <li>Confirm booking details with service provider</li>
             <li>Send customer any additional documentation needed</li>
             <li>Update booking status when service is delivered</li>
           </ol>
+          `}
         </div>
       </div>
     </body>

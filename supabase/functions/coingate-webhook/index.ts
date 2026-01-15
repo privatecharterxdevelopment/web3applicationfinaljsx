@@ -174,6 +174,100 @@ serve(async (req) => {
       });
     }
 
+    // Handle commercial flight bookings - create actual Duffel order after payment
+    if (newPaymentStatus === 'paid' && previousStatus !== 'paid' && (booking.booking_type === 'commercial_flight' || booking.booking_type === 'flight')) {
+      console.log('Processing commercial flight booking - creating Duffel order...');
+
+      try {
+        // Flight data is stored as flight_data (underscore) in metadata
+        const flightData = booking.metadata?.flight_data || booking.metadata?.flightData;
+        const offerId = booking.metadata?.duffel_offer_id || flightData?.offerId || booking.service_id;
+        const passengers = booking.metadata?.passengers || flightData?.passengers || [];
+
+        if (offerId && passengers.length > 0) {
+          const supabaseUrl = Deno.env.get('SUPABASE_URL');
+          const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+          // Call create-flight-order to book with Duffel
+          const selectedSeats = booking.metadata?.selected_seats || flightData?.selectedSeats || [];
+
+          const orderResponse = await fetch(`${supabaseUrl}/functions/v1/create-flight-order`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${supabaseKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              offerId: offerId,
+              passengers: passengers.map((p: any) => ({
+                type: 'adult',
+                givenName: p.givenName,
+                familyName: p.familyName,
+                gender: p.gender,
+                email: p.email || booking.contact_email,
+                phone: booking.contact_phone,
+                bornOn: p.bornOn
+              })),
+              userId: booking.user_id,
+              email: booking.contact_email,
+              phone: booking.contact_phone,
+              selectedSeats: selectedSeats,
+              metadata: {
+                coingate_booking_id: booking.id,
+                payment_confirmed: true
+              }
+            })
+          });
+
+          const orderResult = await orderResponse.json();
+
+          if (orderResult.success && orderResult.order) {
+            console.log(`Duffel order created: ${orderResult.order.id}, PNR: ${orderResult.order.bookingReference}`);
+
+            // Update booking with Duffel order details
+            await supabaseAdmin
+              .from('user_bookings')
+              .update({
+                booking_status: 'confirmed',
+                metadata: {
+                  ...booking.metadata,
+                  duffel_order_id: orderResult.order.id,
+                  booking_reference: orderResult.order.bookingReference,
+                  duffel_order_status: orderResult.order.status,
+                  duffel_documents: orderResult.order.documents,
+                  flight_booked_at: new Date().toISOString()
+                }
+              })
+              .eq('id', booking.id);
+
+            console.log('Flight booking confirmed with PNR:', orderResult.order.bookingReference);
+          } else {
+            console.error('Failed to create Duffel order:', orderResult.error);
+            // Mark booking as needing manual intervention
+            await supabaseAdmin
+              .from('user_bookings')
+              .update({
+                booking_status: 'pending_manual',
+                metadata: {
+                  ...booking.metadata,
+                  duffel_error: orderResult.error,
+                  needs_manual_booking: true
+                }
+              })
+              .eq('id', booking.id);
+          }
+        } else {
+          console.error('Missing flight data for commercial flight booking:', {
+            offerId,
+            passengersCount: passengers.length,
+            metadata: JSON.stringify(booking.metadata)
+          });
+        }
+      } catch (flightError) {
+        console.error('Error creating Duffel flight order:', flightError);
+      }
+    }
+
     // Record transaction in booking_transactions
     if (newPaymentStatus === 'paid' && previousStatus !== 'paid') {
       const { error: txError } = await supabaseAdmin
