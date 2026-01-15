@@ -264,10 +264,15 @@ export default function Adventures() {
 
                     <p className="text-xs sm:text-sm">
                       <span className="font-semibold text-gray-900">
-                        {adventure.currency === 'EUR' ? '€' : '$'}
-                        {adventure.price?.toLocaleString() || 'On request'}
+                        {adventure.price ? (
+                          <>
+                            {adventure.currency === 'EUR' ? '€' : '$'}
+                            {adventure.price.toLocaleString()}
+                          </>
+                        ) : (
+                          'On request'
+                        )}
                       </span>
-                      <span className="text-gray-500 hidden sm:inline"> total</span>
                     </p>
                   </div>
                 </div>

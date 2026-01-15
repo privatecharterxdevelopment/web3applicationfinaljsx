@@ -397,7 +397,7 @@ export default function AdventureBookingModal({
               )}
             </div>
 
-            <p className="text-sm text-gray-500 font-light leading-relaxed mb-4">
+            <p className="text-sm text-gray-500 font-light leading-relaxed mb-4 whitespace-pre-line">
               {adventure.description || 'Experience luxury private aviation with this exclusive adventure package.'}
             </p>
 
