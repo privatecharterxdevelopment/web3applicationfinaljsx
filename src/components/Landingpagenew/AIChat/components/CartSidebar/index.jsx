@@ -66,7 +66,7 @@ const CartSidebar = ({
   // IMPORTANT: trip_package, jets, helicopters, medevac, yachts are REQUEST-ONLY (no direct payment)
   // Only these item types can be paid directly with crypto:
   const { payableItems, requestOnlyItems, hasPayableItems, hasRequestOnlyItems } = useMemo(() => {
-    const payableTypes = ['empty_legs', 'emptyleg', 'wines', 'wine', 'custom_extra', 'service_fee', 'cigars', 'delicatesse'];
+    const payableTypes = ['empty_legs', 'emptyleg', 'wines', 'wine', 'custom_extra', 'service_fee', 'cigars', 'delicatesse', 'commercial_flight'];
     // Everything else (trip_package, jets, helicopters, medevac, yachts, ground_transport) goes to requestOnly
     const payable = cartItems.filter(item => payableTypes.includes(item.type));
     const requestOnly = cartItems.filter(item => !payableTypes.includes(item.type));

@@ -107,6 +107,13 @@ export const useMessageHandler = ({
         count: toolResult.results.length,
         items: toolResult.results
       });
+    } else if (toolUse.name === 'searchCommercialFlights' && toolResult.results?.length > 0) {
+      tabs.push({
+        id: 'commercial_flights',
+        title: 'Commercial Flights',
+        count: toolResult.results.length,
+        items: toolResult.results.map(f => ({ ...f, type: 'commercial_flight' }))
+      });
     }
 
     return { tabs, hasRestriction: false };

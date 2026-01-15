@@ -26,11 +26,12 @@ const CartItem = ({
   const isCustomExtra = item.type === 'custom_extra';
   const isTripPackage = item.type === 'trip_package';
   const isMedevac = item.type === 'medevac';
-  const canDirectCheckout = isEmptyLeg || isAdventure || isWine;
+  const isCommercialFlight = item.type === 'commercial_flight';
+  const canDirectCheckout = isEmptyLeg || isAdventure || isWine || isCommercialFlight;
 
   // Get item icon
   const getIcon = () => {
-    if (isEmptyLeg || isJet) return <Plane size={14} className="text-gray-500" />;
+    if (isEmptyLeg || isJet || isCommercialFlight) return <Plane size={14} className="text-gray-500" />;
     if (isHelicopter) return <Plane size={14} className="text-gray-500 rotate-45" />;
     if (isYacht) return <Anchor size={14} className="text-gray-500" />;
     if (isLuxuryCar || isTransfer) return <Car size={14} className="text-gray-500" />;
@@ -393,7 +394,7 @@ const CartItem = ({
       </div>
 
       {/* Expandable Details */}
-      {(isEmptyLeg || isJet || isHelicopter) && (
+      {(isEmptyLeg || isJet || isHelicopter || isCommercialFlight) && (
         <button
           onClick={onToggleExpand}
           className="w-full mt-2 pt-2 border-t border-gray-200 flex items-center justify-center gap-1 text-xs text-gray-500 hover:text-gray-700"
@@ -421,6 +422,76 @@ const CartItem = ({
             <div className="flex items-center gap-2">
               <Users size={12} className="text-gray-400" />
               <span>{item.capacity} passengers max</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Commercial Flight Expanded Details */}
+      {isExpanded && isCommercialFlight && (
+        <div className="mt-2 pt-2 border-t border-gray-200 space-y-2 text-xs">
+          {/* Flight Header */}
+          <div className="flex items-center gap-2 p-2 bg-sky-50 rounded-lg border border-sky-100">
+            {item.airlineLogo && (
+              <img src={item.airlineLogo} alt={item.airline} className="h-6 object-contain" onError={(e) => e.target.style.display = 'none'} />
+            )}
+            <div>
+              <p className="font-medium text-gray-800">{item.airline || 'Airline'}</p>
+              {item.flightNumber && <p className="text-[10px] text-gray-500">{item.flightNumber}</p>}
+            </div>
+          </div>
+
+          {/* Flight Times */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="p-2 bg-gray-50 rounded-lg">
+              <p className="text-[10px] text-gray-500">Departure</p>
+              <p className="font-medium text-gray-800">{item.departureTime || '—'}</p>
+              <p className="text-[10px] text-gray-500">{item.from || item.fromCity}</p>
+            </div>
+            <div className="p-2 bg-gray-50 rounded-lg">
+              <p className="text-[10px] text-gray-500">Arrival</p>
+              <p className="font-medium text-gray-800">{item.arrivalTime || '—'}</p>
+              <p className="text-[10px] text-gray-500">{item.to || item.toCity}</p>
+            </div>
+          </div>
+
+          {/* Flight Info */}
+          <div className="flex flex-wrap gap-x-3 gap-y-1 text-gray-600">
+            {item.duration && (
+              <div className="flex items-center gap-1">
+                <Clock size={12} className="text-gray-400" />
+                <span>{item.duration}</span>
+              </div>
+            )}
+            {item.cabinClass && (
+              <div className="flex items-center gap-1">
+                <Briefcase size={12} className="text-gray-400" />
+                <span className="capitalize">{item.cabinClass}</span>
+              </div>
+            )}
+            {item.passengers && (
+              <div className="flex items-center gap-1">
+                <Users size={12} className="text-gray-400" />
+                <span>{item.passengers} pax</span>
+              </div>
+            )}
+          </div>
+
+          {/* Stops */}
+          {item.stops > 0 && (
+            <div className="p-2 bg-amber-50 rounded-lg border border-amber-100">
+              <p className="text-[10px] text-amber-700">
+                {item.stops} stop{item.stops > 1 ? 's' : ''} • Total journey: {item.totalDuration || item.duration}
+              </p>
+            </div>
+          )}
+
+          {/* Baggage Info */}
+          {(item.checkedBaggage || item.cabinBaggage) && (
+            <div className="text-[10px] text-gray-500">
+              {item.checkedBaggage && <span>Checked: {item.checkedBaggage}</span>}
+              {item.checkedBaggage && item.cabinBaggage && <span> • </span>}
+              {item.cabinBaggage && <span>Cabin: {item.cabinBaggage}</span>}
             </div>
           )}
         </div>
