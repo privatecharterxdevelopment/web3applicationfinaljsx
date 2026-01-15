@@ -45,9 +45,9 @@ export const fetchFixedOffers = async (params: FetchFixedOffersParams = {}) => {
           );
           break;
         case 'asia':
-          // Asian cities including Japan
+          // Asian cities - Japan, Southeast Asia, China, Middle East
           query = query.or(
-            'origin.ilike.%Tokyo%,origin.ilike.%Osaka%,origin.ilike.%Kyoto%,origin.ilike.%Yokohama%,origin.ilike.%Singapore%,origin.ilike.%Hong Kong%,origin.ilike.%Dubai%,origin.ilike.%Bangkok%,origin.ilike.%Bali%,origin.ilike.%Shanghai%,destination.ilike.%Tokyo%,destination.ilike.%Osaka%,destination.ilike.%Kyoto%,destination.ilike.%Yokohama%'
+            'origin.ilike.%Tokyo%,origin.ilike.%Osaka%,origin.ilike.%Kyoto%,origin.ilike.%Yokohama%,origin.ilike.%Singapore%,origin.ilike.%Hong Kong%,origin.ilike.%Dubai%,origin.ilike.%Bangkok%,origin.ilike.%Bali%,origin.ilike.%Shanghai%,origin.ilike.%Beijing%,origin.ilike.%Vietnam%,origin.ilike.%Hanoi%,origin.ilike.%Ho Chi Minh%,origin.ilike.%Saigon%,origin.ilike.%Seoul%,origin.ilike.%Taipei%,origin.ilike.%Kuala Lumpur%,origin.ilike.%Jakarta%,origin.ilike.%Manila%,origin.ilike.%Phuket%,origin.ilike.%Maldives%,destination.ilike.%Tokyo%,destination.ilike.%Osaka%,destination.ilike.%Kyoto%,destination.ilike.%Yokohama%,destination.ilike.%Singapore%,destination.ilike.%Hong Kong%,destination.ilike.%Dubai%,destination.ilike.%Bangkok%,destination.ilike.%Bali%,destination.ilike.%Shanghai%,destination.ilike.%Beijing%,destination.ilike.%Vietnam%,destination.ilike.%Hanoi%,destination.ilike.%Ho Chi Minh%,destination.ilike.%Saigon%,destination.ilike.%Seoul%,destination.ilike.%Taipei%,destination.ilike.%Kuala Lumpur%,destination.ilike.%Jakarta%,destination.ilike.%Manila%,destination.ilike.%Phuket%,destination.ilike.%Maldives%'
           );
           break;
         case 'usa':
