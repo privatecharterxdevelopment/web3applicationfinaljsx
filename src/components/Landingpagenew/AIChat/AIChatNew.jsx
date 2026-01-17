@@ -289,7 +289,18 @@ const AIChatNew = ({
   // ==================================
   // EVENT HANDLERS
   // ==================================
+  // State for callback flight data
+  const [callbackFlightData, setCallbackFlightData] = useState(null);
+
   const handleAddToCart = useCallback((item) => {
+    // Special handling for flight callback requests
+    if (item.isCallbackRequest && item.serviceType === 'commercial_flight_callback') {
+      // Store flight data and open consultation modal for callback
+      setCallbackFlightData(item);
+      modals.setShowConsultationModal(true);
+      return;
+    }
+
     const cartId = cart.addToCart(item);
     if (cartId) modals.setToast({ message: `Added ${item.name || 'item'} to cart`, type: 'cart' });
   }, [cart, modals]);
@@ -1456,8 +1467,9 @@ const AIChatNew = ({
       {modals.showConsultationModal && (
         <ConsultationBookingModal
           isOpen={modals.showConsultationModal}
-          onClose={() => modals.setShowConsultationModal(false)}
-          topic={modals.consultationTopic}
+          onClose={() => { modals.setShowConsultationModal(false); setCallbackFlightData(null); }}
+          topic={callbackFlightData ? 'flight_callback' : modals.consultationTopic}
+          flightData={callbackFlightData}
         />
       )}
       {modals.showCryptoPayment && modals.selectedPaymentItem && (

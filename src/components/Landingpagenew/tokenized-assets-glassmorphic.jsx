@@ -4483,10 +4483,10 @@ const TokenizedAssetsGlassmorphic = () => {
       </video>
 
 
-      {/* Main Container - Centered Floating Glassmorphic Dashboard */}
-      <div className="relative z-10 flex h-full items-center justify-center p-0 lg:p-8">
-        {/* COMPLETE FLOATING GLASSMORPHIC CONTAINER - Sidebar + Content als ein Stück */}
-        <div className={`relative flex w-full max-w-7xl h-full lg:h-[90vh] rounded-none lg:rounded-3xl shadow-2xl border-0 lg:border overflow-hidden lg:transition-all lg:duration-700 lg:ease-out opacity-100 scale-100 ${
+      {/* Main Container - Fullscreen Glassmorphic Dashboard */}
+      <div className="relative z-10 flex h-full items-center justify-center p-0">
+        {/* COMPLETE FULLSCREEN GLASSMORPHIC CONTAINER - Sidebar + Content als ein Stück */}
+        <div className={`relative flex w-full h-full rounded-none shadow-2xl border-0 overflow-hidden ${
           webMode === 'web3'
             ? 'bg-white/30 backdrop-blur-3xl lg:border-white/40'
             : 'bg-white/80 backdrop-blur-3xl lg:border-gray-200/80'

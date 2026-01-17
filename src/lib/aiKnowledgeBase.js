@@ -2187,15 +2187,29 @@ ONLY search the database for BOOKABLE services:
   - Example: "from Zurich" → searchEmptyLegs({ from: "Zurich" }) → shows departures only
   - Example: "to Monaco" → searchEmptyLegs({ to: "Monaco" }) → shows arrivals only
   - ⚠️ CRITICAL: When user provides a city name, ALWAYS call searchEmptyLegs immediately - do NOT ask follow-up questions!
+- **⚠️ FLIGHT BOOKING - ALWAYS ASK FIRST (CRITICAL):**
+  - When user asks generically: "book a flight", "I need a flight", "fly from X to Y", "flight tomorrow", "book me a flight"
+  - ⚠️ ALWAYS ask FIRST: "Would you prefer a commercial flight or a private jet?"
+  - DO NOT immediately search - WAIT for user's answer
+  - If user says "private jet", "charter", "private", "jet" → proceed with searchPrivateJets
+  - If user says "commercial", "airline", "regular flight", "economy", "business class" → proceed with searchCommercialFlights
+  - ONLY skip this question if user EXPLICITLY specifies type upfront (e.g., "book me a private jet" or "find commercial flights")
 - **COMMERCIAL FLIGHTS / AIRLINE TICKETS → searchCommercialFlights:**
-  - When user asks for "commercial flight", "airline ticket", "flight", "airfare", "plane ticket", "fly to" → CALL searchCommercialFlights
+  - ONLY use when user explicitly asks for "commercial flight", "airline ticket", "airfare", "airline", "economy/business class ticket"
+  - OR after user answered "commercial" to the flight type question above
   - REQUIRED parameters: origin, destination, departureDate, passengers
+  - ⚠️ DATE FORMAT: departureDate MUST be in ISO format: YYYY-MM-DD (e.g., "2026-01-19")
+  - Convert user dates like "19 january", "tomorrow", "next monday" to ISO format (e.g., "2026-01-19")
+  - Today is ${new Date().toISOString().split('T')[0]} - use this as reference for relative dates
   - If user doesn't provide all details, ASK for: departure city, destination city, travel date, number of passengers
   - Convert city names to IATA codes (London=LHR, New York=JFK, Paris=CDG, Zurich=ZRH, etc.)
-  - Example: "flight from Zurich to Barcelona" → searchCommercialFlights({ origin: "ZRH", destination: "BCN", departureDate: "[date]", passengers: 1 })
+  - Example: "commercial flight from Zurich to Barcelona on January 19" → searchCommercialFlights({ origin: "ZRH", destination: "BCN", departureDate: "2026-01-19", passengers: 1 })
   - ⚠️ CRITICAL: You MUST call searchCommercialFlights tool - DO NOT say "I don't have access" or suggest external websites!
   - After showing results, user can book online or request a callback for phone booking
-- Private jet/charter → Search "jets" database, show 5-8 results
+- **PRIVATE JET / CHARTER → searchPrivateJets:**
+  - ONLY use when user explicitly asks for "private jet", "charter", "jet charter"
+  - OR after user answered "private jet" to the flight type question above
+  - Search "jets" database, show 5-8 results
 - Helicopter → Search "helicopters" database, show 3-5 results
 - Yacht/boat → INQUIRY ONLY - collect details via sequential questions
 - Car/taxi/transfer/airport pickup → You MUST have BOTH pickup AND destination before showing ANY prices. If only one location is given, ask for the other. NEVER invent prices without knowing both locations. Direct user to **Ground Transport** page for accurate distance-based pricing.

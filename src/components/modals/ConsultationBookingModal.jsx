@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Mail, MessageCircle, Clock, User, Building } from 'lucide-react';
+import { X, Calendar, Mail, MessageCircle, Clock, User, Building, Plane, Phone, ArrowRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
-const ConsultationBookingModal = ({ isOpen, onClose, topic = 'tokenization' }) => {
+const ConsultationBookingModal = ({ isOpen, onClose, topic = 'tokenization', flightData = null }) => {
   if (!isOpen) return null;
+
+  // Check if this is a flight callback request
+  const isFlightCallback = topic === 'flight_callback' && flightData;
 
   const [selectedOption, setSelectedOption] = useState(null);
   const [formData, setFormData] = useState({
@@ -151,17 +154,181 @@ const ConsultationBookingModal = ({ isOpen, onClose, topic = 'tokenization' }) =
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Calendar size={32} className="text-green-600" />
+            {isFlightCallback ? <Phone size={32} className="text-green-600" /> : <Calendar size={32} className="text-green-600" />}
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            Consultation Request Submitted!
+            {isFlightCallback ? 'Callback Request Submitted!' : 'Consultation Request Submitted!'}
           </h3>
           <p className="text-gray-600 mb-4">
-            We've received your {selectedOption} request. Our tokenization experts will contact you within 24 hours.
+            {isFlightCallback
+              ? `We've received your callback request for ${flightData?.from} → ${flightData?.to}. Our flight booking team will call you within the hour.`
+              : `We've received your ${selectedOption} request. Our tokenization experts will contact you within 24 hours.`
+            }
           </p>
           <p className="text-sm text-gray-500">
             You can track this request in your dashboard under "Chat Support".
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Flight Callback Modal - Simplified form
+  if (isFlightCallback) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+          {/* Header */}
+          <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-sky-50 to-blue-50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-sky-100 rounded-full flex items-center justify-center">
+                  <Phone size={20} className="text-sky-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Request Callback
+                  </h2>
+                  <p className="text-sm text-gray-600">
+                    Our team will call you to complete your booking
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+              >
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+          </div>
+
+          {/* Flight Summary */}
+          <div className="p-4 mx-4 mt-4 bg-gray-50 rounded-xl border border-gray-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                {flightData?.airlineLogo ? (
+                  <img src={flightData.airlineLogo} alt="" className="w-6 h-6 object-contain" />
+                ) : (
+                  <Plane size={16} className="text-sky-500" />
+                )}
+                <span className="text-sm font-medium text-gray-700">{flightData?.airline || 'Flight'}</span>
+              </div>
+              <span className="text-lg font-bold text-gray-900">
+                ${flightData?.pricePerPerson?.toLocaleString() || flightData?.price?.toLocaleString() || '—'}
+                <span className="text-xs font-normal text-gray-500">/person</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-3 text-center">
+              <div>
+                <p className="text-xl font-bold text-gray-900">{flightData?.from || 'DEP'}</p>
+                <p className="text-xs text-gray-500">{flightData?.departureTime || ''}</p>
+              </div>
+              <div className="flex-1 flex items-center">
+                <div className="flex-1 border-t border-dashed border-gray-300"></div>
+                <ArrowRight size={16} className="mx-2 text-gray-400" />
+                <div className="flex-1 border-t border-dashed border-gray-300"></div>
+              </div>
+              <div>
+                <p className="text-xl font-bold text-gray-900">{flightData?.to || 'ARR'}</p>
+                <p className="text-xs text-gray-500">{flightData?.arrivalTime || ''}</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-4 mt-2 text-xs text-gray-500">
+              <span>{flightData?.duration || ''}</span>
+              <span>•</span>
+              <span>{flightData?.stops === 0 ? 'Non-stop' : `${flightData?.stops} stop${flightData?.stops > 1 ? 's' : ''}`}</span>
+            </div>
+          </div>
+
+          {/* Callback Form */}
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            setIsSubmitting(true);
+            try {
+              const { data: { user: currentUser } } = await supabase.auth.getUser();
+              if (!currentUser) throw new Error('Please log in');
+
+              const ticketData = {
+                user_id: currentUser.id,
+                subject: `Flight Callback: ${flightData?.from} → ${flightData?.to}`,
+                description: `Callback requested for flight booking.\n\nFlight: ${flightData?.airline} ${flightData?.flightNumber || ''}\nRoute: ${flightData?.from} → ${flightData?.to}\nTime: ${flightData?.departureTime} - ${flightData?.arrivalTime}\nPrice: $${flightData?.pricePerPerson || flightData?.price}/person\n\nContact: ${formData.phone}\nPreferred Time: ${formData.preferredTime}`,
+                status: 'pending',
+                priority: 'high',
+                tags: ['flight', 'callback', 'commercial_flight'],
+                ticket_data: {
+                  type: 'flight_callback',
+                  flightData,
+                  phone: formData.phone,
+                  preferredTime: formData.preferredTime,
+                  name: formData.name,
+                  email: formData.email
+                }
+              };
+
+              await supabase.from('support_tickets').insert([ticketData]);
+              setSubmitted(true);
+              setTimeout(() => { onClose(); setSubmitted(false); }, 3000);
+            } catch (error) {
+              alert('Failed to submit: ' + error.message);
+            } finally {
+              setIsSubmitting(false);
+            }
+          }} className="p-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Phone Number *
+              </label>
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleInputChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-lg"
+                placeholder="+41 79 123 4567"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Best Time to Call
+              </label>
+              <select
+                name="preferredTime"
+                value={formData.preferredTime}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              >
+                <option value="asap">As soon as possible</option>
+                <option value="morning">Morning (9 AM - 12 PM)</option>
+                <option value="afternoon">Afternoon (12 PM - 5 PM)</option>
+                <option value="evening">Evening (5 PM - 8 PM)</option>
+              </select>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting || !formData.phone}
+              className="w-full px-6 py-3 bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 font-medium"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Phone size={18} />
+                  Request Callback
+                </>
+              )}
+            </button>
+
+            <p className="text-xs text-gray-500 text-center">
+              Our flight booking team typically calls back within 15-30 minutes during business hours.
+            </p>
+          </form>
         </div>
       </div>
     );

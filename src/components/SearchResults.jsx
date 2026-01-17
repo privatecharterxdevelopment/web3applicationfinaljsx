@@ -151,167 +151,109 @@ const SearchResults = ({ tabs, onSelectItem, selectedItems = [], onBookNow, onAd
             item.type === 'commercial_flight' ? (
               <div
                 key={item.id}
-                className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 hover:border-gray-400 hover:shadow-md transition-all"
+                className="bg-white border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all"
               >
-                <div className="flex items-center justify-between gap-2">
-                  {/* Airline & Times */}
-                  <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
-                      {item.airlineLogo ? (
-                        <img
-                          src={item.airlineLogo}
-                          alt={item.airline}
-                          className="max-w-full max-h-full object-contain"
-                          onError={(e) => { e.target.style.display = 'none'; }}
-                        />
-                      ) : (
-                        <Plane className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 sm:gap-3">
-                        <span className="text-sm sm:text-lg font-semibold text-gray-900">
-                          {item.departureTime || '—'}
-                        </span>
-                        <ArrowRight size={14} className="text-gray-400 flex-shrink-0" />
-                        <span className="text-sm sm:text-lg font-semibold text-gray-900">
-                          {item.arrivalTime || '—'}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-0.5 truncate">
-                        {item.airline || 'Airline'} · {item.flightNumber || ''}
-                      </p>
-                    </div>
+                {/* Main Content - Duffel Style */}
+                <div className="p-4 flex items-start gap-4">
+                  {/* Airline Logo */}
+                  <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
+                    {item.airlineLogo ? (
+                      <img
+                        src={item.airlineLogo}
+                        alt={item.airline}
+                        className="w-8 h-8 object-contain"
+                        onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<span class="text-gray-400">✈</span>'; }}
+                      />
+                    ) : (
+                      <Plane className="w-5 h-5 text-gray-400" />
+                    )}
                   </div>
 
-                  {/* Duration & Route - Hidden on mobile */}
-                  <div className="text-center px-3 sm:px-6 hidden sm:block">
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <Clock size={14} className="text-gray-400" />
-                      <span>{item.duration || '—'}</span>
+                  {/* Flight Info */}
+                  <div className="flex-1 min-w-0">
+                    {/* Times - Main element */}
+                    <div className="flex items-baseline gap-2 mb-1">
+                      <span className="text-lg font-semibold text-gray-900">
+                        {item.departureTime?.slice(11, 16) || item.departureTime || '—'}
+                      </span>
+                      <span className="text-gray-400">–</span>
+                      <span className="text-lg font-semibold text-gray-900">
+                        {item.arrivalTime?.slice(11, 16) || item.arrivalTime || '—'}
+                        {item.arrivalTime && item.departureTime &&
+                          new Date(item.arrivalTime).getDate() !== new Date(item.departureTime).getDate() && (
+                          <sup className="text-xs text-gray-500 ml-0.5">+1</sup>
+                        )}
+                      </span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {item.from} – {item.to}
+
+                    {/* Airline & Flight Info */}
+                    <p className="text-sm text-gray-500 truncate">
+                      {item.airline || 'Airline'}{item.flightNumber ? ` · ${item.flightNumber}` : ''}
                     </p>
+                  </div>
+
+                  {/* Duration & Route */}
+                  <div className="text-right text-sm text-gray-600 hidden sm:block">
+                    <p className="font-medium">{item.duration || '—'}</p>
+                    <p className="text-gray-400">{item.from} – {item.to}</p>
                   </div>
 
                   {/* Stops */}
-                  <div className="text-center px-2 sm:px-4 hidden md:block">
-                    <p className={`text-sm font-medium ${item.stops === 0 ? 'text-green-600' : 'text-gray-700'}`}>
+                  <div className="text-right text-sm min-w-[70px] hidden sm:block">
+                    <p className={`font-medium ${item.stops === 0 ? 'text-gray-900' : 'text-amber-600'}`}>
                       {item.stops === 0 ? 'Non-stop' : `${item.stops} stop${item.stops > 1 ? 's' : ''}`}
                     </p>
+                    {item.stops > 0 && item.stopDetails?.[0]?.airport && (
+                      <p className="text-xs text-gray-400">{item.stopDetails[0].duration || ''} {item.stopDetails[0].airport}</p>
+                    )}
                   </div>
 
-                  {/* Baggage - Hidden on mobile */}
-                  <div className="text-center px-2 hidden lg:block">
-                    <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                      <Luggage size={14} className="text-gray-400" />
-                      <span>{item.checkedBags > 0 ? `${item.checkedBags} bag` : 'No bags'}</span>
+                  {/* Price & Select */}
+                  <div className="flex items-center gap-3 pl-4 border-l border-gray-100">
+                    <div className="text-right">
+                      <p className="text-xs text-gray-400">
+                        {item.returnJourney ? 'Return' : 'One-way'}
+                      </p>
+                      <p className="text-lg font-bold text-gray-900">
+                        <span className="text-xs font-normal text-gray-500">From </span>
+                        US${item.pricePerPerson?.toLocaleString() || item.price?.toLocaleString() || '—'}
+                      </p>
                     </div>
-                  </div>
-
-                  {/* Price */}
-                  <div className="text-right pl-2 sm:pl-4 flex-shrink-0">
-                    <p className="text-base sm:text-xl font-bold text-gray-900">
-                      ${item.pricePerPerson?.toLocaleString() || item.price?.toLocaleString() || '—'}
-                    </p>
-                    <p className="text-[10px] sm:text-xs text-gray-500">per person</p>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const flightData = {
+                          id: item.id,
+                          offerId: item.offerId || item.id,
+                          offerRequestId: item.offerRequestId,
+                          airline: { name: item.airline || 'Airline', iataCode: item.airlineCode || '', logoUrl: item.airlineLogo || null },
+                          flightNumber: item.flightNumber || '',
+                          departure: { airport: item.from, airportName: item.departureAirportName || '', city: item.departureCity || item.from, time: item.departureTime, terminal: item.departureTerminal || null },
+                          arrival: { airport: item.to, airportName: item.arrivalAirportName || '', city: item.arrivalCity || item.to, time: item.arrivalTime, terminal: item.arrivalTerminal || null },
+                          duration: item.duration || '', durationMinutes: item.durationMinutes || 0, stops: item.stops || 0, stopDetails: item.stopDetails || [], segments: item.segments || [],
+                          returnJourney: item.returnJourney || null,
+                          price: { amount: item.totalPrice || item.price || 0, currency: item.currency || 'USD', perPassenger: item.pricePerPerson || item.price || 0 },
+                          baggage: { checkedBags: item.checkedBags || 0, cabinBags: item.cabinBags || 1, checkedBagWeight: item.checkedBagWeight || null },
+                          cabinClass: item.cabinClass || 'economy', cabinClassName: item.cabinClassName || 'Economy',
+                          expiresAt: item.expiresAt || new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+                          conditions: item.conditions || { refundable: false, changeable: false }, rawOffer: item.rawOffer || item
+                        };
+                        localStorage.setItem(`flight_offer_${flightData.offerId}`, JSON.stringify(flightData));
+                        navigate(`/book/flight/${flightData.offerId}?passengers=${item.passengers || 1}`, { state: { flight: flightData } });
+                      }}
+                      className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      Select
+                    </button>
                   </div>
                 </div>
 
-                {/* Mobile: Extra info row */}
-                <div className="flex items-center gap-3 mt-2 sm:hidden text-xs text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <Clock size={10} />
-                    {item.duration || '—'}
+                {/* Mobile: Extra row */}
+                <div className="sm:hidden px-4 pb-3 flex items-center justify-between text-xs text-gray-500 border-t border-gray-50 pt-2">
+                  <span>{item.duration} · {item.from}–{item.to}</span>
+                  <span className={item.stops === 0 ? 'text-gray-700' : 'text-amber-600'}>
+                    {item.stops === 0 ? 'Non-stop' : `${item.stops} stop`}
                   </span>
-                  <span>·</span>
-                  <span className={item.stops === 0 ? 'text-green-600' : ''}>
-                    {item.stops === 0 ? 'Non-stop' : `${item.stops} stop${item.stops > 1 ? 's' : ''}`}
-                  </span>
-                  <span>·</span>
-                  <span>{item.from} – {item.to}</span>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-2 mt-3 pt-3 border-t border-gray-100">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Navigate to FlightBooking page with flight data
-                      const flightData = {
-                        id: item.id,
-                        offerId: item.offerId || item.id,
-                        offerRequestId: item.offerRequestId,
-                        airline: {
-                          name: item.airline || 'Airline',
-                          iataCode: item.airlineCode || '',
-                          logoUrl: item.airlineLogo || null
-                        },
-                        flightNumber: item.flightNumber || '',
-                        departure: {
-                          airport: item.from || item.origin,
-                          airportName: item.departureAirportName || '',
-                          city: item.departureCity || item.from,
-                          time: item.departureTime || item.departure_time,
-                          terminal: item.departureTerminal || null
-                        },
-                        arrival: {
-                          airport: item.to || item.destination,
-                          airportName: item.arrivalAirportName || '',
-                          city: item.arrivalCity || item.to,
-                          time: item.arrivalTime || item.arrival_time,
-                          terminal: item.arrivalTerminal || null
-                        },
-                        duration: item.duration || '',
-                        durationMinutes: item.durationMinutes || 0,
-                        stops: item.stops || 0,
-                        stopDetails: item.stopDetails || [],
-                        segments: item.segments || [],
-                        returnJourney: item.returnJourney || null,
-                        price: {
-                          amount: item.totalPrice || item.price || 0,
-                          currency: item.currency || 'USD',
-                          perPassenger: item.pricePerPerson || item.price || 0
-                        },
-                        baggage: {
-                          checkedBags: item.checkedBags || 0,
-                          cabinBags: item.cabinBags || 1,
-                          checkedBagWeight: item.checkedBagWeight || null
-                        },
-                        cabinClass: item.cabinClass || 'economy',
-                        cabinClassName: item.cabinClassName || 'Economy',
-                        expiresAt: item.expiresAt || new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-                        conditions: item.conditions || { refundable: false, changeable: false },
-                        rawOffer: item.rawOffer || item
-                      };
-                      // Store in localStorage as backup
-                      localStorage.setItem(`flight_offer_${flightData.offerId}`, JSON.stringify(flightData));
-                      // Navigate to booking page
-                      navigate(`/book/flight/${flightData.offerId}?passengers=${item.passengers || 1}`, {
-                        state: { flight: flightData }
-                      });
-                    }}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium transition-colors text-sm"
-                  >
-                    <CreditCard size={16} />
-                    Book & Pay with Crypto
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAddToCart && onAddToCart({
-                        ...item,
-                        requestType: 'callback',
-                        isCallbackRequest: true,
-                        serviceType: 'commercial_flight_callback'
-                      });
-                    }}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg font-medium transition-colors text-sm border border-emerald-200"
-                  >
-                    <Phone size={16} />
-                    Request Callback
-                  </button>
                 </div>
               </div>
             ) : (
