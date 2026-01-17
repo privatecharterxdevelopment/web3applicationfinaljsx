@@ -371,10 +371,7 @@ export default function AdventureBookingModal({
             <div className="flex items-center gap-1.5 text-gray-500 text-sm mb-4">
               <MapPin size={12} />
               <span className="font-light">
-                {isLocationBased
-                  ? (adventure.destination || adventure.origin || 'Exclusive Location')
-                  : `${adventure.origin} → ${adventure.destination || 'Multi-stop'}`
-                }
+                {adventure.destination || adventure.origin || 'Exclusive Location'}
               </span>
             </div>
 

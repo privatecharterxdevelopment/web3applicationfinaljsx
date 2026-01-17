@@ -243,11 +243,7 @@ export default function Adventures() {
                     <div className="flex items-center gap-1 text-gray-500 text-xs sm:text-sm mb-1">
                       <MapPin size={10} className="flex-shrink-0" />
                       <span className="line-clamp-1">
-                        {/* Show single location for location-based adventures, route for flights */}
-                        {!adventure.destination || adventure.origin === adventure.destination
-                          ? (adventure.destination || adventure.origin || 'Exclusive Location')
-                          : `${adventure.origin} → ${adventure.destination}`
-                        }
+                        {adventure.destination || adventure.origin || 'Exclusive Location'}
                       </span>
                     </div>
 
