@@ -95,14 +95,18 @@ export default function AdventureBookingModal({
   }
 
   const maxPassengers = adventure.max_passengers || adventure.passengers || 8;
+  const isOnRequest = (adventure as any).price_on_request || !adventure.price || adventure.price === 0;
   const basePrice = adventure.price || 0;
   const pricePerPerson = (adventure as any).price_per_person;
   const totalPrice = pricePerPerson ? pricePerPerson * passengers : basePrice;
   const platformFee = Math.round(totalPrice * 0.025);
   const vatAmount = Math.round(totalPrice * 0.081);
   const finalTotal = totalPrice + platformFee + vatAmount;
-  const pvcxReward = (finalTotal * 0.015).toFixed(2);
+  const pvcxReward = isOnRequest ? '0' : (finalTotal * 0.015).toFixed(2);
   const currency = adventure.currency === 'EUR' ? '€' : '$';
+
+  // Check if this is a location-based adventure vs a flight route
+  const isLocationBased = !adventure.destination || adventure.origin === adventure.destination;
 
   // Calendar functions
   const getDaysInMonth = (date: Date) => {
@@ -366,11 +370,16 @@ export default function AdventureBookingModal({
             <h1 className="text-xl font-light text-gray-900 mb-2">{adventure.title}</h1>
             <div className="flex items-center gap-1.5 text-gray-500 text-sm mb-4">
               <MapPin size={12} />
-              <span className="font-light">{adventure.origin} → {adventure.destination || 'Multi-stop'}</span>
+              <span className="font-light">
+                {isLocationBased
+                  ? (adventure.destination || adventure.origin || 'Exclusive Location')
+                  : `${adventure.origin} → ${adventure.destination || 'Multi-stop'}`
+                }
+              </span>
             </div>
 
             <div className="grid grid-cols-2 gap-3 py-4 border-y border-gray-100 mb-4">
-              {adventure.aircraft_type && (
+              {adventure.aircraft_type && !isLocationBased && (
                 <div className="flex items-center gap-2">
                   <Plane size={14} className="text-gray-400" />
                   <div>
@@ -382,7 +391,7 @@ export default function AdventureBookingModal({
               <div className="flex items-center gap-2">
                 <Users size={14} className="text-gray-400" />
                 <div>
-                  <p className="text-[10px] text-gray-400 font-light">Passengers</p>
+                  <p className="text-[10px] text-gray-400 font-light">Participants</p>
                   <p className="text-xs text-gray-900 font-light">Up to {maxPassengers}</p>
                 </div>
               </div>
@@ -398,7 +407,7 @@ export default function AdventureBookingModal({
             </div>
 
             <p className="text-sm text-gray-500 font-light leading-relaxed mb-4 whitespace-pre-line">
-              {adventure.description || 'Experience luxury private aviation with this exclusive adventure package.'}
+              {adventure.description || 'Experience this exclusive adventure package curated by PrivateCharterX.'}
             </p>
 
             {(adventure.includes_wifi || adventure.includes_catering) && (
@@ -419,24 +428,35 @@ export default function AdventureBookingModal({
               </div>
             )}
 
-            <div className="flex items-center gap-1.5 text-emerald-600 text-xs">
-              <Sparkles size={12} />
-              <span className="font-light">Earn +{pvcxReward} PVCX</span>
-            </div>
+            {!isOnRequest && (
+              <div className="flex items-center gap-1.5 text-emerald-600 text-xs">
+                <Sparkles size={12} />
+                <span className="font-light">Earn +{pvcxReward} PVCX</span>
+              </div>
+            )}
           </div>
 
           <div className="flex-shrink-0 border-t border-gray-100 px-6 py-4">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <span className="text-lg font-light text-gray-900">{currency}{finalTotal.toLocaleString()}</span>
-                <p className="text-[10px] text-gray-400 font-light">incl. VAT 8.1%</p>
+                {isOnRequest ? (
+                  <>
+                    <span className="text-lg font-light text-gray-900">On Request</span>
+                    <p className="text-[10px] text-gray-400 font-light">Contact us for pricing</p>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-lg font-light text-gray-900">{currency}{finalTotal.toLocaleString()}</span>
+                    <p className="text-[10px] text-gray-400 font-light">incl. VAT 8.1%</p>
+                  </>
+                )}
               </div>
             </div>
             <button
               onClick={handleBookNow}
               className="w-full py-2.5 bg-gray-900 text-white rounded-lg text-sm font-light hover:bg-gray-800 transition-colors"
             >
-              Book Now
+              {isOnRequest ? 'Request Quote' : 'Book Now'}
             </button>
           </div>
         </div>
@@ -672,14 +692,16 @@ export default function AdventureBookingModal({
                 <span className="text-gray-900 font-light">{formatDate(selectedDate)} - {formatDate(selectedEndDate)}</span>
               </div>
               <div className="flex justify-between text-xs mb-2">
-                <span className="text-gray-500 font-light">Passengers</span>
+                <span className="text-gray-500 font-light">Participants</span>
                 <span className="text-gray-900 font-light">{passengers}</span>
               </div>
               <div className="flex justify-between text-sm pt-2 border-t border-gray-200">
                 <span className="text-gray-900 font-light">Total</span>
-                <span className="text-gray-900 font-medium">{currency}{finalTotal.toLocaleString()}</span>
+                <span className="text-gray-900 font-medium">
+                  {isOnRequest ? 'On Request' : `${currency}${finalTotal.toLocaleString()}`}
+                </span>
               </div>
-              <p className="text-[9px] text-gray-400 font-light text-right mt-1">incl. VAT 8.1%</p>
+              {!isOnRequest && <p className="text-[9px] text-gray-400 font-light text-right mt-1">incl. VAT 8.1%</p>}
             </div>
 
             {error && (
@@ -697,6 +719,8 @@ export default function AdventureBookingModal({
             >
               {isProcessing ? (
                 <><Loader2 size={14} className="animate-spin" /> Processing...</>
+              ) : isOnRequest ? (
+                'Submit Quote Request'
               ) : paymentMethod === 'crypto' ? (
                 `Pay ${currency}${finalTotal.toLocaleString()}`
               ) : (

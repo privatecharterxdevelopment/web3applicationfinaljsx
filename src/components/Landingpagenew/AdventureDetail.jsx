@@ -391,7 +391,11 @@ const AdventureDetail = () => {
                 {adventure.title}
               </h1>
               <p className="text-sm text-gray-600 mb-4">
-                {adventure.destination || adventure.origin}
+                {/* Show single location for location-based adventures */}
+                {!adventure.destination || adventure.origin === adventure.destination
+                  ? (adventure.destination || adventure.origin || 'Exclusive Location')
+                  : adventure.destination
+                }
               </p>
 
               {/* Tab Navigation */}

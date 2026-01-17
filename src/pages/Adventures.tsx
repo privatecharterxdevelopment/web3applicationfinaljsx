@@ -243,12 +243,17 @@ export default function Adventures() {
                     <div className="flex items-center gap-1 text-gray-500 text-xs sm:text-sm mb-1">
                       <MapPin size={10} className="flex-shrink-0" />
                       <span className="line-clamp-1">
-                        {adventure.origin} → {adventure.destination || 'Multi-stop'}
+                        {/* Show single location for location-based adventures, route for flights */}
+                        {!adventure.destination || adventure.origin === adventure.destination
+                          ? (adventure.destination || adventure.origin || 'Exclusive Location')
+                          : `${adventure.origin} → ${adventure.destination}`
+                        }
                       </span>
                     </div>
 
                     <div className="hidden sm:flex items-center gap-3 text-xs text-gray-500 mb-2">
-                      {adventure.aircraft_type && (
+                      {/* Only show aircraft type for flight-based packages */}
+                      {adventure.aircraft_type && adventure.destination && adventure.origin !== adventure.destination && (
                         <span className="flex items-center gap-1">
                           <Plane size={10} />
                           {adventure.aircraft_type}
@@ -264,13 +269,13 @@ export default function Adventures() {
 
                     <p className="text-xs sm:text-sm">
                       <span className="font-semibold text-gray-900">
-                        {adventure.price ? (
+                        {adventure.price && adventure.price > 0 && !(adventure as any).price_on_request ? (
                           <>
                             {adventure.currency === 'EUR' ? '€' : '$'}
                             {adventure.price.toLocaleString()}
                           </>
                         ) : (
-                          'On request'
+                          'On Request'
                         )}
                       </span>
                     </p>

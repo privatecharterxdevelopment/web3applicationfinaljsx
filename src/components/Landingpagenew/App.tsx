@@ -87,6 +87,10 @@ import FlightBooking from '../../pages/FlightBooking';
 import EmptyLegs from '../../pages/EmptyLegs';
 import EmptyLegBooking from '../../pages/EmptyLegBooking';
 
+// Import Tokenized Assets Marketplace pages
+import TokenizedAssetsMarketplace from '../../pages/TokenizedAssetsMarketplace';
+import TokenizedAssetMarketplaceDetail from '../../pages/TokenizedAssetMarketplaceDetail';
+
 // Import your complete dashboard
 import TokenizedAssetsGlassmorphic from './tokenized-assets-glassmorphic.jsx';
 import ProjectPage from './ProjectPage.jsx';
@@ -376,6 +380,12 @@ function AppContent() {
               <Route path="/book/flight/:offerId" element={<FlightBooking />} />
               <Route path="/empty-legs" element={<EmptyLegs />} />
               <Route path="/book/empty-leg/:id" element={<EmptyLegBooking />} />
+
+              {/* Tokenized Assets Marketplace - HIDDEN until license obtained */}
+              {/* <Route path="/marketplace" element={<TokenizedAssetsMarketplace />} /> */}
+              {/* <Route path="/marketplace/asset/:id" element={<TokenizedAssetMarketplaceDetail />} /> */}
+              <Route path="/marketplace" element={<Navigate to="/tokenized" replace />} />
+              <Route path="/marketplace/*" element={<Navigate to="/tokenized" replace />} />
 
               {/* ===== LEGAL PAGES ===== */}
               <Route path="/terms" element={<TermsConditions />} />

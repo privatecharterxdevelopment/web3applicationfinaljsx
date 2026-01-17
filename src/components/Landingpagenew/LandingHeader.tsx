@@ -48,6 +48,8 @@ export default function LandingHeader({ onGetStarted, showInfoButton = true }: L
     { path: '/flights', label: 'Flights' },
     { path: '/empty-legs', label: 'Empty Legs', badge: 'New' },
     { path: '/adventures', label: 'Adventures' },
+    // Marketplace hidden - not ready, no license yet
+    // { path: '/marketplace', label: 'Marketplace', badge: 'New' },
     { path: '/tokenized', label: 'RWA Tokenization' },
     { path: '/sphera-ai', label: 'Sphera AI' },
   ];

@@ -124,9 +124,7 @@ export default function HomepageFooter() {
                   <button onClick={() => navigate('/dashboard/web3/launchpad')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                     Launchpad
                   </button>
-                  <button onClick={() => navigate('/dashboard/web3/marketplace')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
-                    Marketplace
-                  </button>
+                  {/* Marketplace hidden - no license yet */}
                 </div>
               </div>
 
