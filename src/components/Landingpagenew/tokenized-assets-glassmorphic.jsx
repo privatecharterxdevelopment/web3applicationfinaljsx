@@ -6585,7 +6585,7 @@ const TokenizedAssetsGlassmorphic = () => {
                     <div className="flex gap-1.5 sm:gap-2 mt-2.5 sm:mt-3 items-center overflow-x-auto">
                       {/* Flight Tickets */}
                       <div
-                        onClick={() => navigate('/flights')}
+                        onClick={() => setActiveCategory('flights')}
                         className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-100 hover:border-gray-300/40 hover:bg-white/10 active:scale-95 flex-shrink-0"
                       >
                         <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-gray-900 text-base sm:text-xl font-light">+</div>
@@ -6594,19 +6594,19 @@ const TokenizedAssetsGlassmorphic = () => {
 
                       {/* Adventures */}
                       <div
-                        onClick={() => navigate('/adventures')}
+                        onClick={() => setActiveCategory('adventures')}
                         className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-100 hover:border-gray-300/40 hover:bg-white/10 active:scale-95 flex-shrink-0"
                       >
                         <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-gray-900 text-base sm:text-xl font-light">+</div>
                         <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide whitespace-nowrap">adventures</span>
                       </div>
 
-                      {/* Charter a Jet - Expandable */}
+                      {/* Charter a Jet */}
                       <div
-                        onClick={() => setShowHomeCharterFields(!showHomeCharterFields)}
+                        onClick={() => setActiveCategory('jets')}
                         className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-100 hover:border-gray-300/40 hover:bg-white/10 active:scale-95 flex-shrink-0"
                       >
-                        <div className={`w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-gray-900 text-base sm:text-xl font-light transition-transform duration-150 ${showHomeCharterFields ? 'rotate-45' : ''}`}>+</div>
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-gray-900 text-base sm:text-xl font-light">+</div>
                         <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide whitespace-nowrap">charter a jet</span>
                       </div>
 
