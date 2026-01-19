@@ -622,10 +622,8 @@ Happy travels!`,
                 </div>
               </button>
               
-              {/* NFT Marketplace - Disabled (Web3 not in use)
               <button
                 onClick={() => {
-                  setWebMode('web3');
                   setActiveCategory('nft-marketplace');
                 }}
                 className="w-full flex items-center gap-2 p-3 text-left hover:bg-white/20 rounded-lg transition-all duration-200 group"
@@ -636,7 +634,6 @@ Happy travels!`,
                   <div className="text-xs text-gray-600">Buy & Sell NFTs</div>
                 </div>
               </button>
-              */}
             </div>
           </div>
         </div>
@@ -1227,9 +1224,9 @@ const TokenizedAssetsGlassmorphic = () => {
     'tokenization': '/dashboard/web3/tokenization',
     'my-tokenized-assets': '/dashboard/web3/my-tokenized-assets',
     'launchpad': '/dashboard/web3/launchpad',
-    'nft-marketplace': '/dashboard/nft-marketplace',  // Moved to main dashboard
-    'marketplace': '/dashboard/web3/marketplace',
-    'pvcx-token': '/dashboard/web3/pvcx-token',
+    'nft-marketplace': '/dashboard/nft-marketplace',
+    'marketplace': '/dashboard/marketplace',
+    'pvcx-token': '/dashboard/pvcx',
 
     // CO2/SAF
     'co2-saf': '/dashboard/co2-saf',
@@ -2298,9 +2295,11 @@ const TokenizedAssetsGlassmorphic = () => {
       '/dashboard/web3/tokenization': 'tokenization',
       '/dashboard/web3/tokenize-asset': 'tokenize-asset',
       '/dashboard/nft-marketplace': 'nft-marketplace',
+      '/dashboard/marketplace': 'marketplace',
+      '/dashboard/pvcx': 'pvcx-token',
       '/dashboard/web3/nft-marketplace': 'nft-marketplace',  // Legacy route support
       '/dashboard/web3/launchpad': 'launchpad',
-      '/dashboard/web3/pvcx-token': 'pvcx-token',
+      '/dashboard/web3/pvcx-token': 'pvcx-token',  // Legacy route support
       '/dashboard/web3/spv-formation': 'spv-formation',
       '/dashboard/web3/my-tokenized-assets': 'my-tokenized-assets',
       '/dashboard/web3/my-spvs': 'my-spvs',
@@ -5081,8 +5080,8 @@ const TokenizedAssetsGlassmorphic = () => {
             <div className={`transition-all duration-300 ${isMobileMenuOpen || sidebarExpanded ? 'px-4' : 'px-2'}`}>
               <button
                 onClick={() => {
-                  // Stay in RWS mode - just show PVCX info
-                  setActiveCategory('subscriptions');
+                  // Navigate to PVCX token page (now at /dashboard/pvcx)
+                  setActiveCategory('pvcx-token');
                   // Close mobile menu after selection
                   if (isMobileMenuOpen) {
                     setIsMobileMenuOpen(false);
