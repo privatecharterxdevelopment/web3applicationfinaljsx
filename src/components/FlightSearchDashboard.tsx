@@ -39,6 +39,10 @@ const POPULAR_AIRPORTS = [
   { code: 'ICN', name: 'Incheon', city: 'Seoul', country: 'South Korea' },
   { code: 'BKK', name: 'Suvarnabhumi', city: 'Bangkok', country: 'Thailand' },
   { code: 'DOH', name: 'Hamad Intl', city: 'Doha', country: 'Qatar' },
+  { code: 'IAH', name: 'George Bush Intercontinental', city: 'Houston', country: 'USA' },
+  { code: 'HOU', name: 'William P. Hobby', city: 'Houston', country: 'USA' },
+  { code: 'MBJ', name: 'Sangster Intl', city: 'Montego Bay', country: 'Jamaica' },
+  { code: 'KIN', name: 'Norman Manley Intl', city: 'Kingston', country: 'Jamaica' },
 ];
 
 interface AvailableService {
