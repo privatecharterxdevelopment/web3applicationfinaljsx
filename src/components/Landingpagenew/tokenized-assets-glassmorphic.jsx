@@ -6943,481 +6943,74 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
-          {/* Overview Section (Dashboard) - Show for authenticated regular users only */}
+          {/* Home Section - Show for authenticated regular users only */}
           {!isTransitioning && activeCategory === 'overview' && user && user?.user_role !== 'partner' && (
             <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col px-4 md:px-0">
-              {/* Spacer - Both modes need space from header */}
-              <div className={webMode === 'rws' ? 'mt-20 mb-2' : 'mt-16 mb-2'}></div>
-              <div className="flex-1 flex flex-col">
-                {/* RWS Mode Only: Search Input & Quick Action Buttons */}
-                {webMode === 'rws' && (
-                  <>
-                    {/* Greeting */}
-                    <div className="mb-6 text-left">
-                      <h1 className="text-3xl font-light text-gray-900">
-                        Good {(() => {
-                          const hour = new Date().getHours();
-                          if (hour < 12) return 'morning';
-                          if (hour < 18) return 'afternoon';
-                          return 'evening';
-                        })()}, <span className="text-gray-400">{user?.first_name || user?.name || 'there'}</span>
-                      </h1>
-                    </div>
+              <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh]">
+                {/* Greeting */}
+                <h1 className="text-3xl md:text-4xl font-light text-gray-900 mb-2 tracking-tight">
+                  Good {(() => {
+                    const hour = new Date().getHours();
+                    if (hour < 12) return 'morning';
+                    if (hour < 18) return 'afternoon';
+                    return 'evening';
+                  })()}, <span className="text-gray-400">{user?.first_name || user?.name || 'there'}</span>
+                </h1>
+                <p className="text-gray-500 text-lg mb-8">
+                  Your Private Aviation Concierge
+                </p>
 
-                    {/* Intelligent Search with Autocomplete */}
-                    <div className="mb-8">
-                      <IntelligentSearch
-                        webMode={webMode}
-                        onSearch={(item, openIndexPage) => {
-                          // Handle search selection
-                          if (item.action === 'search-index' || openIndexPage) {
-                            // Open search index page with query
-                            setSearchQuery(item.query || item.label);
-                            setActiveCategory('search-index');
-                          } else if (item.action.startsWith('search:')) {
-                            const query = item.action.replace('search:', '');
-                            setSearchQuery(query);
-                            // Navigate to appropriate category based on search
-                            const category = item.category?.toLowerCase();
-                            if (category?.includes('jet')) {
-                              setActiveCategory('jets');
-                            } else if (category?.includes('empty')) {
-                              setActiveCategory('empty-legs');
-                            } else if (category?.includes('adventure')) {
-                              setActiveCategory('adventures');
-                            } else if (category?.includes('car')) {
-                              setActiveCategory('luxury-cars');
-                            } else if (category?.includes('helicopter')) {
-                              setActiveCategory('helicopter');
-                            }
-                          } else if (item.action === 'chat' || item.action === 'ai-chat') {
-                            // Navigate to AI Chat with query
-                            // Don't set activeChat here - let AIChat.jsx handle chat creation
-                            const queryText = item.query || item.label || '';
-                            setAiChatQuery(queryText);
-                            setActiveCategory('chat');
-                          } else {
-                            // Navigate to category
-                            setActiveCategory(item.action);
-                          }
-                        }}
-                        onOpenAIChat={(query) => {
-                          // Navigate to AI Chat with the query
-                          // Don't set activeChat here - let AIChat.jsx handle chat creation
-                          // to avoid race condition where activeChat points to non-existent chat
-                          setAiChatQuery(query);
-                          setActiveCategory('chat');
-                        }}
-                        placeholder="I need a..."
-                      />
-                    </div>
-
-                  </>
-                )}
-
-              {/* Back button when showing luxury car detail */}
-              {showLuxuryCarDetail && (
-                <button
-                  onClick={() => {
-                    setShowLuxuryCarDetail(false);
-                    setSelectedLuxuryCar(null);
-                    setCurrentLuxuryCarImageIndex(0);
-                    setLuxuryCarDetailTab('details');
-                  }}
-                  className="flex items-center gap-2 text-gray-700 hover:text-gray-900 mb-6 transition-colors"
-                >
-                  <ArrowLeft size={20} />
-                  <span className="text-sm font-medium">Back to Luxury Cars</span>
-                </button>
-              )}
-
-                {/* Recent Cards Section - Different for RWS vs Web3 */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between px-1">
-                    <div className="flex items-center gap-2">
-                      <ChevronRight size={12} className={webMode === 'web3' ? 'text-gray-700' : 'text-gray-400'} />
-                      <h3 className={`text-xs font-medium ${webMode === 'web3' ? 'text-gray-800' : 'text-gray-600'}`}>
-                        {webMode === 'web3' ? 'web3 dashboard' : 'Your recent chats'}
-                      </h3>
-                    </div>
-                    {webMode === 'web3' && (
-                      <a
-                        href="/dashboard/web3/marketplace"
-                        className="text-[10px] text-gray-500 hover:text-gray-700 transition-colors"
-                      >
-                        View all →
-                      </a>
-                    )}
-                  </div>
-
-                  {/* RWA Investment Banner - Web3 Mode Only - Animated Carousel */}
-                  {webMode === 'web3' && (
-                    <RWABannerCarousel />
-                  )}
-
-                  {/* Row 1: Empty Legs + Aviation (2 cards) - RWS Mode Only */}
-                  {webMode === 'rws' && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {/* RWS Mode - Show recent chats/empty legs */}
-                    {webMode === 'rws' && (
-                      <>
-                        {/* Empty Legs Card (rotating every 5 minutes) */}
-                        <button
-                          onClick={() => setActiveCategory('empty-legs')}
-                          className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
-                          style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                        >
-                          <div className="mb-2">
-                            <span className="text-[10px] font-bold font-['DM_Sans'] text-gray-500 uppercase tracking-wider">Empty Legs</span>
-                          </div>
-                          {loadingEmptyLegs ? (
-                            <>
-                              <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800">Loading...</h4>
-                              <p className="text-[10px] font-['DM_Sans'] text-gray-600">Fetching offers</p>
-                            </>
-                          ) : emptyLegs.length > 0 ? (
-                            <>
-                              <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800">
-                                {emptyLegs[currentEmptyLegIndex].from_city || emptyLegs[currentEmptyLegIndex].from} → {emptyLegs[currentEmptyLegIndex].to_city || emptyLegs[currentEmptyLegIndex].to}
-                              </h4>
-                              <p className="text-[10px] font-['DM_Sans'] text-gray-600">
-                                ${emptyLegs[currentEmptyLegIndex].price?.toLocaleString() || 'N/A'} • {new Date(emptyLegs[currentEmptyLegIndex].departure_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                              </p>
-                            </>
-                          ) : (
-                            <>
-                              <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800">No Offers</h4>
-                              <p className="text-[10px] font-['DM_Sans'] text-gray-600">Check back soon</p>
-                            </>
-                          )}
-                        </button>
-
-                        {/* Charter Aviation Card (Helicopter/Jet) - Opens AI Chat */}
-                        <button
-                          onClick={() => {
-                            // Open AI Chat with prefilled message based on current aviation type
-                            const queryText = currentAviationType === 0 ? 'I want to charter a helicopter' : 'I want to charter a private jet';
-                            // Set state directly to ensure it's picked up immediately
-                            setAiChatQuery(queryText);
-                            setActiveChat('new');
-                            setActiveCategory('chat');
-                            // Update URL cosmetically
-                            window.history.pushState({}, '', `/dashboard/chat?query=${encodeURIComponent(queryText)}`);
-                          }}
-                          className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50 relative overflow-hidden"
-                          style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex-1">
-                              <div className="mb-2 md:mb-2">
-                                <span className="text-[10px] font-bold font-['DM_Sans'] text-gray-500 uppercase tracking-wider">Aviation</span>
-                              </div>
-                              {/* Mobile: Simple title only */}
-                              <div className="md:hidden">
-                                <h4 className="text-xs font-medium font-['DM_Sans'] text-gray-800">Private Charter</h4>
-                              </div>
-                              {/* Desktop: Animated helicopter/jet titles */}
-                              <div className="hidden md:block relative h-[32px] overflow-hidden">
-                                <h4
-                                  className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800 absolute inset-0 transition-all duration-700 ease-in-out"
-                                  style={{
-                                    opacity: currentAviationType === 0 ? 1 : 0,
-                                    transform: currentAviationType === 0 ? 'translateY(0)' : 'translateY(-100%)'
-                                  }}
-                                >
-                                  Charter a Helicopter
-                                </h4>
-                                <h4
-                                  className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800 absolute inset-0 transition-all duration-700 ease-in-out"
-                                  style={{
-                                    opacity: currentAviationType === 1 ? 1 : 0,
-                                    transform: currentAviationType === 1 ? 'translateY(0)' : 'translateY(100%)'
-                                  }}
-                                >
-                                  Charter a Jet
-                                </h4>
-                              </div>
-                              <p className="hidden md:block text-[10px] font-['DM_Sans'] text-gray-600">
-                                Book your private flight
-                              </p>
-                            </div>
-                            {/* Hide image on mobile */}
-                            <div className="hidden md:block flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden relative">
-                              {/* Helicopter Image */}
-                              <img
-                                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/gb/%20%20(3).png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJnYi8gICgzKS5wbmciLCJpYXQiOjE3NjA5NjIwMDcsImV4cCI6MTc5MjQ5ODAwN30.7yFk178KYOXi874bcWv4v8JBczbebcQFgpfDV0MH_MI"
-                                alt="Helicopter"
-                                className="w-full h-full object-contain absolute inset-0 transition-all duration-700 ease-in-out group-hover:scale-110"
-                                style={{
-                                  opacity: currentAviationType === 0 ? 1 : 0,
-                                  transform: currentAviationType === 0 ? 'scale(1)' : 'scale(0.8)'
-                                }}
-                              />
-                              {/* Jet Image */}
-                              <img
-                                src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/serviceImagesVector/pngtree-sleek-private-jet-in-flight-ready-for-business-travel-png-image_20073193.png"
-                                alt="Private Jet"
-                                className="w-full h-full object-contain absolute inset-0 transition-all duration-700 ease-in-out group-hover:scale-110"
-                                style={{
-                                  opacity: currentAviationType === 1 ? 1 : 0,
-                                  transform: currentAviationType === 1 ? 'scale(1)' : 'scale(0.8)'
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </button>
-
-                        {/* My Requests Card - Hidden on mobile, shown on desktop in row 1 */}
-                        <button
-                          onClick={() => setActiveCategory('requests')}
-                          className="hidden md:block border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
-                          style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                        >
-                          <div className="mb-2 flex items-center justify-between">
-                            <span className="text-[10px] font-bold font-['DM_Sans'] text-gray-500 uppercase tracking-wider">
-                              My Requests
-                            </span>
-                            {!loadingRequests && userRequests.length > 0 && (
-                              <span className={`text-[9px] px-2 py-0.5 rounded-full font-medium font-['DM_Sans'] ${
-                                userRequests[0].status === 'confirmed'
-                                  ? 'bg-green-100 text-green-700'
-                                  : userRequests[0].status === 'pending'
-                                  ? 'bg-yellow-100 text-yellow-700'
-                                  : 'bg-gray-100 text-gray-700'
-                              }`}>
-                                {userRequests[0].status}
-                              </span>
-                            )}
-                          </div>
-                          {loadingRequests ? (
-                            <>
-                              <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800">Loading...</h4>
-                              <p className="text-[10px] font-['DM_Sans'] text-gray-600">Checking requests</p>
-                            </>
-                          ) : userRequests.length > 0 ? (
-                            <>
-                              <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800 line-clamp-1">
-                                {userRequests.length} Active Request{userRequests.length > 1 ? 's' : ''}
-                              </h4>
-                              <p className="text-[10px] font-['DM_Sans'] text-gray-600">
-                                Latest: {new Date(userRequests[0].created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                              </p>
-                            </>
-                          ) : (
-                            <>
-                              <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800">No Active Requests</h4>
-                              <p className="text-[10px] font-['DM_Sans'] text-gray-600">Start booking services</p>
-                            </>
-                          )}
-                        </button>
-                      </>
-                    )}
-
-                  </div>
-                  )}
-
-                  {/* Row 2: My Bookings + My Requests (mobile) / My Bookings + Blog (desktop) */}
-                  <div className="grid grid-cols-2 gap-3 md:gap-4">
-                    {/* Card - Bookings Card */}
+                {/* Search Input - opens AI chat */}
+                <div className="w-full max-w-2xl">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Where would you like to fly?"
+                      className="w-full px-6 py-4 text-lg border border-gray-200 rounded-2xl bg-white shadow-sm pr-14"
+                      onFocus={() => {
+                        setAiChatQuery('');
+                        setActiveCategory('chat');
+                      }}
+                      readOnly
+                    />
                     <button
                       onClick={() => {
-                        setActiveCategory('bookings');
+                        setAiChatQuery('');
+                        setActiveCategory('chat');
                       }}
-                      className="border rounded-xl p-3 md:p-4 bg-white/35 hover:bg-white/40 border-gray-300/50 transition-all text-left"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-blue-500 hover:bg-blue-600 rounded-xl flex items-center justify-center transition-colors"
                     >
-                      <h4 className={`text-xs font-semibold mb-1 font-['DM_Sans'] ${webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'}`}>
-                        My Bookings
-                      </h4>
-                      <p className={`text-2xl font-semibold font-['DM_Sans'] ${webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'}`}>
-                        {loadingBookings ? '...' : userBookings.length}
-                      </p>
-                      <p className={`text-[10px] font-['DM_Sans'] text-gray-600`}>
-                        {userBookings.length === 0 ? 'Book your first flight' : 'Flights, Adventures & CO2'}
-                      </p>
+                      <ArrowRight size={20} className="text-white" />
                     </button>
-
-                    {/* My Requests Card - Shown on mobile only in row 2 */}
-                    <button
-                      onClick={() => setActiveCategory('requests')}
-                      className="md:hidden border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    >
-                      <div className="mb-2 flex items-center justify-between">
-                        <span className="text-[10px] font-bold font-['DM_Sans'] text-gray-500 uppercase tracking-wider">
-                          My Requests
-                        </span>
-                        {!loadingRequests && userRequests.length > 0 && (
-                          <span className={`text-[9px] px-2 py-0.5 rounded-full font-medium font-['DM_Sans'] ${
-                            userRequests[0].status === 'confirmed'
-                              ? 'bg-green-100 text-green-700'
-                              : userRequests[0].status === 'pending'
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-gray-100 text-gray-700'
-                          }`}>
-                            {userRequests[0].status}
-                          </span>
-                        )}
-                      </div>
-                      {loadingRequests ? (
-                        <>
-                          <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800">Loading...</h4>
-                          <p className="text-[10px] font-['DM_Sans'] text-gray-600">Checking requests</p>
-                        </>
-                      ) : userRequests.length > 0 ? (
-                        <>
-                          <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800 line-clamp-1">
-                            {userRequests.length} Active Request{userRequests.length > 1 ? 's' : ''}
-                          </h4>
-                          <p className="text-[10px] font-['DM_Sans'] text-gray-600">
-                            Latest: {new Date(userRequests[0].created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          </p>
-                        </>
-                      ) : (
-                        <>
-                          <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-800">No Active Requests</h4>
-                          <p className="text-[10px] font-['DM_Sans'] text-gray-600">Start booking services</p>
-                        </>
-                      )}
-                    </button>
-
-                    {/* News Card - Hidden on mobile, shown on desktop */}
-                    <a
-                      href={latestBlogPost?.link || 'https://www.privatecharterx.blog'}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hidden md:block border rounded-xl p-4 transition-all cursor-pointer bg-white/35 hover:bg-white/40 border-gray-300/50"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    >
-                      <div className="flex items-start gap-2 mb-2">
-                        <img
-                          src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/gb/PrivatecharterX_logo_vectorized.glb.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJnYi9Qcml2YXRlY2hhcnRlclhfbG9nb192ZWN0b3JpemVkLmdsYi5wbmciLCJpYXQiOjE3NTk1Mzc3MjcsImV4cCI6MzYwNDUzNTQ0MTI3fQ.jYHe7MUj65rwO8cVL3Ocwgwd3ZJRMr5w1wR9xcaDtVk"
-                          alt="PrivateCharterX"
-                          className="w-6 h-6 object-contain flex-shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <h4 className={`text-xs font-semibold mb-1 line-clamp-2 font-['DM_Sans'] ${
-                            webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'
-                          }`}>
-                            {blogLoading ? 'Loading...' : (latestBlogPost?.title || 'Latest from PrivateCharterX Blog')}
-                          </h4>
-                          <p className={`text-[10px] line-clamp-2 font-['DM_Sans'] ${
-                            webMode === 'web3' ? 'text-gray-600' : 'text-gray-600'
-                          }`}>
-                            {latestBlogPost ? 'Click to read more →' : 'Discover new sustainable aviation fuels and CO2 offset programs...'}
-                          </p>
-                        </div>
-                      </div>
-                      <p className={`text-[10px] font-['DM_Sans'] ${webMode === 'web3' ? 'text-gray-500' : 'text-gray-500'}`}>
-                        {latestBlogPost ? new Date(latestBlogPost.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '2 hours ago'}
-                      </p>
-                    </a>
                   </div>
-
-                  {/* Row 3: Blog post (mobile only - full width) */}
-                  <div className="mt-4 md:hidden">
-                    <a
-                      href={latestBlogPost?.link || 'https://www.privatecharterx.blog'}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block border rounded-xl p-3 transition-all cursor-pointer bg-white/35 hover:bg-white/40 border-gray-300/50"
-                      style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                    >
-                      <div className="flex items-start gap-2 mb-2">
-                        <img
-                          src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/gb/PrivatecharterX_logo_vectorized.glb.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJnYi9Qcml2YXRlY2hhcnRlclhfbG9nb192ZWN0b3JpemVkLmdsYi5wbmciLCJpYXQiOjE3NTk1Mzc3MjcsImV4cCI6MzYwNDUzNTQ0MTI3fQ.jYHe7MUj65rwO8cVL3Ocwgwd3ZJRMr5w1wR9xcaDtVk"
-                          alt="PrivateCharterX"
-                          className="w-6 h-6 object-contain flex-shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <h4 className={`text-xs font-semibold mb-1 line-clamp-2 font-['DM_Sans'] ${
-                            webMode === 'web3' ? 'text-gray-900' : 'text-gray-800'
-                          }`}>
-                            {blogLoading ? 'Loading...' : (latestBlogPost?.title || 'Latest from PrivateCharterX Blog')}
-                          </h4>
-                          <p className={`text-[10px] line-clamp-2 font-['DM_Sans'] ${
-                            webMode === 'web3' ? 'text-gray-600' : 'text-gray-600'
-                          }`}>
-                            {latestBlogPost ? 'Click to read more →' : 'Discover new sustainable aviation fuels and CO2 offset programs...'}
-                          </p>
-                        </div>
-                      </div>
-                      <p className={`text-[10px] font-['DM_Sans'] ${webMode === 'web3' ? 'text-gray-500' : 'text-gray-500'}`}>
-                        {latestBlogPost ? new Date(latestBlogPost.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '2 hours ago'}
-                      </p>
-                    </a>
-                  </div>
-
-                  {/* Third Row - Additional Cards (Web3 Mode Only) */}
-                  {webMode === 'web3' && (
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {/* Card #9 - NFT Marketplace */}
-                      <button
-                        onClick={() => setActiveCategory('nft-marketplace')}
-                        className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
-                        style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                      >
-                        <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-900 truncate">
-                          NFT Marketplace
-                        </h4>
-                        <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-1">
-                          Buy & Sell NFTs
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-medium text-gray-900">
-                            Browse
-                          </span>
-                          <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
-                            Explore
-                          </span>
-                        </div>
-                      </button>
-
-                      {/* Card #10 - PVCX Tokens */}
-                      <button
-                        onClick={() => setActiveCategory('pvcx-token')}
-                        className="border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
-                        style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                      >
-                        <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-900 truncate">
-                          PVCX Tokens
-                        </h4>
-                        <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-1">
-                          Your Balance
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-medium text-gray-900">
-                            {loadingPvcxBalance ? '...' : `${pvcxBalance.toFixed(3)} $PVCX`}
-                          </span>
-                        </div>
-                      </button>
-
-                      {/* Card #11 - Wallet Signatures (NFT Verifications) */}
-                      <button
-                        onClick={() => {/* Could navigate to signatures view if desired */}}
-                        className="hidden md:block border rounded-xl p-3 text-left transition-all group bg-white/35 hover:bg-white/40 border-gray-300/50"
-                        style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
-                      >
-                        <h4 className="text-xs font-medium mb-0.5 font-['DM_Sans'] text-gray-900 truncate">
-                          Wallet Signatures
-                        </h4>
-                        <p className="text-[10px] font-['DM_Sans'] text-gray-600 mb-1">NFT verifications</p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-medium text-gray-900">
-                            {loadingSignatures ? '...' : `${walletSignatures.length} signed`}
-                          </span>
-                          {walletSignatures.length > 0 && (
-                            <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
-                              Verified
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    </div>
-                  )}
                 </div>
-                <PageFooter />
+
+                {/* Category Badges */}
+                <div className="flex flex-wrap gap-2 mt-6 justify-center">
+                  {[
+                    { id: 'flights', label: 'flight tickets' },
+                    { id: 'adventures', label: 'adventures' },
+                    { id: 'jets', label: 'charter a jet' },
+                    { id: 'empty-legs', label: 'empty legs' },
+                    { id: 'helicopter', label: 'helicopters' }
+                  ].map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setActiveCategory(cat.id)}
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700 transition-colors"
+                    >
+                      <span className="text-gray-400">★</span>
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Disclaimer */}
+                <p className="mt-8 text-xs text-gray-400 text-center max-w-md">
+                  This is an AI Assistant. We monitor all bookings and requests so AI can make mistakes. Please verify important details.
+                </p>
               </div>
+              <PageFooter />
             </div>
           )}
 
