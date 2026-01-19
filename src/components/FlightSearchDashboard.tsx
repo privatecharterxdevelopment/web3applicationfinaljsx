@@ -1548,7 +1548,17 @@ export default function FlightSearchDashboard({ onShowLoginModal }: FlightSearch
                           <div className="text-center hidden sm:block">
                             <div className="text-xs text-gray-500 mb-1">{flight.duration}</div>
                             <div className="text-xs text-gray-400">
-                              {flight.stops === 0 ? 'Direct' : `${flight.stops} stop${flight.stops > 1 ? 's' : ''}`}
+                              {flight.stops === 0 ? 'Direct' : (
+                                <>
+                                  {flight.stops} stop{flight.stops > 1 ? 's' : ''}
+                                  {(flight as any).stopDetails?.[0] && (
+                                    <span className="block text-gray-500">
+                                      {(flight as any).stopDetails[0].city || (flight as any).stopDetails[0].airport}
+                                      {(flight as any).stopDetails[0].duration && ` · ${(flight as any).stopDetails[0].duration}`}
+                                    </span>
+                                  )}
+                                </>
+                              )}
                             </div>
                           </div>
 
@@ -1582,7 +1592,16 @@ export default function FlightSearchDashboard({ onShowLoginModal }: FlightSearch
                             <div className="text-center hidden sm:block">
                               <div className="text-xs text-gray-500 mb-1">{flight.returnJourney.duration || '--'}</div>
                               <div className="text-xs text-gray-400">
-                                {flight.returnJourney.stops === 0 ? 'Direct' : `${flight.returnJourney.stops} stop${flight.returnJourney.stops > 1 ? 's' : ''}`}
+                                {flight.returnJourney.stops === 0 ? 'Direct' : (
+                                  <>
+                                    {flight.returnJourney.stops} stop{flight.returnJourney.stops > 1 ? 's' : ''}
+                                    {flight.returnJourney.segments?.[0] && flight.returnJourney.stops > 0 && (
+                                      <span className="block text-gray-500">
+                                        {flight.returnJourney.segments[0].arrival?.city || flight.returnJourney.segments[0].arrival?.airport}
+                                      </span>
+                                    )}
+                                  </>
+                                )}
                               </div>
                             </div>
 
