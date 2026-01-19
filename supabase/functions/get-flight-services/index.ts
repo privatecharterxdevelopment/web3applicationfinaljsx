@@ -94,7 +94,7 @@ serve(async (req) => {
       // Determine if this is for outbound or return based on segment position
       const isFirstHalf = index < allBaggageServices.length / 2;
       const legLabel = allBaggageServices.length > 1
-        ? (isFirstHalf ? 'Hinflug' : 'Rückflug')
+        ? (isFirstHalf ? 'Outbound' : 'Return')
         : null;
 
       return {

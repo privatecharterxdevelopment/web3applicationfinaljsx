@@ -617,7 +617,7 @@ export default function FlightSearchDashboard({ onShowLoginModal }: FlightSearch
           passengers: searchParams.passengers,
           priceUSD: finalTotal,
           serviceTitle: `${selectedFlight.departure.airport} → ${selectedFlight.arrival.airport}`,
-          serviceDescription: `${selectedFlight.airline.name} ${selectedFlight.flightNumber} on ${formatDate(selectedFlight.departure.time)}${selectedServices.length > 0 ? ` + ${selectedServices.length}x Extra Gepäck` : ''}`,
+          serviceDescription: `${selectedFlight.airline.name} ${selectedFlight.flightNumber} on ${formatDate(selectedFlight.departure.time)}${selectedServices.length > 0 ? ` + ${selectedServices.length}x Extra Baggage` : ''}`,
           isGuestCheckout: !user,
           flightData: {
             offerId: selectedFlight.offerId,
@@ -842,7 +842,7 @@ export default function FlightSearchDashboard({ onShowLoginModal }: FlightSearch
 
                 {/* Included Baggage */}
                 <div className="p-6">
-                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">Inkludiertes Gepäck</p>
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">Included Baggage</p>
                   <div className="space-y-2">
                     {/* Cabin Baggage */}
                     <div className="flex items-center gap-3">
@@ -851,9 +851,9 @@ export default function FlightSearchDashboard({ onShowLoginModal }: FlightSearch
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-900">
-                          {selectedFlight.baggage?.cabinBags || 1}x Handgepäck
+                          {selectedFlight.baggage?.cabinBags || 1}x Cabin Bag
                         </p>
-                        <p className="text-xs text-gray-500">Cabin bag inkludiert</p>
+                        <p className="text-xs text-gray-500">Included in fare</p>
                       </div>
                     </div>
 
@@ -865,12 +865,12 @@ export default function FlightSearchDashboard({ onShowLoginModal }: FlightSearch
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-900">
-                            {selectedFlight.baggage?.checkedBags}x Aufgabegepäck
+                            {selectedFlight.baggage?.checkedBags}x Checked Bag
                           </p>
                           <p className="text-xs text-gray-500">
                             {selectedFlight.baggage?.checkedBagWeight
-                              ? `${selectedFlight.baggage.checkedBagWeight}kg pro Stück`
-                              : '23kg pro Stück'}
+                              ? `${selectedFlight.baggage.checkedBagWeight}kg per piece`
+                              : '23kg per piece'}
                           </p>
                         </div>
                       </div>
@@ -880,8 +880,8 @@ export default function FlightSearchDashboard({ onShowLoginModal }: FlightSearch
                           <Luggage size={14} className="text-gray-400" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-500">Kein Aufgabegepäck</p>
-                          <p className="text-xs text-gray-400">Nicht im Preis inkludiert</p>
+                          <p className="text-sm font-medium text-gray-500">No Checked Baggage</p>
+                          <p className="text-xs text-gray-400">Not included in fare</p>
                         </div>
                       </div>
                     )}
@@ -894,15 +894,15 @@ export default function FlightSearchDashboard({ onShowLoginModal }: FlightSearch
                 <div className="p-6 border-b border-gray-100">
                   <h4 className="font-semibold text-gray-900 flex items-center gap-2">
                     <Luggage size={18} />
-                    Extra Gepäck hinzufügen
+                    Add Extra Baggage
                   </h4>
-                  <p className="text-sm text-gray-500 mt-1">Optional: Zusätzliches Aufgabegepäck buchen</p>
+                  <p className="text-sm text-gray-500 mt-1">Optional: Book additional checked baggage</p>
                 </div>
                 <div className="p-4">
                   {isLoadingServices ? (
                     <div className="flex items-center justify-center py-6">
                       <Loader2 size={24} className="animate-spin text-gray-400" />
-                      <span className="ml-2 text-sm text-gray-500">Gepäck-Optionen werden geladen...</span>
+                      <span className="ml-2 text-sm text-gray-500">Loading baggage options...</span>
                     </div>
                   ) : extraBaggageOptions.length > 0 ? (
                     <div className="space-y-2">
@@ -927,7 +927,7 @@ export default function FlightSearchDashboard({ onShowLoginModal }: FlightSearch
                               </div>
                               <div>
                                 <p className="text-sm font-medium text-gray-900">
-                                  1x Aufgabegepäck {(service as any).legLabel && <span className="text-gray-500 font-normal">({(service as any).legLabel})</span>}
+                                  1x Checked Bag {(service as any).legLabel && <span className="text-gray-500 font-normal">({(service as any).legLabel})</span>}
                                 </p>
                                 <p className="text-xs text-gray-500">
                                   {service.metadata?.maximumWeightKg
@@ -947,8 +947,8 @@ export default function FlightSearchDashboard({ onShowLoginModal }: FlightSearch
                     </div>
                   ) : (
                     <div className="py-4 text-center text-sm text-gray-500">
-                      <p>Für diesen Flug ist kein zusätzliches Gepäck buchbar.</p>
-                      <p className="text-xs text-gray-400 mt-1">Das inkludierte Gepäck ist oben aufgeführt.</p>
+                      <p>No extra baggage available for this flight.</p>
+                      <p className="text-xs text-gray-400 mt-1">The included baggage is listed above.</p>
                     </div>
                   )}
                 </div>
@@ -1154,7 +1154,7 @@ export default function FlightSearchDashboard({ onShowLoginModal }: FlightSearch
                 {extrasPrice > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">
-                      Extra Gepäck ({selectedServices.length}x)
+                      Extra Baggage ({selectedServices.length}x)
                     </span>
                     <span className="text-gray-900">{currency}{extrasPrice.toFixed(2)}</span>
                   </div>
