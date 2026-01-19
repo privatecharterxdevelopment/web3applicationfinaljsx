@@ -228,14 +228,39 @@ serve(async (req) => {
         returnJourney: returnSlice ? {
           departure: {
             airport: returnSlice.origin?.iata_code || '',
-            time: returnSlice.segments?.[0]?.departing_at || ''
+            airportName: returnSlice.origin?.name || '',
+            city: returnSlice.origin?.city_name || '',
+            time: returnSlice.segments?.[0]?.departing_at || '',
+            terminal: returnSlice.segments?.[0]?.origin_terminal || null
           },
           arrival: {
             airport: returnSlice.destination?.iata_code || '',
-            time: returnSlice.segments?.[returnSlice.segments.length - 1]?.arriving_at || ''
+            airportName: returnSlice.destination?.name || '',
+            city: returnSlice.destination?.city_name || '',
+            time: returnSlice.segments?.[returnSlice.segments.length - 1]?.arriving_at || '',
+            terminal: returnSlice.segments?.[returnSlice.segments.length - 1]?.destination_terminal || null
           },
-          duration: returnSlice.duration || null,
-          stops: (returnSlice.segments?.length || 1) - 1
+          duration: returnSlice.duration ? formatDuration(parseDuration(returnSlice.duration)) : null,
+          durationMinutes: returnSlice.duration ? parseDuration(returnSlice.duration) : null,
+          stops: (returnSlice.segments?.length || 1) - 1,
+          segments: returnSlice.segments?.map((seg: any) => ({
+            flightNumber: `${seg.marketing_carrier?.iata_code || ''}${seg.marketing_carrier_flight_number || ''}`,
+            aircraft: seg.aircraft?.name || null,
+            departure: {
+              airport: seg.origin?.iata_code || '',
+              airportName: seg.origin?.name || '',
+              time: seg.departing_at || '',
+              terminal: seg.origin_terminal || null
+            },
+            arrival: {
+              airport: seg.destination?.iata_code || '',
+              airportName: seg.destination?.name || '',
+              time: seg.arriving_at || '',
+              terminal: seg.destination_terminal || null
+            },
+            duration: seg.duration || null,
+            cabinClass: seg.passengers?.[0]?.cabin_class_marketing_name || cabinClass
+          })) || []
         } : null,
 
         // Pricing (20% markup applied)

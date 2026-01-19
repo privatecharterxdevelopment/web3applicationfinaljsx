@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Search, Plane, Users, MapPin, Clock, Luggage, ArrowRight, ArrowLeft,
   AlertCircle, Check, ChevronRight, Wallet, Loader2, User, Mail, Phone,
-  Sparkles, X
+  Sparkles, X, RefreshCw
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -927,7 +927,7 @@ export default function FlightSearchDashboard({ onShowLoginModal }: FlightSearch
                               </div>
                               <div>
                                 <p className="text-sm font-medium text-gray-900">
-                                  1x Aufgabegepäck
+                                  1x Aufgabegepäck {(service as any).legLabel && <span className="text-gray-500 font-normal">({(service as any).legLabel})</span>}
                                 </p>
                                 <p className="text-xs text-gray-500">
                                   {service.metadata?.maximumWeightKg
@@ -1523,6 +1523,7 @@ export default function FlightSearchDashboard({ onShowLoginModal }: FlightSearch
                         onClick={() => handleFlightSelect(flight)}
                         className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md cursor-pointer transition-all"
                       >
+                        {/* Outbound Flight */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
                             {flight.airline?.logoUrl ? (
@@ -1558,6 +1559,38 @@ export default function FlightSearchDashboard({ onShowLoginModal }: FlightSearch
                             <div className="text-xs text-gray-500">{flight.airline?.name}</div>
                           </div>
                         </div>
+
+                        {/* Return Flight (if round trip) */}
+                        {flight.returnJourney && (
+                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 flex items-center justify-center">
+                                <RefreshCw size={16} className="text-gray-400" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-semibold text-gray-900">{formatTime(flight.returnJourney.departure?.time)}</span>
+                                  <ArrowRight size={14} className="text-gray-400" />
+                                  <span className="font-semibold text-gray-900">{formatTime(flight.returnJourney.arrival?.time)}</span>
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {flight.returnJourney.departure?.city || flight.returnJourney.departure?.airport} ({flight.returnJourney.departure?.airport}) - {flight.returnJourney.arrival?.city || flight.returnJourney.arrival?.airport} ({flight.returnJourney.arrival?.airport})
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="text-center hidden sm:block">
+                              <div className="text-xs text-gray-500 mb-1">{flight.returnJourney.duration || '--'}</div>
+                              <div className="text-xs text-gray-400">
+                                {flight.returnJourney.stops === 0 ? 'Direct' : `${flight.returnJourney.stops} stop${flight.returnJourney.stops > 1 ? 's' : ''}`}
+                              </div>
+                            </div>
+
+                            <div className="text-right">
+                              <div className="text-xs text-gray-500">Return</div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
 

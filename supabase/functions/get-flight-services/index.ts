@@ -68,9 +68,40 @@ serve(async (req) => {
     }));
 
     // Filter to only baggage services
-    const baggageServices = transformedServices.filter(
+    const allBaggageServices = transformedServices.filter(
       (s: any) => s.type === 'baggage' && s.metadata?.type === 'checked'
     );
+
+    // Group baggage services by weight to avoid duplicates for round trips
+    // Each segment may have its own service, so combine them by weight
+    const baggageByWeight = new Map<number, any[]>();
+    allBaggageServices.forEach((service: any) => {
+      const weight = service.metadata?.maximumWeightKg || 23;
+      if (!baggageByWeight.has(weight)) {
+        baggageByWeight.set(weight, []);
+      }
+      baggageByWeight.get(weight)?.push(service);
+    });
+
+    // Create combined baggage options (one per weight class)
+    // For round trips, we need to select baggage for each leg, so keep services separate
+    // but add a label to distinguish them
+    const baggageServices = allBaggageServices.map((service: any, index: number) => {
+      const segmentCount = service.segmentIds?.length || 1;
+      const totalSegments = allBaggageServices.reduce((max: number, s: any) =>
+        Math.max(max, s.segmentIds?.length || 1), 0);
+
+      // Determine if this is for outbound or return based on segment position
+      const isFirstHalf = index < allBaggageServices.length / 2;
+      const legLabel = allBaggageServices.length > 1
+        ? (isFirstHalf ? 'Hinflug' : 'Rückflug')
+        : null;
+
+      return {
+        ...service,
+        legLabel
+      };
+    });
 
     console.log(`Found ${baggageServices.length} baggage services for offer ${offerId}`);
 
