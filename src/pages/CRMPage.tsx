@@ -1,19 +1,15 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AuthProvider } from '../context/AuthContext';
-import CRMDashboard from '../components/CRMDashboard';
+import { AuthProvider as CRMAuthProvider } from '../contexts/CRM/AuthContext';
+import { NotificationProvider } from '../contexts/CRM/NotificationContext';
+import CRMApp from '../components/CRM/App';
 
 // CRM Page wrapper - complete standalone CRM system
 export default function CRMPage() {
-  const navigate = useNavigate();
-
-  const handleClose = () => {
-    navigate('/dashboard');
-  };
-
   return (
-    <AuthProvider>
-      <CRMDashboard onClose={handleClose} />
-    </AuthProvider>
+    <CRMAuthProvider>
+      <NotificationProvider>
+        <CRMApp />
+      </NotificationProvider>
+    </CRMAuthProvider>
   );
 }

@@ -554,7 +554,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user && !initializing,
-    isAdmin: user?.user_role === 'admin',
+    isAdmin: user?.user_role === 'admin' || user?.user_role === 'super_admin',
     initializing,
     signIn,
     signUp,

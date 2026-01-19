@@ -2160,7 +2160,7 @@ const TokenizedAssetsGlassmorphic = () => {
   }, [isAuthenticated, user, pendingCategory]);
 
   // Protected categories that require login - show login modal for guests
-  const protectedCategories = ['dashboard', 'profile', 'bookings', 'requests', 'activities', 'settings', 'messages', 'subscriptions'];
+  const protectedCategories = ['dashboard', 'profile', 'bookings', 'requests', 'activities', 'settings', 'messages', 'subscriptions', 'chat'];
   useEffect(() => {
     if (!user && !initializing && protectedCategories.includes(activeCategory)) {
       setShowLoginModal(true);
