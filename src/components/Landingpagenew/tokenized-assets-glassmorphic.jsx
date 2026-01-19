@@ -4488,117 +4488,17 @@ const TokenizedAssetsGlassmorphic = () => {
   // Check if on admin route
   const isOnAdminRoute = window.location.pathname === '/admin' || window.location.pathname === '/crm-admin' || window.location.pathname.startsWith('/admin/');
 
-  // Don't render dashboard content until authenticated
-  // MOBILE FIX: If authenticated (even without showDashboard flag), show dashboard immediately
-  // This prevents the blank screen flash on mobile devices
-  // EXCEPTION: Admin routes should always render to show login modal
-  // EXCEPTION: Home/overview page should be accessible to guests
-  const isOnHomePage = window.location.pathname === '/dashboard/home' || window.location.pathname === '/dashboard' || activeCategory === 'home';
-  if (!isAuthenticated && !isOnAdminRoute && !isSimpleAdminAuth && !isOnHomePage) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-center">
-          {/* Only show logo animation if not showing any auth modal */}
-          {!showLoginModal && !showRegisterModal && !showForgotPasswordModal && !showPartnerRegisterModal && (
-            <div className="flex flex-col items-center gap-4">
-              {/* PrivateCharterX Logo Animation - Same as transition */}
-              <div className="w-20 h-20">
-                <video
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="w-full h-full object-contain"
-                >
-                  <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
-                </video>
-              </div>
-            </div>
-          )}
-        </div>
-        {/* Login modal - Use app-specific modal for native apps */}
-        {showLoginModal && (
-          isNativeApp() ? (
-            <AppLoginModal
-              onClose={() => setShowLoginModal(false)}
-              onSwitchToRegister={() => {
-                setShowLoginModal(false);
-                setShowRegisterModal(true);
-              }}
-              onSuccess={() => setShowLoginModal(false)}
-              onForgotPassword={() => {
-                setShowLoginModal(false);
-                setShowForgotPasswordModal(true);
-              }}
-            />
-          ) : (
-            <LoginModal
-              onClose={() => setShowLoginModal(false)}
-              onSwitchToRegister={() => {
-                setShowLoginModal(false);
-                setShowRegisterModal(true);
-              }}
-              onSwitchToPartnerRegister={() => {
-                setShowLoginModal(false);
-                setShowPartnerRegisterModal(true);
-              }}
-              onSuccess={() => setShowLoginModal(false)}
-              onSwitchToForgotPassword={() => {
-                setShowLoginModal(false);
-                setShowForgotPasswordModal(true);
-              }}
-            />
-          )
-        )}
-        {/* Register modal - Use app-specific modal for native apps */}
-        {showRegisterModal && (
-          isNativeApp() ? (
-            <AppRegisterModal
-              onClose={() => setShowRegisterModal(false)}
-              onSwitchToLogin={() => {
-                setShowRegisterModal(false);
-                setShowLoginModal(true);
-              }}
-              onSuccess={() => setShowRegisterModal(false)}
-            />
-          ) : (
-            <RegisterModal
-              onClose={() => setShowRegisterModal(false)}
-              onSwitchToLogin={() => {
-                setShowRegisterModal(false);
-                setShowLoginModal(true);
-              }}
-              onSwitchToPartnerRegister={() => {
-                setShowRegisterModal(false);
-                setShowPartnerRegisterModal(true);
-              }}
-              onSuccess={() => setShowRegisterModal(false)}
-            />
-          )
-        )}
-        {showForgotPasswordModal && (
-          <ForgotPasswordModal
-            onClose={() => setShowForgotPasswordModal(false)}
-            onBackToLogin={() => {
-              setShowForgotPasswordModal(false);
-              setShowLoginModal(true);
-            }}
-          />
-        )}
-        {showPartnerRegisterModal && (
-          <PartnerRegistrationModal
-            isOpen={showPartnerRegisterModal}
-            onClose={() => setShowPartnerRegisterModal(false)}
-            onSuccess={() => {
-              setShowPartnerRegisterModal(false);
-              showToast('Partner registration successful! Please wait for verification.', 'success');
-            }}
-          />
-        )}
-        <ToastContainer toasts={toasts} removeToast={removeToast} />
-      </div>
-    );
-  }
+  // Protected categories that require login
+  const protectedCategories = ['dashboard', 'profile', 'bookings', 'requests', 'activities', 'settings', 'messages', 'subscriptions'];
+
+  // If guest tries to access protected category, show login modal and redirect to home
+  useEffect(() => {
+    if (!user && !initializing && protectedCategories.includes(activeCategory)) {
+      setShowLoginModal(true);
+      setPendingCategory(activeCategory);
+      setActiveCategory('home', true);
+    }
+  }, [activeCategory, user, initializing]);
 
   // Promo banner slides - category ads
   const promoSlides = [
