@@ -6891,7 +6891,7 @@ const TokenizedAssetsGlassmorphic = () => {
                   PrivateCharterX
                 </h1>
                 <p className="text-gray-500 text-lg mb-8">
-                  Your Private Aviation Concierge
+                  Your Luxury Travel Concierge
                 </p>
 
                 {/* Search Input - triggers login on focus */}
