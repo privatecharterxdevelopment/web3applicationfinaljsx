@@ -2144,9 +2144,9 @@ const TokenizedAssetsGlassmorphic = () => {
     if (!isAuthenticated && !initializing) {
       // Don't show login modal immediately - allow guest view
       setShowDashboard(true);
-      // Set activeCategory to overview for guest landing
-      if (activeCategory !== 'overview') {
-        setActiveCategory('overview', true);
+      // Set activeCategory to home for guest landing
+      if (activeCategory !== 'home') {
+        setActiveCategory('home', true);
       }
     }
   }, [isAuthenticated, initializing]);
@@ -2254,7 +2254,7 @@ const TokenizedAssetsGlassmorphic = () => {
       '/dashboard': 'chat',
 
       // Home (landing page style)
-      '/dashboard/home': 'overview',
+      '/dashboard/home': 'home',
 
       // Aviation & Transport
       '/dashboard/jets': 'jets',
@@ -4493,7 +4493,7 @@ const TokenizedAssetsGlassmorphic = () => {
   // This prevents the blank screen flash on mobile devices
   // EXCEPTION: Admin routes should always render to show login modal
   // EXCEPTION: Home/overview page should be accessible to guests
-  const isOnHomePage = window.location.pathname === '/dashboard/home' || window.location.pathname === '/dashboard' || activeCategory === 'overview';
+  const isOnHomePage = window.location.pathname === '/dashboard/home' || window.location.pathname === '/dashboard' || activeCategory === 'home';
   if (!isAuthenticated && !isOnAdminRoute && !isSimpleAdminAuth && !isOnHomePage) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
@@ -6884,145 +6884,6 @@ const TokenizedAssetsGlassmorphic = () => {
             <PartnerDashboard user={user} onNavigate={setActiveCategory} />
           )}
 
-          {/* Guest View - Show for non-authenticated users */}
-          {!isTransitioning && activeCategory === 'overview' && !user && (
-            <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col px-4 md:px-0">
-              <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh]">
-                {/* Greeting - same as logged in but without username */}
-                <h1 className="text-3xl md:text-4xl font-light text-gray-900 mb-2 tracking-tight">
-                  Good {(() => {
-                    const hour = new Date().getHours();
-                    if (hour < 12) return 'morning';
-                    if (hour < 18) return 'afternoon';
-                    return 'evening';
-                  })()}
-                </h1>
-                <p className="text-gray-500 text-lg mb-8">
-                  Your Private Aviation Concierge
-                </p>
-
-                {/* Search Input - triggers login on click */}
-                <div
-                  className="w-full max-w-2xl cursor-pointer"
-                  onClick={() => setShowLoginModal(true)}
-                >
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Where would you like to fly?"
-                      className="w-full px-6 py-4 text-lg border border-gray-200 rounded-2xl bg-white shadow-sm pr-14 cursor-pointer"
-                      readOnly
-                    />
-                    <button
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-blue-500 hover:bg-blue-600 rounded-xl flex items-center justify-center transition-colors"
-                    >
-                      <ArrowRight size={20} className="text-white" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Category Badges - trigger login + set pending category */}
-                <div className="flex flex-wrap gap-2 mt-6 justify-center">
-                  {[
-                    { id: 'flights', label: 'flight tickets' },
-                    { id: 'adventures', label: 'adventures' },
-                    { id: 'jets', label: 'charter a jet' },
-                    { id: 'empty-legs', label: 'empty legs' },
-                    { id: 'helicopter', label: 'helicopters' }
-                  ].map((cat) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => {
-                        setPendingCategory(cat.id);
-                        setShowLoginModal(true);
-                      }}
-                      className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700 transition-colors"
-                    >
-                      <span className="text-gray-400">★</span>
-                      {cat.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Disclaimer */}
-                <p className="mt-8 text-xs text-gray-400 text-center max-w-md">
-                  This is an AI Assistant. We monitor all bookings and requests so AI can make mistakes. Please verify important details.
-                </p>
-              </div>
-              <PageFooter />
-            </div>
-          )}
-
-          {/* Home Section - Show for authenticated regular users only */}
-          {!isTransitioning && activeCategory === 'overview' && user && user?.user_role !== 'partner' && (
-            <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col px-4 md:px-0">
-              <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh]">
-                {/* Greeting */}
-                <h1 className="text-3xl md:text-4xl font-light text-gray-900 mb-2 tracking-tight">
-                  Good {(() => {
-                    const hour = new Date().getHours();
-                    if (hour < 12) return 'morning';
-                    if (hour < 18) return 'afternoon';
-                    return 'evening';
-                  })()}, <span className="text-gray-400">{user?.first_name || user?.name || 'there'}</span>
-                </h1>
-                <p className="text-gray-500 text-lg mb-8">
-                  Your Private Aviation Concierge
-                </p>
-
-                {/* Search Input - opens AI chat */}
-                <div className="w-full max-w-2xl">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Where would you like to fly?"
-                      className="w-full px-6 py-4 text-lg border border-gray-200 rounded-2xl bg-white shadow-sm pr-14"
-                      onFocus={() => {
-                        setAiChatQuery('');
-                        setActiveCategory('chat');
-                      }}
-                      readOnly
-                    />
-                    <button
-                      onClick={() => {
-                        setAiChatQuery('');
-                        setActiveCategory('chat');
-                      }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-blue-500 hover:bg-blue-600 rounded-xl flex items-center justify-center transition-colors"
-                    >
-                      <ArrowRight size={20} className="text-white" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Category Badges */}
-                <div className="flex flex-wrap gap-2 mt-6 justify-center">
-                  {[
-                    { id: 'flights', label: 'flight tickets' },
-                    { id: 'adventures', label: 'adventures' },
-                    { id: 'jets', label: 'charter a jet' },
-                    { id: 'empty-legs', label: 'empty legs' },
-                    { id: 'helicopter', label: 'helicopters' }
-                  ].map((cat) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => setActiveCategory(cat.id)}
-                      className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700 transition-colors"
-                    >
-                      <span className="text-gray-400">★</span>
-                      {cat.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Disclaimer */}
-                <p className="mt-8 text-xs text-gray-400 text-center max-w-md">
-                  This is an AI Assistant. We monitor all bookings and requests so AI can make mistakes. Please verify important details.
-                </p>
-              </div>
-              <PageFooter />
-            </div>
-          )}
 
           {/* Tokenize Asset Flow */}
           {!isTransitioning && activeCategory === 'tokenization' && (
