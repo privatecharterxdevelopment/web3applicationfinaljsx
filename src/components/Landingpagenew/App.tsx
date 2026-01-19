@@ -91,6 +91,10 @@ import EmptyLegBooking from '../../pages/EmptyLegBooking';
 import TokenizedAssetsMarketplace from '../../pages/TokenizedAssetsMarketplace';
 import TokenizedAssetMarketplaceDetail from '../../pages/TokenizedAssetMarketplaceDetail';
 
+// Import Asset Marketplace (Polymesh) pages
+import AssetMarketplace from '../../pages/AssetMarketplace';
+import AssetMarketplaceDetail from '../../pages/AssetMarketplaceDetail';
+
 // Import your complete dashboard
 import TokenizedAssetsGlassmorphic from './tokenized-assets-glassmorphic.jsx';
 import ProjectPage from './ProjectPage.jsx';
@@ -381,11 +385,9 @@ function AppContent() {
               <Route path="/empty-legs" element={<EmptyLegs />} />
               <Route path="/book/empty-leg/:id" element={<EmptyLegBooking />} />
 
-              {/* Tokenized Assets Marketplace - HIDDEN until license obtained */}
-              {/* <Route path="/marketplace" element={<TokenizedAssetsMarketplace />} /> */}
-              {/* <Route path="/marketplace/asset/:id" element={<TokenizedAssetMarketplaceDetail />} /> */}
-              <Route path="/marketplace" element={<Navigate to="/tokenized" replace />} />
-              <Route path="/marketplace/*" element={<Navigate to="/tokenized" replace />} />
+              {/* Asset Marketplace - Polymesh Tokenized Assets */}
+              <Route path="/marketplace" element={<AssetMarketplace />} />
+              <Route path="/marketplace/:ticker" element={<AssetMarketplaceDetail />} />
 
               {/* ===== LEGAL PAGES ===== */}
               <Route path="/terms" element={<TermsConditions />} />
@@ -431,10 +433,23 @@ function AppContent() {
               <Route path="/dashboard/spv/my-spvs" element={<Navigate to="/dashboard/web3/my-tokenized-assets" replace />} />
 
               {/* Dashboard sub-routes - All render within the dashboard */}
+              <Route path="/dashboard/home" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/services" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/jets" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/flights" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
               <Route path="/dashboard/helicopter" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/helis" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
               <Route path="/dashboard/adventures" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/empty-legs" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
               <Route path="/dashboard/luxury-cars" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/ground-transport" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
               <Route path="/dashboard/hotels" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/chat" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/ai-chat" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/subscriptions" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/my-requests" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              <Route path="/dashboard/settings" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
+              {/* <Route path="/dashboard/card" element={<TokenizedAssetsGlassmorphic key="dashboard" />} /> */}
 
               {/* RWA Dashboard Routes - redirect to Web3 */}
               <Route path="/dashboard/rwa" element={<Navigate to="/dashboard/web3/tokenization" replace />} />
@@ -560,8 +575,8 @@ function AppContent() {
               <Route path="/faq" element={<Navigate to="/dashboard" replace />} />
 
               {/* Partner pages - redirect to homepage */}
-              <Route path="/partner" element={<Navigate to="/" replace />} />
-              <Route path="/partner-with-us" element={<Navigate to="/" replace />} />
+              <Route path="/partner" element={<Navigate to="/dashboard/home" replace />} />
+              <Route path="/partner-with-us" element={<Navigate to="/dashboard/home" replace />} />
 
               {/* Service pages - redirect to aviation */}
               <Route path="/private-jet" element={<Navigate to="/aviation" replace />} />
@@ -570,16 +585,16 @@ function AppContent() {
               <Route path="/evtol-flights" element={<Navigate to="/aviation" replace />} />
               <Route path="/helicopter" element={<Navigate to="/aviation" replace />} />
               <Route path="/helicopter-charter" element={<Navigate to="/aviation" replace />} />
-              <Route path="/yacht" element={<Navigate to="/" replace />} />
+              <Route path="/yacht" element={<Navigate to="/dashboard/home" replace />} />
               <Route path="/group-charter" element={<Navigate to="/aviation" replace />} />
 
               {/* Info pages - redirect to homepage */}
-              <Route path="/how-it-works" element={<Navigate to="/" replace />} />
-              <Route path="/about" element={<Navigate to="/" replace />} />
+              <Route path="/how-it-works" element={<Navigate to="/dashboard/home" replace />} />
+              <Route path="/about" element={<Navigate to="/dashboard/home" replace />} />
               <Route path="/contact" element={<Navigate to="/helpdesk" replace />} />
               <Route path="/safety" element={<Navigate to="/aviation" replace />} />
-              <Route path="/blog" element={<Navigate to="/" replace />} />
-              <Route path="/news" element={<Navigate to="/" replace />} />
+              <Route path="/blog" element={<Navigate to="/dashboard/home" replace />} />
+              <Route path="/news" element={<Navigate to="/dashboard/home" replace />} />
 
               {/* Membership pages - redirect to dashboard */}
               <Route path="/membership" element={<Navigate to="/dashboard" replace />} />
@@ -595,10 +610,10 @@ function AppContent() {
               <Route path="/carbon" element={<Navigate to="/tokenized" replace />} />
               <Route path="/co2" element={<Navigate to="/tokenized" replace />} />
               <Route path="/marketplace" element={<Navigate to="/tokenized" replace />} />
-              <Route path="/behind-the-scene" element={<Navigate to="/" replace />} />
+              <Route path="/behind-the-scene" element={<Navigate to="/dashboard/home" replace />} />
 
-              {/* Home Route - New Landing Page */}
-              <Route path="/" element={<Homepage />} />
+              {/* Home Route - Redirect to Dashboard */}
+              <Route path="/" element={<Navigate to="/dashboard/home" replace />} />
             </>
           )}
         </Routes>
