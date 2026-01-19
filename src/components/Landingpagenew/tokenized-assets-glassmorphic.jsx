@@ -622,6 +622,7 @@ Happy travels!`,
                 </div>
               </button>
               
+              {/* NFT Marketplace - Disabled (Web3 not in use)
               <button
                 onClick={() => {
                   setWebMode('web3');
@@ -635,6 +636,7 @@ Happy travels!`,
                   <div className="text-xs text-gray-600">Buy & Sell NFTs</div>
                 </div>
               </button>
+              */}
             </div>
           </div>
         </div>
@@ -2343,12 +2345,15 @@ const TokenizedAssetsGlassmorphic = () => {
       '/dashboard/profile': 'profile'
     };
 
-    // Detect Web3 mode from URL and set webMode accordingly
+    // Web3 mode disabled - redirect any /dashboard/web3 routes to regular dashboard
     const isWeb3Route = currentPath.startsWith('/dashboard/web3');
-    if (isWeb3Route && webMode !== 'web3') {
-      setWebMode('web3');
-    } else if (currentPath.startsWith('/dashboard') && !isWeb3Route && webMode === 'web3') {
-      // Switch back to RWS mode if on a non-web3 dashboard route
+    if (isWeb3Route) {
+      // Redirect to regular dashboard - web3 not in use
+      navigate('/dashboard/home');
+      return;
+    }
+    // Always stay in RWS mode
+    if (webMode !== 'rws') {
       setWebMode('rws');
     }
 
@@ -4303,14 +4308,9 @@ const TokenizedAssetsGlassmorphic = () => {
     // Show loading screen with transition: 1200ms total
     setTimeout(() => {
       setWebMode(mode);
-      // Reset to default page for each mode
-      if (mode === 'web3') {
-        setActiveCategory('chat');
-        navigate('/dashboard/web3');
-      } else {
-        setActiveCategory('chat');
-        navigate('/dashboard');
-      }
+      // Reset to default page - always stay in RWS dashboard
+      setActiveCategory('chat');
+      navigate('/dashboard');
       setTimeout(() => {
         setIsTransitioning(false);
         setTargetMode(null);
@@ -5012,7 +5012,7 @@ const TokenizedAssetsGlassmorphic = () => {
               </div>
             )}
 
-            {/* MOBILE ONLY: Web3.0 Services Section */}
+            {/* MOBILE ONLY: Web3.0 Services Section - Disabled (Web3 not in use)
             {isMobileMenuOpen && user?.user_role !== 'partner' && (
               <div className="mt-4 pt-4 border-t border-gray-200/50">
                 <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2 px-2">Web3.0 Services</p>
@@ -5054,6 +5054,7 @@ const TokenizedAssetsGlassmorphic = () => {
                 })}
               </div>
             )}
+            */}
           </nav>
 
           {/* Sidebar Toggle Button - Above the border line */}
@@ -5080,11 +5081,8 @@ const TokenizedAssetsGlassmorphic = () => {
             <div className={`transition-all duration-300 ${isMobileMenuOpen || sidebarExpanded ? 'px-4' : 'px-2'}`}>
               <button
                 onClick={() => {
-                  if (webMode === 'rws') {
-                    handleWebModeSwitch('web3');
-                  } else {
-                    setActiveCategory('pvcx-token');
-                  }
+                  // Stay in RWS mode - just show PVCX info
+                  setActiveCategory('subscriptions');
                   // Close mobile menu after selection
                   if (isMobileMenuOpen) {
                     setIsMobileMenuOpen(false);
@@ -5093,7 +5091,7 @@ const TokenizedAssetsGlassmorphic = () => {
                 className={`h-10 flex items-center hover:bg-white/5 transition-all duration-300 ${
                   isMobileMenuOpen || sidebarExpanded ? 'w-full rounded-lg justify-start gap-2 px-2 bg-white/10' : 'w-10 rounded-full justify-center'
                 }`}
-                title={webMode === 'rws' ? 'Switch to Web3.0 for $PVCX Token' : '$PVCX Token Balance'}
+                title="$PVCX Token Balance"
               >
                 <img
                   src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/PaymentIcons/Title-removebg-preview.png"
@@ -5168,7 +5166,7 @@ const TokenizedAssetsGlassmorphic = () => {
                 </>
               )}
 
-              {/* COLLAPSIBLE CATEGORY BUTTONS - Web3 mode - NO ICONS */}
+              {/* COLLAPSIBLE CATEGORY BUTTONS - Web3 mode - Disabled (Web3 not in use)
               {!headersCollapsed && webMode === 'web3' && user?.user_role !== 'partner' && (
                 <>
                   {web3CategoryMenu
@@ -5203,6 +5201,7 @@ const TokenizedAssetsGlassmorphic = () => {
                     })}
                 </>
               )}
+              */}
             </div>
 
             {/* RIGHT: Plus Icon + Icons + Switcher */}
