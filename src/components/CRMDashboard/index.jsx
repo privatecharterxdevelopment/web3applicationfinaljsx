@@ -14,6 +14,7 @@ import {
   Coins, ShoppingCart, FileCheck, Crown, RotateCcw, Bell, UserCheck2, User
 } from 'lucide-react';
 import QuoteInvoiceModal from './QuoteInvoiceModal';
+import AdminSupportDashboard from '../LiveSupportChat/AdminSupportDashboard';
 
 // ============================================
 // ADMIN SUPABASE CLIENT - BYPASSES RLS
@@ -820,6 +821,7 @@ const CRMDashboard = ({ onClose }) => {
     { id: 'customers', icon: Users, label: 'Customers', count: sidebarCounts.customers },
     { id: 'activity', icon: Activity, label: 'Customer Activity', count: (sidebarCounts.bookings || 0) + (sidebarCounts.requests || 0) + (sidebarCounts.chatRequests || 0) },
     { id: 'ai-chats', icon: Sparkles, label: 'AI Chats', count: sidebarCounts.aiChats },
+    { id: 'live-support', icon: MessageSquare, label: 'Live Support', count: null },
     { id: 'invoice-generator', icon: FileText, label: 'Invoice Generator', count: null },
     { id: 'support', icon: Ticket, label: 'Support', count: sidebarCounts.support },
     { id: 'transactions', icon: CreditCard, label: 'Transactions', count: sidebarCounts.transactions },
@@ -1044,6 +1046,11 @@ const CRMDashboard = ({ onClose }) => {
           {/* AI Conversations Section - from ai_chat_sessions */}
           {activeSection === 'ai-chats' && (
             <AiChatsSection chats={allAiChats} requests={allChatRequests} refreshing={refreshing} onRefresh={() => { fetchAllAiChats(); fetchAllChatRequests(); }} supabaseAdmin={supabaseAdmin} currentAdminEmail={user?.email} />
+          )}
+
+          {/* Live Support Section */}
+          {activeSection === 'live-support' && (
+            <AdminSupportDashboard />
           )}
 
           {/* Invoice Generator Section */}
