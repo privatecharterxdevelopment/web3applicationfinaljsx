@@ -5,7 +5,7 @@
 User-agent: *
 
 # Allow current active pages
-Allow: /$
+Allow: /home
 Allow: /aviation
 Allow: /flights
 Allow: /flight-tickets
@@ -15,7 +15,9 @@ Allow: /fixed-offers
 Allow: /tokenized
 Allow: /sphera-ai
 Allow: /helpdesk
-Allow: /home
+
+# Block old landing page (dashboard is now homepage)
+Disallow: /$
 
 # Block legal pages from indexing (still accessible, just not indexed)
 Disallow: /terms
