@@ -92,8 +92,9 @@ import TokenizedAssetsMarketplace from '../../pages/TokenizedAssetsMarketplace';
 import TokenizedAssetMarketplaceDetail from '../../pages/TokenizedAssetMarketplaceDetail';
 
 // Import Asset Marketplace (Polymesh) pages
-import AssetMarketplace from '../../pages/AssetMarketplace';
-import AssetMarketplaceDetail from '../../pages/AssetMarketplaceDetail';
+// Asset Marketplace - disabled (no license)
+// import AssetMarketplace from '../../pages/AssetMarketplace';
+// import AssetMarketplaceDetail from '../../pages/AssetMarketplaceDetail';
 
 // Import your complete dashboard
 import TokenizedAssetsGlassmorphic from './tokenized-assets-glassmorphic.jsx';
@@ -386,8 +387,10 @@ function AppContent() {
               <Route path="/book/empty-leg/:id" element={<EmptyLegBooking />} />
 
               {/* Asset Marketplace - Polymesh Tokenized Assets */}
+              {/* Asset Marketplace - disabled (no license)
               <Route path="/marketplace" element={<AssetMarketplace />} />
               <Route path="/marketplace/:ticker" element={<AssetMarketplaceDetail />} />
+              */}
 
               {/* ===== LEGAL PAGES ===== */}
               <Route path="/terms" element={<TermsConditions />} />
