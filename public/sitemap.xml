@@ -3,7 +3,15 @@
   <!-- Homepage - Main landing page -->
   <url>
     <loc>https://privatecharterx.com/</loc>
-    <lastmod>2025-01-14</lastmod>
+    <lastmod>2025-01-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Home Dashboard -->
+  <url>
+    <loc>https://privatecharterx.com/home</loc>
+    <lastmod>2025-01-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -11,7 +19,7 @@
   <!-- Aviation - Charter Services -->
   <url>
     <loc>https://privatecharterx.com/aviation</loc>
-    <lastmod>2025-01-14</lastmod>
+    <lastmod>2025-01-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -19,7 +27,7 @@
   <!-- Commercial Flights -->
   <url>
     <loc>https://privatecharterx.com/flights</loc>
-    <lastmod>2025-01-14</lastmod>
+    <lastmod>2025-01-19</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
@@ -27,7 +35,7 @@
   <!-- Empty Legs - Discounted Private Flights -->
   <url>
     <loc>https://privatecharterx.com/empty-legs</loc>
-    <lastmod>2025-01-14</lastmod>
+    <lastmod>2025-01-19</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
@@ -35,7 +43,7 @@
   <!-- Adventures - Fixed Offer Packages -->
   <url>
     <loc>https://privatecharterx.com/adventures</loc>
-    <lastmod>2025-01-14</lastmod>
+    <lastmod>2025-01-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -43,7 +51,7 @@
   <!-- RWA Tokenization -->
   <url>
     <loc>https://privatecharterx.com/tokenized</loc>
-    <lastmod>2025-01-14</lastmod>
+    <lastmod>2025-01-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -51,7 +59,7 @@
   <!-- Sphera AI - AI Travel Assistant -->
   <url>
     <loc>https://privatecharterx.com/sphera-ai</loc>
-    <lastmod>2025-01-14</lastmod>
+    <lastmod>2025-01-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -59,30 +67,8 @@
   <!-- Helpdesk / Support -->
   <url>
     <loc>https://privatecharterx.com/helpdesk</loc>
-    <lastmod>2025-01-14</lastmod>
+    <lastmod>2025-01-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
-  </url>
-
-  <!-- Legal Pages -->
-  <url>
-    <loc>https://privatecharterx.com/terms</loc>
-    <lastmod>2025-01-14</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-
-  <url>
-    <loc>https://privatecharterx.com/privacy</loc>
-    <lastmod>2025-01-14</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-
-  <url>
-    <loc>https://privatecharterx.com/imprint</loc>
-    <lastmod>2025-01-14</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
   </url>
 </urlset>

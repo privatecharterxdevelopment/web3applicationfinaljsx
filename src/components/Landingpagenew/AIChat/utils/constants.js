@@ -9,6 +9,7 @@ export const MAX_CHATS_ELITE = Infinity;
 
 // Subscription tiers
 export const SUBSCRIPTION_TIERS = {
+  FREE: 'free',
   ESSENTIAL: 'essential',
   EXPLORER: 'explorer',
   TRAVELLER: 'traveller',
@@ -25,6 +26,20 @@ export const TIER_PRICING = {
 
 // Tier limits
 export const TIER_LIMITS = {
+  [SUBSCRIPTION_TIERS.FREE]: {
+    chats: 1,
+    messagesPerChat: 5,
+    breakThePrice: false,
+    unlimitedMessages: false,
+    price: 0,
+    support: 'none',
+    aiModel: 'haiku',
+    features: [
+      'empty_legs',
+      'general_queries',
+      'ground_transport'
+    ]
+  },
   [SUBSCRIPTION_TIERS.ESSENTIAL]: {
     chats: 10,
     messagesPerChat: 5,
@@ -142,6 +157,38 @@ export const hasFeatureAccess = (tier, feature) => {
 // Service keyword to feature mapping for subscription checks
 // Maps user query patterns to required feature codes
 export const SERVICE_FEATURE_MAP = {
+  // Services requiring at least Essential tier (not available for Free)
+  private_jets: {
+    patterns: ['private jet', 'jet charter', 'charter jet', 'book a jet', 'book jet', 'charter a jet', 'reserve a jet', 'jet booking', 'fly private', 'gulfstream', 'citation', 'learjet', 'falcon jet', 'bombardier', 'embraer', 'cessna citation', 'light jet', 'midsize jet', 'heavy jet', 'ultra long range'],
+    feature: 'private_jets',
+    requiredTier: 'essential',
+    displayName: 'Private Jets'
+  },
+  restaurants: {
+    patterns: ['restaurant', 'dinner reservation', 'book a table', 'fine dining'],
+    feature: 'restaurants',
+    requiredTier: 'essential',
+    displayName: 'Restaurant Reservations'
+  },
+  helicopters: {
+    patterns: ['helicopter', 'heli charter', 'chopper', 'rotor'],
+    feature: 'helicopters',
+    requiredTier: 'explorer',
+    displayName: 'Helicopter Services'
+  },
+  yachts: {
+    patterns: ['yacht', 'boat charter', 'sailing', 'cruise'],
+    feature: 'yachts',
+    requiredTier: 'explorer',
+    displayName: 'Yacht Charters'
+  },
+  luxury_cars: {
+    patterns: ['luxury car', 'ferrari', 'lamborghini', 'rolls royce', 'bentley', 'supercar'],
+    feature: 'luxury_cars',
+    requiredTier: 'explorer',
+    displayName: 'Luxury Car Rentals'
+  },
+  // ground_transport is available for FREE tier - no restriction needed
   // Services requiring Traveller or Elite (not in Explorer)
   medevac: {
     patterns: ['medevac', 'medical evacuation', 'medical flight', 'air ambulance', 'emergency medical'],
@@ -208,8 +255,8 @@ export const checkServiceAccess = (message, currentTier) => {
 
     if (matchedPattern) {
       // Check if user has access based on tier
-      const tierHierarchy = { essential: 1, explorer: 2, traveller: 3, elite: 4 };
-      const userTierLevel = tierHierarchy[currentTier] || 0; // 0 = no subscription
+      const tierHierarchy = { free: 0, essential: 1, starter: 1, explorer: 2, traveller: 3, elite: 4 };
+      const userTierLevel = tierHierarchy[currentTier] ?? -1; // -1 = no subscription
       const requiredLevel = tierHierarchy[serviceConfig.requiredTier] || 3;
 
       if (userTierLevel < requiredLevel) {

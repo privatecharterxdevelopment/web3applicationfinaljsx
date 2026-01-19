@@ -1074,6 +1074,22 @@ const AIChatNew = ({
                   {actualMessageCount}/10
                 </span>
               </span>
+            ) : displayTier === 'essential' || displayTier === 'starter' ? (
+              <span className="flex items-center gap-1">
+                <span className="text-gray-600">Essential</span>
+                <span className="text-gray-300">•</span>
+                <span className={`${actualMessageCount >= 5 ? 'text-red-500' : actualMessageCount >= 3 ? 'text-amber-500' : 'text-gray-500'}`}>
+                  {actualMessageCount}/5
+                </span>
+              </span>
+            ) : displayTier === 'free' ? (
+              <span className="flex items-center gap-1">
+                <span className="text-gray-600">Free</span>
+                <span className="text-gray-300">•</span>
+                <span className={`${actualMessageCount >= 5 ? 'text-red-500' : actualMessageCount >= 3 ? 'text-amber-500' : 'text-gray-500'}`}>
+                  {actualMessageCount}/5
+                </span>
+              </span>
             ) : (
               <span className="flex items-center gap-1">
                 <span className="text-gray-500">No Plan</span>

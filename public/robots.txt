@@ -1,6 +1,6 @@
 # robots.txt for PrivateCharterX
 # https://privatecharterx.com
-# Last updated: 2025-01-14
+# Last updated: 2025-01-19
 
 User-agent: *
 
@@ -15,15 +15,18 @@ Allow: /fixed-offers
 Allow: /tokenized
 Allow: /sphera-ai
 Allow: /helpdesk
-Allow: /terms
-Allow: /privacy
-Allow: /imprint
+Allow: /home
+
+# Block legal pages from indexing (still accessible, just not indexed)
+Disallow: /terms
+Disallow: /privacy
+Disallow: /imprint
+Disallow: /impressum
 
 # Block old/dead pages (redirects are in place but block from indexing)
 Disallow: /faq
 Disallow: /faqs
 Disallow: /services
-Disallow: /sphera-ai
 Disallow: /rwa-nft
 Disallow: /partner
 Disallow: /partners

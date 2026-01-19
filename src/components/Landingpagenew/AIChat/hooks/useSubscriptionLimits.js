@@ -105,6 +105,9 @@ export function useSubscriptionLimits({ user, isAdmin }) {
     if (!limits?.tier) return 'No Subscription';
 
     const names = {
+      'free': 'Free',
+      'essential': 'Essential',
+      'starter': 'Essential',
       [SUBSCRIPTION_TIERS.EXPLORER]: 'Explorer',
       [SUBSCRIPTION_TIERS.TRAVELLER]: 'Traveller',
       [SUBSCRIPTION_TIERS.ELITE]: 'Elite Club'
