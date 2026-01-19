@@ -5,7 +5,7 @@
 User-agent: *
 
 # Allow current active pages
-Allow: /home
+Allow: /dashboard/home
 Allow: /aviation
 Allow: /flights
 Allow: /flight-tickets
