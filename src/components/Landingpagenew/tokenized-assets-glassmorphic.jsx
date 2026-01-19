@@ -9663,84 +9663,94 @@ const TokenizedAssetsGlassmorphic = () => {
           {!isTransitioning && activeCategory === 'services' && (
             <div className="w-full flex-1 flex flex-col px-4 md:px-8 max-w-6xl mx-auto">
               {/* Header */}
-              <div className="mb-6">
+              <div className="mb-8">
                 <h1 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tighter mb-2">Services</h1>
-                <p className="text-gray-500 text-sm">Explore our full range of luxury travel services</p>
+                <p className="text-gray-500 text-base">Explore our full range of luxury travel services</p>
               </div>
 
-              {/* Services Grid - Consistent Card Style */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+              {/* Services Grid - Bigger Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
 
                 {/* Commercial Flights - Wide Card */}
-                <div className="col-span-2 group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[240px] flex flex-col">
-                  <div className="relative h-[45%] overflow-hidden cursor-pointer" onClick={() => setActiveCategory('flights')}>
+                <div className="col-span-2 group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[300px] flex flex-col cursor-pointer" onClick={() => setActiveCategory('flights')}>
+                  <div className="relative h-[50%] overflow-hidden">
                     <div
                       className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
                       style={{ backgroundImage: 'url(https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/Whisk_e82354997b9109c97864b1fcd5f56776dr.png)' }}
                     />
                   </div>
-                  <div className="flex-1 p-3 bg-gray-100 flex flex-col">
-                    <h3 className="text-base font-light mb-0.5 tracking-tight">
+                  <div className="flex-1 p-4 bg-gray-100 flex flex-col">
+                    <h3 className="text-lg font-light mb-1 tracking-tight">
                       <span className="text-gray-900">Commercial</span> <span className="text-gray-500">Flights</span>
                     </h3>
-                    <p className="text-[10px] text-gray-600 mb-1">Swiss, Lufthansa & 900+ airlines</p>
-                    <div className="flex gap-1 mb-2">
-                      <span className="bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded text-[8px]">900+ Airlines</span>
-                      <span className="bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded text-[8px]">Crypto Pay</span>
+                    <p className="text-sm text-gray-600 mb-2">Swiss, Lufthansa & 900+ airlines</p>
+                    <div className="flex gap-2 mb-3">
+                      <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs">900+ Airlines</span>
+                      <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs">Crypto Pay</span>
                     </div>
-                    <a href="mailto:bookings@privatecharterx.com" onClick={(e) => e.stopPropagation()} className="mt-auto w-fit px-2.5 py-1 bg-gray-900 rounded-full text-[9px] text-white hover:bg-gray-800 transition-colors">
-                      Get a Quote
-                    </a>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setAiChatQuery('commercial flights'); setActiveCategory('chat'); }}
+                      className="mt-auto w-fit px-4 py-2 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors flex items-center gap-2"
+                    >
+                      <Sparkles size={14} />
+                      Explore by AI
+                    </button>
                   </div>
                 </div>
 
                 {/* Private Jets */}
-                <div className="group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[240px] flex flex-col">
-                  <div className="relative h-[45%] overflow-hidden cursor-pointer" onClick={() => setActiveCategory('jets')}>
+                <div className="group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[300px] flex flex-col cursor-pointer" onClick={() => setActiveCategory('jets')}>
+                  <div className="relative h-[50%] overflow-hidden">
                     <div
                       className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
                       style={{ backgroundImage: 'url(https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/Whisk_a5109b014ee92cba42f48bfebce4fd92eg.png)' }}
                     />
                   </div>
-                  <div className="flex-1 p-3 bg-gray-100 flex flex-col">
-                    <h3 className="text-sm font-light mb-0.5 tracking-tight">
+                  <div className="flex-1 p-4 bg-gray-100 flex flex-col">
+                    <h3 className="text-base font-light mb-1 tracking-tight">
                       <span className="text-gray-900">Private</span> <span className="text-gray-500">Jets</span>
                     </h3>
-                    <p className="text-[10px] text-gray-600 mb-1">16,000+ aircraft worldwide</p>
-                    <span className="bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded text-[8px] w-fit mb-2">24/7 Service</span>
-                    <a href="mailto:bookings@privatecharterx.com" onClick={(e) => e.stopPropagation()} className="mt-auto w-fit px-2.5 py-1 bg-gray-900 rounded-full text-[9px] text-white hover:bg-gray-800 transition-colors">
-                      Get a Quote
-                    </a>
+                    <p className="text-sm text-gray-600 mb-2">16,000+ aircraft worldwide</p>
+                    <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs w-fit mb-3">24/7 Service</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setAiChatQuery('private jet charter'); setActiveCategory('chat'); }}
+                      className="mt-auto w-fit px-4 py-2 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors flex items-center gap-2"
+                    >
+                      <Sparkles size={14} />
+                      Explore by AI
+                    </button>
                   </div>
                 </div>
 
                 {/* Empty Legs */}
-                <div className="group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[240px] flex flex-col">
-                  <div className="relative h-[45%] overflow-hidden cursor-pointer" onClick={() => setActiveCategory('empty-legs')}>
+                <div className="group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[300px] flex flex-col cursor-pointer" onClick={() => setActiveCategory('empty-legs')}>
+                  <div className="relative h-[50%] overflow-hidden">
                     <div
                       className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
                       style={{ backgroundImage: 'url(https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/Whisk_8eaf61762669635badd48e59c304b6c3eg.png)' }}
                     />
                   </div>
-                  <div className="flex-1 p-3 bg-gray-100 flex flex-col">
-                    <h3 className="text-sm font-light mb-0.5 tracking-tight">
+                  <div className="flex-1 p-4 bg-gray-100 flex flex-col">
+                    <h3 className="text-base font-light mb-1 tracking-tight">
                       <span className="text-gray-900">Empty</span> <span className="text-gray-500">Legs</span>
                     </h3>
-                    <p className="text-[10px] text-gray-600 mb-1">Save up to 75% on private jets</p>
-                    <span className="bg-green-500 text-white px-1.5 py-0.5 rounded text-[8px] font-medium w-fit mb-2">Up to 75% Off</span>
-                    <a href="mailto:bookings@privatecharterx.com" onClick={(e) => e.stopPropagation()} className="mt-auto w-fit px-2.5 py-1 bg-gray-900 rounded-full text-[9px] text-white hover:bg-gray-800 transition-colors">
-                      Get a Quote
-                    </a>
+                    <p className="text-sm text-gray-600 mb-2">Save up to 75% on private jets</p>
+                    <span className="bg-green-500 text-white px-2 py-1 rounded text-xs font-medium w-fit mb-3">Up to 75% Off</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setAiChatQuery('empty leg flights'); setActiveCategory('chat'); }}
+                      className="mt-auto w-fit px-4 py-2 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors flex items-center gap-2"
+                    >
+                      <Sparkles size={14} />
+                      Explore by AI
+                    </button>
                   </div>
                 </div>
 
                 {/* Yachts - with video */}
-                <div className="group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[240px] flex flex-col">
-                  <div className="relative h-[45%] overflow-hidden cursor-pointer" onClick={() => {
+                <div className="group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[300px] flex flex-col">
+                  <div className="relative h-[50%] overflow-hidden cursor-pointer" onClick={() => {
+                    setAiChatQuery('yacht charter');
                     setActiveCategory('chat');
-                    setTimeout(() => {
-                      window.history.pushState({}, '', '/dashboard/chat?query=yacht+charter&newChat=true');
-                    }, 100);
                   }}>
                     <video
                       autoPlay
@@ -9752,132 +9762,147 @@ const TokenizedAssetsGlassmorphic = () => {
                       <source src="https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/4920651-uhd_4096_2160_25fps.mp4" type="video/mp4" />
                     </video>
                   </div>
-                  <div className="flex-1 p-3 bg-gray-100 flex flex-col">
-                    <h3 className="text-sm font-light mb-0.5 tracking-tight">
+                  <div className="flex-1 p-4 bg-gray-100 flex flex-col">
+                    <h3 className="text-base font-light mb-1 tracking-tight">
                       <span className="text-gray-900">Yacht</span> <span className="text-gray-500">Charter</span>
                     </h3>
-                    <p className="text-[10px] text-gray-600 mb-1">Luxury yachts & sailing worldwide</p>
-                    <span className="bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded text-[8px] w-fit mb-2">Mediterranean</span>
-                    <a href="mailto:bookings@privatecharterx.com" onClick={(e) => e.stopPropagation()} className="mt-auto w-fit px-2.5 py-1 bg-gray-900 rounded-full text-[9px] text-white hover:bg-gray-800 transition-colors">
-                      Get a Quote
-                    </a>
+                    <p className="text-sm text-gray-600 mb-2">Luxury yachts worldwide</p>
+                    <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs w-fit mb-3">Mediterranean</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setAiChatQuery('yacht charter'); setActiveCategory('chat'); }}
+                      className="mt-auto w-fit px-4 py-2 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors flex items-center gap-2"
+                    >
+                      <Sparkles size={14} />
+                      Explore by AI
+                    </button>
                   </div>
                 </div>
 
                 {/* Ground Transport */}
-                <div className="group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[240px] flex flex-col">
-                  <div className="relative h-[45%] overflow-hidden cursor-pointer" onClick={() => setActiveCategory('ground-transport')}>
+                <div className="group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[300px] flex flex-col cursor-pointer" onClick={() => setActiveCategory('ground-transport')}>
+                  <div className="relative h-[50%] overflow-hidden">
                     <div
                       className="absolute inset-0 bg-cover transition-transform duration-700 group-hover:scale-110"
                       style={{ backgroundImage: 'url(https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/Whisk_60417b0dd969afb83c44f8733d7156eaeg.png)', backgroundPosition: 'center -20px', backgroundSize: '110%' }}
                     />
                   </div>
-                  <div className="flex-1 p-3 bg-gray-100 flex flex-col">
-                    <h3 className="text-sm font-light mb-0.5 tracking-tight">
+                  <div className="flex-1 p-4 bg-gray-100 flex flex-col">
+                    <h3 className="text-base font-light mb-1 tracking-tight">
                       <span className="text-gray-900">Ground</span> <span className="text-gray-500">Transport</span>
                     </h3>
-                    <p className="text-[10px] text-gray-600 mb-1">Chauffeur & airport transfers</p>
-                    <span className="bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded text-[8px] w-fit mb-2">24/7</span>
-                    <a href="mailto:bookings@privatecharterx.com" onClick={(e) => e.stopPropagation()} className="mt-auto w-fit px-2.5 py-1 bg-gray-900 rounded-full text-[9px] text-white hover:bg-gray-800 transition-colors">
-                      Get a Quote
-                    </a>
+                    <p className="text-sm text-gray-600 mb-2">Chauffeur & airport transfers</p>
+                    <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs w-fit mb-3">24/7</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setAiChatQuery('airport transfer'); setActiveCategory('chat'); }}
+                      className="mt-auto w-fit px-4 py-2 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors flex items-center gap-2"
+                    >
+                      <Sparkles size={14} />
+                      Explore by AI
+                    </button>
                   </div>
                 </div>
 
-                {/* Adventures - Wide Card */}
-                <div className="col-span-2 group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[240px] flex flex-col">
-                  <div className="relative h-[45%] overflow-hidden cursor-pointer" onClick={() => setActiveCategory('adventures')}>
+                {/* Adventures - Wide Card - NO AI button */}
+                <div className="col-span-2 group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[300px] flex flex-col cursor-pointer" onClick={() => setActiveCategory('adventures')}>
+                  <div className="relative h-[50%] overflow-hidden">
                     <div
                       className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
                       style={{ backgroundImage: 'url(https://auth.privatecharterx.com/storage/v1/object/sign/moreVideos/Whisk_7da17c1fb12a69698224a40c29f3815feg.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zL1doaXNrXzdkYTE3YzFmYjEyYTY5Njk4MjI0YTQwYzI5ZjM4MTVmZWcucG5nIiwiaWF0IjoxNzY4NzcxMTkwLCJleHAiOjE4MDAzMDcxOTB9.wtWrpjsjr2AcFpiuYGNLdGSuuJMsdvVeLERPZN2Nz7c)' }}
                     />
                   </div>
-                  <div className="flex-1 p-3 bg-gray-100 flex flex-col">
-                    <h3 className="text-base font-light mb-0.5 tracking-tight">
+                  <div className="flex-1 p-4 bg-gray-100 flex flex-col">
+                    <h3 className="text-lg font-light mb-1 tracking-tight">
                       <span className="text-gray-900">Adventure</span> <span className="text-gray-500">Packages</span>
                     </h3>
-                    <p className="text-[10px] text-gray-600 mb-1">Curated luxury experiences worldwide</p>
-                    <div className="flex gap-1 mb-2">
-                      <span className="bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded text-[8px]">All-Inclusive</span>
-                      <span className="bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded text-[8px]">Curated</span>
+                    <p className="text-sm text-gray-600 mb-2">Curated luxury experiences worldwide</p>
+                    <div className="flex gap-2 mb-3">
+                      <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs">All-Inclusive</span>
+                      <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs">Curated</span>
                     </div>
-                    <a href="mailto:bookings@privatecharterx.com" onClick={(e) => e.stopPropagation()} className="mt-auto w-fit px-2.5 py-1 bg-gray-900 rounded-full text-[9px] text-white hover:bg-gray-800 transition-colors">
-                      Get a Quote
-                    </a>
+                    <span className="mt-auto text-sm text-gray-500">Click to explore packages →</span>
                   </div>
                 </div>
 
-                {/* Helicopters - SWAPPED with Concierge */}
-                <div className="group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[240px] flex flex-col">
-                  <div className="relative h-[45%] overflow-hidden cursor-pointer" onClick={() => setActiveCategory('helicopter')}>
+                {/* Helicopters */}
+                <div className="group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[300px] flex flex-col cursor-pointer" onClick={() => setActiveCategory('helicopter')}>
+                  <div className="relative h-[50%] overflow-hidden">
                     <div
                       className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
                       style={{ backgroundImage: 'url(https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/Whisk_bf9f83710232184b8f94a95270a5a4beeg.png)' }}
                     />
                   </div>
-                  <div className="flex-1 p-3 bg-gray-100 flex flex-col">
-                    <h3 className="text-sm font-light mb-0.5 tracking-tight">
+                  <div className="flex-1 p-4 bg-gray-100 flex flex-col">
+                    <h3 className="text-base font-light mb-1 tracking-tight">
                       <span className="text-gray-900">Heli</span><span className="text-gray-500">copters</span>
                     </h3>
-                    <p className="text-[10px] text-gray-600 mb-1">City transfers & scenic tours</p>
-                    <span className="bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded text-[8px] w-fit mb-2">Short Range</span>
-                    <a href="mailto:bookings@privatecharterx.com" onClick={(e) => e.stopPropagation()} className="mt-auto w-fit px-2.5 py-1 bg-gray-900 rounded-full text-[9px] text-white hover:bg-gray-800 transition-colors">
-                      Get a Quote
-                    </a>
+                    <p className="text-sm text-gray-600 mb-2">City transfers & scenic tours</p>
+                    <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs w-fit mb-3">Short Range</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setAiChatQuery('helicopter charter'); setActiveCategory('chat'); }}
+                      className="mt-auto w-fit px-4 py-2 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors flex items-center gap-2"
+                    >
+                      <Sparkles size={14} />
+                      Explore by AI
+                    </button>
                   </div>
                 </div>
 
                 {/* NFT Membership */}
-                <div className="group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[240px] flex flex-col">
-                  <div className="relative h-[45%] overflow-hidden cursor-pointer" onClick={() => setActiveCategory('nft-membership')}>
+                <div className="group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[300px] flex flex-col cursor-pointer" onClick={() => setActiveCategory('nft-membership')}>
+                  <div className="relative h-[50%] overflow-hidden">
                     <div
                       className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
                       style={{ backgroundImage: 'url(https://auth.privatecharterx.com/storage/v1/object/public/logos/Whisk_iwzzu2nzizyzmmn50szjzgotutn1qtllfwnh1so.png)' }}
                     />
                   </div>
-                  <div className="flex-1 p-3 bg-gray-100 flex flex-col">
-                    <h3 className="text-sm font-light mb-0.5 tracking-tight">
+                  <div className="flex-1 p-4 bg-gray-100 flex flex-col">
+                    <h3 className="text-base font-light mb-1 tracking-tight">
                       <span className="text-gray-900">NFT</span> <span className="text-gray-500">Membership</span>
                     </h3>
-                    <p className="text-[10px] text-gray-600 mb-1">Exclusive benefits & rewards</p>
-                    <div className="flex gap-1 mb-2">
-                      <span className="bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded text-[8px]">10% Off</span>
-                      <span className="bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded text-[8px]">Free Empty Leg</span>
+                    <p className="text-sm text-gray-600 mb-2">Exclusive benefits & rewards</p>
+                    <div className="flex gap-2 mb-3">
+                      <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs">10% Off</span>
+                      <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs">Free Empty Leg</span>
                     </div>
-                    <a href="mailto:bookings@privatecharterx.com" onClick={(e) => e.stopPropagation()} className="mt-auto w-fit px-2.5 py-1 bg-gray-900 rounded-full text-[9px] text-white hover:bg-gray-800 transition-colors">
-                      Get a Quote
-                    </a>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setAiChatQuery('NFT membership benefits'); setActiveCategory('chat'); }}
+                      className="mt-auto w-fit px-4 py-2 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors flex items-center gap-2"
+                    >
+                      <Sparkles size={14} />
+                      Explore by AI
+                    </button>
                   </div>
                 </div>
 
-                {/* MEDEVAC */}
-                <div className="group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[240px] flex flex-col">
-                  <div className="relative h-[45%] overflow-hidden cursor-pointer" onClick={() => {
+                {/* MEDEVAC - Keep Get a Quote */}
+                <div className="group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[300px] flex flex-col">
+                  <div className="relative h-[50%] overflow-hidden cursor-pointer" onClick={() => {
+                    setAiChatQuery('medevac medical evacuation');
                     setActiveCategory('chat');
-                    setTimeout(() => {
-                      window.history.pushState({}, '', '/dashboard/chat?query=medevac&newChat=true');
-                    }, 100);
                   }}>
                     <div
                       className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
                       style={{ backgroundImage: 'url(https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/Whisk_298998b167301be944d4ff7fb3bc74e5eg.png)' }}
                     />
                   </div>
-                  <div className="flex-1 p-3 bg-gray-100 flex flex-col">
-                    <h3 className="text-sm font-light mb-0.5 tracking-tight">
+                  <div className="flex-1 p-4 bg-gray-100 flex flex-col">
+                    <h3 className="text-base font-light mb-1 tracking-tight">
                       <span className="text-gray-900">MED</span><span className="text-gray-500">EVAC</span>
                     </h3>
-                    <p className="text-[10px] text-gray-600 mb-1">Medical evacuation & air ambulance</p>
-                    <span className="bg-red-500 text-white px-1.5 py-0.5 rounded text-[8px] font-medium w-fit mb-2">24/7 Emergency</span>
-                    <a href="mailto:bookings@privatecharterx.com" onClick={(e) => e.stopPropagation()} className="mt-auto w-fit px-2.5 py-1 bg-gray-900 rounded-full text-[9px] text-white hover:bg-gray-800 transition-colors">
+                    <p className="text-sm text-gray-600 mb-2">Medical evacuation & air ambulance</p>
+                    <span className="bg-red-500 text-white px-2 py-1 rounded text-xs font-medium w-fit mb-3">24/7 Emergency</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setAiChatQuery('medevac medical evacuation'); setActiveCategory('chat'); }}
+                      className="mt-auto w-fit px-4 py-2 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors"
+                    >
                       Get a Quote
-                    </a>
+                    </button>
                   </div>
                 </div>
 
-                {/* Concierge - with video - SWAPPED with Helicopters */}
-                <div className="group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[240px] flex flex-col">
-                  <div className="relative h-[45%] overflow-hidden cursor-pointer" onClick={() => setActiveCategory('concierge')}>
+                {/* Concierge - with video */}
+                <div className="group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[300px] flex flex-col cursor-pointer" onClick={() => setActiveCategory('concierge')}>
+                  <div className="relative h-[50%] overflow-hidden">
                     <video
                       autoPlay
                       loop
@@ -9888,46 +9913,52 @@ const TokenizedAssetsGlassmorphic = () => {
                       <source src="https://auth.privatecharterx.com/storage/v1/object/sign/moreVideos/9519379-uhd_4096_2160_25fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzk1MTkzNzktdWhkXzQwOTZfMjE2MF8yNWZwcy5tcDQiLCJpYXQiOjE3Njg3NjQ1MTMsImV4cCI6Njg2MDAzODIyNjIxMTN9.McSTtByO71Gqk7WP54ONfI5n-5QNvHAoMqBVJ8Z6N9Q" type="video/mp4" />
                     </video>
                   </div>
-                  <div className="flex-1 p-3 bg-gray-100 flex flex-col">
-                    <h3 className="text-sm font-light mb-0.5 tracking-tight">
+                  <div className="flex-1 p-4 bg-gray-100 flex flex-col">
+                    <h3 className="text-base font-light mb-1 tracking-tight">
                       <span className="text-gray-900">Con</span><span className="text-gray-500">cierge</span>
                     </h3>
-                    <p className="text-[10px] text-gray-600 mb-1">24/7 personal assistance</p>
-                    <span className="bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded text-[8px] w-fit mb-2">VIP Service</span>
-                    <a href="mailto:bookings@privatecharterx.com" onClick={(e) => e.stopPropagation()} className="mt-auto w-fit px-2.5 py-1 bg-gray-900 rounded-full text-[9px] text-white hover:bg-gray-800 transition-colors">
-                      Get a Quote
-                    </a>
+                    <p className="text-sm text-gray-600 mb-2">24/7 personal assistance</p>
+                    <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs w-fit mb-3">VIP Service</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setAiChatQuery('concierge service'); setActiveCategory('chat'); }}
+                      className="mt-auto w-fit px-4 py-2 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors flex items-center gap-2"
+                    >
+                      <Sparkles size={14} />
+                      Explore by AI
+                    </button>
                   </div>
                 </div>
 
                 {/* Group Charter - Full Width Horizontal Card */}
-                <div className="col-span-2 lg:col-span-4 group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[180px] flex">
+                <div className="col-span-2 lg:col-span-4 group rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-500 bg-gray-100 border border-gray-200 h-[200px] flex">
                   <div className="relative w-2/5 overflow-hidden cursor-pointer" onClick={() => {
+                    setAiChatQuery('group charter');
                     setActiveCategory('chat');
-                    setTimeout(() => {
-                      window.history.pushState({}, '', '/dashboard/chat?query=group+charter&newChat=true');
-                    }, 100);
                   }}>
                     <div
                       className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
                       style={{ backgroundImage: 'url(https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/Whisk_a03676b0c23fce485f841fbe26bcc9ffeg%20%281%29.png)' }}
                     />
                   </div>
-                  <div className="flex-1 p-4 bg-gray-100 flex flex-col justify-center">
-                    <h3 className="text-lg font-light mb-0.5 tracking-tight">
+                  <div className="flex-1 p-5 bg-gray-100 flex flex-col justify-center">
+                    <h3 className="text-xl font-light mb-1 tracking-tight">
                       <span className="text-gray-900">Group</span> <span className="text-gray-500">Charter</span>
                     </h3>
-                    <p className="text-[10px] text-gray-600 mb-2 max-w-md">
+                    <p className="text-sm text-gray-600 mb-3 max-w-md">
                       Tailored solutions for corporate events, sports teams, and large groups.
                     </p>
-                    <div className="flex gap-1 mb-2">
-                      <span className="bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded text-[8px]">10+ Passengers</span>
-                      <span className="bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded text-[8px]">Corporate</span>
-                      <span className="bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded text-[8px]">Events</span>
+                    <div className="flex gap-2 mb-3">
+                      <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs">10+ Passengers</span>
+                      <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs">Corporate</span>
+                      <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs">Events</span>
                     </div>
-                    <a href="mailto:bookings@privatecharterx.com" onClick={(e) => e.stopPropagation()} className="w-fit px-2.5 py-1 bg-gray-900 rounded-full text-[9px] text-white hover:bg-gray-800 transition-colors">
-                      Get a Quote
-                    </a>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setAiChatQuery('group charter'); setActiveCategory('chat'); }}
+                      className="w-fit px-4 py-2 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors flex items-center gap-2"
+                    >
+                      <Sparkles size={14} />
+                      Explore by AI
+                    </button>
                   </div>
                 </div>
 
