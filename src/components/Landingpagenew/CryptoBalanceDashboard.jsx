@@ -64,6 +64,8 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
   const [sendingSupport, setSendingSupport] = useState(false);
   const [supportSent, setSupportSent] = useState(false);
   const [supportTickets, setSupportTickets] = useState([]);
+  const [liveSupportChats, setLiveSupportChats] = useState([]);
+  const [loadingLiveChats, setLoadingLiveChats] = useState(false);
 
   // State for Edit Profile modal
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -149,6 +151,7 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
       fetchUserRequests();
       fetchWalletSignatures();
       fetchSupportTickets();
+      fetchLiveSupportChats();
       fetchInvestments();
       fetchNFTCount();
       fetchPVCXData();
@@ -606,6 +609,30 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
       }
     } catch (error) {
       console.error('Error fetching support tickets:', error);
+    }
+  };
+
+  // Fetch live support chat history
+  const fetchLiveSupportChats = async () => {
+    if (!user?.id) return;
+    setLoadingLiveChats(true);
+    try {
+      const { data, error } = await supabase
+        .from('live_support_chats')
+        .select(`
+          *,
+          live_support_messages(*)
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setLiveSupportChats(data);
+      }
+    } catch (error) {
+      console.error('Error fetching live support chats:', error);
+    } finally {
+      setLoadingLiveChats(false);
     }
   };
 
@@ -1637,6 +1664,75 @@ export default function CryptoBalanceDashboard({ setActiveCategory, onLogout }) 
                     </>
                   ) : (
                     <p className="text-xs text-gray-500 text-center py-2">No tickets yet</p>
+                  )}
+
+                  {/* Live Support Chat History */}
+                  {liveSupportChats.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-gray-200/30">
+                      <p className="text-xs text-gray-500 font-medium mb-2">Live Chat History</p>
+                      {loadingLiveChats ? (
+                        <div className="flex items-center justify-center py-4">
+                          <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                        </div>
+                      ) : (
+                        <>
+                          {liveSupportChats.slice(0, 5).map((chat) => {
+                            const statusColors = {
+                              open: 'bg-green-100 text-green-700',
+                              closed: 'bg-gray-100 text-gray-700'
+                            };
+                            const messageCount = chat.live_support_messages?.length || 0;
+                            const lastMessage = chat.live_support_messages?.[chat.live_support_messages.length - 1];
+
+                            return (
+                              <div key={chat.id} className="py-3 px-3 bg-white/5 rounded-lg border border-gray-200/30 mb-2">
+                                {/* Header with Status */}
+                                <div className="flex justify-between items-start mb-2">
+                                  <div className="flex-1 pr-2">
+                                    <p className="text-sm font-medium text-gray-900 line-clamp-1">
+                                      Live Chat #{chat.id.slice(0, 8)}
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                      {messageCount} message{messageCount !== 1 ? 's' : ''}
+                                    </p>
+                                  </div>
+                                  <span className={`px-2 py-0.5 text-xs rounded-full capitalize ${statusColors[chat.status] || statusColors.open}`}>
+                                    {chat.status || 'open'}
+                                  </span>
+                                </div>
+
+                                {/* Last Message Preview */}
+                                {lastMessage && (
+                                  <p className="text-xs text-gray-600 line-clamp-2 mb-2">
+                                    {lastMessage.is_admin ? '🛡️ Admin: ' : 'You: '}
+                                    {lastMessage.message}
+                                  </p>
+                                )}
+
+                                {/* Date */}
+                                <div className="flex items-center gap-1 text-xs text-gray-400">
+                                  <Clock className="w-3 h-3" />
+                                  <span>
+                                    {new Date(chat.updated_at || chat.created_at).toLocaleDateString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {liveSupportChats.length > 5 && (
+                            <p className="text-xs text-gray-400 text-center py-2">
+                              +{liveSupportChats.length - 5} more chats
+                            </p>
+                          )}
+                        </>
+                      )}
+                    </div>
                   )}
 
                   {/* Contact Support Button - Always visible at bottom */}

@@ -13,6 +13,7 @@ interface AdventureBookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   adventure: FixedOffer;
+  onShowLoginModal?: () => void;
 }
 
 type BookingStep = 'details' | 'dates' | 'guests' | 'payment' | 'success';
@@ -21,6 +22,7 @@ export default function AdventureBookingModal({
   isOpen,
   onClose,
   adventure,
+  onShowLoginModal,
 }: AdventureBookingModalProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -46,15 +48,25 @@ export default function AdventureBookingModal({
 
   const handleBookNow = () => {
     if (!user) {
-      setShowLoginPrompt(true);
+      if (onShowLoginModal) {
+        onShowLoginModal();
+        onClose();
+      } else {
+        setShowLoginPrompt(true);
+      }
       return;
     }
     setStep('dates');
   };
 
   const handleLoginRedirect = () => {
-    onClose();
-    navigate('/login', { state: { returnTo: window.location.pathname } });
+    if (onShowLoginModal) {
+      onShowLoginModal();
+      onClose();
+    } else {
+      onClose();
+      navigate('/login', { state: { returnTo: window.location.pathname } });
+    }
   };
 
   useEffect(() => {

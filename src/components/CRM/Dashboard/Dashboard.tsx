@@ -33,6 +33,7 @@ import {
 import { supabaseAdmin } from '../../../lib/supabaseAdmin';
 import { useAuth } from '../../../contexts/CRM/AuthContext';
 import { useNotification } from '../../../contexts/CRM/NotificationContext';
+import AdminSupportDashboard from '../../LiveSupportChat/AdminSupportDashboard';
 
 interface DashboardMetric {
   id: string;
@@ -709,7 +710,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab: externalActiveT
              currentView === 'emptylegs' ? 'Empty Legs' :
              currentView === 'subscriptions' ? 'Subscriptions' :
              currentView === 'kyc' ? 'KYC Verification' :
-             currentView === 'tokenization' ? 'Tokenization Requests' : 'Dashboard'}
+             currentView === 'tokenization' ? 'Tokenization Requests' :
+             currentView === 'live-support' ? 'Live Support' : 'Dashboard'}
           </h2>
           {currentView === 'requests' && (
             <p className="text-sm text-gray-400 mt-0.5">Jets, Helicopters, Yachts, Cars, Adventures</p>
@@ -1566,6 +1568,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab: externalActiveT
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Live Support Tab - Admin Support Dashboard */}
+      {currentView === 'live-support' && (
+        <div className="bg-white rounded-xl border border-gray-100 p-0 overflow-hidden">
+          <AdminSupportDashboard />
         </div>
       )}
 

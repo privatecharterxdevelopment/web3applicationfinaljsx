@@ -1876,6 +1876,16 @@ export const SUSTAINABILITY = {
 
 // Subscription tier feature definitions
 const TIER_FEATURES = {
+  free: {
+    name: 'Free',
+    price: 0,
+    chatsPerMonth: 1,
+    messagesPerChat: 5,
+    aiModel: 'Haiku (Fast)',
+    features: ['empty_legs', 'general_queries', 'ground_transport'],
+    restricted: ['private_jets_booking', 'private_jets_search', 'restaurants', 'helicopters', 'yachts', 'luxury_cars', 'adventures', 'concierge', 'medevac', 'group_charter', 'vip_events', 'airport_transfers', 'membershipx_card', 'break_the_price', 'delicacies', 'cigars', 'winery', 'catering'],
+    upgradeMessage: '🔒 This feature requires a subscription. Upgrade to Essential ($19/mo) for more features.'
+  },
   essential: {
     name: 'Essential Basic',
     price: 19,
@@ -1930,6 +1940,42 @@ SUBSCRIPTION PLANS OVERVIEW (when asked):
 EXPRESS VISA SERVICE: $250/person (available to Explorer and above)
 - 24-hour guaranteed processing for 95% of countries
 - Full documentation handling by verified agent network`;
+  }
+
+  // Special handling for Free tier
+  if (userTier.toLowerCase() === 'free') {
+    return `Current user subscription: FREE TIER (1 chat/month, 5 messages)
+USAGE LIMITS: 1 chat/month, 5 messages/chat
+AI MODEL: Haiku (Fast responses)
+
+ACCESSIBLE FEATURES for Free tier:
+- Empty legs search and booking ✅
+- Ground transport / Airport transfers ✅
+- General service queries and information ✅
+
+RESTRICTED FEATURES (require upgrade to Essential $19/mo or higher):
+- Private jet search and booking
+- Restaurant search
+- Helicopter charters
+- Yacht charters
+- Luxury cars
+- Adventures
+- Concierge services
+- MEDEVAC
+- Wine/cigars/delicacies
+- VIP events
+
+⚠️ FREE TIER ENFORCEMENT - CRITICAL:
+When a Free tier user tries to request any restricted feature:
+1. Respond with: "🔒 This feature requires a subscription. Upgrade to Essential ($19/mo) for empty legs + jet search, or Explorer ($99/mo) for full access. [UPGRADE_BUTTON]"
+
+For ALLOWED features (empty legs, ground transport, general queries), proceed normally without mentioning upgrade.
+
+SUBSCRIPTION UPGRADE OPTIONS:
+• Essential Basic ($19/mo): 10 chats/month, 5 messages/chat, Empty legs, Restaurant search, Private jet search
+• Explorer ($99/mo): Full jet/heli booking, Ground transport, 5 chats/month, 10 messages/chat
+• Traveller ($199/mo): + MEDEVAC, Concierge, Break the Price, 10 chats, 25 messages
+• Elite Club ($999/mo): Unlimited everything, VIP benefits`;
   }
 
   // Special handling for Essential tier

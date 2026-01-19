@@ -3089,15 +3089,29 @@ As their luxury travel consultant, provide an enthusiastic response that:
     // MESSAGE LIMIT CHECK - Enforce per-chat message limits based on subscription tier
     if (!isAdmin && activeChat !== 'new' && existingChat) {
       const currentMsgCount = existingChat.messages?.filter(m => m.role === 'user').length || 0;
-      const tierMessageLimit = userProfile?.subscription_tier === 'elite' ? Infinity :
-                               userProfile?.subscription_tier === 'traveller' ? 25 : 10;
+      const currentTier = userProfile?.subscription_tier;
+      const tierMessageLimit = currentTier === 'elite' ? Infinity :
+                               currentTier === 'traveller' ? 25 :
+                               currentTier === 'explorer' ? 10 :
+                               currentTier === 'essential' || currentTier === 'starter' ? 5 :
+                               currentTier === 'free' ? 5 : 5; // Default to 5 for free/unknown
 
       if (currentMsgCount >= tierMessageLimit) {
         setMessageLimitReached(true);
-        // Add message explaining the limit
+        // Add message explaining the limit with tier-specific upgrade options
+        let upgradeMessage = '';
+        if (currentTier === 'free') {
+          upgradeMessage = 'Upgrade to Essential ($19/mo) for 10 chats/month, or Explorer ($99/mo) for more features.';
+        } else if (currentTier === 'essential' || currentTier === 'starter') {
+          upgradeMessage = 'Upgrade to Explorer ($99/mo) for 10 messages/chat, or Traveller ($199/mo) for 25 messages/chat.';
+        } else if (currentTier === 'explorer') {
+          upgradeMessage = 'Upgrade to Traveller for 25 messages per chat, or Elite for unlimited messages.';
+        } else {
+          upgradeMessage = 'Upgrade to Elite for unlimited messages per chat.';
+        }
         const limitMessage = {
           role: 'assistant',
-          content: `You've reached the message limit for this chat (${tierMessageLimit} messages).\n\n${userProfile?.subscription_tier === 'explorer' ? 'Upgrade to Traveller for 25 messages per chat, or Elite for unlimited messages.' : 'Upgrade to Elite for unlimited messages per chat.'}`
+          content: `You've reached the message limit for this chat (${tierMessageLimit} messages).\n\n${upgradeMessage}`
         };
         setChatHistory(prev => prev.map(c =>
           c.id === activeChat
@@ -4999,18 +5013,26 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
   // Get tier limits for message tracking
   const getTierMessageLimit = () => {
-    if (!userProfile?.subscription_tier) return 0;
-    if (userProfile.subscription_tier === 'elite') return Infinity;
-    if (userProfile.subscription_tier === 'traveller') return 25;
-    return 10; // explorer
+    const tier = userProfile?.subscription_tier;
+    if (!tier) return 0;
+    if (tier === 'elite') return Infinity;
+    if (tier === 'traveller') return 25;
+    if (tier === 'explorer') return 10;
+    if (tier === 'essential' || tier === 'starter') return 5;
+    if (tier === 'free') return 5;
+    return 5; // default
   };
 
   // Get tier chat limit
   const getTierChatLimit = () => {
-    if (!userProfile?.subscription_tier) return 0;
-    if (userProfile.subscription_tier === 'elite') return Infinity;
-    if (userProfile.subscription_tier === 'traveller') return 10;
-    return 5; // explorer
+    const tier = userProfile?.subscription_tier;
+    if (!tier) return 0;
+    if (tier === 'elite') return Infinity;
+    if (tier === 'traveller') return 10;
+    if (tier === 'explorer') return 5;
+    if (tier === 'essential' || tier === 'starter') return 10;
+    if (tier === 'free') return 1;
+    return 1; // default
   };
 
   // Get user's tier features
@@ -5018,13 +5040,18 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
     const tier = userProfile?.subscription_tier;
     if (!tier) return [];
 
-    const explorerFeatures = ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'catering', 'custom_travel_org'];
+    const freeFeatures = ['empty_legs', 'general_queries', 'ground_transport'];
+    const essentialFeatures = ['empty_legs', 'restaurants', 'private_jets_search', 'general_queries', 'ground_transport'];
+    const explorerFeatures = ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'catering', 'custom_travel_org', 'private_jets', 'helicopters'];
     const travellerFeatures = [...explorerFeatures, 'medevac', 'concierge', 'group_charter', 'reservations', 'event_booking', 'break_the_price'];
     const eliteFeatures = [...travellerFeatures, 'vip_catering', 'airport_transfers', 'membershipx_card', 'vip_events'];
 
     if (tier === 'elite') return eliteFeatures;
     if (tier === 'traveller') return travellerFeatures;
-    return explorerFeatures;
+    if (tier === 'explorer') return explorerFeatures;
+    if (tier === 'essential' || tier === 'starter') return essentialFeatures;
+    if (tier === 'free') return freeFeatures;
+    return freeFeatures; // default to free features
   };
 
   // Check if user has access to a specific feature
@@ -5056,12 +5083,13 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
     console.log('🎨 Rendering: NEW CHAT VIEW (welcome with suggestions)', { activeChat, chatHistoryLength: chatHistory.length });
 
     // Quick suggestion bubbles - small, blurred, monochromatic
-    // Essential tier ($19) only has: empty legs, restaurant search, jet search (no booking), general queries
+    // Free tier: empty legs, ground transport, general queries
+    // Essential tier ($19): + restaurant search, jet search (no booking)
     const quickSuggestions = [
-      { id: 'emptylegs', label: 'Empty Legs', prompt: 'I want to find empty leg flights', isRouteQuery: true }, // Available to all
-      { id: 'restaurants', label: 'Restaurants', prompt: 'Find me a luxury restaurant' }, // Available to all
-      { id: 'jets', label: 'Private Jets', prompt: 'I need to search for private jets', essentialAllowed: true }, // Essential can search only
-      { id: 'transfer', label: 'Airport Transfer', prompt: 'I need an airport transfer', requiresSubscription: ['explorer', 'traveller', 'elite', 'professional'] },
+      { id: 'emptylegs', label: 'Empty Legs', prompt: 'I want to find empty leg flights', isRouteQuery: true }, // Available to all including free
+      { id: 'transfer', label: 'Airport Transfer', prompt: 'I need an airport transfer' }, // Available to all including free
+      { id: 'jets', label: 'Private Jets', prompt: 'I need to search for private jets', requiresSubscription: ['essential', 'starter', 'explorer', 'traveller', 'elite', 'professional'] }, // Requires at least Essential
+      { id: 'restaurants', label: 'Restaurants', prompt: 'Find me a luxury restaurant', requiresSubscription: ['essential', 'starter', 'explorer', 'traveller', 'elite', 'professional'] }, // Requires at least Essential
       { id: 'helicopter', label: 'Helicopters', prompt: 'I need a helicopter charter', requiresSubscription: ['explorer', 'traveller', 'elite', 'professional'] },
       { id: 'sommelier', label: 'Sommelier', prompt: 'I would like wine recommendations', requiresSubscription: ['explorer', 'traveller', 'elite', 'professional'] },
       { id: 'concierge', label: 'Concierge', prompt: 'I need concierge services', requiresSubscription: ['traveller', 'elite', 'professional'] },
@@ -5145,7 +5173,13 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       // No subscription - all premium features locked
                       isLocked = suggestion.requiresSubscription ? true : false;
                       lockMessage = `${suggestion.label} requires a subscription. Subscribe to access this service.`;
-                    } else if (userTier === 'essential') {
+                    } else if (userTier === 'free') {
+                      // Free tier - only empty legs and general queries allowed
+                      if (suggestion.requiresSubscription) {
+                        isLocked = true;
+                        lockMessage = `${suggestion.label} requires Essential ($19/mo) or higher. Upgrade to access this service.`;
+                      }
+                    } else if (userTier === 'essential' || userTier === 'starter') {
                       // Essential tier - only empty legs, restaurants, jet search allowed
                       if (suggestion.requiresSubscription && !suggestion.requiresSubscription.includes('essential')) {
                         isLocked = true;
@@ -5405,6 +5439,22 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                       <span className="text-gray-300">•</span>
                       <span className={`${messageCount >= 8 ? 'text-red-500' : messageCount >= 5 ? 'text-amber-500' : 'text-gray-500'}`}>
                         {messageCount}/10
+                      </span>
+                    </span>
+                  ) : displayTier === 'essential' || displayTier === 'starter' ? (
+                    <span className="flex items-center gap-1">
+                      <span className="text-gray-600">Essential</span>
+                      <span className="text-gray-300">•</span>
+                      <span className={`${messageCount >= 4 ? 'text-red-500' : messageCount >= 3 ? 'text-amber-500' : 'text-gray-500'}`}>
+                        {messageCount}/5
+                      </span>
+                    </span>
+                  ) : displayTier === 'free' ? (
+                    <span className="flex items-center gap-1">
+                      <span className="text-gray-600">Free</span>
+                      <span className="text-gray-300">•</span>
+                      <span className={`${messageCount >= 4 ? 'text-red-500' : messageCount >= 3 ? 'text-amber-500' : 'text-gray-500'}`}>
+                        {messageCount}/5
                       </span>
                     </span>
                   ) : (

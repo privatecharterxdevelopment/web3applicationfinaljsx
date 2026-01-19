@@ -7,7 +7,9 @@ import TransactionService from '../services/transactionService';
 import { web3Service, WalletTransaction } from '../lib/web3';
 import ChatSupport from './ChatSupport';
 import LaunchpadTransactions from './Landingpagenew/LaunchpadTransactions';
+import { MarketplaceView } from './Marketplace';
 import {
+  Store,
   ArrowRight,
   Calendar,
   MapPin,
@@ -1749,6 +1751,7 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
 
   const navigationItems = [
     { id: 'overview', label: 'Overview', icon: Home },
+    { id: 'asset-marketplace', label: 'Asset Marketplace', icon: Store },
     { id: 'requests', label: 'My Requests', icon: History, badge: userRequests.length },
     { id: 'ai-requests', label: 'AI Requests', icon: Sparkles, badge: aiRequestsCount, isSubMenu: true },
     { id: 'messages', label: 'Notifications', icon: Bell, badge: notifications.filter(n => n.unread).length },
@@ -4883,6 +4886,7 @@ const Dashboard: React.FC<{ onClose?: () => void; initialTab?: string }> = ({ on
             {/* Main Content */}
             <main className="flex-1 min-h-0 max-h-full">
               {currentView === 'overview' && renderOverview()}
+              {currentView === 'asset-marketplace' && <MarketplaceView />}
               {currentView === 'requests' && renderRequests()}
               {currentView === 'ai-requests' && renderRequests('ai_chat_bulk')}
               {currentView === 'messages' && renderMessages()}

@@ -106,10 +106,13 @@ serve(async (req) => {
       }
     };
 
+    // Query param for available services (extra baggage, seats, etc.)
+    const requestUrl = 'https://api.duffel.com/air/offer_requests?return_available_services=true';
+
     console.log('Duffel API request:', JSON.stringify(offerRequestBody, null, 2));
 
     // Call Duffel Offer Requests API
-    const duffelResponse = await fetch('https://api.duffel.com/air/offer_requests', {
+    const duffelResponse = await fetch(requestUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${duffelApiToken}`,
@@ -256,7 +259,25 @@ serve(async (req) => {
 
         // Metadata
         expiresAt: offer.expires_at,
-        availableServices: offer.available_services || [],
+
+        // Available services (extra baggage, etc.)
+        availableServices: (offer.available_services || []).map((service: any) => ({
+          id: service.id,
+          type: service.type, // 'baggage'
+          passengerIds: service.passenger_ids || [],
+          segmentIds: service.segment_ids || [],
+          totalAmount: parseFloat(service.total_amount || '0'),
+          totalCurrency: service.total_currency || 'USD',
+          // Baggage specific metadata
+          metadata: service.metadata ? {
+            type: service.metadata.type, // 'checked' or 'carry_on'
+            maximumWeightKg: service.metadata.maximum_weight_kg,
+            maximumHeightCm: service.metadata.maximum_height_cm,
+            maximumLengthCm: service.metadata.maximum_length_cm,
+            maximumDepthCm: service.metadata.maximum_depth_cm,
+          } : null
+        })),
+
         conditions: {
           refundable: offer.conditions?.refund_before_departure?.allowed || false,
           changeable: offer.conditions?.change_before_departure?.allowed || false

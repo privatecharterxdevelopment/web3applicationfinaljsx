@@ -4,6 +4,7 @@ import FloatingSearchModal from './FloatingSearchModal';
 import AnimatedSection from '../AnimatedSection';
 import LandingHeader from './LandingHeader';
 import { supabase } from '../../lib/supabase';
+import { LiveSupportWidget } from '../LiveSupportChat';
 import Globe3D from '../Globe3D';
 import { fetchFixedOffers } from '../../services/fixedOffersService';
 import { FixedOffer } from '../../pages/FixedOffers';
@@ -243,6 +244,7 @@ function Homepage() {
   const [jets, setJets] = useState<Jet[]>([]);
   const [cardImageIndexes, setCardImageIndexes] = useState<{[key: string]: number}>({});
   const [showPromoBanner, setShowPromoBanner] = useState(true);
+  const [showLiveSupportChat, setShowLiveSupportChat] = useState(false);
   const [flightOfferIndexes, setFlightOfferIndexes] = useState([0, 0, 0, 0, 0, 0, 0, 0]);
   const [adventurePackages, setAdventurePackages] = useState<FixedOffer[]>([]);
   const [flightSearch, setFlightSearch] = useState({
@@ -1290,11 +1292,11 @@ function Homepage() {
         {/* Footer */}
         <Footer />
 
-        {/* Promotional "Try for Free" Banner - Bottom Right - Glassmorphic */}
-        {showPromoBanner && (
+        {/* "Need support?" Banner - Bottom Right - Glassmorphic */}
+        {showPromoBanner && !showLiveSupportChat && (
           <div className="fixed bottom-6 right-6 z-50">
             <div
-              className="rounded-2xl overflow-hidden"
+              className="rounded-2xl overflow-hidden relative"
               style={{
                 width: '260px',
                 background: 'rgba(255, 255, 255, 0.6)',
@@ -1315,12 +1317,12 @@ function Homepage() {
               {/* Content */}
               <div className="p-5">
                 <p className="text-sm text-gray-700 leading-relaxed mb-4 pr-4">
-                  Ready to plan your next trip?
+                  Need support?
                 </p>
 
                 {/* CTA Button */}
                 <button
-                  onClick={() => navigate('/dashboard/chat?newChat=true')}
+                  onClick={() => setShowLiveSupportChat(true)}
                   className="w-full py-2.5 px-4 rounded-xl text-sm transition-all duration-200 flex items-center justify-center gap-2"
                   style={{
                     background: 'rgba(0, 0, 0, 0.05)',
@@ -1334,18 +1336,18 @@ function Homepage() {
                     e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
                   }}
                 >
-                  <span>Try it for $19/m</span>
+                  <span>Chat with us</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
 
                 {/* Contact link */}
                 <p className="text-[11px] text-gray-500 text-center mt-3">
-                  Questions or booking inquiry?{' '}
+                  Or email us at{' '}
                   <a
                     href="mailto:bookings@privatecharterx.com"
                     className="text-gray-700 hover:text-gray-900 underline"
                   >
-                    Contact us
+                    bookings@privatecharterx.com
                   </a>
                 </p>
               </div>
@@ -1353,6 +1355,8 @@ function Homepage() {
           </div>
         )}
 
+      {/* Live Support Chat Window */}
+      <LiveSupportWidget isOpen={showLiveSupportChat} onClose={() => setShowLiveSupportChat(false)} />
     </div>
   );
 }

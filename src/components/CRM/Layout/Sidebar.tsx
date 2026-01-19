@@ -10,7 +10,8 @@ import {
   Settings,
   LogOut,
   Wallet,
-  Globe
+  Globe,
+  MessageCircle
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/CRM/AuthContext';
 
@@ -31,6 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSectio
     { id: 'emptylegs', label: 'Empty Legs', icon: Plane },
     { id: 'subscriptions', label: 'Subscriptions', icon: CreditCard },
     { id: 'kyc', label: 'KYC Verification', icon: Shield },
+    { id: 'live-support', label: 'Live Support', icon: MessageCircle },
   ];
 
   // Web3.0 menu items

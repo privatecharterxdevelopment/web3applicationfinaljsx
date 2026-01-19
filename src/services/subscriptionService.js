@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 
 // Tier-specific message limits per chat
 const TIER_MESSAGE_LIMITS = {
+  free: 5,         // Free tier - 5 messages per chat (Haiku, basic queries only)
   essential: 5,    // Essential Basic - 5 messages per chat (Haiku)
   starter: 5,      // Alias for essential (Stripe product name)
   explorer: 10,
@@ -12,6 +13,7 @@ const TIER_MESSAGE_LIMITS = {
 
 // Tier-specific chat limits per month
 const TIER_CHAT_LIMITS = {
+  free: 1,         // Free tier - 1 chat per month
   essential: 10,   // Essential Basic - 10 chats per month
   starter: 10,     // Alias for essential
   explorer: 5,
@@ -20,8 +22,9 @@ const TIER_CHAT_LIMITS = {
   professional: null
 };
 
-// AI Model per tier - Essential uses Haiku, others use Sonnet
+// AI Model per tier - Free and Essential use Haiku, others use Sonnet
 const TIER_AI_MODELS = {
+  free: 'claude-3-5-haiku-20241022',       // Free uses Haiku (basic queries)
   essential: 'claude-3-5-haiku-20241022',  // Essential Basic uses Haiku (faster, cheaper)
   starter: 'claude-3-5-haiku-20241022',    // Alias for essential
   explorer: 'claude-sonnet-4-20250514',
@@ -32,6 +35,7 @@ const TIER_AI_MODELS = {
 
 // Features allowed per tier
 const TIER_ALLOWED_FEATURES = {
+  free: ['empty_legs', 'general_queries', 'ground_transport'],  // Free tier - empty legs, general queries, ground transport
   essential: ['empty_legs', 'restaurants', 'private_jets_search', 'general_queries'],
   starter: ['empty_legs', 'restaurants', 'private_jets_search', 'general_queries'], // Alias for essential
   explorer: ['empty_legs', 'restaurants', 'ground_transport', 'delicacies', 'cigars', 'winery', 'catering', 'custom_travel_org', 'private_jets', 'helicopters'],
@@ -63,12 +67,12 @@ class SubscriptionService {
       return data;
     } catch (error) {
       console.error('Error getting user profile:', error);
-      // Return a default profile object - no subscription
+      // Return a default profile object with free tier
       return {
         user_id: userId,
-        subscription_tier: null,
-        subscription_status: 'inactive',
-        chats_limit: 0,
+        subscription_tier: 'free',
+        subscription_status: 'active',
+        chats_limit: 1,
         chats_used: 0,
         chats_reset_date: null
       };
@@ -76,24 +80,28 @@ class SubscriptionService {
   }
 
   /**
-   * Create default profile for new users (no subscription)
-   * Users must subscribe to use the AI chat
+   * Create default profile for new users with FREE tier
+   * Free tier: 1 chat/month, 5 messages/chat, Haiku model, basic queries only
    */
   async createDefaultProfile(userId) {
     try {
       const { data: userData } = await supabase.auth.getUser();
       const email = userData?.user?.email;
 
+      // Calculate reset date (first day of next month)
+      const now = new Date();
+      const resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
       const { data, error } = await supabase
         .from('user_profiles')
         .insert({
           user_id: userId,
           email: email,
-          subscription_tier: null, // No tier - must subscribe
-          subscription_status: 'inactive',
-          chats_limit: 0,
+          subscription_tier: 'free',  // Free tier by default
+          subscription_status: 'active',
+          chats_limit: 1,             // 1 chat per month
           chats_used: 0,
-          chats_reset_date: null
+          chats_reset_date: resetDate.toISOString()
         })
         .select()
         .single();
@@ -102,12 +110,12 @@ class SubscriptionService {
       return data;
     } catch (error) {
       console.error('Error creating default profile:', error);
-      // Return a default profile object
+      // Return a default profile object with free tier
       return {
         user_id: userId,
-        subscription_tier: null,
-        subscription_status: 'inactive',
-        chats_limit: 0,
+        subscription_tier: 'free',
+        subscription_status: 'active',
+        chats_limit: 1,
         chats_used: 0,
         chats_reset_date: null
       };

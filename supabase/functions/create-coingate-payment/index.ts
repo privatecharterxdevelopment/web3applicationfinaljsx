@@ -546,7 +546,10 @@ serve(async (req) => {
               conditions: (paymentData as any).flightData?.conditions || {},
               airline: (paymentData as any).flightData?.airline,
               flight_number: (paymentData as any).flightData?.flightNumber,
-              cabin_class: (paymentData as any).flightData?.cabinClass
+              cabin_class: (paymentData as any).flightData?.cabinClass,
+              // Extra baggage services
+              selected_services: (paymentData as any).flightData?.selectedServices || [],
+              extra_baggage: ((paymentData as any).flightData?.selectedServices || []).filter((s: any) => s.type === 'baggage')
             } : {})
           }
         })

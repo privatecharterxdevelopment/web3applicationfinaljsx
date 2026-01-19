@@ -1265,7 +1265,7 @@ const TokenizedAssetsGlassmorphic = () => {
 
     // Other
     'search-index': '/dashboard/search-index',
-    'overview': '/dashboard',
+    'overview': '/dashboard/home',
     'profile': '/dashboard/profile',
   };
 

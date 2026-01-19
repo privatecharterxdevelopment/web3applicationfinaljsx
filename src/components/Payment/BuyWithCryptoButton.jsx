@@ -26,6 +26,7 @@ const BuyWithCryptoButton = ({
   size = 'default', // 'small' | 'default' | 'large'
   variant = 'gradient', // 'gradient' | 'outline' | 'ghost'
   onSuccess,
+  onShowLoginModal, // Callback to show login modal
   disabled = false,
   children
 }) => {
@@ -60,8 +61,12 @@ const BuyWithCryptoButton = ({
 
   const handleClick = () => {
     if (!isAuthenticated) {
-      setShowLoginPrompt(true);
-      setTimeout(() => setShowLoginPrompt(false), 3000);
+      if (onShowLoginModal) {
+        onShowLoginModal();
+      } else {
+        setShowLoginPrompt(true);
+        setTimeout(() => setShowLoginPrompt(false), 3000);
+      }
       return;
     }
     setIsModalOpen(true);
