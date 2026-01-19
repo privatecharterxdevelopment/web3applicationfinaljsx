@@ -2159,6 +2159,16 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   }, [isAuthenticated, user, pendingCategory]);
 
+  // Protected categories that require login - show login modal for guests
+  const protectedCategories = ['dashboard', 'profile', 'bookings', 'requests', 'activities', 'settings', 'messages', 'subscriptions'];
+  useEffect(() => {
+    if (!user && !initializing && protectedCategories.includes(activeCategory)) {
+      setShowLoginModal(true);
+      setPendingCategory(activeCategory);
+      setActiveCategory('home', true);
+    }
+  }, [activeCategory, user, initializing]);
+
   // For native app mode, re-show login modal if needed
   // On web, allow guest view to remain visible
   useEffect(() => {
@@ -4487,18 +4497,6 @@ const TokenizedAssetsGlassmorphic = () => {
 
   // Check if on admin route
   const isOnAdminRoute = window.location.pathname === '/admin' || window.location.pathname === '/crm-admin' || window.location.pathname.startsWith('/admin/');
-
-  // Protected categories that require login
-  const protectedCategories = ['dashboard', 'profile', 'bookings', 'requests', 'activities', 'settings', 'messages', 'subscriptions'];
-
-  // If guest tries to access protected category, show login modal and redirect to home
-  useEffect(() => {
-    if (!user && !initializing && protectedCategories.includes(activeCategory)) {
-      setShowLoginModal(true);
-      setPendingCategory(activeCategory);
-      setActiveCategory('home', true);
-    }
-  }, [activeCategory, user, initializing]);
 
   // Promo banner slides - category ads
   const promoSlides = [
