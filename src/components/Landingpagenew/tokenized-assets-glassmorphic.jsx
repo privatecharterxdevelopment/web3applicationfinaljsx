@@ -2144,9 +2144,9 @@ const TokenizedAssetsGlassmorphic = () => {
     if (!isAuthenticated && !initializing) {
       // Don't show login modal immediately - allow guest view
       setShowDashboard(true);
-      // Set activeCategory to home for guest landing
-      if (activeCategory !== 'home') {
-        setActiveCategory('home', true);
+      // Set activeCategory to overview for guest landing
+      if (activeCategory !== 'overview') {
+        setActiveCategory('overview', true);
       }
     }
   }, [isAuthenticated, initializing]);
@@ -4492,7 +4492,9 @@ const TokenizedAssetsGlassmorphic = () => {
   // MOBILE FIX: If authenticated (even without showDashboard flag), show dashboard immediately
   // This prevents the blank screen flash on mobile devices
   // EXCEPTION: Admin routes should always render to show login modal
-  if (!isAuthenticated && !isOnAdminRoute && !isSimpleAdminAuth) {
+  // EXCEPTION: Home/overview page should be accessible to guests
+  const isOnHomePage = window.location.pathname === '/dashboard/home' || window.location.pathname === '/dashboard' || activeCategory === 'overview';
+  if (!isAuthenticated && !isOnAdminRoute && !isSimpleAdminAuth && !isOnHomePage) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
