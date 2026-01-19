@@ -44,6 +44,13 @@ const TIER_ALLOWED_FEATURES = {
   professional: ['all']
 };
 
+// Helper to check if subscription status is active (case-insensitive, allows trialing/paid)
+const isActiveStatus = (status) => {
+  if (!status) return false;
+  const normalized = status.toLowerCase();
+  return ['active', 'trialing', 'paid'].includes(normalized);
+};
+
 class SubscriptionService {
   /**
    * Get user's subscription profile
@@ -149,7 +156,7 @@ class SubscriptionService {
       const profile = await this.getUserProfile(userId);
 
       // No subscription - cannot start chat
-      if (!profile.subscription_tier || profile.subscription_status !== 'active') {
+      if (!profile.subscription_tier || !isActiveStatus(profile.subscription_status)) {
         return {
           canStart: false,
           requiresSubscription: true,
@@ -276,7 +283,7 @@ class SubscriptionService {
     try {
       const profile = await this.getUserProfile(userId);
 
-      if (!profile || !profile.subscription_tier || profile.subscription_status !== 'active') {
+      if (!profile || !profile.subscription_tier || !isActiveStatus(profile.subscription_status)) {
         return {
           tier: null,
           hasSubscription: false,
@@ -1002,7 +1009,7 @@ class SubscriptionService {
       if (!profile || !profile.subscription_tier) return false;
 
       // Check if subscription is active
-      if (profile.subscription_status !== 'active') return false;
+      if (!isActiveStatus(profile.subscription_status)) return false;
 
       // Check if past reset date
       const resetDate = profile.chats_reset_date ? new Date(profile.chats_reset_date) : null;

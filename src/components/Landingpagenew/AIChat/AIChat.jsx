@@ -663,7 +663,7 @@ const AIChat = ({
     if (!userProfile || isAdmin) return;
 
     // Check if user has a subscription but has reached their chat limit
-    const hasSubscription = userProfile.subscription_tier && userProfile.subscription_status === 'active';
+    const hasSubscription = userProfile.subscription_tier && ['active', 'trialing', 'paid'].includes(userProfile.subscription_status?.toLowerCase());
     const hasLimit = userProfile.chats_limit !== null && userProfile.chats_limit !== undefined;
     const limitReached = hasLimit && userProfile.chats_used >= userProfile.chats_limit;
 

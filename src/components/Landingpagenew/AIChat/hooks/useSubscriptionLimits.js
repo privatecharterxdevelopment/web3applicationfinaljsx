@@ -37,7 +37,7 @@ export function useSubscriptionLimits({ user, isAdmin }) {
         unlimited_messages: hasUnlimitedAccess(tier),
         break_the_price: tierConfig.breakThePrice || false,
         features: tierConfig.features || [],
-        has_subscription: !!tier && profile?.subscription_status === 'active'
+        has_subscription: !!tier && ['active', 'trialing', 'paid'].includes(profile?.subscription_status?.toLowerCase())
       });
       setError(null);
     } catch (err) {
