@@ -1729,7 +1729,7 @@ export default function FlightTickets() {
                   </p>
                   {flights.length === 0 && (
                     <button
-                      onClick={() => navigate(`/dashboard/chat?query=Find me a flight from ${searchParams.origin} to ${searchParams.destination} on ${searchParams.departureDate}&newChat=true`)}
+                      onClick={() => navigate(`/chat?query=Find me a flight from ${searchParams.origin} to ${searchParams.destination} on ${searchParams.departureDate}&newChat=true`)}
                       className="px-6 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
                     >
                       Search with AI Assistant

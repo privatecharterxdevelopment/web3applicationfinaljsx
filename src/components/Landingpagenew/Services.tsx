@@ -244,14 +244,14 @@ function Services({ setCurrentPage }: ServicesProps) {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => navigate('/dashboard/chat?newChat=true')}
+              onClick={() => navigate('/chat?newChat=true')}
               className="bg-gray-900 text-white px-8 py-4 rounded-xl text-sm font-medium hover:bg-gray-800 transition-all duration-200 flex items-center justify-center gap-2"
             >
               <Sparkles className="w-4 h-4" />
               Chat with Sphera AI
             </button>
             <button
-              onClick={() => navigate('/dashboard/subscriptions/plans')}
+              onClick={() => navigate('/subscriptions/plans')}
               className="border border-gray-200 text-gray-700 px-8 py-4 rounded-xl text-sm font-medium hover:bg-white hover:border-gray-300 transition-all duration-200"
             >
               View Plans
@@ -293,7 +293,7 @@ function Services({ setCurrentPage }: ServicesProps) {
           {mainServices.map((service, index) => (
             <div
               key={index}
-              onClick={() => navigate(`/dashboard/chat?query=${encodeURIComponent(service.query)}&newChat=true`)}
+              onClick={() => navigate(`/chat?query=${encodeURIComponent(service.query)}&newChat=true`)}
               className="group bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-gray-200 hover:shadow-xl transition-all duration-300 cursor-pointer"
             >
               <div className="p-8">
@@ -336,7 +336,7 @@ function Services({ setCurrentPage }: ServicesProps) {
           {additionalServices.map((service, index) => (
             <div
               key={index}
-              onClick={() => navigate(`/dashboard/chat?query=${encodeURIComponent(service.query)}&newChat=true`)}
+              onClick={() => navigate(`/chat?query=${encodeURIComponent(service.query)}&newChat=true`)}
               className="group bg-white rounded-2xl p-6 border border-gray-100 hover:border-gray-200 hover:shadow-lg transition-all duration-300 cursor-pointer"
             >
               <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-4 group-hover:bg-gray-100 transition-colors">
@@ -388,7 +388,7 @@ function Services({ setCurrentPage }: ServicesProps) {
 
           <div className="text-center mt-10">
             <button
-              onClick={() => navigate('/dashboard/subscriptions/plans')}
+              onClick={() => navigate('/subscriptions/plans')}
               className="bg-white text-gray-900 px-8 py-4 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors inline-flex items-center gap-2"
             >
               Upgrade to Elite
@@ -479,7 +479,7 @@ function Services({ setCurrentPage }: ServicesProps) {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => navigate('/dashboard/chat?newChat=true')}
+              onClick={() => navigate('/chat?newChat=true')}
               className="bg-white text-gray-900 px-8 py-4 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors inline-flex items-center justify-center gap-2"
             >
               <Sparkles className="w-4 h-4" />

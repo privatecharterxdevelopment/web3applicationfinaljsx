@@ -1,25 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Homepage - Dashboard (main entry point) -->
+  <!-- Homepage -->
   <url>
-    <loc>https://privatecharterx.com/dashboard/home</loc>
-    <lastmod>2025-01-19</lastmod>
+    <loc>https://privatecharterx.com/</loc>
+    <lastmod>2026-01-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
 
-  <!-- Aviation - Charter Services -->
+  <!-- Home -->
+  <url>
+    <loc>https://privatecharterx.com/home</loc>
+    <lastmod>2026-01-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Services - Main Services Overview -->
+  <url>
+    <loc>https://privatecharterx.com/services</loc>
+    <lastmod>2026-01-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Aviation - Private Charter Services -->
   <url>
     <loc>https://privatecharterx.com/aviation</loc>
-    <lastmod>2025-01-19</lastmod>
+    <lastmod>2026-01-20</lastmod>
     <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Jets -->
+  <url>
+    <loc>https://privatecharterx.com/jets</loc>
+    <lastmod>2026-01-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Helicopters -->
+  <url>
+    <loc>https://privatecharterx.com/helis</loc>
+    <lastmod>2026-01-20</lastmod>
+    <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
 
   <!-- Commercial Flights -->
   <url>
     <loc>https://privatecharterx.com/flights</loc>
-    <lastmod>2025-01-19</lastmod>
+    <lastmod>2026-01-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
@@ -27,23 +59,39 @@
   <!-- Empty Legs - Discounted Private Flights -->
   <url>
     <loc>https://privatecharterx.com/empty-legs</loc>
-    <lastmod>2025-01-19</lastmod>
+    <lastmod>2026-01-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
 
-  <!-- Adventures - Fixed Offer Packages -->
+  <!-- Flight Bids -->
+  <url>
+    <loc>https://privatecharterx.com/flight-bids</loc>
+    <lastmod>2026-01-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Adventures - Fixed Offer Travel Packages -->
   <url>
     <loc>https://privatecharterx.com/adventures</loc>
-    <lastmod>2025-01-19</lastmod>
+    <lastmod>2026-01-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
-  <!-- RWA Tokenization -->
+  <!-- Ground Transport / Luxury Cars -->
+  <url>
+    <loc>https://privatecharterx.com/ground-transport</loc>
+    <lastmod>2026-01-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Tokenized - RWA & NFT Information -->
   <url>
     <loc>https://privatecharterx.com/tokenized</loc>
-    <lastmod>2025-01-19</lastmod>
+    <lastmod>2026-01-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -51,7 +99,7 @@
   <!-- Sphera AI - AI Travel Assistant -->
   <url>
     <loc>https://privatecharterx.com/sphera-ai</loc>
-    <lastmod>2025-01-19</lastmod>
+    <lastmod>2026-01-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -59,7 +107,7 @@
   <!-- Helpdesk / Support -->
   <url>
     <loc>https://privatecharterx.com/helpdesk</loc>
-    <lastmod>2025-01-19</lastmod>
+    <lastmod>2026-01-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

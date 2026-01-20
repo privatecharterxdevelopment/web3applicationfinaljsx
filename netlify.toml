@@ -5,16 +5,407 @@
 [dev]
   command = "npm run dev"
   targetPort = 5173
-# Catch-all rewrite for SPA routing
+
+# ========================================
+# /dashboard/* REDIRECTS - Clean URL migration
+# ========================================
+# Main dashboard redirects to clean URLs
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+  from = "/dashboard"
+  to = "/"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/home"
+  to = "/home"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/jets"
+  to = "/jets"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/helis"
+  to = "/helis"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/helicopter"
+  to = "/helis"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/empty-legs"
+  to = "/empty-legs"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/adventures"
+  to = "/adventures"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/flights"
+  to = "/flights"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/flight-ops"
+  to = "/flight-bids"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/ground-transport"
+  to = "/ground-transport"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/luxury-cars"
+  to = "/luxury-cars"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/hotels"
+  to = "/hotels"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/chat"
+  to = "/chat"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/chat/*"
+  to = "/chat/:splat"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/profile"
+  to = "/profile"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/settings"
+  to = "/settings"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/bookings"
+  to = "/bookings"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/transactions"
+  to = "/transactions"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/calendar"
+  to = "/calendar"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/favourites"
+  to = "/favourites"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/notifications"
+  to = "/notifications"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/bids"
+  to = "/bids"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/messages"
+  to = "/messages"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/subscriptions"
+  to = "/subscriptions"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/subscriptions/*"
+  to = "/subscriptions/:splat"
+  status = 301
+  force = true
+
+# Web3/RWS Dashboard redirects
+[[redirects]]
+  from = "/dashboard/web3"
+  to = "/rws"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/web3/*"
+  to = "/rws/:splat"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/marketplace"
+  to = "/rws/marketplace"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/nft-marketplace"
+  to = "/rws/nft-marketplace"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/launchpad"
+  to = "/rws/launchpad"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/pvcx"
+  to = "/rws/pvcx-token"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/dashboard/tokenization"
+  to = "/rws/tokenization"
+  status = 301
+  force = true
+
+# Catch-all dashboard redirect
+[[redirects]]
+  from = "/dashboard/*"
+  to = "/:splat"
+  status = 301
+
+# ========================================
+# SEO 301 REDIRECTS - Dead/Old Pages
+# ========================================
+# Service sub-pages
+[[redirects]]
+  from = "/services/private-jet-charter"
+  to = "/aviation"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/services/helicopter-charter"
+  to = "/aviation"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/services/group-charter"
+  to = "/aviation"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/services/evtol"
+  to = "/aviation"
+  status = 301
+  force = true
+
+# Support pages
+[[redirects]]
+  from = "/privatecharterx-support"
+  to = "/helpdesk"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/support"
+  to = "/helpdesk"
+  status = 301
+  force = true
+
+# Partner pages
+[[redirects]]
+  from = "/partners-board"
+  to = "/home"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/partners"
+  to = "/home"
+  status = 301
+
+# Web3 tracker pages
+[[redirects]]
+  from = "/web3/flight-tracker"
+  to = "/home"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/web3/tracker"
+  to = "/home"
+  status = 301
+[[redirects]]
+  from = "/web3/*"
+  to = "/rws/:splat"
+  status = 301
+
+# Old dead pages
+[[redirects]]
+  from = "/faq"
+  to = "/faqs"
+  status = 301
+[[redirects]]
+  from = "/partner"
+  to = "/home"
+  status = 301
+[[redirects]]
+  from = "/partner-with-us"
+  to = "/home"
+  status = 301
+[[redirects]]
+  from = "/private-jet"
+  to = "/aviation"
+  status = 301
+[[redirects]]
+  from = "/private-jet-charter"
+  to = "/aviation"
+  status = 301
+[[redirects]]
+  from = "/evtol"
+  to = "/aviation"
+  status = 301
+[[redirects]]
+  from = "/evtol-flights"
+  to = "/aviation"
+  status = 301
+[[redirects]]
+  from = "/helicopter"
+  to = "/aviation"
+  status = 301
+[[redirects]]
+  from = "/helicopter-charter"
+  to = "/aviation"
+  status = 301
+[[redirects]]
+  from = "/yacht"
+  to = "/home"
+  status = 301
+[[redirects]]
+  from = "/group-charter"
+  to = "/aviation"
+  status = 301
+[[redirects]]
+  from = "/how-it-works"
+  to = "/home"
+  status = 301
+[[redirects]]
+  from = "/about"
+  to = "/home"
+  status = 301
+[[redirects]]
+  from = "/contact"
+  to = "/helpdesk"
+  status = 301
+[[redirects]]
+  from = "/safety"
+  to = "/aviation"
+  status = 301
+[[redirects]]
+  from = "/blog"
+  to = "/home"
+  status = 301
+[[redirects]]
+  from = "/news"
+  to = "/home"
+  status = 301
+[[redirects]]
+  from = "/membership"
+  to = "/subscriptions"
+  status = 301
+[[redirects]]
+  from = "/jet-card"
+  to = "/subscriptions"
+  status = 301
+[[redirects]]
+  from = "/visa"
+  to = "/home"
+  status = 301
+[[redirects]]
+  from = "/ico"
+  to = "/tokenized"
+  status = 301
+[[redirects]]
+  from = "/nft"
+  to = "/tokenized"
+  status = 301
+[[redirects]]
+  from = "/dao"
+  to = "/tokenized"
+  status = 301
+[[redirects]]
+  from = "/crypto"
+  to = "/tokenized"
+  status = 301
+[[redirects]]
+  from = "/carbon"
+  to = "/tokenized"
+  status = 301
+[[redirects]]
+  from = "/co2"
+  to = "/tokenized"
+  status = 301
+[[redirects]]
+  from = "/marketplace"
+  to = "/tokenized"
+  status = 301
+[[redirects]]
+  from = "/behind-the-scene"
+  to = "/home"
+  status = 301
+[[redirects]]
+  from = "/technology"
+  to = "/home"
+  status = 301
+[[redirects]]
+  from = "/rwa-nft"
+  to = "/tokenized"
+  status = 301
+[[redirects]]
+  from = "/flight-tickets"
+  to = "/flights"
+  status = 301
+[[redirects]]
+  from = "/fixed-offers"
+  to = "/adventures"
+  status = 301
+
+# RWA/SPV redirects
+[[redirects]]
+  from = "/rwa"
+  to = "/rws/tokenization"
+  status = 301
+[[redirects]]
+  from = "/rwa/*"
+  to = "/rws/:splat"
+  status = 301
+[[redirects]]
+  from = "/spv"
+  to = "/rws/spv-formation"
+  status = 301
+[[redirects]]
+  from = "/spv/*"
+  to = "/rws/:splat"
+  status = 301
+
+# ========================================
+# END SEO REDIRECTS
+# ========================================
+
 # API function redirects
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
+
+# Catch-all rewrite for SPA routing (must be last)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
 # Dashboard subdomain configuration
 [[redirects]]
   from = "https://dashboard.privatecharterx.com/*"
@@ -22,13 +413,15 @@
   status = 200
   force = true
   conditions = {Role = ["user"]}
-# Admin subdomain configuration  
+
+# Admin subdomain configuration
 [[redirects]]
   from = "https://admin.privatecharterx.com/*"
   to = "/index.html"
   status = 200
   force = true
   conditions = {Role = ["admin"]}
+
 # FIXED: Headers with proper CSP formatting including wallet domains
 [[headers]]
   for = "/*"
@@ -38,6 +431,7 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Content-Security-Policy = "default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api.mapbox.com https://*.tiles.mapbox.com blob:; style-src 'self' 'unsafe-inline' https://api.mapbox.com https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https: blob:; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self'; connect-src 'self' http://localhost:* https://api.mapbox.com https://*.tiles.mapbox.com https://events.mapbox.com wss://api.mapbox.com https://oubecmstqtzdnevyqavu.supabase.co https://*.supabase.co wss://oubecmstqtzdnevyqavu.supabase.co wss://*.supabase.co wss://relay.walletconnect.org https://*.walletconnect.org https://rpc.walletconnect.org https://api.web3modal.org https://pulse.walletconnect.org https://cca-lite.coinbase.com https://*.coinbase.com https://eth-mainnet.g.alchemy.com https://*.alchemy.com https://*.alchemyapi.io https://base-mainnet.g.alchemy.com https://www.privatecharterx.blog https://public-api.wordpress.com;"
+
 # Domain configuration
 [context.production]
   [context.production.environment]
@@ -45,6 +439,7 @@
     VITE_DASHBOARD_URL = "https://dashboard.privatecharterx.com"
     VITE_ADMIN_URL = "https://admin.privatecharterx.com"
     VITE_MAINTENANCE_MODE = "false"
+
 # Staging context
 [context.staging]
   [context.staging.environment]
@@ -52,6 +447,7 @@
     VITE_DASHBOARD_URL = "https://staging-dashboard.privatecharterx.com"
     VITE_ADMIN_URL = "https://staging-admin.privatecharterx.com"
     VITE_MAINTENANCE_MODE = "false"
+
 # Development context
 [context.development]
   [context.development.environment]

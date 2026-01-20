@@ -2523,7 +2523,7 @@ Your quote has been received and will be reviewed within 12 hours.`;
 
     // Redirect to AI Requests page after short delay (let PDF download complete)
     setTimeout(() => {
-      window.location.href = '/dashboard/ai-requests';
+      window.location.href = '/ai-requests';
     }, 1500);
   }, [cartItems, cartTotal, activeChat, selectedPaymentMethod, userHasNFT, usedNFTBenefitThisYear, conversationalAI, connectedWallet]);
 
@@ -5142,7 +5142,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
                     </p>
                     <div className="flex items-center gap-2 mt-3">
                       <button
-                        onClick={() => navigate('/dashboard/chat-history')}
+                        onClick={() => navigate('/chat-history')}
                         className="flex-1 py-2 px-3 text-[13px] font-medium text-gray-600 rounded-xl transition-all"
                         style={{ background: 'rgba(0, 0, 0, 0.04)' }}
                       >
@@ -9580,7 +9580,7 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
 
                       // Redirect to AI Requests page after short delay (let PDF download complete)
                       setTimeout(() => {
-                        window.location.href = '/dashboard/ai-requests';
+                        window.location.href = '/ai-requests';
                       }, 1500);
                     } catch (error) {
                       console.error('Booking error:', error);

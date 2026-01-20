@@ -287,7 +287,7 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
             </div>
           ) : (
             <button
-              onClick={() => navigate('/dashboard/web3')}
+              onClick={() => navigate('/rws')}
               className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl text-sm font-medium transition-all duration-200 border border-gray-300 hover:border-gray-400 text-gray-700 hover:bg-gray-50"
             >
               <Wallet className="w-4 h-4" />
@@ -512,7 +512,7 @@ function RWANFT({ setCurrentPage }: RWANFTProps) {
                 Buy on OpenSea
               </a>
               <button
-                onClick={() => navigate('/dashboard/chat?newChat=true')}
+                onClick={() => navigate('/chat?newChat=true')}
                 className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl text-sm font-medium transition-all duration-200 border border-white/30 hover:border-white/50 text-white hover:bg-white/10"
               >
                 <Sparkles className="w-4 h-4" />

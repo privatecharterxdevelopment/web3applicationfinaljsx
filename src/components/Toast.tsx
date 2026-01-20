@@ -8,7 +8,7 @@ interface ToastProps {
   onClose: () => void;
 }
 
-export default function Toast({ message, type = 'success', duration = 3000, onClose }: ToastProps) {
+export default function Toast({ message, type = 'success', duration = 2000, onClose }: ToastProps) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -26,37 +26,29 @@ export default function Toast({ message, type = 'success', duration = 3000, onCl
 
   return (
     <div
-      className={`fixed top-6 left-1/2 -translate-x-1/2 z-[99999] transform transition-all duration-300 ease-out ${
+      className={`fixed top-4 left-1/2 -translate-x-1/2 z-[99999] transform transition-all duration-300 ease-out ${
         isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
       }`}
     >
-      <div className="bg-white text-gray-900 rounded-xl shadow-2xl px-5 py-4 flex items-center gap-3 min-w-[300px] max-w-md border border-gray-200">
+      <div
+        className="bg-black/40 backdrop-blur-xl text-white rounded-full shadow-lg px-4 py-2 flex items-center gap-2 border border-white/10"
+        style={{ backdropFilter: 'blur(20px) saturate(180%)' }}
+      >
         {/* Icon */}
-        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-          type === 'success' ? 'bg-green-100' : 'bg-red-100'
+        <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${
+          type === 'success' ? 'bg-green-500/30' : 'bg-red-500/30'
         }`}>
           {type === 'success' ? (
-            <Check size={18} className="text-green-600" />
+            <Check size={12} className="text-green-300" />
           ) : (
-            <X size={18} className="text-red-500" />
+            <X size={12} className="text-red-300" />
           )}
         </div>
 
         {/* Message */}
-        <p className="flex-1 text-sm font-medium text-gray-900">
+        <p className="text-xs font-medium text-white/90">
           {message}
         </p>
-
-        {/* Close Button */}
-        <button
-          onClick={() => {
-            setIsVisible(false);
-            setTimeout(onClose, 300);
-          }}
-          className="flex-shrink-0 p-1 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <X size={16} className="text-gray-500" />
-        </button>
       </div>
     </div>
   );

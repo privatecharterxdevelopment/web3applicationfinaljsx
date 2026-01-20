@@ -6,8 +6,7 @@ import LandingHeader from './LandingHeader';
 import { supabase } from '../../lib/supabase';
 import { LiveSupportWidget } from '../LiveSupportChat';
 import Globe3D from '../Globe3D';
-import { fetchFixedOffers } from '../../services/fixedOffersService';
-import { FixedOffer } from '../../pages/FixedOffers';
+import { fetchFixedOffers, FixedOffer } from '../../services/fixedOffersService';
 import NewsletterForm from '../NewsletterForm';
 import Footer from './Footer';
 import {
@@ -505,7 +504,7 @@ function Homepage() {
                   Get a Quote
                 </a>
                 <button
-                  onClick={() => navigate('/dashboard/chat?query=I%20want%20to%20book%20a%20private%20jet')}
+                  onClick={() => navigate('/chat?query=I%20want%20to%20book%20a%20private%20jet')}
                   className="px-3 py-1.5 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors"
                 >
                   Book by AI
@@ -543,7 +542,7 @@ function Homepage() {
                     Get a Quote
                   </a>
                   <button
-                    onClick={() => navigate('/dashboard/chat?query=I%20want%20to%20book%20a%20helicopter')}
+                    onClick={() => navigate('/chat?query=I%20want%20to%20book%20a%20helicopter')}
                     className="px-3 py-1.5 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors"
                   >
                     Book by AI
@@ -554,7 +553,7 @@ function Homepage() {
 
             {/* Card 2 - Book a Yacht or Boat */}
             <div
-              onClick={() => navigate('/dashboard/chat?query=I%20want%20to%20book%20a%20yacht')}
+              onClick={() => navigate('/chat?query=I%20want%20to%20book%20a%20yacht')}
               className="group relative bg-white rounded-2xl overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 border border-gray-200"
               style={{ minHeight: '320px' }}
             >
@@ -594,7 +593,7 @@ function Homepage() {
                   </h3>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => navigate('/dashboard/chat?query=I%20want%20to%20book%20a%20commercial%20flight')}
+                      onClick={() => navigate('/chat?query=I%20want%20to%20book%20a%20commercial%20flight')}
                       className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-gray-900 text-white text-xs font-medium hover:bg-gray-800 transition-colors"
                     >
                       <Sparkles size={14} />
@@ -925,7 +924,7 @@ function Homepage() {
                       </div>
                       <div className="flex-1 flex justify-center">
                         <div className="px-4 py-1 bg-white/60 rounded-md text-xs text-gray-500 font-light">
-                          privatecharterx.com/dashboard/chat
+                          privatecharterx.com/chat
                         </div>
                       </div>
                     </div>
@@ -1046,7 +1045,7 @@ function Homepage() {
                       if (dashboardSection) {
                         dashboardSection.scrollIntoView({ behavior: 'smooth' });
                       } else {
-                        window.location.href = '/dashboard/chat';
+                        window.location.href = '/chat';
                       }
                     }}
                     className="px-8 py-3 rounded-xl text-sm font-medium transition-all duration-200 border border-white/40 hover:border-white/60 hover:shadow-lg"
@@ -1145,7 +1144,7 @@ function Homepage() {
             </div>
             <div className="flex flex-wrap justify-center gap-3">
               <button
-                onClick={() => navigate('/dashboard/chat?query=Calculate%20revenue%20APY%20for%20tokenizing%20my%20asset&newChat=true')}
+                onClick={() => navigate('/chat?query=Calculate%20revenue%20APY%20for%20tokenizing%20my%20asset&newChat=true')}
                 className="px-5 py-2.5 bg-gray-900 rounded-lg text-sm font-medium text-white hover:bg-gray-800 transition-colors"
               >
                 Calculate Revenue APY
@@ -1193,7 +1192,7 @@ function Homepage() {
 
             {/* PVCX Token Card */}
             <div
-              onClick={() => navigate('/dashboard/web3/pvcx-token')}
+              onClick={() => navigate('/rws/pvcx-token')}
               className="group relative rounded-2xl overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 border border-gray-200"
               style={{ minHeight: '260px' }}
             >
@@ -1282,7 +1281,7 @@ function Homepage() {
             Book your next journey with AI-powered precision, crypto payments, and 24/7 concierge support.
           </p>
           <button
-            onClick={() => navigate('/dashboard/chat?newChat=true')}
+            onClick={() => navigate('/chat?newChat=true')}
             className="bg-gray-900 text-white px-8 py-3 rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
           >
             Start Planning Now

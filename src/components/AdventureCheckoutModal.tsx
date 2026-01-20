@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, MapPin, Plane, Users, Calendar, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
-import { FixedOffer } from '../pages/FixedOffers';
+import { FixedOffer } from '../services/fixedOffersService';
 
 interface AdventureCheckoutModalProps {
   isOpen: boolean;

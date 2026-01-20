@@ -87,7 +87,7 @@ export function useChatManager({ user, isAdmin, navigate, onToast }) {
 
         // Update URL (use dashboard route to keep sidebar)
         if (navigate && chat.id) {
-          navigate(`/dashboard/chat/${chat.id}`, { replace: true });
+          navigate(`/chat/${chat.id}`, { replace: true });
         }
 
         return chat;
@@ -115,7 +115,7 @@ export function useChatManager({ user, isAdmin, navigate, onToast }) {
 
     // Update URL (use dashboard route to keep sidebar)
     if (navigate && chatId && chatId !== 'new') {
-      navigate(`/dashboard/chat/${chatId}`, { replace: true });
+      navigate(`/chat/${chatId}`, { replace: true });
     }
   }, [navigate, state.chatHistory]);
 

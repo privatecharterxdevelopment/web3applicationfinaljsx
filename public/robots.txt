@@ -1,38 +1,53 @@
 # robots.txt for PrivateCharterX
 # https://privatecharterx.com
-# Last updated: 2025-01-19
+# Last updated: 2026-01-20
 
 User-agent: *
 
-# Allow current active pages
-Allow: /dashboard/home
+# ========================================
+# ALLOW - Active Public Pages (Clean URLs)
+# ========================================
+Allow: /$
+Allow: /home
+Allow: /services
 Allow: /aviation
+Allow: /jets
+Allow: /helis
 Allow: /flights
-Allow: /flight-tickets
 Allow: /empty-legs
+Allow: /flight-bids
 Allow: /adventures
-Allow: /fixed-offers
+Allow: /ground-transport
 Allow: /tokenized
 Allow: /sphera-ai
 Allow: /helpdesk
 
-# Block old landing page (dashboard is now homepage)
-Disallow: /$
+# ========================================
+# DISALLOW - Old /dashboard/* URLs (301 redirects in place)
+# ========================================
+Disallow: /dashboard
+Disallow: /dashboard/
 
-# Block legal pages from indexing (still accessible, just not indexed)
-Disallow: /terms
-Disallow: /privacy
-Disallow: /imprint
-Disallow: /impressum
+# ========================================
+# DISALLOW - Dead/Old Pages (301 redirects in place)
+# ========================================
+# Service sub-pages (now redirected to /aviation)
+Disallow: /services/private-jet-charter
+Disallow: /services/helicopter-charter
+Disallow: /services/group-charter
+Disallow: /services/evtol
 
-# Block old/dead pages (redirects are in place but block from indexing)
-Disallow: /faq
-Disallow: /faqs
-Disallow: /services
-Disallow: /rwa-nft
+# Support pages (now redirected to /helpdesk)
+Disallow: /privatecharterx-support
+Disallow: /support
+
+# Partner pages (now redirected to /home)
+Disallow: /partners-board
 Disallow: /partner
 Disallow: /partners
 Disallow: /partner-with-us
+
+# Old service pages
 Disallow: /private-jet
 Disallow: /private-jet-charter
 Disallow: /evtol
@@ -41,38 +56,82 @@ Disallow: /helicopter
 Disallow: /helicopter-charter
 Disallow: /yacht
 Disallow: /group-charter
-Disallow: /technology
+
+# Old info pages
 Disallow: /how-it-works
 Disallow: /about
 Disallow: /contact
+Disallow: /safety
 Disallow: /blog
 Disallow: /news
-Disallow: /safety
+Disallow: /technology
+Disallow: /behind-the-scene
+
+# Old FAQ pages
+Disallow: /faq
+
+# Old membership pages
 Disallow: /membership
 Disallow: /jet-card
 Disallow: /visa
-Disallow: /luxury-cars
+
+# Old Web3/Crypto pages
 Disallow: /ico
 Disallow: /nft
 Disallow: /dao
-Disallow: /web3
 Disallow: /crypto
 Disallow: /carbon
 Disallow: /co2
 Disallow: /marketplace
-Disallow: /behind-the-scene
+Disallow: /rwa-nft
+Disallow: /web3/flight-tracker
+Disallow: /web3/tracker
 
-# Block dashboard, admin, and private pages
-Disallow: /dashboard
+# ========================================
+# DISALLOW - Private/Admin/User Areas
+# ========================================
 Disallow: /admin
+Disallow: /crm
+Disallow: /crm-admin
 Disallow: /login
 Disallow: /register
-Disallow: /crm
 Disallow: /checkout
-Disallow: /payment
-Disallow: /book
-Disallow: /api
-Disallow: /*.json$
+Disallow: /payment/
+Disallow: /subscription/
+Disallow: /book/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /newsletter/
+Disallow: /user-overview
+Disallow: /verify-email
+Disallow: /reset-password
 
-# Sitemap location
+# Private user pages
+Disallow: /profile
+Disallow: /settings
+Disallow: /bookings
+Disallow: /transactions
+Disallow: /calendar
+Disallow: /favourites
+Disallow: /notifications
+Disallow: /bids
+Disallow: /messages
+Disallow: /subscriptions
+Disallow: /chat
+Disallow: /rws/
+
+# Legal pages (accessible but not indexed)
+Disallow: /terms
+Disallow: /privacy
+Disallow: /imprint
+Disallow: /cookies
+
+# Block query params and files
+Disallow: /*?*
+Disallow: /*.json$
+Disallow: /*.xml$
+
+# ========================================
+# Sitemap
+# ========================================
 Sitemap: https://privatecharterx.com/sitemap.xml

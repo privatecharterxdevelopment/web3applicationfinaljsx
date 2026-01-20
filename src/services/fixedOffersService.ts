@@ -1,5 +1,24 @@
 import { supabase } from '../lib/supabase';
-import { FixedOffer } from '../pages/FixedOffers';
+
+// FixedOffer type definition (Adventures/Fixed Offers)
+export interface FixedOffer {
+  id: string;
+  title: string;
+  description: string;
+  origin: string;
+  destination: string;
+  price: number;
+  currency: string;
+  departure_date: string;
+  return_date?: string;
+  image_url: string;
+  aircraft_type: string;
+  passengers: number;
+  duration: string;
+  is_featured: boolean;
+  is_empty_leg: boolean;
+  created_at: string;
+}
 
 export interface FetchFixedOffersParams {
   page?: number;

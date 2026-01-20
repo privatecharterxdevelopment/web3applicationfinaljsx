@@ -727,7 +727,7 @@ const AIChatNew = ({
                     </p>
                     <div className="flex items-center gap-2 mt-3">
                       <button
-                        onClick={() => navigate('/dashboard/chat-history')}
+                        onClick={() => navigate('/chat-history')}
                         className="flex-1 py-2 px-3 text-[13px] font-medium text-gray-600 rounded-xl transition-all"
                         style={{ background: 'rgba(0, 0, 0, 0.04)' }}
                       >
@@ -898,7 +898,7 @@ const AIChatNew = ({
                       key={plan.tier}
                       onClick={() => {
                         modals.setShowSubscriptionBlocker(false);
-                        navigate('/dashboard/subscriptions/plans');
+                        navigate('/subscriptions/plans');
                       }}
                       className={`flex-1 p-3 rounded-xl border text-center transition-all hover:border-gray-300 ${
                         plan.popular
@@ -922,7 +922,7 @@ const AIChatNew = ({
                 <button
                   onClick={() => {
                     modals.setShowSubscriptionBlocker(false);
-                    navigate('/dashboard/subscriptions/plans');
+                    navigate('/subscriptions/plans');
                   }}
                   className="w-full py-2.5 bg-gray-900 text-white rounded-xl text-sm font-light hover:bg-gray-800 transition-colors"
                 >
@@ -931,7 +931,7 @@ const AIChatNew = ({
                 <button
                   onClick={() => {
                     modals.setShowSubscriptionBlocker(false);
-                    navigate('/dashboard/chat-history');
+                    navigate('/chat-history');
                   }}
                   className="w-full py-2.5 bg-white text-gray-700 rounded-xl text-sm font-light hover:bg-gray-100 transition-colors border border-gray-200"
                 >
@@ -1421,7 +1421,7 @@ const AIChatNew = ({
                     key={plan.tier}
                     onClick={() => {
                       modals.setShowSubscriptionBlocker(false);
-                      navigate('/dashboard/subscriptions/plans');
+                      navigate('/subscriptions/plans');
                     }}
                     className={`flex-1 p-3 rounded-xl border text-center transition-all hover:border-gray-300 ${
                       plan.popular
@@ -1445,7 +1445,7 @@ const AIChatNew = ({
               <button
                 onClick={() => {
                   modals.setShowSubscriptionBlocker(false);
-                  navigate('/dashboard/subscriptions/plans');
+                  navigate('/subscriptions/plans');
                 }}
                 className="w-full py-2.5 bg-gray-900 text-white rounded-xl text-sm font-light hover:bg-gray-800 transition-colors"
               >
@@ -1454,7 +1454,7 @@ const AIChatNew = ({
               <button
                 onClick={() => {
                   modals.setShowSubscriptionBlocker(false);
-                  navigate('/dashboard/chat-history');
+                  navigate('/chat-history');
                 }}
                 className="w-full py-2.5 bg-white text-gray-700 rounded-xl text-sm font-light hover:bg-gray-100 transition-colors border border-gray-200"
               >

@@ -87,16 +87,16 @@ export default function HomepageFooter() {
               <div>
                 <h4 className="text-sm font-medium text-gray-900 mb-4">Services</h4>
                 <div className="space-y-3">
-                  <button onClick={() => navigate('/dashboard/chat?query=private+jet')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                  <button onClick={() => navigate('/chat?query=private+jet')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                     Private Jets
                   </button>
-                  <button onClick={() => navigate('/dashboard/chat?query=helicopter')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                  <button onClick={() => navigate('/chat?query=helicopter')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                     Helicopters
                   </button>
-                  <button onClick={() => navigate('/dashboard/empty-legs')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                  <button onClick={() => navigate('/empty-legs')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                     Empty Legs
                   </button>
-                  <button onClick={() => navigate('/dashboard/ground-transport')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                  <button onClick={() => navigate('/ground-transport')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                     Ground Transport
                   </button>
                   <button onClick={() => navigate('/adventures')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
@@ -118,10 +118,10 @@ export default function HomepageFooter() {
                   <button onClick={() => navigate('/rwa-nft')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                     NFT Membership
                   </button>
-                  <button onClick={() => navigate('/dashboard/web3/pvcx-token')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                  <button onClick={() => navigate('/rws/pvcx-token')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                     PVCX Token
                   </button>
-                  <button onClick={() => navigate('/dashboard/web3/launchpad')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                  <button onClick={() => navigate('/rws/launchpad')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                     Launchpad
                   </button>
                   {/* Marketplace hidden - no license yet */}
@@ -160,13 +160,13 @@ export default function HomepageFooter() {
                   <button onClick={() => navigate('/helpdesk')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                     Help Center
                   </button>
-                  <button onClick={() => navigate('/dashboard/subscriptions/plans')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                  <button onClick={() => navigate('/subscriptions/plans')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                     Subscriptions
                   </button>
-                  <button onClick={() => navigate('/dashboard/requests')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                  <button onClick={() => navigate('/requests')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                     My Requests
                   </button>
-                  <button onClick={() => navigate('/dashboard/bookings')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                  <button onClick={() => navigate('/bookings')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                     My Bookings
                   </button>
                 </div>

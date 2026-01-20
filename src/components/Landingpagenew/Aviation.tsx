@@ -96,7 +96,7 @@ function Aviation({ setCurrentPage }: AviationProps) {
               Get a Quote
             </a>
             <button
-              onClick={() => navigate('/dashboard/chat?query=aviation&newChat=true')}
+              onClick={() => navigate('/chat?query=aviation&newChat=true')}
               className="px-4 py-2 bg-gray-900 rounded-full text-sm text-white hover:bg-gray-800 transition-colors"
             >
               Book by AI
@@ -178,7 +178,7 @@ function Aviation({ setCurrentPage }: AviationProps) {
                   Get a Quote
                 </a>
                 <button
-                  onClick={() => navigate('/dashboard/chat?query=private+jet&newChat=true')}
+                  onClick={() => navigate('/chat?query=private+jet&newChat=true')}
                   className="px-3 py-1.5 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors"
                 >
                   Book by AI
@@ -205,7 +205,7 @@ function Aviation({ setCurrentPage }: AviationProps) {
                 </p>
               </div>
               <button
-                onClick={() => navigate('/dashboard/empty-legs')}
+                onClick={() => navigate('/empty-legs')}
                 className="px-3 py-1.5 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors"
               >
                 View All
@@ -223,7 +223,7 @@ function Aviation({ setCurrentPage }: AviationProps) {
                 emptyLegs.slice(0, 8).map((leg, index) => (
                   <div
                     key={leg.id || index}
-                    onClick={() => navigate('/dashboard/empty-legs')}
+                    onClick={() => navigate('/empty-legs')}
                     className="group relative rounded-xl overflow-hidden cursor-pointer h-[180px] transition-all duration-500"
                   >
                     {/* Background Image */}
@@ -300,7 +300,7 @@ function Aviation({ setCurrentPage }: AviationProps) {
                   Get a Quote
                 </a>
                 <button
-                  onClick={() => navigate('/dashboard/chat?query=helicopter&newChat=true')}
+                  onClick={() => navigate('/chat?query=helicopter&newChat=true')}
                   className="px-3 py-1.5 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors"
                 >
                   Book by AI
@@ -340,7 +340,7 @@ function Aviation({ setCurrentPage }: AviationProps) {
                   Get a Quote
                 </a>
                 <button
-                  onClick={() => navigate('/dashboard/chat?query=group+charter&newChat=true')}
+                  onClick={() => navigate('/chat?query=group+charter&newChat=true')}
                   className="px-3 py-1.5 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors"
                 >
                   Book by AI
@@ -414,7 +414,7 @@ function Aviation({ setCurrentPage }: AviationProps) {
                   Get a Quote
                 </a>
                 <button
-                  onClick={() => navigate('/dashboard/chat?query=medevac+medical+evacuation&newChat=true')}
+                  onClick={() => navigate('/chat?query=medevac+medical+evacuation&newChat=true')}
                   className="px-3 py-1.5 bg-gray-900 rounded-full text-xs text-white hover:bg-gray-800 transition-colors"
                 >
                   Book by AI

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { X, Check, ChevronLeft, ChevronRight, Calendar, MapPin, Clock, Users } from 'lucide-react';
-import { FixedOffer } from '../../pages/FixedOffers';
+import { FixedOffer } from '../../services/fixedOffersService';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';

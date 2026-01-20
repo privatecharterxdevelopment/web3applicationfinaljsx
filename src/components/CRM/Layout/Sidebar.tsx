@@ -11,7 +11,8 @@ import {
   LogOut,
   Wallet,
   Globe,
-  MessageCircle
+  MessageCircle,
+  Gavel
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/CRM/AuthContext';
 
@@ -30,6 +31,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSectio
     { id: 'requests', label: 'User Requests', icon: FileText },
     { id: 'bookings', label: 'Bookings', icon: Calendar },
     { id: 'emptylegs', label: 'Empty Legs', icon: Plane },
+    { id: 'bids', label: 'Flight Bids', icon: Gavel },
     { id: 'subscriptions', label: 'Subscriptions', icon: CreditCard },
     { id: 'kyc', label: 'KYC Verification', icon: Shield },
     { id: 'live-support', label: 'Live Support', icon: MessageCircle },

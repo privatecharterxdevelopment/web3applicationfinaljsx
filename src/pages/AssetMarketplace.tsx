@@ -249,7 +249,7 @@ export default function AssetMarketplace() {
                       List your jets, yachts & more on Polymesh.
                     </p>
                     <button
-                      onClick={() => navigate('/dashboard/web3/tokenization')}
+                      onClick={() => navigate('/rws/tokenization')}
                       className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gray-200 text-gray-700 text-[10px] font-medium rounded-lg hover:bg-gray-300 transition-colors"
                     >
                       Get Started

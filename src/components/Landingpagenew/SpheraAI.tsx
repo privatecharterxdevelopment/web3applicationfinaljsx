@@ -276,7 +276,7 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
                   ].map((item, idx) => (
                     <button
                       key={idx}
-                      onClick={() => navigate(`/dashboard/chat?query=${encodeURIComponent(item.prompt)}&newChat=true`)}
+                      onClick={() => navigate(`/chat?query=${encodeURIComponent(item.prompt)}&newChat=true`)}
                       className="prompt-card group relative flex-shrink-0 flex items-center gap-3 pl-3 pr-4 py-4 rounded-2xl text-xs whitespace-nowrap cursor-pointer border border-gray-200/40"
                       style={{
                         background: 'rgba(255, 255, 255, 0.7)',
@@ -327,7 +327,7 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
                   ].map((item, idx) => (
                     <button
                       key={idx}
-                      onClick={() => navigate(`/dashboard/chat?query=${encodeURIComponent(item.prompt)}&newChat=true`)}
+                      onClick={() => navigate(`/chat?query=${encodeURIComponent(item.prompt)}&newChat=true`)}
                       className="prompt-card group relative flex-shrink-0 flex items-center gap-3 pl-3 pr-4 py-4 rounded-2xl text-xs whitespace-nowrap cursor-pointer border border-gray-200/40"
                       style={{
                         background: 'rgba(255, 255, 255, 0.7)',
@@ -378,7 +378,7 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
                   ].map((item, idx) => (
                     <button
                       key={idx}
-                      onClick={() => navigate(`/dashboard/chat?query=${encodeURIComponent(item.prompt)}&newChat=true`)}
+                      onClick={() => navigate(`/chat?query=${encodeURIComponent(item.prompt)}&newChat=true`)}
                       className="prompt-card group relative flex-shrink-0 flex items-center gap-3 pl-3 pr-4 py-4 rounded-2xl text-xs whitespace-nowrap cursor-pointer border border-gray-200/40"
                       style={{
                         background: 'rgba(255, 255, 255, 0.7)',
@@ -450,7 +450,7 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
                   </div>
                   <div className="flex-1 flex justify-center">
                     <div className="px-4 py-1 bg-white/60 rounded-md text-xs text-gray-500 font-light">
-                      privatecharterx.com/dashboard/chat
+                      privatecharterx.com/chat
                     </div>
                   </div>
                 </div>
@@ -634,7 +634,7 @@ function SpheraAI({ setCurrentPage }: SpheraAIProps) {
                 <span className="text-gray-500 text-xs">/mo</span>
               </div>
               <button
-                onClick={() => navigate('/dashboard/subscriptions/plans')}
+                onClick={() => navigate('/subscriptions/plans')}
                 className={`w-full py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   plan.popular
                     ? 'bg-gray-900 text-white hover:bg-gray-800'

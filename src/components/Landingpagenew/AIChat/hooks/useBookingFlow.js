@@ -413,7 +413,7 @@ export const useBookingFlow = ({
 
       // Redirect to AI Requests page
       setTimeout(() => {
-        window.location.href = '/dashboard/ai-requests';
+        window.location.href = '/ai-requests';
       }, 1500);
 
       return true;

@@ -319,7 +319,7 @@ const SubscriptionSuccessPage = () => {
           {/* Action Buttons */}
           <div className="space-y-2.5">
             <Link
-              to="/dashboard/chat"
+              to="/chat"
               className="w-full py-3 px-6 bg-gray-900 text-white font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors text-sm"
             >
               <MessageSquare className="w-4 h-4" />
@@ -336,7 +336,7 @@ const SubscriptionSuccessPage = () => {
             </Link>
 
             <Link
-              to="/dashboard/subscriptions/manage"
+              to="/subscriptions/manage"
               className="w-full py-2.5 px-6 bg-transparent text-gray-400 font-light rounded-xl flex items-center justify-center gap-2 hover:text-gray-600 transition-colors text-sm"
             >
               <Crown className="w-4 h-4" />

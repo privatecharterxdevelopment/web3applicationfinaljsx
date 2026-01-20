@@ -4,7 +4,7 @@ import {
   Check, Wifi, UtensilsCrossed, Car, Hotel, Shield, Star, Sparkles,
   Wallet, Building2, Loader2, X
 } from 'lucide-react';
-import { FixedOffer } from '../pages/FixedOffers';
+import { FixedOffer } from '../services/fixedOffersService';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
@@ -748,7 +748,7 @@ export default function AdventureBookingModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 sm:p-6 lg:p-10" style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 sm:p-6 lg:p-10" style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}>
       <div className="flex h-full max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3rem)] lg:max-h-[calc(100vh-5rem)] w-full max-w-6xl bg-white rounded-2xl shadow-2xl overflow-hidden">
         {/* Left - Image */}
         <div className="hidden lg:block lg:w-1/2 bg-gray-100 relative">
@@ -810,7 +810,7 @@ export default function AdventureBookingModal({
 
       {/* Login Prompt */}
       {showLoginPrompt && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl p-6 max-w-sm w-full">
             <h3 className="text-lg font-light text-gray-900 mb-2">Sign in to continue</h3>
             <p className="text-sm text-gray-500 font-light mb-6">Please sign in to book this adventure.</p>

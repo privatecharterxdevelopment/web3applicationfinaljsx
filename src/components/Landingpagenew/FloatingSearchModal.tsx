@@ -138,7 +138,7 @@ export default function FloatingSearchModal() {
       if (!isAuthenticated) {
         params.append('login', 'true');
       }
-      navigate(`/dashboard/chat?${params.toString()}`);
+      navigate(`/chat?${params.toString()}`);
     }
   };
 
@@ -152,17 +152,17 @@ export default function FloatingSearchModal() {
       // Navigate to AI chat with query - requires authentication
       if (isAuthenticated) {
         // Navigate directly to chat route with query
-        navigate(`/dashboard/chat?query=${encodeURIComponent(query)}`);
+        navigate(`/chat?query=${encodeURIComponent(query)}`);
       } else {
         // Navigate with login flag - will show login modal first
-        navigate(`/dashboard/chat?query=${encodeURIComponent(query)}&login=true`);
+        navigate(`/chat?query=${encodeURIComponent(query)}&login=true`);
       }
     } else {
       // If no query, just open AI chat
       if (isAuthenticated) {
-        navigate('/dashboard/chat');
+        navigate('/chat');
       } else {
-        navigate('/dashboard/chat?login=true');
+        navigate('/chat?login=true');
       }
     }
   };
@@ -202,9 +202,9 @@ export default function FloatingSearchModal() {
   // Handle Custom Travel Agent - opens new AI chat session
   const handleCustomTravelAgent = () => {
     if (isAuthenticated) {
-      navigate('/dashboard/chat?newChat=true');
+      navigate('/chat?newChat=true');
     } else {
-      navigate('/dashboard/chat?newChat=true&login=true');
+      navigate('/chat?newChat=true&login=true');
     }
   };
 
@@ -234,13 +234,13 @@ export default function FloatingSearchModal() {
         navigateWithAuth('/dashboard?tab=spv');
         break;
       case 'adventure package':
-        navigateWithAuth('/dashboard/chat?query=show me adventure packages');
+        navigateWithAuth('/chat?query=show me adventure packages');
         break;
       case 'holiday planer':
-        navigateWithAuth('/dashboard/chat?query=help me plan my holiday');
+        navigateWithAuth('/chat?query=help me plan my holiday');
         break;
       case 'travel designer':
-        navigateWithAuth('/dashboard/chat?query=design my travel itinerary');
+        navigateWithAuth('/chat?query=design my travel itinerary');
         break;
       case 'Co2 certificate':
         navigate('/dashboard?tab=co2');
@@ -254,19 +254,19 @@ export default function FloatingSearchModal() {
   const handleWeb3Click = (category: string) => {
     switch (category) {
       case 'free emptyleg':
-        navigate('/dashboard/empty-legs');
+        navigate('/empty-legs');
         break;
       case 'NFTs':
-        navigate('/dashboard/web3');
+        navigate('/rws');
         break;
       case 'asset-/tokenization':
-        navigateWithAuth('/dashboard/web3');
+        navigateWithAuth('/rws');
         break;
       case '$PVCX':
-        navigateWithAuth('/dashboard/web3');
+        navigateWithAuth('/rws');
         break;
       default:
-        navigate('/dashboard/web3');
+        navigate('/rws');
     }
   };
 

@@ -1246,7 +1246,7 @@ const ActivityCard = ({
                     onClick={(e) => {
                       e.stopPropagation();
                       // Navigate to AI chat dashboard where user can search again
-                      window.location.href = '/dashboard/chat';
+                      window.location.href = '/chat';
                     }}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg hover:bg-gray-800 transition-colors"
                   >

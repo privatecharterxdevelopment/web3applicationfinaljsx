@@ -81,7 +81,6 @@ import SpheraAI from './SpheraAI';
 import RWANFT from './RWANFT';
 
 // Import new pages
-import Adventures from '../../pages/Adventures';
 import FlightTickets from '../../pages/FlightTickets';
 import FlightBooking from '../../pages/FlightBooking';
 import EmptyLegs from '../../pages/EmptyLegs';
@@ -214,10 +213,10 @@ function ScrollToTop() {
   return null;
 }
 
-// Redirect /chat/:chatId to /dashboard/chat/:chatId to preserve sidebar layout
+// Redirect old /chat/:chatId to new /chat/:chatId (no change needed now)
 function ChatRedirect() {
   const { chatId } = useParams();
-  return <Navigate to={`/dashboard/chat/${chatId}`} replace />;
+  return <Navigate to={`/chat/${chatId}`} replace />;
 }
 
 // Page transition animations
@@ -358,157 +357,77 @@ function AppContent() {
               <Route path="/offers" element={<AdminOffers />} />
             </>
           ) : (
-            // Main Site Routes
+            // Main Site Routes - Clean URLs without /dashboard prefix
             <>
-              {/* CHECKOUT PAGE ROUTE - CRITICAL FOR WEB3 PAYMENTS */}
+              {/* ===== HOMEPAGE ===== */}
+              <Route path="/" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/home" element={<TokenizedAssetsGlassmorphic key="main" />} />
+
+              {/* ===== MAIN SERVICE ROUTES (formerly /dashboard/*) ===== */}
+              <Route path="/jets" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/helis" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/empty-legs" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/adventures" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/flights" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/flight-bids" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/ground-transport" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/luxury-cars" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/hotels" element={<TokenizedAssetsGlassmorphic key="main" />} />
+
+              {/* ===== AI CHAT ROUTES ===== */}
+              <Route path="/chat" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/chat/:chatId" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/ai-chat" element={<TokenizedAssetsGlassmorphic key="main" />} />
+
+              {/* ===== USER ACCOUNT ROUTES ===== */}
+              <Route path="/profile" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/settings" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/bookings" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/my-bookings" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/transactions" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/calendar" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/favourites" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/notifications" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/bids" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/messages" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/requests" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/my-requests" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/ai-requests" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/activities" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/chat-history" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/kyc-verification" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/referral" element={<TokenizedAssetsGlassmorphic key="main" />} />
+
+              {/* ===== SUBSCRIPTIONS ===== */}
+              <Route path="/subscriptions" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/subscriptions/plans" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/subscriptions/manage" element={<TokenizedAssetsGlassmorphic key="main" />} />
+
+              {/* ===== WEB3/RWS ROUTES ===== */}
+              <Route path="/rws" element={<TokenizedAssetsGlassmorphic key="main-rws" />} />
+              <Route path="/rws/marketplace" element={<TokenizedAssetsGlassmorphic key="main-rws" />} />
+              <Route path="/rws/tokenization" element={<TokenizedAssetsGlassmorphic key="main-rws" />} />
+              <Route path="/rws/nft-marketplace" element={<TokenizedAssetsGlassmorphic key="main-rws" />} />
+              <Route path="/rws/launchpad" element={<TokenizedAssetsGlassmorphic key="main-rws" />} />
+              <Route path="/rws/pvcx-token" element={<TokenizedAssetsGlassmorphic key="main-rws" />} />
+              <Route path="/rws/tokenize-asset" element={<TokenizedAssetsGlassmorphic key="main-rws" />} />
+              <Route path="/rws/spv-formation" element={<TokenizedAssetsGlassmorphic key="main-rws" />} />
+              <Route path="/rws/my-tokenized-assets" element={<TokenizedAssetsGlassmorphic key="main-rws" />} />
+              <Route path="/rws/my-spvs" element={<TokenizedAssetsGlassmorphic key="main-rws" />} />
+              <Route path="/my-launches" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/search-index" element={<TokenizedAssetsGlassmorphic key="main" />} />
+
+              {/* ===== FAQS ===== */}
+              <Route path="/faqs" element={<TokenizedAssetsGlassmorphic key="main" />} />
+
+              {/* ===== CHECKOUT PAGE - CRITICAL FOR WEB3 PAYMENTS ===== */}
               <Route path="/checkout" element={<CheckoutPage />} />
 
-              {/* Google Calendar OAuth Callback */}
-              <Route path="/auth/google/callback" element={<GoogleCalendarCallback />} />
-
-              {/* Landing Page Routes */}
-              <Route path="/services" element={<Services setCurrentPage={() => {}} />} />
-              <Route path="/technology" element={<Technology setCurrentPage={() => {}} />} />
-              <Route path="/aviation" element={<Aviation setCurrentPage={() => {}} />} />
-              <Route path="/tokenized" element={<Tokenized setCurrentPage={() => {}} />} />
-              <Route path="/sphera-ai" element={<SpheraAI setCurrentPage={() => {}} />} />
-              <Route path="/rwa-nft" element={<RWANFT setCurrentPage={() => {}} />} />
-              <Route path="/helpdesk" element={<Helpdesk setCurrentPage={() => {}} />} />
-              <Route path="/tokenswap" element={<TokenSwapPage />} />
-              <Route path="/crypto-fund" element={<CryptoFund />} />
-
-              {/* New standalone pages */}
-              <Route path="/adventures" element={<Adventures />} />
-              <Route path="/fixed-offers" element={<Adventures />} />
-              <Route path="/flight-tickets" element={<FlightTickets />} />
-              <Route path="/flights" element={<FlightTickets />} />
+              {/* ===== BOOKING ROUTES ===== */}
               <Route path="/book/flight/:offerId" element={<FlightBooking />} />
-              <Route path="/empty-legs" element={<EmptyLegs />} />
               <Route path="/book/empty-leg/:id" element={<EmptyLegBooking />} />
 
-              {/* Asset Marketplace - Polymesh Tokenized Assets */}
-              {/* Asset Marketplace - disabled (no license)
-              <Route path="/marketplace" element={<AssetMarketplace />} />
-              <Route path="/marketplace/:ticker" element={<AssetMarketplaceDetail />} />
-              */}
-
-              {/* ===== LEGAL PAGES ===== */}
-              <Route path="/terms" element={<TermsConditions />} />
-              <Route path="/privacy" element={<PrivacyPolicy />} />
-              <Route path="/imprint" element={<Impressum />} />
-              <Route path="/cookies" element={<PrivacyPolicy />} />
-
-              {/* ===== LEGACY WEB3 REDIRECTS - Must be before /dashboard catch-all ===== */}
-              <Route path="/dashboard/launchpad" element={<Navigate to="/dashboard/web3/launchpad" replace />} />
-              <Route path="/dashboard/nft-marketplace" element={<Navigate to="/dashboard/web3/nft-marketplace" replace />} />
-              <Route path="/dashboard/marketplace" element={<Navigate to="/dashboard/web3/marketplace" replace />} />
-              <Route path="/dashboard/pvcx-token" element={<Navigate to="/dashboard/web3/pvcx-token" replace />} />
-              <Route path="/dashboard/sto-utl" element={<Navigate to="/dashboard/web3/launchpad" replace />} />
-              <Route path="/dashboard/tokenization" element={<Navigate to="/dashboard/web3/tokenization" replace />} />
-              <Route path="/dashboard/my-tokenized-assets" element={<Navigate to="/dashboard/web3/my-tokenized-assets" replace />} />
-
-              {/* Dashboard Route - Glassmorphic Dashboard with Empty Legs & RWS */}
-              <Route path="/dashboard" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-
-              {/* CRM Admin Route - Full CRM System */}
-              <Route path="/crm" element={<CRMPage />} />
-              <Route path="/crm-admin" element={<CRMPage />} />
-              {/* Old simple admin (kept for backwards compatibility) */}
-              <Route path="/admin" element={<AdminCRM />} />
-
-              {/* Dashboard AI Chat - new chat session */}
-              <Route path="/dashboard/chat" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-
-              {/* Dashboard with specific chat session - allows direct linking to chats */}
-              <Route path="/dashboard/chat/:chatId" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-
-              {/* Service category routes - use same key to prevent remount on route change */}
-              <Route path="/dashboard/jets" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/helis" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/empty-legs" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/ground-transport" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/transfer" element={<Navigate to="/dashboard?tab=ground-transport" replace />} />
-              <Route path="/ground-transport" element={<Navigate to="/dashboard/ground-transport" replace />} />
-
-              {/* SPV routes - redirect to Web3 */}
-              <Route path="/dashboard/spv" element={<Navigate to="/dashboard/web3/spv-formation" replace />} />
-              <Route path="/dashboard/spv/create" element={<Navigate to="/dashboard/web3/spv-formation" replace />} />
-              <Route path="/dashboard/spv/my-spvs" element={<Navigate to="/dashboard/web3/my-tokenized-assets" replace />} />
-
-              {/* Dashboard sub-routes - All render within the dashboard */}
-              <Route path="/dashboard/home" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/services" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/jets" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/flights" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/helicopter" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/helis" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/adventures" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/empty-legs" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/luxury-cars" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/ground-transport" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/hotels" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/chat" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/ai-chat" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/subscriptions" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/my-requests" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/settings" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              {/* <Route path="/dashboard/card" element={<TokenizedAssetsGlassmorphic key="dashboard" />} /> */}
-
-              {/* RWA Dashboard Routes - redirect to Web3 */}
-              <Route path="/dashboard/rwa" element={<Navigate to="/dashboard/web3/tokenization" replace />} />
-              <Route path="/dashboard/rwa/tokenize" element={<Navigate to="/dashboard/web3/tokenize-asset" replace />} />
-              <Route path="/dashboard/rwa/assets" element={<Navigate to="/dashboard/web3/my-tokenized-assets" replace />} />
-
-              {/* Web3 Dashboard Routes - with /dashboard/web3/ prefix */}
-              <Route path="/dashboard/web3" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
-              <Route path="/dashboard/web3/marketplace" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
-              <Route path="/dashboard/web3/tokenization" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
-              <Route path="/dashboard/web3/nft-marketplace" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
-              <Route path="/dashboard/web3/launchpad" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
-              <Route path="/dashboard/web3/pvcx-token" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
-              <Route path="/dashboard/web3/tokenize-asset" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
-              <Route path="/dashboard/web3/spv-formation" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
-              <Route path="/dashboard/web3/my-tokenized-assets" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
-              <Route path="/dashboard/web3/my-spvs" element={<TokenizedAssetsGlassmorphic key="dashboard-web3" />} />
-
-              {/* User Dashboard Routes */}
-              <Route path="/dashboard/activities" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/requests" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/ai-requests" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/bookings" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/my-bookings" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/transactions" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/calendar" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/favourites" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/notifications" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/settings" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/kyc-verification" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/referral" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/my-launches" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/search-index" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/faqs" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/chat-history" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/profile" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-
-              {/* User Overview Dashboard (old) */}
-              <Route path="/user-overview" element={<Dashboard />} />
-
-              {/* Tokenized Assets Route - Redirect to new dashboard */}
-              <Route path="/tokenized-assets" element={<Navigate to="/dashboard" replace />} />
-
-              {/* Legacy redirect - /glas now redirects to /dashboard */}
-              <Route path="/glas" element={<Navigate to="/dashboard" replace />} />
-
-              {/* AI Chat direct route - redirect to /dashboard/chat */}
-              <Route path="/chat" element={<Navigate to="/dashboard/chat" replace />} />
-
-              {/* AI Chat with specific conversation ID - redirect to dashboard */}
-              <Route path="/chat/:chatId" element={<ChatRedirect />} />
-
-              {/* Individual Project Pages */}
-              <Route path="/project/:projectId" element={<ProjectPage />} />
-
-              {/* Detail Pages */}
+              {/* ===== DETAIL PAGES ===== */}
               <Route path="/empty-leg/:id" element={<EmptyLegDetail />} />
               <Route path="/adventure/:id" element={<AdventureDetail />} />
               <Route path="/luxury-car/:id" element={<LuxuryCarDetail />} />
@@ -516,96 +435,174 @@ function AppContent() {
               <Route path="/helicopter/:id" element={<HelicopterDetail />} />
               <Route path="/co2-certificate/:id" element={<CO2CertificateDetail />} />
               <Route path="/hotel/:id" element={<HotelDetail />} />
+              <Route path="/project/:projectId" element={<ProjectPage />} />
 
-              {/* Legacy redirect - kept for backwards compatibility */}
-              <Route path="/tokenized-assets/dashboard" element={<Navigate to="/dashboard" replace />} />
+              {/* ===== LANDING PAGE ROUTES ===== */}
+              <Route path="/services" element={<Services setCurrentPage={() => {}} />} />
+              <Route path="/aviation" element={<Aviation setCurrentPage={() => {}} />} />
+              <Route path="/tokenized" element={<Tokenized setCurrentPage={() => {}} />} />
+              <Route path="/sphera-ai" element={<SpheraAI setCurrentPage={() => {}} />} />
+              <Route path="/helpdesk" element={<Helpdesk setCurrentPage={() => {}} />} />
+              <Route path="/tokenswap" element={<TokenSwapPage />} />
+              <Route path="/crypto-fund" element={<CryptoFund />} />
 
-              {/* Partner Dashboard Route */}
-              <Route path="/partner-dashboard" element={<PartnerDashboard />} />
+              {/* ===== LEGAL PAGES ===== */}
+              <Route path="/terms" element={<TermsConditions />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/imprint" element={<Impressum />} />
+              <Route path="/cookies" element={<PrivacyPolicy />} />
 
-              {/* Charter a Jet Route - Redirect to AI Chat with prefilled message */}
-              <Route path="/charter-a-jet" element={<Navigate to="/dashboard/chat?query=I%20want%20to%20charter%20a%20private%20jet" replace />} />
-
-              {/* ===== SPV Routes - redirect to Web3 ===== */}
-              <Route path="/spv" element={<Navigate to="/dashboard/web3/spv-formation" replace />} />
-              <Route path="/spv/create" element={<Navigate to="/dashboard/web3/spv-formation" replace />} />
-              <Route path="/spv/my-spvs" element={<Navigate to="/dashboard/web3/my-tokenized-assets" replace />} />
-              <Route path="/spv-formation" element={<Navigate to="/dashboard/web3/spv-formation" replace />} />
-
-              {/* ===== RWA Routes - redirect to Web3 ===== */}
-              <Route path="/rwa" element={<Navigate to="/dashboard/web3/tokenization" replace />} />
-              <Route path="/rwa/tokenize" element={<Navigate to="/dashboard/web3/tokenize-asset" replace />} />
-              <Route path="/rwa/assets" element={<Navigate to="/dashboard/web3/my-tokenized-assets" replace />} />
-              <Route path="/rwa/marketplace" element={<Navigate to="/dashboard/web3/marketplace" replace />} />
-
-              {/* ===== Web3 Routes - Redirect to /dashboard/web3/* ===== */}
-              <Route path="/web3" element={<Navigate to="/dashboard/web3" replace />} />
-              <Route path="/web3/ico" element={<Navigate to="/dashboard/web3/launchpad" replace />} />
-              <Route path="/web3/nft" element={<Navigate to="/dashboard/web3/nft-marketplace" replace />} />
-              <Route path="/web3/nft-collection" element={<Navigate to="/dashboard/web3/nft-marketplace" replace />} />
-              <Route path="/web3/launchpad" element={<Navigate to="/dashboard/web3/launchpad" replace />} />
-
-              {/* ===== Subscriptions Routes ===== */}
-              <Route path="/subscriptions" element={<Navigate to="/dashboard/subscriptions/plans" replace />} />
-              <Route path="/subscriptions/plans" element={<Navigate to="/dashboard/subscriptions/plans" replace />} />
-              <Route path="/subscriptions/manage" element={<Navigate to="/dashboard/subscriptions/manage" replace />} />
-              <Route path="/dashboard/subscriptions" element={<Navigate to="/dashboard/subscriptions/plans" replace />} />
-              <Route path="/dashboard/subscriptions/plans" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-              <Route path="/dashboard/subscriptions/manage" element={<TokenizedAssetsGlassmorphic key="dashboard" />} />
-
-              {/* Auth Routes */}
+              {/* ===== AUTH ROUTES ===== */}
               <Route path="/login" element={<LoginNew />} />
               <Route path="/register" element={<RegisterNew />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/auth/google/callback" element={<GoogleCalendarCallback />} />
 
-              {/* All other pages now integrated into dashboard */}
+              {/* ===== CRM ADMIN ROUTES ===== */}
+              <Route path="/crm" element={<CRMPage />} />
+              <Route path="/crm-admin" element={<CRMPage />} />
+              <Route path="/admin" element={<AdminCRM />} />
 
-              {/* Newsletter Routes */}
+              {/* ===== PARTNER ROUTES ===== */}
+              <Route path="/partner-dashboard" element={<PartnerDashboard />} />
+
+              {/* ===== NEWSLETTER ROUTES ===== */}
               <Route path="/newsletter/preferences" element={<NewsletterPreferences />} />
               <Route path="/newsletter/unsubscribe" element={<NewsletterUnsubscribe />} />
 
-              {/* Payment Status Routes */}
+              {/* ===== PAYMENT ROUTES ===== */}
               <Route path="/payment/success" element={<PaymentSuccessPage />} />
               <Route path="/payment/cancel" element={<PaymentCancelPage />} />
-
-              {/* Subscription Success Routes */}
               <Route path="/subscription/success" element={<SubscriptionSuccessPage />} />
-              <Route path="/dashboard/success" element={<SubscriptionSuccessPage />} />
 
-              {/* ===== DEAD PAGE REDIRECTS - For old Google indexed pages ===== */}
-              {/* FAQ pages - redirect to dashboard */}
-              <Route path="/faq" element={<Navigate to="/dashboard" replace />} />
+              {/* ===== LEGACY /dashboard/* REDIRECTS (SEO backwards compatibility) ===== */}
+              <Route path="/dashboard" element={<Navigate to="/" replace />} />
+              <Route path="/dashboard/home" element={<Navigate to="/home" replace />} />
+              <Route path="/dashboard/jets" element={<Navigate to="/jets" replace />} />
+              <Route path="/dashboard/helis" element={<Navigate to="/helis" replace />} />
+              <Route path="/dashboard/empty-legs" element={<Navigate to="/empty-legs" replace />} />
+              <Route path="/dashboard/adventures" element={<Navigate to="/adventures" replace />} />
+              <Route path="/dashboard/flights" element={<Navigate to="/flights" replace />} />
+              <Route path="/dashboard/flight-ops" element={<Navigate to="/flight-bids" replace />} />
+              <Route path="/dashboard/ground-transport" element={<Navigate to="/ground-transport" replace />} />
+              <Route path="/dashboard/luxury-cars" element={<Navigate to="/luxury-cars" replace />} />
+              <Route path="/dashboard/hotels" element={<Navigate to="/hotels" replace />} />
+              <Route path="/dashboard/chat" element={<Navigate to="/chat" replace />} />
+              <Route path="/dashboard/chat/:chatId" element={<ChatRedirect />} />
+              <Route path="/dashboard/ai-chat" element={<Navigate to="/ai-chat" replace />} />
+              <Route path="/dashboard/profile" element={<Navigate to="/profile" replace />} />
+              <Route path="/dashboard/settings" element={<Navigate to="/settings" replace />} />
+              <Route path="/dashboard/bookings" element={<Navigate to="/bookings" replace />} />
+              <Route path="/dashboard/my-bookings" element={<Navigate to="/my-bookings" replace />} />
+              <Route path="/dashboard/transactions" element={<Navigate to="/transactions" replace />} />
+              <Route path="/dashboard/calendar" element={<Navigate to="/calendar" replace />} />
+              <Route path="/dashboard/favourites" element={<Navigate to="/favourites" replace />} />
+              <Route path="/dashboard/notifications" element={<Navigate to="/notifications" replace />} />
+              <Route path="/dashboard/bids" element={<Navigate to="/bids" replace />} />
+              <Route path="/dashboard/messages" element={<Navigate to="/messages" replace />} />
+              <Route path="/dashboard/requests" element={<Navigate to="/requests" replace />} />
+              <Route path="/dashboard/my-requests" element={<Navigate to="/my-requests" replace />} />
+              <Route path="/dashboard/ai-requests" element={<Navigate to="/ai-requests" replace />} />
+              <Route path="/dashboard/activities" element={<Navigate to="/activities" replace />} />
+              <Route path="/dashboard/chat-history" element={<Navigate to="/chat-history" replace />} />
+              <Route path="/dashboard/kyc-verification" element={<Navigate to="/kyc-verification" replace />} />
+              <Route path="/dashboard/referral" element={<Navigate to="/referral" replace />} />
+              <Route path="/dashboard/subscriptions" element={<Navigate to="/subscriptions" replace />} />
+              <Route path="/dashboard/subscriptions/plans" element={<Navigate to="/subscriptions/plans" replace />} />
+              <Route path="/dashboard/subscriptions/manage" element={<Navigate to="/subscriptions/manage" replace />} />
+              <Route path="/dashboard/my-launches" element={<Navigate to="/my-launches" replace />} />
+              <Route path="/dashboard/search-index" element={<Navigate to="/search-index" replace />} />
+              <Route path="/dashboard/success" element={<Navigate to="/subscription/success" replace />} />
+              <Route path="/dashboard/transfer" element={<Navigate to="/ground-transport" replace />} />
+              <Route path="/dashboard/services" element={<Navigate to="/services" replace />} />
+              <Route path="/dashboard/helicopter" element={<Navigate to="/helis" replace />} />
 
-              {/* Partner pages - redirect to homepage */}
-              <Route path="/partner" element={<Navigate to="/dashboard/home" replace />} />
-              <Route path="/partner-with-us" element={<Navigate to="/dashboard/home" replace />} />
+              {/* Legacy /dashboard/web3/* redirects to /rws/* */}
+              <Route path="/dashboard/web3" element={<Navigate to="/rws" replace />} />
+              <Route path="/dashboard/web3/marketplace" element={<Navigate to="/rws/marketplace" replace />} />
+              <Route path="/dashboard/web3/tokenization" element={<Navigate to="/rws/tokenization" replace />} />
+              <Route path="/dashboard/web3/nft-marketplace" element={<Navigate to="/rws/nft-marketplace" replace />} />
+              <Route path="/dashboard/web3/launchpad" element={<Navigate to="/rws/launchpad" replace />} />
+              <Route path="/dashboard/web3/pvcx-token" element={<Navigate to="/rws/pvcx-token" replace />} />
+              <Route path="/dashboard/web3/tokenize-asset" element={<Navigate to="/rws/tokenize-asset" replace />} />
+              <Route path="/dashboard/web3/spv-formation" element={<Navigate to="/rws/spv-formation" replace />} />
+              <Route path="/dashboard/web3/my-tokenized-assets" element={<Navigate to="/rws/my-tokenized-assets" replace />} />
+              <Route path="/dashboard/web3/my-spvs" element={<Navigate to="/rws/my-spvs" replace />} />
 
-              {/* Service pages - redirect to aviation */}
+              {/* Legacy dashboard routes */}
+              <Route path="/dashboard/launchpad" element={<Navigate to="/rws/launchpad" replace />} />
+              <Route path="/dashboard/nft-marketplace" element={<Navigate to="/rws/nft-marketplace" replace />} />
+              <Route path="/dashboard/marketplace" element={<Navigate to="/rws/marketplace" replace />} />
+              <Route path="/dashboard/pvcx-token" element={<Navigate to="/rws/pvcx-token" replace />} />
+              <Route path="/dashboard/sto-utl" element={<Navigate to="/rws/launchpad" replace />} />
+              <Route path="/dashboard/tokenization" element={<Navigate to="/rws/tokenization" replace />} />
+              <Route path="/dashboard/my-tokenized-assets" element={<Navigate to="/rws/my-tokenized-assets" replace />} />
+              <Route path="/dashboard/spv" element={<Navigate to="/rws/spv-formation" replace />} />
+              <Route path="/dashboard/spv/create" element={<Navigate to="/rws/spv-formation" replace />} />
+              <Route path="/dashboard/spv/my-spvs" element={<Navigate to="/rws/my-tokenized-assets" replace />} />
+              <Route path="/dashboard/rwa" element={<Navigate to="/rws/tokenization" replace />} />
+              <Route path="/dashboard/rwa/tokenize" element={<Navigate to="/rws/tokenize-asset" replace />} />
+              <Route path="/dashboard/rwa/assets" element={<Navigate to="/rws/my-tokenized-assets" replace />} />
+
+              {/* ===== OTHER LEGACY REDIRECTS ===== */}
+              <Route path="/tokenized-assets" element={<Navigate to="/" replace />} />
+              <Route path="/tokenized-assets/dashboard" element={<Navigate to="/" replace />} />
+              <Route path="/glas" element={<Navigate to="/" replace />} />
+              <Route path="/user-overview" element={<Dashboard />} />
+              <Route path="/flight-tickets" element={<Navigate to="/flights" replace />} />
+              <Route path="/fixed-offers" element={<Navigate to="/adventures" replace />} />
+              <Route path="/charter-a-jet" element={<Navigate to="/chat?query=I%20want%20to%20charter%20a%20private%20jet" replace />} />
+
+              {/* SPV Routes - redirect to RWS */}
+              <Route path="/spv" element={<Navigate to="/rws/spv-formation" replace />} />
+              <Route path="/spv/create" element={<Navigate to="/rws/spv-formation" replace />} />
+              <Route path="/spv/my-spvs" element={<Navigate to="/rws/my-tokenized-assets" replace />} />
+              <Route path="/spv-formation" element={<Navigate to="/rws/spv-formation" replace />} />
+
+              {/* RWA Routes - redirect to RWS */}
+              <Route path="/rwa" element={<Navigate to="/rws/tokenization" replace />} />
+              <Route path="/rwa/tokenize" element={<Navigate to="/rws/tokenize-asset" replace />} />
+              <Route path="/rwa/assets" element={<Navigate to="/rws/my-tokenized-assets" replace />} />
+              <Route path="/rwa/marketplace" element={<Navigate to="/rws/marketplace" replace />} />
+
+              {/* Web3 Routes - redirect to RWS */}
+              <Route path="/web3" element={<Navigate to="/rws" replace />} />
+              <Route path="/web3/ico" element={<Navigate to="/rws/launchpad" replace />} />
+              <Route path="/web3/nft" element={<Navigate to="/rws/nft-marketplace" replace />} />
+              <Route path="/web3/nft-collection" element={<Navigate to="/rws/nft-marketplace" replace />} />
+              <Route path="/web3/launchpad" element={<Navigate to="/rws/launchpad" replace />} />
+
+              {/* ===== DEAD PAGE REDIRECTS - For old Google/Bing indexed pages ===== */}
+              <Route path="/services/*" element={<Navigate to="/aviation" replace />} />
+              <Route path="/privatecharterx-support" element={<Navigate to="/helpdesk" replace />} />
+              <Route path="/support" element={<Navigate to="/helpdesk" replace />} />
+              <Route path="/partners-board" element={<Navigate to="/home" replace />} />
+              <Route path="/partners" element={<Navigate to="/home" replace />} />
+              <Route path="/web3/flight-tracker" element={<Navigate to="/home" replace />} />
+              <Route path="/web3/tracker" element={<Navigate to="/home" replace />} />
+              <Route path="/faq" element={<Navigate to="/faqs" replace />} />
+              <Route path="/partner" element={<Navigate to="/home" replace />} />
+              <Route path="/partner-with-us" element={<Navigate to="/home" replace />} />
               <Route path="/private-jet" element={<Navigate to="/aviation" replace />} />
               <Route path="/private-jet-charter" element={<Navigate to="/aviation" replace />} />
               <Route path="/evtol" element={<Navigate to="/aviation" replace />} />
               <Route path="/evtol-flights" element={<Navigate to="/aviation" replace />} />
               <Route path="/helicopter" element={<Navigate to="/aviation" replace />} />
               <Route path="/helicopter-charter" element={<Navigate to="/aviation" replace />} />
-              <Route path="/yacht" element={<Navigate to="/dashboard/home" replace />} />
+              <Route path="/yacht" element={<Navigate to="/home" replace />} />
               <Route path="/group-charter" element={<Navigate to="/aviation" replace />} />
-
-              {/* Info pages - redirect to homepage */}
-              <Route path="/how-it-works" element={<Navigate to="/dashboard/home" replace />} />
-              <Route path="/about" element={<Navigate to="/dashboard/home" replace />} />
+              <Route path="/how-it-works" element={<Navigate to="/home" replace />} />
+              <Route path="/about" element={<Navigate to="/home" replace />} />
               <Route path="/contact" element={<Navigate to="/helpdesk" replace />} />
               <Route path="/safety" element={<Navigate to="/aviation" replace />} />
-              <Route path="/blog" element={<Navigate to="/dashboard/home" replace />} />
-              <Route path="/news" element={<Navigate to="/dashboard/home" replace />} />
-
-              {/* Membership pages - redirect to dashboard */}
-              <Route path="/membership" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/jet-card" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/visa" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/luxury-cars" element={<Navigate to="/dashboard" replace />} />
-
-              {/* Web3/Crypto pages - redirect to tokenized */}
+              <Route path="/blog" element={<Navigate to="/home" replace />} />
+              <Route path="/news" element={<Navigate to="/home" replace />} />
+              <Route path="/technology" element={<Navigate to="/home" replace />} />
+              <Route path="/rwa-nft" element={<Navigate to="/tokenized" replace />} />
+              <Route path="/membership" element={<Navigate to="/subscriptions" replace />} />
+              <Route path="/jet-card" element={<Navigate to="/subscriptions" replace />} />
+              <Route path="/visa" element={<Navigate to="/home" replace />} />
               <Route path="/ico" element={<Navigate to="/tokenized" replace />} />
               <Route path="/nft" element={<Navigate to="/tokenized" replace />} />
               <Route path="/dao" element={<Navigate to="/tokenized" replace />} />
@@ -613,10 +610,7 @@ function AppContent() {
               <Route path="/carbon" element={<Navigate to="/tokenized" replace />} />
               <Route path="/co2" element={<Navigate to="/tokenized" replace />} />
               <Route path="/marketplace" element={<Navigate to="/tokenized" replace />} />
-              <Route path="/behind-the-scene" element={<Navigate to="/dashboard/home" replace />} />
-
-              {/* Home Route - Redirect to Dashboard */}
-              <Route path="/" element={<Navigate to="/dashboard/home" replace />} />
+              <Route path="/behind-the-scene" element={<Navigate to="/home" replace />} />
             </>
           )}
         </Routes>

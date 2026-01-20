@@ -5,8 +5,8 @@ import {
   Plane, Zap, Mountain, Car, MapPin, Sparkles, Rocket,
   Leaf, Award, Settings, User, ChevronRight, ChevronDown, ChevronUp, ChevronLeft, X, LogOut, MessageSquare, MessageCircle,
   Users, Calendar, Package, Compass, ArrowLeft, ArrowRight, Wallet, History, Crown, Gift, LayoutDashboard, Clock,
-  Mail, Phone, Globe, FileText, Edit3, Check, Loader2, Building2, Coins, Share2, Menu, ExternalLink, SlidersHorizontal, Info, CreditCard,
-  ShoppingCart, Send, AlertCircle, Lock, Activity
+  Mail, Phone, Globe, FileText, Edit3, Check, CheckCircle, Loader2, Building2, Coins, Share2, Menu, ExternalLink, SlidersHorizontal, Info, CreditCard,
+  ShoppingCart, Send, AlertCircle, Lock, Activity, Gavel
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -35,6 +35,8 @@ import MyRequestsView from '../MyRequestsView';
 import MyBookingsView from '../MyBookingsView';
 import MyActivityView from '../MyActivityView';
 import SupportMessagesView from '../SupportMessagesView';
+import BidsView from '../BidsView';
+import FlightOpsView from '../FlightOpsView';
 import MembershipCard from '../MembershipCard';
 import ReferralCard from '../ReferralCard';
 import SubscriptionManagement from '../SubscriptionManagement';
@@ -50,7 +52,6 @@ import STOUTLDashboard from './STOUTLDashboard';
 import Marketplace from './Marketplace';
 import P2PMarketplace from './P2PMarketplace';
 import TokenizedAssetsShowcase from './TokenizedAssetsShowcase';
-import CommunityPage from './CommunityPage';
 import MyLaunches from './MyLaunches';
 import { useNFT } from '../../context/NFTContext';
 import NFTBenefitsModal from '../NFTBenefitsModal';
@@ -82,6 +83,7 @@ import HotelsView from '../Hotels/HotelsView';
 import { convertToUSD, initializeExchangeRates } from '../../services/currencyService';
 import { generateSubscriptionConfirmationPDF, downloadPDF } from '../../services/pdfGeneratorService';
 import AdventureBookingModal from '../AdventureBookingModal';
+import FlightBidModal from '../modals/FlightBidModal';
 import FlightSearchDashboard from '../FlightSearchDashboard';
 import { LiveSupportWidget, AdminSupportDashboard } from '../LiveSupportChat';
 
@@ -330,7 +332,12 @@ Happy travels!`,
               loop
               muted
               playsInline
-              className="w-full h-full object-contain"
+              controls={false}
+              disablePictureInPicture
+              preload="auto"
+              webkit-playsinline="true"
+              x5-playsinline="true"
+              className="w-full h-full object-contain pointer-events-none"
             >
               <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
             </video>
@@ -1186,6 +1193,93 @@ const TokenizedAssetsGlassmorphic = () => {
   const [homeSearchQuery, setHomeSearchQuery] = useState('');
   const [showSubscriptionPopupDismissed, setShowSubscriptionPopupDismissed] = useState(false);
   const [promoSlideIndex, setPromoSlideIndex] = useState(0);
+  const [footerBannerIndex, setFooterBannerIndex] = useState(0);
+
+  // Footer banner carousel data
+  const footerBanners = [
+    {
+      title: 'Discover the world',
+      subtitle: 'Commercial flights to 5,000+ destinations',
+      bg: 'https://auth.privatecharterx.com/storage/v1/object/public/routes%20bids/emirates-flying-in-vibrant-clouds-at-sunset-w1920x480.avif',
+      category: 'flights'
+    },
+    {
+      title: 'Fly private wherever you like',
+      subtitle: 'Whenever you like',
+      bg: 'https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/Whisk_f63c4a88c894c04a8b4479a70bc04333dr.png',
+      category: 'jets'
+    },
+    {
+      title: 'Drivers & transfers',
+      subtitle: 'A chat away',
+      bg: 'https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/2021-Mercedes-Benz-S-Class-4-smaller-tall.avif',
+      category: 'chat',
+      query: 'airport transfer'
+    },
+    {
+      title: 'Explore the world',
+      subtitle: 'From every angle',
+      bg: 'https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/intro-1676579298.jpg',
+      category: 'adventures'
+    },
+    {
+      title: 'Plan your custom travel',
+      subtitle: 'AI-powered trip planning',
+      bg: 'https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/pink-cloud-filled-u6r9k0g7hs5w01in.jpg',
+      category: 'chat',
+      query: 'plan my trip'
+    }
+  ];
+
+  // Footer banner auto-rotation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFooterBannerIndex((prev) => (prev + 1) % footerBanners.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [footerBanners.length]);
+
+  // Search input typing animation
+  const searchPlaceholderPhrases = [
+    'Book your travel by chat',
+    'How can we help you today?',
+    'Economic flights to Ibiza?',
+    'Call a driver within chat?',
+    'Short trip for two?',
+    'Private jet to Monaco?',
+    'Helicopter tour in NYC?'
+  ];
+  const [typingPhraseIndex, setTypingPhraseIndex] = useState(0);
+  const [typingCharIndex, setTypingCharIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [typingPlaceholder, setTypingPlaceholder] = useState('');
+
+  useEffect(() => {
+    const currentPhrase = searchPlaceholderPhrases[typingPhraseIndex];
+
+    const typeSpeed = isDeleting ? 30 : 60;
+    const pauseTime = isDeleting ? 500 : 2000;
+
+    if (!isDeleting && typingCharIndex === currentPhrase.length) {
+      // Finished typing, pause then start deleting
+      const timeout = setTimeout(() => setIsDeleting(true), pauseTime);
+      return () => clearTimeout(timeout);
+    }
+
+    if (isDeleting && typingCharIndex === 0) {
+      // Finished deleting, move to next phrase
+      setIsDeleting(false);
+      setTypingPhraseIndex((prev) => (prev + 1) % searchPlaceholderPhrases.length);
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      setTypingCharIndex((prev) => prev + (isDeleting ? -1 : 1));
+      setTypingPlaceholder(currentPhrase.substring(0, typingCharIndex + (isDeleting ? -1 : 1)));
+    }, typeSpeed);
+
+    return () => clearTimeout(timeout);
+  }, [typingCharIndex, isDeleting, typingPhraseIndex, searchPlaceholderPhrases]);
 
   // Charter a jet expandable fields state (same as homepage)
   const [showHomeCharterFields, setShowHomeCharterFields] = useState(false);
@@ -1201,71 +1295,73 @@ const TokenizedAssetsGlassmorphic = () => {
   const [homeIsLoadingDestination, setHomeIsLoadingDestination] = useState(false);
   const [showLiveSupportChat, setShowLiveSupportChat] = useState(false);
 
-  // Map internal category names to URL paths
+  // Map internal category names to URL paths (clean URLs without /dashboard prefix)
   const categoryToUrl = {
     // Home (landing page style)
-    'home': '/dashboard/home',
+    'home': '/home',
 
     // Aviation & Transport
-    'jets': '/dashboard/jets',
-    'helicopter': '/dashboard/helicopter',
-    'empty-legs': '/dashboard/empty-legs',
-    'ground-transport': '/dashboard/ground-transport',
-    'adventures': '/dashboard/adventures',
-    'flights': '/dashboard/flights',
-    'luxury-cars': '/dashboard/luxury-cars',
-    'hotels': '/dashboard/hotels',
-    'services': '/dashboard/services',
+    'jets': '/jets',
+    'helicopter': '/helis',
+    'empty-legs': '/empty-legs',
+    'ground-transport': '/ground-transport',
+    'adventures': '/adventures',
+    'flights': '/flights',
+    'luxury-cars': '/luxury-cars',
+    'hotels': '/hotels',
+    'services': '/services',
 
-    // Web3 Routes (all under /dashboard/web3/)
-    'spv-formation': '/dashboard/web3/spv-formation',
-    'my-spvs': '/dashboard/web3/my-tokenized-assets',
-    'tokenize-asset': '/dashboard/web3/tokenize-asset',
-    'tokenization': '/dashboard/web3/tokenization',
-    'my-tokenized-assets': '/dashboard/web3/my-tokenized-assets',
-    'launchpad': '/dashboard/web3/launchpad',
-    'nft-marketplace': '/dashboard/nft-marketplace',
-    'marketplace': '/dashboard/marketplace',
-    'pvcx-token': '/dashboard/pvcx',
+    // RWS Routes (all under /rws/)
+    'spv-formation': '/rws/spv-formation',
+    'my-spvs': '/rws/my-tokenized-assets',
+    'tokenize-asset': '/rws/tokenize-asset',
+    'tokenization': '/rws/tokenization',
+    'my-tokenized-assets': '/rws/my-tokenized-assets',
+    'launchpad': '/rws/launchpad',
+    'nft-marketplace': '/rws/nft-marketplace',
+    'marketplace': '/rws/marketplace',
+    'pvcx-token': '/rws/pvcx-token',
 
     // CO2/SAF
-    'co2-saf': '/dashboard/co2-saf',
-    'co2-certificates': '/dashboard/co2-certificates',
+    'co2-saf': '/co2-saf',
+    'co2-certificates': '/co2-certificates',
 
     // Legal Pages
-    'terms': '/dashboard/terms',
-    'privacy': '/dashboard/privacy',
-    'imprint': '/dashboard/imprint',
+    'terms': '/terms',
+    'privacy': '/privacy',
+    'imprint': '/imprint',
 
     // Subscriptions
-    'subscription-plans': '/dashboard/subscriptions/plans',
-    'subscriptions': '/dashboard/subscriptions/manage',
+    'subscription-plans': '/subscriptions/plans',
+    'subscriptions': '/subscriptions/manage',
 
     // User
-    'my-activity': '/dashboard/activities',
-    'requests': '/dashboard/requests',
-    'ai-requests': '/dashboard/ai-requests',
-    'bookings': '/dashboard/bookings',
-    'my-bookings': '/dashboard/my-bookings',
-    'transactions': '/dashboard/transactions',
-    'calendar': '/dashboard/calendar',
-    'favourites': '/dashboard/favourites',
-    'notifications': '/dashboard/notifications',
-    'settings': '/dashboard/settings',
-    'kyc-verification': '/dashboard/kyc-verification',
-    'referral': '/dashboard/referral',
-    'my-launches': '/dashboard/my-launches',
+    'my-activity': '/activities',
+    'requests': '/requests',
+    'ai-requests': '/ai-requests',
+    'bookings': '/bookings',
+    'my-bookings': '/my-bookings',
+    'transactions': '/transactions',
+    'calendar': '/calendar',
+    'favourites': '/favourites',
+    'notifications': '/notifications',
+    'settings': '/settings',
+    'kyc-verification': '/kyc-verification',
+    'referral': '/referral',
+    'my-launches': '/my-launches',
 
     // Chat & Support
-    'chat': '/dashboard/chat',
-    'chat-history': '/dashboard/chat-history',
+    'chat': '/chat',
+    'chat-history': '/chat-history',
     'chat-support': '/faqs',
-    'support-messages': '/dashboard/messages',
+    'support-messages': '/messages',
+    'bids': '/bids',
+    'flight-ops': '/flight-bids',
 
     // Other
-    'search-index': '/dashboard/search-index',
-    'overview': '/dashboard/home',
-    'profile': '/dashboard/profile',
+    'search-index': '/search-index',
+    'overview': '/home',
+    'profile': '/profile',
   };
 
   // Wrapper for setActiveCategory to prevent invalid values, add logging, and sync URL
@@ -1278,11 +1374,11 @@ const TokenizedAssetsGlassmorphic = () => {
     if (!skipUrlUpdate && categoryToUrl[validCategory]) {
       let newUrl = categoryToUrl[validCategory];
 
-      // For 'overview' category, check if we're in Web3 mode
+      // For 'overview' category, check if we're in RWS mode
       if (validCategory === 'overview') {
-        const isCurrentlyWeb3 = window.location.pathname.startsWith('/dashboard/web3');
-        if (isCurrentlyWeb3) {
-          newUrl = '/dashboard/web3';
+        const isCurrentlyRWS = window.location.pathname.startsWith('/rws');
+        if (isCurrentlyRWS) {
+          newUrl = '/rws';
         }
       }
 
@@ -1450,7 +1546,7 @@ const TokenizedAssetsGlassmorphic = () => {
   const analyserRef = useRef(null);
   const animationFrameRef = useRef(null);
   const [chatHistory, setChatHistory] = useState([]);
-  const [chatHistoryExpanded, setChatHistoryExpanded] = useState(true); // Sidebar chat history collapsible
+  const [chatHistoryExpanded, setChatHistoryExpanded] = useState(false); // Sidebar chat history collapsible - collapsed by default
   const previousUserIdRef = useRef(null); // Track previous user to detect user changes
   const activeChatRef = useRef(null); // Track activeChat without triggering effect re-runs
 
@@ -1920,7 +2016,11 @@ const TokenizedAssetsGlassmorphic = () => {
   const [showAdventureDetail, setShowAdventureDetail] = useState(false);
   const [currentAdventureImageIndex, setCurrentAdventureImageIndex] = useState(0);
   const [adventureDetailTab, setAdventureDetailTab] = useState('details'); // 'details' | 'itinerary' | 'pricing'
-  // (state moved to top of component)
+
+  // Flight Ops state (simplified for modal)
+  const [showFlightBidModal, setShowFlightBidModal] = useState(false);
+  const [selectedFlightOp, setSelectedFlightOp] = useState(null);
+  const [flightOpBidCount, setFlightOpBidCount] = useState(0);
 
   // Luxury Cars state variables
   const [luxuryCarsData, setLuxuryCarsData] = useState([]);
@@ -2248,109 +2348,84 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   }, [isAuthenticated, user, activeCategory, setActiveCategory]);
 
-  // URL Sync: Handle /dashboard/chat and service category routes
+  // URL Sync: Handle /chat and service category routes (clean URLs without /dashboard)
   // Track the last processed path to avoid re-processing the same URL
   const lastProcessedPathRef = useRef('');
 
   useEffect(() => {
     const currentPath = location.pathname;
-    const isOnChatRoute = currentPath.startsWith('/dashboard/chat');
-    const isExactChatRoute = currentPath === '/dashboard/chat' || currentPath === '/dashboard/chat/';
+    const isOnChatRoute = currentPath.startsWith('/chat');
+    const isExactChatRoute = currentPath === '/chat' || currentPath === '/chat/';
 
     // Handle service category routes - map URL paths to internal activeCategory values
     const serviceRoutes = {
-      // Base dashboard - goes to chat (overview hidden)
-      '/dashboard': 'chat',
-
-      // Home (landing page style)
-      '/dashboard/home': 'home',
+      // Base routes - goes to chat (overview hidden)
+      '/': 'home',
+      '/home': 'home',
 
       // Aviation & Transport
-      '/dashboard/jets': 'jets',
-      '/dashboard/helis': 'helicopter',
-      '/dashboard/helicopter': 'helicopter',
-      '/dashboard/empty-legs': 'empty-legs',
-      '/dashboard/ground-transport': 'ground-transport',
-      '/dashboard/adventures': 'adventures',
-      '/dashboard/flights': 'flights',
-      '/dashboard/luxury-cars': 'luxury-cars',
-      '/dashboard/hotels': 'hotels',
-      '/dashboard/services': 'services',
+      '/jets': 'jets',
+      '/helis': 'helicopter',
+      '/empty-legs': 'empty-legs',
+      '/ground-transport': 'ground-transport',
+      '/adventures': 'adventures',
+      '/flights': 'flights',
+      '/luxury-cars': 'luxury-cars',
+      '/hotels': 'hotels',
+      '/services': 'services',
+      '/flight-bids': 'flight-ops',
 
-      // SPV Routes
-      '/dashboard/spv': 'spv-formation',
-      '/dashboard/spv/create': 'spv-formation',
-      '/dashboard/spv/my-spvs': 'my-spvs',
-
-      // RWA (Real World Assets) Routes
-      '/dashboard/rwa': 'overview',
-      '/dashboard/rwa/tokenize': 'tokenization',
-      '/dashboard/rwa/assets': 'my-tokenized-assets',
-      '/dashboard/tokenization': 'tokenization',
-      '/dashboard/my-tokenized-assets': 'my-tokenized-assets',
-
-      // Web3 Routes (all under /dashboard/web3/ prefix)
-      '/dashboard/web3': 'overview',
-      '/dashboard/web3/marketplace': 'marketplace',
-      '/dashboard/web3/tokenization': 'tokenization',
-      '/dashboard/web3/tokenize-asset': 'tokenize-asset',
-      '/dashboard/nft-marketplace': 'nft-marketplace',
-      '/dashboard/marketplace': 'marketplace',
-      '/dashboard/pvcx': 'pvcx-token',
-      '/dashboard/web3/nft-marketplace': 'nft-marketplace',  // Legacy route support
-      '/dashboard/web3/launchpad': 'launchpad',
-      '/dashboard/web3/pvcx-token': 'pvcx-token',  // Legacy route support
-      '/dashboard/web3/spv-formation': 'spv-formation',
-      '/dashboard/web3/my-tokenized-assets': 'my-tokenized-assets',
-      '/dashboard/web3/my-spvs': 'my-spvs',
+      // RWS Routes (all under /rws/)
+      '/rws': 'overview',
+      '/rws/marketplace': 'marketplace',
+      '/rws/tokenization': 'tokenization',
+      '/rws/tokenize-asset': 'tokenize-asset',
+      '/rws/nft-marketplace': 'nft-marketplace',
+      '/rws/launchpad': 'launchpad',
+      '/rws/pvcx-token': 'pvcx-token',
+      '/rws/spv-formation': 'spv-formation',
+      '/rws/my-tokenized-assets': 'my-tokenized-assets',
+      '/rws/my-spvs': 'my-spvs',
 
       // CO2/SAF Routes
-      '/dashboard/co2-saf': 'co2-saf',
-      '/dashboard/co2-certificates': 'co2-certificates',
+      '/co2-saf': 'co2-saf',
+      '/co2-certificates': 'co2-certificates',
 
       // Legal Pages
-      '/dashboard/terms': 'terms',
-      '/dashboard/privacy': 'privacy',
-      '/dashboard/imprint': 'imprint',
+      '/terms': 'terms',
+      '/privacy': 'privacy',
+      '/imprint': 'imprint',
 
       // Subscriptions Routes
-      '/dashboard/subscriptions/plans': 'subscription-plans',
-      '/dashboard/subscriptions/manage': 'subscriptions',
+      '/subscriptions': 'subscription-plans',
       '/subscriptions/plans': 'subscription-plans',
       '/subscriptions/manage': 'subscriptions',
 
       // User Routes
-      '/dashboard/activities': 'my-activity',
-      '/dashboard/requests': 'requests',
-      '/dashboard/ai-requests': 'ai-requests',
-      '/dashboard/bookings': 'bookings',
-      '/dashboard/my-bookings': 'my-bookings',
-      '/dashboard/transactions': 'transactions',
-      '/dashboard/calendar': 'calendar',
-      '/dashboard/favourites': 'favourites',
-      '/dashboard/notifications': 'notifications',
-      '/dashboard/settings': 'settings',
-      '/dashboard/kyc-verification': 'kyc-verification',
-      '/dashboard/referral': 'referral',
-      '/dashboard/my-launches': 'my-launches',
+      '/activities': 'my-activity',
+      '/requests': 'requests',
+      '/ai-requests': 'ai-requests',
+      '/bookings': 'bookings',
+      '/my-bookings': 'my-bookings',
+      '/transactions': 'transactions',
+      '/calendar': 'calendar',
+      '/favourites': 'favourites',
+      '/notifications': 'notifications',
+      '/settings': 'settings',
+      '/kyc-verification': 'kyc-verification',
+      '/referral': 'referral',
+      '/my-launches': 'my-launches',
 
       // Support & Messages
-      '/dashboard/messages': 'support-messages',
+      '/messages': 'support-messages',
+      '/bids': 'bids',
 
       // Other
-      '/dashboard/search-index': 'search-index',
+      '/search-index': 'search-index',
       '/faqs': 'chat-support',
-      '/dashboard/chat-history': 'chat-history',
-      '/dashboard/profile': 'profile'
+      '/chat-history': 'chat-history',
+      '/profile': 'profile'
     };
-
-    // Web3 mode disabled - redirect any /dashboard/web3 routes to regular dashboard
-    const isWeb3Route = currentPath.startsWith('/dashboard/web3');
-    if (isWeb3Route) {
-      // Redirect to regular dashboard - web3 not in use
-      navigate('/dashboard/home');
-      return;
-    }
     // Always stay in RWS mode
     if (webMode !== 'rws') {
       setWebMode('rws');
@@ -2374,7 +2449,7 @@ const TokenizedAssetsGlassmorphic = () => {
     // Skip if we've already processed this exact path
     if (lastProcessedPathRef.current === currentPath + location.search) return;
 
-    // Handle /dashboard/chat (new chat) or /dashboard/chat/:chatId (specific chat)
+    // Handle /chat (new chat) or /chat/:chatId (specific chat)
     if (isOnChatRoute) {
       lastProcessedPathRef.current = currentPath + location.search;
 
@@ -2385,7 +2460,7 @@ const TokenizedAssetsGlassmorphic = () => {
       const login = params.get('login') === 'true';
 
       if (isExactChatRoute) {
-        // /dashboard/chat - open new chat
+        // /chat - open new chat
         // Check if login is required
         if (login && !isAuthenticated) {
           // Store query and show login modal
@@ -2415,7 +2490,7 @@ const TokenizedAssetsGlassmorphic = () => {
           // This prevents AIChat from rendering with empty initialQuery
           setTimeout(() => {
             setActiveCategory('chat', true); // skipUrlUpdate=true since URL already correct
-            console.log('🔗 Opening new chat from URL: /dashboard/chat', query ? `with query: ${query}` : '', assistantMessage ? 'with assistant message' : '');
+            console.log('🔗 Opening new chat from URL: /chat', query ? `with query: ${query}` : '', assistantMessage ? 'with assistant message' : '');
           }, 0);
         }
         // Clean up URL params but keep the path
@@ -2423,12 +2498,12 @@ const TokenizedAssetsGlassmorphic = () => {
         // The query will be fully cleared when AIChat calls onQueryProcessed
         if (query || assistantMessage || login) {
           setTimeout(() => {
-            window.history.replaceState({}, '', '/dashboard/chat');
-            lastProcessedPathRef.current = '/dashboard/chat'; // Update to cleaned path
+            window.history.replaceState({}, '', '/chat');
+            lastProcessedPathRef.current = '/chat'; // Update to cleaned path
           }, 100);
         }
       } else if (urlChatId) {
-        // /dashboard/chat/:chatId - open specific chat
+        // /chat/:chatId - open specific chat
         const targetChatId = urlChatId === 'new' ? 'new' : urlChatId;
         setActiveChat(targetChatId);
         setActiveCategory('chat', true); // skipUrlUpdate=true since URL already correct
@@ -2437,19 +2512,19 @@ const TokenizedAssetsGlassmorphic = () => {
     }
   }, [location.pathname, location.search, isAuthenticated, urlChatId]); // Re-run when URL or auth changes
 
-  // When leaving chat view, redirect to dashboard (but don't sync activeChat to URL)
+  // When leaving chat view, redirect to home (but don't sync activeChat to URL)
   // Only redirect if we're LEAVING chat (not arriving at chat route)
   const previousCategoryRef = useRef(activeCategory);
 
   useEffect(() => {
     const currentPath = location.pathname;
-    const isOnChatRoute = currentPath.startsWith('/dashboard/chat');
+    const isOnChatRoute = currentPath.startsWith('/chat');
     const wasInChat = previousCategoryRef.current === 'chat';
 
     // Only redirect if we were IN chat and are now leaving it
     // Don't redirect if we're arriving at a chat route (activeCategory will be updated by URL sync)
     if (wasInChat && activeCategory !== 'chat' && isOnChatRoute) {
-      window.history.replaceState({}, '', '/dashboard');
+      window.history.replaceState({}, '', '/home');
     }
 
     previousCategoryRef.current = activeCategory;
@@ -3078,14 +3153,14 @@ const TokenizedAssetsGlassmorphic = () => {
   }, [activeCategory, successSubscriptionTier, user?.id, subscriptionPdfSent, subscriptionPdfGenerating]);
 
   // Process URL parameters using React Router's location (updates on navigation)
-  // NOTE: /dashboard/chat routes are handled by the URL Sync Effect above
+  // NOTE: /chat routes are handled by the URL Sync Effect above
   useEffect(() => {
     // Wait for auth to initialize
     if (initializing) return;
 
-    // Skip if on /dashboard/chat route - that's handled by URL Sync Effect
-    if (location.pathname.startsWith('/dashboard/chat')) {
-      console.log('🔎 URL Params Effect: Skipping - /dashboard/chat handled by URL Sync Effect');
+    // Skip if on /chat route - that's handled by URL Sync Effect
+    if (location.pathname.startsWith('/chat')) {
+      console.log('🔎 URL Params Effect: Skipping - /chat handled by URL Sync Effect');
       return;
     }
 
@@ -3145,7 +3220,7 @@ const TokenizedAssetsGlassmorphic = () => {
         if (targetTab === 'profile') {
           setActiveCategoryInternal('dashboard');
           setDashboardView('profile');
-          window.history.replaceState({}, '', '/dashboard/profile');
+          window.history.replaceState({}, '', '/profile');
         } else {
           setActiveCategory(targetTab); // This will also update the URL
         }
@@ -3198,7 +3273,7 @@ const TokenizedAssetsGlassmorphic = () => {
       if (targetTab === 'profile') {
         setActiveCategoryInternal('dashboard');
         setDashboardView('profile');
-        window.history.replaceState({}, '', '/dashboard/profile');
+        window.history.replaceState({}, '', '/profile');
         setShowDashboard(true);
         pendingUrlParamsRef.current = null;
       }
@@ -4353,8 +4428,9 @@ const TokenizedAssetsGlassmorphic = () => {
     { id: 'jets', label: 'Jets', icon: Plane, category: 'jets' },
     { id: 'helicopter', label: 'Helis', icon: Zap, category: 'helicopter' },
     { id: 'empty-legs', label: 'Empty Legs', icon: MapPin, category: 'empty-legs' },
+    { id: 'flight-ops', label: 'Flight Bids', icon: Gavel, category: 'flight-ops' },
     { id: 'adventures', label: 'Adventures', icon: Mountain, category: 'adventures' },
-    { id: 'flights', label: 'Flights', icon: Plane, category: 'flights' }
+    { id: 'flights', label: 'Commercial', icon: Plane, category: 'flights' }
     // { id: 'card', label: 'Card', icon: CreditCard, category: 'card' }, // Hidden - Marqeta integration pending
     // { id: 'hotels', label: 'Hotels', icon: Building2, category: 'hotels' }, // DISABLED - LiteAPI hotels temporarily removed
     // { id: 'assets', label: 'Events & Sports', icon: Calendar, category: 'assets' }, // Hidden for MVP
@@ -4444,9 +4520,9 @@ const TokenizedAssetsGlassmorphic = () => {
     // { id: 'co2-certificates', label: 'CO2 Certificates', icon: Leaf, category: 'co2-certificates' }, // Hidden for now
     // { id: 'chat-support', label: 'Chat Support', icon: MessageSquare, category: 'chat-support' }, // Hidden - using footer chat widget instead
     { id: 'support-messages', label: 'Messages', icon: MessageCircle, category: 'support-messages', rwsOnly: true },
-    { id: 'nft-marketplace', label: 'NFT Marketplace', icon: Shield, category: 'nft-marketplace' },
-    // Admin only
-    { id: 'live-support-admin', label: 'Live Support', icon: MessageCircle, category: 'live-support-admin', adminOnly: true }
+    { id: 'bids', label: 'Bids', icon: Gavel, category: 'bids', rwsOnly: true },
+    { id: 'nft-marketplace', label: 'NFT Marketplace', icon: Shield, category: 'nft-marketplace' }
+    // Live Support removed - only available in CRM
   ];
 
   // Filter menu based on user role and webMode
@@ -4475,7 +4551,11 @@ const TokenizedAssetsGlassmorphic = () => {
             loop
             muted
             playsInline
-            className="w-full h-full object-contain"
+            controls={false}
+            disablePictureInPicture
+            webkit-playsinline="true"
+            x5-playsinline="true"
+            className="w-full h-full object-contain pointer-events-none"
           >
             <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
           </video>
@@ -4707,7 +4787,11 @@ const TokenizedAssetsGlassmorphic = () => {
                     loop
                     muted
                     playsInline
-                    className={`h-12 w-12 object-contain ${isMobileMenuOpen || sidebarExpanded ? 'hidden' : 'block'}`}
+                    controls={false}
+                    disablePictureInPicture
+                    webkit-playsinline="true"
+                    x5-playsinline="true"
+                    className={`h-12 w-12 object-contain pointer-events-none ${isMobileMenuOpen || sidebarExpanded ? 'hidden' : 'block'}`}
                   >
                     <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/logos/videoExport-2025-10-19@14-08-49.871-540x540@60fps.mp4" type="video/mp4" />
                   </video>
@@ -4755,7 +4839,7 @@ const TokenizedAssetsGlassmorphic = () => {
                   setActiveCategory('chat');
                   setActiveChat('new'); // Reset to new chat screen directly
                   // Update URL without triggering navigation/reload
-                  window.history.pushState({}, '', '/dashboard/chat');
+                  window.history.pushState({}, '', '/chat');
                   // Close mobile menu after selection
                   if (isMobileMenuOpen) {
                     setIsMobileMenuOpen(false);
@@ -4833,7 +4917,7 @@ const TokenizedAssetsGlassmorphic = () => {
                       onClick={() => {
                         setActiveChat(chat.id);
                         setActiveCategory('chat');
-                        window.history.pushState({}, '', `/dashboard/chat/${chat.id}`);
+                        window.history.pushState({}, '', `/chat/${chat.id}`);
                         if (isMobileMenuOpen) {
                           setIsMobileMenuOpen(false);
                         }
@@ -4888,7 +4972,7 @@ const TokenizedAssetsGlassmorphic = () => {
                         if (item.dashboardTab === 'profile') {
                           setActiveCategoryInternal('dashboard');
                           setDashboardView('profile');
-                          window.history.pushState({}, '', '/dashboard/profile');
+                          window.history.pushState({}, '', '/profile');
                         } else {
                           setActiveCategory(item.category);
                           if (item.dashboardTab) {
@@ -4975,11 +5059,11 @@ const TokenizedAssetsGlassmorphic = () => {
                   const isActive = activeCategory === item.category;
                   // Map category to URL path
                   const categoryToPath = {
-                    'jets': '/dashboard/jets',
-                    'helicopter': '/dashboard/helis',
-                    'empty-legs': '/dashboard/empty-legs',
-                    'ground-transport': '/dashboard/ground-transport',
-                    'adventures': '/dashboard/adventures'
+                    'jets': '/jets',
+                    'helicopter': '/helis',
+                    'empty-legs': '/empty-legs',
+                    'ground-transport': '/ground-transport',
+                    'adventures': '/adventures'
                   };
                   return (
                     <button
@@ -5018,10 +5102,10 @@ const TokenizedAssetsGlassmorphic = () => {
                 {web3CategoryMenu.map((item) => {
                   const isActive = activeCategory === item.category;
                   const web3CategoryToPath = {
-                    'marketplace': '/dashboard/web3/marketplace',
-                    'tokenization': '/dashboard/web3/tokenization',
-                    'nft-marketplace': '/dashboard/nft-marketplace',
-                    'launchpad': '/dashboard/web3/launchpad'
+                    'marketplace': '/rws/marketplace',
+                    'tokenization': '/rws/tokenization',
+                    'nft-marketplace': '/rws/nft-marketplace',
+                    'launchpad': '/rws/launchpad'
                   };
                   return (
                     <button
@@ -5080,7 +5164,7 @@ const TokenizedAssetsGlassmorphic = () => {
             <div className={`transition-all duration-300 ${isMobileMenuOpen || sidebarExpanded ? 'px-4' : 'px-2'}`}>
               <button
                 onClick={() => {
-                  // Navigate to PVCX token page (now at /dashboard/pvcx)
+                  // Navigate to PVCX token page (now at /rws/pvcx-token)
                   setActiveCategory('pvcx-token');
                   // Close mobile menu after selection
                   if (isMobileMenuOpen) {
@@ -5135,11 +5219,11 @@ const TokenizedAssetsGlassmorphic = () => {
                     const isActive = activeCategory === item.category;
                     // Map category to URL path
                     const categoryToPath = {
-                      'jets': '/dashboard/jets',
-                      'helicopter': '/dashboard/helis',
-                      'empty-legs': '/dashboard/empty-legs',
-                      'ground-transport': '/dashboard/ground-transport',
-                      'adventures': '/dashboard/adventures'
+                      'jets': '/jets',
+                      'helicopter': '/helis',
+                      'empty-legs': '/empty-legs',
+                      'ground-transport': '/ground-transport',
+                      'adventures': '/adventures'
                     };
                     return (
                       <button
@@ -5173,10 +5257,10 @@ const TokenizedAssetsGlassmorphic = () => {
                     .map((item) => {
                       const isActive = activeCategory === item.category;
                       const web3CategoryToPath = {
-                        'marketplace': '/dashboard/web3/marketplace',
-                        'tokenization': '/dashboard/web3/tokenization',
-                        'nft-marketplace': '/dashboard/nft-marketplace',
-                        'launchpad': '/dashboard/web3/launchpad'
+                        'marketplace': '/rws/marketplace',
+                        'tokenization': '/rws/tokenization',
+                        'nft-marketplace': '/rws/nft-marketplace',
+                        'launchpad': '/rws/launchpad'
                       };
                       return (
                         <button
@@ -5292,7 +5376,7 @@ const TokenizedAssetsGlassmorphic = () => {
                 onClick={() => {
                   setActiveCategoryInternal('dashboard');
                   setDashboardView('profile');
-                  window.history.pushState({}, '', '/dashboard/profile');
+                  window.history.pushState({}, '', '/profile');
                 }}
                 className="flex items-center justify-center transition-all duration-200"
               >
@@ -5357,7 +5441,11 @@ const TokenizedAssetsGlassmorphic = () => {
                   loop
                   muted
                   playsInline
-                  className="w-full h-full object-contain"
+                  controls={false}
+                  disablePictureInPicture
+                  webkit-playsinline="true"
+                  x5-playsinline="true"
+                  className="w-full h-full object-contain pointer-events-none"
                 >
                   <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
                 </video>
@@ -5596,7 +5684,11 @@ const TokenizedAssetsGlassmorphic = () => {
                             loop
                             muted
                             playsInline
-                            className="w-full h-full object-contain"
+                            controls={false}
+                            disablePictureInPicture
+                            webkit-playsinline="true"
+                            x5-playsinline="true"
+                            className="w-full h-full object-contain pointer-events-none"
                           >
                             <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
                           </video>
@@ -6110,6 +6202,27 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
+          {/* Bids View */}
+          {!isTransitioning && activeCategory === 'bids' && (
+            <div className="w-full h-full">
+              <BidsView />
+            </div>
+          )}
+
+          {/* Flight Bids View */}
+          {!isTransitioning && activeCategory === 'flight-ops' && (
+            <div className="w-full flex-1 flex flex-col">
+              <FlightOpsView
+                onSelectRoute={(route, bidCount) => {
+                  setSelectedFlightOp(route);
+                  setFlightOpBidCount(bidCount);
+                  setShowFlightBidModal(true);
+                }}
+              />
+              <PageFooter />
+            </div>
+          )}
+
           {/* Transactions View */}
           {!isTransitioning && activeCategory === 'transactions' && (
             <div className="w-full h-full overflow-y-auto">
@@ -6529,13 +6642,13 @@ const TokenizedAssetsGlassmorphic = () => {
                   })()}{user ? <span className="text-gray-400">, {user?.first_name || user?.name || 'there'}</span> : ''}
                 </h1>
                 <p className="text-gray-500 text-base mb-8">
-                  Your Private Aviation Concierge
+                  Multi Booking Travel AI
                 </p>
 
                 {/* Search Input - Same style as Homepage FloatingSearchModal */}
                 <div className="w-full max-w-2xl">
                   <div className="bg-gray-100 backdrop-blur-md rounded-xl sm:rounded-2xl p-2.5 sm:p-4 border border-gray-200">
-                    <div className="relative flex items-center gap-2 sm:gap-3 px-2.5 sm:px-4 py-2.5 sm:py-3 bg-gray-50 rounded-lg sm:rounded-xl border border-gray-200 focus-within:bg-white focus-within:border-gray-300 transition-all duration-100">
+                    <div className="relative flex items-center gap-2 sm:gap-3 px-2.5 sm:px-4 py-2.5 sm:py-3 bg-white rounded-lg sm:rounded-xl border border-gray-200 focus-within:border-gray-300 transition-all duration-100">
                       {/* Command Icon */}
                       <span className="text-gray-400 text-xs sm:text-sm font-light flex-shrink-0">⌘</span>
 
@@ -6555,7 +6668,7 @@ const TokenizedAssetsGlassmorphic = () => {
                             }
                           }
                         }}
-                        placeholder="Where would you like to fly?"
+                        placeholder={typingPlaceholder}
                         className="flex-1 bg-transparent border-none outline-none text-[16px] sm:text-[18px] text-gray-800 font-light tracking-tight placeholder-gray-400"
                       />
 
@@ -6771,6 +6884,67 @@ const TokenizedAssetsGlassmorphic = () => {
                   This is an AI assistant. We monitor all bookings and requests, but AI can make mistakes. Please verify important details.
                 </p>
               </div>
+
+              {/* Footer Banner Carousel */}
+              <div className="w-full mt-4 mb-0 px-4">
+                <div className="relative h-[72px] sm:h-[80px] overflow-hidden rounded-xl">
+                  {footerBanners.map((banner, index) => (
+                    <div
+                      key={index}
+                      className="absolute inset-0 transition-all duration-700 ease-in-out cursor-pointer"
+                      style={{
+                        opacity: index === footerBannerIndex ? 1 : 0,
+                        transform: index === footerBannerIndex ? 'translateX(0)' : index < footerBannerIndex ? 'translateX(-100%)' : 'translateX(100%)',
+                        pointerEvents: index === footerBannerIndex ? 'auto' : 'none'
+                      }}
+                      onClick={() => {
+                        if (banner.query) {
+                          setAiChatQuery(banner.query);
+                        }
+                        if (banner.category) {
+                          setActiveCategory(banner.category);
+                        }
+                      }}
+                    >
+                      <div
+                        className="relative w-full h-full bg-cover bg-center rounded-xl"
+                        style={{ backgroundImage: `url(${banner.bg})` }}
+                      >
+                        {/* Dark overlay for text readability */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent rounded-xl" />
+
+                        {/* Content */}
+                        <div className="relative h-full flex items-center px-6 sm:px-10">
+                          <div className="text-white">
+                            <h3 className="text-sm sm:text-base lg:text-lg font-light tracking-tight">
+                              {banner.title}
+                            </h3>
+                            <p className="text-xs sm:text-sm text-white/80 font-light">
+                              {banner.subtitle}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Navigation dots */}
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    {footerBanners.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={(e) => { e.stopPropagation(); setFooterBannerIndex(index); }}
+                        className={`w-1.5 h-1.5 rounded-full transition-all ${
+                          index === footerBannerIndex
+                            ? 'bg-white w-4'
+                            : 'bg-white/40 hover:bg-white/60'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               <PageFooter />
             </div>
           )}
@@ -6804,7 +6978,11 @@ const TokenizedAssetsGlassmorphic = () => {
                         loop
                         muted
                         playsInline
-                        className="w-full h-full object-contain"
+                        controls={false}
+                        disablePictureInPicture
+                        webkit-playsinline="true"
+                        x5-playsinline="true"
+                        className="w-full h-full object-contain pointer-events-none"
                       >
                         <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
                       </video>
@@ -7214,7 +7392,11 @@ const TokenizedAssetsGlassmorphic = () => {
                         loop
                         muted
                         playsInline
-                        className="w-full h-full object-contain"
+                        controls={false}
+                        disablePictureInPicture
+                        webkit-playsinline="true"
+                        x5-playsinline="true"
+                        className="w-full h-full object-contain pointer-events-none"
                       >
                         <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
                       </video>
@@ -7518,7 +7700,11 @@ const TokenizedAssetsGlassmorphic = () => {
                         loop
                         muted
                         playsInline
-                        className="w-full h-full object-contain"
+                        controls={false}
+                        disablePictureInPicture
+                        webkit-playsinline="true"
+                        x5-playsinline="true"
+                        className="w-full h-full object-contain pointer-events-none"
                       >
                         <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
                       </video>
@@ -7771,7 +7957,7 @@ const TokenizedAssetsGlassmorphic = () => {
                   <button
                     onClick={() => {
                       const query = encodeURIComponent('I want to charter a private jet');
-                      navigate(`/dashboard/chat?query=${query}`);
+                      navigate(`/chat?query=${query}`);
                     }}
                     className="px-3 md:px-4 py-1.5 md:py-2 bg-gray-200 text-gray-700 rounded-lg text-[10px] md:text-sm font-medium hover:bg-gray-300 transition-colors"
                   >
@@ -8040,7 +8226,7 @@ const TokenizedAssetsGlassmorphic = () => {
                         <button
                           onClick={() => {
                             const query = encodeURIComponent(`I want to charter a private jet: ${selectedJet?.name || 'private jet'}`);
-                            navigate(`/dashboard/chat?query=${query}`);
+                            navigate(`/chat?query=${query}`);
                           }}
                           className="w-full bg-gray-900 text-white py-3 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
                         >
@@ -8079,7 +8265,7 @@ const TokenizedAssetsGlassmorphic = () => {
                   <button
                     onClick={() => {
                       const query = encodeURIComponent('I want to charter a helicopter');
-                      navigate(`/dashboard/chat?query=${query}`);
+                      navigate(`/chat?query=${query}`);
                     }}
                     className="px-3 md:px-4 py-1.5 md:py-2 bg-gray-200 text-gray-700 rounded-lg text-[10px] md:text-sm font-medium hover:bg-gray-300 transition-colors"
                   >
@@ -8366,7 +8552,7 @@ const TokenizedAssetsGlassmorphic = () => {
                         <button
                           onClick={() => {
                             const query = encodeURIComponent(`I want to charter a helicopter: ${selectedHelicopter?.name || 'helicopter'}`);
-                            navigate(`/dashboard/chat?query=${query}`);
+                            navigate(`/chat?query=${query}`);
                           }}
                           className="w-full bg-gray-900 text-white py-3 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
                         >
@@ -9119,7 +9305,11 @@ const TokenizedAssetsGlassmorphic = () => {
                       loop
                       muted
                       playsInline
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      controls={false}
+                      disablePictureInPicture
+                      webkit-playsinline="true"
+                      x5-playsinline="true"
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 pointer-events-none"
                     >
                       <source src="https://auth.privatecharterx.com/storage/v1/object/public/uber%20imgs/4920651-uhd_4096_2160_25fps.mp4" type="video/mp4" />
                     </video>
@@ -9270,7 +9460,11 @@ const TokenizedAssetsGlassmorphic = () => {
                       loop
                       muted
                       playsInline
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      controls={false}
+                      disablePictureInPicture
+                      webkit-playsinline="true"
+                      x5-playsinline="true"
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 pointer-events-none"
                     >
                       <source src="https://auth.privatecharterx.com/storage/v1/object/sign/moreVideos/9519379-uhd_4096_2160_25fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzk1MTkzNzktdWhkXzQwOTZfMjE2MF8yNWZwcy5tcDQiLCJpYXQiOjE3Njg3NjQ1MTMsImV4cCI6Njg2MDAzODIyNjIxMTN9.McSTtByO71Gqk7WP54ONfI5n-5QNvHAoMqBVJ8Z6N9Q" type="video/mp4" />
                     </video>
@@ -9478,7 +9672,11 @@ const TokenizedAssetsGlassmorphic = () => {
                       loop
                       muted
                       playsInline
-                      className="w-full h-full object-contain"
+                      controls={false}
+                      disablePictureInPicture
+                      webkit-playsinline="true"
+                      x5-playsinline="true"
+                      className="w-full h-full object-contain pointer-events-none"
                     >
                       <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
                     </video>
@@ -10166,7 +10364,7 @@ const TokenizedAssetsGlassmorphic = () => {
                     onClick={() => {
                       setActiveChat('new');
                       setActiveCategory('chat');
-                      window.history.pushState({}, '', '/dashboard/chat');
+                      window.history.pushState({}, '', '/chat');
                     }}
                     className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-all inline-flex items-center gap-2"
                   >
@@ -10196,7 +10394,7 @@ const TokenizedAssetsGlassmorphic = () => {
                         setActiveChat(selectedChatForView.id);
                         setActiveCategory('chat');
                         setSelectedChatForView(null);
-                        window.history.pushState({}, '', `/dashboard/chat/${selectedChatForView.id}`);
+                        window.history.pushState({}, '', `/chat/${selectedChatForView.id}`);
                       }}
                       className="px-4 py-2 bg-black text-white text-sm rounded-lg hover:bg-gray-800 transition-all flex items-center gap-2"
                     >
@@ -10397,7 +10595,7 @@ const TokenizedAssetsGlassmorphic = () => {
                     onClick={() => {
                       setActiveChat('new');
                       setActiveCategory('chat');
-                      window.history.pushState({}, '', '/dashboard/chat');
+                      window.history.pushState({}, '', '/chat');
                     }}
                     className="px-6 py-2.5 bg-black text-white rounded-xl hover:bg-gray-800 transition-all inline-flex items-center gap-2"
                   >
@@ -11488,6 +11686,20 @@ const TokenizedAssetsGlassmorphic = () => {
         </main>
       </div>
       </div>
+
+      {/* Flight Bid Modal */}
+      <FlightBidModal
+        isOpen={showFlightBidModal}
+        onClose={() => {
+          setShowFlightBidModal(false);
+          setSelectedFlightOp(null);
+        }}
+        route={selectedFlightOp}
+        bidCount={flightOpBidCount}
+        onBidSuccess={() => {
+          // Optionally navigate to bids view
+        }}
+      />
 
       {/* Modals - Use app-specific modals for native apps */}
       {showLoginModal && (

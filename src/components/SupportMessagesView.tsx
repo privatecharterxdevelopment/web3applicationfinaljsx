@@ -302,9 +302,9 @@ export default function SupportMessagesView() {
   }
 
   return (
-    <div className="h-full overflow-y-auto" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="h-full flex flex-col overflow-hidden" style={{ fontFamily: "'DM Sans', sans-serif" }}>
       {/* Header */}
-      <div className="px-6 py-5 border-b border-gray-100">
+      <div className="flex-shrink-0 px-6 py-5 border-b border-gray-100">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {view === 'chat' && (
@@ -406,10 +406,10 @@ export default function SupportMessagesView() {
       )}
 
       {/* Content */}
-      <div className="px-6 py-4">
+      <div className="flex-1 overflow-hidden px-6 py-4 flex flex-col">
         {/* Chat List View */}
         {view === 'list' && (
-          <>
+          <div className="flex-1 overflow-y-auto">
             {isLoading && chats.length === 0 ? (
               <div className="flex items-center justify-center h-64">
                 <div className="flex flex-col items-center">
@@ -473,14 +473,14 @@ export default function SupportMessagesView() {
                 ))}
               </div>
             )}
-          </>
+          </div>
         )}
 
         {/* Chat View */}
         {view === 'chat' && activeChat && (
-          <div className="flex flex-col" style={{ height: 'calc(100vh - 200px)' }}>
+          <div className="flex flex-col flex-1 min-h-0">
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto py-4">
+            <div className="flex-1 overflow-y-auto py-4 min-h-0">
               {messages.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -525,7 +525,7 @@ export default function SupportMessagesView() {
 
             {/* Input */}
             {activeChat.status !== 'closed' ? (
-              <div className="pt-4 border-t border-gray-100">
+              <div className="flex-shrink-0 pt-4 pb-2 border-t border-gray-100">
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -552,7 +552,7 @@ export default function SupportMessagesView() {
                 </form>
               </div>
             ) : (
-              <div className="pt-4 border-t border-gray-100 text-center">
+              <div className="flex-shrink-0 pt-4 pb-2 border-t border-gray-100 text-center">
                 <p className="text-xs text-gray-500">This conversation has been closed</p>
                 <button
                   onClick={() => setShowNewChatForm(true)}

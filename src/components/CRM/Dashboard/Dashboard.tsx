@@ -28,7 +28,8 @@ import {
   Bell,
   MessageSquare,
   DollarSign,
-  Copy
+  Copy,
+  Gavel
 } from 'lucide-react';
 import { supabaseAdmin } from '../../../lib/supabaseAdmin';
 import { useAuth } from '../../../contexts/CRM/AuthContext';
@@ -82,6 +83,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab: externalActiveT
   const [userSubscriptions, setUserSubscriptions] = useState<any[]>([]);
   const [kycApplications, setKycApplications] = useState<any[]>([]);
   const [tokenizationDrafts, setTokenizationDrafts] = useState<any[]>([]);
+  const [flightBids, setFlightBids] = useState<any[]>([]);
 
   useEffect(() => {
     // Fetch all data on mount
@@ -100,6 +102,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab: externalActiveT
         fetchUserSubscriptions(),
         fetchKycApplications(),
         fetchTokenizationDrafts(),
+        fetchFlightBids(),
       ]);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -264,6 +267,58 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab: externalActiveT
     } catch (error) {
       console.error('Error fetching tokenization drafts:', error);
       setTokenizationDrafts([]);
+    }
+  };
+
+  const fetchFlightBids = async () => {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('flight_bids')
+        .select(`
+          *,
+          route:route_id (
+            id,
+            title,
+            origin,
+            destination,
+            price,
+            currency,
+            aircraft_type
+          ),
+          user:user_id (
+            id,
+            email,
+            raw_user_meta_data
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setFlightBids(data || []);
+    } catch (error) {
+      console.error('Error fetching flight bids:', error);
+      setFlightBids([]);
+    }
+  };
+
+  // Update bid status (accept, reject, counter)
+  const updateBidStatus = async (bidId: string, status: string, counterAmount?: number, adminResponse?: string) => {
+    try {
+      const updateData: any = { status };
+      if (counterAmount) updateData.counter_amount = counterAmount;
+      if (adminResponse) updateData.admin_response = adminResponse;
+
+      const { error } = await supabaseAdmin
+        .from('flight_bids')
+        .update(updateData)
+        .eq('id', bidId);
+
+      if (error) throw error;
+      showSuccess(`Bid ${status} successfully`);
+      fetchFlightBids();
+    } catch (error) {
+      console.error('Error updating bid:', error);
+      showError('Failed to update bid');
     }
   };
 
@@ -708,6 +763,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab: externalActiveT
              currentView === 'requests' ? 'User Requests' :
              currentView === 'bookings' ? 'User Bookings' :
              currentView === 'emptylegs' ? 'Empty Legs' :
+             currentView === 'bids' ? 'Flight Bids' :
              currentView === 'subscriptions' ? 'Subscriptions' :
              currentView === 'kyc' ? 'KYC Verification' :
              currentView === 'tokenization' ? 'Tokenization Requests' :
@@ -1575,6 +1631,135 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab: externalActiveT
       {currentView === 'live-support' && (
         <div className="bg-white rounded-xl border border-gray-100 p-0 overflow-hidden">
           <AdminSupportDashboard />
+        </div>
+      )}
+
+      {/* Flight Bids Tab */}
+      {currentView === 'bids' && (
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <div className="p-5 border-b border-gray-50 flex justify-between items-center">
+            <div>
+              <h3 className="text-gray-800 font-medium">All Bids</h3>
+              <p className="text-sm text-gray-400 mt-0.5">{flightBids.length} total bids</p>
+            </div>
+            <button
+              onClick={fetchFlightBids}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50/50">
+                <tr>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Route</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Starting Price</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bid Amount</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {flightBids.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-5 py-12 text-center text-gray-400">
+                      No bids yet
+                    </td>
+                  </tr>
+                ) : (
+                  flightBids.map((bid) => (
+                    <tr key={bid.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-5 py-4">
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">
+                            {bid.user?.raw_user_meta_data?.full_name || bid.user?.email?.split('@')[0] || 'Unknown'}
+                          </p>
+                          <p className="text-xs text-gray-400">{bid.user?.email}</p>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div>
+                          <p className="text-sm text-gray-800">{bid.route?.title || 'Unknown Route'}</p>
+                          <p className="text-xs text-gray-400">
+                            {bid.route?.origin?.split('(')[0]?.trim()} → {bid.route?.destination?.split('(')[0]?.trim()}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="text-sm text-gray-500">
+                          ${bid.route?.price?.toLocaleString() || 'N/A'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="text-sm font-semibold text-gray-800">
+                          ${bid.bid_amount?.toLocaleString()}
+                        </span>
+                        {bid.counter_amount && (
+                          <p className="text-xs text-blue-500">Counter: ${bid.counter_amount.toLocaleString()}</p>
+                        )}
+                      </td>
+                      <td className="px-5 py-4">
+                        <div>
+                          <p className="text-sm text-gray-800">
+                            {bid.departure_date ? new Date(bid.departure_date).toLocaleDateString() : 'Flexible'}
+                          </p>
+                          <p className="text-xs text-gray-400">{bid.passengers} pax</p>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                          bid.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                          bid.status === 'accepted' ? 'bg-emerald-100 text-emerald-700' :
+                          bid.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                          bid.status === 'countered' ? 'bg-blue-100 text-blue-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          {bid.status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        {bid.status === 'pending' && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => updateBidStatus(bid.id, 'accepted')}
+                              className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-lg transition-colors"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={() => {
+                                const counter = prompt('Enter counter amount ($):');
+                                if (counter && !isNaN(parseFloat(counter))) {
+                                  updateBidStatus(bid.id, 'countered', parseFloat(counter));
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition-colors"
+                            >
+                              Counter
+                            </button>
+                            <button
+                              onClick={() => updateBidStatus(bid.id, 'rejected')}
+                              className="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-medium rounded-lg transition-colors"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
+                        {bid.status !== 'pending' && (
+                          <span className="text-xs text-gray-400">
+                            {bid.responded_at ? new Date(bid.responded_at).toLocaleDateString() : '-'}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

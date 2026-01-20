@@ -248,7 +248,7 @@ const PricingPackages = ({ onClose, onBack }) => {
             userEmail: user.email,
             tier: plan.id,
             successUrl: `${window.location.origin}/subscription/success?tier=${plan.id}`,
-            cancelUrl: `${window.location.origin}/dashboard/subscriptions/plans?subscription=cancelled`
+            cancelUrl: `${window.location.origin}/subscriptions/plans?subscription=cancelled`
           }
         });
 

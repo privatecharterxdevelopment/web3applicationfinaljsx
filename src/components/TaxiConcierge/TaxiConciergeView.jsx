@@ -1507,7 +1507,7 @@ const TaxiConciergeView = ({ onRequestSubmit }) => {
               ? `Your ride from ${locationA} to ${locationB} is confirmed!`
               : `Quote request for ${locationA} to ${locationB} submitted. We'll contact you within 24 hours.`,
             is_read: false,
-            action_url: '/dashboard/favourites',
+            action_url: '/favourites',
             metadata: requestData,
             created_at: new Date().toISOString()
           };
