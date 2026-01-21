@@ -21,6 +21,7 @@ Allow: /ground-transport
 Allow: /tokenized
 Allow: /sphera-ai
 Allow: /helpdesk
+Allow: /partners
 
 # ========================================
 # DISALLOW - Old /dashboard/* URLs (301 redirects in place)
@@ -41,10 +42,9 @@ Disallow: /services/evtol
 Disallow: /privatecharterx-support
 Disallow: /support
 
-# Partner pages (now redirected to /home)
+# Old partner pages (redirected - /partners is now active)
 Disallow: /partners-board
 Disallow: /partner
-Disallow: /partners
 Disallow: /partner-with-us
 
 # Old service pages

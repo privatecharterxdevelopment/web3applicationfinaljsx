@@ -176,6 +176,9 @@ export default function HomepageFooter() {
               <div>
                 <h4 className="text-sm font-medium text-gray-900 mb-4">Legal</h4>
                 <div className="space-y-3">
+                  <button onClick={() => navigate('/partners')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
+                    Partners
+                  </button>
                   <button onClick={() => navigate('/terms')} className="block text-sm text-gray-500 hover:text-gray-900 transition-colors text-left">
                     Terms of Service
                   </button>

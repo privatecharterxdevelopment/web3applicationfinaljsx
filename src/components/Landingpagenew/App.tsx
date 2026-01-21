@@ -62,6 +62,7 @@ import AdminOffers from '../../pages/AdminOffers.tsx';
 import Impressum from '../../pages/Legal/Impressum.tsx';
 import PrivacyPolicy from '../../pages/Legal/PrivacyPolicy.tsx';
 import TermsConditions from '../../pages/Legal/TermsConditions.tsx';
+import Partners from '../../pages/Partners.tsx';
 import ResetPassword from '../../pages/ResetPassword.tsx';
 
 // Import TokenSwap page
@@ -451,6 +452,7 @@ function AppContent() {
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/imprint" element={<Impressum />} />
               <Route path="/cookies" element={<PrivacyPolicy />} />
+              <Route path="/partners" element={<Partners />} />
 
               {/* ===== AUTH ROUTES ===== */}
               <Route path="/login" element={<LoginNew />} />
