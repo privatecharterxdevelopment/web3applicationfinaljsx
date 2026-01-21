@@ -6,7 +6,7 @@ import {
   Leaf, Award, Settings, User, ChevronRight, ChevronDown, ChevronUp, ChevronLeft, X, LogOut, MessageSquare, MessageCircle,
   Users, Calendar, Package, Compass, ArrowLeft, ArrowRight, Wallet, History, Crown, Gift, LayoutDashboard, Clock,
   Mail, Phone, Globe, FileText, Edit3, Check, CheckCircle, Loader2, Building2, Coins, Share2, Menu, ExternalLink, SlidersHorizontal, Info, CreditCard,
-  ShoppingCart, Send, AlertCircle, Lock, Activity, Gavel
+  ShoppingCart, Send, AlertCircle, Lock, Activity, Gavel, TrendingUp
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -29,8 +29,8 @@ import SPVFormationFlow from '../SPVFormation/SPVFormationFlow_NEW';
 import TokenSwap from './TokenSwap';
 import AIChatNew from './AIChat/AIChatNew';
 import ChatRequestsView from '../ChatRequestsView';
-import CalendarView from '../Calendar/CalendarView';
-import FavouritesView from '../Favourites/FavouritesView';
+// CalendarView removed - not used
+// FavouritesView removed - not used
 import MyRequestsView from '../MyRequestsView';
 import MyBookingsView from '../MyBookingsView';
 import MyActivityView from '../MyActivityView';
@@ -65,7 +65,7 @@ import NotificationBell, { useNotificationCount } from '../NotificationBell';
 import NotificationCenter from '../NotificationCenter';
 
 import SearchIndexPage from '../SearchIndexPage';
-import FavouriteButton from '../Favourites/FavouriteButton';
+// FavouriteButton removed - not used
 import ReferralPage from './ReferralPage';
 import Subscriptionplans from './Subscriptionplans';
 import AdminDashboardEnhanced from '../AdminDashboardEnhanced';
@@ -1342,8 +1342,7 @@ const TokenizedAssetsGlassmorphic = () => {
     'bookings': '/bookings',
     'my-bookings': '/my-bookings',
     'transactions': '/transactions',
-    'calendar': '/calendar',
-    'favourites': '/favourites',
+    // calendar and favourites removed - not used
     'notifications': '/notifications',
     'settings': '/settings',
     'kyc-verification': '/kyc-verification',
@@ -2395,6 +2394,8 @@ const TokenizedAssetsGlassmorphic = () => {
       '/terms': 'terms',
       '/privacy': 'privacy',
       '/imprint': 'imprint',
+      '/cookies': 'privacy',
+      '/partners': 'partners',
 
       // Subscriptions Routes
       '/subscriptions': 'subscription-plans',
@@ -2408,8 +2409,7 @@ const TokenizedAssetsGlassmorphic = () => {
       '/bookings': 'bookings',
       '/my-bookings': 'my-bookings',
       '/transactions': 'transactions',
-      '/calendar': 'calendar',
-      '/favourites': 'favourites',
+      // calendar and favourites removed - not used
       '/notifications': 'notifications',
       '/settings': 'settings',
       '/kyc-verification': 'kyc-verification',
@@ -4698,12 +4698,14 @@ const TokenizedAssetsGlassmorphic = () => {
       )}
 
       {/* Footer Links */}
-      <div className="text-center text-[9px] text-gray-300">
+      <div className="text-center text-[9px] text-black">
         <button onClick={() => setActiveCategory('terms')} className="hover:text-gray-500">Terms</button>
         <span className="mx-1.5">·</span>
         <button onClick={() => setActiveCategory('privacy')} className="hover:text-gray-500">Privacy</button>
         <span className="mx-1.5">·</span>
         <button onClick={() => setActiveCategory('imprint')} className="hover:text-gray-500">Imprint</button>
+        <span className="mx-1.5">·</span>
+        <button onClick={() => setActiveCategory('partners')} className="hover:text-gray-500">Partners</button>
         <span className="mx-1.5">·</span>
         <span>PrivateCharterX LLC · Miami, FL</span>
       </div>
@@ -6230,22 +6232,9 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
-          {/* Calendar View */}
-          {!isTransitioning && activeCategory === 'calendar' && (
-            <div className="w-full h-full overflow-y-auto">
-              <CalendarView user={user} />
-            </div>
-          )}
+          {/* Calendar View - removed, not used */}
 
-          {/* Favourites View */}
-          {!isTransitioning && activeCategory === 'favourites' && (
-            <div className="w-full h-full overflow-y-auto">
-              <FavouritesView user={user} onAddToCalendar={(favourite) => {
-                // Add to calendar functionality
-                setActiveCategory('calendar');
-              }} />
-            </div>
-          )}
+          {/* Favourites View - removed, not used */}
 
           {/* Search Index Page */}
           {!isTransitioning && activeCategory === 'search-index' && (
@@ -9521,12 +9510,14 @@ const TokenizedAssetsGlassmorphic = () => {
               </div>
 
               {/* Simple Footer Links - No Promo Banner */}
-              <div className="mt-8 mb-4 text-center text-[9px] text-gray-300">
+              <div className="mt-8 mb-4 text-center text-[9px] text-black">
                 <button onClick={() => setActiveCategory('terms')} className="hover:text-gray-500">Terms</button>
                 <span className="mx-1.5">·</span>
                 <button onClick={() => setActiveCategory('privacy')} className="hover:text-gray-500">Privacy</button>
                 <span className="mx-1.5">·</span>
                 <button onClick={() => setActiveCategory('imprint')} className="hover:text-gray-500">Imprint</button>
+                <span className="mx-1.5">·</span>
+                <button onClick={() => setActiveCategory('partners')} className="hover:text-gray-500">Partners</button>
                 <span className="mx-1.5">·</span>
                 <span>PrivateCharterX LLC · Miami, FL</span>
               </div>
@@ -11142,7 +11133,6 @@ const TokenizedAssetsGlassmorphic = () => {
                     <h2 className="text-base font-medium text-gray-900 mb-2">Contact</h2>
                     <div className="bg-gray-50 p-4 rounded-xl space-y-2 text-sm">
                       <p className="text-gray-600">Email: <a href="mailto:info@privatecharterx.com" className="text-gray-900 hover:underline">info@privatecharterx.com</a></p>
-                      <p className="text-gray-600">Phone: <a href="tel:+442045920778" className="text-gray-900 hover:underline">+44 20 4592 0778</a></p>
                       <p className="text-gray-600">Website: <a href="https://privatecharterx.com" className="text-gray-900 hover:underline">privatecharterx.com</a></p>
                     </div>
                   </div>
@@ -11218,6 +11208,143 @@ const TokenizedAssetsGlassmorphic = () => {
                     </div>
                   </div>
                 </div>
+                <PageFooter />
+              </div>
+            </div>
+          )}
+
+          {/* Partners Page */}
+          {!isTransitioning && activeCategory === 'partners' && (
+            <div className="w-full flex-1 overflow-y-auto">
+              <div className="max-w-3xl mx-auto">
+                {/* Hero Section */}
+                <div className="text-center mb-12">
+                  <h1 className="text-3xl sm:text-4xl font-light text-gray-900 tracking-tight mb-6">
+                    Partner with us and get listed<br />
+                    <span className="text-gray-500">within all major AIs</span>
+                  </h1>
+
+                  <p className="text-base text-gray-600 font-light max-w-2xl mx-auto">
+                    Allow users to book your services by AI Chat. Join the future of travel booking where customers discover and book through natural conversation with AI assistants.
+                  </p>
+                </div>
+
+                {/* Benefits Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                  <div className="bg-white rounded-2xl p-6 border border-gray-200">
+                    <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center mb-3">
+                      <Globe size={20} className="text-gray-700" />
+                    </div>
+                    <h3 className="text-base font-medium text-gray-900 mb-2">Global AI Visibility</h3>
+                    <p className="text-sm text-gray-600 font-light">
+                      Your services become discoverable through AI conversations. Users can find and book you simply by chatting with our AI assistant.
+                    </p>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-6 border border-gray-200">
+                    <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center mb-3">
+                      <MessageSquare size={20} className="text-gray-700" />
+                    </div>
+                    <h3 className="text-base font-medium text-gray-900 mb-2">Conversational Booking</h3>
+                    <p className="text-sm text-gray-600 font-light">
+                      Customers book through natural language. No complicated forms - just a simple chat that converts into real bookings.
+                    </p>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-6 border border-gray-200">
+                    <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center mb-3">
+                      <Users size={20} className="text-gray-700" />
+                    </div>
+                    <h3 className="text-base font-medium text-gray-900 mb-2">New Customer Channel</h3>
+                    <p className="text-sm text-gray-600 font-light">
+                      Reach customers who prefer AI-assisted booking. Tap into the growing market of travelers who want seamless, chat-based experiences.
+                    </p>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-6 border border-gray-200">
+                    <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center mb-3">
+                      <TrendingUp size={20} className="text-gray-700" />
+                    </div>
+                    <h3 className="text-base font-medium text-gray-900 mb-2">Commission-Based Model</h3>
+                    <p className="text-sm text-gray-600 font-light">
+                      No upfront costs. You only pay a commission when we bring you confirmed bookings. Performance-based partnership.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Who Can Partner */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-200 mb-12">
+                  <h2 className="text-lg font-medium text-gray-900 mb-4">Who can partner with us?</h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {[
+                      'Airlines & Flight Operators',
+                      'Hotels & Resorts',
+                      'Ground Transportation',
+                      'Adventure Companies',
+                      'Yacht Charter Services',
+                      'Tour Operators',
+                      'Car Rental Services',
+                      'Concierge Services',
+                      'Experience Providers'
+                    ].map((item) => (
+                      <div key={item} className="flex items-center gap-2 text-gray-700">
+                        <div className="w-1.5 h-1.5 bg-black rounded-full" />
+                        <span className="text-sm font-light">{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* CTA */}
+                <div className="text-center mb-8">
+                  <p className="text-gray-500 text-sm mb-4">
+                    Questions? Contact us at{' '}
+                    <a href="mailto:info@privatecharterx.com" className="text-gray-900 hover:underline">
+                      info@privatecharterx.com
+                    </a>
+                  </p>
+                  <button
+                    onClick={() => {
+                      const subject = encodeURIComponent('Partner Application - [Your Company Name]');
+                      const body = encodeURIComponent(`Hello PrivateCharterX Team,
+
+I am interested in becoming a partner and getting listed on your AI-powered booking platform.
+
+Company Information:
+- Company Name:
+- Website:
+- Industry/Services:
+- Location(s):
+- Contact Person:
+- Email:
+- Phone:
+
+Services we offer:
+- [ ] Flights / Aviation
+- [ ] Hotels / Accommodation
+- [ ] Ground Transportation
+- [ ] Adventures / Experiences
+- [ ] Yacht Charter
+- [ ] Other:
+
+Brief description of your business:
+
+
+Why you want to partner with PrivateCharterX:
+
+
+Looking forward to hearing from you.
+
+Best regards,
+[Your Name]`);
+                      window.location.href = `mailto:admin@privatecharterx.com?subject=${subject}&body=${body}`;
+                    }}
+                    className="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-900 px-6 py-3 rounded-full text-sm font-medium transition-colors"
+                  >
+                    Apply to become a partner
+                  </button>
+                </div>
+
                 <PageFooter />
               </div>
             </div>

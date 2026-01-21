@@ -170,13 +170,41 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab: externalActiveT
 
   const fetchRegisteredUsers = async () => {
     try {
-      const { data, error } = await supabaseAdmin
-        .from('users')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Fetch all users from auth.users via Admin API (includes Google OAuth users)
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers({
+        page: 1,
+        perPage: 1000
+      });
 
-      if (error) throw error;
-      setRegisteredUsers(data || []);
+      if (authError) throw authError;
+
+      // Also fetch user_profiles for additional data
+      const { data: profiles } = await supabaseAdmin
+        .from('user_profiles')
+        .select('*');
+
+      // Merge auth users with their profiles
+      const usersWithProfiles = (authData?.users || []).map(user => {
+        const profile = profiles?.find(p => p.id === user.id);
+        return {
+          id: user.id,
+          email: user.email,
+          created_at: user.created_at,
+          last_sign_in_at: user.last_sign_in_at,
+          provider: user.app_metadata?.provider || 'email',
+          raw_user_meta_data: user.user_metadata,
+          first_name: user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')[0] || profile?.first_name,
+          last_name: user.user_metadata?.last_name || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || profile?.last_name,
+          phone: user.phone || profile?.phone,
+          avatar_url: user.user_metadata?.avatar_url || profile?.avatar_url,
+          // Profile data
+          subscription_tier: profile?.subscription_tier,
+          role: profile?.role,
+          kyc_status: profile?.kyc_status
+        };
+      }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setRegisteredUsers(usersWithProfiles);
     } catch (error) {
       console.error('Error fetching users:', error);
       setRegisteredUsers([]);
@@ -276,7 +304,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab: externalActiveT
         .from('flight_bids')
         .select(`
           *,
-          route:route_id (
+          flight:flight_id (
             id,
             title,
             origin,
@@ -284,17 +312,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab: externalActiveT
             price,
             currency,
             aircraft_type
-          ),
-          user:user_id (
-            id,
-            email,
-            raw_user_meta_data
           )
         `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setFlightBids(data || []);
+
+      // Fetch user details separately since auth.users can't be joined directly
+      const bidsWithUsers = await Promise.all((data || []).map(async (bid) => {
+        try {
+          const { data: userData } = await supabaseAdmin.auth.admin.getUserById(bid.user_id);
+          return {
+            ...bid,
+            route: bid.flight, // Map flight to route for backwards compatibility
+            user: userData?.user ? {
+              id: userData.user.id,
+              email: userData.user.email,
+              raw_user_meta_data: userData.user.user_metadata
+            } : null
+          };
+        } catch {
+          return { ...bid, route: bid.flight, user: null };
+        }
+      }));
+
+      setFlightBids(bidsWithUsers);
     } catch (error) {
       console.error('Error fetching flight bids:', error);
       setFlightBids([]);
@@ -978,13 +1020,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab: externalActiveT
                         <p className="text-gray-400 text-xs">{u.subscription_tier || 'Customer'}</p>
                       </div>
                     </div>
-                    <span className={`text-[11px] px-2.5 py-1 rounded-full border ${
-                      isNewUser ? 'border-green-200 text-green-600 bg-green-50' :
-                      isRepeat ? 'border-blue-200 text-blue-600 bg-blue-50' :
-                      'border-gray-200 text-gray-500'
-                    }`}>
-                      {isNewUser ? 'New Customer' : isRepeat ? 'Repeat Customer' : 'Customer'}
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className={`text-[11px] px-2.5 py-1 rounded-full border ${
+                        isNewUser ? 'border-green-200 text-green-600 bg-green-50' :
+                        isRepeat ? 'border-blue-200 text-blue-600 bg-blue-50' :
+                        'border-gray-200 text-gray-500'
+                      }`}>
+                        {isNewUser ? 'New Customer' : isRepeat ? 'Repeat Customer' : 'Customer'}
+                      </span>
+                      {u.provider && u.provider !== 'email' && (
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                          u.provider === 'google' ? 'bg-red-50 text-red-600 border border-red-200' :
+                          u.provider === 'apple' ? 'bg-gray-100 text-gray-600 border border-gray-200' :
+                          'bg-purple-50 text-purple-600 border border-purple-200'
+                        }`}>
+                          {u.provider.charAt(0).toUpperCase() + u.provider.slice(1)}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Email with Copy */}
@@ -1657,7 +1710,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab: externalActiveT
                   <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Route</th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Starting Price</th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bid Amount</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bid Time</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Departure</th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
@@ -1665,7 +1719,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab: externalActiveT
               <tbody className="divide-y divide-gray-50">
                 {flightBids.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-5 py-12 text-center text-gray-400">
+                    <td colSpan={8} className="px-5 py-12 text-center text-gray-400">
                       No bids yet
                     </td>
                   </tr>
@@ -1675,22 +1729,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab: externalActiveT
                       <td className="px-5 py-4">
                         <div>
                           <p className="text-sm font-medium text-gray-800">
-                            {bid.user?.raw_user_meta_data?.full_name || bid.user?.email?.split('@')[0] || 'Unknown'}
+                            {bid.user?.raw_user_meta_data?.full_name || bid.user?.raw_user_meta_data?.first_name || bid.user?.email?.split('@')[0] || 'Unknown'}
                           </p>
-                          <p className="text-xs text-gray-400">{bid.user?.email}</p>
+                          <p className="text-xs text-gray-400">{bid.user?.email || 'No email'}</p>
                         </div>
                       </td>
                       <td className="px-5 py-4">
                         <div>
-                          <p className="text-sm text-gray-800">{bid.route?.title || 'Unknown Route'}</p>
+                          <p className="text-sm text-gray-800">{bid.route?.title || bid.flight?.title || 'Unknown Route'}</p>
                           <p className="text-xs text-gray-400">
-                            {bid.route?.origin?.split('(')[0]?.trim()} → {bid.route?.destination?.split('(')[0]?.trim()}
+                            {(bid.route?.origin || bid.flight?.origin)?.split('(')[0]?.trim()} → {(bid.route?.destination || bid.flight?.destination)?.split('(')[0]?.trim()}
                           </p>
                         </div>
                       </td>
                       <td className="px-5 py-4">
                         <span className="text-sm text-gray-500">
-                          ${bid.route?.price?.toLocaleString() || 'N/A'}
+                          ${(bid.route?.price || bid.flight?.price)?.toLocaleString() || 'N/A'}
                         </span>
                       </td>
                       <td className="px-5 py-4">
@@ -1700,6 +1754,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab: externalActiveT
                         {bid.counter_amount && (
                           <p className="text-xs text-blue-500">Counter: ${bid.counter_amount.toLocaleString()}</p>
                         )}
+                      </td>
+                      <td className="px-5 py-4">
+                        <div>
+                          <p className="text-sm text-gray-800">
+                            {bid.created_at ? new Date(bid.created_at).toLocaleDateString() : 'N/A'}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {bid.created_at ? new Date(bid.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                          </p>
+                        </div>
                       </td>
                       <td className="px-5 py-4">
                         <div>

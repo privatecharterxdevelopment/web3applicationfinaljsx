@@ -16,11 +16,11 @@ import Header from '../../components/Header.tsx';
 import LoginNew from '../../pages/LoginNew.tsx';
 import RegisterNew from '../../pages/RegisterNew.tsx';
 import VerifyEmail from '../../pages/VerifyEmail.tsx';
-import GoogleCalendarCallback from '../GoogleCalendarCallback.jsx';
+// GoogleCalendarCallback removed - not used
 import MapboxMap from '../../components/Map.tsx';
 import WeatherWidget from '../../components/WeatherWidget.tsx';
 import Logo from '../../components/Logo.tsx';
-import Footer from './Footer';
+// Footer removed - not used (dashboard has its own footer)
 import NavigationMenu from '../../components/NavigationMenu.tsx';
 import CookieBanner from '../../components/CookieBanner.tsx';
 import ErrorBoundary from '../../components/ErrorBoundary.tsx';
@@ -32,7 +32,7 @@ import { AuthProvider, useAuth } from '../../context/AuthContext.tsx';
 import { ThemeProvider } from '../../context/ThemeContext.tsx';
 import { MaintenanceProvider, useMaintenance } from '../../context/MaintenanceContext.tsx';
 import { NFTProvider } from '../../context/NFTContext';
-import { FavouritesProvider } from '../../contexts/FavouritesContext.jsx';
+// FavouritesProvider removed - not used
 import MaintenanceMode from '../../components/MaintenanceMode.tsx';
 import ChatSupport from '../../components/ChatSupport.tsx';
 import Dashboard from '../../components/Dashboard.tsx';
@@ -57,12 +57,8 @@ import AdminEarnings from '../../pages/admin/Earnings.tsx';
 import AdminNotifications from '../../pages/admin/Notifications.tsx';
 import Faq from '../../components/faq.tsx';  // LOWERCASE faq.tsx
 
-// Import pages (cleaned - removed unused dead pages)
+// Import pages (cleaned - legal pages now in dashboard)
 import AdminOffers from '../../pages/AdminOffers.tsx';
-import Impressum from '../../pages/Legal/Impressum.tsx';
-import PrivacyPolicy from '../../pages/Legal/PrivacyPolicy.tsx';
-import TermsConditions from '../../pages/Legal/TermsConditions.tsx';
-import Partners from '../../pages/Partners.tsx';
 import ResetPassword from '../../pages/ResetPassword.tsx';
 
 // Import TokenSwap page
@@ -71,25 +67,11 @@ import TokenSwapPage from './TokenSwapPage';
 // Import CryptoFund page (LOCAL TESTING ONLY - NOT FOR PRODUCTION)
 import CryptoFund from '../../pages/CryptoFund';
 
-// Import Landing Page Components
-import Homepage from './Homepage_new';
-import Services from './Services';
-import Technology from './Technology';
-import Aviation from './Aviation';
-import Tokenized from './Tokenized';
-import Helpdesk from './Helpdesk';
-import SpheraAI from './SpheraAI';
-import RWANFT from './RWANFT';
+// Landing Page Components removed - not used (dashboard only)
 
-// Import new pages
-import FlightTickets from '../../pages/FlightTickets';
+// Import booking pages (detail pages still needed for direct links)
 import FlightBooking from '../../pages/FlightBooking';
-import EmptyLegs from '../../pages/EmptyLegs';
 import EmptyLegBooking from '../../pages/EmptyLegBooking';
-
-// Import Tokenized Assets Marketplace pages
-import TokenizedAssetsMarketplace from '../../pages/TokenizedAssetsMarketplace';
-import TokenizedAssetMarketplaceDetail from '../../pages/TokenizedAssetMarketplaceDetail';
 
 // Import Asset Marketplace (Polymesh) pages
 // Asset Marketplace - disabled (no license)
@@ -103,8 +85,7 @@ import ProjectPage from './ProjectPage.jsx';
 // Import Launchpad page
 import LaunchpadPageNew from './LaunchpadPageNew.jsx';
 
-// Import Charter a Jet page
-import CharterAJet from './CharterAJet.jsx';
+// CharterAJet removed - not used
 
 // Import AI Chat standalone view
 import AIChat from './AIChat';
@@ -132,9 +113,7 @@ import UnifiedBookingFlow from '../../components/UnifiedBookingFlow.tsx';
 // Import Partner components
 import PartnerDashboard from '../../components/PartnerDashboard.tsx';
 
-// Import Newsletter components
-import NewsletterPreferences from '../../pages/NewsletterPreferences.tsx';
-import NewsletterUnsubscribe from '../../pages/NewsletterUnsubscribe.tsx';
+// Newsletter components removed - not used
 
 // Import Payment Pages
 import PaymentSuccessPage from '../../pages/PaymentSuccessPage.jsx';
@@ -386,8 +365,7 @@ function AppContent() {
               <Route path="/bookings" element={<TokenizedAssetsGlassmorphic key="main" />} />
               <Route path="/my-bookings" element={<TokenizedAssetsGlassmorphic key="main" />} />
               <Route path="/transactions" element={<TokenizedAssetsGlassmorphic key="main" />} />
-              <Route path="/calendar" element={<TokenizedAssetsGlassmorphic key="main" />} />
-              <Route path="/favourites" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              {/* calendar and favourites routes removed - features not used */}
               <Route path="/notifications" element={<TokenizedAssetsGlassmorphic key="main" />} />
               <Route path="/bids" element={<TokenizedAssetsGlassmorphic key="main" />} />
               <Route path="/messages" element={<TokenizedAssetsGlassmorphic key="main" />} />
@@ -438,28 +416,28 @@ function AppContent() {
               <Route path="/hotel/:id" element={<HotelDetail />} />
               <Route path="/project/:projectId" element={<ProjectPage />} />
 
-              {/* ===== LANDING PAGE ROUTES ===== */}
-              <Route path="/services" element={<Services setCurrentPage={() => {}} />} />
-              <Route path="/aviation" element={<Aviation setCurrentPage={() => {}} />} />
-              <Route path="/tokenized" element={<Tokenized setCurrentPage={() => {}} />} />
-              <Route path="/sphera-ai" element={<SpheraAI setCurrentPage={() => {}} />} />
-              <Route path="/helpdesk" element={<Helpdesk setCurrentPage={() => {}} />} />
+              {/* ===== LEGACY LANDING PAGE REDIRECTS ===== */}
+              <Route path="/services" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/aviation" element={<Navigate to="/jets" replace />} />
+              <Route path="/tokenized" element={<Navigate to="/rws" replace />} />
+              <Route path="/sphera-ai" element={<Navigate to="/chat" replace />} />
+              <Route path="/helpdesk" element={<Navigate to="/chat" replace />} />
               <Route path="/tokenswap" element={<TokenSwapPage />} />
               <Route path="/crypto-fund" element={<CryptoFund />} />
 
-              {/* ===== LEGAL PAGES ===== */}
-              <Route path="/terms" element={<TermsConditions />} />
-              <Route path="/privacy" element={<PrivacyPolicy />} />
-              <Route path="/imprint" element={<Impressum />} />
-              <Route path="/cookies" element={<PrivacyPolicy />} />
-              <Route path="/partners" element={<Partners />} />
+              {/* ===== LEGAL PAGES (within dashboard) ===== */}
+              <Route path="/terms" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/privacy" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/imprint" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/cookies" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/partners" element={<TokenizedAssetsGlassmorphic key="main" />} />
 
               {/* ===== AUTH ROUTES ===== */}
               <Route path="/login" element={<LoginNew />} />
               <Route path="/register" element={<RegisterNew />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/auth/google/callback" element={<GoogleCalendarCallback />} />
+              {/* Google calendar callback removed - not used */}
 
               {/* ===== CRM ADMIN ROUTES ===== */}
               <Route path="/crm" element={<CRMPage />} />
@@ -469,9 +447,7 @@ function AppContent() {
               {/* ===== PARTNER ROUTES ===== */}
               <Route path="/partner-dashboard" element={<PartnerDashboard />} />
 
-              {/* ===== NEWSLETTER ROUTES ===== */}
-              <Route path="/newsletter/preferences" element={<NewsletterPreferences />} />
-              <Route path="/newsletter/unsubscribe" element={<NewsletterUnsubscribe />} />
+              {/* Newsletter routes removed - not used */}
 
               {/* ===== PAYMENT ROUTES ===== */}
               <Route path="/payment/success" element={<PaymentSuccessPage />} />
@@ -498,8 +474,8 @@ function AppContent() {
               <Route path="/dashboard/bookings" element={<Navigate to="/bookings" replace />} />
               <Route path="/dashboard/my-bookings" element={<Navigate to="/my-bookings" replace />} />
               <Route path="/dashboard/transactions" element={<Navigate to="/transactions" replace />} />
-              <Route path="/dashboard/calendar" element={<Navigate to="/calendar" replace />} />
-              <Route path="/dashboard/favourites" element={<Navigate to="/favourites" replace />} />
+              <Route path="/dashboard/calendar" element={<Navigate to="/home" replace />} />
+              <Route path="/dashboard/favourites" element={<Navigate to="/home" replace />} />
               <Route path="/dashboard/notifications" element={<Navigate to="/notifications" replace />} />
               <Route path="/dashboard/bids" element={<Navigate to="/bids" replace />} />
               <Route path="/dashboard/messages" element={<Navigate to="/messages" replace />} />
@@ -579,8 +555,8 @@ function AppContent() {
               <Route path="/services/*" element={<Navigate to="/aviation" replace />} />
               <Route path="/privatecharterx-support" element={<Navigate to="/helpdesk" replace />} />
               <Route path="/support" element={<Navigate to="/helpdesk" replace />} />
-              <Route path="/partners-board" element={<Navigate to="/home" replace />} />
-              <Route path="/partners" element={<Navigate to="/home" replace />} />
+              <Route path="/partners-board" element={<Navigate to="/partners" replace />} />
+              {/* /partners route is defined above - no redirect needed */}
               <Route path="/web3/flight-tracker" element={<Navigate to="/home" replace />} />
               <Route path="/web3/tracker" element={<Navigate to="/home" replace />} />
               <Route path="/faq" element={<Navigate to="/faqs" replace />} />
@@ -639,11 +615,9 @@ function AppWithAuth() {
   const { user } = useAuth();
 
   return (
-    <FavouritesProvider user={user}>
-      <MaintenanceProvider>
-        <AppContent />
-      </MaintenanceProvider>
-    </FavouritesProvider>
+    <MaintenanceProvider>
+      <AppContent />
+    </MaintenanceProvider>
   );
 }
 

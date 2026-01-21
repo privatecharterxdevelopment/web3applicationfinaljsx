@@ -57,6 +57,7 @@ const CRMDashboard = ({ onClose }) => {
   const [allSubscriptions, setAllSubscriptions] = useState([]);
   const [allPVCXBalances, setAllPVCXBalances] = useState([]);
   const [allPVCXTransactions, setAllPVCXTransactions] = useState([]);
+  const [allFlightBids, setAllFlightBids] = useState([]);
   const [sidebarCounts, setSidebarCounts] = useState({});
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -253,13 +254,15 @@ const CRMDashboard = ({ onClose }) => {
             created_at: authUser.created_at, // Use auth.users created_at - this is the REAL registration time
             last_sign_in_at: authUser.last_sign_in_at,
             email_confirmed_at: authUser.email_confirmed_at,
+            // Auth provider (google, email, etc.)
+            provider: authUser.app_metadata?.provider || authUser.app_metadata?.providers?.[0] || 'email',
             // Phone: check users table first, then user_profiles, then auth.users
             phone: publicUser?.phone || profile?.phone || authUser.phone || null,
             // From user_metadata
-            name: authUser.user_metadata?.name || publicUser?.name,
+            name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || publicUser?.name,
             first_name: authUser.user_metadata?.first_name || publicUser?.first_name,
             last_name: authUser.user_metadata?.last_name || publicUser?.last_name,
-            avatar_url: authUser.user_metadata?.avatar_url || profile?.avatar_url,
+            avatar_url: authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture || profile?.avatar_url,
             // From public.users table
             is_admin: publicUser?.is_admin,
             user_role: publicUser?.user_role,
@@ -280,11 +283,12 @@ const CRMDashboard = ({ onClose }) => {
             created_at: authUser.created_at,
             last_sign_in_at: authUser.last_sign_in_at,
             email_confirmed_at: authUser.email_confirmed_at,
+            provider: authUser.app_metadata?.provider || authUser.app_metadata?.providers?.[0] || 'email',
             phone: authUser.phone,
-            name: authUser.user_metadata?.name,
+            name: authUser.user_metadata?.name || authUser.user_metadata?.full_name,
             first_name: authUser.user_metadata?.first_name,
             last_name: authUser.user_metadata?.last_name,
-            avatar_url: authUser.user_metadata?.avatar_url,
+            avatar_url: authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture,
             is_admin: false,
             user_role: 'user',
             is_active: true,
@@ -734,6 +738,62 @@ const CRMDashboard = ({ onClose }) => {
     finally { setRefreshing(false); }
   }, []);
 
+  // Fetch flight bids with route and user data
+  const fetchFlightBids = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // Fetch bids with route details from fixed_offers
+      const { data: bids, error } = await supabaseAdmin
+        .from('flight_bids')
+        .select(`
+          *,
+          route:route_id (
+            id,
+            title,
+            origin,
+            destination,
+            price,
+            currency,
+            aircraft_type,
+            image_url
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.log('flight_bids fetch error:', error.message);
+        setAllFlightBids([]);
+        return;
+      }
+
+      console.log('Fetched flight bids:', bids?.length || 0);
+
+      // Enrich with user data from auth.users
+      const enrichedBids = await Promise.all((bids || []).map(async (bid) => {
+        try {
+          const { data: userData } = await supabaseAdmin.auth.admin.getUserById(bid.user_id);
+          return {
+            ...bid,
+            user: userData?.user ? {
+              id: userData.user.id,
+              email: userData.user.email,
+              name: userData.user.user_metadata?.name || userData.user.user_metadata?.full_name || userData.user.email?.split('@')[0],
+              provider: userData.user.app_metadata?.provider || 'email'
+            } : null
+          };
+        } catch {
+          return { ...bid, user: null };
+        }
+      }));
+
+      setAllFlightBids(enrichedBids);
+    } catch (err) {
+      console.error('Error fetching flight bids:', err);
+      setAllFlightBids([]);
+    }
+    finally { setRefreshing(false); }
+  }, []);
+
   // Fetch recent notifications (latest entries across all tables)
   const fetchNotifications = useCallback(async () => {
     try {
@@ -805,9 +865,10 @@ const CRMDashboard = ({ onClose }) => {
       case 'spv-formation': fetchSPVFormations(); break;
       case 'tokenization': fetchTokenizationDrafts(); break;
       case 'pvcx': fetchPVCXData(); break;
+      case 'bids': fetchFlightBids(); break;
       default: fetchCustomers();
     }
-  }, [isAdmin, activeSection, fetchCustomers, fetchAllBookings, fetchAllRequests, fetchAllAiChats, fetchAllSupport, fetchAllTransactions, fetchAllChatMessages, fetchAllChatRequests, fetchEmptyLegBookings, fetchEmptyLegsFromTable, fetchAllWines, fetchAllCigars, fetchSPVFormations, fetchTokenizationDrafts, fetchAllSubscriptions, fetchPVCXData, fetchSidebarCounts]);
+  }, [isAdmin, activeSection, fetchCustomers, fetchAllBookings, fetchAllRequests, fetchAllAiChats, fetchAllSupport, fetchAllTransactions, fetchAllChatMessages, fetchAllChatRequests, fetchEmptyLegBookings, fetchEmptyLegsFromTable, fetchAllWines, fetchAllCigars, fetchSPVFormations, fetchTokenizationDrafts, fetchAllSubscriptions, fetchPVCXData, fetchFlightBids, fetchSidebarCounts]);
 
   const getUserName = (c) => c?.name || `${c?.first_name || ''} ${c?.last_name || ''}`.trim() || c?.email?.split('@')[0] || 'Unknown';
   const getUserRole = (c) => c?.user_role || (c?.bookings?.length > 5 ? 'VIP' : c?.bookings?.length > 0 ? 'Active' : 'New');
@@ -825,6 +886,7 @@ const CRMDashboard = ({ onClose }) => {
     { id: 'invoice-generator', icon: FileText, label: 'Invoice Generator', count: null },
     { id: 'support', icon: Ticket, label: 'Support', count: sidebarCounts.support },
     { id: 'transactions', icon: CreditCard, label: 'Transactions', count: sidebarCounts.transactions },
+    { id: 'bids', icon: Tag, label: 'Flight Bids', count: allFlightBids.length || null },
     { id: 'inventory', icon: Package, label: 'Inventory', count: (sidebarCounts.emptyLegsTable || 0) + (sidebarCounts.wines || 0) + (sidebarCounts.cigars || 0) },
     { id: 'subscriptions', icon: Crown, label: 'Subscriptions', count: sidebarCounts.subscriptions },
     { id: 'spv-formation', icon: Building2, label: 'SPV Formation', count: sidebarCounts.spvFormations },
@@ -1124,6 +1186,16 @@ const CRMDashboard = ({ onClose }) => {
               supabaseAdmin={supabaseAdmin}
               currentAdminEmail={user?.email}
               customers={customers}
+            />
+          )}
+
+          {/* Flight Bids Section */}
+          {activeSection === 'bids' && (
+            <BidsSection
+              bids={allFlightBids}
+              refreshing={refreshing}
+              onRefresh={fetchFlightBids}
+              supabaseAdmin={supabaseAdmin}
             />
           )}
         </div>
@@ -3554,9 +3626,14 @@ const CustomerCard = ({ customer, getUserName, getUserRole, isRepeatCustomer, co
           <p className="text-xs text-gray-500">{getUserRole(customer)}</p>
         </div>
       </div>
-      <span className={`px-2 py-1 text-xs rounded-full font-medium ${isRepeatCustomer(customer) ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
-        {isRepeatCustomer(customer) ? 'Repeat' : 'New'}
-      </span>
+      <div className="flex flex-col gap-1 items-end">
+        <span className={`px-2 py-1 text-xs rounded-full font-medium ${isRepeatCustomer(customer) ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
+          {isRepeatCustomer(customer) ? 'Repeat' : 'New'}
+        </span>
+        <span className={`px-2 py-0.5 text-[10px] rounded-full font-medium ${customer.provider === 'google' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+          {customer.provider === 'google' ? '🔵 Google' : '✉️ Email'}
+        </span>
+      </div>
     </div>
 
     {/* Contact Info */}
@@ -3615,6 +3692,7 @@ const CustomerTable = ({ customers, getUserName, getUserRole, isRepeatCustomer, 
         <tr>
           <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Customer</th>
           <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Email</th>
+          <th className="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase">Provider</th>
           <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Phone</th>
           <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Country</th>
           <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Joined</th>
@@ -3641,6 +3719,11 @@ const CustomerTable = ({ customers, getUserName, getUserRole, isRepeatCustomer, 
               </div>
             </td>
             <td className="px-4 py-3 text-sm text-gray-600">{c.email}</td>
+            <td className="px-4 py-3 text-center">
+              <span className={`px-2 py-1 text-xs rounded-full font-medium ${c.provider === 'google' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                {c.provider === 'google' ? 'Google' : 'Email'}
+              </span>
+            </td>
             <td className="px-4 py-3 text-sm text-gray-600">{c.profile?.phone || 'Not provided'}</td>
             <td className="px-4 py-3 text-sm text-gray-600">{c.profile?.country || 'Not provided'}</td>
             <td className="px-4 py-3 text-sm text-gray-600">{new Date(c.created_at).toLocaleDateString()}</td>
@@ -7241,6 +7324,223 @@ const PVCXSection = ({ balances, transactions, refreshing, onRefresh, supabaseAd
       )}
 
     </>
+  );
+};
+
+// ============================================
+// FLIGHT BIDS SECTION
+// View and manage flight bids from users
+// ============================================
+const BidsSection = ({ bids, refreshing, onRefresh, supabaseAdmin }) => {
+  const [selectedBid, setSelectedBid] = useState(null);
+  const [showCounterModal, setShowCounterModal] = useState(false);
+  const [counterAmount, setCounterAmount] = useState('');
+  const [updating, setUpdating] = useState(false);
+
+  const updateBidStatus = async (bidId, status, counter = null) => {
+    setUpdating(true);
+    try {
+      const updateData = { status };
+      if (counter) updateData.counter_amount = parseFloat(counter);
+
+      const { error } = await supabaseAdmin
+        .from('flight_bids')
+        .update(updateData)
+        .eq('id', bidId);
+
+      if (error) throw error;
+      onRefresh();
+      setShowCounterModal(false);
+      setCounterAmount('');
+    } catch (err) {
+      console.error('Error updating bid:', err);
+      alert('Failed to update bid');
+    }
+    setUpdating(false);
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending': return 'bg-amber-100 text-amber-700';
+      case 'accepted': return 'bg-emerald-100 text-emerald-700';
+      case 'rejected': return 'bg-red-100 text-red-700';
+      case 'countered': return 'bg-blue-100 text-blue-700';
+      case 'withdrawn': return 'bg-gray-100 text-gray-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold text-gray-900">Flight Bids</h2>
+          <p className="text-gray-500 text-sm mt-1">{bids.length} total bids</p>
+        </div>
+        <button
+          onClick={onRefresh}
+          disabled={refreshing}
+          className="px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-2"
+        >
+          <RefreshCcw size={16} className={refreshing ? 'animate-spin' : ''} />
+          Refresh
+        </button>
+      </div>
+
+      {/* Bids Table */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        {refreshing ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+          </div>
+        ) : bids.length === 0 ? (
+          <div className="text-center py-20 text-gray-400">
+            <Tag size={40} className="mx-auto mb-3 opacity-50" />
+            <p>No flight bids yet</p>
+          </div>
+        ) : (
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Route</th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">List Price</th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bid Amount</th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bid Time</th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Departure</th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {bids.map((bid) => (
+                <tr key={bid.id} className="hover:bg-gray-50">
+                  <td className="px-5 py-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{bid.user?.name || 'Unknown'}</p>
+                      <p className="text-xs text-gray-500">{bid.user?.email || 'No email'}</p>
+                      {bid.user?.provider && bid.user.provider !== 'email' && (
+                        <span className="text-[10px] px-1.5 py-0.5 bg-red-50 text-red-600 rounded mt-1 inline-block">
+                          {bid.user.provider}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-5 py-4">
+                    <div>
+                      <p className="text-sm text-gray-900">{bid.route?.title || 'Unknown Route'}</p>
+                      <p className="text-xs text-gray-500">
+                        {bid.route?.origin?.split('(')[0]?.trim()} → {bid.route?.destination?.split('(')[0]?.trim()}
+                      </p>
+                    </div>
+                  </td>
+                  <td className="px-5 py-4">
+                    <span className="text-sm text-gray-500">
+                      €{bid.route?.price?.toLocaleString() || 'N/A'}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4">
+                    <span className="text-sm font-semibold text-gray-900">
+                      €{bid.bid_amount?.toLocaleString()}
+                    </span>
+                    {bid.counter_amount && (
+                      <p className="text-xs text-blue-600">Counter: €{bid.counter_amount.toLocaleString()}</p>
+                    )}
+                  </td>
+                  <td className="px-5 py-4">
+                    <div>
+                      <p className="text-sm text-gray-900">
+                        {bid.created_at ? new Date(bid.created_at).toLocaleDateString() : 'N/A'}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {bid.created_at ? new Date(bid.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                      </p>
+                    </div>
+                  </td>
+                  <td className="px-5 py-4">
+                    <div>
+                      <p className="text-sm text-gray-900">
+                        {bid.departure_date ? new Date(bid.departure_date).toLocaleDateString() : 'Flexible'}
+                      </p>
+                      <p className="text-xs text-gray-500">{bid.passengers} pax</p>
+                    </div>
+                  </td>
+                  <td className="px-5 py-4">
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(bid.status)}`}>
+                      {bid.status}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4">
+                    {bid.status === 'pending' && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => updateBidStatus(bid.id, 'accepted')}
+                          disabled={updating}
+                          className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-lg"
+                        >
+                          Accept
+                        </button>
+                        <button
+                          onClick={() => { setSelectedBid(bid); setShowCounterModal(true); }}
+                          className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-lg"
+                        >
+                          Counter
+                        </button>
+                        <button
+                          onClick={() => updateBidStatus(bid.id, 'rejected')}
+                          disabled={updating}
+                          className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded-lg"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                    {bid.status !== 'pending' && (
+                      <span className="text-xs text-gray-400">No actions</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Counter Offer Modal */}
+      {showCounterModal && selectedBid && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Counter Offer</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Original bid: €{selectedBid.bid_amount?.toLocaleString()} for {selectedBid.flight?.title}
+            </p>
+            <input
+              type="number"
+              value={counterAmount}
+              onChange={(e) => setCounterAmount(e.target.value)}
+              placeholder="Enter counter amount (€)"
+              className="w-full px-4 py-2 border border-gray-200 rounded-lg mb-4"
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowCounterModal(false); setCounterAmount(''); }}
+                className="flex-1 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => updateBidStatus(selectedBid.id, 'countered', counterAmount)}
+                disabled={!counterAmount || updating}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {updating ? 'Sending...' : 'Send Counter'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
