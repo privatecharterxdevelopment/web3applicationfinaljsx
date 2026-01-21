@@ -64,9 +64,6 @@ export default function Impressum() {
                 Email: <a href="mailto:info@privatecharterx.com" className="text-gray-900 hover:underline">info@privatecharterx.com</a>
               </p>
               <p className="text-gray-600">
-                Phone: <a href="tel:+442045920778" className="text-gray-900 hover:underline">+44 20 4592 0778</a>
-              </p>
-              <p className="text-gray-600">
                 Website: <a href="https://privatecharterx.com" className="text-gray-900 hover:underline">privatecharterx.com</a>
               </p>
             </div>
