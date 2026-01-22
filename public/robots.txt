@@ -5,7 +5,7 @@
 User-agent: *
 
 # ========================================
-# ALLOW - Only these 8 public pages
+# ALLOW - Public pages and SEO files
 # ========================================
 Allow: /services
 Allow: /jets
@@ -15,6 +15,7 @@ Allow: /flight-bids
 Allow: /adventures
 Allow: /flights
 Allow: /partners
+Allow: /sitemap.xml
 
 # ========================================
 # DISALLOW - Everything else

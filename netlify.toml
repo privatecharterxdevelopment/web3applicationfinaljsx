@@ -400,6 +400,17 @@
   to = "/.netlify/functions/:splat"
   status = 200
 
+# Static files that must be served directly (before SPA catch-all)
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "/sitemap.xml"
+  status = 200
+
+[[redirects]]
+  from = "/robots.txt"
+  to = "/robots.txt"
+  status = 200
+
 # Catch-all rewrite for SPA routing (must be last)
 [[redirects]]
   from = "/*"
