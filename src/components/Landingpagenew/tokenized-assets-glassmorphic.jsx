@@ -2258,7 +2258,7 @@ const TokenizedAssetsGlassmorphic = () => {
   }, [isAuthenticated, user, pendingCategory]);
 
   // Protected categories that require login - show login modal for guests
-  const protectedCategories = ['dashboard', 'profile', 'bookings', 'requests', 'activities', 'settings', 'messages', 'subscriptions', 'chat'];
+  const protectedCategories = ['dashboard', 'profile', 'bookings', 'requests', 'activities', 'settings', 'messages', 'subscriptions', 'chat', 'chat-history'];
   useEffect(() => {
     if (!user && !initializing && protectedCategories.includes(activeCategory)) {
       setShowLoginModal(true);
@@ -4835,6 +4835,12 @@ const TokenizedAssetsGlassmorphic = () => {
                   // If sidebar is collapsed, expand it first
                   if (!sidebarExpanded && !isMobileMenuOpen) {
                     setSidebarExpanded(true);
+                    return;
+                  }
+                  // Check authentication before opening chat
+                  if (!user) {
+                    setShowLoginModal(true);
+                    setPendingCategory('chat');
                     return;
                   }
                   // Start a new chat - update state first, then URL cosmetically
@@ -10353,6 +10359,11 @@ const TokenizedAssetsGlassmorphic = () => {
                   <p className="text-sm text-gray-600 mb-6">Start a new chat to begin talking with Sphera</p>
                   <button
                     onClick={() => {
+                      if (!user) {
+                        setShowLoginModal(true);
+                        setPendingCategory('chat');
+                        return;
+                      }
                       setActiveChat('new');
                       setActiveCategory('chat');
                       window.history.pushState({}, '', '/chat');

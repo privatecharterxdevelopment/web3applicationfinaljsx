@@ -24,10 +24,9 @@ const config: CapacitorConfig = {
 
   // iOS specific configuration
   ios: {
-    contentInset: 'automatic',
-    backgroundColor: '#ffffff',
+    contentInset: 'always',
+    backgroundColor: '#000000',
     preferredContentMode: 'mobile',
-    // Handle status bar
     scrollEnabled: true
   },
 
@@ -44,12 +43,14 @@ const config: CapacitorConfig = {
   plugins: {
     // Splash screen settings
     SplashScreen: {
-      launchShowDuration: 2000,
+      launchShowDuration: 3500,
+      launchAutoHide: true,
       backgroundColor: '#000000',
       showSpinner: false,
       androidScaleType: 'CENTER_CROP',
       splashFullScreen: true,
-      splashImmersive: true
+      splashImmersive: true,
+      fadeOutDuration: 300
     },
 
     // Status bar settings
@@ -62,6 +63,16 @@ const config: CapacitorConfig = {
     Keyboard: {
       resize: 'body',
       resizeOnFullScreen: true
+    },
+
+    // Push Notifications
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert']
+    },
+
+    // Haptics
+    Haptics: {
+      enabled: true
     }
   }
 };

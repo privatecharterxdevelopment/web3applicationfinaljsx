@@ -11,7 +11,7 @@ export default function LoginNew() {
       onSwitchToRegister={() => navigate('/register')}
       onSwitchToPartnerRegister={() => navigate('/register?type=partner')}
       onSuccess={() => navigate('/dashboard')}
-      onSwitchToForgotPassword={() => navigate('/reset-password')}
+      onSwitchToForgotPassword={() => navigate('/forgot-password')}
     />
   );
 }

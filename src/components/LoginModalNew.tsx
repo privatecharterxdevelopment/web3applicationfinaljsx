@@ -15,16 +15,7 @@ interface LoginModalProps {
 }
 
 const videos = [
-  'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/moreVideos/8436362-uhd_3840_2160_30fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzg0MzYzNjItdWhkXzM4NDBfMjE2MF8zMGZwcy5tcDQiLCJpYXQiOjE3NjA5MTE2MjAsImV4cCI6Nzc1MjI5OTgwMjB9.ebROl6af5ZnN0T1Xd95tfZBwKmPhcCUl8oCsVAYwlMI',
-  'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/fucking%20videos/17324151-hd_1080_1920_30fps.mp4',
-  'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/moreVideos/7875576-hd_1920_1080_25fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzc4NzU1NzYtaGRfMTkyMF8xMDgwXzI1ZnBzLm1wNCIsImlhdCI6MTc2MDkxMzc2NiwiZXhwIjo3NzUyMzAwMDE2Nn0.acimIaa-fPSN47voHxAUiNjrkKjC98fo2aNQyVO0a-A',
-  'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/12427495_3840_2160_24fps.mp4',
-  'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/moreVideos/13736229-uhd_3840_2160_30fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzEzNzM2MjI5LXVoZF8zODQwXzIxNjBfMzBmcHMubXA0IiwiaWF0IjoxNzYwOTEyMTU3LCJleHAiOjc3NjUyNDI1NzU3fQ.Oq64TE_BAxshzy6AS9U5AnboXpjnQZWubm8HW5eGavs',
-  'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/moreVideos/13158911_4096_2160_50fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzEzMTU4OTExXzQwOTZfMjE2MF81MGZwcy5tcDQiLCJpYXQiOjE3NjA5MTIyNDUsImV4cCI6OTUxMzkyOTg0NX0.jM3JSo4Kyf27Hi5yiGGIK5mrtDnrCtUxA5vdFm7Rino',
-  'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/moreVideos/5673899-uhd_4096_2160_30fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzU2NzM4OTktdWhkXzQwOTZfMjE2MF8zMGZwcy5tcDQiLCJpYXQiOjE3NjA5MTI0MjYsImV4cCI6MTc5MjQ0ODQyNn0.YHofw-Rwow-p8VmZkyg-cDaxejMSvd14KnG8NoPxp2E',
-  'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/moreVideos/4415852-uhd_3840_2160_30fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzQ0MTU4NTItdWhkXzM4NDBfMjE2MF8zMGZwcy5tcDQiLCJpYXQiOjE3NjA5MTI1NDgsImV4cCI6MTc5MjQ0ODU0OH0.IBjgnpwZaf9pj47zgGIyCxIPlvs-lNo-Qqmbe8X9fsk',
-  'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/moreVideos/13167263_1080_1920_30fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzEzMTY3MjYzXzEwODBfMTkyMF8zMGZwcy5tcDQiLCJpYXQiOjE3NjA5MTM1NTcsImV4cCI6MTc5MjQ0OTU1N30.iDgNvEyF3i3S3F6GyPEDL52ZlJicj2GxVQuTRXXs5v0',
-  'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/moreVideos/19948847-uhd_3840_2160_60fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzE5OTQ4ODQ3LXVoZF8zODQwXzIxNjBfNjBmcHMubXA0IiwiaWF0IjoxNzYwOTEzNjY5LCJleHAiOjE3OTI0NDk2Njl9.F-uRmmODnG2dLtVGSunChWYYnE3RvUPtab3fhU8lhpQ'
+  'https://auth.privatecharterx.com/storage/v1/object/sign/moreVideos/14493573_1080_1920_30fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzE0NDkzNTczXzEwODBfMTkyMF8zMGZwcy5tcDQiLCJpYXQiOjE3Njg5OTUxMDIsImV4cCI6NjEyNzgyOTExMDJ9.quOPjnMyqKoPOncM58QQLmO2LmcPSqtbRpyjpsA-XeU'
 ];
 
 // Google Icon SVG component
@@ -87,10 +78,20 @@ function LoginForm({
     setIsGoogleLoading(true);
 
     try {
+      // Detect if running in Capacitor (iOS/Android)
+      const isCapacitor = window.location.protocol === 'capacitor:' ||
+                          window.location.hostname === 'localhost' &&
+                          typeof (window as any).Capacitor !== 'undefined';
+
+      // Use proper redirect URL based on platform
+      const redirectUrl = isCapacitor
+        ? 'https://privatecharterx.com/dashboard'
+        : `${window.location.origin}/dashboard`;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: redirectUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -142,7 +143,7 @@ function LoginForm({
               <div className="w-full max-w-sm mx-auto py-4">
                 {/* Title */}
                 <div className="mb-6">
-                  <h1 className="text-2xl font-semibold text-gray-900 mb-1">
+                  <h1 className="text-2xl font-light text-gray-900 mb-1">
                     Welcome Back
                   </h1>
                   <p className="text-sm text-gray-500 font-light">
@@ -221,7 +222,7 @@ function LoginForm({
                         onSwitchToForgotPassword();
                       } else {
                         onClose();
-                        navigate('/reset-password');
+                        navigate('/forgot-password');
                       }
                     }}
                     className="text-gray-500 hover:text-gray-900 transition-colors font-light"

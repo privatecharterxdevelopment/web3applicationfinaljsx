@@ -102,6 +102,16 @@ const allowedUsers: User[] = [
     isOnline: true,
     lastSeen: new Date(),
     department: 'Management'
+  },
+  {
+    id: 'h0eebc99-9c0b-4ef8-bb6d-6bb9bd380a18',
+    email: 'aziz.electricwala20@gmail.com',
+    name: 'Aziz Electricwala',
+    role: 'sales',
+    isOnline: true,
+    lastSeen: new Date(),
+    department: 'Sales',
+    hideClients: true  // Custom flag to hide customers/clients
   }
 ];
 

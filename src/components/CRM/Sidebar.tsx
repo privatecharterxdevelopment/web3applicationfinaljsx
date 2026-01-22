@@ -55,9 +55,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSectio
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
-  const filteredMenuItems = menuItems.filter(item => 
-    !item.roles || item.roles.includes(user?.role || '')
-  );
+  const filteredMenuItems = menuItems.filter(item => {
+    // Check role-based access
+    if (item.roles && !item.roles.includes(user?.role || '')) {
+      return false;
+    }
+    // Hide clients section for users with hideClients flag
+    if (item.id === 'clients' && user?.hideClients) {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col">

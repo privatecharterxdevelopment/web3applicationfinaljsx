@@ -33,7 +33,7 @@ const CRMDashboard = ({ onClose }) => {
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState('customers');
+  const [activeSection, setActiveSection] = useState('dashboard');
   const [viewMode, setViewMode] = useState('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
@@ -68,11 +68,33 @@ const CRMDashboard = ({ onClose }) => {
   const [refreshing, setRefreshing] = useState(false);
   const pageSize = 9;
 
+  // Special CRM access users (with restricted permissions) - all emails lowercase
+  const SPECIAL_CRM_USERS = {
+    'aziz.electricwala20@gmail.com': { hideCustomers: true }
+  };
+
+  // Helper to check if user is a special CRM user (case-insensitive)
+  const getSpecialUserConfig = (email) => {
+    if (!email) return null;
+    const lowerEmail = email.toLowerCase();
+    return SPECIAL_CRM_USERS[lowerEmail] || null;
+  };
+
   // Check admin status - check both auth.users metadata AND users table
   useEffect(() => {
     const checkAdmin = async () => {
       if (!user?.id) { setLoading(false); return; }
       try {
+        // Check for special CRM users first (case-insensitive)
+        const specialConfig = getSpecialUserConfig(user?.email);
+        console.log('🔍 CRM Access Check:', { email: user?.email, specialConfig });
+        if (specialConfig) {
+          setIsAdmin(true);
+          console.log('✅ Admin check: Special CRM user granted access:', user.email);
+          setLoading(false);
+          return;
+        }
+
         // Check 1: auth.users user_metadata (where we set is_admin via auth.admin.updateUserById)
         const { data: authData } = await supabaseAdmin.auth.admin.getUserById(user.id);
         const authIsAdmin = authData?.user?.user_metadata?.is_admin === true;
@@ -877,7 +899,7 @@ const CRMDashboard = ({ onClose }) => {
 
   // Sidebar menu items
   // ENHANCED MENU - includes Web3 sections
-  const menuItems = [
+  const allMenuItems = [
     { id: 'dashboard', icon: Home, label: 'Dashboard', count: null },
     { id: 'customers', icon: Users, label: 'Customers', count: sidebarCounts.customers },
     { id: 'activity', icon: Activity, label: 'Customer Activity', count: (sidebarCounts.bookings || 0) + (sidebarCounts.requests || 0) + (sidebarCounts.chatRequests || 0) },
@@ -893,6 +915,16 @@ const CRMDashboard = ({ onClose }) => {
     { id: 'tokenization', icon: Coins, label: 'Tokenized Assets', count: sidebarCounts.tokenizationDrafts },
     { id: 'pvcx', icon: Zap, label: 'PVCX Tokens', count: allPVCXBalances.length || null },
   ];
+
+  // Filter menu items based on user permissions (case-insensitive)
+  const userConfig = getSpecialUserConfig(user?.email);
+  const menuItems = allMenuItems.filter(item => {
+    // Hide customers for users with hideCustomers flag
+    if (item.id === 'customers' && userConfig?.hideCustomers) {
+      return false;
+    }
+    return true;
+  });
 
   if (loading) {
     return (

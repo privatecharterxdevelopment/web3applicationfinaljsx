@@ -8,6 +8,7 @@ export interface User {
   lastSeen: Date;
   department?: string;
   birthday?: Date;
+  hideClients?: boolean;  // Flag to hide customers/clients section
 }
 
 export interface Client {

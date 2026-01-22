@@ -60,6 +60,7 @@ import Faq from '../../components/faq.tsx';  // LOWERCASE faq.tsx
 // Import pages (cleaned - legal pages now in dashboard)
 import AdminOffers from '../../pages/AdminOffers.tsx';
 import ResetPassword from '../../pages/ResetPassword.tsx';
+import ForgotPassword from '../../pages/ForgotPassword.tsx';
 
 // Import TokenSwap page
 import TokenSwapPage from './TokenSwapPage';
@@ -436,6 +437,7 @@ function AppContent() {
               <Route path="/login" element={<LoginNew />} />
               <Route path="/register" element={<RegisterNew />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               {/* Google calendar callback removed - not used */}
 
