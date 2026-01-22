@@ -3,7 +3,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 // QueryClient is provided from main.tsx
-import { useAuth0 } from '@auth0/auth0-react';
+// Auth0 import removed - using Supabase for authentication
 import { ArrowRight, MapPin, Calendar, Users, Check } from 'lucide-react';
 
 // ===== WAGMI/REOWN IMPORTS =====
@@ -246,7 +246,6 @@ function PageTransition({ children }: { children: React.ReactNode }) {
 
 // Main App Content Component (wrapped by AuthProvider)
 function AppContent() {
-  const { isLoading } = useAuth0();
   const { isMaintenanceMode } = useMaintenance();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -294,10 +293,6 @@ function AppContent() {
 
   // Check if we're on admin subdomain
   const isAdminDomain = window.location.hostname.startsWith('admin.');
-
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
 
   if (isMaintenanceMode) {
     return <MaintenanceMode />;
