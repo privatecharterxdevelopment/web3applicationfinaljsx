@@ -5408,11 +5408,11 @@ const TokenizedAssetsGlassmorphic = () => {
               {/* Phone Number */}
               <a
                 href="tel:+18332002057"
-                className="hidden sm:flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200"
+                className="flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200"
                 title="Call Us"
               >
                 <Phone size={14} className="text-gray-700" />
-                <span className="text-xs font-medium text-gray-700">(833) 200-2057</span>
+                <span className="hidden sm:inline text-xs font-medium text-gray-700">(833) 200-2057</span>
               </a>
 
               {/* Web Mode Switcher - Hidden (no longer needed) */}
