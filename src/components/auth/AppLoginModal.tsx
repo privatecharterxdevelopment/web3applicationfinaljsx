@@ -3,8 +3,17 @@ import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import Portal from '../Portal';
 import { useAuth } from '../../context/AuthContext';
 
-// Background video for login
-const loginVideo = 'https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/sign/moreVideos/13736229-uhd_3840_2160_30fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzEzNzM2MjI5LXVoZF8zODQwXzIxNjBfMzBmcHMubXA0IiwiaWF0IjoxNzYwOTEyMTU3LCJleHAiOjc3NjUyNDI1NzU3fQ.Oq64TE_BAxshzy6AS9U5AnboXpjnQZWubm8HW5eGavs';
+// Service titles for display
+const SERVICE_TITLES = [
+  'Empty Legs',
+  'Private Jets',
+  'Helicopter',
+  'Commercial Flights',
+  'Holidays',
+  'Adventures',
+  'Maritime',
+  'Airport Transfer'
+];
 
 interface AppLoginModalProps {
   onClose: () => void;
@@ -63,18 +72,25 @@ export default function AppLoginModal({
 
   return (
     <Portal>
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
       <div className="fixed inset-0 z-[9999] bg-black font-['DM_Sans']">
-        {/* Background Video */}
+        {/* Background Image */}
         <div className="absolute inset-0">
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full h-full object-cover"
-          >
-            <source src={loginVideo} type="video/mp4" />
-          </video>
+          <div
+            className="w-full h-full bg-cover bg-center"
+            style={{ backgroundImage: 'url(/login-bg.jpg)' }}
+          />
           {/* Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/30" />
         </div>
@@ -91,6 +107,22 @@ export default function AppLoginModal({
                 e.currentTarget.style.display = 'none';
               }}
             />
+          </div>
+
+          {/* Service Titles - Top right */}
+          <div className="absolute top-14 right-6 text-right">
+            {SERVICE_TITLES.map((title, index) => (
+              <p
+                key={title}
+                className="text-white/80 text-xs font-light tracking-wide mb-1"
+                style={{
+                  animation: `fadeInUp 0.5s ease-out ${index * 80}ms forwards`,
+                  opacity: 0
+                }}
+              >
+                {title}
+              </p>
+            ))}
           </div>
 
           {/* Welcome Text */}
