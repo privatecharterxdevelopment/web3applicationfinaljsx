@@ -3,7 +3,6 @@ import { Mail, Lock, X, ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Portal from './Portal';
-import { VideoHero } from './auth';
 import { supabase } from '../lib/supabase';
 
 interface LoginModalProps {
@@ -13,10 +12,6 @@ interface LoginModalProps {
   onSuccess?: () => void;
   onSwitchToForgotPassword?: () => void;
 }
-
-const videos = [
-  'https://auth.privatecharterx.com/storage/v1/object/sign/moreVideos/14493573_1080_1920_30fps.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zNzUxNzI0Mi0yZTk0LTQxZDctODM3Ny02Yjc0ZDBjNWM2OTAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtb3JlVmlkZW9zLzE0NDkzNTczXzEwODBfMTkyMF8zMGZwcy5tcDQiLCJpYXQiOjE3Njg5OTUxMDIsImV4cCI6NjEyNzgyOTExMDJ9.quOPjnMyqKoPOncM58QQLmO2LmcPSqtbRpyjpsA-XeU'
-];
 
 // Google Icon SVG component
 const GoogleIcon = () => (
@@ -110,6 +105,19 @@ function LoginForm({
 
   return (
     <Portal>
+      {/* Animation styles */}
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 0.9;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-0 lg:p-8 font-['DM_Sans']">
 
         {/* Modal Container - Fullscreen mobile, centered desktop */}
@@ -253,8 +261,8 @@ function LoginForm({
                   )}
                 </button>
 
-                {/* Google Login Button */}
-                <button
+                {/* Google Login Button - Hidden */}
+                {/* <button
                   type="button"
                   onClick={handleGoogleLogin}
                   disabled={isLoading || isGoogleLoading}
@@ -266,7 +274,7 @@ function LoginForm({
                     <GoogleIcon />
                   )}
                   <span className="text-gray-700">Continue with Google</span>
-                </button>
+                </button> */}
 
                 {/* Footer */}
                 <div className="pt-2 text-center">
@@ -281,9 +289,48 @@ function LoginForm({
             </div>
           </div>
 
-          {/* Video Section - Top on mobile, right on desktop */}
+          {/* Hero Section - Top on mobile, right on desktop */}
           <div className="w-full lg:w-3/5 relative h-64 lg:h-auto">
-            <VideoHero videos={videos} interval={8000} />
+            {/* Background Image */}
+            <div
+              className="absolute inset-0 bg-cover bg-center rounded-none lg:rounded-r-2xl"
+              style={{ backgroundImage: 'url(/login-bg.jpg)' }}
+            >
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-black/40 rounded-none lg:rounded-r-2xl" />
+            </div>
+
+            {/* Service Titles */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 lg:p-12">
+              <div className="text-center space-y-2 lg:space-y-3">
+                {[
+                  'Empty Legs',
+                  'Private Jets',
+                  'Helicopter',
+                  'Commercial Flights',
+                  'Holidays',
+                  'Adventures',
+                  'Maritime',
+                  'Airport Transfer'
+                ].map((title, index) => (
+                  <p
+                    key={title}
+                    className="text-white font-light text-sm lg:text-lg tracking-wide opacity-90 hover:opacity-100 transition-opacity"
+                    style={{
+                      animationDelay: `${index * 100}ms`,
+                      animation: 'fadeInUp 0.5s ease-out forwards'
+                    }}
+                  >
+                    {title}
+                  </p>
+                ))}
+              </div>
+
+              {/* Logo or Brand */}
+              <div className="absolute bottom-6 right-6">
+                <p className="text-white/60 text-xs font-light tracking-widest">PRIVATECHARTERX</p>
+              </div>
+            </div>
           </div>
 
         </div>
