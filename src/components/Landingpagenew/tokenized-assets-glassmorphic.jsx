@@ -86,6 +86,7 @@ import AdventureBookingModal from '../AdventureBookingModal';
 import FlightBidModal from '../modals/FlightBidModal';
 import FlightSearchDashboard from '../FlightSearchDashboard';
 import { LiveSupportWidget, AdminSupportDashboard } from '../LiveSupportChat';
+import PayDashboard from './PayDashboard';
 
 // Settings Page Component
 const SettingsPage = ({ user, kycStatus, setKycStatus, setActiveCategory }) => {
@@ -324,24 +325,22 @@ Happy travels!`,
 
   if (isLoading) {
     return (
-      <div className="p-8 space-y-6">
-        <div className="flex items-center justify-center py-12">
-          <div className="w-20 h-20">
-            <video
-              autoPlay
-              loop
-              muted
-              playsInline
-              controls={false}
-              disablePictureInPicture
-              preload="auto"
-              webkit-playsinline="true"
-              x5-playsinline="true"
-              className="w-full h-full object-contain pointer-events-none"
-            >
-              <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
-            </video>
-          </div>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="w-20 h-20">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            controls={false}
+            disablePictureInPicture
+            preload="auto"
+            webkit-playsinline="true"
+            x5-playsinline="true"
+            className="w-full h-full object-contain pointer-events-none"
+          >
+            <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/videoExport-2025-10-19@11-32-10.850-540x540@60fps.mp4" type="video/mp4" />
+          </video>
         </div>
       </div>
     );
@@ -1361,6 +1360,7 @@ const TokenizedAssetsGlassmorphic = () => {
     'search-index': '/search-index',
     'overview': '/home',
     'profile': '/profile',
+    'pay': '/pay',
   };
 
   // Wrapper for setActiveCategory to prevent invalid values, add logging, and sync URL
@@ -2424,7 +2424,8 @@ const TokenizedAssetsGlassmorphic = () => {
       '/search-index': 'search-index',
       '/faqs': 'chat-support',
       '/chat-history': 'chat-history',
-      '/profile': 'profile'
+      '/profile': 'profile',
+      '/pay': 'pay'
     };
     // Always stay in RWS mode
     if (webMode !== 'rws') {
@@ -4470,6 +4471,7 @@ const TokenizedAssetsGlassmorphic = () => {
   // User menu - for sidebar navigation (dashboard-related items)
   const userMenuBase = [
     { id: 'home', label: 'Home', icon: Home, category: 'home' },
+    // { id: 'pay', label: 'PCX Pay', icon: Wallet, category: 'pay' }, // Hidden - PCX Pay still in development
     // { id: 'overview', label: 'Overview', icon: LayoutDashboard, category: 'overview' }, // Hidden - overview page disabled
     { id: 'profile', label: 'Profile', icon: User, category: 'dashboard', dashboardTab: 'profile', rwsOnly: true },
     // { id: 'calendar', label: 'Calendar', icon: Calendar, category: 'calendar' }, // Hidden - not needed for now
@@ -5379,6 +5381,18 @@ const TokenizedAssetsGlassmorphic = () => {
                 <Mail size={16} className="text-gray-700" />
               </a>
 
+              {/* Connect Wallet Button - Small icon with green dot when connected */}
+              <button
+                onClick={() => open()}
+                className="relative flex items-center justify-center transition-all duration-200"
+                title={isConnected ? `Connected: ${address}` : 'Connect Wallet'}
+              >
+                <Wallet size={16} className="text-gray-700" />
+                {isConnected && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border border-white" />
+                )}
+              </button>
+
               {/* User Profile Icon */}
               <button
                 onClick={() => {
@@ -5391,18 +5405,15 @@ const TokenizedAssetsGlassmorphic = () => {
                 <User size={16} className="text-gray-700" />
               </button>
 
-              {/* Connect Wallet Button - Compact on mobile */}
-              <button
-                onClick={() => open()}
-                className="px-2 sm:px-4 py-1.5 bg-black text-white rounded-xl text-xs font-medium hover:bg-gray-800 transition-all duration-200 flex items-center gap-1 sm:gap-2"
+              {/* Phone Number */}
+              <a
+                href="tel:+18332002057"
+                className="hidden sm:flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200"
+                title="Call Us"
               >
-                <Wallet size={14} />
-                {isConnected ? (
-                  <span className="hidden sm:inline">{address.slice(0, 6)}...{address.slice(-4)}</span>
-                ) : (
-                  <span className="hidden sm:inline">Connect</span>
-                )}
-              </button>
+                <Phone size={14} className="text-gray-700" />
+                <span className="text-xs font-medium text-gray-700">(833) 200-2057</span>
+              </a>
 
               {/* Web Mode Switcher - Hidden (no longer needed) */}
               {/* <div className="flex items-center gap-0.5 sm:gap-1 border rounded-xl p-0.5 bg-white/20 backdrop-blur-md border-gray-200/30">
@@ -5616,7 +5627,24 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* LEGACY: My Requests View - Redirect to My Activity */}
           {!isTransitioning && activeCategory === 'requests' && (
             <div className="w-full h-full overflow-y-auto">
-              <MyActivityView user={user} />
+              {user ? (
+                <MyActivityView user={user} />
+              ) : (
+                <div className="flex flex-col items-center justify-center min-h-[60vh]">
+                  <div className="text-center space-y-4">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+                      <Lock size={24} className="text-gray-400" />
+                    </div>
+                    <p className="text-gray-600 text-lg">Please login to access My Activities</p>
+                    <button
+                      onClick={() => setShowLoginModal(true)}
+                      className="px-6 py-2.5 bg-black text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
+                    >
+                      Login
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -5685,7 +5713,7 @@ const TokenizedAssetsGlassmorphic = () => {
 
                   if (loadingRequests) {
                     return (
-                      <div className="flex items-center justify-center py-16">
+                      <div className="flex items-center justify-center min-h-[50vh]">
                         <div className="w-20 h-20">
                           <video
                             autoPlay
@@ -6185,14 +6213,48 @@ const TokenizedAssetsGlassmorphic = () => {
           {/* LEGACY: AI Requests View - Redirect to My Activity */}
           {!isTransitioning && activeCategory === 'ai-requests' && (
             <div className="w-full h-full overflow-y-auto">
-              <MyActivityView user={user} initialFilter="ai" />
+              {user ? (
+                <MyActivityView user={user} initialFilter="ai" />
+              ) : (
+                <div className="flex flex-col items-center justify-center min-h-[60vh]">
+                  <div className="text-center space-y-4">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+                      <Lock size={24} className="text-gray-400" />
+                    </div>
+                    <p className="text-gray-600 text-lg">Please login to access My Activities</p>
+                    <button
+                      onClick={() => setShowLoginModal(true)}
+                      className="px-6 py-2.5 bg-black text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
+                    >
+                      Login
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {/* UNIFIED: My Activity View - All bookings, requests, and orders in one place */}
           {!isTransitioning && activeCategory === 'my-activity' && (
             <div className="w-full h-full overflow-y-auto">
-              <MyActivityView user={user} />
+              {user ? (
+                <MyActivityView user={user} />
+              ) : (
+                <div className="flex flex-col items-center justify-center min-h-[60vh]">
+                  <div className="text-center space-y-4">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+                      <Lock size={24} className="text-gray-400" />
+                    </div>
+                    <p className="text-gray-600 text-lg">Please login to access My Activities</p>
+                    <button
+                      onClick={() => setShowLoginModal(true)}
+                      className="px-6 py-2.5 bg-black text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
+                    >
+                      Login
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -6623,6 +6685,14 @@ const TokenizedAssetsGlassmorphic = () => {
             </div>
           )}
 
+          {/* Pay Dashboard - PCX Pay Finance App */}
+          {!isTransitioning && activeCategory === 'pay' && (
+            <PayDashboard
+              user={user}
+              onSwitchToMain={() => setActiveCategory('chat')}
+            />
+          )}
+
           {/* Home Section - Landing page style with search and category badges */}
           {!isTransitioning && activeCategory === 'home' && (
             <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col px-4 md:px-0">
@@ -6733,6 +6803,15 @@ const TokenizedAssetsGlassmorphic = () => {
                         <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-gray-900 text-base sm:text-xl font-light">+</div>
                         <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide whitespace-nowrap">helicopters</span>
                       </div>
+
+                      {/* Phone Number */}
+                      <a
+                        href="tel:+18332002057"
+                        className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 cursor-pointer select-none border border-gray-300/25 rounded-full transition-all duration-100 hover:border-gray-300/40 hover:bg-white/10 active:scale-95 flex-shrink-0 ml-auto"
+                      >
+                        <Phone size={12} className="text-gray-700" />
+                        <span className="text-[11px] sm:text-xs text-gray-700 font-medium tracking-wide whitespace-nowrap">(833) 200-2057</span>
+                      </a>
                     </div>
 
                     {/* Charter Fields - Expandable (same as homepage) */}
@@ -6966,7 +7045,7 @@ const TokenizedAssetsGlassmorphic = () => {
 
                 {/* Tokenization List */}
                 {loadingTokenizations ? (
-                  <div className="flex items-center justify-center py-20">
+                  <div className="flex items-center justify-center min-h-[50vh]">
                     <div className="w-20 h-20">
                       <video
                         autoPlay
@@ -7380,7 +7459,7 @@ const TokenizedAssetsGlassmorphic = () => {
 
                 {/* SPV List */}
                 {loadingSPVs ? (
-                  <div className="flex items-center justify-center py-20">
+                  <div className="flex items-center justify-center min-h-[50vh]">
                     <div className="w-20 h-20">
                       <video
                         autoPlay
@@ -7688,7 +7767,7 @@ const TokenizedAssetsGlassmorphic = () => {
 
                 {/* Bookings List */}
                 {loadingBookings ? (
-                  <div className="flex items-center justify-center py-20">
+                  <div className="flex items-center justify-center min-h-[50vh]">
                     <div className="w-20 h-20">
                       <video
                         autoPlay
@@ -9662,7 +9741,7 @@ const TokenizedAssetsGlassmorphic = () => {
 
               {/* Loading State */}
               {isLoadingLuxuryCars && (
-                <div className="flex justify-center items-center py-12">
+                <div className="flex justify-center items-center min-h-[50vh]">
                   <div className="w-20 h-20">
                     <video
                       autoPlay

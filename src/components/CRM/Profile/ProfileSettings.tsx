@@ -283,6 +283,24 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ isOpen, onClos
               Only city and country are displayed for privacy. Street address and ZIP code are hidden.
             </p>
           </div>
+
+          {/* Contact Support */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h3 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+              <Phone className="w-4 h-4 mr-2" />
+              Need Help?
+            </h3>
+            <p className="text-sm text-gray-600">
+              Contact our support team at{' '}
+              <a href="tel:+18332002057" className="text-black font-medium hover:underline">
+                (833) 200-2057
+              </a>
+              {' '}or email{' '}
+              <a href="mailto:support@privatecharterx.com" className="text-black hover:underline">
+                support@privatecharterx.com
+              </a>
+            </p>
+          </div>
         </div>
 
         <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">

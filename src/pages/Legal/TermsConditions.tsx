@@ -346,6 +346,9 @@ export default function TermsConditions() {
             <h2 className="text-lg font-medium text-gray-900">16. Contact Information</h2>
             <div className="bg-gray-50 p-4 rounded-xl space-y-2 text-sm">
               <p className="text-gray-600">
+                Phone: <a href="tel:+18332002057" className="text-gray-900 hover:underline font-medium">(833) 200-2057</a>
+              </p>
+              <p className="text-gray-600">
                 General: <a href="mailto:info@privatecharterx.com" className="text-gray-900 hover:underline">info@privatecharterx.com</a>
               </p>
               <p className="text-gray-600">
