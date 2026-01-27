@@ -26,6 +26,99 @@ const PayApplicationPage = ({ user, onClose }) => {
     'Saudi Arabia', 'Qatar', 'Singapore', 'Hong Kong', 'Australia',
     'Canada', 'Ireland', 'Sweden', 'Norway', 'Denmark', 'Finland',
   ];
+
+  // VAT validation patterns by country
+  const vatPatterns = {
+    'Germany': { prefix: 'DE', pattern: /^DE\d{9}$/, example: 'DE123456789', label: 'USt-IdNr.' },
+    'France': { prefix: 'FR', pattern: /^FR[A-Z0-9]{2}\d{9}$/, example: 'FR12345678901', label: 'TVA' },
+    'United Kingdom': { prefix: 'GB', pattern: /^GB(\d{9}|\d{12})$/, example: 'GB123456789', label: 'VAT' },
+    'Austria': { prefix: 'ATU', pattern: /^ATU\d{8}$/, example: 'ATU12345678', label: 'UID' },
+    'Italy': { prefix: 'IT', pattern: /^IT\d{11}$/, example: 'IT12345678901', label: 'P.IVA' },
+    'Spain': { prefix: 'ES', pattern: /^ES[A-Z0-9]\d{7}[A-Z0-9]$/, example: 'ESX1234567X', label: 'NIF' },
+    'Netherlands': { prefix: 'NL', pattern: /^NL\d{9}B\d{2}$/, example: 'NL123456789B01', label: 'BTW' },
+    'Belgium': { prefix: 'BE', pattern: /^BE[01]\d{9}$/, example: 'BE0123456789', label: 'TVA/BTW' },
+    'Switzerland': { prefix: 'CHE', pattern: /^CHE\d{9}(TVA|MWST|IVA)?$/, example: 'CHE123456789', label: 'MWST' },
+    'Luxembourg': { prefix: 'LU', pattern: /^LU\d{8}$/, example: 'LU12345678', label: 'TVA' },
+    'Portugal': { prefix: 'PT', pattern: /^PT\d{9}$/, example: 'PT123456789', label: 'NIF' },
+    'Ireland': { prefix: 'IE', pattern: /^IE\d{7}[A-Z]{1,2}$/, example: 'IE1234567X', label: 'VAT' },
+    'Sweden': { prefix: 'SE', pattern: /^SE\d{12}$/, example: 'SE123456789012', label: 'Moms' },
+    'Norway': { prefix: 'NO', pattern: /^NO\d{9}MVA$/, example: 'NO123456789MVA', label: 'MVA' },
+    'Denmark': { prefix: 'DK', pattern: /^DK\d{8}$/, example: 'DK12345678', label: 'CVR' },
+    'Finland': { prefix: 'FI', pattern: /^FI\d{8}$/, example: 'FI12345678', label: 'ALV' },
+    'Liechtenstein': { prefix: 'LI', pattern: /^LI\d{5}$/, example: 'LI12345', label: 'MWST' },
+    // Countries without EU-style VAT (use generic validation)
+    'United States': { prefix: '', pattern: /^.{9,15}$/, example: 'EIN or State ID', label: 'Tax ID' },
+    'Canada': { prefix: '', pattern: /^\d{9}[A-Z]{2}\d{4}$/, example: '123456789RT0001', label: 'BN/GST' },
+    'Australia': { prefix: '', pattern: /^\d{11}$/, example: '12345678901', label: 'ABN' },
+    'United Arab Emirates': { prefix: '', pattern: /^\d{15}$/, example: 'TRN Number', label: 'TRN' },
+    'Saudi Arabia': { prefix: '', pattern: /^\d{15}$/, example: 'VAT Number', label: 'VAT' },
+    'Qatar': { prefix: '', pattern: /^.{8,15}$/, example: 'Tax ID', label: 'Tax ID' },
+    'Singapore': { prefix: '', pattern: /^[A-Z]\d{7}[A-Z]$/, example: 'T12345678X', label: 'UEN' },
+    'Hong Kong': { prefix: '', pattern: /^\d{8}$/, example: '12345678', label: 'BR No.' },
+    'Monaco': { prefix: 'FR', pattern: /^FR[A-Z0-9]{2}\d{9}$/, example: 'FR12345678901', label: 'TVA' },
+  };
+
+  const [vatError, setVatError] = useState('');
+  const [vatValid, setVatValid] = useState(false);
+
+  // Validate VAT number based on selected country
+  const validateVat = (vat, country) => {
+    if (!vat || !country) {
+      setVatError('');
+      setVatValid(false);
+      return false;
+    }
+
+    const countryRules = vatPatterns[country];
+    if (!countryRules) {
+      // Country not in list, accept any format
+      setVatError('');
+      setVatValid(vat.length >= 5);
+      return vat.length >= 5;
+    }
+
+    const upperVat = vat.toUpperCase().replace(/\s/g, '');
+
+    if (countryRules.pattern.test(upperVat)) {
+      setVatError('');
+      setVatValid(true);
+      return true;
+    } else {
+      setVatError(`Invalid format. Example: ${countryRules.example}`);
+      setVatValid(false);
+      return false;
+    }
+  };
+
+  // Handle VAT input change
+  const handleVatChange = (e) => {
+    const value = e.target.value.toUpperCase();
+    setFormData({ ...formData, vatNumber: value });
+    if (formData.country) {
+      validateVat(value, formData.country);
+    }
+  };
+
+  // Re-validate when country changes
+  useEffect(() => {
+    if (formData.vatNumber && formData.country) {
+      validateVat(formData.vatNumber, formData.country);
+    }
+  }, [formData.country]);
+
+  // Get VAT label for selected country
+  const getVatLabel = () => {
+    if (!formData.country || !vatPatterns[formData.country]) return 'VAT Number';
+    return `${vatPatterns[formData.country].label} Number`;
+  };
+
+  // Get VAT placeholder for selected country
+  const getVatPlaceholder = () => {
+    if (!formData.country || !vatPatterns[formData.country]) return 'e.g. DE123456789';
+    const rules = vatPatterns[formData.country];
+    return `e.g. ${rules.example}`;
+  };
+
   const [submitted, setSubmitted] = useState(false);
   const [subStep, setSubStep] = useState(1); // For splitting Step 1 into 1a and 1b
   const [activeLandingVideo, setActiveLandingVideo] = useState(1); // For landing page video switching
@@ -306,7 +399,7 @@ const PayApplicationPage = ({ user, onClose }) => {
     }
   };
 
-  const canProceedStep1 = formData.firstName && formData.lastName && formData.email && formData.phone && formData.country && formData.monthlySpending && formData.expectedVolume && (formData.accountType === 'individual' || formData.vatNumber);
+  const canProceedStep1 = formData.firstName && formData.lastName && formData.email && formData.phone && formData.country && formData.monthlySpending && formData.expectedVolume && (formData.accountType === 'individual' || (formData.vatNumber && vatValid));
 
   const nextCard = () => {
     setSelectedCardIndex((prev) => (prev + 1) % cards.length);
@@ -572,16 +665,44 @@ const PayApplicationPage = ({ user, onClose }) => {
                           {formData.accountType === 'corporate' && (
                             <div>
                               <label className="block text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide mb-1">
-                                VAT Number
+                                {getVatLabel()}
                               </label>
-                              <input
-                                type="text"
-                                value={formData.vatNumber}
-                                onChange={(e) => setFormData({ ...formData, vatNumber: e.target.value })}
-                                placeholder="e.g. DE123456789"
-                                className="w-full px-2.5 sm:px-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:border-black"
-                                required
-                              />
+                              <div className="relative">
+                                <input
+                                  type="text"
+                                  value={formData.vatNumber}
+                                  onChange={handleVatChange}
+                                  placeholder={getVatPlaceholder()}
+                                  className={`w-full px-2.5 sm:px-3 py-2 sm:py-2.5 border rounded-lg text-xs sm:text-sm focus:outline-none transition-colors ${
+                                    vatError
+                                      ? 'border-red-400 focus:border-red-500'
+                                      : vatValid
+                                        ? 'border-green-400 focus:border-green-500'
+                                        : 'border-gray-300 focus:border-black'
+                                  }`}
+                                  required
+                                />
+                                {/* Validation indicator */}
+                                {formData.vatNumber && (
+                                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                                    {vatValid ? (
+                                      <Check size={14} className="text-green-500" />
+                                    ) : vatError ? (
+                                      <span className="text-red-500 text-xs">✗</span>
+                                    ) : null}
+                                  </div>
+                                )}
+                              </div>
+                              {/* Error message */}
+                              {vatError && (
+                                <p className="text-[9px] sm:text-[10px] text-red-500 mt-1">{vatError}</p>
+                              )}
+                              {/* Country-specific hint */}
+                              {formData.country && vatPatterns[formData.country] && !vatError && !vatValid && formData.vatNumber && (
+                                <p className="text-[9px] sm:text-[10px] text-gray-400 mt-1">
+                                  Format: {vatPatterns[formData.country].example}
+                                </p>
+                              )}
                             </div>
                           )}
 
@@ -635,7 +756,7 @@ const PayApplicationPage = ({ user, onClose }) => {
                             <button
                               type="button"
                               onClick={() => setStep(2)}
-                              disabled={!formData.country || !formData.monthlySpending || !formData.expectedVolume || (formData.accountType === 'corporate' && !formData.vatNumber)}
+                              disabled={!formData.country || !formData.monthlySpending || !formData.expectedVolume || (formData.accountType === 'corporate' && (!formData.vatNumber || !vatValid))}
                               className="flex-1 py-2.5 sm:py-3 bg-black text-white text-xs sm:text-sm font-medium hover:bg-gray-900 transition-colors rounded-full disabled:bg-gray-300 disabled:cursor-not-allowed"
                             >
                               Choose Card
