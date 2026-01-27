@@ -477,7 +477,15 @@ const PayApplicationPage = ({ user, onClose }) => {
       setSubmitted(true);
     } catch (error) {
       console.error('Error submitting application:', error);
-      setSubmitError(error.message || 'Failed to submit application. Please try again.');
+      // Handle network errors specifically
+      if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+        setSubmitError('Network error. Please check your connection and try again.');
+      } else if (error.code === '42P01') {
+        // Table doesn't exist
+        setSubmitError('Service temporarily unavailable. Please try again later.');
+      } else {
+        setSubmitError(error.message || 'Failed to submit application. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -1117,26 +1125,14 @@ const PayApplicationPage = ({ user, onClose }) => {
                         </div>
                       </div>
 
-                      {/* AI Subscription Included */}
-                      <div className="mb-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Sparkles className="w-4 h-4 text-gray-400" />
-                          <h4 className="text-xs font-medium text-black uppercase tracking-wide">AI Assistant</h4>
-                          <span className="ml-auto text-[10px] text-gray-500">Included (${selectedCard.aiPlan.value} value)</span>
-                        </div>
-                        <div className="flex items-center gap-3 text-[11px] text-gray-600 mb-3">
-                          <span className="px-2 py-1 bg-black text-white rounded text-[10px] font-medium">{selectedCard.aiPlan.name}</span>
-                          <span className="text-gray-400">·</span>
-                          <span>{selectedCard.aiPlan.chats}</span>
-                          <span className="text-gray-400">·</span>
-                          <span>{selectedCard.aiPlan.messages}</span>
-                        </div>
-                        {/* AI Benefits */}
-                        <ul className="space-y-1.5">
-                          {selectedCard.aiPlan.aiBenefits.map((benefit, index) => (
+                      {/* Card Benefits - Highlighted */}
+                      <div className="mb-4 p-4 bg-black rounded-xl">
+                        <h4 className="text-xs font-medium text-white mb-3 uppercase tracking-wide">{selectedCard.name} Benefits</h4>
+                        <ul className="space-y-2">
+                          {selectedCard.benefits.map((benefit, index) => (
                             <li key={index} className="flex items-start gap-2">
-                              <Check className="w-3 h-3 text-gray-400 flex-shrink-0 mt-0.5" />
-                              <span className="text-[10px] text-gray-600">{benefit}</span>
+                              <Check className="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5" />
+                              <span className="text-[11px] text-white/90">{benefit}</span>
                             </li>
                           ))}
                         </ul>
@@ -1195,19 +1191,6 @@ const PayApplicationPage = ({ user, onClose }) => {
                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                           </div>
                         </div>
-                      </div>
-
-                      {/* Card Benefits */}
-                      <div className="mb-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                        <h4 className="text-xs font-medium text-black mb-3 uppercase tracking-wide">{selectedCard.name} Benefits</h4>
-                        <ul className="space-y-2">
-                          {selectedCard.benefits.map((benefit, index) => (
-                            <li key={index} className="flex items-start gap-2">
-                              <Check className="w-3 h-3 text-gray-400 flex-shrink-0 mt-0.5" />
-                              <span className="text-[11px] text-gray-600">{benefit}</span>
-                            </li>
-                          ))}
-                        </ul>
                       </div>
 
                       {/* Total & Choose Button - Desktop */}
