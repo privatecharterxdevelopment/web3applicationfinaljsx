@@ -51,6 +51,7 @@ import AdminSPVFormations from '../../pages/admin/SPVFormations.tsx';
 import AdminTokenization from '../../pages/admin/Tokenization.tsx';
 import AdminChatMessages from '../../pages/admin/ChatMessages.tsx';
 import AdminSubscriptions from '../../pages/admin/Subscriptions.tsx';
+import AdminCardApplications from '../../pages/admin/CardApplications.tsx';
 import AdminBookings from '../../pages/admin/Bookings.tsx';
 import AdminEmptyLegs from '../../pages/admin/EmptyLegs.tsx';
 import AdminEarnings from '../../pages/admin/Earnings.tsx';
@@ -99,6 +100,7 @@ import JetDetail from './JetDetail.jsx';
 import HelicopterDetail from './HelicopterDetail.jsx';
 import CO2CertificateDetail from './CO2CertificateDetail.jsx';
 import HotelDetail from './HotelDetail.jsx';
+import PayLandingPage from './PayLandingPage.jsx';
 
 // Import SPV & RWA components
 import MySPVs from '../../pages/MySPVs.tsx';
@@ -323,6 +325,7 @@ function AppContent() {
                 <Route path="transactions" element={<AdminTransactions />} />
                 <Route path="bookings" element={<AdminBookings />} />
                 <Route path="subscriptions" element={<AdminSubscriptions />} />
+                <Route path="card-applications" element={<AdminCardApplications />} />
                 <Route path="spv-formations" element={<AdminSPVFormations />} />
                 <Route path="tokenization" element={<AdminTokenization />} />
                 <Route path="chat-messages" element={<AdminChatMessages />} />
@@ -372,7 +375,8 @@ function AppContent() {
               <Route path="/chat-history" element={<TokenizedAssetsGlassmorphic key="main" />} />
               <Route path="/kyc-verification" element={<TokenizedAssetsGlassmorphic key="main" />} />
               <Route path="/referral" element={<TokenizedAssetsGlassmorphic key="main" />} />
-              <Route path="/pay" element={<TokenizedAssetsGlassmorphic key="main" />} />
+              <Route path="/pay" element={<PayLandingPage />} />
+              <Route path="/apply" element={<PayLandingPage />} />
 
               {/* ===== SUBSCRIPTIONS ===== */}
               <Route path="/subscriptions" element={<TokenizedAssetsGlassmorphic key="main" />} />

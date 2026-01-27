@@ -1389,6 +1389,16 @@ const TokenizedAssetsGlassmorphic = () => {
       }
     }
   }, []);
+
+  // Listen for openPayPopup event (from PayLandingPage)
+  useEffect(() => {
+    const handleOpenPayPopup = () => {
+      setActiveCategoryInternal('pay');
+    };
+    window.addEventListener('openPayPopup', handleOpenPayPopup);
+    return () => window.removeEventListener('openPayPopup', handleOpenPayPopup);
+  }, []);
+
   const [expandedMenus, setExpandedMenus] = useState({});
   const [expandedAIRequestId, setExpandedAIRequestId] = useState(null);
   const [expandedRequestId, setExpandedRequestId] = useState(null);
