@@ -5414,28 +5414,28 @@ const TokenizedAssetsGlassmorphic = () => {
                 />
               </div>
 
-              {/* Info Icon - Links to Helpdesk - Hidden on mobile */}
+              {/* Info Icon - Links to Helpdesk */}
               <button
                 onClick={() => setActiveCategory('chat-support')}
-                className="hidden sm:flex items-center justify-center transition-all duration-200"
+                className="flex items-center justify-center transition-all duration-200"
                 title="Helpdesk"
               >
                 <Info size={16} className="text-gray-700" />
               </button>
 
-              {/* Mail Icon - Opens email to bookings - Hidden on mobile */}
+              {/* Mail Icon - Opens email to bookings */}
               <a
                 href="mailto:bookings@privatecharterx.com"
-                className="hidden sm:flex items-center justify-center transition-all duration-200"
+                className="flex items-center justify-center transition-all duration-200"
                 title="Contact Bookings"
               >
                 <Mail size={16} className="text-gray-700" />
               </a>
 
-              {/* Connect Wallet Button - Small icon with green dot when connected - Hidden on mobile */}
+              {/* Connect Wallet Button - Small icon with green dot when connected */}
               <button
                 onClick={() => open()}
-                className="hidden sm:flex relative items-center justify-center transition-all duration-200"
+                className="relative flex items-center justify-center transition-all duration-200"
                 title={isConnected ? `Connected: ${address}` : 'Connect Wallet'}
               >
                 <Wallet size={16} className="text-gray-700" />
@@ -6759,7 +6759,7 @@ const TokenizedAssetsGlassmorphic = () => {
               <div className="max-w-4xl mx-auto w-full">
                 {/* Title - LEFT aligned */}
                 <div className="text-left mb-2 sm:mb-3">
-                  <h1 className="text-xl sm:text-2xl md:text-3xl font-light text-gray-900 mb-0.5">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-light text-gray-900 mb-0.5">
                     Good {(() => {
                       const hour = new Date().getHours();
                       if (hour < 12) return 'morning';
