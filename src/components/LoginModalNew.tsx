@@ -261,8 +261,8 @@ function LoginForm({
                   )}
                 </button>
 
-                {/* Google Login Button - Hidden */}
-                {/* <button
+                {/* Google Login Button */}
+                <button
                   type="button"
                   onClick={handleGoogleLogin}
                   disabled={isLoading || isGoogleLoading}
@@ -274,7 +274,7 @@ function LoginForm({
                     <GoogleIcon />
                   )}
                   <span className="text-gray-700">Continue with Google</span>
-                </button> */}
+                </button>
 
                 {/* Footer */}
                 <div className="pt-2 text-center">
@@ -290,15 +290,19 @@ function LoginForm({
           </div>
 
           {/* Hero Section - Top on mobile, right on desktop */}
-          <div className="w-full lg:w-3/5 relative h-64 lg:h-auto">
-            {/* Background Image */}
-            <div
-              className="absolute inset-0 bg-cover bg-center rounded-none lg:rounded-r-2xl"
-              style={{ backgroundImage: 'url(/login-bg.jpg)' }}
+          <div className="w-full lg:w-3/5 relative h-64 lg:h-auto overflow-hidden">
+            {/* Background Video */}
+            <video
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover rounded-none lg:rounded-r-2xl"
             >
-              {/* Overlay */}
-              <div className="absolute inset-0 bg-black/40 rounded-none lg:rounded-r-2xl" />
-            </div>
+              <source src="https://oubecmstqtzdnevyqavu.supabase.co/storage/v1/object/public/motion%20videos/12427495_3840_2160_24fps.mp4" type="video/mp4" />
+            </video>
+            {/* Overlay */}
+            <div className="absolute inset-0 bg-black/40 rounded-none lg:rounded-r-2xl" />
 
             {/* Service Titles */}
             <div className="absolute inset-0 flex flex-col items-center justify-center p-6 lg:p-12">

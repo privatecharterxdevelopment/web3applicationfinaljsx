@@ -11,7 +11,8 @@ import {
   Home, BarChart3, Briefcase, Tag, Globe, Zap,
   Building2, Sparkles, Ticket, Clock, Package, AlertCircle,
   ArrowRight, Star, Leaf, Percent, Wine, Cigarette,
-  Coins, ShoppingCart, FileCheck, Crown, RotateCcw, Bell, UserCheck2, User
+  Coins, ShoppingCart, FileCheck, Crown, RotateCcw, Bell, UserCheck2, User,
+  CheckCircle, XCircle
 } from 'lucide-react';
 import QuoteInvoiceModal from './QuoteInvoiceModal';
 import AdminSupportDashboard from '../LiveSupportChat/AdminSupportDashboard';
@@ -58,6 +59,8 @@ const CRMDashboard = ({ onClose }) => {
   const [allPVCXBalances, setAllPVCXBalances] = useState([]);
   const [allPVCXTransactions, setAllPVCXTransactions] = useState([]);
   const [allFlightBids, setAllFlightBids] = useState([]);
+  const [allCardApplications, setAllCardApplications] = useState([]);
+  const [allJetQuotes, setAllJetQuotes] = useState([]);
   const [sidebarCounts, setSidebarCounts] = useState({});
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -137,7 +140,9 @@ const CRMDashboard = ({ onClose }) => {
         { count: cigarsCount },
         { count: spvFormationsCount },
         { count: tokenizationDraftsCount },
-        { count: subscriptionsCount }
+        { count: subscriptionsCount },
+        { count: cardApplicationsCount },
+        { count: jetQuotesCount }
       ] = await Promise.all([
         supabaseAdmin.from('user_bookings').select('*', { count: 'exact', head: true }),
         supabaseAdmin.from('user_requests').select('*', { count: 'exact', head: true }),
@@ -156,7 +161,9 @@ const CRMDashboard = ({ onClose }) => {
         supabaseAdmin.from('premium_cigars').select('*', { count: 'exact', head: true }),
         supabaseAdmin.from('user_requests').select('*', { count: 'exact', head: true }).eq('type', 'spv_formation'),
         supabaseAdmin.from('tokenization_drafts').select('*', { count: 'exact', head: true }),
-        supabaseAdmin.from('user_profiles').select('*', { count: 'exact', head: true }).not('subscription_tier', 'is', null)
+        supabaseAdmin.from('user_profiles').select('*', { count: 'exact', head: true }).not('subscription_tier', 'is', null),
+        supabaseAdmin.from('card_applications').select('*', { count: 'exact', head: true }),
+        supabaseAdmin.from('user_requests').select('*', { count: 'exact', head: true }).eq('type', 'private_jet_charter')
       ]);
       setSidebarCounts({
         customers: authUsersCount,
@@ -177,7 +184,9 @@ const CRMDashboard = ({ onClose }) => {
         cigars: cigarsCount || 0,
         spvFormations: spvFormationsCount || 0,
         tokenizationDrafts: tokenizationDraftsCount || 0,
-        subscriptions: subscriptionsCount || 0
+        subscriptions: subscriptionsCount || 0,
+        cardApplications: cardApplicationsCount || 0,
+        jetQuotes: jetQuotesCount || 0
       });
     } catch (err) { console.error('Error fetching counts:', err); }
   }, []);
@@ -716,6 +725,37 @@ const CRMDashboard = ({ onClose }) => {
     finally { setRefreshing(false); }
   }, []);
 
+  // Fetch Card Applications
+  const fetchCardApplications = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('card_applications')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) console.error('Card applications fetch error:', error);
+      console.log('Card applications fetched:', data?.length, 'records');
+      setAllCardApplications(data || []);
+    } catch (err) { console.error('Error fetching card applications:', err); }
+    finally { setRefreshing(false); }
+  }, []);
+
+  // Fetch Jet Quotes (private_jet_charter requests)
+  const fetchJetQuotes = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('user_requests')
+        .select('*')
+        .eq('type', 'private_jet_charter')
+        .order('created_at', { ascending: false });
+      if (error) console.error('Jet quotes fetch error:', error);
+      console.log('Jet quotes fetched:', data?.length, 'records');
+      setAllJetQuotes(data || []);
+    } catch (err) { console.error('Error fetching jet quotes:', err); }
+    finally { setRefreshing(false); }
+  }, []);
+
   // Fetch PVCX token balances and transactions
   const fetchPVCXData = useCallback(async () => {
     setRefreshing(true);
@@ -878,6 +918,8 @@ const CRMDashboard = ({ onClose }) => {
       case 'support': fetchAllSupport(); break;
       case 'transactions': fetchAllTransactions(); break;
       case 'subscriptions': fetchAllSubscriptions(); break;
+      case 'card-applications': fetchCardApplications(); break;
+      case 'jet-quotes': fetchJetQuotes(); break;
       case 'chat-messages': fetchAllChatMessages(); break;
       case 'chat-requests': fetchAllChatRequests(); break;
       case 'empty-legs': fetchEmptyLegBookings(); break;
@@ -890,7 +932,7 @@ const CRMDashboard = ({ onClose }) => {
       case 'bids': fetchFlightBids(); break;
       default: fetchCustomers();
     }
-  }, [isAdmin, activeSection, fetchCustomers, fetchAllBookings, fetchAllRequests, fetchAllAiChats, fetchAllSupport, fetchAllTransactions, fetchAllChatMessages, fetchAllChatRequests, fetchEmptyLegBookings, fetchEmptyLegsFromTable, fetchAllWines, fetchAllCigars, fetchSPVFormations, fetchTokenizationDrafts, fetchAllSubscriptions, fetchPVCXData, fetchFlightBids, fetchSidebarCounts]);
+  }, [isAdmin, activeSection, fetchCustomers, fetchAllBookings, fetchAllRequests, fetchAllAiChats, fetchAllSupport, fetchAllTransactions, fetchAllChatMessages, fetchAllChatRequests, fetchEmptyLegBookings, fetchEmptyLegsFromTable, fetchAllWines, fetchAllCigars, fetchSPVFormations, fetchTokenizationDrafts, fetchAllSubscriptions, fetchCardApplications, fetchJetQuotes, fetchPVCXData, fetchFlightBids, fetchSidebarCounts]);
 
   const getUserName = (c) => c?.name || `${c?.first_name || ''} ${c?.last_name || ''}`.trim() || c?.email?.split('@')[0] || 'Unknown';
   const getUserRole = (c) => c?.user_role || (c?.bookings?.length > 5 ? 'VIP' : c?.bookings?.length > 0 ? 'Active' : 'New');
@@ -909,8 +951,10 @@ const CRMDashboard = ({ onClose }) => {
     { id: 'support', icon: Ticket, label: 'Support', count: sidebarCounts.support },
     { id: 'transactions', icon: CreditCard, label: 'Transactions', count: sidebarCounts.transactions },
     { id: 'bids', icon: Tag, label: 'Flight Bids', count: allFlightBids.length || null },
+    { id: 'jet-quotes', icon: Plane, label: 'Jet Quotes', count: sidebarCounts.jetQuotes },
     { id: 'inventory', icon: Package, label: 'Inventory', count: (sidebarCounts.emptyLegsTable || 0) + (sidebarCounts.wines || 0) + (sidebarCounts.cigars || 0) },
     { id: 'subscriptions', icon: Crown, label: 'Subscriptions', count: sidebarCounts.subscriptions },
+    { id: 'card-applications', icon: CreditCard, label: 'Card Applications', count: sidebarCounts.cardApplications },
     { id: 'spv-formation', icon: Building2, label: 'SPV Formation', count: sidebarCounts.spvFormations },
     { id: 'tokenization', icon: Coins, label: 'Tokenized Assets', count: sidebarCounts.tokenizationDrafts },
     { id: 'pvcx', icon: Zap, label: 'PVCX Tokens', count: allPVCXBalances.length || null },
@@ -996,7 +1040,7 @@ const CRMDashboard = ({ onClose }) => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 ml-60">
+      <main className="flex-1 ml-60 h-screen overflow-y-auto">
         <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-30">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-semibold text-gray-900 capitalize">
@@ -1092,7 +1136,7 @@ const CRMDashboard = ({ onClose }) => {
           </div>
         </header>
 
-        <div className="p-6">
+        <div className="p-6 pb-24">
           {/* Dashboard Overview */}
           {activeSection === 'dashboard' && (
             <DashboardOverview sidebarCounts={sidebarCounts} onNavigate={setActiveSection} />
@@ -1204,6 +1248,26 @@ const CRMDashboard = ({ onClose }) => {
               subscriptions={allSubscriptions}
               refreshing={refreshing}
               onRefresh={fetchAllSubscriptions}
+              supabaseAdmin={supabaseAdmin}
+            />
+          )}
+
+          {/* Card Applications Section */}
+          {activeSection === 'card-applications' && (
+            <CardApplicationsSection
+              applications={allCardApplications}
+              refreshing={refreshing}
+              onRefresh={fetchCardApplications}
+              supabaseAdmin={supabaseAdmin}
+            />
+          )}
+
+          {/* Jet Quotes Section */}
+          {activeSection === 'jet-quotes' && (
+            <JetQuotesSection
+              quotes={allJetQuotes}
+              refreshing={refreshing}
+              onRefresh={fetchJetQuotes}
               supabaseAdmin={supabaseAdmin}
             />
           )}
@@ -6834,6 +6898,681 @@ const SubscriptionsSection = ({ subscriptions, refreshing, onRefresh, supabaseAd
                         >
                           <CreditCard size={14} /> View in Stripe
                         </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+};
+
+// ============================================
+// CARD APPLICATIONS SECTION
+// ============================================
+const CardApplicationsSection = ({ applications, refreshing, onRefresh, supabaseAdmin }) => {
+  const [expandedApp, setExpandedApp] = useState(null);
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterTier, setFilterTier] = useState('all');
+
+  const getTierColor = (tier) => {
+    const t = tier?.toLowerCase();
+    if (t === 'platinum') return 'bg-purple-100 text-purple-700';
+    if (t === 'black') return 'bg-gray-800 text-white';
+    if (t === 'crew') return 'bg-blue-100 text-blue-700';
+    if (t === 'gold') return 'bg-yellow-100 text-yellow-700';
+    return 'bg-gray-100 text-gray-700';
+  };
+
+  const getStatusColor = (status) => {
+    const s = status?.toLowerCase();
+    if (s === 'approved') return 'bg-green-100 text-green-700';
+    if (s === 'rejected') return 'bg-red-100 text-red-700';
+    if (s === 'under_review') return 'bg-blue-100 text-blue-700';
+    if (s === 'waitlist') return 'bg-orange-100 text-orange-700';
+    return 'bg-yellow-100 text-yellow-700';
+  };
+
+  const formatDate = (date) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
+  const handleStatusUpdate = async (id, newStatus) => {
+    try {
+      const { error } = await supabaseAdmin
+        .from('card_applications')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) throw error;
+      onRefresh();
+    } catch (err) {
+      console.error('Error updating status:', err);
+      alert('Failed to update status');
+    }
+  };
+
+  const filteredApps = applications.filter(a => {
+    if (filterStatus !== 'all' && a.status?.toLowerCase() !== filterStatus) return false;
+    if (filterTier !== 'all' && a.card_tier?.toLowerCase() !== filterTier) return false;
+    return true;
+  });
+
+  const stats = {
+    total: applications.length,
+    pending: applications.filter(a => a.status === 'pending').length,
+    approved: applications.filter(a => a.status === 'approved').length,
+    rejected: applications.filter(a => a.status === 'rejected').length
+  };
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-medium text-gray-900">Card Applications ({applications.length})</h2>
+        <div className="flex items-center gap-3">
+          <select
+            value={filterTier}
+            onChange={(e) => setFilterTier(e.target.value)}
+            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900"
+          >
+            <option value="all">All Tiers</option>
+            <option value="basic">Basic</option>
+            <option value="gold">Gold</option>
+            <option value="crew">Crew</option>
+            <option value="black">Black</option>
+            <option value="platinum">Platinum</option>
+          </select>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900"
+          >
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="under_review">Under Review</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="waitlist">Waitlist</option>
+          </select>
+          <button onClick={onRefresh} disabled={refreshing} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+            <RefreshCcw size={16} className={`text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+              <CreditCard size={18} className="text-gray-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+              <p className="text-xs text-gray-500">Total</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+              <Clock size={18} className="text-yellow-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+              <p className="text-xs text-gray-500">Pending</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+              <CheckCircle size={18} className="text-green-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-green-600">{stats.approved}</p>
+              <p className="text-xs text-gray-500">Approved</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+              <XCircle size={18} className="text-red-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
+              <p className="text-xs text-gray-500">Rejected</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Applications List */}
+      {filteredApps.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+          <CreditCard size={48} className="text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500">No card applications found</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredApps.map((app) => {
+            const isExpanded = expandedApp === app.id;
+            return (
+              <div key={app.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                <div
+                  className="p-4 flex items-center justify-between cursor-pointer"
+                  onClick={() => setExpandedApp(isExpanded ? null : app.id)}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-medium text-gray-700">
+                        {(app.first_name?.[0] || 'U').toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{app.first_name} {app.last_name}</p>
+                      <p className="text-sm text-gray-500">{app.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`px-2 py-1 text-xs rounded-full font-medium ${getTierColor(app.card_tier)}`}>
+                      {app.card_tier?.toUpperCase() || 'BASIC'}
+                    </span>
+                    <span className={`px-2 py-1 text-xs rounded-full font-medium ${getStatusColor(app.status)}`}>
+                      {app.status?.replace(/_/g, ' ').toUpperCase() || 'PENDING'}
+                    </span>
+                    <span className="text-sm font-medium text-gray-900">€{Number(app.card_price || 0).toLocaleString()}</span>
+                    <ChevronDown size={16} className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div className="px-4 py-4 border-t border-gray-100 bg-gray-50">
+                    {/* Contact Info */}
+                    <div className="grid grid-cols-4 gap-4 mb-4">
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Email</p>
+                        <p className="text-sm font-medium text-gray-900">{app.email}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Phone</p>
+                        <p className="text-sm font-medium text-gray-900">{app.phone || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Country</p>
+                        <p className="text-sm font-medium text-gray-900">{app.country || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Account Type</p>
+                        <p className="text-sm font-medium text-gray-900 capitalize">{app.account_type || 'Individual'}</p>
+                      </div>
+                    </div>
+
+                    {/* Card Details */}
+                    <div className="grid grid-cols-4 gap-4 mb-4">
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Card Tier</p>
+                        <p className="text-sm font-medium text-gray-900 capitalize">{app.card_tier}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Card Price</p>
+                        <p className="text-sm font-medium text-gray-900">€{Number(app.card_price || 0).toLocaleString()}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Min Top-up</p>
+                        <p className="text-sm font-medium text-gray-900">€{Number(app.min_topup || 0).toLocaleString()}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Ground Transport</p>
+                        <p className="text-sm font-medium text-gray-900">{app.ground_transport_included || '-'}</p>
+                      </div>
+                    </div>
+
+                    {/* Financial Info */}
+                    <div className="grid grid-cols-4 gap-4 mb-4">
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Monthly Spending</p>
+                        <p className="text-sm font-medium text-gray-900">{app.monthly_spending || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Expected Volume</p>
+                        <p className="text-sm font-medium text-gray-900">{app.expected_volume || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">AI Plan</p>
+                        <p className="text-sm font-medium text-gray-900">{app.ai_plan_name || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Staking APY</p>
+                        <p className="text-sm font-medium text-gray-900">{app.staking_apy || '-'}</p>
+                      </div>
+                    </div>
+
+                    {/* Discounts */}
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Booking Discount</p>
+                        <p className="text-sm font-medium text-gray-900">{app.discount_booking || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Empty Legs Discount</p>
+                        <p className="text-sm font-medium text-gray-900">{app.discount_empty_legs || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Hotels Discount</p>
+                        <p className="text-sm font-medium text-gray-900">{app.discount_hotels || '-'}</p>
+                      </div>
+                    </div>
+
+                    {/* VAT Number (if corporate) */}
+                    {app.vat_number && (
+                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
+                        <p className="text-xs font-semibold text-blue-700 mb-1">VAT Number (Corporate)</p>
+                        <p className="text-sm font-mono text-blue-800">{app.vat_number}</p>
+                      </div>
+                    )}
+
+                    {/* Dates */}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Applied</p>
+                        <p className="text-sm font-medium text-gray-900">{formatDate(app.created_at)}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Last Updated</p>
+                        <p className="text-sm font-medium text-gray-900">{formatDate(app.updated_at)}</p>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-3">
+                      <a
+                        href={`mailto:${app.email}?subject=Your PrivatecharterX Card Application`}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+                      >
+                        <Mail size={14} /> Email Applicant
+                      </a>
+                      {(app.status === 'pending' || app.status === 'under_review') && (
+                        <>
+                          <button
+                            onClick={() => handleStatusUpdate(app.id, 'approved')}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
+                          >
+                            <CheckCircle size={14} /> Approve
+                          </button>
+                          <button
+                            onClick={() => handleStatusUpdate(app.id, 'under_review')}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200"
+                          >
+                            <Eye size={14} /> Review
+                          </button>
+                          <button
+                            onClick={() => handleStatusUpdate(app.id, 'rejected')}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200"
+                          >
+                            <XCircle size={14} /> Reject
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+};
+
+// ============================================
+// JET QUOTES SECTION
+// ============================================
+const JetQuotesSection = ({ quotes, refreshing, onRefresh, supabaseAdmin }) => {
+  const [expandedQuote, setExpandedQuote] = useState(null);
+  const [filterStatus, setFilterStatus] = useState('all');
+
+  const getStatusColor = (status) => {
+    const s = status?.toLowerCase();
+    if (s === 'confirmed' || s === 'completed') return 'bg-green-100 text-green-700';
+    if (s === 'cancelled' || s === 'rejected') return 'bg-red-100 text-red-700';
+    if (s === 'quoted' || s === 'in_progress') return 'bg-blue-100 text-blue-700';
+    return 'bg-yellow-100 text-yellow-700';
+  };
+
+  const formatDate = (date) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
+  const formatPrice = (min, max) => {
+    if (!min && !max) return '-';
+    if (min && max) return `$${Number(min).toLocaleString()} - $${Number(max).toLocaleString()}`;
+    return `$${Number(min || max).toLocaleString()}`;
+  };
+
+  const handleStatusUpdate = async (id, newStatus) => {
+    try {
+      const { error } = await supabaseAdmin
+        .from('user_requests')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) throw error;
+      onRefresh();
+    } catch (err) {
+      console.error('Error updating status:', err);
+      alert('Failed to update status');
+    }
+  };
+
+  const filteredQuotes = quotes.filter(q => {
+    if (filterStatus !== 'all' && q.status?.toLowerCase() !== filterStatus) return false;
+    return true;
+  });
+
+  const stats = {
+    total: quotes.length,
+    pending: quotes.filter(q => q.status === 'pending').length,
+    quoted: quotes.filter(q => q.status === 'quoted').length,
+    confirmed: quotes.filter(q => q.status === 'confirmed').length
+  };
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-medium text-gray-900">Jet Quotes ({quotes.length})</h2>
+        <div className="flex items-center gap-3">
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900"
+          >
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="quoted">Quoted</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <button onClick={onRefresh} disabled={refreshing} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+            <RefreshCcw size={16} className={`text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+              <Plane size={18} className="text-gray-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+              <p className="text-xs text-gray-500">Total Quotes</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+              <Clock size={18} className="text-yellow-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+              <p className="text-xs text-gray-500">Pending</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <FileText size={18} className="text-blue-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-blue-600">{stats.quoted}</p>
+              <p className="text-xs text-gray-500">Quoted</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+              <CheckCircle size={18} className="text-green-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-green-600">{stats.confirmed}</p>
+              <p className="text-xs text-gray-500">Confirmed</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Quotes List */}
+      {filteredQuotes.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+          <Plane size={48} className="text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500">No jet quotes found</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredQuotes.map((quote) => {
+            const isExpanded = expandedQuote === quote.id;
+            const data = quote.data || {};
+            return (
+              <div key={quote.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                <div
+                  className="p-4 flex items-center justify-between cursor-pointer"
+                  onClick={() => setExpandedQuote(isExpanded ? null : quote.id)}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <Plane size={18} className="text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {data.from_city || 'Unknown'} → {data.to_city || 'Unknown'}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {data.client_name || quote.client_email || 'Unknown Client'} • {data.aircraft_category || 'Any'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-gray-500">{formatDate(data.departure_date)}</span>
+                    <span className={`px-2 py-1 text-xs rounded-full font-medium ${getStatusColor(quote.status)}`}>
+                      {quote.status?.toUpperCase() || 'PENDING'}
+                    </span>
+                    <span className="text-sm font-medium text-gray-900">
+                      {formatPrice(data.price_range_min, data.price_range_max)}
+                    </span>
+                    <ChevronDown size={16} className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div className="px-4 py-4 border-t border-gray-100 bg-gray-50">
+                    {/* Route Info */}
+                    <div className="grid grid-cols-4 gap-4 mb-4">
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">From</p>
+                        <p className="text-sm font-medium text-gray-900">{data.from_city || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">To</p>
+                        <p className="text-sm font-medium text-gray-900">{data.to_city || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Distance</p>
+                        <p className="text-sm font-medium text-gray-900">{data.distance_km ? `${data.distance_km} km` : '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Trip Type</p>
+                        <p className="text-sm font-medium text-gray-900 capitalize">{data.trip_type?.replace(/_/g, ' ') || '-'}</p>
+                      </div>
+                    </div>
+
+                    {/* Flight Details */}
+                    <div className="grid grid-cols-4 gap-4 mb-4">
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Departure Date</p>
+                        <p className="text-sm font-medium text-gray-900">{formatDate(data.departure_date)}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Departure Time</p>
+                        <p className="text-sm font-medium text-gray-900">{data.departure_time || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Return Date</p>
+                        <p className="text-sm font-medium text-gray-900">{formatDate(data.return_date) || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Return Time</p>
+                        <p className="text-sm font-medium text-gray-900">{data.return_time || '-'}</p>
+                      </div>
+                    </div>
+
+                    {/* Aircraft & Passengers */}
+                    <div className="grid grid-cols-4 gap-4 mb-4">
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Aircraft Category</p>
+                        <p className="text-sm font-medium text-gray-900">{data.aircraft_category || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Capacity Range</p>
+                        <p className="text-sm font-medium text-gray-900">{data.capacity_range || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Passengers</p>
+                        <p className="text-sm font-medium text-gray-900">{data.passengers || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Est. Flight Hours</p>
+                        <p className="text-sm font-medium text-gray-900">{data.estimated_flight_hours ? `${data.estimated_flight_hours}h` : '-'}</p>
+                      </div>
+                    </div>
+
+                    {/* Extras */}
+                    <div className="grid grid-cols-4 gap-4 mb-4">
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Luggage</p>
+                        <p className="text-sm font-medium text-gray-900">{data.luggage || '-'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Pet</p>
+                        <p className="text-sm font-medium text-gray-900">{data.has_pet ? 'Yes' : 'No'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Ground Transport</p>
+                        <p className="text-sm font-medium text-gray-900">{data.ground_transport_included ? 'Included' : 'No'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Price Range</p>
+                        <p className="text-sm font-medium text-green-600">{formatPrice(data.price_range_min, data.price_range_max)}</p>
+                      </div>
+                    </div>
+
+                    {/* Ground Transport Addresses */}
+                    {(data.pickup_address || data.dropoff_address) && (
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div className="bg-white p-3 rounded-lg border border-gray-200">
+                          <p className="text-xs text-gray-500 mb-1">Pickup Address</p>
+                          <p className="text-sm font-medium text-gray-900">{data.pickup_address || '-'}</p>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg border border-gray-200">
+                          <p className="text-xs text-gray-500 mb-1">Dropoff Address</p>
+                          <p className="text-sm font-medium text-gray-900">{data.dropoff_address || '-'}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Client Contact */}
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
+                      <p className="text-xs font-semibold text-blue-700 mb-2 flex items-center gap-2">
+                        <User size={14} /> Client Contact
+                      </p>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-xs text-blue-600">Name</p>
+                          <p className="text-sm font-medium text-blue-900">{data.client_name || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-blue-600">Email</p>
+                          <p className="text-sm font-medium text-blue-900">{quote.client_email || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-blue-600">Phone</p>
+                          <p className="text-sm font-medium text-blue-900">{data.client_phone || '-'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Special Requests */}
+                    {data.special_requests && (
+                      <div className="bg-gray-100 p-4 rounded-lg border border-gray-200 mb-4">
+                        <p className="text-xs font-semibold text-gray-700 mb-2">Special Requests</p>
+                        <p className="text-sm text-gray-900">{data.special_requests}</p>
+                      </div>
+                    )}
+
+                    {/* Dates */}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Quote Requested</p>
+                        <p className="text-sm font-medium text-gray-900">{formatDate(quote.created_at)}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Last Updated</p>
+                        <p className="text-sm font-medium text-gray-900">{formatDate(quote.updated_at)}</p>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-3">
+                      <a
+                        href={`mailto:${quote.client_email}?subject=Your Private Jet Quote - ${data.from_city} to ${data.to_city}`}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+                      >
+                        <Mail size={14} /> Email Client
+                      </a>
+                      {quote.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => handleStatusUpdate(quote.id, 'quoted')}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700"
+                          >
+                            <FileText size={14} /> Mark Quoted
+                          </button>
+                          <button
+                            onClick={() => handleStatusUpdate(quote.id, 'confirmed')}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
+                          >
+                            <CheckCircle size={14} /> Confirm
+                          </button>
+                        </>
+                      )}
+                      {quote.status === 'quoted' && (
+                        <button
+                          onClick={() => handleStatusUpdate(quote.id, 'confirmed')}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
+                        >
+                          <CheckCircle size={14} /> Confirm Booking
+                        </button>
+                      )}
+                      {(quote.status === 'pending' || quote.status === 'quoted') && (
+                        <button
+                          onClick={() => handleStatusUpdate(quote.id, 'cancelled')}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200"
+                        >
+                          <XCircle size={14} /> Cancel
+                        </button>
                       )}
                     </div>
                   </div>
