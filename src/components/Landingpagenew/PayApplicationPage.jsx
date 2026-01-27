@@ -415,13 +415,13 @@ const PayApplicationPage = ({ user, onClose }) => {
 
               {/* Step 1: Personal Info */}
               {step === 1 && (
-                <div className="flex-1 flex flex-col lg:flex-row">
+                <div className="flex-1 flex flex-col-reverse lg:flex-row">
 
                   {/* Left: Form */}
-                  <div className="flex-1 flex flex-col items-center justify-center px-6 py-8 lg:py-0">
+                  <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-8 lg:py-0">
 
                     {/* Progress Indicator */}
-                    <div className="flex items-center gap-2 mb-6">
+                    <div className="flex items-center gap-2 mb-3 sm:mb-6">
                       <div className={`w-2 h-2 rounded-full ${subStep >= 1 ? 'bg-black' : 'bg-gray-300'}`} />
                       <div className={`w-8 h-px ${subStep >= 2 ? 'bg-black' : 'bg-gray-300'}`} />
                       <div className={`w-2 h-2 rounded-full ${subStep >= 2 ? 'bg-black' : 'bg-gray-300'}`} />
@@ -432,23 +432,23 @@ const PayApplicationPage = ({ user, onClose }) => {
                     {/* Sub-Step 1: Basic Info */}
                     {subStep === 1 && (
                       <>
-                        <p className="text-xs text-gray-400 tracking-widest uppercase mb-3">Personal Details</p>
-                        <h2 className="text-2xl font-light text-black text-center mb-1">
+                        <p className="text-xs text-gray-400 tracking-widest uppercase mb-1 sm:mb-3">Personal Details</p>
+                        <h2 className="text-xl sm:text-2xl font-light text-black text-center mb-0.5 sm:mb-1">
                           Let's get started
                         </h2>
-                        <p className="text-gray-400 text-sm mb-6">Basic information for your account</p>
+                        <p className="text-gray-400 text-xs sm:text-sm mb-3 sm:mb-6">Basic information for your account</p>
 
-                        <form className="w-full max-w-sm space-y-4">
+                        <form className="w-full max-w-sm space-y-2 sm:space-y-4">
                           {/* Account Type */}
                           <div>
-                            <label className="block text-xs text-gray-500 uppercase tracking-wide mb-2">
+                            <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1 sm:mb-2">
                               Account Type
                             </label>
-                            <div className="flex gap-3">
+                            <div className="flex gap-2 sm:gap-3">
                               <button
                                 type="button"
                                 onClick={() => setFormData({ ...formData, accountType: 'individual' })}
-                                className={`flex-1 py-2.5 text-sm border rounded-lg transition-colors ${
+                                className={`flex-1 py-2 sm:py-2.5 text-xs sm:text-sm border rounded-lg transition-colors ${
                                   formData.accountType === 'individual'
                                     ? 'border-black bg-black text-white'
                                     : 'border-gray-300 text-gray-700 hover:border-gray-400'
@@ -459,7 +459,7 @@ const PayApplicationPage = ({ user, onClose }) => {
                               <button
                                 type="button"
                                 onClick={() => setFormData({ ...formData, accountType: 'corporate' })}
-                                className={`flex-1 py-2.5 text-sm border rounded-lg transition-colors ${
+                                className={`flex-1 py-2 sm:py-2.5 text-xs sm:text-sm border rounded-lg transition-colors ${
                                   formData.accountType === 'corporate'
                                     ? 'border-black bg-black text-white'
                                     : 'border-gray-300 text-gray-700 hover:border-gray-400'
@@ -471,28 +471,28 @@ const PayApplicationPage = ({ user, onClose }) => {
                           </div>
 
                           {/* Name */}
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-2 gap-2 sm:gap-3">
                             <div>
-                              <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1.5">
+                              <label className="block text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide mb-1">
                                 First Name
                               </label>
                               <input
                                 type="text"
                                 value={formData.firstName}
                                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-black"
+                                className="w-full px-2.5 sm:px-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:border-black"
                                 required
                               />
                             </div>
                             <div>
-                              <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1.5">
+                              <label className="block text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide mb-1">
                                 Last Name
                               </label>
                               <input
                                 type="text"
                                 value={formData.lastName}
                                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-black"
+                                className="w-full px-2.5 sm:px-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:border-black"
                                 required
                               />
                             </div>
@@ -500,21 +500,21 @@ const PayApplicationPage = ({ user, onClose }) => {
 
                           {/* Email */}
                           <div>
-                            <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1.5">
+                            <label className="block text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide mb-1">
                               Email
                             </label>
                             <input
                               type="email"
                               value={formData.email}
                               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-black"
+                              className="w-full px-2.5 sm:px-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:border-black"
                               required
                             />
                           </div>
 
                           {/* Phone */}
                           <div>
-                            <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1.5">
+                            <label className="block text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide mb-1">
                               Phone Number
                             </label>
                             <input
@@ -522,7 +522,7 @@ const PayApplicationPage = ({ user, onClose }) => {
                               value={formData.phone}
                               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                               placeholder="+1 234 567 8900"
-                              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-black"
+                              className="w-full px-2.5 sm:px-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:border-black"
                               required
                             />
                           </div>
@@ -532,7 +532,7 @@ const PayApplicationPage = ({ user, onClose }) => {
                             type="button"
                             onClick={() => setSubStep(2)}
                             disabled={!formData.firstName || !formData.lastName || !formData.email || !formData.phone}
-                            className="w-full py-3 bg-black text-white text-sm font-medium hover:bg-gray-900 transition-colors rounded-full disabled:bg-gray-300 disabled:cursor-not-allowed mt-4"
+                            className="w-full py-2.5 sm:py-3 bg-black text-white text-xs sm:text-sm font-medium hover:bg-gray-900 transition-colors rounded-full disabled:bg-gray-300 disabled:cursor-not-allowed mt-2 sm:mt-4"
                           >
                             Continue
                           </button>
@@ -543,22 +543,22 @@ const PayApplicationPage = ({ user, onClose }) => {
                     {/* Sub-Step 2: Additional Info */}
                     {subStep === 2 && (
                       <>
-                        <p className="text-xs text-gray-400 tracking-widest uppercase mb-3">Additional Details</p>
-                        <h2 className="text-2xl font-light text-black text-center mb-1">
+                        <p className="text-xs text-gray-400 tracking-widest uppercase mb-1 sm:mb-3">Additional Details</p>
+                        <h2 className="text-xl sm:text-2xl font-light text-black text-center mb-0.5 sm:mb-1">
                           Almost there
                         </h2>
-                        <p className="text-gray-400 text-sm mb-6">Help us understand your needs</p>
+                        <p className="text-gray-400 text-xs sm:text-sm mb-3 sm:mb-6">Help us understand your needs</p>
 
-                        <form className="w-full max-w-sm space-y-4">
+                        <form className="w-full max-w-sm space-y-2 sm:space-y-4">
                           {/* Country */}
                           <div>
-                            <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1.5">
+                            <label className="block text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide mb-1">
                               Country
                             </label>
                             <select
                               value={formData.country}
                               onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-black bg-white"
+                              className="w-full px-2.5 sm:px-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:border-black bg-white"
                               required
                             >
                               <option value="">Select country</option>
@@ -571,7 +571,7 @@ const PayApplicationPage = ({ user, onClose }) => {
                           {/* VAT Number - Only for Corporate */}
                           {formData.accountType === 'corporate' && (
                             <div>
-                              <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1.5">
+                              <label className="block text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide mb-1">
                                 VAT Number
                               </label>
                               <input
@@ -579,7 +579,7 @@ const PayApplicationPage = ({ user, onClose }) => {
                                 value={formData.vatNumber}
                                 onChange={(e) => setFormData({ ...formData, vatNumber: e.target.value })}
                                 placeholder="e.g. DE123456789"
-                                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-black"
+                                className="w-full px-2.5 sm:px-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:border-black"
                                 required
                               />
                             </div>
@@ -587,13 +587,13 @@ const PayApplicationPage = ({ user, onClose }) => {
 
                           {/* Monthly Spending */}
                           <div>
-                            <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1.5">
+                            <label className="block text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide mb-1">
                               Expected Monthly Spending
                             </label>
                             <select
                               value={formData.monthlySpending}
                               onChange={(e) => setFormData({ ...formData, monthlySpending: e.target.value })}
-                              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-black bg-white"
+                              className="w-full px-2.5 sm:px-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:border-black bg-white"
                               required
                             >
                               <option value="">Select range</option>
@@ -606,13 +606,13 @@ const PayApplicationPage = ({ user, onClose }) => {
 
                           {/* Expected Volume */}
                           <div>
-                            <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1.5">
+                            <label className="block text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide mb-1">
                               Expected Annual Volume
                             </label>
                             <select
                               value={formData.expectedVolume}
                               onChange={(e) => setFormData({ ...formData, expectedVolume: e.target.value })}
-                              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-black bg-white"
+                              className="w-full px-2.5 sm:px-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:border-black bg-white"
                               required
                             >
                               <option value="">Select range</option>
@@ -624,11 +624,11 @@ const PayApplicationPage = ({ user, onClose }) => {
                           </div>
 
                           {/* Buttons */}
-                          <div className="flex gap-3 mt-4">
+                          <div className="flex gap-2 sm:gap-3 mt-2 sm:mt-4">
                             <button
                               type="button"
                               onClick={() => setSubStep(1)}
-                              className="flex-1 py-3 border border-gray-300 text-gray-700 text-sm font-medium hover:border-gray-400 transition-colors rounded-full"
+                              className="flex-1 py-2.5 sm:py-3 border border-gray-300 text-gray-700 text-xs sm:text-sm font-medium hover:border-gray-400 transition-colors rounded-full"
                             >
                               Back
                             </button>
@@ -636,7 +636,7 @@ const PayApplicationPage = ({ user, onClose }) => {
                               type="button"
                               onClick={() => setStep(2)}
                               disabled={!formData.country || !formData.monthlySpending || !formData.expectedVolume || (formData.accountType === 'corporate' && !formData.vatNumber)}
-                              className="flex-1 py-3 bg-black text-white text-sm font-medium hover:bg-gray-900 transition-colors rounded-full disabled:bg-gray-300 disabled:cursor-not-allowed"
+                              className="flex-1 py-2.5 sm:py-3 bg-black text-white text-xs sm:text-sm font-medium hover:bg-gray-900 transition-colors rounded-full disabled:bg-gray-300 disabled:cursor-not-allowed"
                             >
                               Choose Card
                             </button>
@@ -672,7 +672,7 @@ const PayApplicationPage = ({ user, onClose }) => {
                     <div className="absolute inset-0 bg-black/50" />
 
                     {/* Content Overlay */}
-                    <div className="relative z-10 p-4 lg:p-6 flex flex-col justify-end min-h-[400px] lg:min-h-full">
+                    <div className="relative z-10 p-3 sm:p-4 lg:p-6 flex flex-col justify-end min-h-[200px] sm:min-h-[300px] lg:min-h-full">
                       <p className="text-[9px] text-white/50 uppercase tracking-widest mb-3 text-center lg:text-left">Included with every card</p>
 
                       <div className="grid grid-cols-2 gap-2">
