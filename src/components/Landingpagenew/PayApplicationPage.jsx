@@ -20,15 +20,36 @@ const PayApplicationPage = ({ user, onClose }) => {
   });
 
   const countries = [
-    'United States', 'United Kingdom', 'Germany', 'France', 'Switzerland',
-    'Netherlands', 'Belgium', 'Austria', 'Italy', 'Spain', 'Portugal',
-    'Monaco', 'Luxembourg', 'Liechtenstein', 'United Arab Emirates',
-    'Saudi Arabia', 'Qatar', 'Singapore', 'Hong Kong', 'Australia',
-    'Canada', 'Ireland', 'Sweden', 'Norway', 'Denmark', 'Finland',
-  ];
+    // Europe
+    'Germany', 'United Kingdom', 'France', 'Switzerland', 'Austria',
+    'Netherlands', 'Belgium', 'Italy', 'Spain', 'Portugal',
+    'Ireland', 'Sweden', 'Norway', 'Denmark', 'Finland',
+    'Poland', 'Czech Republic', 'Greece', 'Hungary', 'Romania',
+    'Luxembourg', 'Monaco', 'Liechtenstein', 'Cyprus', 'Malta',
+    'Croatia', 'Slovenia', 'Slovakia', 'Bulgaria', 'Estonia',
+    'Latvia', 'Lithuania', 'Iceland', 'Turkey', 'Russia',
+    // North America
+    'United States', 'Canada', 'Mexico',
+    // South America
+    'Brazil', 'Argentina', 'Chile', 'Colombia', 'Peru',
+    // Middle East
+    'United Arab Emirates', 'Saudi Arabia', 'Qatar', 'Kuwait', 'Bahrain',
+    'Oman', 'Israel', 'Jordan', 'Lebanon',
+    // Asia
+    'China', 'Japan', 'South Korea', 'India', 'Singapore',
+    'Hong Kong', 'Taiwan', 'Thailand', 'Vietnam', 'Malaysia',
+    'Indonesia', 'Philippines', 'Pakistan', 'Bangladesh', 'Sri Lanka',
+    // Oceania
+    'Australia', 'New Zealand',
+    // Africa
+    'South Africa', 'Nigeria', 'Kenya', 'Uganda', 'Ghana',
+    'Egypt', 'Morocco', 'Tunisia', 'Tanzania', 'Ethiopia',
+    'Rwanda', 'Mauritius', 'Botswana', 'Namibia', 'Zimbabwe',
+  ].sort();
 
   // VAT validation patterns by country
   const vatPatterns = {
+    // Europe - EU VAT
     'Germany': { prefix: 'DE', pattern: /^DE\d{9}$/, example: 'DE123456789', label: 'USt-IdNr.' },
     'France': { prefix: 'FR', pattern: /^FR[A-Z0-9]{2}\d{9}$/, example: 'FR12345678901', label: 'TVA' },
     'United Kingdom': { prefix: 'GB', pattern: /^GB(\d{9}|\d{12})$/, example: 'GB123456789', label: 'VAT' },
@@ -46,16 +67,79 @@ const PayApplicationPage = ({ user, onClose }) => {
     'Denmark': { prefix: 'DK', pattern: /^DK\d{8}$/, example: 'DK12345678', label: 'CVR' },
     'Finland': { prefix: 'FI', pattern: /^FI\d{8}$/, example: 'FI12345678', label: 'ALV' },
     'Liechtenstein': { prefix: 'LI', pattern: /^LI\d{5}$/, example: 'LI12345', label: 'MWST' },
-    // Countries without EU-style VAT (use generic validation)
-    'United States': { prefix: '', pattern: /^.{9,15}$/, example: 'EIN or State ID', label: 'Tax ID' },
+    'Monaco': { prefix: 'FR', pattern: /^FR[A-Z0-9]{2}\d{9}$/, example: 'FR12345678901', label: 'TVA' },
+    'Poland': { prefix: 'PL', pattern: /^PL\d{10}$/, example: 'PL1234567890', label: 'NIP' },
+    'Czech Republic': { prefix: 'CZ', pattern: /^CZ\d{8,10}$/, example: 'CZ12345678', label: 'DIČ' },
+    'Greece': { prefix: 'EL', pattern: /^EL\d{9}$/, example: 'EL123456789', label: 'ΑΦΜ' },
+    'Hungary': { prefix: 'HU', pattern: /^HU\d{8}$/, example: 'HU12345678', label: 'Adószám' },
+    'Romania': { prefix: 'RO', pattern: /^RO\d{2,10}$/, example: 'RO1234567890', label: 'CIF' },
+    'Cyprus': { prefix: 'CY', pattern: /^CY\d{8}[A-Z]$/, example: 'CY12345678X', label: 'ΦΠΑ' },
+    'Malta': { prefix: 'MT', pattern: /^MT\d{8}$/, example: 'MT12345678', label: 'VAT' },
+    'Croatia': { prefix: 'HR', pattern: /^HR\d{11}$/, example: 'HR12345678901', label: 'OIB' },
+    'Slovenia': { prefix: 'SI', pattern: /^SI\d{8}$/, example: 'SI12345678', label: 'DDV' },
+    'Slovakia': { prefix: 'SK', pattern: /^SK\d{10}$/, example: 'SK1234567890', label: 'IČ DPH' },
+    'Bulgaria': { prefix: 'BG', pattern: /^BG\d{9,10}$/, example: 'BG123456789', label: 'ДДС' },
+    'Estonia': { prefix: 'EE', pattern: /^EE\d{9}$/, example: 'EE123456789', label: 'KMKR' },
+    'Latvia': { prefix: 'LV', pattern: /^LV\d{11}$/, example: 'LV12345678901', label: 'PVN' },
+    'Lithuania': { prefix: 'LT', pattern: /^LT(\d{9}|\d{12})$/, example: 'LT123456789', label: 'PVM' },
+    'Iceland': { prefix: 'IS', pattern: /^IS\d{5,6}$/, example: 'IS12345', label: 'VSK' },
+    'Turkey': { prefix: 'TR', pattern: /^TR\d{10}$/, example: 'TR1234567890', label: 'VKN' },
+    'Russia': { prefix: 'RU', pattern: /^RU\d{10,12}$/, example: 'RU1234567890', label: 'ИНН' },
+    // North America
+    'United States': { prefix: '', pattern: /^(\d{2}-\d{7}|\d{9})$/, example: '12-3456789', label: 'EIN' },
     'Canada': { prefix: '', pattern: /^\d{9}[A-Z]{2}\d{4}$/, example: '123456789RT0001', label: 'BN/GST' },
-    'Australia': { prefix: '', pattern: /^\d{11}$/, example: '12345678901', label: 'ABN' },
-    'United Arab Emirates': { prefix: '', pattern: /^\d{15}$/, example: 'TRN Number', label: 'TRN' },
-    'Saudi Arabia': { prefix: '', pattern: /^\d{15}$/, example: 'VAT Number', label: 'VAT' },
-    'Qatar': { prefix: '', pattern: /^.{8,15}$/, example: 'Tax ID', label: 'Tax ID' },
+    'Mexico': { prefix: '', pattern: /^[A-Z]{3,4}\d{6}[A-Z0-9]{3}$/, example: 'ABC123456XYZ', label: 'RFC' },
+    // South America
+    'Brazil': { prefix: '', pattern: /^\d{14}$/, example: '12345678000195', label: 'CNPJ' },
+    'Argentina': { prefix: '', pattern: /^\d{11}$/, example: '12345678901', label: 'CUIT' },
+    'Chile': { prefix: '', pattern: /^\d{8,9}-\d$/, example: '12345678-9', label: 'RUT' },
+    'Colombia': { prefix: '', pattern: /^\d{9,10}$/, example: '1234567890', label: 'NIT' },
+    'Peru': { prefix: '', pattern: /^\d{11}$/, example: '12345678901', label: 'RUC' },
+    // Middle East
+    'United Arab Emirates': { prefix: '', pattern: /^\d{15}$/, example: '100123456789012', label: 'TRN' },
+    'Saudi Arabia': { prefix: '', pattern: /^\d{15}$/, example: '300123456789012', label: 'VAT' },
+    'Qatar': { prefix: '', pattern: /^\d{10}$/, example: '1234567890', label: 'TIN' },
+    'Kuwait': { prefix: '', pattern: /^\d{9}$/, example: '123456789', label: 'Tax ID' },
+    'Bahrain': { prefix: '', pattern: /^\d{9,15}$/, example: '123456789', label: 'VAT' },
+    'Oman': { prefix: '', pattern: /^OM\d{10}$/, example: 'OM1234567890', label: 'VAT' },
+    'Israel': { prefix: '', pattern: /^\d{9}$/, example: '123456789', label: 'ח.פ.' },
+    'Jordan': { prefix: '', pattern: /^\d{8,10}$/, example: '12345678', label: 'TIN' },
+    'Lebanon': { prefix: '', pattern: /^\d{8}$/, example: '12345678', label: 'TIN' },
+    // Asia
+    'China': { prefix: '', pattern: /^[A-Z0-9]{15,18}$/, example: '91110000MA12345X', label: '统一社会信用代码' },
+    'Japan': { prefix: '', pattern: /^T\d{13}$/, example: 'T1234567890123', label: '法人番号' },
+    'South Korea': { prefix: '', pattern: /^\d{3}-\d{2}-\d{5}$/, example: '123-45-67890', label: '사업자등록번호' },
+    'India': { prefix: '', pattern: /^\d{2}[A-Z]{5}\d{4}[A-Z]\d[A-Z0-9]{2}$/, example: '22AAAAA1234A1Z5', label: 'GSTIN' },
     'Singapore': { prefix: '', pattern: /^[A-Z]\d{7}[A-Z]$/, example: 'T12345678X', label: 'UEN' },
     'Hong Kong': { prefix: '', pattern: /^\d{8}$/, example: '12345678', label: 'BR No.' },
-    'Monaco': { prefix: 'FR', pattern: /^FR[A-Z0-9]{2}\d{9}$/, example: 'FR12345678901', label: 'TVA' },
+    'Taiwan': { prefix: '', pattern: /^\d{8}$/, example: '12345678', label: '統一編號' },
+    'Thailand': { prefix: '', pattern: /^\d{13}$/, example: '1234567890123', label: 'Tax ID' },
+    'Vietnam': { prefix: '', pattern: /^\d{10,13}$/, example: '1234567890', label: 'MST' },
+    'Malaysia': { prefix: '', pattern: /^\d{12}$/, example: '123456789012', label: 'SST' },
+    'Indonesia': { prefix: '', pattern: /^\d{15}$/, example: '123456789012345', label: 'NPWP' },
+    'Philippines': { prefix: '', pattern: /^\d{12}$/, example: '123456789012', label: 'TIN' },
+    'Pakistan': { prefix: '', pattern: /^\d{7}$/, example: '1234567', label: 'NTN' },
+    'Bangladesh': { prefix: '', pattern: /^\d{9,12}$/, example: '123456789', label: 'BIN' },
+    'Sri Lanka': { prefix: '', pattern: /^\d{9,12}$/, example: '123456789', label: 'TIN' },
+    // Oceania
+    'Australia': { prefix: '', pattern: /^\d{11}$/, example: '12345678901', label: 'ABN' },
+    'New Zealand': { prefix: '', pattern: /^\d{8,9}$/, example: '123456789', label: 'GST' },
+    // Africa
+    'South Africa': { prefix: '', pattern: /^\d{10}$/, example: '1234567890', label: 'VAT' },
+    'Nigeria': { prefix: '', pattern: /^\d{8}-\d{4}$/, example: '12345678-0001', label: 'TIN' },
+    'Kenya': { prefix: '', pattern: /^P\d{9}[A-Z]$/, example: 'P123456789A', label: 'PIN' },
+    'Uganda': { prefix: '', pattern: /^\d{10}$/, example: '1234567890', label: 'TIN' },
+    'Ghana': { prefix: '', pattern: /^[A-Z]\d{10}$/, example: 'C1234567890', label: 'TIN' },
+    'Egypt': { prefix: '', pattern: /^\d{9}$/, example: '123456789', label: 'TIN' },
+    'Morocco': { prefix: '', pattern: /^\d{8}$/, example: '12345678', label: 'ICE' },
+    'Tunisia': { prefix: '', pattern: /^\d{7}[A-Z]$/, example: '1234567A', label: 'MF' },
+    'Tanzania': { prefix: '', pattern: /^\d{9}$/, example: '123456789', label: 'TIN' },
+    'Ethiopia': { prefix: '', pattern: /^\d{10}$/, example: '1234567890', label: 'TIN' },
+    'Rwanda': { prefix: '', pattern: /^\d{9}$/, example: '123456789', label: 'TIN' },
+    'Mauritius': { prefix: '', pattern: /^[A-Z]\d{8}$/, example: 'V12345678', label: 'VAT' },
+    'Botswana': { prefix: '', pattern: /^[A-Z]\d{9}$/, example: 'P123456789', label: 'TIN' },
+    'Namibia': { prefix: '', pattern: /^\d{10}$/, example: '1234567890', label: 'TIN' },
+    'Zimbabwe': { prefix: '', pattern: /^\d{10}$/, example: '1234567890', label: 'TIN' },
   };
 
   const [vatError, setVatError] = useState('');
