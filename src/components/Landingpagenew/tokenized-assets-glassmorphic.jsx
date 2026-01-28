@@ -6,7 +6,7 @@ import {
   Leaf, Award, Settings, User, ChevronRight, ChevronDown, ChevronUp, ChevronLeft, X, LogOut, MessageSquare, MessageCircle,
   Users, Calendar, Package, Compass, ArrowLeft, ArrowRight, Wallet, History, Crown, Gift, LayoutDashboard, Clock,
   Mail, Phone, Globe, FileText, Edit3, Check, CheckCircle, Loader2, Building2, Coins, Share2, Menu, ExternalLink, SlidersHorizontal, Info, CreditCard,
-  ShoppingCart, Send, AlertCircle, Lock, Activity, Gavel, TrendingUp
+  ShoppingCart, Send, AlertCircle, Lock, Activity, Gavel, TrendingUp, Headphones
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -89,6 +89,7 @@ import PrivateJetSearchDashboard from '../PrivateJetSearchDashboard';
 import { LiveSupportWidget, AdminSupportDashboard } from '../LiveSupportChat';
 import PayDashboard from './PayDashboard';
 import PayApplicationPage from './PayApplicationPage';
+import PaymentMockup from './PaymentMockup';
 
 // Settings Page Component
 const SettingsPage = ({ user, kycStatus, setKycStatus, setActiveCategory }) => {
@@ -1308,6 +1309,7 @@ const TokenizedAssetsGlassmorphic = () => {
     'ground-transport': '/ground-transport',
     'adventures': '/adventures',
     'flights': '/flights',
+    'paymentx': '/paymentx',
     'luxury-cars': '/luxury-cars',
     'hotels': '/hotels',
     'services': '/services',
@@ -1507,6 +1509,9 @@ const TokenizedAssetsGlassmorphic = () => {
 
   // Aviation card animation state (helicopter/jet switching)
   const [currentAviationType, setCurrentAviationType] = useState(0); // 0 = helicopter, 1 = jet
+
+  // PaymentX card carousel index
+  const [paymentxCardIndex, setPaymentxCardIndex] = useState(0);
 
   // Aviation card rotation effect (switch between helicopter and jet every 5 seconds)
   useEffect(() => {
@@ -2385,6 +2390,8 @@ const TokenizedAssetsGlassmorphic = () => {
       '/ground-transport': 'ground-transport',
       '/adventures': 'adventures',
       '/flights': 'flights',
+      '/paymentx': 'paymentx',
+      '/debitcard': 'paymentx',
       '/luxury-cars': 'luxury-cars',
       '/hotels': 'hotels',
       '/services': 'services',
@@ -4484,7 +4491,8 @@ const TokenizedAssetsGlassmorphic = () => {
     { id: 'empty-legs', label: 'Empty Legs', icon: MapPin, category: 'empty-legs' },
     { id: 'flight-ops', label: 'Flight Bids', icon: Gavel, category: 'flight-ops', hideOnMobile: true },
     { id: 'adventures', label: 'Adventures', icon: Mountain, category: 'adventures' },
-    { id: 'flights', label: 'Commercial', icon: Plane, category: 'flights' }
+    { id: 'flights', label: 'Commercial', icon: Plane, category: 'flights' },
+    { id: 'paymentx', label: 'PaymentX', icon: CreditCard, category: 'paymentx' }
     // { id: 'card', label: 'Card', icon: CreditCard, category: 'card' }, // Hidden - Marqeta integration pending
     // { id: 'hotels', label: 'Hotels', icon: Building2, category: 'hotels' }, // DISABLED - LiteAPI hotels temporarily removed
     // { id: 'assets', label: 'Events & Sports', icon: Calendar, category: 'assets' }, // Hidden for MVP
@@ -5126,7 +5134,9 @@ const TokenizedAssetsGlassmorphic = () => {
                     'helicopter': '/helis',
                     'empty-legs': '/empty-legs',
                     'ground-transport': '/ground-transport',
-                    'adventures': '/adventures'
+                    'adventures': '/adventures',
+                    'flights': '/flights',
+                    'paymentx': '/paymentx'
                   };
                   return (
                     <button
@@ -5286,7 +5296,9 @@ const TokenizedAssetsGlassmorphic = () => {
                       'helicopter': '/helis',
                       'empty-legs': '/empty-legs',
                       'ground-transport': '/ground-transport',
-                      'adventures': '/adventures'
+                      'adventures': '/adventures',
+                      'flights': '/flights',
+                      'paymentx': '/paymentx'
                     };
                     return (
                       <button
@@ -6760,6 +6772,605 @@ const TokenizedAssetsGlassmorphic = () => {
               user={user}
               onSwitchToMain={() => setActiveCategory('chat')}
             />
+          )}
+
+          {/* PaymentX - USDC Debit Card Landing Page */}
+          {!isTransitioning && activeCategory === 'paymentx' && (
+            <div className="w-full flex-1 flex flex-col">
+              {/* Hero Section with Video Background */}
+              <div className="relative min-h-[70vh] flex items-center justify-center overflow-hidden rounded-2xl mx-2 sm:mx-4 mt-4">
+                {/* Background Video */}
+                <video
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="absolute inset-0 w-full h-full object-cover"
+                >
+                  <source src="https://auth.privatecharterx.com/storage/v1/object/public/motion%20videos/9520295-uhd_4096_2160_25fps.mp4" type="video/mp4" />
+                </video>
+
+                {/* Dark Overlay */}
+                <div className="absolute inset-0 bg-black/50" />
+
+                {/* Content */}
+                <div className="relative z-10 flex flex-col items-start px-6 sm:px-12 py-12 max-w-6xl mx-auto w-full">
+                  {/* Text Content - Left Aligned */}
+                  <div className="text-left max-w-xl">
+                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-light text-white leading-tight mb-4">
+                      Premium Travel Cards
+                      <br />
+                      <span className="text-white/70">Powered by USDC</span>
+                    </h1>
+
+                    <p className="text-white/60 text-sm sm:text-base max-w-lg mb-6">
+                      PaymentX combines stablecoin efficiency with premium travel benefits.
+                      Earn up to 4% APY, enjoy complimentary airport transfers, and pay anywhere.
+                    </p>
+
+                    {/* Key Stats */}
+                    <div className="flex flex-wrap justify-start gap-6 mb-8">
+                      <div>
+                        <p className="text-2xl font-light text-white">4%</p>
+                        <p className="text-[10px] text-white/50 uppercase tracking-wide">APY Rewards</p>
+                      </div>
+                      <div className="w-px h-10 bg-white/20" />
+                      <div>
+                        <p className="text-2xl font-light text-white">10%</p>
+                        <p className="text-[10px] text-white/50 uppercase tracking-wide">Travel Discounts</p>
+                      </div>
+                      <div className="w-px h-10 bg-white/20" />
+                      <div>
+                        <p className="text-2xl font-light text-white">40km</p>
+                        <p className="text-[10px] text-white/50 uppercase tracking-wide">Free Transport</p>
+                      </div>
+                    </div>
+
+                    {/* CTA Buttons */}
+                    <div className="flex flex-col sm:flex-row items-start justify-start gap-3">
+                      <button
+                        onClick={() => setActiveCategory('pay')}
+                        className="w-full sm:w-auto px-6 py-3 bg-white text-black font-medium rounded-full hover:bg-gray-100 transition-all flex items-center justify-center gap-2"
+                      >
+                        Apply for Card
+                        <ArrowRight size={16} />
+                      </button>
+                      <span className="text-xs text-white/50 self-center">From $59/month</span>
+                    </div>
+                  </div>
+
+                  {/* Mastercard Logo - Bottom Right */}
+                  <div className="absolute bottom-6 right-6 sm:right-12">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-white/40 uppercase tracking-wider">Powered by</span>
+                      <div className="flex -space-x-1">
+                        <div className="w-6 h-6 rounded-full bg-red-500 opacity-90" />
+                        <div className="w-6 h-6 rounded-full bg-yellow-500 opacity-90" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Airline Partners Carousel */}
+              <div className="px-4 sm:px-8 py-8 max-w-6xl mx-auto">
+                <p className="text-center text-[10px] text-gray-400 uppercase tracking-widest mb-4">Airline Partners</p>
+                <div className="relative overflow-hidden">
+                  {/* Fade edges */}
+                  <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-gray-50 to-transparent z-10 pointer-events-none" />
+                  <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-gray-50 to-transparent z-10 pointer-events-none" />
+
+                  <style>{`
+                    @keyframes scrollAirlinesPaymentX {
+                      0% { transform: translateX(0); }
+                      100% { transform: translateX(-50%); }
+                    }
+                    .airline-carousel-paymentx {
+                      animation: scrollAirlinesPaymentX 60s linear infinite;
+                    }
+                  `}</style>
+                  <div className="airline-carousel-paymentx flex items-center gap-12 w-max py-3">
+                    {[...Array(2)].map((_, setIndex) => (
+                      <div key={setIndex} className="flex items-center gap-10">
+                        <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/LX.svg" alt="Swiss" className="h-5 opacity-20 grayscale" />
+                        <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/EK.svg" alt="Emirates" className="h-5 opacity-20 grayscale" />
+                        <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/LH.svg" alt="Lufthansa" className="h-5 opacity-20 grayscale" />
+                        <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/BA.svg" alt="British Airways" className="h-5 opacity-20 grayscale" />
+                        <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/AF.svg" alt="Air France" className="h-3 opacity-20 grayscale" />
+                        <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/KL.svg" alt="KLM" className="h-5 opacity-20 grayscale" />
+                        <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/SQ.svg" alt="Singapore Airlines" className="h-5 opacity-20 grayscale" />
+                        <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/TK.svg" alt="Turkish Airlines" className="h-5 opacity-20 grayscale" />
+                        <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/EY.svg" alt="Etihad" className="h-5 opacity-20 grayscale" />
+                        <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/UA.svg" alt="United" className="h-5 opacity-20 grayscale" />
+                        <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/AA.svg" alt="American Airlines" className="h-5 opacity-20 grayscale" />
+                        <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/DL.svg" alt="Delta" className="h-5 opacity-20 grayscale" />
+                        <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/CX.svg" alt="Cathay Pacific" className="h-5 opacity-20 grayscale" />
+                        <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/JL.svg" alt="Japan Airlines" className="h-5 opacity-20 grayscale" />
+                        <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/NH.svg" alt="ANA" className="h-5 opacity-20 grayscale" />
+                        <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/QF.svg" alt="Qantas" className="h-5 opacity-20 grayscale" />
+                        <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/QR.svg" alt="Qatar Airways" className="h-5 opacity-20 grayscale" />
+                        <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/IB.svg" alt="Iberia" className="h-5 opacity-20 grayscale" />
+                        <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/WK.svg" alt="Edelweiss" className="h-5 opacity-20 grayscale" />
+                        <img src="https://assets.duffel.com/img/airlines/for-light-background/full-color-lockup/AY.svg" alt="Finnair" className="h-3 opacity-20 grayscale" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Benefits Grid */}
+              <div className="px-4 sm:px-6 py-12">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl sm:text-3xl font-light text-gray-900 mb-2">Everything Included</h2>
+                  <p className="text-gray-500 text-sm">Premium features with every card tier</p>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 max-w-5xl mx-auto">
+                  {[
+                    { icon: Wallet, title: 'USDC Wallet', desc: 'Stablecoin payments' },
+                    { icon: CreditCard, title: 'Mastercard', desc: 'Accepted worldwide' },
+                    { icon: TrendingUp, title: 'Up to 4% APY', desc: 'Staking rewards' },
+                    { icon: Car, title: 'Ground Transport', desc: 'Airport transfers' },
+                    { icon: Plane, title: '10% Discounts', desc: 'Travel & bookings' },
+                    { icon: Headphones, title: '24/7 Concierge', desc: 'Premium support' },
+                  ].map((benefit, i) => (
+                    <div key={i} className="bg-gray-50 rounded-xl p-4 text-center hover:bg-gray-100 transition-colors">
+                      <benefit.icon className="w-6 h-6 mx-auto mb-2 text-gray-700" />
+                      <h3 className="text-xs font-medium text-gray-900 mb-0.5">{benefit.title}</h3>
+                      <p className="text-[10px] text-gray-500">{benefit.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Section 1: Left Card, Right Text - USDC Wallet */}
+              <div className="px-4 sm:px-6 py-16 lg:py-24">
+                <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
+                  {/* Left: Card */}
+                  <div className="flex-1 flex justify-center">
+                    <div className="relative">
+                      {/* 3D Card */}
+                      <div
+                        className="w-[220px] sm:w-[260px] h-[340px] sm:h-[400px] rounded-2xl p-5 sm:p-6 flex flex-col justify-between shadow-2xl transform hover:scale-105 transition-transform duration-300"
+                        style={{
+                          background: 'linear-gradient(145deg, #1a1a1a 0%, #2d2d2d 30%, #1a1a1a 60%, #0d0d0d 100%)',
+                          boxShadow: '0 50px 100px -20px rgba(0, 0, 0, 0.4)',
+                        }}
+                      >
+                        {/* Shine effect */}
+                        <div
+                          className="absolute inset-0 rounded-2xl pointer-events-none"
+                          style={{
+                            background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%)',
+                          }}
+                        />
+
+                        {/* Top */}
+                        <div className="flex justify-between items-start relative z-10">
+                          <p className="text-[9px] sm:text-[10px] text-gray-400 uppercase tracking-[0.15em]">PrivateCharterX</p>
+                          <div className="flex -space-x-1.5">
+                            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-500 opacity-80" />
+                            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-yellow-500 opacity-80" />
+                          </div>
+                        </div>
+
+                        {/* Chip */}
+                        <div className="relative z-10 my-3">
+                          <div className="w-8 h-6 sm:w-10 sm:h-8 rounded-md bg-gradient-to-br from-yellow-200 via-yellow-300 to-yellow-400 opacity-90" />
+                        </div>
+
+                        {/* Card Number */}
+                        <div className="relative z-10">
+                          <p className="text-white/50 text-xs sm:text-sm tracking-[0.25em] font-light">
+                            •••• •••• •••• 4242
+                          </p>
+                        </div>
+
+                        {/* Name (Vertical) */}
+                        <div className="flex-1 flex items-center relative z-10">
+                          <p
+                            className="text-xs sm:text-sm font-medium tracking-[0.2em] text-white/80"
+                            style={{
+                              writingMode: 'vertical-rl',
+                              textOrientation: 'mixed',
+                              transform: 'rotate(180deg)',
+                            }}
+                          >
+                            {user ? `${user.first_name || ''} ${user.last_name || ''}`.toUpperCase().trim() || 'YOUR NAME' : 'YOUR NAME'}
+                          </p>
+                        </div>
+
+                        {/* Bottom */}
+                        <div className="flex justify-between items-end relative z-10">
+                          <div>
+                            <p className="text-[8px] sm:text-[9px] text-gray-500 uppercase tracking-wide mb-0.5">Expires</p>
+                            <p className="text-white text-xs sm:text-sm">12/29</p>
+                          </div>
+                          <div className="text-gray-500">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M8.5 14.5c1.5-2 4.5-2 6 0" />
+                              <path d="M6 12c2.5-3.5 9.5-3.5 12 0" />
+                              <path d="M3.5 9.5c4-5 13-5 17 0" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Floating badge */}
+                      <div className="absolute -top-3 -right-3 px-2.5 py-1 bg-green-500 text-white text-[10px] font-medium rounded-full shadow-lg">
+                        4% APY
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right: Text */}
+                  <div className="flex-1 text-center lg:text-left">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 rounded-full mb-4">
+                      <Wallet size={14} className="text-blue-600" />
+                      <span className="text-xs text-blue-700 font-medium">Stablecoin Wallet</span>
+                    </div>
+                    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-light text-gray-900 mb-4">
+                      Your Money, <span className="text-gray-400">Always Stable</span>
+                    </h2>
+                    <p className="text-gray-500 text-sm sm:text-base mb-6 max-w-lg">
+                      Hold USDC with zero volatility. Earn up to 4% APY on your balance while maintaining instant access to your funds. No lock-up periods, withdraw anytime.
+                    </p>
+                    <ul className="space-y-3 mb-6">
+                      {['Multi-currency eIBAN (EUR, USD, CHF, GBP)', 'Instant settlements worldwide', 'Bank-grade security & Swiss regulated'].map((item, i) => (
+                        <li key={i} className="flex items-center gap-2 text-sm text-gray-600">
+                          <Check size={16} className="text-green-500 flex-shrink-0" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Right Mockup, Left Text - Onboarding */}
+              <div className="px-4 sm:px-6 py-16 lg:py-24">
+                <div className="max-w-6xl mx-auto flex flex-col-reverse lg:flex-row items-center gap-8 lg:gap-12">
+                  {/* Left: Text */}
+                  <div className="flex-1 text-center lg:text-left">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full mb-4">
+                      <span className="text-xs text-gray-600 font-medium">Asia · Europe · USA</span>
+                    </div>
+                    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-light text-gray-900 mb-4">
+                      Onboarding <span className="text-gray-400">Made Easy</span>
+                    </h2>
+                    <p className="text-gray-500 text-sm sm:text-base mb-6 max-w-lg">
+                      Global connectivity across continents. Apply in under 2 minutes and use your card instantly — whether you're in Tokyo, London, or New York.
+                    </p>
+                    <ul className="space-y-3 mb-6">
+                      {['Seamless payments across Asia, Europe & USA', 'Instant KYC verification worldwide', 'Virtual card ready immediately', 'Physical card shipped globally in 5-7 days'].map((item, i) => (
+                        <li key={i} className="flex items-center gap-2 text-sm text-gray-600">
+                          <Check size={16} className="text-green-500 flex-shrink-0" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      onClick={() => setActiveCategory('pay')}
+                      className="px-6 py-3 bg-black text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors inline-flex items-center gap-2"
+                    >
+                      Start Application
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+
+                  {/* Right: Phone + Card Mockup */}
+                  <div className="flex-1">
+                    <PaymentMockup />
+                  </div>
+                </div>
+              </div>
+
+              {/* Card Tiers - 3 Cards Carousel with Arrows */}
+              <div className="px-4 sm:px-6 py-16 lg:py-24">
+                <div className="text-center mb-12">
+                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-light text-gray-900 mb-2">Choose Your Card</h2>
+                  <p className="text-gray-500 text-sm sm:text-base">Five tiers designed for every need. Upgrade anytime.</p>
+                </div>
+
+                {(() => {
+                  const cardTiers = [
+                    {
+                      id: 'basic',
+                      name: 'Basic',
+                      price: '$59',
+                      apy: '1-2%',
+                      transport: '5 km',
+                      minTopup: '$150',
+                      gradient: 'linear-gradient(145deg, #e8e8e8 0%, #b8b8b8 50%, #d4d4d4 100%)',
+                      benefits: ['Virtual Mastercard', 'USDC Wallet', 'MEDEVAC Available', 'Priority Line']
+                    },
+                    {
+                      id: 'gold',
+                      name: 'Gold',
+                      price: '$99',
+                      apy: '2-3%',
+                      transport: '10 km',
+                      minTopup: '$250',
+                      gradient: 'linear-gradient(145deg, #d4af37 0%, #f4e4a6 40%, #d4af37 70%, #c4a030 100%)',
+                      popular: true,
+                      benefits: ['Physical Metal Card', 'Priority eIBAN', 'MEDEVAC Available', 'Priority Line']
+                    },
+                    {
+                      id: 'crew',
+                      name: 'Crew',
+                      price: '$129',
+                      apy: '2-4%',
+                      transport: '15 km',
+                      minTopup: '$350',
+                      gradient: 'linear-gradient(145deg, #1e3a5f 0%, #2d5a87 40%, #1e3a5f 70%, #0f2940 100%)',
+                      badge: 'CREW',
+                      benefits: ['Airline Crew Only', 'MEDEVAC Available', '1.5x PVCX Rewards', 'Priority Line']
+                    },
+                    {
+                      id: 'black',
+                      name: 'Black',
+                      price: '$229',
+                      apy: '3-4%',
+                      transport: '25 km',
+                      minTopup: '$1,000',
+                      gradient: 'linear-gradient(145deg, #1a1a1a 0%, #2d2d2d 30%, #1a1a1a 60%, #0d0d0d 100%)',
+                      benefits: ['Exclusive Black Card', 'MEDEVAC Priority', 'VIP Events Access', 'Priority Line 24/7']
+                    },
+                    {
+                      id: 'platinum',
+                      name: 'Platinum',
+                      price: '$399',
+                      apy: '3-4%',
+                      transport: '40 km',
+                      minTopup: '$10,000',
+                      gradient: 'linear-gradient(145deg, #e5e4e2 0%, #c0c0c0 20%, #e8e8e8 40%, #b8b8b8 60%, #d4d4d4 80%, #a8a8a8 100%)',
+                      badge: 'JETCARD',
+                      benefits: ['Dedicated Manager', 'MEDEVAC Included', 'Priority Line 24/7', 'VIP Worldwide']
+                    },
+                  ];
+
+                  // Get visible cards based on paymentxCardIndex state
+                  const getVisibleCards = () => {
+                    const visible = [];
+                    for (let i = 0; i < 3; i++) {
+                      const index = (paymentxCardIndex + i) % cardTiers.length;
+                      visible.push({ ...cardTiers[index], originalIndex: index });
+                    }
+                    return visible;
+                  };
+
+                  const visibleCards = getVisibleCards();
+
+                  return (
+                    <div className="relative max-w-5xl mx-auto">
+                      {/* Animation styles */}
+                      <style>{`
+                        @keyframes slideInFromRight {
+                          from {
+                            opacity: 0;
+                            transform: translateX(30px);
+                          }
+                          to {
+                            opacity: 1;
+                            transform: translateX(0);
+                          }
+                        }
+                        @keyframes slideInFromLeft {
+                          from {
+                            opacity: 0;
+                            transform: translateX(-30px);
+                          }
+                          to {
+                            opacity: 1;
+                            transform: translateX(0);
+                          }
+                        }
+                        .card-slide-in {
+                          animation: slideInFromRight 0.4s ease-out forwards;
+                        }
+                        .card-slide-in:nth-child(1) { animation-delay: 0ms; }
+                        .card-slide-in:nth-child(2) { animation-delay: 50ms; }
+                        .card-slide-in:nth-child(3) { animation-delay: 100ms; }
+                      `}</style>
+
+                      {/* Left Arrow */}
+                      <button
+                        onClick={() => setPaymentxCardIndex((prev) => (prev - 1 + cardTiers.length) % cardTiers.length)}
+                        className="absolute left-2 lg:left-0 top-1/2 -translate-y-1/2 lg:-translate-x-4 z-20 p-2 lg:p-3 bg-white/90 lg:bg-white hover:bg-gray-100 rounded-full transition-colors shadow-lg border border-gray-200 flex items-center justify-center"
+                      >
+                        <ChevronLeft className="w-5 h-5 lg:w-6 lg:h-6 text-gray-700" />
+                      </button>
+
+                      {/* Cards Grid - 3 visible */}
+                      <div key={paymentxCardIndex} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {visibleCards.map((tier, i) => (
+                          <div
+                            key={tier.id}
+                            onClick={() => setActiveCategory('pay')}
+                            className={`card-slide-in relative bg-white rounded-2xl p-5 border cursor-pointer hover:shadow-xl transition-shadow group ${
+                              tier.popular ? 'border-black shadow-lg ring-2 ring-black/5' : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            {tier.popular && (
+                              <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-black text-white text-[10px] font-medium uppercase rounded-full">
+                                Most Popular
+                              </span>
+                            )}
+                            {tier.badge && !tier.popular && (
+                              <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gray-800 text-white text-[10px] font-medium uppercase rounded-full">
+                                {tier.badge}
+                              </span>
+                            )}
+
+                            {/* Card Image */}
+                            <div className="relative mb-4 flex justify-center">
+                              <div
+                                className="w-[130px] h-[200px] rounded-xl shadow-lg group-hover:shadow-xl transition-shadow overflow-hidden"
+                                style={{ background: tier.gradient }}
+                              >
+                                <div className="w-full h-full p-3 flex flex-col justify-between">
+                                  <div className="flex justify-between items-start">
+                                    <p className="text-[6px] text-gray-600 uppercase tracking-wider opacity-70">PCX</p>
+                                    <div className="flex -space-x-1">
+                                      <div className="w-3 h-3 rounded-full bg-red-500 opacity-80" />
+                                      <div className="w-3 h-3 rounded-full bg-yellow-500 opacity-80" />
+                                    </div>
+                                  </div>
+                                  <div className="flex-1 flex items-center">
+                                    <p
+                                      className={`text-[8px] font-medium tracking-wider ${tier.id === 'black' || tier.id === 'crew' ? 'text-white/80' : 'text-gray-700'}`}
+                                      style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+                                    >
+                                      YOUR NAME
+                                    </p>
+                                  </div>
+                                  <div className="flex justify-between items-end">
+                                    <p className={`text-[7px] ${tier.id === 'black' || tier.id === 'crew' ? 'text-gray-400' : 'text-gray-500'}`}>{tier.name}</p>
+                                    <svg className={`w-3 h-3 ${tier.id === 'black' || tier.id === 'crew' ? 'text-gray-400' : 'text-gray-500'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                      <path d="M8.5 14.5c1.5-2 4.5-2 6 0" />
+                                      <path d="M6 12c2.5-3.5 9.5-3.5 12 0" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Card Info */}
+                            <div className="text-center">
+                              <h4 className="font-medium text-gray-900">{tier.name}</h4>
+                              <p className="text-2xl font-light text-gray-900 mb-1">
+                                {tier.price}<span className="text-xs text-gray-400">/mo</span>
+                              </p>
+                              <p className="text-[10px] text-gray-400 mb-4">{tier.minTopup} min top-up</p>
+                            </div>
+
+                            {/* Benefits */}
+                            <ul className="space-y-2 mb-4">
+                              {tier.benefits.map((benefit, j) => (
+                                <li key={j} className="flex items-center gap-2 text-[11px] text-gray-600">
+                                  <Check size={12} className="text-green-500 flex-shrink-0" />
+                                  {benefit}
+                                </li>
+                              ))}
+                            </ul>
+
+                            {/* Stats */}
+                            <div className="flex justify-between pt-3 border-t border-gray-100">
+                              <div className="text-center">
+                                <p className="text-xs font-medium text-gray-900">{tier.apy}</p>
+                                <p className="text-[9px] text-gray-400">APY</p>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-xs font-medium text-gray-900">{tier.transport}</p>
+                                <p className="text-[9px] text-gray-400">Transport</p>
+                              </div>
+                            </div>
+
+                            {/* Apply Button */}
+                            <button
+                              className={`w-full mt-4 py-2.5 rounded-full text-xs font-medium transition-colors ${
+                                tier.popular
+                                  ? 'bg-black text-white hover:bg-gray-800'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
+                            >
+                              Apply Now
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Right Arrow */}
+                      <button
+                        onClick={() => setPaymentxCardIndex((prev) => (prev + 1) % cardTiers.length)}
+                        className="absolute right-2 lg:right-0 top-1/2 -translate-y-1/2 lg:translate-x-4 z-20 p-2 lg:p-3 bg-white/90 lg:bg-white hover:bg-gray-100 rounded-full transition-colors shadow-lg border border-gray-200 flex items-center justify-center"
+                      >
+                        <ChevronRight className="w-5 h-5 lg:w-6 lg:h-6 text-gray-700" />
+                      </button>
+
+                      {/* Dots indicator */}
+                      <div className="flex justify-center gap-2 mt-8">
+                        {cardTiers.map((_, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setPaymentxCardIndex(index)}
+                            className={`w-2 h-2 rounded-full transition-colors ${
+                              index === paymentxCardIndex ? 'bg-black' : 'bg-gray-300 hover:bg-gray-400'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* FAQs */}
+              <div className="px-4 sm:px-6 py-16">
+                <div className="max-w-6xl mx-auto">
+                  <h2 className="text-2xl sm:text-3xl font-light text-gray-900 text-center mb-10">
+                    Frequently Asked Questions
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      {
+                        q: 'What is PaymentX?',
+                        a: 'PaymentX is a USDC-powered Mastercard that combines stablecoin efficiency with premium travel benefits including airport transfers, travel discounts, and up to 4% APY rewards.'
+                      },
+                      {
+                        q: 'How do I fund my card?',
+                        a: 'You can fund your card with USDC directly from your crypto wallet or via bank transfer. Funds are instantly available for spending worldwide.'
+                      },
+                      {
+                        q: 'What are the card tiers?',
+                        a: 'We offer 5 tiers: Basic ($59/mo), Gold ($99/mo), Crew ($129/mo), Black ($229/mo), and Platinum JetCard ($399/mo). Each tier includes increasing benefits.'
+                      },
+                      {
+                        q: 'Is there a commitment period?',
+                        a: 'No long-term commitment required. You can cancel your subscription anytime. Your card remains active until the end of your billing period.'
+                      },
+                      {
+                        q: 'Where is the card accepted?',
+                        a: 'Your PaymentX card is a Mastercard accepted at 100+ million merchants worldwide, online and in-store, plus ATM withdrawals globally.'
+                      },
+                      {
+                        q: 'What travel benefits are included?',
+                        a: 'All cards include complimentary airport transfers (up to 40km), 10% discount on bookings, priority emergency line, and MEDEVAC coverage on premium tiers.'
+                      },
+                    ].map((faq, i) => (
+                      <details key={i} className="group border border-gray-200 rounded-xl">
+                        <summary className="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
+                          <span className="text-sm font-medium text-gray-900">{faq.q}</span>
+                          <ChevronDown size={16} className="text-gray-400 group-open:rotate-180 transition-transform" />
+                        </summary>
+                        <div className="px-5 pb-4 text-sm text-gray-600">
+                          {faq.a}
+                        </div>
+                      </details>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Final CTA - Minimal */}
+              <div className="px-4 sm:px-6 py-12 bg-[#0f0f0f]">
+                <div className="max-w-2xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+                  <div>
+                    <h3 className="text-xl font-light text-white mb-1">Ready to get started?</h3>
+                    <p className="text-white/40 text-sm">From $59/month · Cancel anytime</p>
+                  </div>
+                  <button
+                    onClick={() => setActiveCategory('pay')}
+                    className="px-8 py-3 bg-white text-black text-sm font-medium rounded-full hover:bg-gray-100 transition-all inline-flex items-center gap-2"
+                  >
+                    Apply Now
+                    <ArrowRight size={16} />
+                  </button>
+                </div>
+              </div>
+
+              <PageFooter />
+            </div>
           )}
 
           {/* Home Section - Landing page style with search and category badges */}
