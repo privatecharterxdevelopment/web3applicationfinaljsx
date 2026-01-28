@@ -292,6 +292,8 @@ const PayApplicationPage = ({ user, onClose }) => {
         'eIBAN Access (EUR/USD)',
         '24/7 Phone Concierge',
         'Email Support',
+        'MEDEVAC Coordination Available',
+        'Priority Emergency Line',
       ],
       requirements: null,
     },
@@ -323,6 +325,8 @@ const PayApplicationPage = ({ user, onClose }) => {
         'Priority eIBAN',
         'Airport Lounge Access',
         'Priority Support',
+        'MEDEVAC Coordination Available',
+        'Priority Emergency Line',
       ],
       requirements: null,
     },
@@ -353,6 +357,8 @@ const PayApplicationPage = ({ user, onClose }) => {
         'Everything in Gold features',
         'PVCX Backed Rewards (+1.5x)',
         'Priority Support',
+        'MEDEVAC Coordination Available',
+        'Priority Emergency Line',
       ],
       requirements: 'Airline crew ID verification',
       badge: 'CREW',
@@ -386,6 +392,8 @@ const PayApplicationPage = ({ user, onClose }) => {
         '24/7 Priority Concierge',
         'Private Jet Priority Booking',
         'VIP Events Access',
+        'MEDEVAC Priority Coordination',
+        'Priority Emergency Line',
       ],
       requirements: null,
     },
@@ -416,6 +424,7 @@ const PayApplicationPage = ({ user, onClose }) => {
         'Platinum Metal JetCard',
         'Dedicated Account Manager',
         'MEDEVAC Services Included',
+        'Priority MEDEVAC Line 24/7',
         'Fixed Hourly Jet Rates',
         'Guaranteed Availability',
         'Fuel Price Protection',
@@ -573,7 +582,7 @@ const PayApplicationPage = ({ user, onClose }) => {
             onClick={() => setShowPopup(true)}
             className="px-10 py-4 bg-white text-black text-sm font-medium hover:bg-gray-100 transition-colors rounded-full"
           >
-            Apply Now
+            Pre-Apply
           </button>
         </div>
       </div>
@@ -1098,7 +1107,7 @@ const PayApplicationPage = ({ user, onClose }) => {
                             Submitting...
                           </>
                         ) : (
-                          <>{selectedCard.requirements ? 'Apply for ' : 'Choose '}{selectedCard.name}</>
+                          <>Pre-Apply for {selectedCard.name}</>
                         )}
                       </button>
                     </div>
@@ -1223,7 +1232,7 @@ const PayApplicationPage = ({ user, onClose }) => {
                               Submitting...
                             </>
                           ) : (
-                            <>{selectedCard.requirements ? 'Apply for ' : 'Choose '}{selectedCard.name}</>
+                            <>Pre-Apply for {selectedCard.name}</>
                           )}
                         </button>
                       </div>

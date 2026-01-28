@@ -6832,7 +6832,7 @@ const TokenizedAssetsGlassmorphic = () => {
                         onClick={() => setActiveCategory('pay')}
                         className="w-full sm:w-auto px-6 py-3 bg-white text-black font-medium rounded-full hover:bg-gray-100 transition-all flex items-center justify-center gap-2"
                       >
-                        Apply for Card
+                        Pre-Apply
                         <ArrowRight size={16} />
                       </button>
                       <span className="text-xs text-white/50 self-center">From $59/month</span>
@@ -7005,18 +7005,18 @@ const TokenizedAssetsGlassmorphic = () => {
 
                   {/* Right: Text */}
                   <div className="flex-1 text-center lg:text-left">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 rounded-full mb-4">
-                      <Wallet size={14} className="text-blue-600" />
-                      <span className="text-xs text-blue-700 font-medium">Stablecoin Wallet</span>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full mb-4">
+                      <Wallet size={14} className="text-gray-600" />
+                      <span className="text-xs text-gray-700 font-medium">eIBAN + Wallet in One</span>
                     </div>
                     <h2 className="text-2xl sm:text-3xl lg:text-4xl font-light text-gray-900 mb-4">
                       Your Money, <span className="text-gray-400">Always Stable</span>
                     </h2>
                     <p className="text-gray-500 text-sm sm:text-base mb-6 max-w-lg">
-                      Hold USDC with zero volatility. Earn up to 4% APY on your balance while maintaining instant access to your funds. No lock-up periods, withdraw anytime.
+                      Redefining JetCard memberships without any blocked periods. Hold USDC with zero volatility, earn up to 4% APY, and access your funds instantly. High spending limits — even higher for premium partners.
                     </p>
                     <ul className="space-y-3 mb-6">
-                      {['Multi-currency eIBAN (EUR, USD, CHF, GBP)', 'Instant settlements worldwide', 'Bank-grade security & Swiss regulated'].map((item, i) => (
+                      {['Multi-currency eIBAN (EUR, USD, CHF, GBP)', 'Top up instantly with crypto or bank transfer', 'Low fees & instant settlements worldwide', 'Track spending in real-time, pay anywhere', 'High limits — unlimited for premium members'].map((item, i) => (
                         <li key={i} className="flex items-center gap-2 text-sm text-gray-600">
                           <Check size={16} className="text-green-500 flex-shrink-0" />
                           {item}
@@ -7053,7 +7053,7 @@ const TokenizedAssetsGlassmorphic = () => {
                       onClick={() => setActiveCategory('pay')}
                       className="px-6 py-3 bg-black text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors inline-flex items-center gap-2"
                     >
-                      Start Application
+                      Pre-Apply
                       <ArrowRight size={16} />
                     </button>
                   </div>
@@ -7274,7 +7274,7 @@ const TokenizedAssetsGlassmorphic = () => {
                                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                               }`}
                             >
-                              Apply Now
+                              Pre-Apply
                             </button>
                           </div>
                         ))}
@@ -7363,7 +7363,7 @@ const TokenizedAssetsGlassmorphic = () => {
                     onClick={() => setActiveCategory('pay')}
                     className="px-8 py-3 bg-white text-black text-sm font-medium rounded-full hover:bg-gray-100 transition-all inline-flex items-center gap-2"
                   >
-                    Apply Now
+                    Pre-Apply
                     <ArrowRight size={16} />
                   </button>
                 </div>
