@@ -375,7 +375,7 @@ function AppContent() {
               <Route path="/chat-history" element={<TokenizedAssetsGlassmorphic key="main" />} />
               <Route path="/kyc-verification" element={<TokenizedAssetsGlassmorphic key="main" />} />
               <Route path="/referral" element={<TokenizedAssetsGlassmorphic key="main" />} />
-              <Route path="/paymentx" element={<PaymentXPage />} />
+              <Route path="/paymentx" element={<TokenizedAssetsGlassmorphic key="main" />} />
               <Route path="/debitcard" element={<TokenizedAssetsGlassmorphic key="main" />} />
 
               {/* ===== SUBSCRIPTIONS ===== */}
