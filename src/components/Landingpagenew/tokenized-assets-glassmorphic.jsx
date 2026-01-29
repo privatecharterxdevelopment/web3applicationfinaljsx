@@ -1310,6 +1310,7 @@ const TokenizedAssetsGlassmorphic = () => {
     'adventures': '/adventures',
     'flights': '/flights',
     'paymentx': '/paymentx',
+    'blog': '/blog',
     'luxury-cars': '/luxury-cars',
     'hotels': '/hotels',
     'services': '/services',
@@ -1660,6 +1661,12 @@ const TokenizedAssetsGlassmorphic = () => {
   const [showEmptyLegSuccess, setShowEmptyLegSuccess] = useState(false);
   const [showCryptoPaymentModal, setShowCryptoPaymentModal] = useState(false);
   const [cryptoPaymentService, setCryptoPaymentService] = useState(null);
+
+  // Blog state variables
+  const [blogPostsData, setBlogPostsData] = useState([]);
+  const [blogCategories, setBlogCategories] = useState([]);
+  const [isLoadingBlog, setIsLoadingBlog] = useState(false);
+  const [selectedBlogCategory, setSelectedBlogCategory] = useState('all');
 
   // Empty Leg Request Function
   const requestEmptyLegFlight = async () => {
@@ -2392,6 +2399,7 @@ const TokenizedAssetsGlassmorphic = () => {
       '/flights': 'flights',
       '/paymentx': 'paymentx',
       '/debitcard': 'paymentx',
+      '/blog': 'blog',
       '/luxury-cars': 'luxury-cars',
       '/hotels': 'hotels',
       '/services': 'services',
@@ -4121,6 +4129,36 @@ const TokenizedAssetsGlassmorphic = () => {
     setCurrentEmptyLegsPage(1);
   }, [activeCategory, emptyLegsFilter, emptyLegsLocation, emptyLegsDate, emptyLegsMaxPrice]);
 
+  // Fetch blog posts and categories when category is active
+  useEffect(() => {
+    const fetchBlogData = async () => {
+      if (activeCategory !== 'blog') return;
+
+      setIsLoadingBlog(true);
+      try {
+        const { fetchAllBlogPosts, fetchBlogCategories } = await import('../../services/blogService');
+
+        // Fetch posts and categories in parallel
+        const [posts, categories] = await Promise.all([
+          fetchAllBlogPosts(),
+          fetchBlogCategories()
+        ]);
+
+        setBlogPostsData(posts || []);
+        setBlogCategories(categories || []);
+        console.log(`📰 Blog loaded: ${posts?.length || 0} posts, ${categories?.length || 0} categories`);
+      } catch (error) {
+        console.error('Error fetching blog data:', error);
+        setBlogPostsData([]);
+        setBlogCategories([]);
+      } finally {
+        setIsLoadingBlog(false);
+      }
+    };
+
+    fetchBlogData();
+  }, [activeCategory]);
+
   // Fetch adventures when category is active
   useEffect(() => {
     if (activeCategory === 'adventures') {
@@ -4492,7 +4530,8 @@ const TokenizedAssetsGlassmorphic = () => {
     { id: 'flight-ops', label: 'Flight Bids', icon: Gavel, category: 'flight-ops', hideOnMobile: true },
     { id: 'adventures', label: 'Adventures', icon: Mountain, category: 'adventures' },
     { id: 'flights', label: 'Commercial', icon: Plane, category: 'flights' },
-    { id: 'paymentx', label: 'PaymentX', icon: CreditCard, category: 'paymentx' }
+    { id: 'paymentx', label: 'PaymentX', icon: CreditCard, category: 'paymentx' },
+    { id: 'blog', label: 'Blog', icon: FileText, category: 'blog' }
     // { id: 'card', label: 'Card', icon: CreditCard, category: 'card' }, // Hidden - Marqeta integration pending
     // { id: 'hotels', label: 'Hotels', icon: Building2, category: 'hotels' }, // DISABLED - LiteAPI hotels temporarily removed
     // { id: 'assets', label: 'Events & Sports', icon: Calendar, category: 'assets' }, // Hidden for MVP
@@ -5136,7 +5175,8 @@ const TokenizedAssetsGlassmorphic = () => {
                     'ground-transport': '/ground-transport',
                     'adventures': '/adventures',
                     'flights': '/flights',
-                    'paymentx': '/paymentx'
+                    'paymentx': '/paymentx',
+                    'blog': '/blog'
                   };
                   return (
                     <button
@@ -7370,6 +7410,179 @@ const TokenizedAssetsGlassmorphic = () => {
               </div>
 
               <PageFooter />
+            </div>
+          )}
+
+          {/* Blog Section */}
+          {!isTransitioning && activeCategory === 'blog' && (
+            <div className="w-full flex-1 flex flex-col">
+              {/* Header */}
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6 gap-3 pt-4 md:pt-6">
+                <h2 className="text-xl md:text-3xl lg:text-4xl font-light text-gray-900 tracking-tighter">Blog</h2>
+              </div>
+
+              {/* Category Filter Tabs */}
+              <div className="mb-6 overflow-x-auto pb-2">
+                <div className="flex gap-2 min-w-max">
+                  <button
+                    onClick={() => setSelectedBlogCategory('all')}
+                    className={`px-4 py-2 rounded-full text-xs font-medium transition-all ${
+                      selectedBlogCategory === 'all'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-gray-100/60 text-gray-700 hover:bg-gray-200/60'
+                    }`}
+                  >
+                    All Posts
+                  </button>
+                  {blogCategories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedBlogCategory(cat.slug)}
+                      className={`px-4 py-2 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                        selectedBlogCategory === cat.slug
+                          ? 'bg-gray-900 text-white'
+                          : 'bg-gray-100/60 text-gray-700 hover:bg-gray-200/60'
+                      }`}
+                    >
+                      {cat.name} ({cat.count})
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Loading State */}
+              {isLoadingBlog && (
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
+                  {[...Array(8)].map((_, i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="bg-gray-200 rounded-xl aspect-[4/3] mb-2 sm:mb-3"></div>
+                      <div className="bg-gray-200 h-4 rounded w-3/4 mb-2"></div>
+                      <div className="bg-gray-200 h-3 rounded w-1/2"></div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Blog Posts Grid */}
+              {!isLoadingBlog && (
+                <>
+                  {/* Results count */}
+                  <p className="text-sm text-gray-500 mb-4">
+                    {(() => {
+                      const filtered = selectedBlogCategory === 'all'
+                        ? blogPostsData
+                        : blogPostsData.filter(post => post.categories?.some(cat => cat.slug === selectedBlogCategory));
+                      return `${filtered.length} article${filtered.length !== 1 ? 's' : ''} available`;
+                    })()}
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                    {(selectedBlogCategory === 'all'
+                      ? blogPostsData
+                      : blogPostsData.filter(post => post.categories?.some(cat => cat.slug === selectedBlogCategory))
+                    ).map((post) => (
+                      <div
+                        key={post.id}
+                        className="group bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300"
+                      >
+                        {/* Image */}
+                        <div className="relative aspect-[16/10] overflow-hidden">
+                          {post.featured_image ? (
+                            <img
+                              src={post.featured_image}
+                              alt={post.title}
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                              <FileText size={32} className="text-gray-300" />
+                            </div>
+                          )}
+                          {/* Category Badge */}
+                          {post.categories && post.categories[0] && (
+                            <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-gray-800 px-2.5 py-1 rounded-full text-[10px] font-medium">
+                              {post.categories[0].name}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-4">
+                          <h3 className="text-sm font-medium text-gray-900 line-clamp-2 mb-2 group-hover:text-gray-700 transition-colors">
+                            {post.title}
+                          </h3>
+
+                          <p className="text-xs text-gray-500 line-clamp-2 mb-3">
+                            {post.excerpt?.replace(/<[^>]*>/g, '').substring(0, 120)}...
+                          </p>
+
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-xs text-gray-400">
+                              <Calendar size={12} />
+                              <span>{new Date(post.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                            </div>
+                          </div>
+
+                          {/* Read Full Post Button */}
+                          <a
+                            href={post.source_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 text-white text-xs font-medium rounded-lg hover:bg-gray-800 transition-colors"
+                          >
+                            Read Full Post
+                            <ExternalLink size={12} />
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* No Results */}
+                  {blogPostsData.length === 0 && (
+                    <div className="text-center py-12 sm:py-16">
+                      <FileText size={48} className="mx-auto text-gray-300 mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No blog posts found</h3>
+                      <p className="text-gray-500 mb-4">Check back later for new articles</p>
+                    </div>
+                  )}
+
+                  {/* Advertise Section */}
+                  <div className="mt-12 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border border-gray-200 p-6 sm:p-8">
+                    <div className="flex flex-col sm:flex-row items-center gap-6">
+                      {/* Profile Image */}
+                      <div className="flex-shrink-0">
+                        <img
+                          src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&h=200&fit=crop&crop=face"
+                          alt="Marketing Specialist"
+                          className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-white shadow-lg"
+                        />
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 text-center sm:text-left">
+                        <h3 className="text-lg sm:text-xl font-medium text-gray-900 mb-1">
+                          Want to advertise on our blog?
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-1">
+                          Reach our exclusive audience of private aviation enthusiasts and high-net-worth individuals.
+                        </p>
+                        <p className="text-xs text-gray-500 mb-4">
+                          <span className="font-medium text-gray-700">Sarah Mitchell</span> · Marketing Specialist @ PrivateCharterX
+                        </p>
+
+                        <a
+                          href="mailto:marketing@privatecharterx.com?subject=Blog Advertising Inquiry"
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-all"
+                        >
+                          <Mail size={16} />
+                          marketing@privatecharterx.com
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 

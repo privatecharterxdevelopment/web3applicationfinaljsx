@@ -576,7 +576,7 @@ function AppContent() {
               <Route path="/about" element={<Navigate to="/home" replace />} />
               <Route path="/contact" element={<Navigate to="/helpdesk" replace />} />
               <Route path="/safety" element={<Navigate to="/aviation" replace />} />
-              <Route path="/blog" element={<Navigate to="/home" replace />} />
+              <Route path="/blog" element={<TokenizedAssetsGlassmorphic key="main" />} />
               <Route path="/news" element={<Navigate to="/home" replace />} />
               <Route path="/technology" element={<Navigate to="/home" replace />} />
               <Route path="/rwa-nft" element={<Navigate to="/tokenized" replace />} />

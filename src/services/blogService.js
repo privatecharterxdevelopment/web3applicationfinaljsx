@@ -15,6 +15,10 @@ const BLOG_URL = 'https://www.privatecharterx.blog';
 const WP_API_BASE = `${BLOG_URL}/wp-json/wp/v2`;
 const WEB3_CATEGORY_ID = 131; // Web3 category ID
 const WEB3_API_URL = `${WP_API_BASE}/posts?categories=${WEB3_CATEGORY_ID}&per_page=50&_embed`;
+// All posts API URL (for blog page)
+const ALL_POSTS_API_URL = `${WP_API_BASE}/posts?per_page=100&_embed`;
+// Categories API URL
+const CATEGORIES_API_URL = `${WP_API_BASE}/categories?per_page=100`;
 // Alternative: RSS feed for Web3 category (fallback)
 const WEB3_RSS_FEED = `${BLOG_URL}/category/web3/feed/`;
 // Supabase project URL (will be set from supabase instance)
@@ -461,4 +465,139 @@ export async function setupBlogSync(intervalMinutes = 60) {
     console.log('Running scheduled blog sync...');
     await syncBlogPostsToDatabase();
   }, intervalMinutes * 60 * 1000);
+}
+
+/**
+ * Fetch ALL blog posts from privatecharterx.blog (all categories)
+ * Used for the /blog page
+ */
+export async function fetchAllBlogPosts() {
+  console.log('🔍 Fetching ALL blog posts from privatecharterx.blog...');
+
+  try {
+    // Try WordPress REST API directly
+    const response = await fetch(ALL_POSTS_API_URL);
+
+    if (response.ok) {
+      const posts = await response.json();
+
+      if (posts && posts.length > 0) {
+        console.log(`✅ Fetched ${posts.length} blog posts`);
+        return posts.map(post => formatWordPressPostWithCategories(post));
+      }
+    }
+
+    // Fallback to CORS proxy
+    for (const proxy of CORS_PROXIES) {
+      try {
+        const proxiedUrl = `${proxy}${encodeURIComponent(ALL_POSTS_API_URL)}`;
+        const proxyResponse = await fetch(proxiedUrl);
+
+        if (proxyResponse.ok) {
+          const posts = JSON.parse(await proxyResponse.text());
+          if (Array.isArray(posts) && posts.length > 0) {
+            console.log(`✅ Proxy successful! Found ${posts.length} posts`);
+            return posts.map(post => formatWordPressPostWithCategories(post));
+          }
+        }
+      } catch (proxyError) {
+        console.log(`❌ Proxy failed: ${proxyError.message}`);
+        continue;
+      }
+    }
+
+    return [];
+  } catch (error) {
+    console.error('❌ Error fetching all blog posts:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch all categories from WordPress blog
+ */
+export async function fetchBlogCategories() {
+  console.log('🔍 Fetching blog categories...');
+
+  try {
+    const response = await fetch(CATEGORIES_API_URL);
+
+    if (response.ok) {
+      const categories = await response.json();
+
+      if (categories && categories.length > 0) {
+        console.log(`✅ Fetched ${categories.length} categories`);
+        // Filter out uncategorized and format
+        return categories
+          .filter(cat => cat.slug !== 'uncategorized' && cat.count > 0)
+          .map(cat => ({
+            id: cat.id,
+            name: cat.name,
+            slug: cat.slug,
+            count: cat.count,
+            description: cat.description
+          }))
+          .sort((a, b) => b.count - a.count); // Sort by post count
+      }
+    }
+
+    // Fallback to CORS proxy
+    for (const proxy of CORS_PROXIES) {
+      try {
+        const proxiedUrl = `${proxy}${encodeURIComponent(CATEGORIES_API_URL)}`;
+        const proxyResponse = await fetch(proxiedUrl);
+
+        if (proxyResponse.ok) {
+          const categories = JSON.parse(await proxyResponse.text());
+          if (Array.isArray(categories) && categories.length > 0) {
+            return categories
+              .filter(cat => cat.slug !== 'uncategorized' && cat.count > 0)
+              .map(cat => ({
+                id: cat.id,
+                name: cat.name,
+                slug: cat.slug,
+                count: cat.count,
+                description: cat.description
+              }))
+              .sort((a, b) => b.count - a.count);
+          }
+        }
+      } catch (proxyError) {
+        continue;
+      }
+    }
+
+    return [];
+  } catch (error) {
+    console.error('❌ Error fetching categories:', error);
+    return [];
+  }
+}
+
+/**
+ * Format WordPress post with category information
+ */
+function formatWordPressPostWithCategories(post) {
+  const baseFormatted = formatWordPressPost(post);
+
+  // Extract categories from _embedded
+  let categories = [];
+  if (post._embedded && post._embedded['wp:term']) {
+    const allTerms = post._embedded['wp:term'].flat();
+    categories = allTerms
+      .filter(term => term.taxonomy === 'category')
+      .map(term => ({
+        id: term.id,
+        name: term.name,
+        slug: term.slug
+      }));
+  }
+
+  return {
+    ...baseFormatted,
+    id: post.id,
+    slug: post.slug,
+    categories,
+    categoryIds: post.categories || []
+  };
 }
