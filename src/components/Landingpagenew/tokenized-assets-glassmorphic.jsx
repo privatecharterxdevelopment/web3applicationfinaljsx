@@ -5509,6 +5509,12 @@ const TokenizedAssetsGlassmorphic = () => {
               {/* User Profile Icon */}
               <button
                 onClick={() => {
+                  if (!user) {
+                    // Only show login if user wants to access profile
+                    setShowLoginModal(true);
+                    setPendingCategory('dashboard');
+                    return;
+                  }
                   setActiveCategoryInternal('dashboard');
                   setDashboardView('profile');
                   window.history.pushState({}, '', '/profile');
@@ -7476,65 +7482,65 @@ const TokenizedAssetsGlassmorphic = () => {
                     })()}
                   </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
                     {(selectedBlogCategory === 'all'
                       ? blogPostsData
                       : blogPostsData.filter(post => post.categories?.some(cat => cat.slug === selectedBlogCategory))
                     ).map((post) => (
-                      <div
+                      <a
                         key={post.id}
-                        className="group bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300"
+                        href={post.source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group cursor-pointer active:scale-[0.98] transition-transform"
                       >
                         {/* Image */}
-                        <div className="relative aspect-[16/10] overflow-hidden">
+                        <div className="relative aspect-[4/3] rounded-lg sm:rounded-xl overflow-hidden mb-2 sm:mb-3">
                           {post.featured_image ? (
                             <img
                               src={post.featured_image}
                               alt={post.title}
-                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                             />
                           ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
                               <FileText size={32} className="text-gray-300" />
                             </div>
                           )}
                           {/* Category Badge */}
-                          {post.categories && post.categories[0] && (
-                            <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-gray-800 px-2.5 py-1 rounded-full text-[10px] font-medium">
-                              {post.categories[0].name}
-                            </span>
-                          )}
+                          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-wrap gap-1">
+                            {post.categories && post.categories[0] && (
+                              <span className="bg-gray-900 text-white px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium">
+                                {post.categories[0].name}
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         {/* Content */}
-                        <div className="p-4">
-                          <h3 className="text-sm font-medium text-gray-900 line-clamp-2 mb-2 group-hover:text-gray-700 transition-colors">
+                        <div>
+                          <h3 className="text-xs sm:text-sm font-medium text-gray-900 line-clamp-2 mb-1">
                             {post.title}
                           </h3>
 
-                          <p className="text-xs text-gray-500 line-clamp-2 mb-3">
-                            {post.excerpt?.replace(/<[^>]*>/g, '').substring(0, 120)}...
-                          </p>
-
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-xs text-gray-400">
-                              <Calendar size={12} />
-                              <span>{new Date(post.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                            </div>
+                          <div className="flex items-center gap-1 text-gray-500 text-xs sm:text-sm mb-1">
+                            <Calendar size={10} className="flex-shrink-0" />
+                            <span>{new Date(post.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                            <span>•</span>
+                            <span className="flex items-center gap-1">
+                              <User size={10} />
+                              {post.author || 'PCX Team'}
+                            </span>
                           </div>
 
-                          {/* Read Full Post Button */}
-                          <a
-                            href={post.source_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 text-white text-xs font-medium rounded-lg hover:bg-gray-800 transition-colors"
-                          >
-                            Read Full Post
-                            <ExternalLink size={12} />
-                          </a>
+                          <p className="text-xs sm:text-sm">
+                            <span className="font-semibold text-gray-900 flex items-center gap-1">
+                              Read Full Post
+                              <ExternalLink size={10} />
+                            </span>
+                          </p>
                         </div>
-                      </div>
+                      </a>
                     ))}
                   </div>
 
