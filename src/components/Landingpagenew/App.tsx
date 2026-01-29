@@ -100,7 +100,7 @@ import JetDetail from './JetDetail.jsx';
 import HelicopterDetail from './HelicopterDetail.jsx';
 import CO2CertificateDetail from './CO2CertificateDetail.jsx';
 import HotelDetail from './HotelDetail.jsx';
-import PayLandingPage from './PayLandingPage.jsx';
+import PaymentXPage from './PaymentXPage.jsx';
 
 // Import SPV & RWA components
 import MySPVs from '../../pages/MySPVs.tsx';
@@ -375,8 +375,8 @@ function AppContent() {
               <Route path="/chat-history" element={<TokenizedAssetsGlassmorphic key="main" />} />
               <Route path="/kyc-verification" element={<TokenizedAssetsGlassmorphic key="main" />} />
               <Route path="/referral" element={<TokenizedAssetsGlassmorphic key="main" />} />
-              <Route path="/pay" element={<PayLandingPage />} />
-              <Route path="/apply" element={<PayLandingPage />} />
+              <Route path="/paymentx" element={<PaymentXPage />} />
+              <Route path="/debitcard" element={<TokenizedAssetsGlassmorphic key="main" />} />
 
               {/* ===== SUBSCRIPTIONS ===== */}
               <Route path="/subscriptions" element={<TokenizedAssetsGlassmorphic key="main" />} />
