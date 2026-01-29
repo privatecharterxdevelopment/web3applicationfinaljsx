@@ -7275,6 +7275,11 @@ const JetQuotesSection = ({ quotes, refreshing, onRefresh, supabaseAdmin }) => {
 
   const filteredQuotes = quotes.filter(q => {
     if (filterStatus !== 'all' && q.status?.toLowerCase() !== filterStatus) return false;
+    // Only show quotes with proper route data (from jets page or jet detail page)
+    const data = q.data || {};
+    if (!data.from_city && !data.from && !data.aircraft_model) return false;
+    // Exclude AI auto-created requests without proper route info
+    if (data.source === 'ai-chat' && !data.from_city) return false;
     return true;
   });
 

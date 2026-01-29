@@ -4848,12 +4848,13 @@ As their luxury travel consultant, proactively suggest relevant add-ons:
       }
 
       // AUTO-SAVE AI-CREATED REQUEST when enough info is gathered
+      // NOTE: Only auto-save for empty legs and helicopters - jets are handled by /jets page
       const hasCompleteBookingInfo = (
         context.from &&
         context.to &&
         context.passengers &&
         context.hasDate &&
-        (context.isJet || context.isEmptyLeg || context.isHelicopter)
+        (context.isEmptyLeg || context.isHelicopter)
       );
 
       if (hasCompleteBookingInfo && user) {

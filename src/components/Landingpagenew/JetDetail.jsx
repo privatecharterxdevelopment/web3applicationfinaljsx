@@ -93,6 +93,7 @@ const JetDetail = () => {
           status: 'pending',
           client_email: user.email,
           data: {
+            source: 'jet_detail_page',
             wallet_address: address,
             jet_id: jet.id,
             // Aircraft details
