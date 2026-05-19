@@ -7,6 +7,7 @@ Use this when transferring the platform to a buyer. **Completing this list does 
 ## Phase A — Before signing
 
 - [ ] Buyer read [BUYER_DUE_DILIGENCE.md](./BUYER_DUE_DILIGENCE.md)
+- [ ] Buyer read [CRM.md](./CRM.md) — **full CRM at privatecharterx.com/crm included in sale**
 - [ ] Buyer read [BLOG.md](./BLOG.md) — **privatecharterx.blog included in sale**
 - [ ] Buyer read [ROUTES.md](./ROUTES.md) (broken tiles acknowledged)
 - [ ] Seller completed [ACCOUNTS_INVENTORY.template.md](./ACCOUNTS_INVENTORY.template.md) (private copy)
@@ -30,6 +31,13 @@ Use this when transferring the platform to a buyer. **Completing this list does 
 - [ ] Registrar account or push access to buyer — **privatecharterx.blog** (see [BLOG.md](./BLOG.md))
 - [ ] Document DNS records (apex, www, admin subdomain)
 - [ ] SSL certificates auto-renew confirmed
+
+### CRM (privatecharterx.com/crm)
+
+- [ ] Seller provides **admin credentials** for buyer team review (secure channel only)
+- [ ] Buyer verified [www.privatecharterx.com/crm](https://www.privatecharterx.com/crm) — customers, activity, AI chats, support, tokenization/SPV modules
+- [ ] Buyer admin user created; seller admin access revoked post-close
+- [ ] Supabase admin roles documented (`is_admin` / `user_role`)
 
 ### Blog (privatecharterx.blog)
 
@@ -101,15 +109,17 @@ Test on **www.privatecharterx.com** (current deploy, unchanged):
 | 8 | `/login` | |
 | 9 | `/partners` | |
 | 10 | Admin login | |
-| 11 | [www.privatecharterx.blog](https://www.privatecharterx.blog/) loads | |
-| 12 | `/blog` on main site shows posts | |
+| 11 | [/crm](https://www.privatecharterx.com/crm) (with admin login) | |
+| 12 | [www.privatecharterx.blog](https://www.privatecharterx.blog/) loads | |
+| 13 | `/blog` on main site shows posts | |
 
 ---
 
 ## Phase E — Knowledge transfer
 
 - [ ] 2h recorded walkthrough (Loom/Zoom)
-- [ ] Admin panel demo
+- [ ] **Full CRM demo** ([/crm](https://www.privatecharterx.com/crm)) — bookings, AI, Web3 ops, invoicing
+- [ ] Admin panel demo (`admin.*` / `/admin` if used)
 - [ ] Supabase Dashboard tour
 - [ ] How to publish empty leg / flight op (if manual today)
 - [ ] Support inbox / `support@privatecharterx.com` transfer

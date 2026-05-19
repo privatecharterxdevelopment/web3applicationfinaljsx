@@ -178,11 +178,14 @@ These URLs exist for old links and **redirect** (do not show dedicated content):
 
 ## 10. Staff / admin routes
 
+**Full CRM documentation:** [CRM.md](./CRM.md)
+
 | URL | Status | Notes |
 |-----|--------|-------|
-| `admin.*` host `/admin/*` | ADMIN | Full back-office (`pages/admin/`) |
-| `/crm`, `/crm-admin` | ADMIN | Internal CRM |
-| `/admin` (main site) | ADMIN | Simple `AdminCRM` |
+| **`/crm`** | **LIVE — ADMIN** | **Primary full CRM** — [privatecharterx.com/crm](https://www.privatecharterx.com/crm) (`CRMDashboard`) |
+| `/crm-admin` | LIVE — ADMIN | Same CRM as `/crm` |
+| `admin.*` host `/admin/*` | ADMIN | Extended back-office (`pages/admin/`, ~43 pages) |
+| `/admin` (main site) | ADMIN | Lighter `AdminCRM` gate + dashboard |
 
 ---
 

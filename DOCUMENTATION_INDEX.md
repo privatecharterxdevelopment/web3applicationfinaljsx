@@ -9,6 +9,7 @@ All files below are **Markdown documentation only**. They do not change applicat
 | Document | Read when |
 |----------|-----------|
 | [BUYER_DUE_DILIGENCE.md](./BUYER_DUE_DILIGENCE.md) | First — overall honesty pack |
+| [CRM.md](./CRM.md) | **Start here for ops** — full CRM at [/crm](https://www.privatecharterx.com/crm) |
 | [BLOG.md](./BLOG.md) | **Blog asset** — [privatecharterx.blog](https://www.privatecharterx.blog/) included in sale |
 | [ROUTES.md](./ROUTES.md) | Verifying what URLs work vs broken |
 | [METRICS.md](./METRICS.md) | Code size and quality signals |
