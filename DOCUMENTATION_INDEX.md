@@ -8,7 +8,8 @@ All files below are **Markdown documentation only**. They do not change applicat
 
 | Document | Read when |
 |----------|-----------|
-| [BUYER_DUE_DILIGENCE.md](./BUYER_DUE_DILIGENCE.md) | First — overall honesty pack |
+| **[BUYER_START_HERE.md](./BUYER_START_HERE.md)** | **First** — all URLs + review order |
+| [BUYER_DUE_DILIGENCE.md](./BUYER_DUE_DILIGENCE.md) | Honesty pack, risks, third parties |
 | [WEB3.md](./WEB3.md) | **Web3** — tokenization, NFT membership, `/rws/*`, crypto |
 | [GROUND_TRANSPORT.md](./GROUND_TRANSPORT.md) | **Ground transport** — Uber-style + crypto checkout |
 | [CRM.md](./CRM.md) | **CRM** — [/crm](https://www.privatecharterx.com/crm) |

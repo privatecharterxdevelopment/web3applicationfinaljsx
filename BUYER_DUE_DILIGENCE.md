@@ -168,6 +168,7 @@ Template to fill: [ACCOUNTS_INVENTORY.template.md](./ACCOUNTS_INVENTORY.template
 
 | File | Purpose |
 |------|---------|
+| [BUYER_START_HERE.md](./BUYER_START_HERE.md) | **Buyer entry** — URLs, review order, feature map |
 | [README.md](./README.md) | Overview & quick start |
 | [ROUTES.md](./ROUTES.md) | Every URL status |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Technical structure |

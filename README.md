@@ -9,7 +9,11 @@ This repository is **only** the PrivateCharterX web application. It is not relat
 
 ---
 
-## For buyers (60-second summary)
+## For buyers
+
+**Start here:** **[BUYER_START_HERE.md](./BUYER_START_HERE.md)** — all live URLs, review order, feature map.
+
+### 60-second summary
 
 | | |
 |--|--|
@@ -30,7 +34,8 @@ This repository is **only** the PrivateCharterX web application. It is not relat
 
 | Document | Audience | Contents |
 |----------|----------|----------|
-| **[BUYER_DUE_DILIGENCE.md](./BUYER_DUE_DILIGENCE.md)** | **Buyers** | **Start here** — honest sale pack |
+| **[BUYER_START_HERE.md](./BUYER_START_HERE.md)** | **Buyers** | **Start here** — URLs + review order |
+| **[BUYER_DUE_DILIGENCE.md](./BUYER_DUE_DILIGENCE.md)** | **Buyers** | Honest sale pack, risks |
 | **[WEB3.md](./WEB3.md)** | **Buyers** | Web3, NFT membership, tokenization, `/rws/*`, crypto |
 | **[GROUND_TRANSPORT.md](./GROUND_TRANSPORT.md)** | **Buyers** | Uber-style Mapbox + crypto/card checkout |
 | **[CRM.md](./CRM.md)** | **Buyers** | **Full CRM** — privatecharterx.com/crm included in sale |
