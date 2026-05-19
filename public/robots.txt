@@ -1,12 +1,9 @@
 # robots.txt for PrivateCharterX
-# https://privatecharterx.com
-# Last updated: 2026-01-21
+# https://www.privatecharterx.com
+# Last updated: 2026-05-20
 
 User-agent: *
-
-# ========================================
-# ALLOW - Public pages and SEO files
-# ========================================
+Allow: /
 Allow: /services
 Allow: /jets
 Allow: /helis
@@ -14,15 +11,21 @@ Allow: /empty-legs
 Allow: /flight-bids
 Allow: /adventures
 Allow: /flights
-Allow: /partners
-Allow: /sitemap.xml
+Allow: /paymentx
+Allow: /blog
 
-# ========================================
-# DISALLOW - Everything else
-# ========================================
-Disallow: /
+# Block staff, account, and internal tools from search indexes
+Disallow: /crm
+Disallow: /crm-admin
+Disallow: /admin
+Disallow: /api/
+Disallow: /webhooks/
+Disallow: /login
+Disallow: /register
+Disallow: /profile
+Disallow: /settings
+Disallow: /dashboard
+Disallow: /checkout
+Disallow: /rws/
 
-# ========================================
-# Sitemap
-# ========================================
-Sitemap: https://privatecharterx.com/sitemap.xml
+Sitemap: https://www.privatecharterx.com/sitemap.xml

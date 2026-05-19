@@ -1,66 +1,63 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Services Overview -->
   <url>
-    <loc>https://privatecharterx.com/services</loc>
-    <lastmod>2026-01-21</lastmod>
+    <loc>https://www.privatecharterx.com/</loc>
+    <lastmod>2026-05-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
-
-  <!-- Private Jets -->
   <url>
-    <loc>https://privatecharterx.com/jets</loc>
-    <lastmod>2026-01-21</lastmod>
+    <loc>https://www.privatecharterx.com/services</loc>
+    <lastmod>2026-05-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://www.privatecharterx.com/jets</loc>
+    <lastmod>2026-05-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
-
-  <!-- Helicopters -->
   <url>
-    <loc>https://privatecharterx.com/helis</loc>
-    <lastmod>2026-01-21</lastmod>
+    <loc>https://www.privatecharterx.com/helis</loc>
+    <lastmod>2026-05-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
-
-  <!-- Empty Legs -->
   <url>
-    <loc>https://privatecharterx.com/empty-legs</loc>
-    <lastmod>2026-01-21</lastmod>
+    <loc>https://www.privatecharterx.com/empty-legs</loc>
+    <lastmod>2026-05-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
-
-  <!-- Flight Bids -->
   <url>
-    <loc>https://privatecharterx.com/flight-bids</loc>
-    <lastmod>2026-01-21</lastmod>
+    <loc>https://www.privatecharterx.com/flight-bids</loc>
+    <lastmod>2026-05-20</lastmod>
     <changefreq>daily</changefreq>
-    <priority>0.8</priority>
+    <priority>0.85</priority>
   </url>
-
-  <!-- Adventures -->
   <url>
-    <loc>https://privatecharterx.com/adventures</loc>
-    <lastmod>2026-01-21</lastmod>
+    <loc>https://www.privatecharterx.com/adventures</loc>
+    <lastmod>2026-05-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
-
-  <!-- Flights -->
   <url>
-    <loc>https://privatecharterx.com/flights</loc>
-    <lastmod>2026-01-21</lastmod>
+    <loc>https://www.privatecharterx.com/flights</loc>
+    <lastmod>2026-05-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
-
-  <!-- Partners -->
   <url>
-    <loc>https://privatecharterx.com/partners</loc>
-    <lastmod>2026-01-21</lastmod>
+    <loc>https://www.privatecharterx.com/paymentx</loc>
+    <lastmod>2026-05-20</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.privatecharterx.com/blog</loc>
+    <lastmod>2026-05-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
   </url>
 </urlset>

@@ -74,6 +74,7 @@ import AdminCRM from '../../pages/AdminCRM';
 import CRMPage from '../../pages/CRMPage';
 
 import { supabase } from '../../lib/supabase.ts';
+import RouteSEO from '../RouteSEO.jsx';
 
 // ===== WAGMI/REOWN CONFIGURATION =====
 const projectId = 'a9111834382219cf7080a2d516cad517';
@@ -249,6 +250,7 @@ function AppContent() {
     <div>
       <Suspense fallback={<LoadingSpinner />}>
         <ScrollToTop />
+        <RouteSEO />
         <PageTransition>
         <Routes>
           {isAdminDomain ? (
