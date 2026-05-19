@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { useAuth } from '../../context/AuthContext';
 import {
   Users, UserPlus, UserCheck, RefreshCcw, Activity,
@@ -16,16 +15,7 @@ import {
 } from 'lucide-react';
 import QuoteInvoiceModal from './QuoteInvoiceModal';
 import AdminSupportDashboard from '../LiveSupportChat/AdminSupportDashboard';
-
-// ============================================
-// ADMIN SUPABASE CLIENT - BYPASSES RLS
-// ============================================
-const supabaseUrl = 'https://oubecmstqtzdnevyqavu.supabase.co';
-const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91YmVjbXN0cXR6ZG5ldnlxYXZ1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTA5NzQxMiwiZXhwIjoyMDY2NjczNDEyfQ.35V_vACN8pmSKku3yOvtijmwUpdnPHR2-UqPm7rfMIA';
-
-const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-  auth: { autoRefreshToken: false, persistSession: false }
-});
+import { supabaseAdmin } from '../../lib/supabaseAdminClient';
 
 // ============================================
 // MAIN CRM DASHBOARD

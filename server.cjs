@@ -23,6 +23,7 @@ dotenv.config();
 const stripeSubscriptionWebhook = require('./api/webhooks/stripe-subscription-webhook.cjs');
 const newsletterApi = require('./api/newsletter.cjs');
 const coingateApi = require('./api/coingate.cjs');
+const { handleCrmAdmin } = require('./api/crm-admin.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -32,8 +33,18 @@ const PORT = process.env.PORT || 3000;
 // ============================================================
 
 // CORS - Allow frontend to make requests
+const corsOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(',').map((s) => s.trim())
+  : [
+      'http://localhost:5173',
+      'http://localhost:5178',
+      'https://www.privatecharterx.com',
+      'https://privatecharterx.com',
+      'https://web3applicationfinaljsx-1.vercel.app',
+    ];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: corsOrigins,
   credentials: true
 }));
 
@@ -97,6 +108,12 @@ app.delete('/api/newsletter/templates/:id', newsletterApi.deleteTemplate);
 app.post('/api/coingate/create-order', coingateApi.createOrder);
 
 // ============================================================
+// CRM Admin API (service role server-side only)
+// ============================================================
+
+app.post('/api/crm-admin', handleCrmAdmin);
+
+// ============================================================
 // Webhook Endpoints
 // ============================================================
 
@@ -126,6 +143,7 @@ app.get('/', (req, res) => {
       health: '/health',
       newsletter: '/api/newsletter/*',
       coingate: '/api/coingate/*',
+      crmAdmin: '/api/crm-admin',
       webhooks: '/webhooks/stripe-subscription'
     }
   });

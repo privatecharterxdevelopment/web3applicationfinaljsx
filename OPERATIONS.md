@@ -33,6 +33,19 @@ Staging uses the **same routes** as production (e.g. `/jets`, `/crm`, `/rws`, `/
 
 ---
 
+## CRM admin API (service role)
+
+| Item | Value |
+|------|--------|
+| Endpoint | `POST /api/crm-admin` |
+| Server module | `api/crm-admin.cjs` |
+| Browser client | `src/lib/supabaseAdminClient.js` |
+| Required env (Vercel, **not** `VITE_`) | `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL` or `VITE_SUPABASE_URL`, `SUPABASE_ANON_KEY` or `VITE_SUPABASE_ANON_KEY` |
+
+**After deploy:** Rotate the Supabase service role key in Dashboard (old key was previously in frontend bundle). Update Vercel env with the new key.
+
+---
+
 ## Architecture in production
 
 ```

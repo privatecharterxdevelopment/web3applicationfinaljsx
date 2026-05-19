@@ -20,6 +20,12 @@ export default defineConfig({
     // Use a fixed port to avoid auto-switching and HMR reconnect loops in dev
     port: 5178,
     strictPort: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
     hmr: {
       // Align HMR websocket port with the dev server
       clientPort: 5178,
