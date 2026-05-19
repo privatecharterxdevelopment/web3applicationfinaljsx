@@ -88,7 +88,17 @@ Same stack as public site: **React + Supabase**. CRM is not a separate paid SaaS
 
 ---
 
-## 6. Buyer review checklist (no deploy)
+## 6. Staging environment
+
+Test CRM on staging (admin login from seller):
+
+**https://web3applicationfinaljsx-1.vercel.app/crm**
+
+Production: **https://www.privatecharterx.com/crm**
+
+---
+
+## 7. Buyer review checklist (no deploy)
 
 | # | Action | Pass? |
 |---|--------|-------|
@@ -100,7 +110,7 @@ Same stack as public site: **React + Supabase**. CRM is not a separate paid SaaS
 
 ---
 
-## 7. Handover (seller → buyer)
+## 8. Handover (seller → buyer)
 
 | Item | Notes |
 |------|--------|
@@ -111,7 +121,7 @@ Same stack as public site: **React + Supabase**. CRM is not a separate paid SaaS
 
 ---
 
-## 8. Related docs
+## 9. Related docs
 
 | Document | Topic |
 |----------|--------|

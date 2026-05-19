@@ -24,7 +24,7 @@ All files below are **Markdown documentation only**. They do not change applicat
 
 | Document | Read when |
 |----------|-----------|
-| [OPERATIONS.md](./OPERATIONS.md) | Running production, deploy, env vars |
+| [OPERATIONS.md](./OPERATIONS.md) | Production + **staging** ([web3applicationfinaljsx-1.vercel.app](https://web3applicationfinaljsx-1.vercel.app/)), deploy, env vars |
 | [HANDOVER_CHECKLIST.md](./HANDOVER_CHECKLIST.md) | Acquisition close |
 | [ACCOUNTS_INVENTORY.template.md](./ACCOUNTS_INVENTORY.template.md) | Listing all third-party accounts (private) |
 | [SUPABASE.md](./SUPABASE.md) | Edge functions and database |

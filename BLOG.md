@@ -81,9 +81,13 @@ See also: [HANDOVER_CHECKLIST.md](./HANDOVER_CHECKLIST.md) (Blog section) and [A
 
 ## 5. Staging & QA (seller process)
 
-Seller has stated that application changes are tested on a **separate Git repository** and **Vercel preview** before production. Blog **content** is typically published directly on `privatecharterx.blog` (no app deploy required for new posts). In-app `/blog` will show new posts once feeds/APIs resolve.
+Application changes are tested on **Vercel staging** before production:
 
-Seller to provide staging repo URL and preview URL when available — not required for first-pass code review.
+**https://web3applicationfinaljsx-1.vercel.app/**
+
+(same routes as production, e.g. `/blog`, `/jets`, `/crm`)
+
+Blog **content** is typically published directly on `privatecharterx.blog` (no app deploy required for new posts). In-app `/blog` on staging/production will show new posts once feeds/APIs resolve.
 
 ---
 

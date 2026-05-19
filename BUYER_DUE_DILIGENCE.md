@@ -17,7 +17,7 @@ This document is for **acquisition review**. It does not modify the application.
 | Is it live? | Yes — [privatecharterx.com](https://www.privatecharterx.com) and [privatecharterx.blog](https://www.privatecharterx.blog/) |
 | Is the code “clean”? | **No** — functional but monolithic; see [METRICS.md](./METRICS.md). |
 | Is it documented? | **Yes** (this pack + [ROUTES.md](./ROUTES.md) + [ARCHITECTURE.md](./ARCHITECTURE.md)). |
-| Biggest technical risk? | ~13k-line UI shell; no automated tests in repo (seller QA on separate repo + Vercel preview). |
+| Biggest technical risk? | ~13k-line UI shell; no automated tests in repo (seller QA on [staging Vercel](https://web3applicationfinaljsx-1.vercel.app/) before production). |
 | Biggest product risk? | Some `/services` marketing tiles have **no screen** (documented in ROUTES.md). |
 | Recommended post-close budget? | Either senior React team + 2–4 month refactor, or accept slower feature velocity. |
 
@@ -92,7 +92,7 @@ Full URL list: **[ROUTES.md](./ROUTES.md)**
 | Issue | Impact |
 |-------|--------|
 | Single ~13k-line shell component | Expensive changes, regression risk |
-| No automated tests in repo | Regression risk unless CI added; seller uses **separate repo + Vercel preview** for manual QA |
+| No automated tests in repo | Regression risk unless CI added; seller uses **staging** [web3applicationfinaljsx-1.vercel.app](https://web3applicationfinaljsx-1.vercel.app/) for manual QA before prod |
 | Auth0 + Supabase dual auth layer | Session edge cases |
 | ~742 `console.log` in `src` (approx.) | Noise; minor info leakage |
 | Mixed `.ts` / `.jsx` | Weaker typing on critical path |
@@ -148,7 +148,7 @@ Template to fill: [ACCOUNTS_INVENTORY.template.md](./ACCOUNTS_INVENTORY.template
 9. Last production deploy date and who performed it?
 10. Any fork of repo elsewhere (e.g. old duplicate folders)?
 11. **Blog:** Who owns `privatecharterx.blog` registrar and CMS? Confirm transfer with domain.
-12. Staging repo URL and Vercel preview URL (if not yet provided)?
+12. Staging uses production Supabase or a separate project? (Staging URL: [web3applicationfinaljsx-1.vercel.app](https://web3applicationfinaljsx-1.vercel.app/))
 
 ---
 

@@ -81,7 +81,13 @@ See **[CRM.md](./CRM.md)**.
 
 ---
 
-## 6. Buyer review checklist
+## 6. Staging environment
+
+**https://web3applicationfinaljsx-1.vercel.app/rws** (and other `/rws/*` paths on the same host)
+
+---
+
+## 7. Buyer review checklist
 
 | # | URL | Pass? |
 |---|-----|-------|
@@ -95,7 +101,7 @@ See **[CRM.md](./CRM.md)**.
 
 ---
 
-## 7. Handover
+## 8. Handover
 
 | Item | Notes |
 |------|--------|
@@ -106,7 +112,7 @@ See **[CRM.md](./CRM.md)**.
 
 ---
 
-## 8. Related docs
+## 9. Related docs
 
 | File | Topic |
 |------|--------|

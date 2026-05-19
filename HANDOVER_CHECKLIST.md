@@ -16,6 +16,7 @@ Use this when transferring the platform to a buyer. **Completing this list does 
 - [ ] Domain ownership documented
 - [ ] Stripe / Supabase / Mapbox account owners identified
 - [ ] No undisclosed second repo or fork (duplicate `thefinalwebapplicationpcx-main` removed from sale repo)
+- [ ] Staging environment documented: [web3applicationfinaljsx-1.vercel.app](https://web3applicationfinaljsx-1.vercel.app/)
 
 ---
 
@@ -56,6 +57,7 @@ Use this when transferring the platform to a buyer. **Completing this list does 
 - [ ] Confirm `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
 - [ ] Build logs accessible
 - [ ] **No deploy during handover day** unless agreed
+- [ ] Staging Vercel project `web3applicationfinaljsx-1` — env vars match production or documented differences
 
 ### Supabase
 

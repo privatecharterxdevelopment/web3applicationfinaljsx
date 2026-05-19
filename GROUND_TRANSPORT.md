@@ -82,7 +82,13 @@ Booking payload stores `paymentMethod: 'crypto' | 'card'` and `cryptoCurrency` w
 
 ---
 
-## 6. Buyer review checklist
+## 6. Staging environment
+
+**https://web3applicationfinaljsx-1.vercel.app/ground-transport**
+
+---
+
+## 7. Buyer review checklist
 
 | # | Action | Pass? |
 |---|--------|-------|
@@ -90,11 +96,11 @@ Booking payload stores `paymentMethod: 'crypto' | 'card'` and `cryptoCurrency` w
 | 2 | Map loads (Mapbox token set on host) | |
 | 3 | Enter A → B, route draws | |
 | 4 | Reach payment step — **Crypto** and **Card** tabs visible | |
-| 5 | (Optional) Complete test booking in staging | |
+| 5 | (Optional) Test on [staging](https://web3applicationfinaljsx-1.vercel.app/ground-transport) | |
 
 ---
 
-## 7. Handover
+## 8. Handover
 
 | Item | Notes |
 |------|--------|
@@ -104,7 +110,7 @@ Booking payload stores `paymentMethod: 'crypto' | 'card'` and `cryptoCurrency` w
 
 ---
 
-## 8. Related docs
+## 9. Related docs
 
 | File | Topic |
 |------|--------|

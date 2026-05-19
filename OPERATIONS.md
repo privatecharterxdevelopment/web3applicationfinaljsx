@@ -4,6 +4,17 @@
 
 ---
 
+## Environments
+
+| Environment | URL | Purpose |
+|-------------|-----|---------|
+| **Production** | https://www.privatecharterx.com | Live customers |
+| **Staging / test** | https://web3applicationfinaljsx-1.vercel.app/ | Vercel preview — QA before production deploy |
+
+Staging uses the **same routes** as production (e.g. `/jets`, `/crm`, `/rws`, `/ground-transport`). Confirm which Supabase project and env vars the staging deployment uses in [HANDOVER_CHECKLIST.md](./HANDOVER_CHECKLIST.md).
+
+---
+
 ## Production URLs
 
 | Surface | URL |
@@ -88,7 +99,7 @@ Full list: `.env.example` and [ACCOUNTS_INVENTORY.template.md](./ACCOUNTS_INVENT
 
 ## Deploy procedure (when you intentionally update production)
 
-1. Confirm staging/preview build (optional).
+1. Confirm staging build: https://web3applicationfinaljsx-1.vercel.app/
 2. Verify env vars on host (especially Mapbox, Supabase).
 3. `npm run build` locally or let CI build.
 4. Deploy `dist/` + server routes.

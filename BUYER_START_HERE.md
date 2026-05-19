@@ -21,6 +21,25 @@ This file is **documentation only**. It does not change [www.privatecharterx.com
 
 **Stack (summary):** React + Vite · Supabase · Stripe · Mapbox · Claude AI · Wagmi / Reown (Web3) · Coingate (crypto) · Capacitor (mobile shells).
 
+### Test / staging environment (Vercel preview)
+
+| | URL |
+|--|-----|
+| **Staging base** | [https://web3applicationfinaljsx-1.vercel.app/](https://web3applicationfinaljsx-1.vercel.app/) |
+
+Use the **same paths as production** on the staging host (examples):
+
+| Page | Staging URL |
+|------|-------------|
+| Home | [web3applicationfinaljsx-1.vercel.app/](https://web3applicationfinaljsx-1.vercel.app/) |
+| Services | [/services](https://web3applicationfinaljsx-1.vercel.app/services) |
+| Jets | [/jets](https://web3applicationfinaljsx-1.vercel.app/jets) |
+| CRM | [/crm](https://web3applicationfinaljsx-1.vercel.app/crm) |
+| Web3 | [/rws](https://web3applicationfinaljsx-1.vercel.app/rws) |
+| Ground transport | [/ground-transport](https://web3applicationfinaljsx-1.vercel.app/ground-transport) |
+
+Changes are tested here before **www.privatecharterx.com** production deploy.
+
 ---
 
 ## 2. Review order (recommended, ~2–4 hours)
@@ -34,7 +53,9 @@ This file is **documentation only**. It does not change [www.privatecharterx.com
 | 5 | [ARCHITECTURE.md](./ARCHITECTURE.md) + [METRICS.md](./METRICS.md) | 30 min |
 | 6 | Clone repo → `npm install` → `npm run build` (`.env.example`) | 30 min |
 
-**Seller provides separately (secure channel):** admin login for `/crm`, staging repo / Vercel preview URL (if applicable).
+**Seller provides separately (secure channel):** admin login for `/crm` on production and/or staging.
+
+**Staging (no login needed to open):** [https://web3applicationfinaljsx-1.vercel.app/](https://web3applicationfinaljsx-1.vercel.app/)
 
 ---
 
@@ -136,7 +157,7 @@ This file is **documentation only**. It does not change [www.privatecharterx.com
 |-------|-------------------|
 | `/services` tiles: yachts, MEDEVAC, concierge, group-charter, **NFT membership** | No shell view — use `/chat`, `/ground-transport`, `/rws/nft-marketplace`, or CRM |
 | Web3 + ground transport not in main nav | Use direct URLs in §3 |
-| No automated tests in repo | Seller QA on separate repo + Vercel preview (confirm with seller) |
+| No automated tests in repo | Seller QA on [staging Vercel](https://web3applicationfinaljsx-1.vercel.app/) before production |
 | Monolithic ~13k-line shell | Budget refactor post-close — see [METRICS.md](./METRICS.md) |
 | Mapbox env | `VITE_MAPBOX_TOKEN` required before **next** frontend deploy |
 
@@ -170,6 +191,7 @@ Full list: [ROUTES.md](./ROUTES.md) · [BUYER_DUE_DILIGENCE.md](./BUYER_DUE_DILI
 PrivateCharterX acquisition review — start here:
 https://github.com/privatecharterxdevelopment/web3applicationfinaljsx/blob/main/BUYER_START_HERE.md
 
+Staging: https://web3applicationfinaljsx-1.vercel.app/
 Live checks:
 • Platform: https://www.privatecharterx.com
 • Web3: https://www.privatecharterx.com/rws

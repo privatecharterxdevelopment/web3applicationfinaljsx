@@ -21,8 +21,8 @@ This repository is **only** the PrivateCharterX web application. It is not relat
 | **Stack** | React + Vite, Supabase (auth/DB/edge functions), Stripe, Mapbox, Claude AI, optional Wagmi/crypto, Capacitor mobile shells. |
 | **Maturity** | Core travel flows work; several marketing tiles and legacy URLs are incomplete or redirect-only (see **[ROUTES.md](./ROUTES.md)**). |
 | **Code health** | Feature-rich; main UI is a ~13k-line shell — budget for refactor or ongoing senior frontend capacity. |
-| **Tests** | No automated test suite in repo; seller QA on separate repo + Vercel preview (details in [BLOG.md](./BLOG.md) §5 / handover). |
-| **Deploy** | Vercel/Netlify-style static build + `server.cjs` API; secrets in `.env.example`. |
+| **Tests** | No automated test suite in repo; seller QA on **staging:** [web3applicationfinaljsx-1.vercel.app](https://web3applicationfinaljsx-1.vercel.app/) |
+| **Deploy** | Vercel static build + `server.cjs` API; **staging:** [web3applicationfinaljsx-1.vercel.app](https://web3applicationfinaljsx-1.vercel.app/) · **prod:** privatecharterx.com |
 
 **Honest value:** strong prototype-to-production platform and integrations, not a fully polished enterprise codebase.
 
