@@ -13,7 +13,7 @@ This repository is **only** the PrivateCharterX web application. It is not relat
 
 | | |
 |--|--|
-| **What you get** | A production **Web3-ready** platform (tokenization, `/rws/*`, wallets) + **full CRM** at **[privatecharterx.com/crm](https://www.privatecharterx.com/crm)** + luxury-travel & AI concierge + blog **[privatecharterx.blog](https://www.privatecharterx.blog/)**. |
+| **What you get** | **Web3/RWA** (tokenization, NFT membership, launchpad, SPV, PVCX, crypto checkout) · **full CRM** [/crm](https://www.privatecharterx.com/crm) · **ground transport** (Mapbox Uber-style + **crypto pay**) [/ground-transport](https://www.privatecharterx.com/ground-transport) · AI luxury concierge · blog [privatecharterx.blog](https://www.privatecharterx.blog/) |
 | **Stack** | React + Vite, Supabase (auth/DB/edge functions), Stripe, Mapbox, Claude AI, optional Wagmi/crypto, Capacitor mobile shells. |
 | **Maturity** | Core travel flows work; several marketing tiles and legacy URLs are incomplete or redirect-only (see **[ROUTES.md](./ROUTES.md)**). |
 | **Code health** | Feature-rich; main UI is a ~13k-line shell — budget for refactor or ongoing senior frontend capacity. |
@@ -31,6 +31,8 @@ This repository is **only** the PrivateCharterX web application. It is not relat
 | Document | Audience | Contents |
 |----------|----------|----------|
 | **[BUYER_DUE_DILIGENCE.md](./BUYER_DUE_DILIGENCE.md)** | **Buyers** | **Start here** — honest sale pack |
+| **[WEB3.md](./WEB3.md)** | **Buyers** | Web3, NFT membership, tokenization, `/rws/*`, crypto |
+| **[GROUND_TRANSPORT.md](./GROUND_TRANSPORT.md)** | **Buyers** | Uber-style Mapbox + crypto/card checkout |
 | **[CRM.md](./CRM.md)** | **Buyers** | **Full CRM** — privatecharterx.com/crm included in sale |
 | **[BLOG.md](./BLOG.md)** | **Buyers** | **Blog asset** — privatecharterx.blog included in sale |
 | **[ROUTES.md](./ROUTES.md)** | Buyers + QA | Every URL: live, hidden, broken, redirects |

@@ -9,8 +9,10 @@ All files below are **Markdown documentation only**. They do not change applicat
 | Document | Read when |
 |----------|-----------|
 | [BUYER_DUE_DILIGENCE.md](./BUYER_DUE_DILIGENCE.md) | First — overall honesty pack |
-| [CRM.md](./CRM.md) | **Start here for ops** — full CRM at [/crm](https://www.privatecharterx.com/crm) |
-| [BLOG.md](./BLOG.md) | **Blog asset** — [privatecharterx.blog](https://www.privatecharterx.blog/) included in sale |
+| [WEB3.md](./WEB3.md) | **Web3** — tokenization, NFT membership, `/rws/*`, crypto |
+| [GROUND_TRANSPORT.md](./GROUND_TRANSPORT.md) | **Ground transport** — Uber-style + crypto checkout |
+| [CRM.md](./CRM.md) | **CRM** — [/crm](https://www.privatecharterx.com/crm) |
+| [BLOG.md](./BLOG.md) | **Blog** — [privatecharterx.blog](https://www.privatecharterx.blog/) |
 | [ROUTES.md](./ROUTES.md) | Verifying what URLs work vs broken |
 | [METRICS.md](./METRICS.md) | Code size and quality signals |
 | [README.md](./README.md) | Quick product + stack overview |

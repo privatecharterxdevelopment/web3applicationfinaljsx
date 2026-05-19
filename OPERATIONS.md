@@ -10,13 +10,15 @@
 |---------|-----|
 | Public site | https://www.privatecharterx.com |
 | **CRM (sale asset)** | https://www.privatecharterx.com/crm |
+| **Web3 hub** | https://www.privatecharterx.com/rws |
+| **Ground transport** | https://www.privatecharterx.com/ground-transport |
 | **Blog (sale asset)** | https://www.privatecharterx.blog/ |
 | In-app blog reader | https://www.privatecharterx.com/blog |
 | Apex (if used) | https://privatecharterx.com |
 | Admin (typical) | https://admin.privatecharterx.com |
 | Supabase API | Project URL in hosting env (`VITE_SUPABASE_URL`) |
 
-CRM details: **[CRM.md](./CRM.md)** · Blog: **[BLOG.md](./BLOG.md)** (documentation only; does not change live sites).
+**WEB3.md** · **GROUND_TRANSPORT.md** · **CRM.md** · **BLOG.md** (documentation only; does not change live sites).
 
 ---
 

@@ -13,7 +13,7 @@ This document is for **acquisition review**. It does not modify the application.
 
 | Question | Answer |
 |----------|--------|
-| What is it? | **Web3-ready** luxury platform (tokenization, `/rws/*`, wallets, launchpad, SPV) + **full CRM** at **/crm** + travel marketplace + AI concierge + blog **privatecharterx.blog**. |
+| What is it? | **Web3/RWA platform** (tokenization, NFT membership, launchpad, SPV, PVCX, wallet checkout) + **Uber-style ground transport with crypto pay** + **full CRM** `/crm` + AI luxury concierge + blog **privatecharterx.blog**. |
 | Is it live? | Yes — [privatecharterx.com](https://www.privatecharterx.com) and [privatecharterx.blog](https://www.privatecharterx.blog/) |
 | Is the code “clean”? | **No** — functional but monolithic; see [METRICS.md](./METRICS.md). |
 | Is it documented? | **Yes** (this pack + [ROUTES.md](./ROUTES.md) + [ARCHITECTURE.md](./ARCHITECTURE.md)). |
@@ -29,7 +29,9 @@ This document is for **acquisition review**. It does not modify the application.
 
 | Asset | Included in repo? | Notes |
 |-------|-------------------|--------|
-| **Full CRM system** | Yes | Live: [privatecharterx.com/crm](https://www.privatecharterx.com/crm) — see **[CRM.md](./CRM.md)** |
+| **Web3 / RWA module** | Yes | [/rws/*](https://www.privatecharterx.com/rws) — see **[WEB3.md](./WEB3.md)** |
+| **Ground transport (Mapbox + crypto)** | Yes | [/ground-transport](https://www.privatecharterx.com/ground-transport) — see **[GROUND_TRANSPORT.md](./GROUND_TRANSPORT.md)** |
+| **Full CRM system** | Yes | [privatecharterx.com/crm](https://www.privatecharterx.com/crm) — see **[CRM.md](./CRM.md)** |
 | Frontend source (React/Vite) | Yes | |
 | Capacitor iOS/Android shells | Yes | Store submission not verified here |
 | Supabase migrations + edge functions | Yes | **Production Supabase project transfers separately** |
@@ -56,13 +58,15 @@ This document is for **acquisition review**. It does not modify the application.
 | Commercial flights | `/flights` | Medium — depends on flight API keys |
 | Adventures | `/adventures` | High |
 | Helicopters | `/helis` | High |
-| Ground transport (Mapbox) | `/ground-transport` | High — not in main nav |
+| **Ground transport (Uber-style + crypto/card pay)** | [/ground-transport](https://www.privatecharterx.com/ground-transport) | **High** — see [GROUND_TRANSPORT.md](./GROUND_TRANSPORT.md); not in main nav |
 | PaymentX marketing + card apply | `/paymentx`, `/pay` | Medium — Marqeta dashboard hidden |
 | Subscriptions | Stripe | Medium — tiers in code |
 | Partner program | `/partners`, partner dashboard | Medium |
 | Blog (in-app) | `/blog` | High — reads **privatecharterx.blog** |
 | Blog (standalone asset) | [privatecharterx.blog](https://www.privatecharterx.blog/) | High — **transfers with deal**; see [BLOG.md](./BLOG.md) |
-| Web3 / RWA | `/rws/*` | Medium — niche |
+| **Web3 / RWA** (tokenization, NFT marketplace, launchpad, PVCX, SPV) | [/rws/*](https://www.privatecharterx.com/rws) | **High** — see [WEB3.md](./WEB3.md); not in main nav |
+| **NFT membership** (wallet benefits + marketplace) | `/rws/nft-marketplace` + `NFTContext` | **High** — `/services` tile broken; feature is live elsewhere |
+| **Crypto checkout** (Coingate + wallet `/checkout` + ground transport) | `/checkout`, PaymentModal | **High** — see WEB3 + GROUND_TRANSPORT |
 | Admin back-office | `admin.*` / `/admin/*` | High |
 | **Full CRM (back-office)** | [/crm](https://www.privatecharterx.com/crm), `/crm-admin` | **High** — customers, bookings, AI chats, support, invoices, Web3 (SPV, tokenization, PVCX) — see **[CRM.md](./CRM.md)** |
 | Extended admin | `admin.*`, `/admin` | High — see CRM.md §4 |
@@ -171,6 +175,8 @@ Template to fill: [ACCOUNTS_INVENTORY.template.md](./ACCOUNTS_INVENTORY.template
 | [SUPABASE.md](./SUPABASE.md) | DB & edge functions |
 | [METRICS.md](./METRICS.md) | Size & quality signals |
 | [HANDOVER_CHECKLIST.md](./HANDOVER_CHECKLIST.md) | Close checklist |
+| [WEB3.md](./WEB3.md) | Web3, NFT membership, tokenization |
+| [GROUND_TRANSPORT.md](./GROUND_TRANSPORT.md) | Mapbox Uber-style + crypto pay |
 | [CRM.md](./CRM.md) | Full CRM — privatecharterx.com/crm |
 | [BLOG.md](./BLOG.md) | Blog asset — privatecharterx.blog |
 | [ACCOUNTS_INVENTORY.template.md](./ACCOUNTS_INVENTORY.template.md) | Accounts spreadsheet template |

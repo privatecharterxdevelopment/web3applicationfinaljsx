@@ -7,6 +7,8 @@ Use this when transferring the platform to a buyer. **Completing this list does 
 ## Phase A — Before signing
 
 - [ ] Buyer read [BUYER_DUE_DILIGENCE.md](./BUYER_DUE_DILIGENCE.md)
+- [ ] Buyer read [WEB3.md](./WEB3.md) — tokenization, NFT membership, `/rws/*`
+- [ ] Buyer read [GROUND_TRANSPORT.md](./GROUND_TRANSPORT.md) — Mapbox + crypto checkout
 - [ ] Buyer read [CRM.md](./CRM.md) — **full CRM at privatecharterx.com/crm included in sale**
 - [ ] Buyer read [BLOG.md](./BLOG.md) — **privatecharterx.blog included in sale**
 - [ ] Buyer read [ROUTES.md](./ROUTES.md) (broken tiles acknowledged)
@@ -105,7 +107,8 @@ Test on **www.privatecharterx.com** (current deploy, unchanged):
 | 4 | `/flight-bids` | |
 | 5 | `/flights` | |
 | 6 | `/chat` (send test message) | |
-| 7 | `/ground-transport` map loads | |
+| 7 | [/ground-transport](https://www.privatecharterx.com/ground-transport) — map, route, **crypto + card** pay | |
+| 7b | [/rws](https://www.privatecharterx.com/rws) + [/rws/tokenization](https://www.privatecharterx.com/rws/tokenization) | |
 | 8 | `/login` | |
 | 9 | `/partners` | |
 | 10 | Admin login | |
