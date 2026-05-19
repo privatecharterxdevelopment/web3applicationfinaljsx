@@ -1,6 +1,7 @@
 # PrivateCharterX — platform repository
 
 **Product:** [www.privatecharterx.com](https://www.privatecharterx.com)  
+**Blog (included in sale):** [www.privatecharterx.blog](https://www.privatecharterx.blog/)  
 **Company:** PrivateCharterX LLC  
 **GitHub:** [privatecharterxdevelopment/web3applicationfinaljsx](https://github.com/privatecharterxdevelopment/web3applicationfinaljsx)
 
@@ -12,11 +13,11 @@ This repository is **only** the PrivateCharterX web application. It is not relat
 
 | | |
 |--|--|
-| **What you get** | A production luxury-travel SPA: AI concierge, private jets, empty legs, commercial flights, flight bidding, adventures, Mapbox ground transport, subscriptions, partner portal, admin back-office, and Web3/RWA modules. |
+| **What you get** | A production **Web3-ready** platform (tokenization, `/rws/*`, wallets) plus luxury-travel & AI concierge — **and** the standalone blog **[privatecharterx.blog](https://www.privatecharterx.blog/)** (content + SEO, integrated in-app at `/blog`). |
 | **Stack** | React + Vite, Supabase (auth/DB/edge functions), Stripe, Mapbox, Claude AI, optional Wagmi/crypto, Capacitor mobile shells. |
 | **Maturity** | Core travel flows work; several marketing tiles and legacy URLs are incomplete or redirect-only (see **[ROUTES.md](./ROUTES.md)**). |
 | **Code health** | Feature-rich; main UI is a ~13k-line shell — budget for refactor or ongoing senior frontend capacity. |
-| **Tests** | No automated test suite in repo today. |
+| **Tests** | No automated test suite in repo; seller QA on separate repo + Vercel preview (details in [BLOG.md](./BLOG.md) §5 / handover). |
 | **Deploy** | Vercel/Netlify-style static build + `server.cjs` API; secrets in `.env.example`. |
 
 **Honest value:** strong prototype-to-production platform and integrations, not a fully polished enterprise codebase.
@@ -30,6 +31,7 @@ This repository is **only** the PrivateCharterX web application. It is not relat
 | Document | Audience | Contents |
 |----------|----------|----------|
 | **[BUYER_DUE_DILIGENCE.md](./BUYER_DUE_DILIGENCE.md)** | **Buyers** | **Start here** — honest sale pack |
+| **[BLOG.md](./BLOG.md)** | **Buyers** | **Blog asset** — privatecharterx.blog included in sale |
 | **[ROUTES.md](./ROUTES.md)** | Buyers + QA | Every URL: live, hidden, broken, redirects |
 | **[METRICS.md](./METRICS.md)** | Buyers | Code size, quality signals, no tests |
 | **[OPERATIONS.md](./OPERATIONS.md)** | Ops / buyer IT | Deploy, env, Supabase, incidents |

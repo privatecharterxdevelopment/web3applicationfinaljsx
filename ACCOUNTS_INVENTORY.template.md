@@ -22,6 +22,8 @@ Copy this file to a password manager or private data room. Fill in during seller
 | GitHub org | Source code | github.com/privatecharterxdevelopment | | | Org invite / transfer | |
 | Vercel **or** Netlify | Hosting | | | | Team transfer | |
 | Domain registrar | privatecharterx.com | | | | Push / auth code | |
+| Domain registrar | **privatecharterx.blog** | [www.privatecharterx.blog](https://www.privatecharterx.blog/) | | | Push / auth code | |
+| Blog CMS / host | **Blog publishing** (Blogger, WP, etc.) | Seller confirms platform | | | Admin transfer | |
 | Supabase | DB, auth, edge, storage | app.supabase.com | | | Org transfer | |
 
 ---

@@ -1,6 +1,7 @@
 # PrivateCharterX — buyer due diligence
 
 **Product:** [www.privatecharterx.com](https://www.privatecharterx.com)  
+**Blog (included in sale):** [www.privatecharterx.blog](https://www.privatecharterx.blog/)  
 **Legal entity:** PrivateCharterX LLC  
 **Repository:** [privatecharterxdevelopment/web3applicationfinaljsx](https://github.com/privatecharterxdevelopment/web3applicationfinaljsx)
 
@@ -12,11 +13,11 @@ This document is for **acquisition review**. It does not modify the application.
 
 | Question | Answer |
 |----------|--------|
-| What is it? | Luxury travel marketplace + AI concierge (jets, empty legs, commercial flights, adventures, Mapbox ground transport, subscriptions, partners, admin, Web3/RWA modules). |
-| Is it live? | Yes — www.privatecharterx.com |
+| What is it? | **Web3-ready** luxury platform (tokenization, `/rws/*`, wallets, launchpad, SPV) plus travel marketplace + AI concierge — **and** standalone blog **privatecharterx.blog** (integrated at `/blog`). |
+| Is it live? | Yes — [privatecharterx.com](https://www.privatecharterx.com) and [privatecharterx.blog](https://www.privatecharterx.blog/) |
 | Is the code “clean”? | **No** — functional but monolithic; see [METRICS.md](./METRICS.md). |
 | Is it documented? | **Yes** (this pack + [ROUTES.md](./ROUTES.md) + [ARCHITECTURE.md](./ARCHITECTURE.md)). |
-| Biggest technical risk? | ~13k-line UI shell; no automated tests. |
+| Biggest technical risk? | ~13k-line UI shell; no automated tests in repo (seller QA on separate repo + Vercel preview). |
 | Biggest product risk? | Some `/services` marketing tiles have **no screen** (documented in ROUTES.md). |
 | Recommended post-close budget? | Either senior React team + 2–4 month refactor, or accept slower feature velocity. |
 
@@ -34,6 +35,7 @@ This document is for **acquisition review**. It does not modify the application.
 | Node API (`server.cjs`) | Yes | Newsletter, Coingate, Stripe webhooks |
 | SQL setup scripts (root) | Yes | Supplementary |
 | Domain `privatecharterx.com` | Negotiate | Not in git |
+| **Blog** `privatecharterx.blog` + CMS/content | **Negotiate — included in sale** | Not in git; see **[BLOG.md](./BLOG.md)** |
 | Production data (users, bookings) | Negotiate | Not in git |
 | Third-party accounts | Negotiate | See [ACCOUNTS_INVENTORY.template.md](./ACCOUNTS_INVENTORY.template.md) |
 | Marqeta card program approval | Unclear | UI pre-launch; edge functions exist |
@@ -57,7 +59,8 @@ This document is for **acquisition review**. It does not modify the application.
 | PaymentX marketing + card apply | `/paymentx`, `/pay` | Medium — Marqeta dashboard hidden |
 | Subscriptions | Stripe | Medium — tiers in code |
 | Partner program | `/partners`, partner dashboard | Medium |
-| Blog | `/blog` | Medium |
+| Blog (in-app) | `/blog` | High — reads **privatecharterx.blog** |
+| Blog (standalone asset) | [privatecharterx.blog](https://www.privatecharterx.blog/) | High — **transfers with deal**; see [BLOG.md](./BLOG.md) |
 | Web3 / RWA | `/rws/*` | Medium — niche |
 | Admin back-office | `admin.*` / `/admin/*` | High |
 | Internal CRM | `/crm` | High — staff only |
@@ -83,7 +86,7 @@ Full URL list: **[ROUTES.md](./ROUTES.md)**
 | Issue | Impact |
 |-------|--------|
 | Single ~13k-line shell component | Expensive changes, regression risk |
-| No automated tests | Regression risk on deploy |
+| No automated tests in repo | Regression risk unless CI added; seller uses **separate repo + Vercel preview** for manual QA |
 | Auth0 + Supabase dual auth layer | Session edge cases |
 | ~742 `console.log` in `src` (approx.) | Noise; minor info leakage |
 | Mixed `.ts` / `.jsx` | Weaker typing on critical path |
@@ -138,6 +141,8 @@ Template to fill: [ACCOUNTS_INVENTORY.template.md](./ACCOUNTS_INVENTORY.template
 8. Why Auth0 still in `main.tsx` if Supabase is primary?
 9. Last production deploy date and who performed it?
 10. Any fork of repo elsewhere (e.g. old duplicate folders)?
+11. **Blog:** Who owns `privatecharterx.blog` registrar and CMS? Confirm transfer with domain.
+12. Staging repo URL and Vercel preview URL (if not yet provided)?
 
 ---
 
@@ -164,6 +169,7 @@ Template to fill: [ACCOUNTS_INVENTORY.template.md](./ACCOUNTS_INVENTORY.template
 | [SUPABASE.md](./SUPABASE.md) | DB & edge functions |
 | [METRICS.md](./METRICS.md) | Size & quality signals |
 | [HANDOVER_CHECKLIST.md](./HANDOVER_CHECKLIST.md) | Close checklist |
+| [BLOG.md](./BLOG.md) | Blog asset — privatecharterx.blog |
 | [ACCOUNTS_INVENTORY.template.md](./ACCOUNTS_INVENTORY.template.md) | Accounts spreadsheet template |
 
 ---

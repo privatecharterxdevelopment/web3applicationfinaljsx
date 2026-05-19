@@ -7,6 +7,7 @@ Use this when transferring the platform to a buyer. **Completing this list does 
 ## Phase A — Before signing
 
 - [ ] Buyer read [BUYER_DUE_DILIGENCE.md](./BUYER_DUE_DILIGENCE.md)
+- [ ] Buyer read [BLOG.md](./BLOG.md) — **privatecharterx.blog included in sale**
 - [ ] Buyer read [ROUTES.md](./ROUTES.md) (broken tiles acknowledged)
 - [ ] Seller completed [ACCOUNTS_INVENTORY.template.md](./ACCOUNTS_INVENTORY.template.md) (private copy)
 - [ ] Domain ownership documented
@@ -25,9 +26,17 @@ Use this when transferring the platform to a buyer. **Completing this list does 
 
 ### Domain & DNS
 
-- [ ] Registrar account or push access to buyer
+- [ ] Registrar account or push access to buyer — **privatecharterx.com**
+- [ ] Registrar account or push access to buyer — **privatecharterx.blog** (see [BLOG.md](./BLOG.md))
 - [ ] Document DNS records (apex, www, admin subdomain)
 - [ ] SSL certificates auto-renew confirmed
+
+### Blog (privatecharterx.blog)
+
+- [ ] CMS / hosting admin access transferred (Blogger, WordPress, or other — seller confirms)
+- [ ] Buyer can publish a test post on **www.privatecharterx.blog** (optional)
+- [ ] In-app **www.privatecharterx.com/blog** shows posts after transfer (no app deploy required for content-only changes)
+- [ ] Google Search Console / blog analytics (if used) transferred
 
 ### Hosting (Vercel / Netlify — confirm which)
 
@@ -92,6 +101,8 @@ Test on **www.privatecharterx.com** (current deploy, unchanged):
 | 8 | `/login` | |
 | 9 | `/partners` | |
 | 10 | Admin login | |
+| 11 | [www.privatecharterx.blog](https://www.privatecharterx.blog/) loads | |
+| 12 | `/blog` on main site shows posts | |
 
 ---
 
@@ -102,6 +113,7 @@ Test on **www.privatecharterx.com** (current deploy, unchanged):
 - [ ] Supabase Dashboard tour
 - [ ] How to publish empty leg / flight op (if manual today)
 - [ ] Support inbox / `support@privatecharterx.com` transfer
+- [ ] How to publish on **privatecharterx.blog** and how feeds sync to `/blog`
 
 ---
 

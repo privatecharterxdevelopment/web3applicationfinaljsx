@@ -9,9 +9,13 @@
 | Surface | URL |
 |---------|-----|
 | Public site | https://www.privatecharterx.com |
+| **Blog (sale asset)** | https://www.privatecharterx.blog/ |
+| In-app blog reader | https://www.privatecharterx.com/blog |
 | Apex (if used) | https://privatecharterx.com |
 | Admin (typical) | https://admin.privatecharterx.com |
 | Supabase API | Project URL in hosting env (`VITE_SUPABASE_URL`) |
+
+Blog integration details: **[BLOG.md](./BLOG.md)** (documentation only; does not change live sites).
 
 ---
 
