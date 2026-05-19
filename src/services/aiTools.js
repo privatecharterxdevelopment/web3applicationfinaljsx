@@ -7,9 +7,9 @@ import { UnifiedSearchService } from './supabaseService';
 import { calculateBilledHours } from '../components/Landingpagenew/AIChat/utils/priceCalculator';
 import { hotelService } from './hotelService';
 import { supabase } from '../lib/supabase';
+import { getMapboxToken } from '../config/mapbox';
 
-// Mapbox token for geocoding and directions
-const MAPBOX_TOKEN = 'pk.eyJ1IjoicHJpdmF0ZWNoYXJ0ZXJ4IiwiYSI6ImNsdGJ2dG4zazFucGsya21tNXRldW5udjYifQ.NrWJLJuG9n6b1jhRh5AkSg';
+const MAPBOX_TOKEN = getMapboxToken();
 
 /**
  * Geocode an address to coordinates using Mapbox

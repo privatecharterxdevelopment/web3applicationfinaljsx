@@ -48,8 +48,9 @@ import { supabase } from '../lib/supabase';
 import { airportsStaticService } from '../services/airportsStaticService';
 import { createRequest } from '../services/requests';
 import { useAuth } from '../context/AuthContext';
+import { getMapboxToken } from '../config/mapbox';
 
-const MAPBOX_TOKEN = 'pk.eyJ1IjoicHJpdmF0ZWNoYXJ0ZXJ4IiwiYSI6ImNtN2Z4empwNzA2Z2wyanM3NWN2Znpmbm4ifQ.nuvmpND_qtdsauY-n8F_9g';
+const MAPBOX_TOKEN = getMapboxToken();
 
 const initialViewState = {
   longitude: 10.0,

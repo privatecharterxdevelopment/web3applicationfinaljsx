@@ -28,6 +28,7 @@ import Footer from './Footer';
 import { useAuth } from '../context/AuthContext';
 import LoginModal from './LoginModal';
 import { supabase } from '../lib/supabase';
+import { getMapboxToken } from '../config/mapbox';
 
 // Empty Leg Interface
 interface EmptyLegOffer {
@@ -457,7 +458,7 @@ const TravelDesigner = () => {
   const [mapIsLoading, setMapIsLoading] = useState(true);
   const [mapError, setMapError] = useState(null);
   const mapRef = useRef();
-  const MAPBOX_TOKEN = 'pk.eyJ1IjoicHJpdmF0ZWNoYXJ0ZXJ4IiwiYSI6ImNtN2Z4empwNzA2Z2wyanM3NWN2Znpmbm4ifQ.nuvmpND_qtdsauY-n8F_9g';
+  const MAPBOX_TOKEN = getMapboxToken();
   
   // Service Options for Landing Page
   const serviceOptions = [

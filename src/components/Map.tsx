@@ -15,6 +15,9 @@ import type { Location, Stop } from '@/types';
 import { format } from 'date-fns';
 import { Building2, MapPin, Phone, Clock, MapPinned, X } from 'lucide-react';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { getMapboxToken } from '../config/mapbox';
+
+const MAPBOX_TOKEN = getMapboxToken();
 
 interface MapboxMapProps {
   origin: Location | null;
@@ -27,8 +30,6 @@ interface MapboxMapProps {
   showControls?: boolean;
   hideLabels?: boolean;
 }
-
-const MAPBOX_TOKEN = 'pk.eyJ1IjoicHJpdmF0ZWNoYXJ0ZXJ4IiwiYSI6ImNtN2Z4empwNzA2Z2wyanM3NWN2Znpmbm4ifQ.nuvmpND_qtdsauY-n8F_9g';
 
 // Center on Europe by default
 const initialViewState = {

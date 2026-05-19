@@ -8,14 +8,15 @@ import Map, {
 } from 'react-map-gl';
 import { MapPin, Plane } from 'lucide-react';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { getMapboxToken } from '../config/mapbox';
+
+const MAPBOX_TOKEN = getMapboxToken();
 
 interface RoutePreviewMapProps {
   origin: { lat: number; lng: number; name: string; city: string; country: string } | null;
   destination: { lat: number; lng: number; name: string; city: string; country: string } | null;
   className?: string;
 }
-
-const MAPBOX_TOKEN = 'pk.eyJ1IjoicHJpdmF0ZWNoYXJ0ZXJ4IiwiYSI6ImNtN2Z4empwNzA2Z2wyanM3NWN2Znpmbm4ifQ.nuvmpND_qtdsauY-n8F_9g';
 
 const initialViewState = {
   longitude: 10.0,

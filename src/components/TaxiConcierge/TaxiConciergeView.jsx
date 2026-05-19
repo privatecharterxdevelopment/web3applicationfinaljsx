@@ -9,9 +9,9 @@ import PaymentModal from './PaymentModal';
 import { convertToUSD, initializeExchangeRates } from '../../services/currencyService';
 import { generateRequestConfirmationPDF, downloadPDF, savePDFToStorage } from '../../services/pdfGeneratorService';
 import { generateRequestConfirmationHTML, downloadHTMLAsPDF } from '../../services/pdfHtmlGenerator';
+import { getMapboxToken } from '../../config/mapbox';
 
-// Mapbox token - privatecharterx account
-const MAPBOX_TOKEN = 'pk.eyJ1IjoicHJpdmF0ZWNoYXJ0ZXJ4IiwiYSI6ImNsdGJ2dG4zazFucGsya21tNXRldW5udjYifQ.NrWJLJuG9n6b1jhRh5AkSg';
+const MAPBOX_TOKEN = getMapboxToken();
 
 const TaxiConciergeView = ({ onRequestSubmit }) => {
   const navigate = useNavigate();

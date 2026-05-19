@@ -1,10 +1,7 @@
-// App.tsx - Fixed AppKit configuration
+// App.tsx - Route table, Wagmi/Reown, and app providers
 import React, { useState, useEffect, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-// QueryClient is provided from main.tsx
-// Auth0 import removed - using Supabase for authentication
-import { ArrowRight, MapPin, Calendar, Users, Check } from 'lucide-react';
 
 // ===== WAGMI/REOWN IMPORTS =====
 import { WagmiProvider } from 'wagmi';
@@ -12,29 +9,17 @@ import { mainnet, base } from 'wagmi/chains';
 import { createAppKit } from '@reown/appkit/react';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 
-import Header from '../../components/Header.tsx';
 import LoginNew from '../../pages/LoginNew.tsx';
 import RegisterNew from '../../pages/RegisterNew.tsx';
 import VerifyEmail from '../../pages/VerifyEmail.tsx';
-// GoogleCalendarCallback removed - not used
-import MapboxMap from '../../components/Map.tsx';
-import WeatherWidget from '../../components/WeatherWidget.tsx';
-import Logo from '../../components/Logo.tsx';
-// Footer removed - not used (dashboard has its own footer)
-import NavigationMenu from '../../components/NavigationMenu.tsx';
 import CookieBanner from '../../components/CookieBanner.tsx';
-import ErrorBoundary from '../../components/ErrorBoundary.tsx';
 import LoadingSpinner from '../../components/LoadingSpinner.tsx';
-import ServicesCarousel from '../../components/ServicesCarousel.tsx';
 import CheckoutPage from '../../components/CheckoutPage.tsx';
-import type { Location, Weather, Stop, BookingDetails } from '../../types.ts';
 import { AuthProvider, useAuth } from '../../context/AuthContext.tsx';
 import { ThemeProvider } from '../../context/ThemeContext.tsx';
 import { MaintenanceProvider, useMaintenance } from '../../context/MaintenanceContext.tsx';
 import { NFTProvider } from '../../context/NFTContext';
-// FavouritesProvider removed - not used
 import MaintenanceMode from '../../components/MaintenanceMode.tsx';
-import ChatSupport from '../../components/ChatSupport.tsx';
 import Dashboard from '../../components/Dashboard.tsx';
 import AdminLayout from '../../pages/admin/Layout.tsx';
 import AdminAnalytics from '../../pages/admin/Analytics.tsx';
@@ -56,43 +41,19 @@ import AdminBookings from '../../pages/admin/Bookings.tsx';
 import AdminEmptyLegs from '../../pages/admin/EmptyLegs.tsx';
 import AdminEarnings from '../../pages/admin/Earnings.tsx';
 import AdminNotifications from '../../pages/admin/Notifications.tsx';
-import Faq from '../../components/faq.tsx';  // LOWERCASE faq.tsx
 
-// Import pages (cleaned - legal pages now in dashboard)
 import AdminOffers from '../../pages/AdminOffers.tsx';
 import ResetPassword from '../../pages/ResetPassword.tsx';
 import ForgotPassword from '../../pages/ForgotPassword.tsx';
 
-// Import TokenSwap page
 import TokenSwapPage from './TokenSwapPage';
 
-// Import CryptoFund page (LOCAL TESTING ONLY - NOT FOR PRODUCTION)
-import CryptoFund from '../../pages/CryptoFund';
-
-// Landing Page Components removed - not used (dashboard only)
-
-// Import booking pages (detail pages still needed for direct links)
 import FlightBooking from '../../pages/FlightBooking';
 import EmptyLegBooking from '../../pages/EmptyLegBooking';
 
-// Import Asset Marketplace (Polymesh) pages
-// Asset Marketplace - disabled (no license)
-// import AssetMarketplace from '../../pages/AssetMarketplace';
-// import AssetMarketplaceDetail from '../../pages/AssetMarketplaceDetail';
-
-// Import your complete dashboard
 import TokenizedAssetsGlassmorphic from './tokenized-assets-glassmorphic.jsx';
 import ProjectPage from './ProjectPage.jsx';
 
-// Import Launchpad page
-import LaunchpadPageNew from './LaunchpadPageNew.jsx';
-
-// CharterAJet removed - not used
-
-// Import AI Chat standalone view
-import AIChat from './AIChat';
-
-// Import Detail pages
 import EmptyLegDetail from './EmptyLegDetail.jsx';
 import AdventureDetail from './AdventureDetail.jsx';
 import LuxuryCarDetail from './LuxuryCarDetail.jsx';
@@ -100,25 +61,9 @@ import JetDetail from './JetDetail.jsx';
 import HelicopterDetail from './HelicopterDetail.jsx';
 import CO2CertificateDetail from './CO2CertificateDetail.jsx';
 import HotelDetail from './HotelDetail.jsx';
-import PaymentXPage from './PaymentXPage.jsx';
 
-// Import SPV & RWA components
-import MySPVs from '../../pages/MySPVs.tsx';
-import SPVFormationFlow from '../../components/SPVFormation/SPVFormationFlow.jsx';
-import TokenizeAssetFlow from './TokenizeAssetFlow.jsx';
-
-// Import Chat Widget
-import ChatWidget from './ChatWidget.jsx';
-
-// Import the new unified booking flow instead of separate components
-import UnifiedBookingFlow from '../../components/UnifiedBookingFlow.tsx';
-
-// Import Partner components
 import PartnerDashboard from '../../components/PartnerDashboard.tsx';
 
-// Newsletter components removed - not used
-
-// Import Payment Pages
 import PaymentSuccessPage from '../../pages/PaymentSuccessPage.jsx';
 import PaymentCancelPage from '../../pages/PaymentCancelPage.jsx';
 import SubscriptionSuccessPage from '../../pages/SubscriptionSuccessPage.jsx';
@@ -424,7 +369,6 @@ function AppContent() {
               <Route path="/sphera-ai" element={<Navigate to="/chat" replace />} />
               <Route path="/helpdesk" element={<Navigate to="/chat" replace />} />
               <Route path="/tokenswap" element={<TokenSwapPage />} />
-              <Route path="/crypto-fund" element={<CryptoFund />} />
 
               {/* ===== LEGAL PAGES (within dashboard) ===== */}
               <Route path="/terms" element={<TokenizedAssetsGlassmorphic key="main" />} />
@@ -602,9 +546,6 @@ function AppContent() {
           </div>
         )}
       </Suspense>
-
-      {/* Chat Widget - Visible on all pages */}
-      {/* {!isAdminDomain && <ChatWidget />} */}
 
       {/* Logout Popup */}
       <LogoutPopupComponent />

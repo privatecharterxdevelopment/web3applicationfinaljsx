@@ -7,6 +7,8 @@
  * - Marker placement for venues
  */
 
+import { getMapboxToken } from '../config/mapbox';
+
 export interface Coordinates {
   lat: number;
   lng: number;
@@ -50,7 +52,7 @@ export interface ItineraryVenue {
   type: string;
 }
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
+const MAPBOX_TOKEN = getMapboxToken();
 const MAPBOX_STYLE = 'mapbox/streets-v12'; // Clean style for luxury
 
 /**
